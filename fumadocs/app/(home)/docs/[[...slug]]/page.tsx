@@ -43,7 +43,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   };
 
   return (
-    <main id="main-content">
+    <>
       <Script
         id="json-ld"
         type="application/ld+json"
@@ -67,7 +67,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
           />
         </DocsBody>
       </DocsPage>
-    </main>
+    </>
   );
 }
 
