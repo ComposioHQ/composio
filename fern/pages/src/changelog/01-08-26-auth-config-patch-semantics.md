@@ -135,16 +135,3 @@ await fetch(url, {
 requests.patch(url, json={"type": "custom", "proxy_config": None})
 ```
 
-### JavaScript/TypeScript Gotcha
-
-`undefined` is stripped by `JSON.stringify`—always use `null` to clear:
-
-```typescript
-// ❌ undefined is stripped—field is omitted, not cleared
-JSON.stringify({ type: 'custom', proxy_config: undefined });
-// Result: '{"type":"custom"}' — proxy_config is PRESERVED
-
-// ✅ null is preserved—field is explicitly cleared
-JSON.stringify({ type: 'custom', proxy_config: null });
-// Result: '{"type":"custom","proxy_config":null}' — proxy_config is CLEARED
-```
