@@ -3,39 +3,8 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
-import { fetchToolkitDetails } from '@/lib/toolkit-api';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { getToolkitSummaries, getToolkitBySlug, ToolkitDataError } from '@/lib/toolkit-data';
 import type { Metadata } from 'next';
-import type { ToolkitSummary } from '@/types/toolkit';
-
-async function getToolkits(): Promise<ToolkitSummary[]> {
-  const filePath = join(process.cwd(), 'public/data/toolkits.json');
-
-  try {
-    const data = await readFile(filePath, 'utf-8');
-    const toolkits = JSON.parse(data) as ToolkitSummary[];
-
-    if (!Array.isArray(toolkits)) {
-      throw new Error('toolkits.json must contain an array');
-    }
-
-    if (toolkits.length === 0) {
-      console.warn('[Toolkits] Warning: toolkits.json is empty');
-    }
-
-    return toolkits;
-  } catch (error) {
-    const err = error as NodeJS.ErrnoException;
-    if (err.code === 'ENOENT') {
-      throw new Error(`Toolkits data file not found: ${filePath}`);
-    }
-    if (error instanceof SyntaxError) {
-      throw new Error(`Invalid JSON in toolkits.json: ${error.message}`);
-    }
-    throw error;
-  }
-}
 
 export async function generateStaticParams() {
   // Index page
@@ -44,8 +13,8 @@ export async function generateStaticParams() {
   // MDX pages
   const mdxParams = toolkitsSource.generateParams();
 
-  // JSON toolkit pages
-  const toolkits = await getToolkits();
+  // JSON toolkit pages (gracefully handle missing data)
+  const toolkits = await getToolkitSummaries();
   const jsonParams = toolkits.map((toolkit) => ({
     slug: [toolkit.slug],
   }));
@@ -75,8 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
 
   // Check JSON toolkit
   if (slug.length === 1) {
-    const toolkits = await getToolkits();
-    const toolkit = toolkits.find((t) => t.slug === slug[0]);
+    const toolkit = await getToolkitBySlug(slug[0]);
     if (toolkit) {
       return {
         title: `${toolkit.name.trim()} - Composio Toolkit`,
@@ -93,7 +61,8 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
 
   // Index page - show landing with search/filter
   if (!slug || slug.length === 0) {
-    return <ToolkitsLanding />;
+    const toolkits = await getToolkitSummaries();
+    return <ToolkitsLanding toolkits={toolkits} />;
   }
 
   // Check MDX first
@@ -109,27 +78,33 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
 
   // Check JSON toolkit
   if (slug.length === 1) {
-    const toolkitSlug = slug[0];
-    const toolkits = await getToolkits();
-    const toolkitSummary = toolkits.find((t) => t.slug === toolkitSlug);
+    try {
+      const toolkit = await getToolkitBySlug(slug[0]);
 
-    if (toolkitSummary) {
-      // Fetch detailed toolkit data (tools, triggers, auth config) dynamically
-      const details = await fetchToolkitDetails(toolkitSlug);
-
-      // Combine summary with fetched details
-      const toolkit = {
-        ...toolkitSummary,
-        ...details,
-      };
-
-      return (
-        <ToolkitDetail
-          toolkit={toolkit}
-          tools={toolkit.tools}
-          triggers={toolkit.triggers}
-        />
-      );
+      if (toolkit) {
+        return (
+          <ToolkitDetail
+            toolkit={toolkit}
+            tools={toolkit.tools}
+            triggers={toolkit.triggers}
+          />
+        );
+      }
+    } catch (error) {
+      if (error instanceof ToolkitDataError && error.code === 'NOT_GENERATED') {
+        return (
+          <div className="space-y-5 sm:space-y-8">
+            <h1 className="text-2xl font-bold text-fd-foreground sm:text-3xl">Toolkit</h1>
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+              <p className="text-fd-foreground">Toolkit data is not available.</p>
+              <p className="mt-2 text-sm text-fd-muted-foreground">
+                Run <code className="rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs">bun run generate:toolkits</code> to generate toolkit data.
+              </p>
+            </div>
+          </div>
+        );
+      }
+      throw error;
     }
   }
 

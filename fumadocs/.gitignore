@@ -3,6 +3,8 @@
 
 # generated content
 .source
+/public/data/toolkits/
+/public/data/toolkits.json.gz
 
 # test & build
 /coverage

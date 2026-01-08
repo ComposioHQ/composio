@@ -23,10 +23,10 @@
 - Filter client-side from pre-generated JSON
 
 ### Build-Time Generation
-- `bun run generate:toolkits` - separate command
-- Not run on `bun run dev` (too slow)
-- Run on CI push
-- JSON files committed to git (works offline)
+- Runs automatically during `bun run build`
+- Skips if data already exists (caching)
+- Not committed to git (in .gitignore)
+- Vercel generates fresh data on each deploy
 
 ---
 
@@ -100,50 +100,59 @@
 
 ## Data & Generation
 
-### Single File Architecture
-
-All toolkit data (including tools and triggers) is stored in a **single JSON file**:
+### File Architecture
 
 ```
-/public/data/toolkits.json     → All toolkits with tools & triggers (~5-10MB)
+public/data/
+├── toolkits.json.gz          # Index (slugs, names, counts) - 64KB
+└── toolkits/
+    ├── gmail.json.gz         # Full toolkit data - ~8KB avg
+    ├── github.json.gz
+    └── ... (862 files, 7MB total)
 ```
 
-### Why Single File?
+### Why Individual Files + Gzip?
 
-- **Fully static** - No API calls at runtime, fast and reliable
-- **No repo bloat** - One file instead of 800+ individual files
-- **Git-friendly** - Git compresses JSON well
-- **Simple** - Easy to understand and maintain
-- **Open source friendly** - Public data, no secrets
+Original single-file approach hit problems:
+- 45MB uncompressed JSON
+- GitHub 100MB file limit
+- Client bundle included 388KB of JSON
+
+Current approach:
+- Gzip: 45MB → 7MB (85% reduction)
+- Per-toolkit files: detail pages load only what they need
+- Server-side decompression: 2-9ms per file, negligible
+- Not committed to git: generated at build time
+
+### Why Build-Time Generation?
+
+- Data always fresh on deploy
+- No git history bloat
+- Vercel caches build artifacts
+- Local dev uses cached data (fast)
 
 ### Generator Script
+
 `scripts/generate-toolkits.ts`
 
-Run: `bun run generate:toolkits`
+```bash
+bun run generate:toolkits              # Generate (skips if exists)
+FORCE_TOOLKIT_REGEN=true bun run ...   # Force regenerate
+```
 
-### JSON Structure
+### Runtime Data Loading
 
-```json
-// toolkits.json
-[
-  {
-    "slug": "gmail",
-    "name": "Gmail",
-    "logo": "https://...",
-    "description": "Gmail is Google's...",
-    "category": "Communication",
-    "authSchemes": ["OAUTH2"],
-    "toolCount": 37,
-    "triggerCount": 2,
-    "version": "20260102_00",
-    "tools": [
-      { "slug": "GMAIL_SEND_EMAIL", "name": "Send email", "description": "..." }
-    ],
-    "triggers": [
-      { "slug": "GMAIL_NEW_EMAIL", "name": "New email", "description": "..." }
-    ]
-  }
-]
+`lib/toolkit-data.ts` handles decompression:
+- `getToolkitSummaries()` → returns `[]` if data missing (graceful)
+- `getToolkitBySlug(slug)` → throws `ToolkitDataError` if data missing
+- Pages show helpful "run generate:toolkits" message on error
+
+### Environment Variables
+
+```
+COMPOSIO_API_KEY        # Required (Vercel env vars)
+COMPOSIO_API_BASE       # Optional, defaults to prod API
+FORCE_TOOLKIT_REGEN     # Set "true" to bypass cache
 ```
 
 ---
@@ -154,18 +163,18 @@ Run: `bun run generate:toolkits`
 {
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun run generate:toolkits && next build",
     "generate:toolkits": "bun scripts/generate-toolkits.ts"
   }
 }
 ```
 
-| Command | Regenerates? | Use case |
-|---------|--------------|----------|
-| `bun run dev` | ❌ | Local dev |
-| `bun run build` | ❌ | Fast build |
-| `bun run generate:toolkits` | ✅ | Manual |
-| CI push | ✅ | Auto regenerate |
+| Command | Generates? | Notes |
+|---------|------------|-------|
+| `bun run dev` | ❌ | Uses cached data |
+| `bun run build` | ✅ (if missing) | Skips if exists |
+| `bun run generate:toolkits` | ✅ (if missing) | Manual trigger |
+| Vercel deploy | ✅ (if missing) | Build includes generation |
 
 ---
 
@@ -180,19 +189,12 @@ Run: `bun run generate:toolkits`
 
 ---
 
-## Implementation Order
+## Implementation Status
 
-1. [x] Generator script (`scripts/generate-toolkits.ts`)
-2. [x] Landing page + components (category grouping, alphabet sections)
-3. [x] Individual toolkit page (version display, auth badges, tool/trigger list with copy)
-4. [x] Premium tools page (`/toolkits/premium-tools`)
-5. [x] Hybrid architecture (static index + server-side API fetch)
-6. [ ] Polish/styling
-7. [ ] CI hooks for auto-regeneration
-
----
-
-## Future: CI Hooks
-
-- Trigger docs regeneration from toolkit repo changes
-- Trigger docs regeneration from API repo changes
+- [x] Generator script with gzip compression
+- [x] Landing page with search/filter
+- [x] Individual toolkit pages
+- [x] Premium tools page
+- [x] Build-time generation (no CI needed)
+- [x] Caching (skips if data exists)
+- [x] Graceful error handling
