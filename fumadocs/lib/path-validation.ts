@@ -210,7 +210,7 @@ export function escapeYaml(str: string): string {
     /^0[xX][0-9a-fA-F]+$/.test(str) || // hex
     /^0[oO]?[0-7]+$/.test(str) || // octal
     /^[-+]?(?:\.inf|\.Inf|\.INF)$/.test(str) || // infinity
-    /^\.nan|\.NaN|\.NAN$/.test(str); // NaN
+    /^(?:\.nan|\.NaN|\.NAN)$/.test(str); // NaN
 
   // Check if starts with special indicator characters
   const startsWithIndicator = /^[-?:,[\]{}#&*!|>'"%@`]/.test(str);

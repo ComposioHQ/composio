@@ -165,30 +165,37 @@ function convertAccordions(mdx: string): string {
 
 /**
  * Convert <YouTube> embeds to links
+ * Uses extractAttribute to handle attributes in any order
  */
 function convertYouTube(mdx: string): string {
-  const ytRegex = /<YouTube[^>]*id="([^"]+)"[^>]*(?:title="([^"]+)")?[^>]*\/?>/g;
+  const ytRegex = /<YouTube([^>]*)\/?>/g;
 
-  return mdx.replace(ytRegex, (match, id, title) => {
-    const videoTitle = title || 'Video';
-    return `[${videoTitle}](https://www.youtube.com/watch?v=${id})`;
+  return mdx.replace(ytRegex, (match, attrs) => {
+    const id = extractAttribute(attrs, 'id');
+    const title = extractAttribute(attrs, 'title') || 'Video';
+    if (!id) return match; // Keep original if no id
+    return `[${title}](https://www.youtube.com/watch?v=${id})`;
   });
 }
 
 /**
  * Convert <Video> embeds to links
+ * Uses extractAttribute to handle attributes in any order
  */
 function convertVideo(mdx: string): string {
-  const videoRegex = /<Video[^>]*src="([^"]+)"[^>]*(?:title="([^"]+)")?[^>]*\/?>/g;
+  const videoRegex = /<Video([^>]*)\/?>/g;
 
-  return mdx.replace(videoRegex, (match, src, title) => {
-    const videoTitle = title || 'Video';
-    return `[${videoTitle}](${src})`;
+  return mdx.replace(videoRegex, (match, attrs) => {
+    const src = extractAttribute(attrs, 'src');
+    const title = extractAttribute(attrs, 'title') || 'Video';
+    if (!src) return match; // Keep original if no src
+    return `[${title}](${src})`;
   });
 }
 
 /**
  * Convert provider-specific components
+ * Uses extractAttribute to handle attributes in any order
  */
 function convertProviderCards(mdx: string): string {
   // Convert <ProviderGrid>
@@ -198,9 +205,14 @@ function convertProviderCards(mdx: string): string {
 
   // Convert <ProviderCard>
   result = result.replace(
-    /<ProviderCard[^>]*name="([^"]+)"[^>]*href="([^"]+)"[^>]*(?:languages=\{?\[([^\]]+)\])?[^>]*\/?>/g,
-    (match, name, href, languages) => {
-      const langs = languages ? ` (${languages.replace(/["']/g, '').trim()})` : '';
+    /<ProviderCard([^>]*)\/?>/g,
+    (match, attrs) => {
+      const name = extractAttribute(attrs, 'name');
+      const href = extractAttribute(attrs, 'href');
+      // Extract languages from {["ts", "py"]} format
+      const langMatch = attrs.match(/languages=\{?\[([^\]]+)\]/);
+      const langs = langMatch ? ` (${langMatch[1].replace(/["']/g, '').trim()})` : '';
+      if (!name || !href) return match; // Keep original if missing required attrs
       return `- [${name}](${href})${langs}`;
     }
   );
