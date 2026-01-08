@@ -709,7 +709,7 @@ async function runTypeDoc(): Promise<TypeDocProject> {
   console.log(`  Found ${entryPoints.length} entry points`);
 
   const cmd = [
-    'bunx typedoc',
+    'npx typedoc',
     '--json',
     TEMP_JSON,
     '--tsconfig',
