@@ -18,10 +18,10 @@
     "@ai-sdk/openai": "^2.0.16",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.18.0",
+    "@modelcontextprotocol/sdk": "catalog:",
     "ai": "catalog:",
     "dotenv": "^16.5.0",
-    "zod-to-json-schema": "^3.24.6"
+    "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",

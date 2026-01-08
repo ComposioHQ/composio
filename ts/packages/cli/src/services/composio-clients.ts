@@ -1,6 +1,6 @@
-import { pipe, Data, Effect, Option, Schema, Array, Order, ParseResult } from 'effect';
+import { pipe, Data, Effect, Option, Schema, Array, Order, ParseResult, String } from 'effect';
 import { Composio as _RawComposioClient } from '@composio/client';
-import { Toolkit, Toolkits } from 'src/models/toolkits';
+import { Toolkit, Toolkits, ToolkitName } from 'src/models/toolkits';
 import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
@@ -17,6 +17,14 @@ import { renderPrettyError } from './utils/pretty-error';
  */
 export class HttpServerError extends Data.TaggedError('services/HttpServerError')<{
   readonly cause?: unknown;
+}> {}
+
+/**
+ * Error thrown when one or more toolkit slugs are invalid.
+ */
+export class InvalidToolkitsError extends Data.TaggedError('services/InvalidToolkitsError')<{
+  readonly invalidToolkits: ReadonlyArray<string>;
+  readonly availableToolkits: ReadonlyArray<string>;
 }> {}
 
 /**
@@ -359,19 +367,21 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
     effect: Effect.gen(function* () {
       const client = yield* ComposioClientLive;
 
+      const getToolkits = (limit?: number) =>
+        client.toolkits.list({ limit }).pipe(
+          Effect.map(response => response.items),
+          Effect.flatMap(
+            Effect.fn(function* (toolkits) {
+              // Sort apps by slug.
+              // TODO: make sure this happens on the server-side.
+              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
+              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
+            })
+          )
+        );
+
       return {
-        getToolkits: (limit?: number) =>
-          client.toolkits.list({ limit }).pipe(
-            Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (toolkits) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-                return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
-              })
-            )
-          ),
+        getToolkits,
         getToolsAsEnums: () => client.tools.retrieveEnum(),
         getTools: (limit: number) =>
           client.tools.list({ limit }).pipe(
@@ -398,6 +408,53 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
               })
             )
           ),
+        /**
+         * Validates that the given toolkit slugs are valid by comparing them against the list
+         * of available toolkits. Returns the list of valid toolkit slugs (normalized to lowercase).
+         * @param toolkitSlugs - Array of toolkit slugs to validate (case-insensitive)
+         */
+        validateToolkits: (
+          toolkitSlugs: ReadonlyArray<string>
+        ): Effect.Effect<
+          ReadonlyArray<string>,
+          InvalidToolkitsError | HttpError | NoSuchElementException
+        > =>
+          Effect.gen(function* () {
+            // Normalize input slugs to lowercase for comparison
+            const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
+
+            // Fetch all available toolkits
+            const allToolkits = yield* getToolkits();
+            const availableSlugs = allToolkits.map(toolkit => String.toLowerCase(toolkit.slug));
+
+            // Find invalid slugs
+            const invalidSlugs = normalizedInputSlugs.filter(
+              slug => !availableSlugs.includes(slug)
+            );
+
+            if (invalidSlugs.length > 0) {
+              return yield* Effect.fail(
+                new InvalidToolkitsError({
+                  invalidToolkits: invalidSlugs,
+                  availableToolkits: availableSlugs,
+                })
+              );
+            }
+
+            return normalizedInputSlugs;
+          }),
+        /**
+         * Filters the given list of toolkits to only include those with the specified slugs.
+         * @param toolkits - Array of toolkits to filter
+         * @param toolkitSlugs - Array of toolkit slugs to filter by (case-insensitive)
+         */
+        filterToolkitsBySlugs: (
+          toolkits: ReadonlyArray<Toolkit>,
+          toolkitSlugs: ReadonlyArray<string>
+        ): ReadonlyArray<Toolkit> => {
+          const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
+          return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
+        },
       };
     }),
     dependencies: [ComposioClientLive.Default],

@@ -1,0 +1,1259 @@
+---
+title: Our next generation SDKs
+description: Learn more about Composio's next generation SDKs and how to migrate
+---
+
+In the last few months, we have experienced very rapid growth in usage of our platform. As such, our team has been working hard to radically improve the performance and developer experience of our platform.
+
+A lot of these changes have happened in the background, but we are excited to finally share our new SDKs with you that complement our new infra.
+
+The new API features improved usability, enhanced stability, and better scalability. The SDKs built on top of it simplify the developer experience, making it easier than ever to build useful agents.
+
+## What's new?
+
+A lot of the changes are on the infra side, but from the SDK point of view, here is what you can expect:
+- Faster and more reliable tool execution
+- A simpler but more opinionated SDK
+- Much more intuitive and consistent naming conventions
+- A vastly improved TypeScript SDK that is meaningfully more type-safe and has full feature parity with the Python SDK
+
+There aren't too many new flashy features here (yet) mainly because we wanted to get the bones right — but we feel we have a solid foundation to ship incredible new experiences on top very quickly.
+
+## State of the new SDK and what is happening with the old SDKs?
+
+Currently, the new SDKs are in a preview release. These new SDKs come almost fully formed, we do not expect many breaking changes to them but are releasing them in a preview state to get feedback and make necessary changes before locking them in.
+
+As we lock the new SDKs in place, we will deprecate support for the old SDKs. They will continue to work for the foreseeable future but are no longer actively maintained. We will continue to push security updates and fix any critical bugs but will not support any new functionality in them.
+
+We urge you to upgrade to the new SDKs as soon as possible.
+
+## Nomenclature
+
+We have updated several key terms in the SDK and API to improve clarity and consistency. The following table summarizes these changes:
+
+| Previous Term | Current Term       | Definition                                                                |
+|---------------|--------------------|--------------------------------------------------------------------------|
+| Actions       | Tools              | Individual operations or capabilities that can be performed by an LLM agent |
+| Apps          | Toolkits           | A collection of tools grouped under a single application                |
+| Integration   | Auth Config        | Configuration containing developer credentials and application-level settings such as scopes and API endpoints. Scoped to a toolkit. |
+| Connection    | Connected accounts | User-linked accounts associated with a toolkit                          |
+| Entity ID     | User ID            | The identifier of the user performing the action (UUID or email)        |
+| Trigger       | Trigger            | An event that can be subscribed to                                      |
+| Toolsets      | Providers          | LLM or agent framework that can be used with Composio to create agents |
+
+## Switch to nano IDs from UUIDs
+
+We have transitioned from UUIDs to nano IDs throughout the platform for the following reasons:
+
+- **Improved readability**: UUIDs are lengthy and difficult to read
+- **Better usability**: Easier to copy with a single double-click
+- **Better organization**: Nano IDs allow us to distinguish between different resource types through prefixes
+
+| Feature           | Nano ID Prefix | Example            |
+|-------------------|----------------|--------------------|
+| Connected Account | `ca_`          | `ca_8x9w2l3k5m`    |
+| Auth Config       | `ac_`          | `ac_1234567890`    |
+| Trigger           | `ti_`          | `ti_So9EQf8XnAcy`  |
+
+<Callout type="info">
+Nano IDs are short, unique, and prefixed to indicate the resource type.
+</Callout>
+
+## SDK Changes
+
+Upgrade to the latest SDK version using the appropriate package manager:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```bash
+pip install -U composio
+```
+  </Tab>
+  <Tab value="TypeScript">
+```bash
+npm install @composio/core
+```
+  </Tab>
+</Tabs>
+
+Both SDKs now implement proper namespacing for each concept.
+
+### User ID scoping
+
+The concept of `entity_id` has been expanded and renamed to `user_id`.
+
+All operations are now scoped to a user ID, including:
+- Fetching tools
+- Initiating connections
+- Executing tools
+- Managing triggers
+
+This change provides explicit specification of the user for whom the action is being performed. When a user may have multiple accounts (such as work and personal Gmail connections), you can use the more specific connected account ID.
+
+### Replacing ToolSets with Providers
+
+We have deprecated "toolsets" in favor of "providers". This change allows Composio to provide deeper standardization for tool implementation across different frameworks.
+
+Previously, you needed to import and use a framework-specific `ComposioToolSet` class:
+
+<Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
+  <Tab value="Python (previous)">
+```python
+from composio_openai import ComposioToolSet, Action, App
+from openai import OpenAI
+
+toolset = ComposioToolSet()
+```
+  </Tab>
+  <Tab value="TypeScript (previous)">
+```typescript
+import { OpenAIToolSet } from 'composio-core';
+
+const toolset = new OpenAIToolSet();
+```
+  </Tab>
+</Tabs>
+
+The SDK structure is now framework-agnostic and includes the OpenAI provider out of the box:
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from composio import Composio
+# from composio_langchain import LangchainProvider
+
+composio = Composio()
+# composio = Composio(provider=LangchainProvider())
+
+tools = composio.tools.get(
+    user_id="0001",
+    tools=["LINEAR_CREATE_LINEAR_ISSUE", "GITHUB_CREATE_COMMIT"]
+)
+# tools returned is formatted for the provider. by default, OpenAI.
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from '@composio/core';
+// import { VercelProvider } from '@composio/vercel';
+
+const composio = new Composio({
+  // provider: new VercelProvider(),
+});
+// Can specify other providers too, like OpenAI, Anthropic, Vercel AI SDK.
+
+const tools = await composio.tools.get('user@example.com', {
+  tools: ['LINEAR_CREATE_LINEAR_ISSUE', 'GITHUB_CREATE_COMMIT'],
+});
+// tools returned is formatted for the provider. by default, OpenAI.
+```
+  </Tab>
+</Tabs>
+
+You can now use the same tools across any framework with our unified interface, or create custom toolsets for frameworks we don't yet support.
+
+Read more about [providers in our documentation](/docs/providers/openai) and explore the [complete list of available providers](/docs/providers/openai).
+
+### Fetching and filtering tools
+
+Previously, you could filter tools by:
+- Apps
+- Action names (tool names)
+- Tags
+
+You could also specify an `important` flag to retrieve the most important tools:
+
+<Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
+  <Tab value="Python (previous)">
+```python
+from composio_openai import ComposioToolSet, Action, App
+from openai import OpenAI
+
+toolset = ComposioToolSet()
+client = OpenAI()
+
+tools = toolset.get_tools(
+    actions=[Action.GITHUB_GET_THE_AUTHENTICATED_USER], check_connected_accounts=True
+)
+
+tools = toolset.get_tools(apps=[App.GITHUB, App.LINEAR, App.SLACK], check_connected_accounts=True)
+```
+  </Tab>
+  <Tab value="TypeScript (previous)">
+```typescript
+import { OpenAIToolSet } from 'composio-core';
+
+const toolset = new OpenAIToolSet();
+
+const tools_1 = await toolset.getTools({ apps: ['GITHUB'] });
+const tools_2 = await toolset.getTools({
+  actions: ['GITHUB_GET_THE_AUTHENTICATED_USER', 'LINEAR_CREATE_LINEAR_ISSUE'],
+});
+```
+  </Tab>
+</Tabs>
+
+You can now filter tools by:
+- Toolkits
+- Tool slugs
+- Limit parameter
+- Search query
+
+The `important` flag has been removed. Instead, tools are returned in order of importance by default:
+
+<Callout type="info">
+Since `user_id` is now explicitly required, the `check_connected_accounts` flag is no longer necessary.
+</Callout>
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from composio import Composio
+
+composio = Composio()
+
+user_id = "user@acme.org"
+
+tools_1 = composio.tools.get(user_id=user_id, toolkits=["GITHUB", "LINEAR"])
+
+tools_2 = composio.tools.get(user_id=user_id, toolkits=["SLACK"], limit=5)  # Default limit=20
+
+tools_3 = composio.tools.get(
+    user_id=user_id,
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_AN_ISSUE_COMMENT", "GITHUB_CREATE_A_COMMIT"],
+)
+
+tools_4 = composio.tools.get(user_id="john", search="hackernews posts")
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from '@composio/core';
+
+const userId = 'user@acme.org';
+
+const composio = new Composio();
+
+const tools_1 = await composio.tools.get(userId, {
+  toolkits: ['GITHUB', 'LINEAR'],
+});
+
+const tools_2 = await composio.tools.get(userId, {
+  toolkits: ['GITHUB'],
+  limit: 5, // Default limit=20
+});
+
+const tools_3 = await composio.tools.get(userId, {
+  tools: ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_CREATE_AN_ISSUE_COMMENT', 'GITHUB_CREATE_A_COMMIT'],
+});
+
+const tools_4 = await composio.tools.get(userId, {
+  search: 'hackernews posts',
+});
+```
+  </Tab>
+</Tabs>
+
+### Fetching raw tool data
+
+To examine the raw schema definition of a tool for understanding input/output parameters or building custom logic around tool definitions, use the following methods:
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from composio import Composio
+
+composio = Composio()
+
+tool = composio.tools.get_raw_composio_tool_by_slug("HACKERNEWS_GET_LATEST_POSTS")
+
+print(tool.model_dump_json())
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const tool = await composio.tools.getRawComposioToolBySlug('GITHUB_GET_OCTOCAT');
+
+console.log(JSON.stringify(tool, null, 2));
+```
+  </Tab>
+</Tabs>
+
+### Executing tools
+
+Tool execution remains largely unchanged, with `user_id` now explicitly required.
+
+For agentic frameworks, the tool object returned from `tools.get` is now the respective framework's native tool object. Tool call execution is handled by the agentic framework itself.
+
+<Callout type="info">
+For non-agentic frameworks, Composio provides a helper function to execute tool calls.
+</Callout>
+
+<Tabs groupId="language" items={['Python v3', 'TypeScript v3']} persist>
+  <Tab value="Python v3">
+```python
+from composio import Composio
+from openai import OpenAI
+
+openai_client = OpenAI()
+composio = Composio()
+
+tools = composio.tools.get(user_id="user@acme.com", tools=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
+response = openai_client.chat.completions.create(
+    model="gpt-4.1",
+    messages=[{"role": "user", "content": "gimme some zen."}],
+    tools=tools,
+)
+
+result = composio.provider.handle_tool_calls(user_id="user@acme.com", response=response)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript v3">
+```typescript
+import { Composio } from '@composio/core';
+import { AnthropicProvider } from '@composio/anthropic';
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic();
+const composio = new Composio({
+  provider: new AnthropicProvider(),
+});
+
+const userId = 'user@example.com';
+const tools = await composio.tools.get(userId, {
+  toolkits: ['GMAIL'],
+});
+
+const msg = await anthropic.messages.create({
+  model: 'claude-3-7-sonnet-latest',
+  tools: tools,
+  messages: [
+    {
+      role: 'user',
+      content: "Say hi to 'soham@composio.dev'",
+    },
+  ],
+  max_tokens: 1024,
+});
+
+const result = await composio.provider.handleToolCalls(userId, msg);
+console.log('Tool results:', result);
+```
+  </Tab>
+</Tabs>
+
+For more information on executing tools for different frameworks, see [Replacing ToolSets with Providers](#replacing-toolsets-with-providers).
+
+### Tool Modifiers (formerly Tool Processors)
+
+Tool processors have been renamed to *tool modifiers* and now provide an improved developer experience. The implementation is now available in TypeScript too! (previously Python-only).
+
+```python title="Python (previous)"
+from composio_openai import ComposioToolSet, Action
+
+toolset = ComposioToolSet()
+
+
+def my_schema_processor(schema: dict) -> dict: ...
+def my_preprocessor(inputs: dict) -> dict: ...
+def my_postprocessor(result: dict) -> dict: ...
+
+
+# Get tools with the modified schema
+processed_tools = toolset.get_tools(
+    actions=[Action.GMAIL_SEND_EMAIL],
+    processors={
+        # Applied BEFORE the LLM sees the schema
+        "schema": {Action.SOME_ACTION: my_schema_processor},
+        # Applied BEFORE the tool executes
+        "pre": {Action.SOME_ACTION: my_preprocessor},
+        # Applied AFTER the tool executes, BEFORE the result is returned
+        "post": {Action.SOME_ACTION: my_postprocessor},
+    },
+)
+```
+
+| Previous          | Current                 |
+|-------------------|-------------------------|
+| `pre` processor   | `beforeExecute` modifier |
+| `post` processor  | `afterExecute` modifier  |
+| `schema` processor| `schema` modifier        |
+
+The modifiers now leverage language-specific features to provide a more natural developer experience.
+
+While tool processors could previously be applied during SDK initialization, tool fetching, and tool execution, we have restructured them as follows:
+- **Chat Completion providers**: Modifiers are specified and applied during tool execution
+- **Agentic frameworks**: Modifiers are specified and applied during tool fetching
+
+#### Schema Modifiers
+
+The following example demonstrates schema modifier usage, applicable across all providers:
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from composio import Composio, schema_modifier
+from composio.types import Tool
+
+user_id = "your@email.com"
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    modifiers=[
+        modify_schema,
+    ]
+)
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAI } from 'openai';
+
+const userId = 'your@email.com';
+const composio = new Composio();
+
+// Schema modifier to delete the `page` argument from the `HACKERNEWS_GET_LATEST_POSTS` tool
+const tools = await composio.tools.get(
+  userId,
+  {
+    tools: ['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+  },
+  {
+    modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+      if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
+        const { inputParameters } = schema;
+        if (inputParameters?.properties) {
+          delete inputParameters.properties['page'];
+        }
+        inputParameters.required = ['size'];
+      }
+      return schema;
+    },
+  }
+);
+
+console.log(JSON.stringify(tools, null, 2));
+```
+  </Tab>
+</Tabs>
+
+#### Before Modifiers
+
+The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modify-tool-behavior/before-execution-modifiers):
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+@before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def before_execute_modifier(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["size"] = 1
+    return params
+
+
+# Get tools
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+const result_1 = await composio.tools.execute(
+  'HACKERNEWS_GET_LATEST_POSTS',
+  {
+    userId,
+    arguments: JSON.parse(toolArgs),
+  },
+  {
+    beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
+      if (toolSlug === 'HACKERNEWS_GET_LATEST_POSTS') {
+        params.arguments.size = 1;
+      }
+      console.log(params);
+      return params;
+    },
+  }
+);
+```
+  </Tab>
+</Tabs>
+
+#### After Modifiers
+
+The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modify-tool-behavior/after-execution-modifiers):
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+@after_execute(tools=["HACKERNEWS_GET_USER"])
+def after_execute_modifier(
+    tool: str,
+    toolkit: str,
+    response: ToolExecutionResponse,
+) -> ToolExecutionResponse:
+    return {
+        **response,
+        "data": {
+            "karma": response["data"]["karma"],
+        },
+    }
+
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+const result_2 = await composio.tools.execute(
+  'HACKERNEWS_GET_USER',
+  {
+    userId,
+    arguments: JSON.parse(toolArgs),
+  },
+  {
+    afterExecute: ({ toolSlug, toolkitSlug, result }) => {
+      if (toolSlug === 'HACKERNEWS_GET_USER') {
+        const { data } = result;
+        const { karma } = data.response_data as { karma: number };
+        return {
+          ...result,
+          data: { karma },
+        };
+      }
+      return result;
+    },
+  }
+);
+```
+  </Tab>
+</Tabs>
+
+### Custom Tools
+
+The SDK continues to support custom tools. [Creating tools from your methods](/docs/custom-tools#creating-a-custom-tool) remains possible. We recommend reviewing the [detailed custom tools documentation](/docs/custom-tools#creating-a-custom-tool) for more information.
+
+Due to changes in the SDK architecture, creating custom tools that use Composio's managed authentication has been modified. In the previous SDK, you could create a custom tool as follows:
+
+<Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
+  <Tab value="Python (previous)">
+```python
+# Python Example using execute_request
+from composio import action, ComposioToolSet
+import typing as t
+
+toolset = ComposioToolSet()
+
+@action(toolname="github") # Associate with GitHub app for auth
+def get_github_repo_topics(
+    owner: t.Annotated[str, "Repository owner username"],
+    repo: t.Annotated[str, "Repository name"],
+    execute_request: t.Callable # Injected by Composio
+) -> dict:
+    """Gets the topics associated with a specific GitHub repository."""
+    response_data = execute_request(
+        endpoint=f"/repos/{owner}/{repo}/topics", # API path relative to base URL
+        method="GET"
+    )
+    if isinstance(response_data, dict):
+        return {"topics": response_data.get("names", [])}
+```
+  </Tab>
+  <Tab value="TypeScript (previous)">
+```typescript
+import { OpenAIToolSet, type ActionExecutionResDto } from "composio-core";
+import { z } from "zod";
+
+const toolset = new OpenAIToolSet();
+
+await toolset.createAction({
+    actionName: "get_github_repo_topics",
+    toolName: "github",
+    description: "Gets the topics associated with a specific GitHub repository.",
+    inputParams: z.object({
+        owner: z.string().describe("Repository owner username"),
+        repo: z.string().describe("Repository name"),
+    }),
+    callback: async (inputParams, _authCredentials, executeRequest): Promise<ActionExecutionResDto> => {
+         const { owner, repo } = inputParams as { owner: string, repo: string };
+         const response = await executeRequest({
+             endpoint: `/repos/${owner}/${repo}/topics`,
+             method: "GET",
+             parameters: [],
+         });
+
+         const topics = (response as any)?.names ?? [];
+         return { successful: true, data: { topics: topics } };
+    }
+});
+```
+  </Tab>
+</Tabs>
+
+The *execute tool request* method handles injection of the appropriate base URL and authentication credentials for the tool:
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from pydantic import BaseModel, Field
+from composio import Composio
+from composio.core.models.custom_tools import ExecuteRequestFn
+
+
+composio = Composio()
+
+class GetIssueInfoInput(BaseModel):
+    issue_number: int = Field(
+        ...,
+        description="The number of the issue to get information about",
+    )
+
+# function name will be used as slug
+@composio.tools.custom_tool(toolkit="github")
+def get_issue_info(
+    request: GetIssueInfoInput,
+    execute_request: ExecuteRequestFn,
+    auth_credentials: dict,
+) -> dict:
+    """Get information about a GitHub issue."""
+    response = execute_request(
+        endpoint=f"/repos/composiohq/composio/issues/{request.issue_number}",
+        method="GET",
+        parameters=[
+            {
+                "name": "Accept",
+                "value": "application/vnd.github.v3+json",
+                "type": "header",
+            },
+            {
+                "name": "Authorization",
+                "value": f"Bearer {auth_credentials['access_token']}",
+                "type": "header",
+            },
+        ],
+    )
+    return {"data": response.data}
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from "@composio/core";
+import z from "zod";
+
+const composio = new Composio();
+
+const tool = await composio.tools.createCustomTool({
+    slug: 'GITHUB_STAR_COMPOSIOHQ_REPOSITORY',
+    name: 'Github star composio repositories',
+    toolkitSlug: 'github',
+    description: 'Star any specificied repo of `composiohq` user',
+    inputParams: z.object({
+      repository: z.string().describe('The repository to star'),
+      page: z.number().optional().describe('Pagination page number'),
+      customHeader: z.string().optional().describe('Custom header'),
+    }),
+    execute: async (input, connectionConfig, executeToolRequest) => {
+      const result = await executeToolRequest({
+        endpoint: `/user/starred/composiohq/${input.repository}`,
+        method: 'PUT',
+        body: {},
+        parameters: [
+          {
+            name: 'page',
+            value: input.page?.toString() || '1',
+            in: 'query',
+          },
+          {
+            name: 'x-custom-header',
+            value: input.customHeader || 'default-value',
+            in: 'header',
+          },
+        ],
+      });
+      return result;
+    },
+  });
+```
+  </Tab>
+</Tabs>
+
+For more information, including executing custom tools and defining custom headers and query parameters, refer to the [Custom Tools](/docs/custom-tools) documentation.
+
+### Auth configs (formerly integrations)
+
+Integrations are now called *auth configs*. While the terminology has changed, the underlying concept remains the same.
+
+Auth configs store the configuration required for authentication with a given toolkit, including OAuth developer credentials, configurable base URLs, and scopes.
+
+Auth configs now use nano IDs instead of UUIDs:
+
+| Previous (UUID) Example              | Current (Nano ID) Example |
+| :----------------------------------- | :------------------------ |
+| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ac_8x9w2l3k5m`             |
+
+We recommend storing auth config nano IDs in your database for connecting users to the appropriate auth configuration.
+
+For most use cases, you will create auth configs through the dashboard, and this process remains unchanged. Read more about [creating auth configs](/docs/authenticating-tools#creating-an-auth-config) and [customizing auth configs](/docs/custom-auth-configs).
+
+Creating auth configs programmatically in the previous SDK:
+
+<Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
+  <Tab value="Python (previous)">
+```python
+from composio_openai import App, ComposioToolSet
+
+toolset = ComposioToolSet()
+
+integration = toolset.create_integration(
+    app=App.GITHUB,
+    auth_mode="OAUTH2",
+    use_composio_oauth_app=True,
+    # For use_composio_oauth_app=False, you can provide your own OAuth app credentials here
+    # auth_config={
+    #     "client_id": "123456",
+    #     "client_secret": "123456"
+    # }
+
+)
+print(integration.id)
+```
+  </Tab>
+  <Tab value="TypeScript (previous)">
+```typescript
+import { OpenAIToolSet } from "composio-core";
+
+const composioToolset = new OpenAIToolSet();
+
+const integration = await composioToolset.integrations.create({
+    name: "gmail_integration",
+    appUniqueKey: "gmail",
+    forceNewIntegration: true,
+    useComposioAuth: false,
+    // For useComposioAuth: false, you can provide your own OAuth app credentials here
+    // authScheme: "OAUTH2",
+    // authConfig: {
+    //     clientId: "123456",
+    //     clientSecret: "123456"
+    // }
+})
+
+console.log(integration.id)
+```
+  </Tab>
+</Tabs>
+
+Creating auth configs programmatically in the current SDK:
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Use composio managed auth
+auth_config = composio.auth_configs.create(
+    toolkit="notion",
+    options={
+        "type": "use_composio_managed_auth",
+        # "type": "use_custom_auth",
+        # "auth_scheme": "OAUTH2",
+        # "credentials": {
+        #     "client_id": "1234567890",
+        #     "client_secret": "1234567890",
+        #     "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+        # },
+    },
+)
+print(auth_config)
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const authConfig = await composio.authConfigs.create('LINEAR', {
+  name: 'Linear',
+  type: 'use_composio_managed_auth',
+  //   type: "use_custom_auth",
+  //   credentials: {
+  //     client_id: "1234567890",
+  //     client_secret: "1234567890",
+  //     oauth_redirect_uri: "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+  // },
+});
+
+console.log(authConfig);
+```
+  </Tab>
+</Tabs>
+
+For using custom authentication credentials, refer to the [Programmatic Auth Configs](/docs/programmatic-auth-configs) documentation.
+
+<Callout type="info">
+The callback URL for creating custom OAuth configs is now `https://backend.composio.dev/api/v3/toolkits/auth/callback`. The previous URL was `https://backend.composio.dev/api/v1/auth-apps/add`.
+</Callout>
+
+### Connected accounts / User IDs
+
+The primary change in connected accounts and user IDs is that user IDs are now a more prominent concept compared to entities in previous versions.
+
+We have simplified the process of connecting a user to a toolkit. Instead of multiple methods and parameters for initiating a connection, both the SDK and API now require only a `user_id` and `auth_config_id` to initiate a connection.
+
+This approach is more explicit and works well with the ability for developers to have multiple auth configs for a given toolkit.
+
+Connected accounts now use nano IDs instead of UUIDs:
+
+| Previous (UUID) Example              | Current (Nano ID) Example |
+| :----------------------------------- | :------------------------ |
+| `b7a9c1e2-3f4d-4a6b-8c2e-1d2f3a4b5c6d` | `ca_8x9w2l3k5m`             |
+
+Previously, you might have initiated a connection like this:
+
+<Tabs groupId="language" items={['Python (previous)', 'TypeScript (previous)']} persist>
+  <Tab value="Python (previous)">
+```python
+from composio_openai import ComposioToolSet
+
+toolset = ComposioToolSet()
+user_id = "your_user_unique_id"
+google_integration_id = "0000-0000"
+
+entity = toolset.get_entity(id=user_id)
+
+try:
+    print(f"Initiating OAuth connection for entity {entity.id}...")
+    connection_request = toolset.initiate_connection(
+        integration_id=google_integration_id,
+        entity_id=user_id,
+        # Optionally add: redirect_url="https://yourapp.com/final-destination"
+        # if you want user sent somewhere specific *after* Composio finishes.
+    )
+
+    # Check if a redirect URL was provided (expected for OAuth)
+    if connection_request.redirectUrl:
+        print(f"Received redirect URL: {connection_request.redirectUrl}")
+    else:
+        print("Error: Expected a redirectUrl for OAuth flow but didn't receive one.")
+
+
+except Exception as e:
+    print(f"Error initiating connection: {e}")
+```
+  </Tab>
+  <Tab value="TypeScript (previous)">
+```typescript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+const userId = "your_user_unique_id";
+const googleIntegrationId = "0000-0000";
+
+console.log(`Initiating OAuth connection for entity ${userId}...`);
+const connectionRequest = await toolset.connectedAccounts.initiate({
+    integrationId: googleIntegrationId,
+    entityId: userId,
+    // Optionally add: redirectUri: "https://yourapp.com/final-destination"
+    // if you want user sent somewhere specific *after* Composio finishes.
+});
+
+// Check if a redirect URL was provided (expected for OAuth)
+if (connectionRequest?.redirectUrl) {
+    console.log(`Received redirect URL: ${connectionRequest.redirectUrl}`);
+    // Proceed to Step 2: Redirect the user
+    // Return or pass connectionRequest to the next stage
+} else {
+    console.error("Error: Expected a redirectUrl for OAuth flow but didn't receive one.");
+}
+```
+  </Tab>
+</Tabs>
+
+The current process for initiating a connection is as follows:
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from composio import Composio
+
+linear_auth_config_id = "ac_1234"
+user_id = "user@email.com"
+composio = Composio()
+
+# Create a new connected account
+connection_request = composio.connected_accounts.initiate(
+    user_id=user_id,
+    auth_config_id=linear_auth_config_id,
+)
+print(connection_request.redirect_url)
+
+# Wait for the connection to be established
+connected_account = connection_request.wait_for_connection()
+print(connected_account)
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+const linearAuthConfigId = "ac_1234";
+const userId = "user@email.com";
+
+// Initiate the OAuth connection request
+const connRequest = await composio.connectedAccounts.initiate(userId, linearAuthConfigId);
+
+const { redirectUrl, id } = connRequest;
+console.log(redirectUrl);
+
+// Wait for the connection to be established
+await connRequest.waitForConnection();
+
+// If you only have the connection request ID, you can also wait using:
+await composio.connectedAccounts.waitForConnection(id);
+```
+  </Tab>
+</Tabs>
+
+### Triggers
+
+Composio continues to support listening to application events using triggers through WebSockets and webhooks.
+
+#### Creating triggers
+
+The process for creating triggers and specifying their configuration has been redesigned for improved clarity and intuitiveness.
+
+Some triggers require configuration, such as repository names for GitHub triggers or channel names for Slack triggers. The process usually follows the pattern of fetching the trigger type and then creating the trigger with the appropriate configuration.
+
+<Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
+  <Tab value="Python (current)">
+```python
+from composio import Composio
+
+composio = Composio()
+
+user_id = "user@example.com"
+trigger_config = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+print(trigger_config.config)
+### Trigger Config
+# {
+#     "properties": {
+#         "owner": {
+#             "description": "Owner of the repository",
+#             "title": "Owner",
+#             "type": "string"
+#         },
+#         "repo": {
+#             "description": "Repository name",
+#             "title": "Repo",
+#             "type": "string"
+#         }
+#     },
+#     "required": ["owner", "repo"],
+#     "title": "WebhookConfigSchema",
+#     "type": "object"
+
+trigger = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id=user_id,
+    trigger_config={"repo": "composiohq", "owner": "composio"},
+)
+print(trigger)
+
+
+# Managing triggers
+
+composio.triggers.enable(id="ti_abcd123")
+```
+  </Tab>
+  <Tab value="TypeScript (current)">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const userId = 'user@acme.com';
+// Fetch the trigger details
+const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
+console.log(JSON.stringify(triggerType.config, null, 2));
+/*--- Trigger config ---
+{
+  "properties": {
+    "owner": {
+      "description": "Owner of the repository",
+      "title": "Owner",
+      "type": "string"
+    },
+    "repo": {
+      "description": "Repository name",
+      "title": "Repo",
+      "type": "string"
+    }
+  },
+  "required": ["owner", "repo"],
+  "title": "WebhookConfigSchema",
+  "type": "object"
+}
+*/
+
+const createResponse = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
+  triggerConfig: {
+    owner: 'composiohq',
+    repo: 'composio',
+  },
+});
+console.log(createResponse);
+```
+  </Tab>
+</Tabs>
+
+#### Enabling/Disabling triggers
+
+You can enable or disable triggers through either the SDK or the dashboard. The dashboard process remains unchanged.
+
+Managing triggers with the SDK:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Disable a trigger instance
+disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
+print(disabled_instance)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+await composio.triggers.disable("ti_abcd123");
+```
+  </Tab>
+</Tabs>
+
+If needed, the trigger can be enabled again.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Enable a trigger instance
+enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
+print(enabled_instance)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+await composio.triggers.enable("ti_abcd123");
+```
+  </Tab>
+</Tabs>
+
+#### Listening to triggers
+
+We recommend listening to triggers through webhooks. The following are example routes for Next.js and FastAPI.
+
+For development, you can also [listen to triggers through the SDK](/docs/using-triggers#subscribing-to-triggers-using-the-sdk-for-development).
+
+<Tabs items={['FastAPI', 'Next.js']}>
+  <Tab value="FastAPI">
+```python title="app/route.py"
+from fastapi import FastAPI, Request, HTTPException
+from typing import Dict, Any
+import uvicorn
+import json
+import hmac
+import hashlib
+import base64
+import os
+
+def verify_webhook_signature(request: Request, body: bytes) -> bool:
+    """Verify Composio webhook signature"""
+    webhook_signature = request.headers.get("webhook-signature")
+    webhook_id = request.headers.get("webhook-id")
+    webhook_timestamp = request.headers.get("webhook-timestamp")
+    webhook_secret = os.getenv("COMPOSIO_WEBHOOK_SECRET")
+
+    if not all([webhook_signature, webhook_id, webhook_timestamp, webhook_secret]):
+        raise HTTPException(status_code=400, detail="Missing required webhook headers or secret")
+
+    if not webhook_signature.startswith("v1,"):
+        raise HTTPException(status_code=401, detail="Invalid signature format")
+
+    received = webhook_signature[3:]
+    signing_string = f"{webhook_id}.{webhook_timestamp}.{body.decode()}"
+    expected = base64.b64encode(
+        hmac.new(webhook_secret.encode(), signing_string.encode(), hashlib.sha256).digest()
+    ).decode()
+
+    if not hmac.compare_digest(received, expected):
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+
+    return True
+
+@app.post("/webhook")
+async def webhook_handler(request: Request):
+    payload = await request.json()
+
+    trigger_type = payload.get("type")
+    event_data = payload.get("data", {})
+
+    if trigger_type == "github_star_added_event":
+        repo_name = event_data.get("repository_name")
+        starred_by = event_data.get("starred_by")
+        print(f"Repository {repo_name} starred by {starred_by}")
+        # Add your business logic here
+
+    return {"status": "success", "message": "Webhook processed"}
+```
+  </Tab>
+  <Tab value="Next.js">
+```typescript title="app/api/webhook/route.ts"
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { TriggerEvent } from '@composio/core';
+import crypto from 'crypto';
+
+type GitHubStarEventData = {
+  repository_name: string;
+  repository_url: string;
+  starred_by: string;
+  starred_at: string;
+};
+
+function verifyWebhookSignature(
+  req: NextApiRequest,
+  body: string
+): boolean {
+  const signature = req.headers['webhook-signature'] as string | undefined;
+  const msgId = req.headers['webhook-id'] as string | undefined;
+  const timestamp = req.headers['webhook-timestamp'] as string | undefined;
+  const secret = process.env.COMPOSIO_WEBHOOK_SECRET;
+
+  if (!signature || !msgId || !timestamp || !secret) {
+    throw new Error('Missing required webhook headers or secret');
+  }
+
+  if (!signature.startsWith('v1,')) {
+    throw new Error('Invalid signature format');
+  }
+
+  const received = signature.slice(3);
+  const signingString = `${msgId}.${timestamp}.${body}`;
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(signingString)
+    .digest('base64');
+
+  return crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));
+}
+
+export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
+  const payload = req.body;
+
+  if (payload.type === 'github_star_added_event') {
+    const event: TriggerEvent<GitHubStarEventData> = {
+      type: payload.type,
+      timestamp: payload.timestamp,
+      data: payload.data
+    };
+
+    console.log(`Repository ${event.data.repository_name} starred by ${event.data.starred_by}`);
+    // Add your business logic here
+  }
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Webhook processed'
+  });
+}
+```
+  </Tab>
+</Tabs>
+
+## Coming Soon
+
+### Local tools
+
+Previously, the Python SDK included *[local tools](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)*. These were tools defined within the SDK and consisted of local shell and code-related tools such as "clipboard", "sqltool", and "shelltool".
+
+This feature is currently in development for both Python and TypeScript SDKs, with newly created tools built for improved agent accuracy.
+
+This feature is currently in development for both Python and TypeScript SDKs.
+
+## API Endpoints
+
+The following table lists important API endpoints that have changed. You can use this reference to quickly find the new v3 API endpoint for migration:
+
+<Callout type="info">
+This list is not exhaustive. Please refer to the [API Reference](/api-reference) for the complete list of endpoints.
+</Callout>
+
+### Toolkits (formerly Apps)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| `GET /api/v1/apps` | `GET /api/v3/toolkits` |
+| `GET /api/v1/apps/list/categories` | `GET /api/v3/toolkits/categories` |
+| `GET /api/v1/apps/{appName}` | `GET /api/v3/toolkits/{slug}` |
+
+### Tools (formerly Actions)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| `GET /api/v2/actions` | `GET /api/v3/tools` |
+| `GET /api/v2/actions/list/enums` | `GET /api/v3/tools/enum` |
+| `GET /api/v2/actions/{actionId}` | `GET /api/v3/tools/{tool_slug}` |
+| `POST /api/v2/actions/{actionId}/execute` | `POST /api/v3/tools/execute/{tool_slug}` |
+| `POST /api/v2/actions/{actionId}/execute/get.inputs` | `POST /api/v3/tools/execute/{tool_slug}/input` |
+| `POST /api/v2/actions/proxy` | `POST /api/v3/tools/execute/proxy` |
+
+### Auth Configs (formerly Integrations/Connectors)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| `GET /api/v1/integrations` | `GET /api/v3/auth_configs` |
+| `POST /api/v1/integrations` | `POST /api/v3/auth_configs` |
+| `GET /api/v1/integrations/{integrationId}` | `GET /api/v3/auth_configs/{nanoid}` |
+| `PATCH /api/v1/integrations/{integrationId}` | `PATCH /api/v3/auth_configs/{nanoid}` |
+| `DELETE /api/v1/integrations/{integrationId}` | `DELETE /api/v3/auth_configs/{nanoid}` |
+| `POST /api/v2/integrations/create` | `POST /api/v3/auth_configs` |
+
+### Connected Accounts (formerly Connections)
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| `GET /api/v1/connectedAccounts` | `GET /api/v3/connected_accounts` |
+| `POST /api/v1/connectedAccounts` | `POST /api/v3/connected_accounts` |
+| `POST /api/v2/connectedAccounts/initiateConnection` | `POST /api/v3/connected_accounts` |
+| `GET /api/v1/connectedAccounts/{connectedAccountId}` | `GET /api/v3/connected_accounts/{nanoid}` |
+| `DELETE /api/v1/connectedAccounts/{connectedAccountId}` | `DELETE /api/v3/connected_accounts/{nanoid}` |
+| `POST /api/v1/connectedAccounts/{connectedAccountId}/disable` | `PATCH /api/v3/connected_accounts/{nanoId}/status` |
+| `POST /api/v1/connectedAccounts/{connectedAccountId}/enable` | `PATCH /api/v3/connected_accounts/{nanoId}/status` |
+| `POST /api/v1/connectedAccounts/{connectedAccountId}/reinitiate` | `POST /api/v3/connected_accounts/{nanoid}/refresh` |
+
+### Triggers
+
+| Previous Endpoint | Current Endpoint |
+| :--- | :--- |
+| `GET /api/v1/triggers` | `GET /api/v3/triggers_types` |
+| `GET /api/v1/triggers/list/enums` | `GET /api/v3/triggers_types/list/enum` |
+| `GET /api/v2/triggers/{triggerName}` | `GET /api/v3/triggers_types/{slug}` |
+| `GET /api/v1/triggers/active_triggers` | `GET /api/v3/trigger_instances/active` |
+| `POST /api/v1/triggers/enable/{connectedAccountId}/{triggerName}` | `POST /api/v3/trigger_instances/{slug}/upsert` |
+| `DELETE /api/v1/triggers/instance/{triggerInstanceId}` | `DELETE /api/v3/trigger_instances/manage/{triggerId}` |
+| `PATCH /api/v1/triggers/instance/{triggerId}/status` | `PATCH /api/v3/trigger_instances/manage/{triggerId}` |

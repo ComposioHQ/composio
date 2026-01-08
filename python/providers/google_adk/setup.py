@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_google_adk",
-    version="0.9.3",
+    version="0.10.3",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Google AI Python Gemini model.",
@@ -23,6 +23,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "google-adk",
+        "composio",
     ],
     include_package_data=True,
 )

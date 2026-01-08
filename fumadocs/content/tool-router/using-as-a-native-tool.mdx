@@ -1,0 +1,241 @@
+---
+title: Using as a native tool
+description: Use Tool Router as a native tool with any AI framework
+keywords: [native tool, single tool, without mcp]
+---
+
+Tool Router can be used as a single native tool with any AI framework. The tool handles search, authentication, and execution internally.
+
+## Examples for popular frameworks
+
+Jump to examples for:
+- [OpenAI](#openai) - Python, TypeScript
+- [Vercel AI SDK](#vercel-ai-sdk) - TypeScript
+
+## OpenAI
+
+### Installation
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```bash
+pip install python-dotenv composio composio-openai-agents openai-agents
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/openai-agents @openai/agents
+```
+</Tab>
+</Tabs>
+
+### Usage
+
+Create a Tool Router session and use it as a native tool with OpenAI Agents SDK:
+
+<Callout type="info">
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from dotenv import load_dotenv
+from composio import Composio
+from agents import Agent, Runner, SQLiteSession
+from composio_openai_agents import OpenAIAgentsProvider
+
+load_dotenv()
+
+# Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
+composio = Composio(provider=OpenAIAgentsProvider())
+
+# Unique identifier of the user
+user_id = "user_123"
+
+# Create a session and get native tools for the user
+session = composio.create(user_id=user_id)
+tools = session.tools()
+
+# Configure OpenAI agent with Composio tools
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
+    model="gpt-5.2",
+    tools=tools,
+)
+
+# Memory for multi-turn conversation
+memory = SQLiteSession("conversation")
+
+# Execute an initial task
+print("Fetching GitHub issues from the Composio repository...\n")
+try:
+    result = Runner.run_sync(
+        starting_agent=agent,
+        input="Fetch all the open GitHub issues on the @ComposioHQ/composio repository and group them by bugs/features/docs.",
+        session=memory,
+    )
+    print(f"{result.final_output}\n")
+except Exception as e:
+    print(f"[Error]: {e}")
+
+# Continue with interactive conversation
+print("\nWhat else would you like me to do? (Type 'exit' to exit)")
+
+while True:
+    user_input = input("You: ").strip()
+    if user_input.lower() == "exit":
+        break
+
+    print("Assistant: ", end="", flush=True)
+    try:
+        result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
+        print(f"{result.final_output}\n")
+    except Exception as e:
+        print(f"\n[Error]: {e}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import "dotenv/config";
+import { Composio } from "@composio/core";
+import { Agent, run, MemorySession } from "@openai/agents";
+import { OpenAIAgentsProvider } from "@composio/openai-agents";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
+const composio = new Composio({ provider: new OpenAIAgentsProvider() });
+
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a session and get native tools for the user
+const session = await composio.create(userId);
+const tools = await session.tools();
+
+const agent = new Agent({
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: "gpt-5.2",
+  tools,
+});
+
+// Create a memory session for persistent multi-turn conversation
+const memory = new MemorySession();
+
+// Execute an initial task
+console.log("Fetching GitHub issues from the Composio repository...\n");
+try {
+  const initialResult = await run(
+    agent,
+    "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
+    { session: memory }
+  );
+  console.log(`${initialResult.finalOutput}\n`);
+} catch (error) {
+  console.error("[Error]:", error instanceof Error ? error.message : error);
+}
+
+// Continue with interactive conversation
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What else would you like me to do?
+(Type 'exit' to exit)
+`);
+
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  console.log("Assistant: ");
+
+  try {
+    const result = await run(agent, input, { session: memory });
+    console.log(`${result.finalOutput}\n`);
+  } catch (error) {
+    console.error("\n[Error]:", error instanceof Error ? error.message : error);
+  }
+}
+readline.close();
+```
+</Tab>
+</Tabs>
+
+## Vercel AI SDK
+
+### Installation
+
+```bash
+npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
+```
+
+### Usage
+
+Create a Tool Router session and use it as a native tool with Vercel AI SDK:
+
+<Callout type="info">
+- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
+- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+</Callout>
+
+```typescript
+import "dotenv/config";
+import { anthropic } from "@ai-sdk/anthropic";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { stepCountIs, streamText } from "ai";
+
+// Initialize Composio with Vercel provider (API key from env var COMPOSIO_API_KEY)
+const composio = new Composio({ provider: new VercelProvider() });
+
+// Unique identifier of the user
+const userId = "user_123";
+
+// Create a session and get native tools for the user
+const session = await composio.create(userId);
+const tools = await session.tools();
+
+console.log("Fetching GitHub issues from the Composio repository...");
+
+// Stream the response with tool calling
+const stream = await streamText({
+  system: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: anthropic("claude-sonnet-4-5"),
+  prompt: "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
+  stopWhen: stepCountIs(10),
+  onStepFinish: (step) => {
+    for (const toolCall of step.toolCalls) {
+      console.log(`[Using tool: ${toolCall.toolName}]`);
+    }
+  },
+  tools,
+});
+
+for await (const textPart of stream.textStream) {
+  process.stdout.write(textPart);
+}
+
+console.log("\n\n---");
+console.log("Tip: If prompted to authenticate, complete the auth flow and run again.");
+```
+
+## Next steps
+
+<Cards>
+  <Card title="Quickstart" href="/tool-router/quickstart">
+    See both MCP and native tool in action
+  </Card>
+  <Card title="Using with MCP" href="/tool-router/using-with-mcp-clients">
+    Use Tool Router with MCP-compatible clients
+  </Card>
+  <Card title="Authentication" href="/tool-router/authentication">
+    Learn about authentication options
+  </Card>
+  <Card title="Session management" href="/tool-router/users-and-sessions">
+    Configure sessions for your users
+  </Card>
+</Cards>

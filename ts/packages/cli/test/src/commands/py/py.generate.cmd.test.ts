@@ -295,6 +295,100 @@ describe('CLI: composio py generate', () => {
           });
         })
       );
+
+      it.scoped(
+        '[Given] --toolkits gmail [Then] it generates type stubs only for the gmail toolkit',
+        Effect.fn(function* () {
+          const process = yield* NodeProcess;
+          const cwd = process.cwd;
+          const fs = yield* FileSystem.FileSystem;
+          const outputDir = path.join(cwd, '.generated', 'composio-py-filtered');
+
+          const args = ['py', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+          yield* cli(args);
+
+          // Check generated files - only gmail.py should exist (no slack.py)
+          const files = yield* fs.readDirectory(outputDir);
+          const fileNames = files.map(file => path.basename(file));
+
+          expect(fileNames).toContain('gmail.py');
+          expect(fileNames).not.toContain('slack.py');
+
+          // Verify gmail.py contains GMAIL class
+          const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
+          expect(gmailSourceCode).toContain('GMAIL');
+        })
+      );
+
+      it.scoped(
+        '[Given] --toolkits gmail --toolkits slack [Then] it generates type stubs for both toolkits',
+        Effect.fn(function* () {
+          const process = yield* NodeProcess;
+          const cwd = process.cwd;
+          const fs = yield* FileSystem.FileSystem;
+          const outputDir = path.join(cwd, '.generated', 'composio-py-multi');
+
+          const args = [
+            'py',
+            'generate',
+            '--toolkits',
+            'gmail',
+            '--toolkits',
+            'slack',
+            '--output-dir',
+            outputDir,
+          ];
+          yield* cli(args);
+
+          // Check generated files - both gmail.py and slack.py should exist
+          const files = yield* fs.readDirectory(outputDir);
+          const fileNames = files.map(file => path.basename(file));
+
+          expect(fileNames).toContain('gmail.py');
+          expect(fileNames).toContain('slack.py');
+
+          // Verify both files contain their respective classes
+          const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
+          const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.py'));
+          expect(gmailSourceCode).toContain('GMAIL');
+          expect(slackSourceCode).toContain('SLACK');
+        })
+      );
+
+      it.scoped(
+        '[Given] --toolkits with invalid toolkit [Then] it fails with an error',
+        Effect.fn(function* () {
+          const process = yield* NodeProcess;
+          const cwd = process.cwd;
+          const outputDir = path.join(cwd, '.generated', 'composio-py-invalid');
+
+          const args = ['py', 'generate', '--toolkits', 'nonexistent', '--output-dir', outputDir];
+          const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+
+          expect(result).toBeInstanceOf(Error);
+          expect((result as Error).message).toContain('Invalid toolkit(s): nonexistent');
+        })
+      );
+
+      it.scoped(
+        '[Given] --toolkits GMAIL (uppercase) [Then] it handles case-insensitive matching',
+        Effect.fn(function* () {
+          const process = yield* NodeProcess;
+          const cwd = process.cwd;
+          const fs = yield* FileSystem.FileSystem;
+          const outputDir = path.join(cwd, '.generated', 'composio-py-uppercase');
+
+          const args = ['py', 'generate', '--toolkits', 'GMAIL', '--output-dir', outputDir];
+          yield* cli(args);
+
+          // Check generated files - only gmail.py should exist
+          const files = yield* fs.readDirectory(outputDir);
+          const fileNames = files.map(file => path.basename(file));
+
+          expect(fileNames).toContain('gmail.py');
+          expect(fileNames).not.toContain('slack.py');
+        })
+      );
     });
   });
 });

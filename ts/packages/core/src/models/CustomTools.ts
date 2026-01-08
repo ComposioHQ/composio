@@ -12,7 +12,7 @@ import {
   CustomToolRegistry,
   InputParamsSchema,
 } from '../types/customTool.types';
-import zodToJsonSchema from 'zod-to-json-schema';
+import * as zodToJsonSchema from 'zod-to-json-schema';
 import {
   Tool,
   ToolExecuteParams,
@@ -81,7 +81,7 @@ export class CustomTools {
       throw new Error('Invalid tool options');
     }
     // generate the input parameters schema
-    const paramsSchema: InputParamsSchema = zodToJsonSchema(inputParams, {
+    const paramsSchema: InputParamsSchema = zodToJsonSchema.default(inputParams, {
       name: 'input',
     }) as InputParamsSchema;
     const paramsSchemaJson = paramsSchema.definitions.input;
@@ -309,6 +309,14 @@ export class CustomTools {
         parameters: parameters,
         body: data.body,
         connected_account_id: connectedAccountId,
+        /**
+         * @deprecated
+         * @description
+         * This parameter is deprecated and will be removed in the future.
+         * Please use custom_auth_params instead.
+         *
+         */
+        // @ts-ignore
         custom_connection_data: data.customConnectionData,
       });
 

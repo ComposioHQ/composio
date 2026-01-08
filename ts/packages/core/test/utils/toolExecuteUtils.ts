@@ -15,7 +15,7 @@ export interface TestContext {
 
 export const createTestContext = (): TestContext => {
   const mockProvider = new MockProvider();
-  const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider);
+  const tools = new Tools(mockClient as unknown as ComposioClient, { provider: mockProvider });
   return { tools, mockProvider };
 };
 
@@ -23,7 +23,9 @@ export const setupTest = (context: TestContext) => {
   beforeEach(() => {
     vi.clearAllMocks();
     context.mockProvider = new MockProvider();
-    context.tools = new Tools(mockClient as unknown as ComposioClient, context.mockProvider);
+    context.tools = new Tools(mockClient as unknown as ComposioClient, {
+      provider: context.mockProvider,
+    });
   });
 };
 

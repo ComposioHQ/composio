@@ -1,0 +1,114 @@
+---
+title: Anthropic Provider
+description: Use Composio tools with Claude
+keywords: [claude]
+---
+
+The Anthropic Provider transforms Composio tools into a format compatible with Anthropic's function calling capabilities through its Messages API.
+
+## Setup
+
+The Anthropic provider can be installed for both SDKs.
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```bash
+pip install composio composio-anthropic
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/anthropic @anthropic-ai/sdk
+```
+</Tab>
+</Tabs>
+
+You can specify the provider in the constructor. The constructor also takes in an optional `cacheTools` parameter.
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```python
+import anthropic
+
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+# Initialize tools.
+anthropic_client = anthropic.Anthropic()
+composio = Composio(provider=AnthropicProvider())
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+import { AnthropicProvider } from "@composio/anthropic";
+import Anthropic from '@anthropic-ai/sdk';
+
+const composio = new Composio({
+  provider: new AnthropicProvider({
+    cacheTools: false,  // default
+  }),
+});
+
+const anthropic = new Anthropic();
+```
+</Tab>
+</Tabs>
+
+## Usage
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```python
+# Define your user ID
+user_id = "your-user-id"
+
+# Get GitHub tool for listing stargazers
+tools = composio.tools.get(user_id=user_id, tools=["GITHUB_LIST_STARGAZERS"])
+
+# Get response from the LLM
+response = anthropic_client.messages.create(
+    model="claude-sonnet-4-5",
+    max_tokens=1024,
+    tools=tools,
+    messages=[
+        {"role": "user", "content": "List my github stargazers. for the repo composiohq/composio"},
+    ],
+)
+
+# Execute the function calls.
+result = composio.provider.handle_tool_calls(user_id=user_id, response=response)
+print(result)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const userId = "your-user-id";
+const tools = await composio.tools.get(userId, {
+  tools: ["GITHUB_LIST_STARGAZERS"]
+})
+
+const msg = await anthropic.messages.create({
+  model: "claude-sonnet-4-5",
+  messages: [
+    {
+      role: "user",
+      content: "List my github stargazers. for the repo composiohq/composio",
+    },
+  ],
+  tools: tools,
+  max_tokens: 1000,
+});
+
+const res = await composio.provider.handleToolCalls(userId, msg);
+
+console.log(res[0].content);
+```
+</Tab>
+</Tabs>
+
+## Modifiers
+
+Modifiers are functions that can be used to intercept and optionally modify the schema, the tool call request and the response from the tool call.
+
+Anthropic provider modifiers are the standard framework modifiers. Read more here: [Modifying tool schemas](/docs/modify-tool-behavior/modifying-tool-schemas).

@@ -22,12 +22,12 @@ from composio.core.provider import (
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
 from composio.core.provider.none_agentic import (
     NonAgenticProvider,
-    NoneAgenticProviderExecuteFn,
 )
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
+from composio.core.provider.base import ExecuteToolFn
 
 from ._modifiers import (
     Modifiers,
@@ -78,6 +78,17 @@ class Tools(Resource, t.Generic[TProvider]):
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
+
+        self.provider.set_execute_tool_fn(
+            t.cast(
+                ExecuteToolFn,
+                functools.partial(
+                    self.execute,
+                    # Dangerously skip version check for provider controlled tool execution
+                    dangerously_skip_version_check=True,
+                ),
+            ),
+        )
 
     def _filter_custom_tools(
         self, tools: t.List[str]
@@ -187,19 +198,6 @@ class Tools(Resource, t.Generic[TProvider]):
             )
 
         if issubclass(type(self.provider), NonAgenticProvider):
-            t.cast(NonAgenticProvider, self.provider).set_execute_tool_fn(
-                t.cast(
-                    NoneAgenticProviderExecuteFn,
-                    functools.partial(
-                        self.execute,
-                        # Dangerously skip version check for non-agentic tool execution
-                        # via providers (e.g. OpenAI tool calling). This mirrors the
-                        # behavior used for agentic providers in `_wrap_execute_tool`
-                        # and keeps manual `tools.execute(...)` calls strict by default.
-                        dangerously_skip_version_check=True,
-                    ),
-                ),
-            )
             return t.cast(NonAgenticProvider, self.provider).wrap_tools(
                 tools=tools_list
             )
@@ -303,11 +301,91 @@ class Tools(Resource, t.Generic[TProvider]):
                 self.execute,
                 modifiers=modifiers,
                 user_id=user_id,
-                # Dangerously skip version check for agentic and non-agentic tool execution via providers
+                # Dangerously skip version check for agentic tool execution via providers
                 # This can be safe because most agentic flows users fetch latest version and then execute the tool
                 dangerously_skip_version_check=True,
             ),
         )
+
+    def _wrap_execute_tool_for_tool_router(
+        self,
+        session_id: str,
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> AgenticProviderExecuteFn:
+        """
+        Create an execute function for tool router that uses the session's execute_meta endpoint.
+
+        This method creates a function that executes tools within a tool router session context.
+        It uses the session's execute_meta endpoint which handles authentication and connection
+        management automatically.
+
+        :param session_id: The session ID
+        :param modifiers: Optional modifiers to apply before and after execution
+        :return: Execute function for tool router
+        """
+
+        def execute_tool_fn(slug: str, arguments: t.Dict) -> t.Dict:
+            """
+            Execute a tool in the tool router session.
+
+            This function is used by agentic providers to execute tools within
+            a tool router session context. It uses the session's execute_meta
+            endpoint which handles authentication and connection management
+            automatically.
+
+            :param slug: The tool slug to execute
+            :param arguments: The tool arguments
+            :return: Tool execution response
+            """
+            # Get tool schema for modifiers
+            tool = self.get_raw_composio_tool_by_slug(slug)
+
+            # Apply before_execute modifiers
+            processed_arguments = arguments
+            if modifiers is not None:
+                params: ToolExecuteParams = {
+                    "arguments": arguments,
+                }
+                type_before: t.Literal["before_execute"] = "before_execute"
+                modified_params = apply_modifier_by_type(
+                    modifiers=modifiers,
+                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    tool=slug,
+                    type=type_before,
+                    request=params,
+                )
+                processed_arguments = modified_params.get("arguments", arguments)
+
+            # Execute the tool via the session's execute_meta endpoint
+            # Note: execute_meta accepts regular tool slugs at runtime, not just meta tool slugs
+            # The type signature expects Literal meta tool slugs, but runtime accepts any str
+            response = self._client.tool_router.session.execute_meta(
+                session_id=session_id,
+                slug=slug,  # type: ignore[arg-type]
+                arguments=processed_arguments,
+            )
+
+            # Convert response to standard format
+            result: ToolExecutionResponse = {
+                "data": response.data if hasattr(response, "data") else {},
+                "error": response.error if hasattr(response, "error") else None,
+                "successful": not (hasattr(response, "error") and response.error),
+            }
+
+            # Apply after_execute modifiers
+            if modifiers is not None:
+                type_after: t.Literal["after_execute"] = "after_execute"
+                result = apply_modifier_by_type(
+                    modifiers=modifiers,
+                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    tool=slug,
+                    type=type_after,
+                    response=result,
+                )
+
+            return t.cast(t.Dict, result)
+
+        return t.cast(AgenticProviderExecuteFn, execute_tool_fn)
 
     def _execute_custom_tool(
         self,
@@ -420,9 +498,11 @@ class Tools(Resource, t.Generic[TProvider]):
         """
 
         tool = self._tool_schemas.get(slug)
-        if tool is None and self._custom_tools.get(slug=slug) is not None:
-            tool = self._custom_tools[slug].info
-            self._tool_schemas[slug] = tool
+        if tool is None:
+            custom_tool = self._custom_tools.get(slug=slug)
+            if custom_tool is not None:
+                tool = custom_tool.info
+                self._tool_schemas[slug] = tool
 
         if tool is None:
             tool = t.cast(
@@ -435,31 +515,48 @@ class Tools(Resource, t.Generic[TProvider]):
             self._tool_schemas[slug] = tool
 
         if modifiers is not None:
+            type_before_exec: t.Literal["before_execute"] = "before_execute"
+            request_params: ToolExecuteParams = {
+                "arguments": arguments,
+            }
+            if connected_account_id is not None:
+                request_params["connected_account_id"] = connected_account_id
+            if custom_auth_params is not None:
+                request_params["custom_auth_params"] = custom_auth_params
+            if custom_connection_data is not None:
+                request_params["custom_connection_data"] = custom_connection_data
+            if version is not None:
+                request_params["version"] = version
+            if text is not None:
+                request_params["text"] = text
+            if user_id is not None:
+                request_params["user_id"] = user_id
+            if dangerously_skip_version_check is not None:
+                request_params["dangerously_skip_version_check"] = (
+                    dangerously_skip_version_check
+                )
             processed_params = apply_modifier_by_type(
                 modifiers=modifiers,
                 toolkit=tool.toolkit.slug,
                 tool=slug,
-                type="before_execute",
-                request={
-                    "connected_account_id": connected_account_id,
-                    "custom_auth_params": custom_auth_params,
-                    "custom_connection_data": custom_connection_data,
-                    "version": version,
-                    "text": text,
-                    "user_id": user_id,
-                    "arguments": arguments,
-                    "dangerously_skip_version_check": dangerously_skip_version_check,
-                },
+                type=type_before_exec,
+                request=request_params,
             )
-            connected_account_id = processed_params["connected_account_id"]
-            custom_auth_params = processed_params["custom_auth_params"]
-            custom_connection_data = processed_params["custom_connection_data"]
-            text = processed_params["text"]
-            version = processed_params["version"]
-            user_id = processed_params["user_id"]
+            connected_account_id = processed_params.get(
+                "connected_account_id", connected_account_id
+            )
+            custom_auth_params = processed_params.get(
+                "custom_auth_params", custom_auth_params
+            )
+            custom_connection_data = processed_params.get(
+                "custom_connection_data", custom_connection_data
+            )
+            text = processed_params.get("text", text)
+            version = processed_params.get("version", version)
+            user_id = processed_params.get("user_id", user_id)
             arguments = processed_params["arguments"]
             dangerously_skip_version_check = processed_params.get(
-                "dangerously_skip_version_check"
+                "dangerously_skip_version_check", dangerously_skip_version_check
             )
 
         arguments = self._file_helper.substitute_file_uploads(

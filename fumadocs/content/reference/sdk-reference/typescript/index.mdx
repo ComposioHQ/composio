@@ -1,0 +1,61 @@
+---
+title: TypeScript SDK Reference
+description: Complete API reference for the Composio TypeScript SDK (@composio/core).
+---
+
+## Installation
+
+<Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn', 'bun']} persist>
+<Tab value="npm">
+```bash
+npm install @composio/core
+```
+</Tab>
+<Tab value="pnpm">
+```bash
+pnpm add @composio/core
+```
+</Tab>
+<Tab value="yarn">
+```bash
+yarn add @composio/core
+```
+</Tab>
+<Tab value="bun">
+```bash
+bun add @composio/core
+```
+</Tab>
+</Tabs>
+
+## Classes
+
+| Class | Description |
+|-------|-------------|
+| [`Composio`](/reference/sdk-reference/typescript/composio) | This is the core class for Composio. |
+| [`AuthConfigs`](/reference/sdk-reference/typescript/auth-configs) | AuthConfigs class |
+| [`ConnectedAccounts`](/reference/sdk-reference/typescript/connected-accounts) | ConnectedAccounts class |
+| [`Toolkits`](/reference/sdk-reference/typescript/toolkits) | Toolkits class |
+| [`Tools`](/reference/sdk-reference/typescript/tools) | This class is used to manage tools in the Composio SDK. |
+| [`Triggers`](/reference/sdk-reference/typescript/triggers) | Trigger (Instance) class |
+
+## Quick Start
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
+
+// Get tools for a user
+const tools = await composio.tools.get('user-123', {
+  toolkits: ['github']
+});
+
+// Execute a tool
+const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+  userId: 'user-123',
+  arguments: { owner: 'composio' }
+});
+```

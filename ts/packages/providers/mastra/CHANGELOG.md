@@ -1,5 +1,94 @@
 # @composio/mastra
 
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [019f54f]
+  - @composio/core@0.3.4
+
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [a76b002]
+  - @composio/core@0.3.3
+
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [69cfede]
+  - @composio/core@0.3.2
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [73db5f5]
+  - @composio/core@0.3.1
+
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.3.0
+
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies [07551cd]
+- Updated dependencies [9e002c5]
+- Updated dependencies [f0e67c4]
+- Updated dependencies [31521bd]
+- Updated dependencies [9e002c5]
+  - @composio/core@0.2.7
+
+## 0.2.7-alpha.4
+
+### Patch Changes
+
+- Updated dependencies [07551cd]
+  - @composio/core@0.2.7-alpha.4
+
+## 0.2.7-alpha.3
+
+### Patch Changes
+
+- Updated dependencies [f0e67c4]
+  - @composio/core@0.2.7-alpha.3
+
+## 0.2.7-alpha.2
+
+### Patch Changes
+
+- Updated dependencies [31521bd]
+  - @composio/core@0.2.7-alpha.2
+
+## 0.2.7-alpha.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.2.7-alpha.1
+
+## 0.2.7-alpha.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.2.7-alpha.0
+
+## 0.2.6
+
+### Patch Changes
+
+- b5cc23f: Fix dangerously skip version check in non agentic providers, Throw error instead of process.exit when api key doesn't exist, bump zod-to-json-schema to 3.25.0, which supports "zod/3"
+- Updated dependencies [b5cc23f]
+  - @composio/core@0.2.6
+
 ## 0.2.5
 
 ### Patch Changes
