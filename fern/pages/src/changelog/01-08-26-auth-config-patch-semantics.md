@@ -34,16 +34,18 @@ from composio import Composio
 composio = Composio()
 
 # Only send the field you want to update - other credentials are preserved
+
 composio.auth_configs.update(
-    "ac_yourAuthConfigId",
-    options={
-        "type": "custom",
-        "credentials": {
-            "client_secret": "new_rotated_secret",
-        },
-    },
+"ac_yourAuthConfigId",
+options={
+"type": "custom",
+"credentials": {
+"client_secret": "new_rotated_secret",
+},
+},
 )
-```
+
+````
 
 ```typescript title="TypeScript SDK"
 import { Composio } from "@composio/core";
@@ -57,7 +59,8 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
     client_secret: "new_rotated_secret",
   },
 });
-```
+````
+
 </CodeBlocks>
 
 ### Update Tool Restrictions Without Touching Credentials
@@ -71,16 +74,18 @@ from composio import Composio
 composio = Composio()
 
 # Update tool restrictions - credentials are automatically preserved
+
 composio.auth_configs.update(
-    "ac_yourAuthConfigId",
-    options={
-        "type": "custom",
-        "tool_access_config": {
-            "tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
-        },
-    },
+"ac_yourAuthConfigId",
+options={
+"type": "custom",
+"tool_access_config": {
+"tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
+},
+},
 )
-```
+
+````
 
 ```typescript title="TypeScript SDK"
 import { Composio } from "@composio/core";
@@ -97,7 +102,8 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
     toolsAvailableForExecution: ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
   },
 });
-```
+````
+
 </CodeBlocks>
 
 ## Migration Guide
@@ -110,10 +116,11 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
 
 ### How to Clear Fields Explicitly
 
-| To Clear             | Python SDK                                                   | TypeScript SDK                                      |
-| -------------------- | ------------------------------------------------------------ | --------------------------------------------------- |
-| `proxy_config`       | `"proxy_config": None`                                       | `proxyConfig: null` (via HTTP API)                  |
+| To Clear             | Python SDK                                                    | TypeScript SDK                                         |
+| -------------------- | ------------------------------------------------------------- | ------------------------------------------------------ |
+| `proxy_config`       | `"proxy_config": None`                                        | `proxyConfig: null` (via HTTP API)                     |
 | `tool_access_config` | `"tool_access_config": {"tools_available_for_execution": []}` | `toolAccessConfig: { toolsAvailableForExecution: [] }` |
+| `scopes` (default)   | `"scopes": ""`                                                | `scopes: ""` (via HTTP API)                            |
 
 <CodeBlocks>
 ```python title="Python SDK - Clear tool restrictions"
@@ -122,16 +129,18 @@ from composio import Composio
 composio = Composio()
 
 # Explicitly clear tool restrictions with empty array
+
 composio.auth_configs.update(
-    "ac_yourAuthConfigId",
-    options={
-        "type": "custom",
-        "tool_access_config": {
-            "tools_available_for_execution": [],
-        },
-    },
+"ac_yourAuthConfigId",
+options={
+"type": "custom",
+"tool_access_config": {
+"tools_available_for_execution": [],
+},
+},
 )
-```
+
+````
 
 ```typescript title="TypeScript SDK - Clear tool restrictions"
 import { Composio } from "@composio/core";
@@ -148,7 +157,8 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
     toolsAvailableForExecution: [],
   },
 });
-```
+````
+
 </CodeBlocks>
 
 ### Raw HTTP API
