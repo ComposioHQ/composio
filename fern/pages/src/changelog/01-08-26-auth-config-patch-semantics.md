@@ -1,167 +1,150 @@
 # True PATCH Semantics for Auth Config Updates
 
-The `PATCH /api/v3/auth_configs/{id}` endpoint now supports true partial updates. Previously, omitting optional fields would reset them to defaults. Now, only explicitly provided fields are modified—unprovided fields retain their existing values.
+The `PATCH /api/v3/auth_configs/{id}` endpoint now implements proper partial update semantics. Previously, omitting fields would clear them (behaving like PUT). Now, omitted fields are preserved—only explicitly provided fields are modified.
 
 <Warning>
-**Breaking Change for edge cases**: If your integration relied on the previous behavior where omitting fields (like `proxy_config` or `tool_access_config`) would clear them, you'll need to explicitly pass `null` or empty values to achieve the same effect.
+**Breaking Change**: If you relied on omitting fields to clear them, you must now explicitly send `null` or `[]`. See [Migration Guide](#migration-guide) below.
 </Warning>
 
 ## What Changed
 
-| Field | Previous Behavior | New Behavior |
-|-------|------------------|--------------|
-| `credentials` | Required on every update | Optional—existing credentials preserved if not sent |
-| `proxy_config` | Reset to `null` if omitted | Preserved if not sent |
-| `tool_access_config` | Reset to empty if omitted | Preserved if not sent |
+| Field                         | Before (Buggy)           | After (Correct)                   |
+| ----------------------------- | ------------------------ | --------------------------------- |
+| `credentials`                 | Required on every update | Optional—merged with existing     |
+| `proxy_config`                | Cleared if omitted       | Preserved if omitted              |
+| `tool_access_config`          | Reset to `{}` if omitted | Preserved if omitted              |
+| `scopes` (type: default)      | Cleared if omitted       | Preserved if omitted              |
+| `restrict_to_following_tools` | Reset to `[]` if omitted | Preserved if omitted              |
+| `shared_credentials`          | Replaced entirely        | Unchanged—still replaced entirely |
 
-## Examples
+<Note>
+**Merge vs Replace**: The `credentials` object is merged (send only fields you want to change). The `shared_credentials` object is replaced entirely (always send the complete dict).
+</Note>
 
-### Update Only `tool_access_config` (Preserve Credentials)
+## New Capabilities
 
-**Before**: This would fail because `credentials` was required.
+### Rotate a Single Credential Field
 
-**Now**: Works correctly—credentials are preserved.
+Update just `client_secret` without resending `client_id`, `scopes`, or other fields:
 
-<CodeGroup>
-```bash title="cURL"
-curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/ac_yourAuthConfigId" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: ak_your_api_key" \
-  -d '{
-    "type": "custom",
-    "tool_access_config": {
-      "tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"]
-    }
-  }'
+```typescript
+// TypeScript
+const response = await fetch(`https://backend.composio.dev/api/v3/auth_configs/${authConfigId}`, {
+  method: 'PATCH',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': process.env.COMPOSIO_API_KEY,
+  },
+  body: JSON.stringify({
+    type: 'custom',
+    credentials: {
+      client_secret: 'new_rotated_secret',
+    },
+  }),
+});
 ```
-```python title="Python"
+
+```python
+# Python
 import requests
 
 response = requests.patch(
-    "https://backend.composio.dev/api/v3/auth_configs/ac_yourAuthConfigId",
+    f"https://backend.composio.dev/api/v3/auth_configs/{auth_config_id}",
     headers={
         "Content-Type": "application/json",
-        "x-api-key": "ak_your_api_key"
-    },
-    json={
-        "type": "custom",
-        "tool_access_config": {
-            "tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"]
-        }
-    }
-)
-```
-```typescript title="TypeScript"
-const response = await fetch(
-  "https://backend.composio.dev/api/v3/auth_configs/ac_yourAuthConfigId",
-  {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": "ak_your_api_key"
-    },
-    body: JSON.stringify({
-      type: "custom",
-      tool_access_config: {
-        tools_available_for_execution: ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"]
-      }
-    })
-  }
-);
-```
-</CodeGroup>
-
-### Update Credentials Only (Preserve Everything Else)
-
-<CodeGroup>
-```bash title="cURL"
-curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/ac_yourAuthConfigId" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: ak_your_api_key" \
-  -d '{
-    "type": "custom",
-    "credentials": {
-      "client_secret": "new_rotated_secret"
-    }
-  }'
-```
-```python title="Python"
-response = requests.patch(
-    "https://backend.composio.dev/api/v3/auth_configs/ac_yourAuthConfigId",
-    headers={
-        "Content-Type": "application/json",
-        "x-api-key": "ak_your_api_key"
+        "x-api-key": os.environ["COMPOSIO_API_KEY"],
     },
     json={
         "type": "custom",
         "credentials": {
-            "client_secret": "new_rotated_secret"
-        }
-    }
+            "client_secret": "new_rotated_secret",
+        },
+    },
 )
 ```
-</CodeGroup>
 
-### Explicitly Clear a Field
+### Update Tool Restrictions Without Touching Credentials
 
-To explicitly remove a configuration, send `null`:
+Previously, this would fail because `credentials` was required. Now it works:
 
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/ac_yourAuthConfigId" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: ak_your_api_key" \
-  -d '{
-    "type": "custom",
-    "proxy_config": null
-  }'
+```typescript
+// TypeScript
+await fetch(`https://backend.composio.dev/api/v3/auth_configs/${authConfigId}`, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+  body: JSON.stringify({
+    type: 'custom',
+    tool_access_config: {
+      tools_available_for_execution: ['GMAIL_SEND_EMAIL', 'GMAIL_READ_EMAIL'],
+    },
+  }),
+});
 ```
-
-## Migration Notes
-
-### If You Were Doing Full Replacements
-
-No changes needed—continue sending all fields as before.
-
-### If You Were Relying on "Reset by Omission"
-
-Update your code to explicitly send `null` or empty arrays:
 
 ```python
-# Before: Omitting proxy_config would clear it
+# Python
+requests.patch(
+    f"https://backend.composio.dev/api/v3/auth_configs/{auth_config_id}",
+    headers={"Content-Type": "application/json", "x-api-key": api_key},
+    json={
+        "type": "custom",
+        "tool_access_config": {
+            "tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
+        },
+    },
+)
+```
+
+## Migration Guide
+
+### Am I Affected?
+
+**Yes**, if your code relied on this pattern to clear fields:
+
+```python
+# This NO LONGER clears proxy_config—it now preserves the existing value
 requests.patch(url, json={"type": "custom", "credentials": {...}})
-
-# After: Explicitly clear proxy_config
-requests.patch(url, json={"type": "custom", "credentials": {...}, "proxy_config": None})
 ```
 
-## API Reference
+**No**, if you always send complete payloads or only use PATCH to update fields.
 
-| Method | Endpoint |
-|--------|----------|
-| `PATCH` | `/api/v3/auth_configs/{id}` |
+### How to Clear Fields Explicitly
 
-### Request Body
+| To Clear                | Send This Value                                               |
+| ----------------------- | ------------------------------------------------------------- |
+| `proxy_config`          | `"proxy_config": null`                                        |
+| `tool_access_config`    | `"tool_access_config": {"tools_available_for_execution": []}` |
+| `scopes` (type:default) | `"scopes": []`                                                |
 
-All fields except `type` are now optional:
+**Example—Clear proxy config:**
 
-```json
-{
-  "type": "custom",
-  "credentials": { ... },
-  "proxy_config": { ... },
-  "tool_access_config": { ... },
-  "shared_credentials": { ... }
-}
+```typescript
+// TypeScript
+await fetch(url, {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+  body: JSON.stringify({
+    type: 'custom',
+    proxy_config: null, // Explicitly clears
+  }),
+});
 ```
 
-For `type: "default"` auth configs:
-
-```json
-{
-  "type": "default",
-  "scopes": ["scope1", "scope2"],
-  "tool_access_config": { ... },
-  "shared_credentials": { ... }
-}
+```python
+# Python
+requests.patch(url, json={"type": "custom", "proxy_config": None})
 ```
 
+### JavaScript/TypeScript Gotcha
+
+`undefined` is stripped by `JSON.stringify`—always use `null` to clear:
+
+```typescript
+// ❌ undefined is stripped—field is omitted, not cleared
+JSON.stringify({ type: 'custom', proxy_config: undefined });
+// Result: '{"type":"custom"}' — proxy_config is PRESERVED
+
+// ✅ null is preserved—field is explicitly cleared
+JSON.stringify({ type: 'custom', proxy_config: null });
+// Result: '{"type":"custom","proxy_config":null}' — proxy_config is CLEARED
+```
