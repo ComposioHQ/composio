@@ -88,10 +88,12 @@ async function getFiles(): Promise<FileObject[]> {
     for (const page of pages) {
       if (!page.absolutePath) continue;
       if (!page.absolutePath.endsWith('.mdx') && !page.absolutePath.endsWith('.md')) continue;
+      // Skip OpenAPI-generated pages (they don't have getText)
+      if (!('getText' in page.data)) continue;
 
       allFiles.push({
         path: page.absolutePath,
-        content: await page.data.getText('raw'),
+        content: await (page.data as { getText: (mode: string) => Promise<string> }).getText('raw'),
         url: page.url,
         data: page.data,
       });
