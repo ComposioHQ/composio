@@ -3,12 +3,73 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
-import type { Toolkit, Tool, Trigger } from '@/types/toolkit';
+import type { Toolkit, Tool, Trigger, ParametersSchema, SchemaProperty } from '@/types/toolkit';
 
 interface ToolkitDetailProps {
   toolkit: Toolkit;
   tools: Tool[];
   triggers: Trigger[];
+}
+
+function getTypeString(prop: SchemaProperty): string {
+  if (Array.isArray(prop.type)) {
+    return prop.type.join(' | ');
+  }
+  if (prop.type === 'array' && prop.items) {
+    const itemType = getTypeString(prop.items);
+    return `${itemType}[]`;
+  }
+  return prop.type || 'any';
+}
+
+function SchemaTable({ schema, title }: { schema: ParametersSchema; title: string }) {
+  if (!schema?.properties || Object.keys(schema.properties).length === 0) {
+    return null;
+  }
+
+  const requiredFields = new Set(schema.required || []);
+
+  return (
+    <div className="mt-3">
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">
+        {title}
+      </h4>
+      <div className="overflow-x-auto rounded-md border border-fd-border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-fd-border bg-fd-muted/50">
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Name</th>
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Type</th>
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(schema.properties).map(([name, prop]) => (
+              <tr key={name} className="border-b border-fd-border/50 last:border-0">
+                <td className="px-3 py-2 align-top">
+                  <code className="rounded bg-fd-muted px-1 py-0.5 text-xs">{name}</code>
+                  {requiredFields.has(name) && (
+                    <span className="ml-1 text-xs text-orange-500">*</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 align-top">
+                  <code className="text-xs text-fd-muted-foreground">{getTypeString(prop)}</code>
+                </td>
+                <td className="px-3 py-2 align-top text-fd-muted-foreground">
+                  {prop.description || '—'}
+                  {prop.default !== undefined && (
+                    <span className="ml-2 text-xs">
+                      (default: <code className="rounded bg-fd-muted px-1">{String(prop.default)}</code>)
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 function ToolkitIcon({ toolkit }: { toolkit: Toolkit }) {
@@ -36,6 +97,19 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Type guard to check if item is a Tool
+  const isTool = (item: Tool | Trigger): item is Tool => {
+    return 'inputParameters' in item || 'outputParameters' in item;
+  };
+
+  // Type guard to check if item is a Trigger
+  const isTrigger = (item: Tool | Trigger): item is Trigger => {
+    return 'payload' in item;
+  };
+
+  const hasToolParams = isTool(item) && (item.inputParameters || item.outputParameters);
+  const hasTriggerPayload = isTrigger(item) && item.payload;
+
   return (
     <div className="border-b border-fd-border/50 last:border-0">
       <button
@@ -60,6 +134,25 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
       {expanded && (
         <div className="bg-fd-muted/20 px-4 py-3 pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
+
+          {/* Show input/output parameters for Tools */}
+          {isTool(item) && hasToolParams && (
+            <div className="mt-4 space-y-4">
+              {item.inputParameters && (
+                <SchemaTable schema={item.inputParameters} title="Input Parameters" />
+              )}
+              {item.outputParameters && (
+                <SchemaTable schema={item.outputParameters} title="Output Response" />
+              )}
+            </div>
+          )}
+
+          {/* Show payload for Triggers */}
+          {isTrigger(item) && hasTriggerPayload && (
+            <div className="mt-4">
+              <SchemaTable schema={item.payload!} title="Payload" />
+            </div>
+          )}
         </div>
       )}
     </div>

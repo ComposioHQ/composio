@@ -20,16 +20,35 @@ if (!API_KEY) {
 
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
 
+interface SchemaProperty {
+  type?: string | string[];
+  description?: string;
+  default?: unknown;
+  required?: boolean;
+  enum?: unknown[];
+  items?: SchemaProperty;
+  properties?: Record<string, SchemaProperty>;
+}
+
+interface ParametersSchema {
+  type: 'object';
+  properties: Record<string, SchemaProperty>;
+  required?: string[];
+}
+
 interface Tool {
   slug: string;
   name: string;
   description: string;
+  inputParameters?: ParametersSchema;
+  outputParameters?: ParametersSchema;
 }
 
 interface Trigger {
   slug: string;
   name: string;
   description: string;
+  payload?: ParametersSchema;
 }
 
 interface Toolkit {
@@ -113,6 +132,8 @@ async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
     slug: raw.slug || '',
     name: raw.name || raw.display_name || raw.slug || '',
     description: raw.description || '',
+    inputParameters: raw.input_parameters || raw.inputParameters || undefined,
+    outputParameters: raw.output_parameters || raw.outputParameters || undefined,
   }));
 }
 
@@ -133,6 +154,7 @@ async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
     slug: raw.slug || '',
     name: raw.name || raw.display_name || raw.slug || '',
     description: raw.description || '',
+    payload: raw.payload || raw.payload_schema || undefined,
   }));
 }
 
