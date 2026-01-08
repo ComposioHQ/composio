@@ -51,6 +51,7 @@ export function Feedback({ pageId, className, onSubmit }: FeedbackProps) {
   const [state, setState] = React.useState<FeedbackState>('initial');
   const [comment, setComment] = React.useState('');
   const [showComment, setShowComment] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [resolvedPageId, setResolvedPageId] = React.useState(pageId || '');
 
   // Resolve page ID from URL on mount (avoid hydration mismatch)
@@ -124,8 +125,10 @@ export function Feedback({ pageId, className, onSubmit }: FeedbackProps) {
 
   const textareaId = `feedback-comment-${currentPageId.replace(/\//g, '-')}`;
 
-  const handleSubmitComment = () => {
-    submitFeedback(false, comment);
+  const handleSubmitComment = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    await submitFeedback(false, comment);
   };
 
   if (state === 'submitted') {
@@ -197,7 +200,7 @@ export function Feedback({ pageId, className, onSubmit }: FeedbackProps) {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Tell us what could be better..."
-              aria-describedby={`${textareaId}-hint`}
+              disabled={isSubmitting}
               className={cn(
                 'flex-1 min-h-[80px] px-3 py-2 text-sm rounded-md',
                 'border border-border bg-background',
@@ -212,20 +215,23 @@ export function Feedback({ pageId, className, onSubmit }: FeedbackProps) {
                 setShowComment(false);
                 setState('initial');
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-border hover:bg-accent transition-colors"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X className="size-4" />
               Cancel
             </button>
             <button
               onClick={handleSubmitComment}
+              disabled={isSubmitting}
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md',
-                'bg-primary text-primary-foreground hover:opacity-90 transition-opacity'
+                'bg-primary text-primary-foreground hover:opacity-90 transition-opacity',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
               <Send className="size-4" />
-              Submit
+              {isSubmitting ? 'Submitting...' : 'Submit'}
             </button>
           </div>
         </div>
