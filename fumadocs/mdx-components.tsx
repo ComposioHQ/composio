@@ -7,7 +7,6 @@ import { Callout } from 'fumadocs-ui/components/callout';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
-import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
 import { ProviderCard, ProviderGrid } from '@/components/provider-card';
 import { Figure } from '@/components/figure';
 import { Video } from '@/components/video';
@@ -79,10 +78,6 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     // Cross-linking components
     RelatedPages,
     RelatedLinks,
-    // Twoslash components for type-checked code examples
-    Popup,
-    PopupContent,
-    PopupTrigger,
     // Lucide icons - available globally in MDX without imports
     ShieldCheck,
     RouteIcon,
