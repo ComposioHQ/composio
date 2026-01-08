@@ -2,7 +2,6 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import { IBM_Plex_Mono, Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
-import { AISearchDialog } from '@/components/search-provider';
 
 // Optimized font loading via next/font
 const inter = Inter({
@@ -27,9 +26,6 @@ export default function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  // Check if Inkeep is configured (build-time)
-  const hasInkeepKey = !!process.env.NEXT_PUBLIC_INKEEP_API_KEY;
-
   return (
     <html
       lang="en"
@@ -47,15 +43,11 @@ export default function RootLayout({
             attribute: 'class',
             enableSystem: false,
           }}
-          search={
-            hasInkeepKey
-              ? { SearchDialog: AISearchDialog }
-              : {
-                  options: {
-                    api: '/api/search',
-                  },
-                }
-          }
+          search={{
+            options: {
+              api: '/api/search',
+            },
+          }}
         >
           {children}
         </RootProvider>
