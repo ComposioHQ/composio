@@ -29,6 +29,30 @@ export interface Trigger {
   payload?: ParametersSchema;
 }
 
+export interface AuthField {
+  name: string;
+  displayName: string;
+  type: string;
+  description?: string;
+  required: boolean;
+  default?: string;
+}
+
+export interface AuthConfigDetail {
+  name: string;
+  mode: string;
+  fields: {
+    auth_config_creation?: {
+      required: AuthField[];
+      optional: AuthField[];
+    };
+    connected_account_initiation?: {
+      required: AuthField[];
+      optional: AuthField[];
+    };
+  };
+}
+
 export interface Toolkit {
   slug: string;
   name: string;
@@ -36,6 +60,7 @@ export interface Toolkit {
   description: string;
   category: string | null;
   authSchemes: string[];
+  authConfigDetails: AuthConfigDetail[];
   toolCount: number;
   triggerCount: number;
   version: string | null;

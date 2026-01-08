@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
-import type { Toolkit, Tool, Trigger, ParametersSchema, SchemaProperty } from '@/types/toolkit';
+import type { Toolkit, Tool, Trigger, ParametersSchema, SchemaProperty, AuthConfigDetail, AuthField } from '@/types/toolkit';
 
 interface ToolkitDetailProps {
   toolkit: Toolkit;
@@ -68,6 +68,107 @@ function SchemaTable({ schema, title }: { schema: ParametersSchema; title: strin
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function AuthFieldsTable({ fields, title }: { fields: AuthField[]; title: string }) {
+  if (!fields || fields.length === 0) return null;
+
+  return (
+    <div className="mt-3">
+      <h5 className="mb-2 text-xs font-medium text-fd-muted-foreground">{title}</h5>
+      <div className="overflow-x-auto rounded-md border border-fd-border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-fd-border bg-fd-muted/50">
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Field</th>
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Type</th>
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fields.map((field) => (
+              <tr key={field.name} className="border-b border-fd-border/50 last:border-0">
+                <td className="px-3 py-2 align-top">
+                  <code className="rounded bg-fd-muted px-1 py-0.5 text-xs">{field.displayName || field.name}</code>
+                  {field.required && <span className="ml-1 text-xs text-orange-500">*</span>}
+                </td>
+                <td className="px-3 py-2 align-top">
+                  <code className="text-xs text-fd-muted-foreground">{field.type}</code>
+                </td>
+                <td className="px-3 py-2 align-top text-fd-muted-foreground">
+                  {field.description || '—'}
+                  {field.default && (
+                    <span className="ml-2 text-xs">
+                      (default: <code className="rounded bg-fd-muted px-1">{field.default.length > 50 ? field.default.slice(0, 50) + '...' : field.default}</code>)
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AuthConfigSection({ authConfigDetails }: { authConfigDetails: AuthConfigDetail[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!authConfigDetails || authConfigDetails.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-fd-border">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-fd-accent/30"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-fd-foreground">Authentication Configuration</span>
+          <span className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-muted-foreground">
+            {authConfigDetails.length} {authConfigDetails.length === 1 ? 'scheme' : 'schemes'}
+          </span>
+        </div>
+        <span className="text-fd-muted-foreground">
+          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </span>
+      </button>
+      {expanded && (
+        <div className="border-t border-fd-border bg-fd-muted/20 px-4 py-4 space-y-6">
+          {authConfigDetails.map((config) => (
+            <div key={config.name}>
+              <div className="flex items-center gap-2 mb-3">
+                <h4 className="text-sm font-medium text-fd-foreground">{config.name}</h4>
+                <span className="rounded bg-orange-500/10 border border-orange-500/30 px-1.5 py-0.5 text-xs text-orange-600 dark:text-orange-400">
+                  {config.mode}
+                </span>
+              </div>
+
+              {config.fields.auth_config_creation && (
+                <div className="mb-4">
+                  <h5 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground mb-2">
+                    Auth Config Creation
+                  </h5>
+                  <AuthFieldsTable fields={config.fields.auth_config_creation.required} title="Required Fields" />
+                  <AuthFieldsTable fields={config.fields.auth_config_creation.optional} title="Optional Fields" />
+                </div>
+              )}
+
+              {config.fields.connected_account_initiation && (
+                <div>
+                  <h5 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground mb-2">
+                    Account Connection
+                  </h5>
+                  <AuthFieldsTable fields={config.fields.connected_account_initiation.required} title="Required Fields" />
+                  <AuthFieldsTable fields={config.fields.connected_account_initiation.optional} title="Optional Fields" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -279,6 +380,11 @@ export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) 
             </div>
           </div>
       </div>
+
+      {/* Authentication Configuration */}
+      {toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0 && (
+        <AuthConfigSection authConfigDetails={toolkit.authConfigDetails} />
+      )}
 
       {/* Tools & Triggers */}
       {(tools.length > 0 || triggers.length > 0) && (

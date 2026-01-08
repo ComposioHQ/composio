@@ -51,6 +51,30 @@ interface Trigger {
   payload?: ParametersSchema;
 }
 
+interface AuthField {
+  name: string;
+  displayName: string;
+  type: string;
+  description?: string;
+  required: boolean;
+  default?: string;
+}
+
+interface AuthConfigDetail {
+  name: string;
+  mode: string;
+  fields: {
+    auth_config_creation?: {
+      required: AuthField[];
+      optional: AuthField[];
+    };
+    connected_account_initiation?: {
+      required: AuthField[];
+      optional: AuthField[];
+    };
+  };
+}
+
 interface Toolkit {
   slug: string;
   name: string;
@@ -58,6 +82,7 @@ interface Toolkit {
   description: string;
   category: string | null;
   authSchemes: string[];
+  authConfigDetails: AuthConfigDetail[];
   toolCount: number;
   triggerCount: number;
   version: string | null;
@@ -158,6 +183,35 @@ async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
   }));
 }
 
+async function fetchToolkitAuthDetails(slug: string): Promise<AuthConfigDetail[]> {
+  const response = await fetch(`${API_BASE}/toolkits/${slug}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY!,
+    },
+  });
+
+  if (!response.ok) return [];
+
+  const data = await response.json();
+  const authDetails = data.auth_config_details || [];
+
+  return authDetails.map((raw: any) => ({
+    name: raw.name || '',
+    mode: raw.mode || '',
+    fields: {
+      auth_config_creation: raw.fields?.auth_config_creation ? {
+        required: raw.fields.auth_config_creation.required || [],
+        optional: raw.fields.auth_config_creation.optional || [],
+      } : undefined,
+      connected_account_initiation: raw.fields?.connected_account_initiation ? {
+        required: raw.fields.connected_account_initiation.required || [],
+        optional: raw.fields.connected_account_initiation.optional || [],
+      } : undefined,
+    },
+  }));
+}
+
 function transformToolkit(raw: any): Toolkit {
   return {
     slug: raw.slug?.toLowerCase() || '',
@@ -166,6 +220,7 @@ function transformToolkit(raw: any): Toolkit {
     description: raw.meta?.description || raw.description || '',
     category: raw.meta?.categories?.[0]?.name || raw.meta?.categories?.[0] || null,
     authSchemes: raw.auth_schemes || raw.authSchemes || [],
+    authConfigDetails: [],
     toolCount: raw.tool_count || raw.toolCount || 0,
     triggerCount: raw.trigger_count || raw.triggerCount || 0,
     version: null,
@@ -195,8 +250,8 @@ async function main() {
     toolkit.version = versionMap.get(toolkit.slug) || null;
   }
 
-  // Fetch tools and triggers for each toolkit in batches
-  console.log('Fetching tools and triggers...');
+  // Fetch tools, triggers, and auth details for each toolkit in batches
+  console.log('Fetching tools, triggers, and auth details...');
   const batchSize = 10;
   let completed = 0;
 
@@ -205,13 +260,15 @@ async function main() {
 
     await Promise.all(
       batch.map(async (toolkit) => {
-        const [tools, triggers] = await Promise.all([
+        const [tools, triggers, authDetails] = await Promise.all([
           fetchToolsForToolkit(toolkit.slug.toUpperCase()),
           fetchTriggersForToolkit(toolkit.slug.toUpperCase()),
+          fetchToolkitAuthDetails(toolkit.slug),
         ]);
 
         toolkit.tools = tools;
         toolkit.triggers = triggers;
+        toolkit.authConfigDetails = authDetails;
         toolkit.toolCount = tools.length;
         toolkit.triggerCount = triggers.length;
 
