@@ -70,3 +70,4 @@ fern/llms-txt-worker/public/*
 
 # E2E test node_modules
 test/e2e/*/node_modules
+.vercel

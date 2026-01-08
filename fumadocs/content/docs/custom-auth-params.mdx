@@ -1,0 +1,132 @@
+---
+title: Custom Auth Parameters
+description: Inject custom credentials in headers or parameters
+keywords: [inject headers, custom credentials]
+---
+
+In cases where Composio is not being used for managing the auth but only for the tools, it is possible to use the `beforeExecute` hook to inject custom auth headers or parameters for a toolkit.
+
+## Setup and Initialization
+
+First, initialize the Composio SDK with your API key:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+```
+  </Tab>
+</Tabs>
+
+## Creating the Auth Modifier Function
+
+Define a function that modifies authentication parameters for specific toolkits. This function checks the toolkit name and adds custom authentication headers when needed.
+
+<Card title="This is a Before Execute Modifier!" href="/docs/modify-tool-behavior/before-execution-modifiers">
+Before Execute Modifiers are a way to modify the parameters of a tool before it is executed. In this case, they are useful for adding custom authentication headers or parameters to a tool.
+</Card>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import before_execute
+from composio.types import ToolExecuteParams
+
+
+@before_execute(toolkits=["NOTION"])
+def add_custom_auth(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    if params["custom_auth_params"] is None:
+        params["custom_auth_params"] = {"parameters": []}
+
+    params["custom_auth_params"]["parameters"].append(
+        {
+            "name": "x-api-key",
+            "value": os.getenv("NOTION_API_KEY"),
+            "in": "header",
+        }
+    )
+    return params
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const authModifier = (toolSlug: string, toolkitSlug: string, params: any) => {
+  // Add authentication parameters for specific toolkits
+  if (toolkitSlug === "NOTION") {
+    if (!params.customAuthParams) {
+      params.customAuthParams = {};
+    }
+
+    if (!params.customAuthParams.parameters) {
+      params.customAuthParams.parameters = [];
+    }
+
+    // Add an API key to the headers
+    params.customAuthParams.parameters.push({
+      in: "header",
+      name: "X-API-Key",
+      value: process.env.CUSTOM_API_KEY,
+    });
+  }
+  return params;
+};
+```
+  </Tab>
+</Tabs>
+
+## Executing Tools with Custom Auth
+
+Execute the tool using the custom authentication modifier. The `beforeExecute` hook allows you to modify parameters before the tool runs.
+
+Following is an example of how to execute a tool with a custom authentication modifier for Completion Providers.
+
+For Agentic Providers, read about [Modifying tool inputs](/docs/modify-tool-behavior/before-execution-modifiers).
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+result = composio.tools.execute(
+    slug="NOTION_GET_DATABASE_ITEMS",
+    user_id="default",
+    arguments={},
+    modifiers=[
+        add_custom_auth,
+    ],
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const result = await composio.tools.execute(
+  "NOTION_GET_DATABASE_ITEMS",
+  {
+    userId: "sid",
+    arguments: {
+      database_id: "1234567890",
+    },
+  },
+  {
+    beforeExecute: authModifier,
+  }
+);
+
+console.log(JSON.stringify(result, null, 2));
+```
+  </Tab>
+</Tabs>
