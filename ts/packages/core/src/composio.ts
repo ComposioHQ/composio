@@ -138,13 +138,22 @@ export class Composio<
   /**
    * Core models for Composio.
    */
+
+  /** List, retrieve, and execute tools */
   tools: Tools<unknown, unknown, TProvider>;
+  /** Retrieve toolkit metadata and authorize user connections */
   toolkits: Toolkits;
+  /** Manage webhook triggers and event subscriptions */
   triggers: Triggers<TProvider>;
+  /** The tool provider instance used for wrapping tools in framework-specific formats */
   provider: TProvider;
+  /** Upload and download files */
   files: Files;
+  /** Manage authentication configurations for toolkits */
   authConfigs: AuthConfigs;
+  /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
+  /** Model Context Protocol server management */
   mcp: MCP;
   /**
    * Experimental feature, use with caution
@@ -272,14 +281,13 @@ export class Composio<
     this.files = new Files(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.toolRouter = new ToolRouter(this.client, this.config);
-    this.toolRouter.create.bind(this.toolRouter);
-    this.toolRouter.use.bind(this.toolRouter);
 
     /**
      * Initialize tool router methods
+     * Properly bind the methods to maintain the correct 'this' context
      */
-    this.create = this.toolRouter.create;
-    this.use = this.toolRouter.use;
+    this.create = this.toolRouter.create.bind(this.toolRouter);
+    this.use = this.toolRouter.use.bind(this.toolRouter);
 
     /**
      * Initialize Experimental features

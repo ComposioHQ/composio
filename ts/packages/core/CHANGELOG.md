@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.3.4
+
+### Patch Changes
+
+- 019f54f: Fix method binding for top level tool router methods
+
 ## 0.3.3
 
 ### Patch Changes

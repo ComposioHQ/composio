@@ -1,6 +1,6 @@
 {
   "name": "@composio/core",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -33,7 +33,8 @@
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json"
+    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],
   "author": "",
@@ -45,6 +46,7 @@
     "tsdown": "catalog:",
     "tsup": "catalog:",
     "tsx": "catalog:",
+    "typedoc": "^0.28.5",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
