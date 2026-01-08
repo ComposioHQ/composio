@@ -4,9 +4,9 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink } from 'lucide-react';
 import toolkitsData from '@/public/data/toolkits.json';
-import type { Toolkit } from '@/types/toolkit';
+import type { ToolkitSummary } from '@/types/toolkit';
 
-const toolkits = toolkitsData as Toolkit[];
+const toolkits = toolkitsData as ToolkitSummary[];
 
 // Popular toolkit slugs (shown at top when no filters)
 const POPULAR_SLUGS = [
@@ -26,7 +26,7 @@ const categories = Array.from(
   new Set(toolkits.map((t) => t.category).filter(Boolean))
 ).sort() as string[];
 
-function ToolkitIcon({ toolkit }: { toolkit: Toolkit }) {
+function ToolkitIcon({ toolkit }: { toolkit: ToolkitSummary }) {
   return (
     <div
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-fd-border/50 bg-fd-background bg-center bg-no-repeat text-sm font-medium text-fd-muted-foreground sm:h-10 sm:w-10"
@@ -61,7 +61,7 @@ function CopySlugButton({ slug }: { slug: string }) {
   );
 }
 
-function ToolkitRow({ toolkit }: { toolkit: Toolkit }) {
+function ToolkitRow({ toolkit }: { toolkit: ToolkitSummary }) {
   return (
     <Link
       href={`/toolkits/${toolkit.slug}`}
@@ -98,7 +98,7 @@ export function ToolkitsLanding() {
   const popularToolkits = useMemo(() => {
     return POPULAR_SLUGS
       .map((slug) => toolkits.find((t) => t.slug === slug))
-      .filter((t): t is Toolkit => t !== undefined);
+      .filter((t): t is ToolkitSummary => t !== undefined);
   }, []);
 
   const filteredToolkits = useMemo(() => {
@@ -125,7 +125,7 @@ export function ToolkitsLanding() {
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
-    const groups: Record<string, Toolkit[]> = {};
+    const groups: Record<string, ToolkitSummary[]> = {};
 
     // First sort all toolkits alphabetically (trim to handle leading spaces)
     const sorted = [...filteredToolkits].sort((a, b) =>

@@ -3,17 +3,18 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
+import { fetchToolkitDetails } from '@/lib/toolkit-api';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { Metadata } from 'next';
-import type { Toolkit } from '@/types/toolkit';
+import type { ToolkitSummary } from '@/types/toolkit';
 
-async function getToolkits(): Promise<Toolkit[]> {
+async function getToolkits(): Promise<ToolkitSummary[]> {
   const filePath = join(process.cwd(), 'public/data/toolkits.json');
 
   try {
     const data = await readFile(filePath, 'utf-8');
-    const toolkits = JSON.parse(data) as Toolkit[];
+    const toolkits = JSON.parse(data) as ToolkitSummary[];
 
     if (!Array.isArray(toolkits)) {
       throw new Error('toolkits.json must contain an array');
@@ -110,9 +111,18 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
   if (slug.length === 1) {
     const toolkitSlug = slug[0];
     const toolkits = await getToolkits();
-    const toolkit = toolkits.find((t) => t.slug === toolkitSlug);
+    const toolkitSummary = toolkits.find((t) => t.slug === toolkitSlug);
 
-    if (toolkit) {
+    if (toolkitSummary) {
+      // Fetch detailed toolkit data (tools, triggers, auth config) dynamically
+      const details = await fetchToolkitDetails(toolkitSlug);
+
+      // Combine summary with fetched details
+      const toolkit = {
+        ...toolkitSummary,
+        ...details,
+      };
+
       return (
         <ToolkitDetail
           toolkit={toolkit}

@@ -51,17 +51,22 @@ export interface AuthConfigDetail {
   };
 }
 
-export interface Toolkit {
+// Lightweight summary for list pages (from static JSON)
+export interface ToolkitSummary {
   slug: string;
   name: string;
   logo: string | null;
   description: string;
   category: string | null;
   authSchemes: string[];
-  authConfigDetails: AuthConfigDetail[];
   toolCount: number;
   triggerCount: number;
   version: string | null;
+}
+
+// Full toolkit data (with dynamically fetched details)
+export interface Toolkit extends ToolkitSummary {
+  authConfigDetails: AuthConfigDetail[];
   tools: Tool[];
   triggers: Trigger[];
 }
