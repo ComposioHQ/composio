@@ -121,6 +121,29 @@ cpSync(TOOLKITS_DIR, CACHE_TOOLKITS, { recursive: true });
 | Local `bun run build` | Generates if missing |
 | `FORCE_TOOLKIT_REGEN=true` | Always regenerates |
 
+### Static Generation Strategy
+
+Even with cached data, generating 862 static pages takes ~2 min. To speed up previews:
+
+```typescript
+// Preview: Only generate index + MDX pages (~30s)
+// Production: Generate all 862 toolkit pages (~4 min)
+
+export const dynamicParams = true; // Allow on-demand rendering
+
+export async function generateStaticParams() {
+  if (process.env.VERCEL_ENV === 'preview') {
+    return [{ slug: [] }, ...mdxParams]; // Index + MDX only
+  }
+  return [{ slug: [] }, ...mdxParams, ...jsonParams]; // All pages
+}
+```
+
+| Environment | Static Pages | Individual Toolkits | Build Time |
+|-------------|--------------|---------------------|------------|
+| Production | All 862 | Pre-rendered | ~4 min |
+| Preview | Index + MDX | On-demand (SSR) | ~30s |
+
 ---
 
 ## Runtime Data Loading
