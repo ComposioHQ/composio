@@ -274,6 +274,7 @@ function trimSchemaProperty(prop: any): Record<string, unknown> {
   // Keep only essential fields
   if (prop.type) trimmed.type = prop.type;
   if (prop.description) trimmed.description = prop.description;
+  if (prop.enum) trimmed.enum = prop.enum;
 
   // Handle nested items (arrays)
   if (prop.items) {

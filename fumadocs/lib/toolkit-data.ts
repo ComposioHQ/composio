@@ -7,7 +7,6 @@
  */
 
 import { readFile } from 'fs/promises';
-import { existsSync } from 'fs';
 import { join } from 'path';
 import { gunzipSync } from 'zlib';
 import type { Toolkit, ToolkitSummary } from '@/types/toolkit';
@@ -16,16 +15,6 @@ const DATA_DIR = join(process.cwd(), 'public/data');
 const TOOLKITS_DIR = join(DATA_DIR, 'toolkits');
 const INDEX_FILE = join(DATA_DIR, 'toolkits.json.gz');
 
-export class ToolkitDataError extends Error {
-  constructor(
-    message: string,
-    public readonly code: 'NOT_GENERATED' | 'PARSE_ERROR' | 'NOT_FOUND'
-  ) {
-    super(message);
-    this.name = 'ToolkitDataError';
-  }
-}
-
 /**
  * Read and decompress a gzipped JSON file
  */
@@ -33,16 +22,6 @@ async function readGzippedJson<T>(filePath: string): Promise<T> {
   const compressed = await readFile(filePath);
   const decompressed = gunzipSync(compressed);
   return JSON.parse(decompressed.toString('utf-8'));
-}
-
-/**
- * Check if toolkit data has been generated (local dev only)
- * On Vercel, we skip this check and let file reads fail gracefully
- */
-export function isToolkitDataGenerated(): boolean {
-  // On Vercel, assume data exists (was generated at build time)
-  if (process.env.VERCEL) return true;
-  return existsSync(INDEX_FILE) && existsSync(TOOLKITS_DIR);
 }
 
 /**
