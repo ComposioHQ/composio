@@ -7,7 +7,7 @@ const config = {
   reactStrictMode: true,
   // Include toolkit data files in serverless bundle for SSR
   outputFileTracingIncludes: {
-    '/toolkits/*': ['./public/data/**/*'],
+    '/toolkits/[[...slug]]': ['./public/data/**/*'],
   },
   async redirects() {
     return [
