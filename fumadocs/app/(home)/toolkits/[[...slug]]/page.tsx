@@ -10,10 +10,16 @@ export async function generateStaticParams() {
   // Index page
   const indexParam = { slug: [] };
 
-  // MDX pages
+  // MDX pages (always static)
   const mdxParams = toolkitsSource.generateParams();
 
-  // JSON toolkit pages (gracefully handle missing data)
+  // On preview: skip generating 862 toolkit pages (render on-demand instead)
+  // On production: pre-generate all for instant page loads
+  if (process.env.VERCEL_ENV === 'preview') {
+    return [indexParam, ...mdxParams];
+  }
+
+  // JSON toolkit pages
   const toolkits = await getToolkitSummaries();
   const jsonParams = toolkits.map((toolkit) => ({
     slug: [toolkit.slug],
@@ -21,6 +27,9 @@ export async function generateStaticParams() {
 
   return [indexParam, ...mdxParams, ...jsonParams];
 }
+
+// Allow dynamic rendering for non-generated pages (previews)
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
   const { slug } = await params;
