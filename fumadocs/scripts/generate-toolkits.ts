@@ -18,7 +18,10 @@ import { gzipSync } from 'zlib';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
-const FORCE_REGEN = process.env.FORCE_TOOLKIT_REGEN === 'true';
+
+// Always regenerate on production for fresh data
+const isProduction = process.env.VERCEL_ENV === 'production';
+const FORCE_REGEN = isProduction || process.env.FORCE_TOOLKIT_REGEN === 'true';
 
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
 const INDEX_FILE = join(OUTPUT_DIR, 'toolkits.json.gz');
@@ -29,6 +32,11 @@ const CACHE_DIR = join(process.cwd(), '.next/cache/toolkit-data');
 const CACHE_INDEX = join(CACHE_DIR, 'toolkits.json.gz');
 const CACHE_TOOLKITS = join(CACHE_DIR, 'toolkits');
 
+// Log environment
+if (isProduction) {
+  console.log('Production build - regenerating fresh toolkit data');
+}
+
 // Check if output already exists
 if (!FORCE_REGEN && existsSync(INDEX_FILE) && existsSync(TOOLKITS_DIR)) {
   console.log('✓ Toolkit data already exists, skipping generation');
@@ -36,9 +44,9 @@ if (!FORCE_REGEN && existsSync(INDEX_FILE) && existsSync(TOOLKITS_DIR)) {
   process.exit(0);
 }
 
-// Check if we can restore from Vercel's build cache
+// Check if we can restore from Vercel's build cache (preview only)
 if (!FORCE_REGEN && existsSync(CACHE_INDEX) && existsSync(CACHE_TOOLKITS)) {
-  console.log('✓ Restoring toolkit data from build cache...');
+  console.log('✓ Preview build - restoring toolkit data from cache...');
   await mkdir(OUTPUT_DIR, { recursive: true });
   await mkdir(TOOLKITS_DIR, { recursive: true });
 
