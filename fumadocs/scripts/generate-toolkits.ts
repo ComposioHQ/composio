@@ -340,8 +340,8 @@ async function main() {
 
   // Fetch full details for each toolkit and write individual files
   console.log('\nFetching detailed data and writing individual files...');
-  const batchSize = 20; // Smaller batch size to avoid rate limits
-  const delayBetweenBatches = 500; // 500ms delay between batches
+  const batchSize = 50; // Parallel toolkit fetches
+  const delayBetweenBatches = 100; // Brief delay to avoid rate limits
   let completed = 0;
   let totalSize = 0;
   let largestFile = { slug: '', size: 0 };
