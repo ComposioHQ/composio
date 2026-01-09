@@ -5,10 +5,6 @@ const withMDX = createMDX();
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
-  // Include toolkit data files in serverless bundle for SSR
-  outputFileTracingIncludes: {
-    '/toolkits/[[...slug]]': ['./public/data/**/*'],
-  },
   async redirects() {
     return [
       {

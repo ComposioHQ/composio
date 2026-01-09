@@ -24,10 +24,30 @@ const OUTPUT_DIR = join(process.cwd(), 'public/data');
 const INDEX_FILE = join(OUTPUT_DIR, 'toolkits.json.gz');
 const TOOLKITS_DIR = join(OUTPUT_DIR, 'toolkits');
 
-// Check if we should skip generation (cache exists)
+// Vercel caches .next/cache between builds
+const CACHE_DIR = join(process.cwd(), '.next/cache/toolkit-data');
+const CACHE_INDEX = join(CACHE_DIR, 'toolkits.json.gz');
+const CACHE_TOOLKITS = join(CACHE_DIR, 'toolkits');
+
+// Check if output already exists
 if (!FORCE_REGEN && existsSync(INDEX_FILE) && existsSync(TOOLKITS_DIR)) {
   console.log('✓ Toolkit data already exists, skipping generation');
   console.log('  Set FORCE_TOOLKIT_REGEN=true to force regeneration');
+  process.exit(0);
+}
+
+// Check if we can restore from Vercel's build cache
+if (!FORCE_REGEN && existsSync(CACHE_INDEX) && existsSync(CACHE_TOOLKITS)) {
+  console.log('✓ Restoring toolkit data from build cache...');
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  await mkdir(TOOLKITS_DIR, { recursive: true });
+
+  // Copy from cache to public
+  const { cpSync } = await import('fs');
+  cpSync(CACHE_INDEX, INDEX_FILE);
+  cpSync(CACHE_TOOLKITS, TOOLKITS_DIR, { recursive: true });
+
+  console.log('✓ Restored from cache');
   process.exit(0);
 }
 
@@ -392,8 +412,16 @@ async function main() {
 
   console.log('\n');
 
+  // Save to Vercel build cache for future builds
+  console.log('Saving to build cache...');
+  const { cpSync } = await import('fs');
+  await mkdir(CACHE_DIR, { recursive: true });
+  cpSync(INDEX_FILE, CACHE_INDEX);
+  cpSync(TOOLKITS_DIR, CACHE_TOOLKITS, { recursive: true });
+  console.log('✓ Saved to .next/cache/toolkit-data/');
+
   // Summary
-  console.log('Generation complete!');
+  console.log('\nGeneration complete!');
   console.log(`  Index file: toolkits.json.gz (${Math.round(indexGzipped.length / 1024)}KB)`);
   console.log(`  Individual files: ${summaries.length} gzipped files in /public/data/toolkits/`);
   console.log(`  Total compressed size: ${Math.round(totalSize / 1024 / 1024)}MB`);
