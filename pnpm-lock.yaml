@@ -104,6 +104,9 @@ importers:
       semver:
         specifier: ^7.7.2
         version: 7.7.2
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(typescript@5.9.3)
       tsx:
         specifier: 'catalog:'
         version: 4.20.5
@@ -2767,9 +2770,6 @@ packages:
     resolution: {integrity: sha512-x0fWaQtYp4E6sktbsdAqnehxDgEc/VwM7uLsRCYWaiGu0ykYdZPiS8zCWdnjHwyiumousxfBm4SO31eXqwEZhQ==}
     cpu: [x64]
     os: [win32]
-
-  '@napi-rs/wasm-runtime@1.1.0':
-    resolution: {integrity: sha512-Fq6DJW+Bb5jaWE69/qOE0D1TUN9+6uWhCeZpdnSBk14pjLcCWR7Q8n49PTSPHazM37JqrsdpEthXy2xn6jWWiA==}
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
@@ -9578,13 +9578,6 @@ snapshots:
   '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
     optional: true
 
-  '@napi-rs/wasm-runtime@1.1.0':
-    dependencies:
-      '@emnapi/core': 1.7.1
-      '@emnapi/runtime': 1.7.1
-      '@tybys/wasm-util': 0.10.1
-    optional: true
-
   '@napi-rs/wasm-runtime@1.1.1':
     dependencies:
       '@emnapi/core': 1.7.1
@@ -10741,7 +10734,7 @@ snapshots:
 
   '@rolldown/binding-wasm32-wasi@1.0.0-beta.57':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.1.0
+      '@napi-rs/wasm-runtime': 1.1.1
     optional: true
 
   '@rolldown/binding-wasm32-wasi@1.0.0-beta.59':
@@ -11198,14 +11191,6 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@20.19.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.0))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 7.2.6(@types/node@20.19.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.0)
-
   '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))':
     dependencies:
       '@vitest/spy': 3.2.4
@@ -11213,22 +11198,6 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 7.2.6(@types/node@22.15.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1)
-
-  '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@24.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 7.2.6(@types/node@24.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1)
-
-  '@vitest/mocker@3.2.4(vite@7.2.6(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))':
-    dependencies:
-      '@vitest/spy': 3.2.4
-      estree-walker: 3.0.3
-      magic-string: 0.30.21
-    optionalDependencies:
-      vite: 7.2.6(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1)
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -11259,7 +11228,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.1)(@vitest/ui@3.2.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.0)
+      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@22.15.32)(@vitest/ui@3.2.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -14695,7 +14664,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@20.19.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.0))
+      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -14781,7 +14750,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@24.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -14824,7 +14793,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.2.6(@types/node@22.15.32)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.5)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4

@@ -1,10 +1,9 @@
 import { defineConfig } from 'tsdown';
+import { baseConfig } from '../../../../tsdown.config.base';
 
 export default defineConfig({
+  ...baseConfig,
   entry: ['src/index.ts'],
-  format: ['esm', 'cjs'],
-  dts: true,
-  clean: true,
-  minify: false,
   outDir: 'dist',
+  tsconfig: 'tsconfig.json',
 });
