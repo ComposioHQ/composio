@@ -4,15 +4,15 @@
 
 ### No Sidebar
 - 862 toolkits would bloat sidebar
-- Breadcrumb navigation only (`← Back to Toolkits`)
+- Breadcrumb navigation only
 
 ### No Input Parameters
 - LLMs read schemas automatically
-- Platform playground is better for param exploration
+- Platform playground is better for exploration
 
 ### No Scopes Display
 - Only have scope names, not descriptions
-- Auth method badge is sufficient (OAuth2, API_KEY, etc.)
+- Auth method badge is sufficient
 
 ### Search-First Landing
 - Search + category filter + cards
@@ -45,12 +45,6 @@ public/data/
 
 ### Why Gzip + Individual Files?
 
-Original approach had problems:
-- 45MB uncompressed JSON
-- GitHub 100MB file limit
-- Client bundle bloat
-
-Current approach:
 - Gzip: 45MB → 7MB (85% reduction)
 - Per-toolkit files: detail pages load only what they need
 - Server-side decompression: 2-9ms, negligible
@@ -58,91 +52,39 @@ Current approach:
 ### Why Not Git?
 
 - 862 auto-generated files would bloat git history
-- Data changes frequently (new tools, updated descriptions)
-- Generated at build time instead
+- Generated at build time, not committed
 
 ---
 
 ## Build Strategy
 
-### The Problem
+Simple approach:
+- **Vercel (prod + preview)**: Always regenerates fresh data
+- **Local dev**: Skips if data exists (for speed)
 
-Build-time generation takes ~2 minutes (API calls + static page generation).
-This is fine for production, but too slow for preview deployments.
+Build time is ~2 minutes. This is acceptable - keeps things simple and ensures data is always fresh.
 
-### Solution: Vercel Build Cache
-
-Vercel persists `.next/cache/` between builds on the same branch.
-
-```
-Production deploy:
-  → Always regenerates fresh data (~2 min)
-  → Saves to .next/cache/toolkit-data/
-
-Preview deploy:
-  → Restores from .next/cache/ if available (~instant)
-  → Falls back to fresh generation if not cached
-```
-
-### Generator Script Flow
+### Generator Script
 
 ```typescript
-// scripts/generate-toolkits.ts
+// On Vercel, always regenerate. Locally, skip if exists.
+const isVercel = !!process.env.VERCEL;
+const FORCE_REGEN = isVercel || process.env.FORCE_TOOLKIT_REGEN === 'true';
 
-const isProduction = process.env.VERCEL_ENV === 'production';
-const FORCE_REGEN = isProduction || process.env.FORCE_TOOLKIT_REGEN === 'true';
-
-// 1. Skip if output exists (local dev)
 if (!FORCE_REGEN && existsSync(INDEX_FILE)) {
-  process.exit(0);
+  process.exit(0); // Skip locally
 }
 
-// 2. Restore from Vercel cache (preview builds)
-if (!FORCE_REGEN && existsSync(CACHE_INDEX)) {
-  cpSync(CACHE_INDEX, INDEX_FILE);
-  cpSync(CACHE_TOOLKITS, TOOLKITS_DIR, { recursive: true });
-  process.exit(0);
-}
-
-// 3. Generate fresh (production or no cache)
-await fetchAndGenerate();
-cpSync(INDEX_FILE, CACHE_INDEX);
-cpSync(TOOLKITS_DIR, CACHE_TOOLKITS, { recursive: true });
+// Generate fresh data...
 ```
 
-### When Cache Refreshes
+### Environment Variables
 
-| Scenario | Behavior |
-|----------|----------|
-| Production deploy | Always regenerates fresh |
-| Preview on branch with prior builds | Uses cached data |
-| Preview on new branch | Generates fresh (then cached) |
-| Local `bun run dev` | Uses existing data |
-| Local `bun run build` | Generates if missing |
-| `FORCE_TOOLKIT_REGEN=true` | Always regenerates |
-
-### Static Generation Strategy
-
-Even with cached data, generating 862 static pages takes ~2 min. To speed up previews:
-
-```typescript
-// Preview: Only generate index + MDX pages (~30s)
-// Production: Generate all 862 toolkit pages (~4 min)
-
-export const dynamicParams = true; // Allow on-demand rendering
-
-export async function generateStaticParams() {
-  if (process.env.VERCEL_ENV === 'preview') {
-    return [{ slug: [] }, ...mdxParams]; // Index + MDX only
-  }
-  return [{ slug: [] }, ...mdxParams, ...jsonParams]; // All pages
-}
 ```
-
-| Environment | Static Pages | Individual Toolkits | Build Time |
-|-------------|--------------|---------------------|------------|
-| Production | All 862 | Pre-rendered | ~4 min |
-| Preview | Index + MDX | On-demand (SSR) | ~30s |
+COMPOSIO_API_KEY        # Required
+COMPOSIO_API_BASE       # Optional, defaults to prod API
+FORCE_TOOLKIT_REGEN     # Set "true" to regenerate locally
+```
 
 ---
 
@@ -166,32 +108,10 @@ export async function getToolkitSummaries(): Promise<ToolkitSummary[]>
 
 ---
 
-## Environment Variables
-
-```
-COMPOSIO_API_KEY        # Required for generation
-COMPOSIO_API_BASE       # Optional, defaults to prod API
-FORCE_TOOLKIT_REGEN     # Set "true" to bypass cache
-VERCEL_ENV              # Auto-set by Vercel (production/preview/development)
-```
-
----
-
-## Scripts
-
-```json
-{
-  "build": "bun run generate:toolkits && next build",
-  "generate:toolkits": "bun scripts/generate-toolkits.ts"
-}
-```
-
----
-
 ## Key Principles
 
-1. **Static pages everywhere** - No SSR, all pages pre-rendered at build time
-2. **Production gets fresh data** - Users see latest toolkits
-3. **Previews are fast** - Use cached data, don't wait 2 min for every push
+1. **Static pages everywhere** - All 862 pages pre-rendered at build time
+2. **Fresh data on every deploy** - No caching, no stale data
+3. **Simple over fast** - 2 min build is acceptable for simplicity
 4. **No git bloat** - Generated files not committed
-5. **Graceful degradation** - Empty arrays/null on errors, not crashes
+5. **Graceful degradation** - Empty arrays/null on errors

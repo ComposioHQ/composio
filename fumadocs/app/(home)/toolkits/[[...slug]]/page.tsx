@@ -6,24 +6,11 @@ import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { getToolkitSummaries, getToolkitBySlug } from '@/lib/toolkit-data';
 import type { Metadata } from 'next';
 
-// Allow on-demand generation for toolkit pages not in generateStaticParams
-export const dynamicParams = true;
-
 export async function generateStaticParams() {
-  // Index page + MDX pages always generated
   const indexParam = { slug: [] };
   const mdxParams = toolkitsSource.generateParams();
-
-  // On preview, skip generating 862 toolkit pages (render on-demand instead)
-  if (process.env.VERCEL_ENV === 'preview') {
-    return [indexParam, ...mdxParams];
-  }
-
-  // On production, generate all toolkit pages statically
   const toolkits = await getToolkitSummaries();
-  const jsonParams = toolkits.map((toolkit) => ({
-    slug: [toolkit.slug],
-  }));
+  const jsonParams = toolkits.map((toolkit) => ({ slug: [toolkit.slug] }));
 
   return [indexParam, ...mdxParams, ...jsonParams];
 }

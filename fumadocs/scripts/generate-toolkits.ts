@@ -7,11 +7,11 @@
  *
  * Run: bun run generate:toolkits
  *
- * Caching: Skips generation if data already exists.
- * Set FORCE_TOOLKIT_REGEN=true to force regeneration.
+ * Local dev: Skips if data exists. Set FORCE_TOOLKIT_REGEN=true to regenerate.
+ * Vercel: Always regenerates fresh data on every deploy.
  */
 
-import { mkdir, writeFile, rm, stat } from 'fs/promises';
+import { mkdir, writeFile, rm } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { gzipSync } from 'zlib';
@@ -19,43 +19,17 @@ import { gzipSync } from 'zlib';
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
-// Always regenerate on production for fresh data
-const isProduction = process.env.VERCEL_ENV === 'production';
-const FORCE_REGEN = isProduction || process.env.FORCE_TOOLKIT_REGEN === 'true';
-
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
 const INDEX_FILE = join(OUTPUT_DIR, 'toolkits.json.gz');
 const TOOLKITS_DIR = join(OUTPUT_DIR, 'toolkits');
 
-// Vercel caches .next/cache between builds
-const CACHE_DIR = join(process.cwd(), '.next/cache/toolkit-data');
-const CACHE_INDEX = join(CACHE_DIR, 'toolkits.json.gz');
-const CACHE_TOOLKITS = join(CACHE_DIR, 'toolkits');
+// On Vercel, always regenerate. Locally, skip if exists (for faster dev).
+const isVercel = !!process.env.VERCEL;
+const FORCE_REGEN = isVercel || process.env.FORCE_TOOLKIT_REGEN === 'true';
 
-// Log environment
-if (isProduction) {
-  console.log('Production build - regenerating fresh toolkit data');
-}
-
-// Check if output already exists
+// Skip if data exists locally (dev convenience)
 if (!FORCE_REGEN && existsSync(INDEX_FILE) && existsSync(TOOLKITS_DIR)) {
-  console.log('✓ Toolkit data already exists, skipping generation');
-  console.log('  Set FORCE_TOOLKIT_REGEN=true to force regeneration');
-  process.exit(0);
-}
-
-// Check if we can restore from Vercel's build cache (preview only)
-if (!FORCE_REGEN && existsSync(CACHE_INDEX) && existsSync(CACHE_TOOLKITS)) {
-  console.log('✓ Preview build - restoring toolkit data from cache...');
-  await mkdir(OUTPUT_DIR, { recursive: true });
-  await mkdir(TOOLKITS_DIR, { recursive: true });
-
-  // Copy from cache to public
-  const { cpSync } = await import('fs');
-  cpSync(CACHE_INDEX, INDEX_FILE);
-  cpSync(CACHE_TOOLKITS, TOOLKITS_DIR, { recursive: true });
-
-  console.log('✓ Restored from cache');
+  console.log('✓ Toolkit data exists, skipping (set FORCE_TOOLKIT_REGEN=true to regenerate)');
   process.exit(0);
 }
 
@@ -63,6 +37,8 @@ if (!API_KEY) {
   console.error('Error: COMPOSIO_API_KEY environment variable is required');
   process.exit(1);
 }
+
+console.log(isVercel ? 'Vercel build - generating fresh data...' : 'Generating toolkit data...');
 
 // Types
 interface ToolkitSummary {
@@ -420,17 +396,7 @@ async function main() {
   }
 
   console.log('\n');
-
-  // Save to Vercel build cache for future builds
-  console.log('Saving to build cache...');
-  const { cpSync } = await import('fs');
-  await mkdir(CACHE_DIR, { recursive: true });
-  cpSync(INDEX_FILE, CACHE_INDEX);
-  cpSync(TOOLKITS_DIR, CACHE_TOOLKITS, { recursive: true });
-  console.log('✓ Saved to .next/cache/toolkit-data/');
-
-  // Summary
-  console.log('\nGeneration complete!');
+  console.log('Generation complete!');
   console.log(`  Index file: toolkits.json.gz (${Math.round(indexGzipped.length / 1024)}KB)`);
   console.log(`  Individual files: ${summaries.length} gzipped files in /public/data/toolkits/`);
   console.log(`  Total compressed size: ${Math.round(totalSize / 1024 / 1024)}MB`);
