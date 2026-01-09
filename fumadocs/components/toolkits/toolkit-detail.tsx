@@ -85,8 +85,8 @@ function AuthFieldsTable({ fields }: { fields: AuthField[] }) {
           </tr>
         </thead>
         <tbody>
-          {fields.map((field) => (
-            <tr key={field.name} className="border-b border-fd-border/50 last:border-0">
+          {fields.map((field, index) => (
+            <tr key={`${field.name}-${index}`} className="border-b border-fd-border/50 last:border-0">
               <td className="px-3 py-2 align-top">
                 <code className="rounded bg-fd-muted px-1 py-0.5 text-xs">{field.displayName || field.name}</code>
                 {field.required && <span className="ml-1 text-xs text-orange-500">*</span>}
