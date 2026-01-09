@@ -17,7 +17,7 @@ catalog:
   '@cloudflare/workers-types': ^4.20250917.0
   '@composio/client': 0.1.0-alpha.52
   '@modelcontextprotocol/sdk': ^1.24.0
-  ai: 5.0.52
+  ai: 6.0.23
   openai: ^5.20.3
   tsup: ^8.5.0
   tsdown: ^0.16.8
