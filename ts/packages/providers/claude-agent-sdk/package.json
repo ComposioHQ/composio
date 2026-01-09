@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [
@@ -46,7 +46,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@anthropic-ai/claude-agent-sdk": "^0.1.9",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "^3.25.76"

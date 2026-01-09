@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [],
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@langchain/core": "^1.1.4",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"

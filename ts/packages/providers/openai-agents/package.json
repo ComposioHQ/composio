@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [],
@@ -37,7 +37,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@openai/agents": "^0.1.3",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:",
     "vitest": "catalog:"

@@ -44,7 +44,6 @@
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.7.0",
     "tsdown": "catalog:",
-    "tsup": "catalog:",
     "tsx": "catalog:",
     "typedoc": "^0.28.5",
     "typescript": "catalog:",

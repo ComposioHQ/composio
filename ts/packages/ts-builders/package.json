@@ -23,12 +23,12 @@
   "devDependencies": {
     "@types/babel__helper-validator-identifier": "^7.15.2",
     "helper-validator-identifier": "link:@types/@babel/helper-validator-identifier",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "vitest": "catalog:"
   },
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "files": [

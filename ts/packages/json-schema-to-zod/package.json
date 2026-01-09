@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run",
     "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
@@ -35,7 +35,7 @@
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
     "@types/node": "^24.0.1",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"

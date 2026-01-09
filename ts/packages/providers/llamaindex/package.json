@@ -21,7 +21,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [
@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
   }
 }
