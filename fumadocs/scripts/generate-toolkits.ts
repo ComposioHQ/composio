@@ -343,6 +343,14 @@ async function main() {
   await writeFile(join(OUTPUT_DIR, 'toolkits.json.gz'), indexGzipped);
   console.log(`Written: toolkits.json.gz (${Math.round(indexGzipped.length / 1024)}KB, uncompressed: ${Math.round(indexJson.length / 1024)}KB)`);
 
+  // On preview, skip individual toolkit files (saves ~2 min)
+  // Individual toolkit pages will 404, but landing page works
+  if (process.env.VERCEL_ENV === 'preview') {
+    console.log('\nPreview build - skipping individual toolkit files');
+    console.log('Landing page works, individual pages will 404');
+    return;
+  }
+
   // Fetch full details for each toolkit and write individual files
   console.log('\nFetching detailed data and writing individual files...');
   const batchSize = 50; // Parallel toolkit fetches

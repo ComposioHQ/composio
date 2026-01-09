@@ -9,9 +9,14 @@ import type { Metadata } from 'next';
 export async function generateStaticParams() {
   const indexParam = { slug: [] };
   const mdxParams = toolkitsSource.generateParams();
+
+  // On preview, skip individual toolkit pages (data not generated)
+  if (process.env.VERCEL_ENV === 'preview') {
+    return [indexParam, ...mdxParams];
+  }
+
   const toolkits = await getToolkitSummaries();
   const jsonParams = toolkits.map((toolkit) => ({ slug: [toolkit.slug] }));
-
   return [indexParam, ...mdxParams, ...jsonParams];
 }
 

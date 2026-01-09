@@ -58,24 +58,25 @@ public/data/
 
 ## Build Strategy
 
-Simple approach:
-- **Vercel (prod + preview)**: Always regenerates fresh data
-- **Local dev**: Skips if data exists (for speed)
+- **Production**: Full generation (~2 min) - all pages static
+- **Preview**: Index only (~30s) - landing works, individual pages 404
+- **Local dev**: Skips if data exists
 
-Build time is ~2 minutes. This is acceptable - keeps things simple and ensures data is always fresh.
+Fast preview builds enable quick iteration. Individual toolkit pages rarely need testing on preview.
 
 ### Generator Script
 
 ```typescript
-// On Vercel, always regenerate. Locally, skip if exists.
-const isVercel = !!process.env.VERCEL;
-const FORCE_REGEN = isVercel || process.env.FORCE_TOOLKIT_REGEN === 'true';
+// Generate index (summaries) - always
+await generateIndex();
 
-if (!FORCE_REGEN && existsSync(INDEX_FILE)) {
-  process.exit(0); // Skip locally
+// On preview, skip individual files
+if (process.env.VERCEL_ENV === 'preview') {
+  return; // Landing page works, details 404
 }
 
-// Generate fresh data...
+// Production: generate all individual toolkit files
+await generateIndividualFiles();
 ```
 
 ### Environment Variables
