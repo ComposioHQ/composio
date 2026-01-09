@@ -36,9 +36,12 @@ async function readGzippedJson<T>(filePath: string): Promise<T> {
 }
 
 /**
- * Check if toolkit data has been generated
+ * Check if toolkit data has been generated (local dev only)
+ * On Vercel, we skip this check and let file reads fail gracefully
  */
 export function isToolkitDataGenerated(): boolean {
+  // On Vercel, assume data exists (was generated at build time)
+  if (process.env.VERCEL) return true;
   return existsSync(INDEX_FILE) && existsSync(TOOLKITS_DIR);
 }
 
@@ -47,18 +50,12 @@ export function isToolkitDataGenerated(): boolean {
  * Loads from individual gzipped JSON file
  */
 export async function getToolkitBySlug(slug: string): Promise<Toolkit | null> {
-  if (!isToolkitDataGenerated()) {
-    throw new ToolkitDataError(
-      'Toolkit data not generated. Run: bun run generate:toolkits',
-      'NOT_GENERATED'
-    );
-  }
-
   try {
     const filePath = join(TOOLKITS_DIR, `${slug.toLowerCase()}.json.gz`);
     return await readGzippedJson<Toolkit>(filePath);
   } catch (error) {
-    // File not found - toolkit doesn't exist
+    console.error(`[toolkit-data] Failed to load toolkit ${slug}:`, error);
+    // File not found or read error
     return null;
   }
 }
@@ -68,18 +65,11 @@ export async function getToolkitBySlug(slug: string): Promise<Toolkit | null> {
  * Returns empty array if data not generated (graceful degradation)
  */
 export async function getToolkitSummaries(): Promise<ToolkitSummary[]> {
-  if (!isToolkitDataGenerated()) {
-    console.warn('[toolkit-data] Data not generated. Run: bun run generate:toolkits');
-    return [];
-  }
-
   try {
     return await readGzippedJson<ToolkitSummary[]>(INDEX_FILE);
   } catch (error) {
-    console.error('[toolkit-data] Failed to parse toolkit data:', error);
-    throw new ToolkitDataError(
-      'Failed to parse toolkit data. Try regenerating: FORCE_TOOLKIT_REGEN=true bun run generate:toolkits',
-      'PARSE_ERROR'
-    );
+    console.error('[toolkit-data] Failed to load toolkit summaries:', error);
+    // Return empty array for graceful degradation
+    return [];
   }
 }
