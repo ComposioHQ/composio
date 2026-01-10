@@ -70,12 +70,16 @@ export const baseConfig = {
 
   /**
    * Configuration for @arethetypeswrong/cli.
+   * Uses '.' entrypoint to check the package root via the exports field,
+   * since src/index.ts is only used during development and not exported.
+   * Uses 'esm-only' profile since packages are ESM-only (ignores CJS resolution failures).
    */
   attw: {
-    entrypoints: ['src/index.ts'],
+    entrypoints: ['.'],
     enabled: true,
-    level: 'warn',
-    profile: 'node16',
+    level: 'error',
+    profile: 'esm-only',
+    ignoreRules: [/* Node.js 10 only, attw doesn't automatically exclude it despite the selected profile */ 'internal-resolution-error'],
   },
 
   /**
