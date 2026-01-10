@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test:e2e": "vitest run",
     "dev": "wrangler dev",
     "cf-typegen": "wrangler types"
   },
