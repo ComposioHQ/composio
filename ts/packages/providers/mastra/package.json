@@ -3,7 +3,6 @@
   "version": "0.3.4",
   "description": "Agentic Provider for mastra in Composio SDK",
   "main": "src/index.ts",
-  "type": "module",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -11,8 +10,18 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "default": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "files": [

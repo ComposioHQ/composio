@@ -3,7 +3,6 @@
   "version": "0.3.4",
   "description": "",
   "main": "src/index.ts",
-  "type": "module",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -13,36 +12,64 @@
     "#platform": {
       "workerd": "./dist/platform/workerd.mjs",
       "edge-light": "./dist/platform/workerd.mjs",
-      "node": "./dist/platform/node.mjs",
-      "default": "./dist/platform/node.mjs"
+      "node": {
+        "import": "./dist/platform/node.mjs",
+        "require": "./dist/platform/node.js"
+      },
+      "default": {
+        "import": "./dist/platform/node.mjs",
+        "require": "./dist/platform/node.js"
+      }
     }
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "default": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     },
     "./platform": {
       "workerd": {
         "types": "./dist/platform/workerd.d.mts",
-        "import": "./dist/platform/workerd.mjs"
+        "default": "./dist/platform/workerd.mjs"
       },
       "edge-light": {
         "types": "./dist/platform/workerd.d.mts",
-        "import": "./dist/platform/workerd.mjs"
+        "default": "./dist/platform/workerd.mjs"
       },
       "node": {
-        "types": "./dist/platform/node.d.mts",
-        "import": "./dist/platform/node.mjs"
+        "import": {
+          "types": "./dist/platform/node.d.mts",
+          "default": "./dist/platform/node.mjs"
+        },
+        "require": {
+          "types": "./dist/platform/node.d.ts",
+          "default": "./dist/platform/node.js"
+        }
       },
       "default": {
-        "types": "./dist/platform/node.d.mts",
-        "import": "./dist/platform/node.mjs"
+        "import": {
+          "types": "./dist/platform/node.d.mts",
+          "default": "./dist/platform/node.mjs"
+        },
+        "require": {
+          "types": "./dist/platform/node.d.ts",
+          "default": "./dist/platform/node.js"
+        }
       }
     },
     "./generated": {
       "types": "./generated/index.d.ts",
-      "import": "./generated/index.js"
+      "default": "./generated/index.js"
     }
   },
   "files": [

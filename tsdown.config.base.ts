@@ -27,8 +27,9 @@ export const baseConfig = {
   /**
    * Configures the output formats for the build.
    * - 'esm' generates ESM (ECMAScript Module) output
+   * - 'cjs' generates lecayse CommonJS output
    */
-  format: ['esm'],
+  format: ['esm', 'cjs' /* legacy */],
 
   /**
    * Generates TypeScript declaration files (.d.mts, .d.ts)
@@ -72,13 +73,13 @@ export const baseConfig = {
    * Configuration for @arethetypeswrong/cli.
    * Uses '.' entrypoint to check the package root via the exports field,
    * since src/index.ts is only used during development and not exported.
-   * Uses 'esm-only' profile since packages are ESM-only (ignores CJS resolution failures).
+   * Uses 'node16' profile since packages support both ESM and CJS.
    */
   attw: {
     entrypoints: ['.'],
     enabled: true,
     level: 'error',
-    profile: 'esm-only',
+    profile: 'node16',
     ignoreRules: [/* Node.js 10 only, attw doesn't automatically exclude it despite the selected profile */ 'internal-resolution-error'],
   },
 
