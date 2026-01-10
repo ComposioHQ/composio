@@ -57,6 +57,7 @@
     }
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
     "@changesets/cli": "^2.29.8",
     "@composio/anthropic": "workspace:*",
     "@composio/core": "workspace:*",
@@ -68,6 +69,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
+    "publint": "catalog:",
     "semver": "^7.7.2",
     "tsx": "catalog:",
     "tsdown": "catalog:",

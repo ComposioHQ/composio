@@ -27,9 +27,8 @@ export const baseConfig = {
   /**
    * Configures the output formats for the build.
    * - 'esm' generates ESM (ECMAScript Module) output
-   * - 'cjs' generates CommonJS output
    */
-  format: ['esm', 'cjs'],
+  format: ['esm'],
 
   /**
    * Generates TypeScript declaration files (.d.mts, .d.ts)
@@ -61,13 +60,32 @@ export const baseConfig = {
   /**
    * External dependencies that should not be bundled, but provided by the consumer.
    */
-  external: ['zod'],
+  external: ['zod', /^node:/],
 
   /**
    * Control how Node.js built-in module imports are handled.
    * When true, imports like `fs` are transformed to `node:fs`.
    */
   nodeProtocol: true,
+
+  /**
+   * Configuration for @arethetypeswrong/cli.
+   */
+  attw: {
+    entrypoints: ['src/index.ts'],
+    enabled: true,
+    level: 'warn',
+    profile: 'node16',
+  },
+
+  /**
+   * Configuration for publint.
+   */
+  publint: {
+    enabled: true,
+    level: 'error',
+    pack: 'pnpm',
+  },
 } satisfies UserConfig
 
 function isESM(ctx: OutExtensionContext) {

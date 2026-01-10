@@ -10,4 +10,6 @@ export default defineConfig({
     js: '#!/usr/bin/env bun',
   },
   external: undefined,
+  publint: undefined,
+  attw: undefined,
 });
