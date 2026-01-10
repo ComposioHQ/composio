@@ -196,15 +196,93 @@ export type TriggerEventData<TPayload = unknown> = TPayload & {
 };
 
 /**
+ * Webhook payload schemas for V1, V2, V3 versions
+ * These schemas represent the raw payload structure sent by Composio's webhook system
+ */
+
+/** V1 webhook payload - legacy format */
+export const WebhookPayloadV1Schema = z.object({
+  trigger_name: z.string(),
+  connection_id: z.string(),
+  trigger_id: z.string(),
+  payload: z.record(z.unknown()),
+  log_id: z.string(),
+});
+export type WebhookPayloadV1 = z.infer<typeof WebhookPayloadV1Schema>;
+
+/** V2 webhook payload - includes timestamp and nested data */
+export const WebhookPayloadV2Schema = z.object({
+  type: z.string(),
+  timestamp: z.string(),
+  log_id: z.string(),
+  data: z
+    .object({
+      connection_id: z.string(),
+      connection_nano_id: z.string(),
+      trigger_nano_id: z.string(),
+      trigger_id: z.string(),
+      user_id: z.string(),
+    })
+    .passthrough(),
+});
+export type WebhookPayloadV2 = z.infer<typeof WebhookPayloadV2Schema>;
+
+/** V3 webhook payload - current format with metadata */
+export const WebhookPayloadV3Schema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  type: z.literal('composio.trigger.message'),
+  metadata: z.object({
+    log_id: z.string(),
+    trigger_slug: z.string(),
+    trigger_id: z.string(),
+    connected_account_id: z.string(),
+    auth_config_id: z.string(),
+    user_id: z.string(),
+  }),
+  data: z.record(z.unknown()),
+});
+export type WebhookPayloadV3 = z.infer<typeof WebhookPayloadV3Schema>;
+
+/** Union of all webhook payload versions */
+export const WebhookPayloadSchema = z.union([
+  WebhookPayloadV3Schema,
+  WebhookPayloadV2Schema,
+  WebhookPayloadV1Schema,
+]);
+export type WebhookPayload = z.infer<typeof WebhookPayloadSchema>;
+
+/** Webhook version enum */
+export const WebhookVersions = {
+  V1: 'V1',
+  V2: 'V2',
+  V3: 'V3',
+} as const;
+export type WebhookVersion = (typeof WebhookVersions)[keyof typeof WebhookVersions];
+
+/**
  * Parameters for verifying a webhook signature
  */
 export const VerifyWebhookParamsSchema = z.object({
+  /**
+   * The webhook message ID from the 'webhook-id' header.
+   * Format: 'msg_xxx'
+   */
+  id: z.string(),
   /** The raw webhook payload as a string (request body) */
   payload: z.string(),
-  /** The signature from the webhook header (e.g., 'x-composio-signature') */
-  signature: z.string(),
-  /** The webhook secret used to sign the payload */
+  /** The webhook secret used to sign the payload (from Composio dashboard) */
   secret: z.string(),
+  /**
+   * The signature from the 'webhook-signature' header.
+   * Format: 'v1,base64EncodedSignature'
+   */
+  signature: z.string(),
+  /**
+   * The webhook timestamp from the 'webhook-timestamp' header.
+   * This is the Unix timestamp in seconds when the webhook was sent.
+   */
+  timestamp: z.string(),
   /**
    * Maximum allowed age of the webhook in seconds.
    * If the webhook timestamp is older than this, verification will fail.
@@ -217,6 +295,14 @@ export const VerifyWebhookParamsSchema = z.object({
 export type VerifyWebhookParams = z.input<typeof VerifyWebhookParamsSchema>;
 
 /**
- * Result of a successful webhook verification
+ * Result of a successful webhook verification.
+ * Contains the parsed payload along with version information.
  */
-export type VerifyWebhookResult = IncomingTriggerPayload;
+export type VerifyWebhookResult = {
+  /** The webhook version (V1, V2, or V3), from 'x-composio-webhook-version' */
+  version: WebhookVersion;
+  /** The parsed and normalized webhook payload */
+  payload: IncomingTriggerPayload;
+  /** The raw parsed payload before normalization */
+  rawPayload: WebhookPayload;
+};
