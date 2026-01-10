@@ -1,5 +1,6 @@
 {
   "name": "@composio/core",
+  "type": "module",
   "version": "0.3.4",
   "description": "",
   "main": "src/index.ts",
