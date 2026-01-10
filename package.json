@@ -13,6 +13,7 @@
     "build": "turbo build",
     "build:packages": "turbo build --filter=./ts/packages/**",
     "test": "turbo test --filter=./ts/packages/**",
+    "test:e2e": "turbo test:e2e --filter=./ts/packages/**",
     "test:ui": "vitest --ui",
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
     "lint": "eslint ts/packages --ext .ts,.tsx",

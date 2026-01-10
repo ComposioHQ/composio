@@ -9,6 +9,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/"]
     },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
     "clean": {
       "cache": false
     },
