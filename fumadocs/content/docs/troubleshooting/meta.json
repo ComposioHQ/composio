@@ -1,0 +1,14 @@
+{
+  "title": "Troubleshooting",
+  "pages": [
+    "index",
+    "api",
+    "authentication",
+    "cli",
+    "dashboard",
+    "mcp",
+    "sdks",
+    "tools",
+    "triggers"
+  ]
+}

@@ -1,0 +1,78 @@
+---
+title: Tools and toolkits
+description: Access 800+ toolkits through Tool Router
+keywords: [available tools, browse toolkits]
+---
+
+Tool Router gives your agent access to most Composio toolkits by default. For details on configuring which toolkits are available in a session, see [Users and sessions](/tool-router/users-and-sessions#enabling-toolkits).
+
+## Toolkits and tools
+
+A **toolkit** is a collection of related tools for a service and a **tool** is an individual action your agent can execute.
+
+| Toolkit | Tools |
+|---------|-------|
+| `github` | `GITHUB_CREATE_A_COMMIT`, `GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO`, `GITHUB_SEARCH_REPO_S`, ... |
+| `gmail` | `GMAIL_SEND_EMAIL`, `GMAIL_FETCH_EMAILS`, `GMAIL_CREATE_EMAIL_DRAFT`, ... |
+| `linear` | `LINEAR_CREATE_LINEAR_ISSUE`, `LINEAR_UPDATE_ISSUE`, `LINEAR_CREATE_LINEAR_LABEL`, ... |
+
+## Available toolkits
+
+Browse all available toolkits in the [Composio platform](https://platform.composio.dev) under "All Toolkits". Each toolkit page shows its tools (with input and output parameters) and authentication methods supported for that toolkit.
+
+You can also list toolkits programmatically:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Returns top 20 toolkits by default
+toolkits = composio.toolkits.get()
+
+for toolkit in toolkits:
+    print(toolkit.name)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// Returns top 20 toolkits by default
+const toolkits = await composio.toolkits.get();
+
+for (const toolkit of toolkits) {
+  console.log(toolkit.name);
+}
+```
+</Tab>
+</Tabs>
+
+For details on browsing tools within toolkits and inspecting schemas, see [Fetching tools and schemas](/docs/fetching-tools).
+
+<Callout type="info">
+Some toolkits require you to provide your own credentials. See [Using custom auth configs](/tool-router/using-custom-auth-configs).
+</Callout>
+
+<Callout type="info">
+Need a toolkit that doesn't exist? [Request it here](https://request.composio.dev/boards/tool-requests).
+</Callout>
+
+## Default session behavior
+
+When you create a session, all toolkits are available:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const session = await composio.create("user_123");
+```
+</Tab>
+</Tabs>
+
+Your agent can search and use tools from any toolkit. To restrict or configure which toolkits are available, see [Users and sessions](/tool-router/users-and-sessions#enabling-toolkits).
+
+<Callout type="info">
+Triggers can be used alongside Tool Router to respond to events in connected apps. See [Using triggers](/docs/using-triggers) for setup instructions.
+</Callout>

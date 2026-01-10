@@ -1,0 +1,11 @@
+{
+  "title": "Python SDK",
+  "pages": [
+    "composio",
+    "tools",
+    "toolkits",
+    "triggers",
+    "connected-accounts",
+    "auth-configs"
+  ]
+}
