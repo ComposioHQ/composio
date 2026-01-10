@@ -10,7 +10,10 @@
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "#platform": ["./src/platform/node.ts", "./src/platform/workerd.ts"]
+    }
   },
   "include": ["src/**/*.ts"]
 }

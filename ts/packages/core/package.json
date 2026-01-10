@@ -9,25 +9,47 @@
     "main": "dist/index.mjs",
     "types": "dist/index.d.mts"
   },
+  "imports": {
+    "#platform": {
+      "workerd": "./dist/platform/workerd.mjs",
+      "edge-light": "./dist/platform/workerd.mjs",
+      "node": "./dist/platform/node.mjs",
+      "default": "./dist/platform/node.mjs"
+    }
+  },
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "types": {
-        "import": "./dist/index.d.mts",
-        "require": "./dist/index.d.cts",
-        "default": "./dist/index.d.cts"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./platform": {
+      "workerd": {
+        "types": "./dist/platform/workerd.d.mts",
+        "import": "./dist/platform/workerd.mjs"
       },
-      "require": "./dist/index.cjs"
+      "edge-light": {
+        "types": "./dist/platform/workerd.d.mts",
+        "import": "./dist/platform/workerd.mjs"
+      },
+      "node": {
+        "types": "./dist/platform/node.d.mts",
+        "import": "./dist/platform/node.mjs"
+      },
+      "default": {
+        "types": "./dist/platform/node.d.mts",
+        "import": "./dist/platform/node.mjs"
+      }
     },
     "./generated": {
-      "import": "./generated/index.js",
-      "types": "./generated/index.d.ts"
+      "types": "./generated/index.d.ts",
+      "import": "./generated/index.js"
     }
   },
   "files": [
     "README.md",
     "dist",
-    "generated"
+    "generated",
+    "src/platform"
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
