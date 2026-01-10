@@ -8,7 +8,6 @@ import { Hono } from 'hono';
 
 type Bindings = {
   COMPOSIO_API_KEY: string;
-  OPENAI_API_KEY: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();

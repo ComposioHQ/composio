@@ -11,7 +11,6 @@ export default defineWorkersConfig({
 				miniflare: {
 					bindings: {
 						COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY!,
-						OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
 					},
 				},
 			},
