@@ -14,8 +14,8 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "dist/bin.js",
-    "types": "dist/bin.d.ts"
+    "main": "dist/bin.mjs",
+    "types": "dist/bin.d.mts"
   },
   "files": [
     "README.md",
