@@ -115,6 +115,7 @@ class Composio(t.Generic[TProvider], WithLogger):
         self.tool_router = ToolRouter(
             client=self._client,
             provider=self.provider,
+            auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
         )
         self.create = self.tool_router.create
         self.use = self.tool_router.use

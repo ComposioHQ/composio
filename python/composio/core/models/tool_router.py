@@ -319,15 +319,18 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         self,
         client: HttpClient,
         provider: t.Optional[TProvider] = None,
+        auto_upload_download_files: bool = True,
     ):
         """
         Initialize ToolRouter instance.
 
         :param client: HTTP client for API calls
         :param provider: Optional provider for tool wrapping
+        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
         """
         super().__init__(client)
         self._provider = provider
+        self._auto_upload_download_files = auto_upload_download_files
 
     def _create_mcp_server_config(
         self,
@@ -578,6 +581,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         tools_model = ToolsModel(
             client=self._client,
             provider=self._provider,
+            auto_upload_download_files=self._auto_upload_download_files,
         )
 
         def tools_fn(modifiers: t.Optional[Modifiers] = None) -> t.Any:
@@ -661,12 +665,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 )
 
             # Process file uploadable schemas
-            for tool in router_tools:
-                tool.input_parameters = (
-                    tools_model._file_helper.process_file_uploadable_schema(
-                        schema=tool.input_parameters,
+            if self._auto_upload_download_files:
+                for tool in router_tools:
+                    tool.input_parameters = (
+                        tools_model._file_helper.process_file_uploadable_schema(
+                            schema=tool.input_parameters,
+                        )
                     )
-                )
 
             # Wrap tools with provider
             if issubclass(type(self._provider), NonAgenticProvider):
