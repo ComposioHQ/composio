@@ -1,0 +1,261 @@
+---
+title: Quickstart
+description: Add composio tools to your AI agents
+keywords: [tutorial, setup, install, first agent]
+---
+
+This guide walks you through **authenticated tool calling**—the foundation of how Composio connects your AI agents to real-world actions.
+
+You'll learn how to:
+1. **Discover and add tools** relevant to your use case (e.g., Slack, GitHub, Notion) to your AI agent
+2. **Authenticate tools** securely on behalf of a specific user, with fine-grained access control
+3. **Enable your LLM** (like OpenAI, Claude, or LangChain) to invoke these tools reliably using structured tool call formats
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+1. **A Composio account** - [Sign up here](https://platform.composio.dev) if you haven't already
+2. **Python 3.10+** or **Node.js 18+** installed on your system
+3. **Your API key** - Get it from the [developer dashboard](https://platform.composio.dev?next_page=/settings) and set it as an environment variable:
+
+```bash
+export COMPOSIO_API_KEY=your_api_key
+```
+
+## Install the SDK
+
+First, install the Composio SDK for your preferred language:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+    ```bash
+    pip install composio
+    ```
+  </Tab>
+  <Tab value="TypeScript">
+    ```bash
+    npm install @composio/core
+    ```
+  </Tab>
+</Tabs>
+
+## Authorize Tools & Run Them with an Agent
+
+Composio supports multiple LLM providers. Here's how to use Composio with some of the most popular ones:
+
+<Tabs items={['OpenAI Agents (Python)', 'Anthropic (TypeScript)', 'Vercel AI SDK (TypeScript)']}>
+  <Tab value="OpenAI Agents (Python)">
+    Install the OpenAI Agents provider:
+
+    ```bash
+    pip install composio openai-agents composio-openai-agents
+    ```
+
+    ```python
+    import asyncio
+    from composio import Composio
+    from agents import Agent, Runner
+    from composio_openai_agents import OpenAIAgentsProvider
+
+    composio = Composio(api_key="your-api-key", provider=OpenAIAgentsProvider())
+
+    # Id of the user in your system
+    externalUserId = "pg-test-6dadae77-9ae1-40ca-8e2e-ba2d1ad9ebc4"
+
+    # Create an auth config for gmail from the dashboard or programmatically
+    auth_config_id = "your-auth-config-id"
+    connection_request = composio.connected_accounts.link(
+        user_id=externalUserId,
+        auth_config_id=auth_config_id,
+    )
+
+    # Redirect user to the OAuth flow
+    redirect_url = connection_request.redirect_url
+
+    print(
+        f"Please authorize the app by visiting this URL: {redirect_url}"
+    )  # Print the redirect url to the user
+
+    # Wait for the connection to be established
+    connected_account = connection_request.wait_for_connection()
+    print(
+        f"Connection established successfully! Connected account id: {connected_account.id}"
+    )
+
+    # Get Gmail tools that are pre-configured
+    tools = composio.tools.get(user_id=externalUserId, tools=["GMAIL_SEND_EMAIL"])
+
+    agent = Agent(
+        name="Email Manager", instructions="You are a helpful assistant", tools=tools
+    )
+
+    # Run the agent
+    async def main():
+        result = await Runner.run(
+            starting_agent=agent,
+            input="Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'",
+        )
+        print(result.final_output)
+
+    asyncio.run(main())
+    ```
+  </Tab>
+  <Tab value="Anthropic (TypeScript)">
+    Install the Composio Anthropic provider:
+
+    ```bash
+    npm i @composio/core @composio/anthropic @anthropic-ai/sdk
+    ```
+
+    ```typescript
+    import { Composio } from "@composio/core";
+    import { AnthropicProvider } from "@composio/anthropic";
+    import Anthropic from "@anthropic-ai/sdk";
+
+    // env: ANTHROPIC_API_KEY
+    const anthropic = new Anthropic();
+
+    const composio = new Composio({
+      apiKey: "your-api-key",
+      provider: new AnthropicProvider(),
+      toolkitVersions: {
+        "gmail": "20251111_00",
+      }
+    });
+
+    // Id of the user in your system
+    const externalUserId = "pg-test-6dadae77-9ae1-40ca-8e2e-ba2d1ad9ebc4";
+
+    // Create an auth config for gmail from the dashboard or programmatically
+    const authConfigId = "your-auth-config-id";
+
+    const connectionRequest = await composio.connectedAccounts.link(
+        externalUserId,
+        authConfigId
+    );
+
+    // redirect the user to the OAuth flow
+    const redirectUrl = connectionRequest.redirectUrl;
+    console.log(`Please authorize the app by visiting this URL: ${redirectUrl}`);
+
+    // wait for connection to be established
+    const connectedAccount = await connectionRequest.waitForConnection();
+    console.log(
+      `Connection established successfully! Connected account id: ${connectedAccount.id}`
+    );
+
+    // Fetch tools for your user and execute
+    const tools = await composio.tools.get(externalUserId, {
+        tools: ["GMAIL_SEND_EMAIL"],
+    });
+
+    console.log(tools);
+    const msg = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      messages: [
+          {
+          role: "user",
+          content: `Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
+          },
+      ],
+      tools: tools,
+      max_tokens: 1000,
+    });
+
+    const res = await composio.provider.handleToolCalls(externalUserId, msg);
+    console.log("Email sent successfully!");
+    ```
+  </Tab>
+  <Tab value="Vercel AI SDK (TypeScript)">
+    Install the Composio Vercel Provider:
+
+    ```bash
+    npm i @composio/core @composio/vercel ai @ai-sdk/openai
+    ```
+
+    ```typescript
+    import { Composio } from "@composio/core";
+    import { VercelProvider } from "@composio/vercel";
+    import { generateText } from "ai";
+    import { openai } from "@ai-sdk/openai";
+
+    const composio = new Composio({
+      apiKey: "your-api-key",
+      provider: new VercelProvider(),
+    });
+
+    // Id of the user in your system
+    const externalUserId = "pg-test-6dadae77-9ae1-40ca-8e2e-ba2d1ac9ebc4";
+
+    // Create an auth config for gmail from the dashboard or programmatically
+    const authConfigId = "your-auth-config-id";
+
+    const connectionRequest = await composio.connectedAccounts.link(
+      externalUserId,
+      authConfigId
+    );
+
+    // redirect the user to the OAuth flow
+    const redirectUrl = connectionRequest.redirectUrl;
+    console.log(`Please authorize the app by visiting this URL: ${redirectUrl}`);
+
+    // wait for connection to be established
+    const connectedAccount = await connectionRequest.waitForConnection();
+
+    const tools = await composio.tools.get(externalUserId, "GMAIL_SEND_EMAIL");
+
+    // env: OPENAI_API_KEY
+    const { text } = await generateText({
+      model: openai("gpt-5"),
+      messages: [
+        {
+          role: "user",
+          content: `Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
+        },
+      ],
+      tools: tools
+    });
+
+    console.log("Email sent successfully!", { text });
+    ```
+  </Tab>
+</Tabs>
+
+<Callout title="What just happened?" type="info">
+You just:
+1. Authorized a user account with Composio
+2. Passed those tool permissions into an LLM framework
+3. Let the LLM securely call real tools on the user's behalf
+
+All OAuth flows and tool execution were automatically handled by Composio.
+</Callout>
+
+## Next steps
+
+<Cards>
+  <Card
+    icon={<Plug />}
+    title="Use Providers"
+    href="/docs/providers/openai"
+    description="Learn how to use Composio with various agent SDK and frameworks."
+  />
+  <Card
+    icon={<Wrench />}
+    title="Work with tools"
+    href="/docs/executing-tools"
+    description="Learn how to work with tools and tool calling on a deeper level with Composio."
+  />
+  <Card
+    icon={<Key />}
+    title="Manage authentication"
+    href="/docs/custom-auth-configs"
+    description="Authorize tools for multiple users."
+  />
+  <Card
+    icon={<Zap />}
+    title="Triggers"
+    href="/docs/using-triggers"
+    description="Listen for external events to trigger actions in your agents."
+  />
+</Cards>

@@ -1,0 +1,172 @@
+---
+title: Before Execution Modifiers
+description: Modify tool arguments before execution
+---
+
+Before execution modifiers are part of Composio SDK's powerful middleware capabilities that allow you to customize and extend the behavior of tools.
+
+These modifiers are called before the tool is executed by the LLM. This allows you to modify the arguments called by the LLM before they are executed by Composio.
+
+**Useful for:**
+- Injecting an argument into the tool execution
+- Overriding the arguments emitted by the LLM
+
+<Figure src="/images/before-execute.png" alt="Before Execution Modifier" />
+
+<Callout>
+Below we use the `beforeExecute` modifier to modify the number of posts returned by `HACKERNEWS_GET_LATEST_POSTS`.
+</Callout>
+
+## With Chat Completions
+
+Since completion providers don't have a function execution step, Composio executes the tool call directly. The modifier is configured on the `tools.execute` method.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from openai import OpenAI
+from composio import Composio, before_execute
+from composio.types import ToolExecuteParams
+
+composio = Composio()
+openai_client = OpenAI()
+user_id = "user@email.com"
+
+@before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def before_execute_modifier(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["size"] = 1
+    return params
+
+# Get tools
+tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
+
+# Get response from the LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[{"role": "user", "content": "Fetch latest posts from hackernews"}],
+)
+print(response)
+
+# Execute the function calls
+result = composio.provider.handle_tool_calls(
+    response=response,
+    user_id="default",
+    modifiers=[
+        before_execute_modifier,
+    ],
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+const response = await openai.chat.completions.create({
+  model: "gpt-4o-mini",
+  messages,
+  tools,
+  tool_choice: "auto",
+});
+
+const { tool_calls } = response.choices[0].message;
+console.log(tool_calls);
+
+if (tool_calls) {
+  const {
+    function: { arguments: toolArgs },
+  } = tool_calls[0];
+
+  const result = await composio.tools.execute(
+    "HACKERNEWS_GET_LATEST_POSTS",
+    {
+      userId,
+      arguments: JSON.parse(toolArgs),
+    },
+    {
+      beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
+        if (toolSlug === "HACKERNEWS_GET_LATEST_POSTS") {
+          params.arguments.size = 1;
+        }
+        console.log(params);
+        return params;
+      },
+    }
+  );
+  console.log(JSON.stringify(result, null, 2));
+}
+```
+  </Tab>
+</Tabs>
+
+## With Agentic Frameworks
+
+Agentic providers have a function execution step. The modifier is configured on the `tools.get` method which modifies the execution logic within the framework.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio, before_execute
+from composio.types import ToolExecuteParams
+from composio_crewai import CrewAIProvider
+
+composio = Composio(provider=CrewAIProvider())
+
+@before_execute(tools=["LINEAR_CREATE_LINEAR_ISSUE"])
+def modify_linear_project_id(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["project_id"] = "1234567890"
+    return params
+
+tools = composio.tools.get(
+    user_id="default",
+    tools=[
+        "HACKERNEWS_GET_LATEST_POSTS",
+        "HACKERNEWS_GET_USER",
+        "LINEAR_CREATE_LINEAR_ISSUE",
+    ],
+    modifiers=[
+        modify_linear_project_id,
+    ]
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+import { MastraProvider } from "@composio/mastra";
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new MastraProvider(),
+});
+
+const userId = "user@acme.com";
+
+const agenticTools = await composio.tools.get(
+  userId,
+  {
+    tools: [
+      "HACKERNEWS_GET_LATEST_POSTS",
+      "HACKERNEWS_GET_USER",
+      "LINEAR_CREATE_LINEAR_ISSUE",
+    ],
+  },
+  {
+    beforeExecute: ({toolSlug, toolkitSlug, params}) => {
+      if (toolSlug === "LINEAR_CREATE_LINEAR_ISSUE") {
+        params.arguments.project_id = "1234567890";
+      }
+      return params;
+    },
+  }
+);
+```
+  </Tab>
+</Tabs>

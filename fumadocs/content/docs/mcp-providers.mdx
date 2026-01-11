@@ -1,0 +1,255 @@
+---
+title: Providers
+description: Connect MCP servers to AI frameworks
+keywords: [mcp sdk, anthropic mcp, openai mcp]
+---
+
+Integrate your MCP servers with popular AI SDKs and frameworks.
+
+<Callout type="info">
+Composio MCP servers only support Streamable HTTP transport.
+</Callout>
+
+## Anthropic SDK
+
+Use MCP servers with the Anthropic Claude API.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from anthropic import Anthropic
+from composio import Composio
+
+# Initialize clients
+composio = Composio()
+anthropic = Anthropic(api_key="your-anthropic-api-key")
+
+# Create MCP server with GitHub and Linear tools
+server = composio.mcp.create(
+    name="dev-workflow-server",
+    toolkits=[
+        {"toolkit": "github", "auth_config": "ac_github_id"},
+        {"toolkit": "linear", "auth_config": "ac_linear_id"}
+    ],
+    allowed_tools=["GITHUB_LIST_PRS", "GITHUB_CREATE_COMMENT", "LINEAR_CREATE_ISSUE"]
+)
+
+# Generate MCP instance for user
+instance = server.generate("user@example.com")
+
+# Use MCP with Anthropic to manage development workflow
+response = anthropic.beta.messages.create(
+    model="claude-sonnet-4-5",
+    system="You are a helpful assistant with access to GitHub and Linear tools. Use these tools to help manage development workflows. Do not ask for confirmation before using the tools.",
+    max_tokens=1000,
+    messages=[{
+        "role": "user",
+        "content": "Check my GitHub PRs for review comments, create Linear tasks for any requested changes, and update the PR descriptions with task links"
+    }],
+    mcp_servers=[{
+        "type": "url",
+        "url": instance['url'],
+        "name": "composio-mcp-server"
+    }],
+    betas=["mcp-client-2025-04-04"]  # Enable MCP beta
+)
+
+print(response.content)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import Anthropic from '@anthropic-ai/sdk';
+import { Composio } from '@composio/core';
+
+// Initialize clients
+const composio = new Composio();
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// Create MCP server with Google Sheets tools
+const server = await composio.mcp.create(
+  "analytics-server",
+  {
+    toolkits: [
+      { toolkit: "googlesheets", authConfigId: "ac_sheets_id" }
+    ],
+    allowedTools: ["GOOGLESHEETS_GET_DATA", "GOOGLESHEETS_UPDATE_DATA", "GOOGLESHEETS_CREATE_SHEET"]
+  }
+);
+
+// Generate MCP instance for user
+const instance = await server.generate("user@example.com");
+
+// Use MCP with Anthropic for spreadsheet operations
+const response = await anthropic.beta.messages.create({
+  model: "claude-sonnet-4-5",
+  system: "You are a helpful assistant with access to Google Sheets tools. Use these tools to analyze and manage spreadsheet data. Do not ask for confirmation before using the tools.",
+  max_tokens: 1000,
+  messages: [{
+    role: "user",
+    content: "Analyze the sales data in my Google Sheets 'Q4 Revenue' spreadsheet, calculate month-over-month growth, and add a new summary sheet with visualizations"
+  }],
+  mcp_servers: [{
+    type: "url",
+    url: instance.url,
+    name: "composio-mcp-server"
+  }],
+  betas: ["mcp-client-2025-04-04"]  // Enable MCP beta
+});
+
+console.log(response.content);
+```
+  </Tab>
+</Tabs>
+
+## OpenAI SDK
+
+Integrate MCP servers with OpenAI GPT models.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from openai import OpenAI
+from composio import Composio
+
+# Initialize clients
+composio = Composio()
+openai = OpenAI(api_key="your-openai-api-key")
+
+# Create MCP server with Google Sheets and Notion tools
+server = composio.mcp.create(
+    name="data-docs-server",
+    toolkits=[
+        {"toolkit": "googlesheets", "auth_config": "ac_sheets_id"},
+        {"toolkit": "notion", "auth_config": "ac_notion_id"}
+    ],
+    allowed_tools=["GOOGLESHEETS_GET_DATA", "GOOGLESHEETS_UPDATE_DATA", "NOTION_CREATE_PAGE"]
+)
+
+# Generate MCP instance for user
+instance = server.generate("user@example.com")
+
+# Use MCP with OpenAI for data management
+response = openai.responses.create(
+    model="gpt-5",
+    tools=[
+        {
+            "type": "mcp",
+            "server_label": "composio-server",
+            "server_description": "Composio MCP server with Google Sheets and Notion integrations",
+            "server_url": instance['url'],
+            "require_approval": "never",
+        },
+    ],
+    input="Export the Q4 metrics from Google Sheets and create a comprehensive Notion page with charts and analysis",
+)
+
+print("OpenAI MCP Response:", response.output_text)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import OpenAI from 'openai';
+import { Composio } from '@composio/core';
+
+// Initialize clients
+const composio = new Composio();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Create MCP server with Linear and Notion tools
+const server = await composio.mcp.create(
+  "project-docs-server",
+  {
+    toolkits: [
+      { toolkit: "linear", authConfigId: "ac_linear_id" },
+      { toolkit: "notion", authConfigId: "ac_notion_id" }
+    ],
+    allowedTools: ["LINEAR_LIST_ISSUES", "LINEAR_GET_ISSUE", "NOTION_CREATE_PAGE"]
+  }
+);
+
+// Generate MCP instance for user
+const instance = await server.generate("user@example.com");
+
+// Use MCP with OpenAI for project documentation
+const response = await openai.responses.create({
+  model: "gpt-5",
+  tools: [
+    {
+      type: "mcp",
+      server_label: "composio-server",
+      server_description: "Composio MCP server with Linear and Notion integrations",
+      server_url: instance.url,
+      require_approval: "never",
+    },
+  ],
+  input: "Find all completed Linear issues from this sprint and create a Notion page documenting the release notes",
+});
+
+console.log("OpenAI MCP Response:", response.output_text);
+```
+  </Tab>
+</Tabs>
+
+## Mastra
+
+Use MCP servers with Mastra framework.
+
+```typescript
+import { MCPClient } from "@mastra/mcp";
+import { openai } from "@ai-sdk/openai";
+import { Agent } from "@mastra/core/agent";
+import { Composio } from "@composio/core";
+
+// Initialize Composio
+const composio = new Composio();
+
+// Create MCP server with GitHub, Linear, and Notion tools
+const server = await composio.mcp.create(
+  "dev-automation-server",
+  {
+    toolkits: [
+      { toolkit: "github", authConfigId: "ac_github_id" },
+      { toolkit: "linear", authConfigId: "ac_linear_id" },
+      { toolkit: "notion", authConfigId: "ac_notion_id" }
+    ],
+    allowedTools: [
+      "GITHUB_LIST_ISSUES", "GITHUB_CREATE_ISSUE",
+      "LINEAR_CREATE_ISSUE", "LINEAR_UPDATE_ISSUE",
+      "NOTION_CREATE_PAGE", "NOTION_UPDATE_PAGE"
+    ]
+  }
+);
+
+// Generate MCP instance for user
+const instance = await server.generate("user@example.com");
+
+// Create MCP client with Composio server
+export const mcpClient = new MCPClient({
+  id: "composio-mcp-client",
+  servers: {
+    composio: { url: new URL(instance.url) },
+  }
+});
+
+// Create a development workflow agent
+export const devAgent = new Agent({
+  name: "Dev Assistant",
+  description: "AI assistant for development workflow automation",
+  instructions: "Help manage GitHub repos, Linear issues, and Notion documentation.",
+  model: openai("gpt-4-turbo"),
+  tools: await mcpClient.getTools()
+});
+
+// Example: Automate development workflow
+(async () => {
+  const response = await devAgent.generate(
+    "Review open GitHub issues, create Linear tasks for bugs labeled 'priority', and update the Notion roadmap page"
+  );
+  console.log(response.text);
+})();
+```

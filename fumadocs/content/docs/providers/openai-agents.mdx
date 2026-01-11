@@ -1,0 +1,95 @@
+---
+title: OpenAI Agents Provider
+description: Use Composio with OpenAI's Agents SDK
+keywords: [agents sdk]
+---
+
+The OpenAI Agents Provider is a provider that formats the Composio tools into an object compatible with OpenAI's Agents API.
+
+OpenAI Agents SDK is different from the OpenAI SDK. It helps build agentic AI apps in a lightweight, easy-to-use package with very few abstractions.
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+## Setup
+
+```bash
+pip install composio openai-agents composio-openai-agents
+```
+
+## Usage
+
+```python
+import asyncio
+from composio import Composio
+from agents import Agent, Runner
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(api_key="your-api-key", provider=OpenAIAgentsProvider())
+
+# Create a connected account for the user for the gmail toolkit and replace with your own user id
+externalUserId = "your-user-id"
+
+# Get Gmail tools that are pre-configured
+tools = composio.tools.get(user_id=externalUserId, tools=["GMAIL_SEND_EMAIL"])
+
+agent = Agent(
+    name="Email Manager", instructions="You are a helpful assistant", tools=tools
+)
+
+# Run the agent
+async def main():
+    result = await Runner.run(
+        starting_agent=agent,
+        input="Send an email to soham.g@composio.dev with the subject 'Hello from composio 👋🏻' and the body 'Congratulations on sending your first email using AI Agents and Composio!'",
+    )
+    print(result.final_output)
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="TypeScript">
+## Setup
+
+```bash
+npm install @composio/core @openai/agents @composio/openai-agents
+```
+
+## Usage
+
+```typescript
+import { Composio } from "@composio/core";
+import { Agent, run } from "@openai/agents";
+import { OpenAIAgentsProvider } from "@composio/openai-agents";
+
+// add OPENAI_API_KEY in your .env file
+const composio = new Composio({
+  apiKey: "your-api-key",
+  provider: new OpenAIAgentsProvider(),
+});
+
+// Create a connected account for the user for the gmail toolkit and replace with your own user id
+const externalUserId = "your-user-id";
+
+// Fetch tools for GMAIL toolkit on behalf of the user
+const tools = await composio.tools.get(externalUserId, {
+    tools: ["GMAIL_SEND_EMAIL"],
+  });
+
+const agent = new Agent({
+    name: "Email Manager",
+    tools: tools,
+});
+
+console.log(`Running agent...`);
+const result = await run(
+    agent,
+    "Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'"
+);
+
+console.log(`Received response from agent`);
+if (result.finalOutput) {
+    console.log(JSON.stringify(result.finalOutput, null, 2));
+}
+```
+</Tab>
+</Tabs>

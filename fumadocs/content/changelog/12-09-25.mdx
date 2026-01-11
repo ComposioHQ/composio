@@ -1,0 +1,38 @@
+---
+title: "Transition to Self-Managed Credentials for Select Applications"
+date: "2025-12-09"
+---
+
+<Callout>
+This is a **non-breaking change**. Your existing integrations will continue to work as expected. This change only affects new integrations with the applications listed below.
+</Callout>
+
+### What's Changing?
+
+Starting today, the following applications will require **your own developer credentials** instead of Composio-managed credentials:
+
+- **Auth0**
+- **Blackbaud**
+- **BoldSign**
+- **Deel**
+- **Front**
+- **GoToWebinar**
+- **PagerDuty**
+- **Pipedrive**
+- **Shopify**
+- **Strava**
+- **SurveyMonkey**
+- **Webex**
+
+### What You Need to Do
+
+To continue using these applications with Composio:
+
+1. **Create Developer Accounts**: Register for developer accounts on the platforms you need
+2. **Generate API Credentials**: Create OAuth apps following each platform's documentation
+3. **Configure in Composio**: Add your credentials to Composio using [custom auth configs](https://docs.composio.dev/docs/custom-auth-configs)
+4. **Test Your Integration**: Test your integration with the new credentials
+
+<Callout>
+All other Composio applications continue to work with Composio-managed credentials. This change only affects the 12 applications listed above.
+</Callout>

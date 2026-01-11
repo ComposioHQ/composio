@@ -1,0 +1,65 @@
+name: Generate SDK Docs
+
+on:
+  push:
+    branches: [next]
+    paths:
+      - 'ts/packages/core/src/**'
+      - 'python/composio/**'
+  workflow_dispatch:
+
+jobs:
+  generate-ts-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @composio/core generate:docs
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'docs: auto-generate TypeScript SDK reference'
+          title: 'docs: Update TypeScript SDK reference'
+          body: Auto-generated TypeScript SDK docs.
+          branch: docs/auto-update-ts-sdk-reference
+          base: next
+          add-paths: fumadocs/content/reference/sdk-reference/typescript/
+
+  generate-python-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - run: cd python && uv run --with griffe python scripts/generate-docs.py
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'docs: auto-generate Python SDK reference'
+          title: 'docs: Update Python SDK reference'
+          body: Auto-generated Python SDK docs.
+          branch: docs/auto-update-python-sdk-reference
+          base: next
+          add-paths: fumadocs/content/reference/sdk-reference/python/
