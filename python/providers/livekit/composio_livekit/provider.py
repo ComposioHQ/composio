@@ -9,6 +9,7 @@ allowing Composio tools to be used as LLM tools within LiveKit voice agents.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import typing as t
 
@@ -104,7 +105,9 @@ class LivekitProvider(
         ) -> str:
             """Execute the Composio tool with the provided arguments."""
             try:
-                result = execute_tool(
+                # Run sync execute_tool in thread pool to avoid blocking the event loop
+                result = await asyncio.to_thread(
+                    execute_tool,
                     slug=tool_slug,
                     arguments=raw_arguments,
                 )
