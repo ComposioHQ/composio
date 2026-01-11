@@ -1,0 +1,264 @@
+---
+title: Quickstart
+description: Create your first MCP server
+keywords: [mcp, model context protocol]
+---
+
+[Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) is an open-source standard for connecting AI applications to external tools. All the 500+ tools available in Composio are also available as MCP servers.
+
+Composio lets you create MCP servers that handle authentication (OAuth, API keys), generate unique URLs for each user, and control which tools are exposed. You can combine multiple toolkits in a single server.
+
+<Callout type="info">
+Composio MCP servers only support Streamable HTTP transport.
+</Callout>
+
+## Install the SDK
+
+First, install the Composio SDK for your preferred language:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```bash
+pip install composio
+```
+  </Tab>
+  <Tab value="TypeScript">
+```bash
+npm install @composio/core
+```
+  </Tab>
+</Tabs>
+
+## Create an MCP server
+
+<Steps>
+  <Step>
+    ### Initialize Composio
+
+    <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+      <Tab value="Python">
+```python
+from composio import Composio
+
+# Initialize Composio
+composio = Composio(api_key="YOUR_API_KEY")
+```
+      </Tab>
+      <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+// Initialize Composio
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY
+});
+```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step>
+    ### Create server configuration
+
+    <Callout type="warn">
+    **Before you begin:** [Create an auth configuration](/docs/authenticating-tools#creating-an-auth-config) for your toolkit.
+    </Callout>
+
+    Create an MCP server with your auth config. You can also set list of specific tools to enable across all toolkits.
+
+    <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+      <Tab value="Python">
+```python
+# Create MCP server with multiple toolkits
+server = composio.mcp.create(
+    name="mcp-config-73840", # Pick a unique name for your MCP server
+    toolkits=[
+        {
+            "toolkit": "gmail",
+            "auth_config": "ac_xyz123"  # Your Gmail auth config ID
+        },
+        {
+            "toolkit": "googlecalendar",
+            "auth_config": "ac_abc456"  # Your Google Calendar auth config ID
+        }
+    ],
+    allowed_tools=["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL", "GOOGLECALENDAR_EVENTS_LIST"]
+)
+
+print(f"Server created: {server.id}")
+print(server.id)
+```
+      </Tab>
+      <Tab value="TypeScript">
+```typescript
+// Create MCP server with multiple toolkits
+const server = await composio.mcp.create("mcp-config-73840", {  // Pick a unique name for your MCP server
+  toolkits: [
+    {
+      authConfigId: "ac_xyz123", // Your Gmail auth config ID
+      toolkit: "gmail"
+    },
+    {
+      authConfigId: "ac_abc456", // Your Google Calendar auth config ID
+      toolkit: "googlecalendar"
+    }
+  ],
+  allowedTools: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL", "GOOGLECALENDAR_EVENTS_LIST"]
+});
+
+console.log(`Server created: ${server.id}`);
+console.log(server.id);
+```
+      </Tab>
+    </Tabs>
+
+    <Callout type="info">
+    **Alternative:** You can also create and manage MCP configs directly from the [Composio dashboard → MCP Configs](https://platform.composio.dev?next_page=/mcp-configs).
+    </Callout>
+  </Step>
+
+  <Step>
+    ### Generate user URLs
+
+    <Callout type="warn">
+    **Before generating URLs:** Users must authenticate with the toolkits configured in your MCP server. See [hosted authentication](/docs/authenticating-tools#hosted-authentication-connect-link) for how to connect user accounts.
+    </Callout>
+
+    Get server URLs for your users to connect:
+
+    <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+      <Tab value="Python">
+```python
+# Generate server instance for user
+instance = composio.mcp.generate(user_id="user-73840", mcp_config_id=server.id) # Use the user ID for which you created the connected account
+
+print(f"MCP Server URL: {instance['url']}")
+```
+      </Tab>
+      <Tab value="TypeScript">
+```typescript
+// Generate server instance for user
+const instance = await composio.mcp.generate("user-73840", server.id);  // Use the user ID for which you created the connected account
+
+console.log("MCP Server URL:", instance.url);
+```
+      </Tab>
+    </Tabs>
+
+    <Callout type="info">
+    If users haven't authenticated, the MCP server will still generate a URL but tools requiring authentication won't work until the user connects their accounts.
+    </Callout>
+  </Step>
+
+  <Step>
+    ### Use with AI providers
+
+    Use the MCP server URL with your AI provider:
+
+    <Tabs items={['OpenAI (Python)', 'Anthropic (Python)', 'Mastra (TypeScript)']}>
+      <Tab value="OpenAI (Python)">
+```python
+from openai import OpenAI
+
+# Initialize OpenAI client
+client = OpenAI(api_key="your-openai-api-key")
+
+# Use the MCP server URL you generated
+mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?include_composio_helper_actions=true&user_id=YOUR_USER_ID"
+
+# Use MCP with OpenAI Responses API
+response = client.responses.create(
+    model="gpt-5",
+    tools=[
+        {
+            "type": "mcp",
+            "server_label": "composio-server",
+            "server_description": "Composio MCP server for Gmail and Calendar integrations",
+            "server_url": mcp_server_url,
+            "require_approval": "never",
+        },
+    ],
+    input="What meetings do I have tomorrow? Also check if I have any urgent emails",
+)
+
+print("OpenAI MCP Response:", response.output_text)
+```
+      </Tab>
+      <Tab value="Anthropic (Python)">
+```python
+from anthropic import Anthropic
+
+# Initialize Anthropic client
+client = Anthropic(api_key="your-anthropic-api-key")
+
+# Use the MCP server URL you generated
+mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?include_composio_helper_actions=true&user_id=YOUR_USER_ID"
+
+# Use MCP with Anthropic (beta feature)
+response = client.beta.messages.create(
+    model="claude-sonnet-4-5",
+    system="You are a helpful assistant with access to various tools through MCP. Use these tools to help the user. Do not ask for confirmation before using the tools.",
+    max_tokens=1000,
+    messages=[{
+        "role": "user",
+        "content": "What meetings do I have tomorrow? Also check if I have any urgent emails"
+    }],
+    mcp_servers=[{
+        "type": "url",
+        "url": mcp_server_url,
+        "name": "composio-gmail-calendar-mcp-server"
+    }],
+    betas=["mcp-client-2025-04-04"]  # Enable MCP beta
+)
+
+print(response.content)
+```
+      </Tab>
+      <Tab value="Mastra (TypeScript)">
+```typescript
+import { MCPClient } from "@mastra/mcp";
+import { openai } from "@ai-sdk/openai";
+import { Agent } from "@mastra/core/agent";
+
+// Use the MCP server URL you generated
+const MCP_URL = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?include_composio_helper_actions=true&user_id=YOUR_USER_ID";
+
+export const client = new MCPClient({
+  id: "docs-mcp-client",
+  servers: {
+    composio: { url: new URL(MCP_URL) },
+  }
+});
+
+export const agent = new Agent({
+  name: "Assistant",
+  description: "Helpful AI with MCP tools",
+  instructions: "Use the MCP tools to answer.",
+  model: openai("gpt-4-turbo"),
+  tools: await client.getTools()
+});
+
+(async () => {
+  const res = await agent.generate("What meetings do I have tomorrow? Also check if I have any urgent emails");
+  console.log(res.text);
+})();
+```
+      </Tab>
+    </Tabs>
+  </Step>
+</Steps>
+
+## Next steps
+
+<Cards>
+  <Card title="Server management" href="/docs/mcp-server-management">
+    Create and manage MCP servers
+  </Card>
+  <Card title="Providers" href="/docs/mcp-providers">
+    Use with Anthropic, OpenAI, and other frameworks
+  </Card>
+</Cards>
+
+<Callout type="info">
+Need help? Join our [Discord](https://discord.com/invite/composio) or [raise an issue on GitHub](https://github.com/ComposioHQ/composio/issues/new?labels=bug).
+</Callout>

@@ -1,0 +1,167 @@
+---
+title: LlamaIndex Provider
+description: Use Composio tools with LlamaIndex
+keywords: [workflow, function agent]
+---
+
+The LlamaIndex Provider transforms Composio tools into a format compatible with LlamaIndex's function calling capabilities.
+
+## Setup
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```bash
+pip install composio_llamaindex==0.8.0 llama-index
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/llamaindex @llamaindex/openai @llamaindex/workflow
+```
+</Tab>
+</Tabs>
+
+## Usage
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```python
+import asyncio
+import dotenv
+from composio_llamaindex import LlamaIndexProvider
+from llama_index.core.agent.workflow import FunctionAgent
+from llama_index.llms.openai import OpenAI
+
+from composio import Composio
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+# Setup client
+llm = OpenAI(model="gpt-5")
+composio = Composio(provider=LlamaIndexProvider())
+
+tools = composio.tools.get(
+    user_id="user@acme.com",
+    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+)
+
+workflow = FunctionAgent(
+    tools=tools,
+    llm=llm,
+    system_prompt="You are an agent that performs github actions.",
+)
+
+
+async def main():
+    result = await workflow.run(
+        user_msg="Hello! I would like to star a repo composiohq/composio on GitHub"
+    )
+    print(result)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { LlamaindexProvider } from '@composio/llamaindex';
+import { openai } from '@llamaindex/openai';
+import { agent } from '@llamaindex/workflow';
+import 'dotenv/config';
+
+// Initialize Composio with LlamaIndex provider
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new LlamaindexProvider(),
+});
+
+async function main() {
+  // Get tools
+  const tools = await composio.tools.get('user@acme.com', {
+    tools: ['GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER'],
+  });
+
+  // Create LlamaIndex agent with Composio tools
+  const githubAgent = agent({
+    name: 'GitHub Agent',
+    description: 'An agent that performs GitHub actions',
+    llm: openai({ model: 'gpt-4o-mini' }),
+    systemPrompt: 'You are an agent that performs github actions.',
+    tools,
+  });
+
+  // Run the agent
+  const result = await githubAgent.run(
+    'Hello! I would like to star a repo composiohq/composio on GitHub'
+  );
+
+  console.log(result);
+}
+
+main().catch(console.error);
+```
+</Tab>
+</Tabs>
+
+## Advanced Usage
+
+### Streaming Agent with Multiple Toolkits
+
+```typescript
+import { Composio } from '@composio/core';
+import { LlamaindexProvider } from '@composio/llamaindex';
+import { openai } from '@llamaindex/openai';
+import { agent, agentStreamEvent } from '@llamaindex/workflow';
+import 'dotenv/config';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new LlamaindexProvider(),
+});
+
+async function streamingExample() {
+  // Get tools from multiple toolkits with execution modifiers
+  const tools = await composio.tools.get(
+    'default',
+    {
+      toolkits: ['gmail', 'googlecalendar', 'slack'],
+      limit: 20,
+    },
+    {
+      beforeExecute: ({ toolSlug, params }) => {
+        console.log(`🔄 Executing ${toolSlug} with:`, params);
+        return params;
+      },
+      afterExecute: ({ toolSlug, result }) => {
+        console.log(`✅ ${toolSlug} completed:`, result);
+        return result;
+      },
+    }
+  );
+
+  // Create streaming agent
+  const assistantAgent = agent({
+    name: 'Personal Assistant',
+    description: 'A helpful personal assistant',
+    llm: openai({ model: 'gpt-4o-mini' }),
+    systemPrompt: 'You are a helpful personal assistant that can manage emails, calendar events, and slack messages.',
+    tools,
+  });
+
+  // Stream the response
+  const stream = await assistantAgent.runStream(
+    'Schedule a meeting for tomorrow at 2 PM and send a slack message about it'
+  );
+
+  for await (const event of stream) {
+    if (agentStreamEvent.include(event)) {
+      process.stdout.write(event.data.delta);
+    }
+  }
+}
+
+streamingExample().catch(console.error);
+```

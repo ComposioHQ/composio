@@ -1,0 +1,89 @@
+---
+title: "Introducing Composio Auth Links"
+date: "2025-09-15"
+---
+
+Composio Auth Links provide a **hosted authentication solution** that eliminates the need for developers to build custom authentication forms. Instead of manually rendering OAuth consent screens, API key input forms, or custom authentication fields, developers can simply redirect users to a Composio-hosted URL that handles the entire authentication process automatically.
+
+### Why Use Auth Links?
+
+- **Zero UI Development**: No need to build forms for OAuth, API keys, or custom fields like subdomains
+- **Universal Authentication**: Works seamlessly across all supported third-party services
+- **Reduced Complexity**: Replace complex OAuth flows with a simple redirect
+- **Better UX**: Professional, consistent authentication experience for end users
+- **Faster Integration**: Get authentication working in minutes, not hours
+
+---
+
+### Python SDK (v0.8.11)
+
+**Added**
+
+- **Composio Connect Link Support**: New `link()` method for creating external authentication links
+    - Added `link()` method to `ConnectedAccounts` class for generating user authentication links
+    - Support for callback URL redirection after authentication
+    - Enhanced user experience with external link-based authentication flow
+    - **No manual form rendering required** - Composio handles all authentication UI
+
+**Examples:**
+
+```python
+# Basic usage - create a connection request
+connection_request = composio.connected_accounts.link('user_123', 'auth_config_123')
+redirect_url = connection_request.redirect_url
+print(f"Visit: {redirect_url} to authenticate your account")
+
+# Wait for the connection to be established
+connected_account = connection_request.wait_for_connection()
+
+# With callback URL
+connection_request = composio.connected_accounts.link(
+    'user_123',
+    'auth_config_123',
+    callback_url='<https://your-app.com/callback>'
+)
+
+```
+
+### TypeScript SDK (v0.1.51)
+
+**Added**
+
+- **Composio Connect Links**: Added support for composio connect links
+    - New `link()` method in `ConnectedAccounts` class for generating authentication URLs
+    - Support for callback URL redirection with `CreateConnectedAccountLinkOptions`
+    - Comprehensive TypeScript types and validation for link creation options
+    - **Eliminates need for custom authentication forms** - just redirect users to the link
+
+**Examples:**
+
+```tsx
+// Basic usage - create a connection request
+const connectionRequest = await composio.connectedAccounts.link('user_123', 'auth_config_123');
+const redirectUrl = connectionRequest.redirectUrl;
+console.log(`Visit: ${redirectUrl} to authenticate your account`);
+
+// Wait for the connection to be established
+const connectedAccount = await connectionRequest.waitForConnection();
+
+// With callback URL
+const connectionRequest = await composio.connectedAccounts.link('user_123', 'auth_config_123', {
+  callbackUrl: '<https://your-app.com/callback>'
+});
+
+```
+
+### Key Benefits
+
+- **No Form Building**: Composio handles OAuth consent, API key collection, and custom field inputs
+- **Hosted Authentication Flow**: Professional UI that works across all supported services
+- **Callback URL Support**: Control where users return after successful authentication
+- **Connection Waiting**: Built-in polling to detect when authentication completes
+- **Cross-Platform Consistency**: Identical developer experience across Python and TypeScript
+
+### Customisation
+
+You can customise the app logo and name showed in the authentication page via the dashboard. Head over your project via `platform.composio.dev`  and choose Settings → Auth Links to upload a new logo and change the name. 
+
+### Migration Note
+This feature replaces manual authentication form development with a simple redirect-based approach, significantly reducing integration time and complexity while providing a better user experience. Auth links are drop in replacement for `composio.connectedAccounts.initate`, you can safely swap this to `composio.connectedAccounts.link`

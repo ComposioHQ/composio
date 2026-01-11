@@ -138,13 +138,22 @@ export class Composio<
   /**
    * Core models for Composio.
    */
+
+  /** List, retrieve, and execute tools */
   tools: Tools<unknown, unknown, TProvider>;
+  /** Retrieve toolkit metadata and authorize user connections */
   toolkits: Toolkits;
+  /** Manage webhook triggers and event subscriptions */
   triggers: Triggers<TProvider>;
+  /** The tool provider instance used for wrapping tools in framework-specific formats */
   provider: TProvider;
+  /** Upload and download files */
   files: Files;
+  /** Manage authentication configurations for toolkits */
   authConfigs: AuthConfigs;
+  /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
+  /** Model Context Protocol server management */
   mcp: MCP;
   /**
    * Experimental feature, use with caution
