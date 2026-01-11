@@ -1,13 +1,15 @@
 """Tests for Triggers class."""
 
+import base64
 import hashlib
 import hmac
 import json
+import time
 import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 from composio_client import omit
-from composio.core.models.triggers import Triggers
+from composio.core.models.triggers import Triggers, WebhookVersion
 from composio import exceptions
 
 
@@ -453,249 +455,435 @@ class TestVerifyWebhook:
         return "test-webhook-secret-12345"
 
     @pytest.fixture
-    def mock_trigger_data(self):
-        """Create mock trigger data matching _TriggerData structure."""
+    def test_webhook_id(self):
+        """Test webhook ID."""
+        return "msg_test123"
+
+    @pytest.fixture
+    def test_timestamp(self):
+        """Test webhook timestamp (current time in Unix seconds)."""
+        return str(int(time.time()))
+
+    @pytest.fixture
+    def mock_v1_payload(self):
+        """Create mock V1 webhook payload."""
         return {
-            "appName": "github",
-            "clientId": 123,
+            "trigger_name": "GITHUB_PUSH_EVENT",
+            "connection_id": "conn-123",
+            "trigger_id": "trigger-123",
             "payload": {"action": "push", "repository": "test-repo"},
-            "originalPayload": {"action": "push", "repository": "test-repo"},
-            "metadata": {
-                "id": "trigger-123",
-                "nanoId": "trigger-123-nano",
-                "triggerName": "GITHUB_COMMIT_EVENT",
-                "triggerData": '{"action":"push"}',
-                "triggerConfig": {"webhook_url": "https://example.com/webhook"},
-                "connection": {
-                    "id": "conn-123",
-                    "connectedAccountNanoId": "conn-123-nano",
-                    "integrationId": "github-integration",
-                    "authConfigNanoId": "auth-123",
-                    "clientUniqueUserId": "user-456",
-                    "status": "ACTIVE",
-                },
+            "log_id": "log-123",
+        }
+
+    @pytest.fixture
+    def mock_v2_payload(self):
+        """Create mock V2 webhook payload."""
+        return {
+            "type": "github_push_event",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "log_id": "log-123",
+            "data": {
+                "connection_id": "conn-123",
+                "connection_nano_id": "conn-nano-123",
+                "trigger_nano_id": "trigger-nano-123",
+                "trigger_id": "trigger-123",
+                "user_id": "user-456",
+                "action": "push",
+                "repository": "test-repo",
             },
         }
 
-    def create_signature(self, payload: str, secret: str) -> str:
-        """Helper to create a valid HMAC-SHA256 signature."""
-        return hmac.new(
+    @pytest.fixture
+    def mock_v3_payload(self):
+        """Create mock V3 webhook payload."""
+        return {
+            "id": "evt-123",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "type": "composio.trigger.message",
+            "metadata": {
+                "log_id": "log-123",
+                "trigger_slug": "GITHUB_PUSH_EVENT",
+                "trigger_id": "trigger-nano-123",
+                "connected_account_id": "conn-nano-123",
+                "auth_config_id": "auth-nano-123",
+                "user_id": "user-456",
+            },
+            "data": {"action": "push", "repository": "test-repo"},
+        }
+
+    def create_signature(
+        self, webhook_id: str, timestamp: str, payload: str, secret: str
+    ) -> str:
+        """Helper to create a valid v1,base64 signature."""
+        to_sign = f"{webhook_id}.{timestamp}.{payload}"
+        signature_bytes = hmac.new(
             key=secret.encode("utf-8"),
-            msg=payload.encode("utf-8"),
+            msg=to_sign.encode("utf-8"),
             digestmod=hashlib.sha256,
-        ).hexdigest()
+        ).digest()
+        return f"v1,{base64.b64encode(signature_bytes).decode('utf-8')}"
 
-    # Successful verification tests
+    # Successful verification tests with V3 payload
 
-    def test_verify_webhook_valid_payload_and_signature(
-        self, triggers, test_secret, mock_trigger_data
+    def test_verify_webhook_v3_payload(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
-        """Test successful webhook verification."""
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
+        """Test successful V3 webhook verification."""
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
 
         result = triggers.verify_webhook(
+            id=test_webhook_id,
             payload=payload,
             signature=signature,
+            timestamp=test_timestamp,
             secret=test_secret,
         )
 
-        assert result["id"] == "trigger-123-nano"
-        assert result["uuid"] == "trigger-123"
-        assert result["trigger_slug"] == "GITHUB_COMMIT_EVENT"
-        assert result["toolkit_slug"] == "github"
-        assert result["user_id"] == "user-456"
+        assert result["version"] == WebhookVersion.V3
+        assert result["payload"]["trigger_slug"] == "GITHUB_PUSH_EVENT"
+        assert result["payload"]["user_id"] == "user-456"
+        assert result["raw_payload"] == mock_v3_payload
 
-    def test_verify_webhook_with_tolerance_zero(
-        self, triggers, test_secret, mock_trigger_data
+    def test_verify_webhook_v3_normalizes_payload(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
-        """Test webhook verification with tolerance set to 0 (skip timestamp validation)."""
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
+        """Test V3 payload normalization."""
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
 
         result = triggers.verify_webhook(
+            id=test_webhook_id,
             payload=payload,
             signature=signature,
+            timestamp=test_timestamp,
+            secret=test_secret,
+        )
+
+        assert (
+            result["payload"]["metadata"]["connected_account"]["id"] == "conn-nano-123"
+        )
+        assert (
+            result["payload"]["metadata"]["connected_account"]["auth_config_id"]
+            == "auth-nano-123"
+        )
+        assert (
+            result["payload"]["metadata"]["connected_account"]["user_id"] == "user-456"
+        )
+
+    # Successful verification with V2 payload
+
+    def test_verify_webhook_v2_payload(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v2_payload
+    ):
+        """Test successful V2 webhook verification."""
+        payload = json.dumps(mock_v2_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
+
+        result = triggers.verify_webhook(
+            id=test_webhook_id,
+            payload=payload,
+            signature=signature,
+            timestamp=test_timestamp,
+            secret=test_secret,
+        )
+
+        assert result["version"] == WebhookVersion.V2
+        assert result["payload"]["user_id"] == "user-456"
+
+    # Successful verification with V1 payload
+
+    def test_verify_webhook_v1_payload(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v1_payload
+    ):
+        """Test successful V1 webhook verification."""
+        payload = json.dumps(mock_v1_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
+
+        result = triggers.verify_webhook(
+            id=test_webhook_id,
+            payload=payload,
+            signature=signature,
+            timestamp=test_timestamp,
+            secret=test_secret,
+        )
+
+        assert result["version"] == WebhookVersion.V1
+        assert result["payload"]["trigger_slug"] == "GITHUB_PUSH_EVENT"
+        assert result["payload"]["id"] == "trigger-123"
+
+    # Tolerance tests
+
+    def test_verify_webhook_with_tolerance_zero(
+        self, triggers, test_secret, test_webhook_id, mock_v3_payload
+    ):
+        """Test webhook verification with tolerance set to 0 (skip timestamp validation)."""
+        # Use an old timestamp (1 hour ago)
+        old_timestamp = str(int(time.time()) - 3600)
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, old_timestamp, payload, test_secret
+        )
+
+        result = triggers.verify_webhook(
+            id=test_webhook_id,
+            payload=payload,
+            signature=signature,
+            timestamp=old_timestamp,
             secret=test_secret,
             tolerance=0,
         )
 
-        assert result["trigger_slug"] == "GITHUB_COMMIT_EVENT"
+        assert result["version"] == WebhookVersion.V3
 
     def test_verify_webhook_with_custom_tolerance(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test webhook verification with custom tolerance."""
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
 
         result = triggers.verify_webhook(
+            id=test_webhook_id,
             payload=payload,
             signature=signature,
+            timestamp=test_timestamp,
             secret=test_secret,
             tolerance=600,  # 10 minutes
         )
 
         assert result is not None
 
-    def test_verify_webhook_transforms_payload_correctly(
-        self, triggers, test_secret, mock_trigger_data
-    ):
-        """Test that payload is correctly transformed to TriggerEvent format."""
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
-
-        result = triggers.verify_webhook(
-            payload=payload,
-            signature=signature,
-            secret=test_secret,
-        )
-
-        # Verify transformation
-        assert result["metadata"]["connected_account"]["id"] == "conn-123-nano"
-        assert result["metadata"]["connected_account"]["uuid"] == "conn-123"
-        assert result["metadata"]["connected_account"]["auth_config_id"] == "auth-123"
-        assert (
-            result["metadata"]["connected_account"]["auth_config_uuid"]
-            == "github-integration"
-        )
-        assert result["metadata"]["connected_account"]["user_id"] == "user-456"
-        assert result["metadata"]["connected_account"]["status"] == "ACTIVE"
-
     # Signature verification error tests
 
-    def test_verify_webhook_empty_payload_raises_error(self, triggers, test_secret):
+    def test_verify_webhook_empty_payload_raises_error(
+        self, triggers, test_secret, test_webhook_id, test_timestamp
+    ):
         """Test that empty payload raises WebhookSignatureVerificationError."""
         with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload="",
-                signature="some-signature",
+                signature="v1,somesignature",
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
 
         assert "No webhook payload was provided" in str(exc_info.value)
 
     def test_verify_webhook_empty_signature_raises_error(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test that empty signature raises WebhookSignatureVerificationError."""
-        payload = json.dumps(mock_trigger_data)
+        payload = json.dumps(mock_v3_payload)
 
         with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=payload,
                 signature="",
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
 
         assert "No signature header value was provided" in str(exc_info.value)
 
     def test_verify_webhook_empty_secret_raises_error(
-        self, triggers, mock_trigger_data
+        self, triggers, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test that empty secret raises WebhookSignatureVerificationError."""
-        payload = json.dumps(mock_trigger_data)
+        payload = json.dumps(mock_v3_payload)
 
         with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=payload,
-                signature="some-signature",
+                signature="v1,somesignature",
+                timestamp=test_timestamp,
                 secret="",
             )
 
         assert "No webhook secret was provided" in str(exc_info.value)
 
-    def test_verify_webhook_invalid_signature_raises_error(
-        self, triggers, test_secret, mock_trigger_data
+    def test_verify_webhook_empty_webhook_id_raises_error(
+        self, triggers, test_secret, test_timestamp, mock_v3_payload
     ):
-        """Test that invalid signature raises WebhookSignatureVerificationError."""
-        payload = json.dumps(mock_trigger_data)
+        """Test that empty webhook ID raises WebhookSignatureVerificationError."""
+        payload = json.dumps(mock_v3_payload)
 
         with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
             triggers.verify_webhook(
+                id="",
                 payload=payload,
-                signature="invalid-signature",
+                signature="v1,somesignature",
+                timestamp=test_timestamp,
+                secret=test_secret,
+            )
+
+        assert "No webhook ID was provided" in str(exc_info.value)
+
+    def test_verify_webhook_empty_timestamp_raises_error(
+        self, triggers, test_secret, test_webhook_id, mock_v3_payload
+    ):
+        """Test that empty timestamp raises WebhookPayloadError."""
+        payload = json.dumps(mock_v3_payload)
+
+        with pytest.raises(exceptions.WebhookPayloadError) as exc_info:
+            triggers.verify_webhook(
+                id=test_webhook_id,
+                payload=payload,
+                signature="v1,somesignature",
+                timestamp="",
+                secret=test_secret,
+            )
+
+        assert "Invalid webhook timestamp" in str(exc_info.value)
+
+    def test_verify_webhook_invalid_signature_format_raises_error(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
+    ):
+        """Test that signature without v1 prefix raises error."""
+        payload = json.dumps(mock_v3_payload)
+
+        with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
+            triggers.verify_webhook(
+                id=test_webhook_id,
+                payload=payload,
+                signature="invalid-signature-no-prefix",
+                timestamp=test_timestamp,
+                secret=test_secret,
+            )
+
+        assert "No valid v1 signature found" in str(exc_info.value)
+
+    def test_verify_webhook_invalid_signature_raises_error(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
+    ):
+        """Test that invalid signature raises WebhookSignatureVerificationError."""
+        payload = json.dumps(mock_v3_payload)
+
+        with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
+            triggers.verify_webhook(
+                id=test_webhook_id,
+                payload=payload,
+                signature="v1,invalidbase64signature==",
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
 
         assert "The signature provided is invalid" in str(exc_info.value)
 
     def test_verify_webhook_wrong_secret_raises_error(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test that signature created with different secret raises error."""
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, "different-secret")
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, "different-secret"
+        )
 
         with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=payload,
                 signature=signature,
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
 
         assert "The signature provided is invalid" in str(exc_info.value)
 
     def test_verify_webhook_modified_payload_raises_error(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test that modified payload after signing raises error."""
-        original_payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(original_payload, test_secret)
+        original_payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, original_payload, test_secret
+        )
 
         # Modify the payload
-        mock_trigger_data["appName"] = "modified-app"
-        modified_payload = json.dumps(mock_trigger_data)
+        mock_v3_payload["data"] = {"modified": True}
+        modified_payload = json.dumps(mock_v3_payload)
 
         with pytest.raises(exceptions.WebhookSignatureVerificationError):
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=modified_payload,
                 signature=signature,
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
 
     # Payload parsing error tests
 
-    def test_verify_webhook_invalid_json_raises_error(self, triggers, test_secret):
+    def test_verify_webhook_invalid_json_raises_error(
+        self, triggers, test_secret, test_webhook_id, test_timestamp
+    ):
         """Test that invalid JSON payload raises WebhookPayloadError."""
         invalid_json = "not-valid-json{"
-        signature = self.create_signature(invalid_json, test_secret)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, invalid_json, test_secret
+        )
 
         with pytest.raises(exceptions.WebhookPayloadError) as exc_info:
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=invalid_json,
                 signature=signature,
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
 
         assert "Failed to parse webhook payload as JSON" in str(exc_info.value)
 
-    def test_verify_webhook_truncated_json_raises_error(self, triggers, test_secret):
-        """Test that truncated JSON raises WebhookPayloadError."""
-        truncated_json = '{"appName": "github", "clientId":'
-        signature = self.create_signature(truncated_json, test_secret)
+    def test_verify_webhook_unrecognized_payload_raises_error(
+        self, triggers, test_secret, test_webhook_id, test_timestamp
+    ):
+        """Test that unrecognized payload format raises WebhookPayloadError."""
+        unknown_payload = json.dumps({"unknown": "format"})
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, unknown_payload, test_secret
+        )
 
-        with pytest.raises(exceptions.WebhookPayloadError):
+        with pytest.raises(exceptions.WebhookPayloadError) as exc_info:
             triggers.verify_webhook(
-                payload=truncated_json,
+                id=test_webhook_id,
+                payload=unknown_payload,
                 signature=signature,
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
+
+        assert "does not match any known version" in str(exc_info.value)
 
     # Timestamp validation tests
 
     def test_verify_webhook_timestamp_within_tolerance(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, mock_v3_payload
     ):
         """Test that timestamp within tolerance passes validation."""
-        now = datetime.now(timezone.utc).isoformat()
-        mock_trigger_data["timestamp"] = now
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
+        recent_timestamp = str(int(time.time()))
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, recent_timestamp, payload, test_secret
+        )
 
         result = triggers.verify_webhook(
+            id=test_webhook_id,
             payload=payload,
             signature=signature,
+            timestamp=recent_timestamp,
             secret=test_secret,
             tolerance=300,
         )
@@ -703,154 +891,139 @@ class TestVerifyWebhook:
         assert result is not None
 
     def test_verify_webhook_timestamp_outside_tolerance_raises_error(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, mock_v3_payload
     ):
         """Test that timestamp outside tolerance raises error."""
-        # Create a timestamp 10 minutes in the past
-        old_time = datetime.now(timezone.utc) - timedelta(minutes=10)
-        mock_trigger_data["timestamp"] = old_time.isoformat()
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
+        # 10 minutes ago
+        old_timestamp = str(int(time.time()) - 600)
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, old_timestamp, payload, test_secret
+        )
 
         with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=payload,
                 signature=signature,
+                timestamp=old_timestamp,
                 secret=test_secret,
                 tolerance=300,  # 5 minutes
             )
 
         assert "outside the allowed tolerance" in str(exc_info.value)
 
-    def test_verify_webhook_skips_timestamp_validation_when_tolerance_zero(
-        self, triggers, test_secret, mock_trigger_data
-    ):
-        """Test that timestamp validation is skipped when tolerance is 0."""
-        # Create a timestamp 1 hour in the past
-        old_time = datetime.now(timezone.utc) - timedelta(hours=1)
-        mock_trigger_data["timestamp"] = old_time.isoformat()
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
-
-        # Should not raise when tolerance is 0
-        result = triggers.verify_webhook(
-            payload=payload,
-            signature=signature,
-            secret=test_secret,
-            tolerance=0,
-        )
-
-        assert result is not None
-
-    def test_verify_webhook_skips_timestamp_validation_when_no_timestamp(
-        self, triggers, test_secret, mock_trigger_data
-    ):
-        """Test that timestamp validation is skipped when no timestamp in payload."""
-        # mock_trigger_data doesn't have timestamp by default
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
-
-        result = triggers.verify_webhook(
-            payload=payload,
-            signature=signature,
-            secret=test_secret,
-            tolerance=300,
-        )
-
-        assert result is not None
-
     def test_verify_webhook_invalid_timestamp_format_raises_error(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, mock_v3_payload
     ):
         """Test that invalid timestamp format raises WebhookPayloadError."""
-        mock_trigger_data["timestamp"] = "not-a-valid-timestamp"
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
+        invalid_timestamp = "not-a-timestamp"
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, invalid_timestamp, payload, test_secret
+        )
 
         with pytest.raises(exceptions.WebhookPayloadError) as exc_info:
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=payload,
                 signature=signature,
+                timestamp=invalid_timestamp,
                 secret=test_secret,
                 tolerance=300,
             )
 
-        assert "Invalid timestamp in webhook payload" in str(exc_info.value)
-
-    def test_verify_webhook_timestamp_with_z_suffix(
-        self, triggers, test_secret, mock_trigger_data
-    ):
-        """Test that timestamp with Z suffix is handled correctly."""
-        mock_trigger_data["timestamp"] = "2024-01-01T12:00:00Z"
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, test_secret)
-
-        # This will fail due to timestamp being old, but should parse correctly
-        with pytest.raises(exceptions.WebhookSignatureVerificationError) as exc_info:
-            triggers.verify_webhook(
-                payload=payload,
-                signature=signature,
-                secret=test_secret,
-                tolerance=300,
-            )
-
-        # Should fail due to timestamp being outside tolerance, not parsing error
-        assert "outside the allowed tolerance" in str(exc_info.value)
+        assert "Invalid webhook timestamp" in str(exc_info.value)
 
     # Security tests
 
     def test_verify_webhook_uses_timing_safe_comparison(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test that signature comparison is timing-safe."""
-        payload = json.dumps(mock_trigger_data)
-        valid_signature = self.create_signature(payload, test_secret)
+        payload = json.dumps(mock_v3_payload)
+        valid_signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
 
         # Valid signature should work
         result = triggers.verify_webhook(
+            id=test_webhook_id,
             payload=payload,
             signature=valid_signature,
+            timestamp=test_timestamp,
             secret=test_secret,
         )
         assert result is not None
 
-        # Invalid signature with same length should fail
-        invalid_signature = "a" * len(valid_signature)
+        # Invalid signature with same format should fail
+        invalid_signature = "v1," + "a" * 44  # base64 SHA256 is 44 chars
         with pytest.raises(exceptions.WebhookSignatureVerificationError):
             triggers.verify_webhook(
+                id=test_webhook_id,
                 payload=payload,
                 signature=invalid_signature,
+                timestamp=test_timestamp,
                 secret=test_secret,
             )
 
     def test_verify_webhook_handles_unicode_payload(
-        self, triggers, test_secret, mock_trigger_data
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test that unicode in payload is handled correctly."""
-        mock_trigger_data["payload"] = {"message": "你好世界 🌍 مرحبا"}
-        payload = json.dumps(mock_trigger_data, ensure_ascii=False)
-        signature = self.create_signature(payload, test_secret)
+        mock_v3_payload["data"] = {"message": "你好世界 🌍 مرحبا"}
+        payload = json.dumps(mock_v3_payload, ensure_ascii=False)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
 
         result = triggers.verify_webhook(
+            id=test_webhook_id,
             payload=payload,
             signature=signature,
+            timestamp=test_timestamp,
             secret=test_secret,
         )
 
-        assert result["payload"]["message"] == "你好世界 🌍 مرحبا"
+        assert result["payload"]["payload"]["message"] == "你好世界 🌍 مرحبا"
 
     def test_verify_webhook_handles_special_characters_in_secret(
-        self, triggers, mock_trigger_data
+        self, triggers, test_webhook_id, test_timestamp, mock_v3_payload
     ):
         """Test that special characters in secret are handled correctly."""
         special_secret = "secret!@#$%^&*()_+-=[]{}|;:,.<>?"
-        payload = json.dumps(mock_trigger_data)
-        signature = self.create_signature(payload, special_secret)
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, special_secret
+        )
 
         result = triggers.verify_webhook(
+            id=test_webhook_id,
             payload=payload,
             signature=signature,
+            timestamp=test_timestamp,
             secret=special_secret,
+        )
+
+        assert result is not None
+
+    def test_verify_webhook_supports_multiple_signatures(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
+    ):
+        """Test that multiple signatures in header are supported."""
+        payload = json.dumps(mock_v3_payload)
+        valid_signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
+        # Multiple signatures space-separated
+        multiple_signatures = f"v1,invalidsig== {valid_signature}"
+
+        result = triggers.verify_webhook(
+            id=test_webhook_id,
+            payload=payload,
+            signature=multiple_signatures,
+            timestamp=test_timestamp,
+            secret=test_secret,
         )
 
         assert result is not None
