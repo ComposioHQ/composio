@@ -1,16 +1,13 @@
 import { Composio } from '@composio/core';
-import { generateText, CoreMessage, ModelMessage, stepCountIs } from 'ai';
+import { generateText, ModelMessage, stepCountIs } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { VercelProvider } from '@composio/vercel';
-import dotenv from 'dotenv';
 import { MessageRoles } from './types';
-dotenv.config();
 
 /**
  * Initialize the Composio SDK with the Vercel provider
  */
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
   provider: new VercelProvider(),
 });
 
@@ -37,11 +34,9 @@ async function run() {
     },
   ];
 
-  // const schema = tools[0].inputSchema;
-
   const { text } = await generateText({
-    model: openai.responses('gpt-4.1'),
-    tools: tools,
+    model: openai('gpt-4o-mini'),
+    tools,
     messages,
     stopWhen: stepCountIs(5),
   });

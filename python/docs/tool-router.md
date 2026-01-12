@@ -211,7 +211,24 @@ session = composio.tool_router.create(
     toolkits=['gmail'],
     manage_connections={
         'enable': True,  # Whether to use tools to manage connections
-        'callback_url': 'https://your-app.com/auth/callback'  # Optional OAuth callback URL
+        'callback_url': 'https://your-app.com/auth/callback',  # Optional OAuth callback URL
+        'wait_for_connections': True  # NEW in v0.10.5: Wait for connections to complete
+    }
+)
+```
+
+#### Wait for Connections
+
+The `wait_for_connections` property (new in v0.10.5) allows the tool router session to wait for users to complete authentication before proceeding to the next step. When set to `True`, the session will block execution until all required connections are established.
+
+```python
+session = composio.tool_router.create(
+    user_id='user_123',
+    toolkits=['gmail', 'slack'],
+    manage_connections={
+        'enable': True,
+        'callback_url': 'https://your-app.com/auth/callback',
+        'wait_for_connections': True  # Session waits for connections to complete
     }
 )
 ```
@@ -261,12 +278,66 @@ Retrieve the tools available in the session, formatted for your AI framework.
 # Basic usage
 tools = session.tools()
 
-# With modifiers
-tools = session.tools(modifiers={
-    'pre_execute': lambda tool, args: print(f"Executing {tool}"),
-    'post_execute': lambda tool, result: print(f"Result: {result}"),
-})
+# With session-specific modifiers (new in v0.10.5)
+from composio.core.models import before_execute_meta, after_execute_meta
+
+@before_execute_meta
+def before_modifier(tool, toolkit, session_id, params):
+    print(f"[Session: {session_id}] Executing {tool} from {toolkit}")
+    # Add custom logging, validation, or parameter transformation
+    return params
+
+@after_execute_meta  
+def after_modifier(tool, toolkit, session_id, response):
+    print(f"[Session: {session_id}] Completed {tool}")
+    # Transform results, add telemetry, or handle errors
+    return response
+
+tools = session.tools(modifiers=[before_modifier, after_modifier])
 ```
+
+#### Session-Specific Modifiers
+
+Tool Router sessions now support enhanced modifiers (introduced in v0.10.5) that include session context:
+
+- **`@before_execute_meta`**: Modify parameters before execution, with access to session ID
+- **`@after_execute_meta`**: Transform results after execution, with access to session ID
+- **`@modify_schema_meta`**: Customize tool schemas before they're sent to the AI model
+
+These modifiers provide better context for session-based tool execution, allowing you to track which session is executing which tools.
+
+### Meta Tools
+
+Tool Router provides meta tools for managing connections and session state. You can access these directly using the `get_raw_tool_router_meta_tools` method (introduced in v0.10.5):
+
+```python
+from composio import Composio
+from composio.core.models import modify_schema_meta
+
+composio = Composio()
+
+# Define schema modifier
+@modify_schema_meta
+def schema_modifier(tool, toolkit, schema):
+    # Customize meta tool schemas
+    print(f"Modifying schema for {tool}")
+    return schema
+
+# Get raw meta tools for a session
+meta_tools = composio.tools.get_raw_tool_router_meta_tools(
+    session_id='session_123',
+    modifiers=[schema_modifier]
+)
+
+print(f"Available meta tools: {[t.name for t in meta_tools]}")
+```
+
+Meta tools allow you to:
+- Authorize new toolkit connections within a session
+- Query toolkit connection states
+- Manage session configuration
+
+This method is useful when you need direct access to the underlying meta tools without creating a full session object.
 
 ### `authorize(toolkit, *, callback_url=None)`
 
@@ -672,12 +743,13 @@ tags: List[Literal['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWor
 # Manage connections configuration
 ToolRouterManageConnectionsConfig = TypedDict('ToolRouterManageConnectionsConfig', {
     'enable': bool,
-    'callback_url': str  # Optional
+    'callback_url': str,  # Optional
+    'wait_for_connections': bool  # NEW in v0.10.5: Wait for connections to complete
 })
 
 manage_connections: Union[
     bool,
-    ToolRouterManageConnectionsConfig   # {'enable': True, 'callback_url': 'https://...'}
+    ToolRouterManageConnectionsConfig   # {'enable': True, 'callback_url': 'https://...', 'wait_for_connections': True}
 ]
 
 # Workbench configuration
@@ -688,4 +760,67 @@ ToolRouterWorkbenchConfig = TypedDict('ToolRouterWorkbenchConfig', {
 
 workbench: ToolRouterWorkbenchConfig
 ```
+
+## What's New in v0.10.5
+
+### 1. Wait for Connections
+
+The new `wait_for_connections` property allows sessions to wait for users to complete authentication before proceeding:
+
+```python
+session = composio.tool_router.create(
+    user_id='user_123',
+    toolkits=['gmail', 'slack'],
+    manage_connections={
+        'enable': True,
+        'callback_url': 'https://your-app.com/callback',
+        'wait_for_connections': True  # NEW
+    }
+)
+```
+
+### 2. Enhanced Session Modifiers
+
+Session-specific modifiers now include session context, making it easier to track and manage tool execution:
+
+```python
+from composio.core.models import before_execute_meta, after_execute_meta
+
+@before_execute_meta
+def before_modifier(tool, toolkit, session_id, params):
+    print(f"[{session_id}] Executing {tool}")
+    return params
+
+@after_execute_meta  
+def after_modifier(tool, toolkit, session_id, response):
+    print(f"[{session_id}] Completed {tool}")
+    return response
+
+tools = session.tools(modifiers=[before_modifier, after_modifier])
+```
+
+### 3. Direct Meta Tools Access
+
+New method to fetch meta tools directly from a session:
+
+```python
+from composio.core.models import modify_schema_meta
+
+@modify_schema_meta
+def schema_modifier(tool, toolkit, schema):
+    return schema
+
+meta_tools = composio.tools.get_raw_tool_router_meta_tools(
+    session_id='session_123',
+    modifiers=[schema_modifier]
+)
+```
+
+### 4. Performance Improvements
+
+- Optimized tool fetching with fewer API calls
+- Improved session API architecture for better reliability
+- Simplified internal tool execution paths
+
+All changes in v0.10.5 are fully backward compatible with existing code.
 
