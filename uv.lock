@@ -506,7 +506,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "composio-client", specifier = ">=1.22.0" },
+    { name = "composio-client", specifier = "==1.22.0" },
     { name = "openai" },
     { name = "pydantic", specifier = ">=2.6.4" },
     { name = "pysher", specifier = ">=1.0.8" },
@@ -892,7 +892,7 @@ dev = [
 requires-dist = [
     { name = "click", specifier = ">=8.1.7" },
     { name = "composio", virtual = "python" },
-    { name = "composio-client" },
+    { name = "composio-client", specifier = "==1.22.0" },
     { name = "composio-gemini", virtual = "python/providers/gemini" },
     { name = "composio-langchain", virtual = "python/providers/langchain" },
     { name = "composio-openai", virtual = "python/providers/openai" },
