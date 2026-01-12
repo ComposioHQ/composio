@@ -88,7 +88,7 @@ export default defineConfig({
       },
       transformers: [
         transformerTwoslash({
-          explicitTrigger: true, // Only process blocks with ```ts twoslash
+          explicitTrigger: false, // All TypeScript blocks are validated
         }),
       ],
     },
