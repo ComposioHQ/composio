@@ -396,6 +396,48 @@ export class Tools<
   }
 
   /**
+   * Fetches the meta tools for a tool router session.
+   * This method fetches the meta tools from the Composio API and transforms them to the expected format.
+   * It provides access to the underlying meta tool data without provider-specific wrapping.
+   *
+   * @param sessionId {string} The session id to get the meta tools for
+   * @param options {SchemaModifierOptions} Optional configuration for tool retrieval
+   * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform the tool schema
+   * @returns {Promise<ToolList>} The list of meta tools
+   *
+   * @example
+   * ```typescript
+   * const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123');
+   * console.log(metaTools);
+   * ```
+   */
+  async getRawToolRouterMetaTools(
+    sessionId: string,
+    options?: SchemaModifierOptions
+  ): Promise<ToolList> {
+    const tools = await this.client.toolRouter.session.tools(sessionId);
+    let modifiedTools = tools.items.map(tool => this.transformToolCases(tool));
+    // apply local modifiers if they are provided
+    if (options?.modifySchema) {
+      const modifier = options.modifySchema;
+      if (typeof modifier === 'function') {
+        const modifiedPromises = modifiedTools.map(tool =>
+          modifier({
+            toolSlug: tool.slug,
+            toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+            schema: tool,
+          })
+        );
+        modifiedTools = await Promise.all(modifiedPromises);
+      } else {
+        throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
+      }
+    }
+
+    return modifiedTools;
+  }
+
+  /**
    * Retrieves a specific tool by its slug from the Composio API.
    *
    * This method fetches a single tool in raw format without provider-specific wrapping,

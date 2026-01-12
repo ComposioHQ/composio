@@ -172,15 +172,12 @@ export class ToolRouter<
    * @returns A function that wraps the tools based on the provider.
    */
   private createToolsFn = (
-    sessionId: string,
-    toolSlugs: string[]
+    sessionId: string
   ): ((modifiers?: ProviderOptions<TProvider>) => Promise<ReturnType<TProvider['wrapTools']>>) => {
     return async (modifiers?: ProviderOptions<TProvider>) => {
       const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-      const tools = await ToolsModel.getRawComposioTools(
-        {
-          tools: toolSlugs,
-        },
+      const tools = await ToolsModel.getRawToolRouterMetaTools(
+        sessionId,
         modifiers?.modifySchema
           ? {
               modifySchema: modifiers?.modifySchema,
@@ -277,7 +274,7 @@ export class ToolRouter<
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
@@ -305,7 +302,7 @@ export class ToolRouter<
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
