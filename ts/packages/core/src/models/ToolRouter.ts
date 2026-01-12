@@ -36,6 +36,8 @@ import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import { Tools } from './Tools';
 import {
   ExecuteToolModifiers,
+  SessionExecuteMetaModifiers,
+  SessionMetaToolOptions,
   ProviderOptions,
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';
@@ -167,14 +169,13 @@ export class ToolRouter<
    * Creates a function that wraps the tools based on the provider.
    * The returned tools will be of the type the frameworks expects.
    *
-   * @param userId - The user id to get the tools for
-   * @param tools - The tools to wrap
-   * @returns A function that wraps the tools based on the provider.
+   * @param sessionId - The session id to get the tools for
+   * @returns A function that wraps the tools based on the provider with session-specific modifiers.
    */
   private createToolsFn = (
     sessionId: string
-  ): ((modifiers?: ProviderOptions<TProvider>) => Promise<ReturnType<TProvider['wrapTools']>>) => {
-    return async (modifiers?: ProviderOptions<TProvider>) => {
+  ): ((modifiers?: SessionMetaToolOptions) => Promise<ReturnType<TProvider['wrapTools']>>) => {
+    return async (modifiers?: SessionMetaToolOptions) => {
       const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
       const tools = await ToolsModel.getRawToolRouterMetaTools(
         sessionId,
@@ -184,11 +185,7 @@ export class ToolRouter<
             }
           : undefined
       );
-      const wrappedTools = ToolsModel.wrapToolsForToolRouter(
-        sessionId,
-        tools,
-        modifiers as ExecuteToolModifiers
-      );
+      const wrappedTools = ToolsModel.wrapToolsForToolRouter(sessionId, tools, modifiers);
       return wrappedTools as ReturnType<TProvider['wrapTools']>;
     };
   };

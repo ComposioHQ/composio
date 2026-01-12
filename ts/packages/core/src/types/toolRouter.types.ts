@@ -1,6 +1,6 @@
 import z from 'zod/v3';
 import { BaseComposioProvider } from '../provider/BaseProvider';
-import { ExecuteToolModifiers, ProviderOptions } from './modifiers.types';
+import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
@@ -270,7 +270,7 @@ export type ToolRouterToolsFn<
   TToolCollection,
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
-> = (modifiers?: ProviderOptions<TProvider>) => Promise<ReturnType<TProvider['wrapTools']>>;
+> = (modifiers?: SessionMetaToolOptions) => Promise<ReturnType<TProvider['wrapTools']>>;
 
 export type ToolRouterAuthorizeFn = (
   toolkit: string,
