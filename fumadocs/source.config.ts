@@ -82,6 +82,10 @@ export const changelog = defineCollections({
 export default defineConfig({
   mdxOptions: {
     rehypeCodeOptions: {
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark',
+      },
       transformers: [
         transformerTwoslash({
           explicitTrigger: true, // Only process blocks with ```ts twoslash
