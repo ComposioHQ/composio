@@ -17,7 +17,7 @@ catalog:
   '@cloudflare/workers-types': ^4.20250917.0
   '@composio/client': 0.1.0-alpha.52
   '@modelcontextprotocol/sdk': ^1.24.0
-  ai: 5.0.52
+  ai: ^6.0.3
   openai: ^5.20.3
   tsup: ^8.5.0
   tsdown: ^0.16.8
@@ -27,7 +27,7 @@ catalog:
   vitest: ^3.2.4
   wrangler: ^4.37.0
   zod: ^4.1.0
-  zod-to-json-schema: ^3.25.0
+  zod-to-json-schema: ^3.25.1
 
 minimumReleaseAge: 1440
 
