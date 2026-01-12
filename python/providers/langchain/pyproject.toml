@@ -1,6 +1,6 @@
 [project]
 name = "composio-langchain"
-version = "0.9.4"
+version = "0.10.3"
 description = "Use Composio to get an array of tools with your Langchain agent."
 readme = "README.md"
 requires-python = ">=3.9,<4"
@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "langchain",
+    "langchain>=1.1.0,<2.0.0",
     "composio",
 ]
 

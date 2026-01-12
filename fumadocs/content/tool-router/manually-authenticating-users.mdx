@@ -1,0 +1,163 @@
+---
+title: Manually authenticating users
+description: Authenticate users to toolkits outside of chat
+keywords: [pre-auth, onboarding, custom ui, authorize]
+---
+
+Manual authentication lets you connect users to toolkits outside of the chat flow. Use this when you want to:
+- Pre-authenticate users before they start chatting
+- Build a custom connections UI in your app
+
+## Authorize a toolkit
+
+Use `session.authorize()` to generate a [Connect Link](/docs/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to complete:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+
+connection_request = session.authorize("gmail")
+
+print(connection_request.redirect_url)
+# https://connect.composio.dev/link/ln_abc123
+
+connected_account = connection_request.wait_for_connection(60000)
+print(f"Connected: {connected_account.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const session = await composio.create("user_123");
+
+const connectionRequest = await session.authorize("gmail");
+
+console.log(connectionRequest.redirectUrl);
+// https://connect.composio.dev/link/ln_abc123
+
+const connectedAccount = await connectionRequest.waitForConnection(60000);
+console.log(`Connected: ${connectedAccount.id}`);
+```
+</Tab>
+</Tabs>
+
+Redirect the user to the redirect URL. After they authenticate, they'll return to your callback URL. The connection request polls until the user completes authentication (default timeout: 60 seconds).
+
+<Callout type="info">
+If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
+</Callout>
+
+## Check connection status
+
+Use `session.toolkits()` to see all toolkits in the session and their connection status:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+toolkits = session.toolkits()
+
+for toolkit in toolkits.items:
+    status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
+    print(f"{toolkit.name}: {status}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const toolkits = await session.toolkits();
+
+toolkits.items.forEach((toolkit) => {
+  console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount?.id ?? "Not connected"}`);
+});
+```
+</Tab>
+</Tabs>
+
+## Disabling in-chat auth
+
+By default, Tool Router includes the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To disable this and handle auth entirely in your UI:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    manage_connections=False,
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+const session = await composio.create("user_123", {
+  manageConnections: false,
+});
+```
+</Tab>
+</Tabs>
+
+## Putting it together
+
+A common pattern is to verify all required connections before starting the agent:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+
+required_toolkits = ["gmail", "github"]
+
+session = composio.create(
+    user_id="user_123",
+    manage_connections=False,  # Disable in-chat auth prompts
+)
+
+toolkits = session.toolkits()
+
+connected = {t.slug for t in toolkits.items if t.connection.is_active}
+pending = [slug for slug in required_toolkits if slug not in connected]
+
+print(f"Connected: {connected}")
+print(f"Pending: {pending}")
+
+for slug in pending:
+    connection_request = session.authorize(slug)
+    print(f"Connect {slug}: {connection_request.redirect_url}")
+    connection_request.wait_for_connection()
+
+print(f"All toolkits connected! MCP URL: {session.mcp.url}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your-api-key" });
+
+const requiredToolkits = ["gmail", "github"];
+
+const session = await composio.create("user_123", {
+  manageConnections: false, // Disable in-chat auth prompts
+});
+
+const toolkits = await session.toolkits();
+
+const connected = toolkits.items
+  .filter((t) => t.connection.connectedAccount)
+  .map((t) => t.slug);
+
+const pending = requiredToolkits.filter((slug) => !connected.includes(slug));
+
+console.log("Connected:", connected);
+console.log("Pending:", pending);
+
+for (const slug of pending) {
+  const connectionRequest = await session.authorize(slug);
+  console.log(`Connect ${slug}: ${connectionRequest.redirectUrl}`);
+  await connectionRequest.waitForConnection();
+}
+
+console.log(`All toolkits connected! MCP URL: ${session.mcp.url}`);
+```
+</Tab>
+</Tabs>

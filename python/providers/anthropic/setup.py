@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_anthropic",
-    version="0.9.4",
+    version="0.10.3",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Anthropic LLMs.",
@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
-    install_requires=["anthropic>=0.25.7"],
+    install_requires=["anthropic>=0.25.7", "composio"],
     include_package_data=True,
 )

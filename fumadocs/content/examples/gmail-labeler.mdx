@@ -1,0 +1,381 @@
+---
+title: Gmail Labeler
+description: Build an agent that automatically labels incoming Gmail messages using triggers
+---
+
+With Composio's managed authentication, tool calling and triggers, it's easy to
+build the AI agents that can interact and react the real world events reducing
+the boilerplate required to setup and manage the authentication. This cookbook
+will walk you through the process of building agents using `Composio`, `LangChain`.
+
+## Prerequisites
+
+* Python3.x
+* [UV](https://docs.astral.sh/uv/getting-started/installation/)
+* Composio API key
+* OpenAI API key
+* Understanding of building AI agents (Preferably with LangChain)
+
+## Build gmail agent to label your messages
+
+```python
+from composio import Composio
+from composio_langchain import LangchainProvider
+
+from langchain import hub
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain_openai import ChatOpenAI
+
+
+def create_agent(user_id: str, composio_client: Composio[LangchainProvider]):
+    """
+    Create an agent for a given user id.
+    """
+    # Step 1: Get all the tools
+    tools = composio_client.tools.get(
+        user_id=user_id,
+        tools=[
+            "GMAIL_LIST_LABELS",
+            "GMAIL_ADD_LABEL_TO_EMAIL",
+            "GMAIL_CREATE_LABEL",
+        ],
+    )
+
+    # Step 2: Pull relevant agent prompt.
+    prompt = hub.pull("hwchase17/openai-functions-agent")
+
+    # Step 3: Initialize chat model.
+    openai_client = ChatOpenAI(model="gpt-5")
+
+    # Step 4: Define agent
+    return AgentExecutor(
+        agent=create_openai_functions_agent(
+            openai_client,
+            tools,
+            prompt,
+        ),
+        tools=tools,
+        verbose=False,
+    )
+```
+
+## Authenticating users
+
+To authenticate your users with Composio you need an auth config for the given
+app, In this case you need one for gmail. You can create and manage auth configs
+from the [dashboard](https://platform.composio.dev/?next_page=/auth-configs?create_auth_config=gmail).
+Composio platform provides composio managed authentication for some apps to help
+you fast-track your development, `gmail` being one of them. You can use these
+default auth configs for development, but for production you should always use
+your own oauth app configuration.
+
+Using dashboard is the preferred way of managing authentication configs, but if
+you want to do it manually you can follow the guide below
+
+<details>
+
+<summary>Click to expand</summary>
+
+To create an authentication config for `gmail` you need `client_id` and `client_secret`
+from your from your [Google OAuth Console](https://developers.google.com/identity/protocols/oauth2).
+Once you have the required credentials you can use the following piece of
+code to set up authentication for `gmail`. 
+
+```python
+from composio import Composio
+from composio_langchain import LangchainProvider
+
+def create_auth_config(composio_client: Composio[OpenAIProvider]):
+    """
+    Create a auth config for the gmail toolkit.
+    """
+    client_id = os.getenv("GMAIL_CLIENT_ID")
+    client_secret = os.getenv("GMAIL_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        raise ValueError("GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET must be set")
+
+    return composio_client.auth_configs.create(
+        toolkit="gmail",
+        options={
+            "name": "default_gmail_auth_config",
+            "type": "use_custom_auth",
+            "auth_scheme": "OAUTH2",
+            "credentials": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+        },
+    )
+```
+
+This will create an authentication config for `gmail` which you can use to
+authenticate your users for your app. Ideally you should just create one
+authentication object per project, so check for an existing auth config
+before you create a new one.
+
+```python
+def fetch_auth_config(composio_client: Composio[OpenAIProvider]):
+    """
+    Fetch the auth config for a given user id.
+    """
+    auth_configs = composio_client.auth_configs.list()
+    for auth_config in auth_configs.items:
+        if auth_config.toolkit == "gmail":
+            return auth_config
+
+    return None
+```
+</details>
+
+Once you have authentication management in place, we can start with connecting
+your users to your `gmail` app. Let's implement a function to connect the users
+to your `gmail` app via composio.
+
+```python
+# Function to initiate a connected account
+def create_connection(composio_client: Composio[OpenAIProvider], user_id: str):
+    """
+    Create a connection for a given user id and auth config id.
+    """
+    # Fetch or create the auth config for the gmail toolkit
+    auth_config = fetch_auth_config(composio_client=composio_client)
+    if not auth_config:
+        auth_config = create_auth_config(composio_client=composio_client)
+
+    # Create a connection for the user
+    return composio_client.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config.id,
+    )
+```
+
+Now, when creating tools for your agent always check if the user already has a
+connected account before creating a new one.
+
+```python
+def check_connected_account_exists(
+    composio_client: Composio[LangchainProvider],
+    user_id: str,
+):
+    """
+    Check if a connected account exists for a given user id.
+    """
+    # Fetch all connected accounts for the user
+    connected_accounts = composio_client.connected_accounts.list(
+        user_ids=[user_id],
+        toolkit_slugs=["GMAIL"],
+    )
+
+    # Check if there's an active connected account
+    for account in connected_accounts.items:
+        if account.status == "ACTIVE":
+            return True
+
+        # Ideally you should not have inactive accounts, but if you do, you should delete them
+        print(f"[warning] inactive account {account.id} found for user id: {user_id}")
+    return False
+```
+
+
+## Creating Triggers
+
+You can use triggers to make your agents react to real world events. In this example,
+we will use triggers to invoke your agent everytime there's a new message in your
+gmail inbox.
+
+```python
+# Create a new trigger
+def create_trigger(
+    composio_client: Composio[LangchainProvider],
+    connected_account_id: str,
+) -> str:
+    """
+    Create a trigger.
+    """
+    response = composio_client.triggers.create(
+        slug="GMAIL_NEW_GMAIL_MESSAGE",
+        connected_account_id=connected_account_id,
+        trigger_config={},
+    )
+    return response.trigger_id
+```
+
+When creating triggers, make sure there are no duplicate triggers. Use following
+code as reference for checking if trigger for given connected account exists or not.
+
+```python
+def check_trigger_exists(
+    composio_client: Composio[LangchainProvider],
+    connected_account_id: str,
+) -> t.Optional[str]:
+    """
+    Check if a trigger exists.
+    """
+    triggers = composio_client.triggers.list_active(
+        trigger_names=["GMAIL_NEW_GMAIL_MESSAGE"],
+        connected_account_ids=[connected_account_id],
+    )
+    for trigger in triggers.items:
+        return trigger.id
+    return None
+```
+
+
+Once trigger is created, you can listen to events using a trigger subscription.
+
+```python
+# Create subscription object
+trigger_subscription = composio_client.triggers.subscribe()
+
+# Register event handler
+@trigger_subscription.handle(
+    trigger_id="<TRIGGER_ID>",  # Filter out events that does not belong this trigger id
+    trigger_slug="GMAIL_NEW_GMAIL_MESSAGE",
+)
+def handle_event(event: TriggerEvent):
+    print("> Received email with subject: ", event["payload"]["subject"])
+
+# Wait for events
+trigger_subscription.wait_forever()
+```
+
+## Putting everything together
+
+Let's put together everything by making the agent react to new messages in your
+inbox.
+
+```python
+# Create a trigger subscription factory
+
+def create_trigger_subscription(
+    composio_client: Composio[LangchainProvider],
+    trigger_slug: str,
+    trigger_id: str,
+    agent: AgentExecutor,
+):
+    """
+    Create a trigger subscription for the given agent.
+    """
+    trigger_subscription = composio_client.triggers.subscribe()
+
+    @trigger_subscription.handle(
+        trigger_slug=trigger_slug,
+        trigger_id=trigger_id,
+    )
+    def handle_event(event: TriggerEvent):
+        print("> Received email with subject: ", event["payload"]["subject"])
+        result = agent.invoke(
+            input={
+                "input": APPLY_NEW_LABEL.format(  # Check `gmail_labeler/prompt.py`
+                    message_id=event["payload"]["id"],
+                    message_subject=event["payload"]["subject"],
+                    message_text=event["payload"]["message_text"],
+                )
+            }
+        )
+        print("> Result: ", result["output"])
+
+    return trigger_subscription
+```
+
+Package everything as a single entry point.
+
+```python
+def run_agent(user_id: str):
+    # Create composio client
+    composio_client = Composio(provider=LangchainProvider())
+
+    # Validate conected account
+    connected_account_id = check_connected_account_exists(composio_client, user_id)
+    if connected_account_id is None:
+        connection_request = create_connection(composio_client, user_id)
+        print(
+            f"Authenticate with the following link: {connection_request.redirect_url}"
+        )
+        connection_request.wait_for_connection()
+        connected_account_id = connection_request.id
+
+    # Check if trigger exists, create if not
+    trigger_id = check_trigger_exists(
+        composio_client=composio_client,
+        connected_account_id=connected_account_id,
+    )
+    if trigger_id is None:
+        trigger_id = create_trigger(
+            composio_client=composio_client,
+            connected_account_id=connected_account_id,
+        )
+
+    # Create agent
+    agent = create_agent(user_id=user_id, composio_client=composio_client)
+
+    # Create trigger subscription
+    trigger_subscription = create_trigger_subscription(
+        composio_client=composio_client,
+        trigger_slug=GMAIL_NEW_GMAIL_MESSAGE_TRIGGER,
+        trigger_id=trigger_id,
+        agent=agent,
+    )
+
+    # Wait forever
+    print("Waiting for events...")
+    trigger_subscription.wait_forever()
+```
+
+To test the above function as CLI, follow the steps below
+
+1. Clone the repository
+   ```bash
+   git clone git@github.com:composiohq/gmail-labeler
+   cd gmail-labeler/
+   ```
+2. Setup environment
+   ```bash
+   cp .env.example .env
+   ```
+
+   Fill the api keys
+   ```dotenv
+   COMPOSIO_API_KEY=
+   OPENAI_API_KEY=
+   ```
+
+   Create the virtual env
+   ```bash
+   make env
+   source .venv/bin/activate
+   ```
+3. Run the agent
+   ```bash
+   python gmail_labeler --user-id "default"
+   ```
+
+## Using Composio for managed auth and tools
+
+Composio reduces a lot of boilerplate for building AI agents with ability access and use a wide variety of apps. For example in this cookbook, to build `gmail` integration without composio you would have to write code to
+- manage `gmail` oauth app
+- manage user connections
+- tools for your agents to interact with `gmail`
+- Infra for listening to changes in your gmail inbox
+
+Using composio simplifies all of the above to a few lines of code as we've seen the cookbook.
+
+## Best practices
+
+**🔒 User Management**:
+
+- Use unique, consistent `user_id` values for each person
+- Each user maintains their own gmail connection
+- User IDs can be email addresses, usernames, or any unique identifier
+
+## Troubleshooting
+
+**Connection Issues**:
+- Ensure your `.env` file has valid `COMPOSIO_API_KEY` and `OPENAI_API_KEY`
+- Check that the user has completed `gmail` authorization
+- Verify the user_id matches exactly between requests
+
+**API Errors**:
+- Check the server logs for detailed error messages
+- Ensure request payloads match the expected format
+- Visit `/docs` endpoint for API schema validation

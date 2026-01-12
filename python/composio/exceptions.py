@@ -176,6 +176,18 @@ class TriggerError(ToolkitError):
     pass
 
 
+class WebhookSignatureVerificationError(TriggerError):
+    """Raised when webhook signature verification fails."""
+
+    pass
+
+
+class WebhookPayloadError(TriggerError):
+    """Raised when webhook payload is invalid."""
+
+    pass
+
+
 class ActionError(ToolkitError):
     pass
 

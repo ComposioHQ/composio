@@ -1,0 +1,17 @@
+{
+  "title": "Examples",
+  "root": true,
+  "pages": [
+    "---Getting Started---",
+    "fast-api",
+    "hono",
+    "---Productivity & Automation---",
+    "gmail-labeler",
+    "slack-summariser",
+    "supabase-sql-agent",
+    "---Full Stack Applications---",
+    "vercel-chat",
+    "---Behind the Curtain---",
+    "tool-generator"
+  ]
+}
