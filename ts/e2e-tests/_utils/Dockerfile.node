@@ -19,6 +19,9 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs package.json tsconfig.base
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 
+# Copy e2e tests
+COPY ts/e2e-tests/ ./ts/e2e-tests/
+
 # Install dependencies using pnpm
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 

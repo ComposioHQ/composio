@@ -19,6 +19,16 @@
       "env": ["COMPOSIO_API_KEY"],
       "cache": false
     },
+    "test:e2e:node": {
+      "dependsOn": ["build"],
+      "env": ["COMPOSIO_API_KEY", "COMPOSIO_E2E_NODE_VERSION"],
+      "cache": false
+    },
+    "test:e2e:cloudflare": {
+      "dependsOn": ["build"],
+      "env": ["COMPOSIO_API_KEY"],
+      "cache": false
+    },
     "clean": {
       "cache": false
     },

@@ -5,12 +5,12 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-UTILS_DIR="$SCRIPT_DIR/../_utils"
+UTILS_DIR="$SCRIPT_DIR/../../../_utils"
 
 NODE_VERSION="${COMPOSIO_E2E_NODE_VERSION:-20.19.0}"
 
 "$UTILS_DIR/run-docker-test.sh" \
   --name "composio-cjs-test-${NODE_VERSION}" \
-  --dir "ts/packages/core/test-e2e/node-cjs" \
+  --dir "ts/e2e-tests/runtimes/node/cjs-basic" \
   --cmd "node test.cjs" \
   --node "$NODE_VERSION"

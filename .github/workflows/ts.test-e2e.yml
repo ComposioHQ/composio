@@ -12,9 +12,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-e2e:
-    name: E2E Test Typescript SDK (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-22.04  # Use Ubuntu 22.04 for stability
+  # Node.js E2E tests, running in Docker to isolate environment
+  test-e2e-node-docker:
+    name: E2E Test Node.js (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-22.04
     permissions: read-all
     strategy:
       fail-fast: false
@@ -45,6 +46,43 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify API Key
+        run: |
+          if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "::error::COMPOSIO_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ COMPOSIO_API_KEY is configured"
+
+      - name: Run Node.js E2E Tests
+        run: pnpm run test:e2e:node
+        env:
+          COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
+
+  # Cloudflare Workerd E2E tests
+  test-e2e-cloudflare:
+    name: E2E Test Cloudflare Workerd
+    runs-on: ubuntu-22.04
+    permissions: read-all
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22.12.0"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Build
         run: pnpm run build:packages
 
@@ -56,7 +94,5 @@ jobs:
           fi
           echo "✅ COMPOSIO_API_KEY is configured"
 
-      - name: Run E2E Tests
-        run: pnpm run test:e2e
-        env:
-          COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
+      - name: Run Cloudflare Workers E2E Tests
+        run: pnpm run test:e2e:cloudflare

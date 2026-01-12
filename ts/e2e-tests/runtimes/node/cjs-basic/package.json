@@ -1,10 +1,10 @@
 {
-  "name": "@test-e2e/composio-core-node-esm",
+  "name": "@test-e2e/node-cjs-basic",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "test:e2e": "bash run-docker-test.sh"
+    "test:e2e": "bash run-docker-test.sh",
+    "test:e2e:node": "bash run-docker-test.sh"
   },
   "devDependencies": {
     "@composio/core": "workspace:*"

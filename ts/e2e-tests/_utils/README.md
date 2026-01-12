@@ -14,7 +14,7 @@ Shared infrastructure for running `@composio/core` end-to-end tests in isolated 
 ```bash
 ./run-docker-test.sh \
   --name "my-test" \
-  --dir "ts/packages/core/test-e2e/my-suite" \
+  --dir "ts/e2e-tests/runtimes/node/my-suite" \
   --cmd "node test.js" \
   --node "20.19.0"
 ```

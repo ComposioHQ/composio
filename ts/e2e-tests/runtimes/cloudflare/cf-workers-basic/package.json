@@ -1,10 +1,11 @@
 {
-  "name": "@test-e2e/composio-core-cloudflare-workers",
+  "name": "@test-e2e/cf-workers-basic",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test:e2e": "vitest run",
+    "test:e2e:cloudflare": "vitest run",
     "dev": "wrangler dev",
     "cf-typegen": "wrangler types"
   },
