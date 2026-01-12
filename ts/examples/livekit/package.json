@@ -1,0 +1,33 @@
+{
+  "name": "livekit-example",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Example for using LiveKit Agents provider with Composio SDK",
+  "main": "src/agent.ts",
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "dev": "bun ./src/agent.ts dev",
+    "download-files": "bun ./src/agent.ts download-files",
+    "start": "bun ./src/agent.ts start",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "@composio/livekit": "workspace:*",
+    "@livekit/agents": "^1.0.0",
+    "@livekit/agents-plugin-silero": "^1.0.0",
+    "@livekit/agents-plugin-livekit": "^1.0.0",
+    "dotenv": "^16.4.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "catalog:"
+  }
+}

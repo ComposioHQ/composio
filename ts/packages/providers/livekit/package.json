@@ -1,0 +1,54 @@
+{
+  "name": "@composio/livekit",
+  "version": "0.3.1",
+  "description": "Composio provider for LiveKit Agents SDK",
+  "main": "src/index.ts",
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "composio",
+    "livekit",
+    "agents",
+    "voice-ai",
+    "realtime",
+    "stt",
+    "tts",
+    "llm"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.0",
+  "peerDependencies": {
+    "@composio/core": "0.3.1",
+    "@livekit/agents": ">=1.0.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*",
+    "@livekit/agents": "^1.0.0",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  }
+}
