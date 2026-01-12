@@ -5,8 +5,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { MCP } from './models/MCP.experimental';
-import { MCP as DeprecatedMCP } from './models/MCP';
+import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -18,7 +17,8 @@ import type { ComposioRequestHeaders } from './types/composio.types';
 import { Files } from './models/Files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
-import { ToolRouter } from './models/ToolRouter.experimental';
+import { ToolRouter } from './models/ToolRouter';
+import { ToolRouterCreateSessionConfig, ToolRouterSession } from './types/toolRouter.types';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -77,6 +77,7 @@ export type ComposioConfig<
   disableVersionCheck?: boolean;
   /**
    * The versions of the toolkits to use for tool execution and retrieval.
+   * Omit to use 'latest' for all toolkits.
    *
    * **Version Control:**
    * When executing tools manually (via `tools.execute()`), if this resolves to "latest",
@@ -88,9 +89,9 @@ export type ComposioConfig<
    * Defaults to 'latest' if nothing is provided.
    * You can specify individual toolkit versions via environment variables: `COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00`
    *
-   * @example Global version for all toolkits
+   * @example Global version for all toolkits, omit to use 'latest'
    * ```typescript
-   * const composio = new Composio({ toolkitVersions: 'latest' });
+   * const composio = new Composio();
    * ```
    *
    * @example Specific versions for different toolkits (recommended for production)
@@ -136,28 +137,63 @@ export class Composio<
   /**
    * Core models for Composio.
    */
+
+  /** List, retrieve, and execute tools */
   tools: Tools<unknown, unknown, TProvider>;
+  /** Retrieve toolkit metadata and authorize user connections */
   toolkits: Toolkits;
+  /** Manage webhook triggers and event subscriptions */
   triggers: Triggers<TProvider>;
+  /** The tool provider instance used for wrapping tools in framework-specific formats */
   provider: TProvider;
+  /** Upload and download files */
   files: Files;
+  /** Manage authentication configurations for toolkits */
   authConfigs: AuthConfigs;
+  /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
+  /** Model Context Protocol server management */
   mcp: MCP;
+  /**
+   * Experimental feature, use with caution
+   * @experimental
+   */
+  toolRouter: ToolRouter<unknown, unknown, TProvider>;
+  /**
+   * Creates a new tool router session for a user.
+   *
+   * @param userId {string} The user id to create the session for
+   * @param config {ToolRouterConfig} The config for the tool router session
+   * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from '@composio/core';
+   *
+   * const composio = new Composio();
+   * const userId = 'user_123';
+   *
+   * const session = await composio.create(userId, {
+   *  manageConnections: true,
+   * });
+   *
+   * console.log(session.sessionId);
+   * console.log(session.url);
+   * console.log(session.tools());
+   * ```
+   */
+  create: (
+    userId: string,
+    routerConfig?: ToolRouterCreateSessionConfig
+  ) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
 
   /**
-   * Experimental features
+   * Use an existing tool router session
+   *
+   * @param id {string} The id of the session to use
+   * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
    */
-  experimental: {
-    toolRouter: ToolRouter;
-  };
-
-  /**
-   * Deprecated features
-   */
-  deprecated: {
-    mcp: DeprecatedMCP<TProvider>;
-  };
+  use: (id: string) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -231,36 +267,21 @@ export class Composio<
       logLevel: COMPOSIO_LOG_LEVEL,
     });
 
-    this.tools = new Tools(this.client, this.provider, this.config);
+    this.tools = new Tools(this.client, this.config);
     this.mcp = new MCP(this.client);
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client, this.config);
     this.authConfigs = new AuthConfigs(this.client);
     this.files = new Files(this.client);
     this.connectedAccounts = new ConnectedAccounts(this.client);
+    this.toolRouter = new ToolRouter(this.client, this.config);
 
     /**
-     * Initialize Experimental features
+     * Initialize tool router methods
+     * Properly bind the methods to maintain the correct 'this' context
      */
-    this.experimental = {
-      /**
-       * Experimental tool router
-       * Helps you create a single MCP server containing all the tools with smart routing.
-       *
-       * @description Allows you to create an isolated toolRouter MCP session for a user
-       */
-      toolRouter: new ToolRouter(this.client),
-    };
-
-    /**
-     * Initialize Deprecated features
-     */
-    this.deprecated = {
-      /**
-       * @deprecated this feature will be removed soon, use `composio.mcp`
-       */
-      mcp: new DeprecatedMCP(this.client, this.provider),
-    };
+    this.create = this.toolRouter.create.bind(this.toolRouter);
+    this.use = this.toolRouter.use.bind(this.toolRouter);
 
     /**
      * Initialize the client telemetry.

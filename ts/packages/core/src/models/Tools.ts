@@ -13,6 +13,7 @@ import {
   ToolExecuteParamsSchema,
   ToolkitVersionParam,
   SchemaModifierOptions,
+  ToolExecuteMetaParamsSchema,
 } from '../types/tool.types';
 import {
   ToolGetInputParams,
@@ -31,6 +32,7 @@ import {
   afterExecuteModifier,
   beforeExecuteModifier,
   ExecuteToolModifiers,
+  SessionExecuteMetaModifiers,
   ProviderOptions,
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';
@@ -50,6 +52,8 @@ import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
 import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
+import { ToolExecuteMetaParams } from '../types/tool.types';
+import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -65,17 +69,17 @@ export class Tools<
   private autoUploadDownloadFiles: boolean;
   private toolkitVersions: ToolkitVersionParam;
 
-  constructor(client: ComposioClient, provider: TProvider, config?: ComposioConfig<TProvider>) {
+  constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
       throw new Error('ComposioClient is required');
     }
-    if (!provider) {
+    if (!config?.provider) {
       throw new ComposioProviderNotDefinedError('Provider not passed into Tools instance');
     }
 
     this.client = client;
     this.customTools = new CustomTools(client);
-    this.provider = provider;
+    this.provider = config.provider;
     this.autoUploadDownloadFiles = config?.autoUploadDownloadFiles ?? true;
     this.toolkitVersions = config?.toolkitVersions ?? 'latest';
     // Bind the execute method to ensure correct 'this' context
@@ -393,6 +397,48 @@ export class Tools<
   }
 
   /**
+   * Fetches the meta tools for a tool router session.
+   * This method fetches the meta tools from the Composio API and transforms them to the expected format.
+   * It provides access to the underlying meta tool data without provider-specific wrapping.
+   *
+   * @param sessionId {string} The session id to get the meta tools for
+   * @param options {SchemaModifierOptions} Optional configuration for tool retrieval
+   * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform the tool schema
+   * @returns {Promise<ToolList>} The list of meta tools
+   *
+   * @example
+   * ```typescript
+   * const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123');
+   * console.log(metaTools);
+   * ```
+   */
+  async getRawToolRouterMetaTools(
+    sessionId: string,
+    options?: SchemaModifierOptions
+  ): Promise<ToolList> {
+    const tools = await this.client.toolRouter.session.tools(sessionId);
+    let modifiedTools = tools.items.map(tool => this.transformToolCases(tool));
+    // apply local modifiers if they are provided
+    if (options?.modifySchema) {
+      const modifier = options.modifySchema;
+      if (typeof modifier === 'function') {
+        const modifiedPromises = modifiedTools.map(tool =>
+          modifier({
+            toolSlug: tool.slug,
+            toolkitSlug: tool.toolkit?.slug ?? 'unknown',
+            schema: tool,
+          })
+        );
+        modifiedTools = await Promise.all(modifiedPromises);
+      } else {
+        throw new ComposioInvalidModifierError('Invalid schema modifier. Not a function.');
+      }
+    }
+
+    return modifiedTools;
+  }
+
+  /**
    * Retrieves a specific tool by its slug from the Composio API.
    *
    * This method fetches a single tool in raw format without provider-specific wrapping,
@@ -568,20 +614,27 @@ export class Tools<
   ): Promise<TToolCollection> {
     // Handle the two-parameter overloads
     const options = arg3 as ProviderOptions<TProvider>;
-    const executeToolFn = this.createExecuteToolFn(userId, options as ExecuteToolModifiers);
 
     // if the second argument is a string, get a single tool
     if (typeof arg2 === 'string') {
       const tool = await this.getRawComposioToolBySlug(arg2, {
         modifySchema: options?.modifySchema as TransformToolSchemaModifier,
       });
-      return this.provider.wrapTools([tool], executeToolFn) as TToolCollection;
+      return this.wrapToolsForProvider(
+        userId,
+        [tool],
+        options as ExecuteToolModifiers
+      ) as TToolCollection;
     } else {
       // if the second argument is an object, get a list of tools
       const tools = await this.getRawComposioTools(arg2, {
         modifySchema: options?.modifySchema as TransformToolSchemaModifier,
       });
-      return this.provider.wrapTools(tools, executeToolFn) as TToolCollection;
+      return this.wrapToolsForProvider(
+        userId,
+        tools,
+        options as ExecuteToolModifiers
+      ) as TToolCollection;
     }
   }
   /**
@@ -599,6 +652,42 @@ export class Tools<
         modifiers
       );
     };
+  }
+
+  /**
+   * @internal
+   * Utility to wrap a given set of tools in the format expected by the provider
+   *
+   * @param userId - The user id to get the tools for
+   * @param tools - The tools to wrap
+   * @param modifiers - The modifiers to be applied to the tools
+   * @returns The wrapped tools
+   */
+  wrapToolsForProvider<T extends TProvider>(
+    userId: string,
+    tools: Tool[],
+    modifiers?: ExecuteToolModifiers
+  ): ReturnType<T['wrapTools']> {
+    const executeToolFn = this.createExecuteToolFn(userId, modifiers);
+    return this.provider.wrapTools(tools, executeToolFn) as ReturnType<T['wrapTools']>;
+  }
+
+  /**
+   * @internal
+   * Utility to wrap a given set of tools in the format expected by the tool router
+   *
+   * @param {string} sessionId - The session id to execute the tool for
+   * @param {Tool[]} tools - The tools to wrap
+   * @param {SessionExecuteMetaModifiers} modifiers - The modifiers to apply to the tool
+   * @returns {Tool[]} The wrapped tools
+   */
+  wrapToolsForToolRouter(
+    sessionId: string,
+    tools: Tool[],
+    modifiers?: SessionExecuteMetaModifiers
+  ): Tool[] {
+    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, modifiers);
+    return this.provider.wrapTools(tools, executeToolFn) as Tool[];
   }
 
   /**
@@ -630,6 +719,34 @@ export class Tools<
 
   /**
    * @internal
+   * Creates a function that executes a tool for a tool router session
+   *
+   * @param {string} sessionId - The session id to execute the tool for
+   * @param {SessionExecuteMetaModifiers} modifiers - The modifiers to apply to the tool
+   * @returns {ExecuteToolFn} The execute tool function
+   */
+  private createExecuteToolFnForToolRouter(
+    sessionId: string,
+    modifiers?: SessionExecuteMetaModifiers
+  ): ExecuteToolFn {
+    const executeToolFn = async (
+      toolSlug: string,
+      input: Record<string, unknown>
+    ): Promise<ToolExecuteResponse> => {
+      return await this.executeMetaTool(
+        toolSlug,
+        {
+          sessionId,
+          arguments: input,
+        },
+        modifiers
+      );
+    };
+    return executeToolFn;
+  }
+
+  /**
+   * @internal
    * Executes a composio tool via API without modifiers
    * @param tool - The tool to execute
    * @param body - The body of the tool execution
@@ -650,6 +767,13 @@ export class Tools<
         allow_tracing: body.allowTracing,
         connected_account_id: body.connectedAccountId,
         custom_auth_params: body.customAuthParams,
+        /**
+         * @deprecated: customConnectionData
+         * @description
+         * This parameter is deprecated and will be removed in the future.
+         * Please use custom_connection_data instead.
+         *
+         */
         custom_connection_data: body.customConnectionData,
         arguments: body.arguments,
         user_id: body.userId,
@@ -789,6 +913,67 @@ export class Tools<
   }
 
   /**
+   * Executes a composio meta tool based on tool router session
+   *
+   * @param {string} toolSlug - The slug of the tool to execute
+   * @param {ToolExecuteMetaParams} body - The execution parameters
+   * @param {string} body.sessionId - The session id to execute the tool for
+   * @param {Record<string, unknown>} body.arguments - The input to pass to the tool
+   * @param {SessionExecuteMetaModifiers} modifiers - The modifiers to apply to the tool
+   * @returns {Promise<ToolExecuteResponse>} The response from the tool execution
+   */
+  async executeMetaTool(
+    toolSlug: string,
+    body: ToolExecuteMetaParams,
+    modifiers?: SessionExecuteMetaModifiers
+  ): Promise<ToolExecuteResponse> {
+    const executeMetaParams = ToolExecuteMetaParamsSchema.safeParse(body);
+    if (!executeMetaParams.success) {
+      throw new ValidationError('Invalid tool execute meta parameters', {
+        cause: executeMetaParams.error,
+      });
+    }
+
+    // Apply beforeExecute modifier if provided
+    let modifiedParams = body.arguments ?? {};
+    if (modifiers?.beforeExecute) {
+      modifiedParams = await modifiers.beforeExecute({
+        toolSlug,
+        toolkitSlug: 'composio',
+        sessionId: body.sessionId,
+        params: modifiedParams,
+      });
+    }
+
+    // Execute the meta tool
+    const response = await this.client.toolRouter.session.executeMeta(body.sessionId, {
+      // assert this because backend might keep adding more tool slugs
+      slug: toolSlug as SessionExecuteMetaParams['slug'],
+      arguments: modifiedParams,
+    });
+
+    // Prepare the result
+    let result: ToolExecuteResponse = {
+      data: response.data,
+      error: response.error,
+      successful: !response.error,
+      logId: response.log_id,
+    };
+
+    // Apply afterExecute modifier if provided
+    if (modifiers?.afterExecute) {
+      result = await modifiers.afterExecute({
+        toolSlug,
+        toolkitSlug: 'composio',
+        sessionId: body.sessionId,
+        result,
+      });
+    }
+
+    return result;
+  }
+
+  /**
    * Fetches the list of all available tools in the Composio SDK.
    *
    * This method is mostly used by the CLI to get the list of tools.
@@ -880,6 +1065,14 @@ export class Tools<
       body: toolProxyParams.data.body,
       connected_account_id: toolProxyParams.data.connectedAccountId,
       parameters: parameters,
+      /**
+       * @deprecated: customConnectionData
+       * @description
+       * This parameter is deprecated and will be removed in the future.
+       * Please use custom_auth_params instead.
+       *
+       */
+      // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     });
   }

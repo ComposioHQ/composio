@@ -34,7 +34,15 @@ export const CreateConnectedAccountParamsSchema = z.object({
     userId: z.string().optional(),
   }),
 });
-export const DefaultCreateConnectedAccountParamsSchema = z.object({
+export const DefaultCreateConnectedAccountParamsSchema: z.ZodType<{
+  auth_config: { id: string };
+  connection: {
+    state?: z.infer<typeof ConnectionDataSchema>;
+    data?: Record<string, unknown>;
+    callback_url?: string;
+    user_id?: string;
+  };
+}> = z.object({
   auth_config: z.object({
     id: z.string(),
   }),
@@ -46,7 +54,11 @@ export const DefaultCreateConnectedAccountParamsSchema = z.object({
   }),
 });
 
-export const CreateConnectedAccountOptionsSchema = z.object({
+export const CreateConnectedAccountOptionsSchema: z.ZodType<{
+  allowMultiple?: boolean;
+  callbackUrl?: string;
+  config?: z.infer<typeof ConnectionDataSchema>;
+}> = z.object({
   allowMultiple: z.boolean().optional(),
   callbackUrl: z.string().optional(),
   config: ConnectionDataSchema.optional(),
@@ -70,7 +82,22 @@ export const ConnectedAccountAuthConfigSchema = z.object({
 });
 export type ConnectedAccountAuthConfig = z.infer<typeof ConnectedAccountAuthConfigSchema>;
 
-export const ConnectedAccountRetrieveResponseSchema = z.object({
+export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
+  id: string;
+  authConfig: z.infer<typeof ConnectedAccountAuthConfigSchema>;
+  /** @deprecated use connectedAccount.state instead */
+  data?: Record<string, unknown>;
+  /** @deprecated use connectedAccount.state instead */
+  params?: Record<string, unknown>;
+  status: ConnectedAccountStatusEnum;
+  statusReason: string | null;
+  toolkit: { slug: string };
+  state?: z.infer<typeof ConnectionDataSchema>;
+  testRequestEndpoint?: string;
+  isDisabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}> = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
   /**
@@ -109,11 +136,6 @@ export const ConnectedAccountListParamsSchema = z.object({
     .optional()
     .describe('The auth config ids of the connected accounts'),
   cursor: z.string().nullish().describe('The cursor to paginate through the connected accounts'),
-  labels: z
-    .array(z.string())
-    .nullable()
-    .optional()
-    .describe('The labels of the connected accounts'),
   limit: z.number().nullable().optional().describe('The limit of the connected accounts to return'),
   orderBy: z
     .enum(['created_at', 'updated_at'])

@@ -1,6 +1,6 @@
 {
   "name": "@composio/vercel",
-  "version": "0.2.17",
+  "version": "0.4.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -30,16 +30,16 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "peerDependencies": {
-    "@composio/core": "0.2.5",
-    "ai": "^5.0.44"
+    "@composio/core": "0.4.0",
+    "ai": "^5.0.0 || ^6.0.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "ai": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",
-    "zod": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }

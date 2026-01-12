@@ -16,9 +16,13 @@ class TestCoreTypes:
         # Should be a Literal["latest"]
         assert hasattr(ToolkitLatestVersion, "__origin__")
 
-    def test_toolkit_version_is_string(self):
-        """Test ToolkitVersion is string type."""
-        assert ToolkitVersion is str
+    def test_toolkit_version_is_union(self):
+        """Test ToolkitVersion is a Union type."""
+        # ToolkitVersion should be Union[Literal["latest"], str]
+        import typing
+
+        assert hasattr(ToolkitVersion, "__origin__")
+        assert ToolkitVersion.__origin__ is typing.Union
 
     def test_toolkit_versions_is_dict(self):
         """Test ToolkitVersions is dict type."""

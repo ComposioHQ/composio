@@ -1,0 +1,132 @@
+---
+title: CLI
+description: Generate type definitions and manage authentication
+keywords: [command line, generate types]
+---
+
+The Composio CLI helps you generate type-safe code and manage your Composio workspace.
+
+## Installation
+
+Install the Composio CLI using the installation script:
+
+```bash
+curl -fsSL https://composio.dev/install | bash
+```
+
+Or using wget:
+```bash
+wget -qO- https://composio.dev/install | bash
+```
+
+## Authentication
+
+Manage your Composio authentication directly from the terminal.
+
+### Login
+
+Authenticate with your Composio account:
+
+```bash
+composio login
+```
+
+This opens your browser to complete authentication and stores your API key locally.
+
+To authenticate without opening a browser (useful for SSH/remote sessions):
+
+```bash
+composio login --no-browser
+```
+
+This displays a URL to manually open in your browser.
+
+### Check authentication status
+
+Verify your current authentication:
+
+```bash
+composio whoami
+```
+
+This displays your current API key or indicates if you're not authenticated.
+
+### Logout
+
+Remove stored authentication:
+
+```bash
+composio logout
+```
+
+## Generate type definitions
+
+Generate TypeScript or Python type definitions for all Composio tools. These types provide type safety when using direct tool execution (`composio.tools.execute()`), helping you pass the correct parameters and catch errors early.
+
+### Auto-detect and generate
+
+The CLI auto-detects your project language.
+In your project directory:
+
+```bash
+composio generate
+```
+
+For TypeScript projects only, include individual tool types:
+```bash
+composio generate --type-tools
+```
+
+The CLI automatically:
+- Detects your project type (Python or TypeScript)
+- Generates appropriate type definitions
+
+### Specify output directory
+
+```bash
+composio generate --output-dir ./my-types
+```
+
+### Language-specific commands
+
+For explicit control, use language-specific commands:
+
+<Tabs items={['TypeScript', 'Python']}>
+  <Tab value="TypeScript">
+    Basic generation:
+    ```bash
+    composio ts generate
+    ```
+
+    Generate as single file:
+    ```bash
+    composio ts generate --compact
+    ```
+
+    Include individual tool types:
+    ```bash
+    composio ts generate --type-tools
+    ```
+
+    Generate both .ts and .js files:
+    ```bash
+    composio ts generate --transpiled
+    ```
+
+    Custom output directory:
+    ```bash
+    composio ts generate --output-dir ./my-types
+    ```
+  </Tab>
+  <Tab value="Python">
+    Basic generation:
+    ```bash
+    composio py generate
+    ```
+
+    Custom output directory:
+    ```bash
+    composio py generate --output-dir ./my_types
+    ```
+  </Tab>
+</Tabs>

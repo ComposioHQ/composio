@@ -182,14 +182,18 @@ class FileHelper(WithLogger):
             "title": schema.get("title"),
         }
 
-    def process_schema_recursively(self, schema: t.Dict) -> t.Dict:
+    def enhance_schema_descriptions(self, schema: t.Dict) -> t.Dict:
+        """Add type hints and required notes to parameter descriptions.
+
+        This method enhances parameter descriptions by adding:
+        - Type hints ("Please provide a value of type...")
+        - Required notes ("This parameter is required.")
+
+        This is separate from file processing and should always run
+        regardless of the auto_upload_download_files setting.
+        """
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
-            if self._file_uploadable(schema=_schema):
-                schema["properties"][_param] = self._process_file_uploadable(
-                    schema=_schema
-                )
-
             if _schema.get("type") in ["string", "integer", "number", "boolean"]:
                 ext = f"Please provide a value of type {_schema['type']}."
                 description = _schema.get("description", "").rstrip(".")
@@ -202,6 +206,29 @@ class FileHelper(WithLogger):
                     if description
                     else "This parameter is required."
                 )
+        return schema
+
+    def process_file_uploadable_schema(self, schema: t.Dict) -> t.Dict:
+        """Process file_uploadable fields in schema.
+
+        This method converts file_uploadable fields to path format.
+        Should only be called when auto_upload_download_files is True.
+        """
+        for _param, _schema in schema["properties"].items():
+            if self._file_uploadable(schema=_schema):
+                schema["properties"][_param] = self._process_file_uploadable(
+                    schema=_schema
+                )
+        return schema
+
+    def process_schema_recursively(self, schema: t.Dict) -> t.Dict:
+        """Process schema for both file handling and description enhancements.
+
+        This method is kept for backward compatibility. It calls both
+        process_file_uploadable_schema and enhance_schema_descriptions.
+        """
+        self.process_file_uploadable_schema(schema)
+        self.enhance_schema_descriptions(schema)
         return schema
 
     def _substitute_file_uploads_recursively(
@@ -232,7 +259,10 @@ class FileHelper(WithLogger):
                 ).model_dump()
                 continue
 
-            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+            if (
+                isinstance(request[_param], dict)
+                and params[_param].get("type") == "object"
+            ):
                 request[_param] = self._substitute_file_uploads_recursively(
                     schema=params[_param],
                     request=request[_param],
@@ -305,7 +335,10 @@ class FileHelper(WithLogger):
                     continue
                 params[_param] = obj
 
-            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+            if (
+                isinstance(request[_param], dict)
+                and params[_param].get("type") == "object"
+            ):
                 request[_param] = self._substitute_file_downloads_recursively(
                     schema=params[_param],
                     request=request[_param],

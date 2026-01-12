@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "---Get Started---",
+    "index",
+    "quickstart",
+    "capabilities",
+    "providers",
+    "---Tools and Triggers---",
+    "fetching-tools",
+    "authenticating-tools",
+    "executing-tools",
+    "using-triggers",
+    "modify-tool-behavior",
+    "custom-tools",
+    "toolkit-versioning",
+    "---Authentication---",
+    "custom-auth-configs",
+    "programmatic-auth-configs",
+    "custom-auth-params",
+    "connected-accounts",
+    "user-management",
+    "---MCP---",
+    "mcp-quickstart",
+    "mcp-server-management",
+    "mcp-providers",
+    "---Resources---",
+    "cli",
+    "debugging-info",
+    "migration-guide",
+    "troubleshooting"
+  ]
+}

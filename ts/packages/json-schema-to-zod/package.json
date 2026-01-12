@@ -1,6 +1,6 @@
 {
   "name": "@composio/json-schema-to-zod",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -41,6 +41,6 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": ">=3.25.76 <4 || >=4.1 <5"
+    "zod": ">=3.25.76 <5"
   }
 }

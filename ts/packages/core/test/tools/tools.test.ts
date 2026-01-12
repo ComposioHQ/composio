@@ -19,7 +19,7 @@ describe('Tools', () => {
 
   describe('constructor', () => {
     it('should throw an error if client is not provided', () => {
-      expect(() => new Tools(null as any, context.mockProvider)).toThrow(
+      expect(() => new Tools(null as any, { provider: context.mockProvider })).toThrow(
         'ComposioClient is required'
       );
     });
@@ -721,6 +721,329 @@ describe('Tools', () => {
     });
   });
 
+  describe('Tool Router Execution', () => {
+    const sessionId = 'test-session-123';
+
+    describe('executeMetaTool', () => {
+      it('should execute a tool via tool router session', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const result = await context.tools.executeMetaTool(toolSlug, body);
+
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: toolSlug,
+          arguments: body.arguments,
+        });
+        expect(result).toEqual({
+          data: { results: true },
+          error: null,
+          successful: true,
+          logId: '123',
+        });
+      });
+
+      it('should throw validation error for invalid parameters', async () => {
+        const invalidBody = {
+          // missing sessionId
+          arguments: { query: 'test' },
+        } as any;
+
+        await expect(context.tools.executeMetaTool('COMPOSIO_TOOL', invalidBody)).rejects.toThrow(
+          'Invalid tool execute meta parameters'
+        );
+      });
+
+      it('should throw error if tool is not found', async () => {
+        const apiError = new Error('Tool not found');
+        mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(apiError);
+
+        await expect(
+          context.tools.executeMetaTool('NONEXISTENT_TOOL', {
+            sessionId,
+            arguments: { query: 'test' },
+          })
+        ).rejects.toThrow('Tool not found');
+      });
+
+      it('should apply beforeExecute modifier', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'original' },
+        };
+
+        const toolWithToolkit = {
+          ...toolMocks.transformedTool,
+          toolkit: { slug: 'test-toolkit', name: 'Test Toolkit' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolWithToolkit as unknown as Tool);
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const beforeExecute = vi.fn().mockImplementation(({ params }) => ({
+          ...params,
+          query: 'modified',
+        }));
+
+        await context.tools.executeMetaTool(toolSlug, body, { beforeExecute });
+
+        expect(beforeExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'composio',
+          sessionId,
+          params: { query: 'original' },
+        });
+
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: toolSlug,
+          arguments: { query: 'modified' },
+        });
+      });
+
+      it('should apply afterExecute modifier', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const toolWithToolkit = {
+          ...toolMocks.transformedTool,
+          toolkit: { slug: 'test-toolkit', name: 'Test Toolkit' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolWithToolkit as unknown as Tool);
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const afterExecute = vi.fn().mockImplementation(({ result }) => ({
+          ...result,
+          data: { results: 'modified result' },
+        }));
+
+        const result = await context.tools.executeMetaTool(toolSlug, body, { afterExecute });
+
+        expect(afterExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'composio',
+          sessionId,
+          result: {
+            data: { results: true },
+            error: null,
+            successful: true,
+            logId: '123',
+          },
+        });
+
+        expect(result.data).toEqual({ results: 'modified result' });
+      });
+
+      it('should handle error responses from tool router', async () => {
+        const toolSlug = 'COMPOSIO_TOOL';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: null,
+          error: 'Something went wrong',
+          log_id: '456',
+        });
+
+        const result = await context.tools.executeMetaTool(toolSlug, body);
+
+        expect(result).toEqual({
+          data: null,
+          error: 'Something went wrong',
+          successful: false,
+          logId: '456',
+        });
+      });
+
+      it('should handle tool without toolkit gracefully', async () => {
+        const toolSlug = 'TOOL_WITHOUT_TOOLKIT';
+        const body = {
+          sessionId,
+          arguments: { query: 'test' },
+        };
+
+        const toolWithoutToolkit = {
+          ...toolMocks.transformedTool,
+          toolkit: undefined,
+        };
+
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolWithoutToolkit as unknown as Tool);
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        const beforeExecute = vi.fn().mockImplementation(({ params }) => params);
+
+        await context.tools.executeMetaTool(toolSlug, body, { beforeExecute });
+
+        expect(beforeExecute).toHaveBeenCalledWith({
+          toolSlug,
+          toolkitSlug: 'composio',
+          sessionId,
+          params: { query: 'test' },
+        });
+      });
+    });
+
+    describe('wrapToolsForToolRouter', () => {
+      it('should wrap tools with tool router execute function', async () => {
+        const tools = [toolMocks.transformedTool as unknown as Tool];
+
+        context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
+
+        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(tools, expect.any(Function));
+        expect(result).toBe('wrapped-tools');
+      });
+
+      it('should create execute function that calls executeMetaTool', async () => {
+        const tools = [toolMocks.transformedTool as unknown as Tool];
+
+        let capturedExecuteFn: (toolSlug: string, input: Record<string, unknown>) => Promise<any>;
+
+        context.mockProvider.wrapTools.mockImplementation((tools, executeFn) => {
+          capturedExecuteFn = executeFn;
+          return 'wrapped-tools';
+        });
+
+        context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        // Setup mocks for execution
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        // Call the captured execute function
+        const result = await capturedExecuteFn!('COMPOSIO_TOOL', { query: 'test' });
+
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: 'COMPOSIO_TOOL',
+          arguments: { query: 'test' },
+        });
+        expect(result).toEqual({
+          data: { results: true },
+          error: null,
+          successful: true,
+          logId: '123',
+        });
+      });
+
+      it('should pass modifiers to the execute function', async () => {
+        const tools = [toolMocks.transformedTool as unknown as Tool];
+        const modifiers = {
+          beforeExecute: vi.fn().mockImplementation(({ params }) => ({
+            ...params,
+            modified: true,
+          })),
+        };
+
+        let capturedExecuteFn: (toolSlug: string, input: Record<string, unknown>) => Promise<any>;
+
+        context.mockProvider.wrapTools.mockImplementation((tools, executeFn) => {
+          capturedExecuteFn = executeFn;
+          return 'wrapped-tools';
+        });
+
+        context.tools.wrapToolsForToolRouter(sessionId, tools, modifiers);
+
+        // Setup mocks for execution
+        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
+        getRawComposioToolBySlugSpy.mockResolvedValueOnce(
+          toolMocks.transformedTool as unknown as Tool
+        );
+
+        mockClient.toolRouter.session.executeMeta.mockResolvedValueOnce({
+          data: { results: true },
+          error: null,
+          log_id: '123',
+        });
+
+        // Call the captured execute function
+        await capturedExecuteFn!('COMPOSIO_TOOL', { query: 'test' });
+
+        expect(modifiers.beforeExecute).toHaveBeenCalled();
+        expect(mockClient.toolRouter.session.executeMeta).toHaveBeenCalledWith(sessionId, {
+          slug: 'COMPOSIO_TOOL',
+          arguments: { query: 'test', modified: true },
+        });
+      });
+
+      it('should handle multiple tools', async () => {
+        const tools = [
+          toolMocks.transformedTool as unknown as Tool,
+          { ...toolMocks.transformedTool, slug: 'ANOTHER_TOOL' } as unknown as Tool,
+        ];
+
+        context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
+
+        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(tools, expect.any(Function));
+        expect(result).toBe('wrapped-tools');
+      });
+
+      it('should handle empty tools array', async () => {
+        const tools: Tool[] = [];
+
+        context.mockProvider.wrapTools.mockReturnValueOnce([]);
+
+        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+
+        expect(context.mockProvider.wrapTools).toHaveBeenCalledWith([], expect.any(Function));
+        expect(result).toEqual([]);
+      });
+    });
+  });
+
   describe('Version Integration Tests', () => {
     describe('toolkit versions in tool fetching', () => {
       it('should pass default "latest" version when no version is configured', async () => {
@@ -742,7 +1065,8 @@ describe('Tools', () => {
 
       it('should pass global version string when configured', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_03' as any,
         });
 
@@ -761,7 +1085,8 @@ describe('Tools', () => {
 
       it('should pass toolkit-specific versions when configured as object', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -788,7 +1113,8 @@ describe('Tools', () => {
 
       it('should pass versions when fetching tools by tool slugs', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -814,7 +1140,8 @@ describe('Tools', () => {
 
       it('should pass versions when searching tools', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: 'latest',
         });
 
@@ -847,7 +1174,8 @@ describe('Tools', () => {
 
       it('should pass global version when retrieving single tool', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_03' as any,
         });
 
@@ -862,7 +1190,8 @@ describe('Tools', () => {
 
       it('should pass toolkit-specific versions when retrieving single tool', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -911,7 +1240,8 @@ describe('Tools', () => {
 
       it('should use global version when configured', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_03' as any,
         });
         const spies = await mockToolExecution(tools);
@@ -937,7 +1267,8 @@ describe('Tools', () => {
 
       it('should use toolkit-specific version when configured as object', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01', // Use the actual toolkit slug from mock
             slack: 'latest',
@@ -977,7 +1308,8 @@ describe('Tools', () => {
 
       it('should use fallback to "latest" when toolkit not in version mapping', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -1015,7 +1347,8 @@ describe('Tools', () => {
 
       it('should prioritize explicit version parameter over configured versions', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
             slack: 'latest',
@@ -1046,7 +1379,8 @@ describe('Tools', () => {
 
       it('should handle tool without toolkit gracefully', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_01',
           },
@@ -1102,7 +1436,8 @@ describe('Tools', () => {
 
         const mockProvider = new MockProvider();
         // Pass the processed environment variables to the Tools constructor
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_08',
             slack: 'latest',
@@ -1131,7 +1466,8 @@ describe('Tools', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             github: '20251201_04', // should override env
             gmail: '20251201_05', // new toolkit not in env
@@ -1160,7 +1496,8 @@ describe('Tools', () => {
         process.env.COMPOSIO_TOOLKIT_VERSION_SLACK = 'latest';
 
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: '20251201_09' as any, // global version overrides everything
         });
 
@@ -1236,7 +1573,8 @@ describe('Tools', () => {
 
       it('should succeed when executing with a specific version (not "latest") without dangerouslySkipVersionCheck', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01',
           },
@@ -1300,7 +1638,8 @@ describe('Tools', () => {
 
       it('should throw error when explicit version parameter is "latest" without dangerouslySkipVersionCheck', async () => {
         const mockProvider = new MockProvider();
-        const tools = new Tools(mockClient as unknown as ComposioClient, mockProvider, {
+        const tools = new Tools(mockClient as unknown as ComposioClient, {
+          provider: mockProvider,
           toolkitVersions: {
             'test-toolkit': '20251201_01', // specific version in config
           },

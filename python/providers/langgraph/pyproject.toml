@@ -1,6 +1,6 @@
 [project]
 name = "composio-langgraph"
-version = "0.9.3"
+version = "0.10.5"
 description = "Use Composio to get array of tools with LangGraph Agent Workflows."
 readme = "README.md"
 requires-python = ">=3.9,<4"
@@ -14,6 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "langgraph",
+    "composio",
 ]
 
 [project.urls]
