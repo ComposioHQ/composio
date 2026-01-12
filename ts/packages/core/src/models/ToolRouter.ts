@@ -48,6 +48,9 @@ import { ValidationError } from '../errors';
 import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
+  transformToolRouterManageConnectionsParams,
+  transformToolRouterWorkbenchParams,
+  transformToolRouterToolkitsParams,
 } from '../lib/toolRouterParams';
 
 export class ToolRouter<
@@ -256,38 +259,17 @@ export class ToolRouter<
   ): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
 
-    const manageConnectedAccounts =
-      typeof routerConfig.manageConnections === 'boolean'
-        ? routerConfig.manageConnections
-        : (routerConfig.manageConnections?.enable ?? true);
-
-    const toolkits = Array.isArray(routerConfig.toolkits)
-      ? { enable: routerConfig.toolkits }
-      : routerConfig.toolkits;
-
-    const tags = transformToolRouterTagsParams(routerConfig.tags);
-    const tools = transformToolRouterToolsParams(routerConfig.tools);
-
     const payload: SessionCreateParams = {
       user_id: userId,
-      toolkits,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
-      tools: tools,
-      tags: tags,
-      manage_connections: {
-        enable: manageConnectedAccounts,
-        callback_url:
-          typeof routerConfig.manageConnections === 'object'
-            ? routerConfig.manageConnections.callbackUrl
-            : undefined,
-      },
-      workbench: routerConfig.workbench
-        ? {
-            enable_proxy_execution: routerConfig.workbench?.enableProxyExecution,
-            auto_offload_threshold: routerConfig.workbench?.autoOffloadThreshold,
-          }
-        : undefined,
+      toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
+      tools: transformToolRouterToolsParams(routerConfig.tools),
+      tags: transformToolRouterTagsParams(routerConfig.tags),
+      manage_connections: transformToolRouterManageConnectionsParams(
+        routerConfig.manageConnections
+      ),
+      workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
     };
 
     const session = await this.client.toolRouter.session.create(payload);

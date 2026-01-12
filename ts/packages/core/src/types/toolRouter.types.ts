@@ -20,6 +20,12 @@ export const ToolRouterConfigManageConnectionsSchema = z
       .string()
       .optional()
       .describe('The callback uri to use in the tool router session'),
+    waitForConnections: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether to wait for users to finish authenticating connections before proceeding to the next step. Defaults to false, if set to true, a wait for connections tool call will happen and finish when the connections are ready'
+      ),
   })
   .strict();
 
