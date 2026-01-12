@@ -1,4 +1,4 @@
-name: Fumadocs - TypeScript Code Validation
+name: Docs - TypeScript Code Validation
 
 on:
   pull_request:
