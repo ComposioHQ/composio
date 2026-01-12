@@ -762,7 +762,7 @@ class TestToolRouter:
 
         # Verify Tools was instantiated
         mock_tools_class.assert_called_once_with(
-            client=mock_client, provider=mock_provider
+            client=mock_client, provider=mock_provider, auto_upload_download_files=True
         )
 
         # Verify get_raw_composio_tools was called
