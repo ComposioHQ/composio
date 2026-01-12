@@ -1,0 +1,303 @@
+---
+title: Slack Summarizer
+description: Build an agent that summarizes Slack channel messages
+---
+
+With Composio's managed authentication and tool calling, it's easy to build the
+AI agents that can interact with the real world while reducing the boilerplate
+required to setup and manage the authentication. This cookbook will walk you through
+the process of building agents using `Composio`,  `LangChain`.
+
+## Prerequisites
+
+* Python3.x
+* [UV](https://docs.astral.sh/uv/getting-started/installation/)
+* Composio API key
+* OpenAI API key
+* Understanding of building AI agents (Preferably with LangChain)
+
+## Build slack agent
+
+Let's start by building an agent that can interact with your slack workspace using Composio.
+
+```python
+from composio import Composio
+from composio_langchain import LangchainProvider
+
+from langchain import hub
+from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain_openai import ChatOpenAI
+
+
+def create_agent(user_id: str, composio_client: Composio[LangchainProvider]):
+    """
+    Create an agent for a given user id.
+    """
+    # Step 1: Get all the tools
+    tools = composio_client.tools.get(
+        user_id=user_id,
+        toolkits=["SLACK"],
+    )
+
+    # Step 2: Pull relevant agent prompt.
+    prompt = hub.pull("hwchase17/openai-functions-agent")
+
+    # Step 3: Initialize chat model.
+    openai_client = ChatOpenAI(model="gpt-5")
+
+    # Step 4: Define agent
+    return AgentExecutor(
+        agent=create_openai_functions_agent(
+            openai_client,
+            tools,
+            prompt,
+        ),
+        tools=tools,
+        verbose=True,
+    )
+```
+
+
+## Authenticating users
+
+To authenticate your users with Composio you need an auth config for the given
+app, In this case you need one for slack. You can create and manage auth configs
+from the [dashboard](https://platform.composio.dev/?next_page=/auth-configs?create_auth_config=slack).
+
+Composio platform provides composio managed authentication for some apps to help
+you fast-track your development, `slack` being one of them. You can use these
+default auth configs for development, but for production you should always use
+your own oauth app configuration.
+
+Using dashboard is the preferred way of managing authentication configs, but if
+you want to do it manually you can follow the guide below
+
+<details>
+
+<summary>Click to expand</summary>
+
+---
+
+To create an authentication config for `slack` you need `client_id` and `client_secret`
+from your Slack [App](https://api.slack.com/apps). Once you have the required credentials
+you can use the following piece of code to set up authentication for `slack`. 
+
+```python
+from composio import Composio
+from composio_langchain import LangchainProvider
+
+def create_auth_config(composio_client: Composio[OpenAIProvider]):
+    """
+    Create a auth config for the slack toolkit.
+    """
+    client_id = os.getenv("SLACK_CLIENT_ID")
+    client_secret = os.getenv("SLACK_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        raise ValueError("SLACK_CLIENT_ID and SLACK_CLIENT_SECRET must be set")
+
+    return composio_client.auth_configs.create(
+        toolkit="SLACK",
+        options={
+            "name": "default_slack_auth_config",
+            "type": "use_custom_auth",
+            "auth_scheme": "OAUTH2",
+            "credentials": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+        },
+    )
+```
+
+This will create an authentication config for `slack` which you can use to
+authenticate your users for your app. Ideally you should just create one
+authentication object per project, so check for an existing auth config
+before you create a new one.
+
+```python
+def fetch_auth_config(composio_client: Composio[OpenAIProvider]):
+    """
+    Fetch the auth config for a given user id.
+    """
+    auth_configs = composio_client.auth_configs.list()
+    for auth_config in auth_configs.items:
+        if auth_config.toolkit == "SLACK":
+            return auth_config
+
+    return None
+```
+</details>
+
+Once you have authentication management in place, we can start with connecting
+your users to your `slack` app. Let's implement a function to connect the users
+to your `slack` app via composio.
+
+```python
+
+# Function to initiate a connected account
+def create_connection(composio_client: Composio[OpenAIProvider], user_id: str):
+    """
+    Create a connection for a given user id and auth config id.
+    """
+    # Fetch or create the auth config for the slack toolkit
+    auth_config = fetch_auth_config(composio_client=composio_client)
+    if not auth_config:
+        auth_config = create_auth_config(composio_client=composio_client)
+
+    # Create a connection for the user
+    return composio_client.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config.id,
+    )
+```
+
+Now, when creating tools for your agent always check if the user already has a
+connected account before creating a new one.
+
+```python
+def check_connected_account_exists(
+    composio_client: Composio[LangchainProvider],
+    user_id: str,
+):
+    """
+    Check if a connected account exists for a given user id.
+    """
+    # Fetch all connected accounts for the user
+    connected_accounts = composio_client.connected_accounts.list(
+        user_ids=[user_id],
+        toolkit_slugs=["SLACK"],
+    )
+
+    # Check if there's an active connected account
+    for account in connected_accounts.items:
+        if account.status == "ACTIVE":
+            return True
+
+        # Ideally you should not have inactive accounts, but if you do, you should delete them
+        print(f"[warning] inactive account {account.id} found for user id: {user_id}")
+    return False
+```
+
+## Modifiers
+
+In the current setup, we are expanding too much unnecessary tokens because response
+from `SLACK_FETCH_CONVERSATION_HISTORY` tool call contains too much unnecessary
+information. This can be fixed using `after_execute` modifier. An after execute
+modifier is called after a tool execution is complete, here you can process
+and modify the response object to make it more easy to consume for your agent.
+
+```python
+from composio import after_execute
+from composio.types import ToolExecutionResponse
+
+
+@after_execute(tools=["SLACK_FETCH_CONVERSATION_HISTORY"])
+def clean_conversation_history(
+    tool: str,
+    toolkit: str,
+    response: ToolExecutionResponse,
+) -> ToolExecutionResponse:
+    """
+    Clean the conversation history.
+    """
+    if not response["data"]["ok"]:
+        return response
+
+    try:
+        response["data"]["messages"] = [
+            {"user": message["user"], "text": message["text"]}
+            for message in response["data"]["messages"]
+            if message["type"] == "message"
+        ]
+    except KeyError:
+        pass
+
+    return response
+```
+
+To register modifiers, include them in the `composio.tools.get` call.
+
+```python
+tools = composio_client.tools.get(
+    user_id=user_id,
+    toolkits=[SLACK_TOOLKIT],
+    modifiers=[clean_conversation_history],
+)
+```
+
+## Putting everything together
+
+So far, we have created an agent with ability to interact with your `slack` 
+workspace using the `composio` SDK, functions to manage connected accounts
+for users and a simple agent runner. Let's package this as a CLI tool.
+
+```python
+def run_agent(user_id: str, prompt: str):
+    composio_client = Composio(provider=LangchainProvider())
+    if not check_connected_account_exists(composio_client, user_id):
+        connection_request = create_connection(composio_client, user_id)
+        print(
+            f"Authenticate with the following link: {connection_request.redirect_url}"
+        )
+        connection_request.wait_for_connection()
+
+    agent = create_agent(user_id, composio_client)
+    agent.invoke({"input": prompt})
+```
+
+To test the above function as CLI, follow the steps below
+
+1. Clone the repository
+   ```bash
+   git clone git@github.com:composiohq/slack-summarizer
+   cd slack-summarizer/
+   ```
+2. Setup environment
+   ```bash
+   cp .env.example .env
+   ```
+
+   Fill the api keys
+   ```dotenv
+   COMPOSIO_API_KEY=
+   OPENAI_API_KEY=
+   ```
+
+   Create the virtual env
+   ```bash
+   make env
+   source .venv/bin/activate
+   ```
+3. Run the agent
+   ```bash
+   python slack_summariser --user-id "default" --prompt "summarise last 5 messages from #general channel"
+   ```
+
+## Using Composio for managed auth and tools
+
+Composio reduces a lot of boilerplate for building AI agents with ability access and use a wide variety of apps. For example in this cookbook, to build `slack` integration without composio you would have to write code to
+- manage `slack` oauth app
+- manage user connections
+- tools for your agents to interact with `slack`
+
+Using composio simplifies all of the above to a few lines of code as we've seen the cookbook.
+
+## Best practices
+
+**🔒 User Management**:
+
+- Use unique, consistent `user_id` values for each person
+- Each user maintains their own slack connection
+- User IDs can be email addresses, usernames, or any unique identifier
+
+## Troubleshooting
+
+**Connection Issues**:
+- Ensure your `.env` file has valid `COMPOSIO_API_KEY` and `OPENAI_API_KEY`
+- Check that the user has completed `slack` authorization
+- Verify the user_id matches exactly between requests
+
+**API Errors**:
+- Check the server logs for detailed error messages
+- Ensure request payloads match the expected format
+- Visit `/docs` endpoint for API schema validation

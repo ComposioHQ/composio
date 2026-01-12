@@ -1,0 +1,24 @@
+---
+title: "Tool Router General Availability"
+date: "2025-12-15"
+---
+
+The Composio SDKs achieved a significant milestone with Tool Router moving from experimental to stable production status in December 2025. The Tool Router is now a fully supported feature that enables creating isolated MCP sessions with scoped toolkit access across both Python 0.10.1 and TypeScript 0.3.0.
+
+### Major Achievements
+
+**Native Tool Execution:** Both SDKs now support direct tool execution through Tool Router sessions. The TypeScript implementation emphasizes improved type safety and error handling, while Python developers benefit from better integration with provider-wrapped tools.
+
+**Webhook Security:** A new verification method was introduced. The system now provides secure webhook endpoint validation and signature verification for incoming webhooks, enhancing protection for trigger-based workflows.
+
+**Framework Compatibility:** The stable Tool Router integrates with multiple AI platforms including OpenAI, Anthropic, LangChain, LlamaIndex, CrewAI, and Vercel AI SDK.
+
+### Technical Improvements
+
+The TypeScript SDK resolved significant CommonJS compatibility issues by switching bundlers. This addresses a common developer pain point, particularly for Node.js projects not using ES modules.
+
+The Python SDK extended LangChain provider support to version 1, while simultaneously fixing a critical KeyError occurring when SUPABASE_BETA_RUN_SQL_QUERY is used with Agents.
+
+### Migration Path
+
+Users upgrading from experimental APIs should note the simplified approach—the Tool Router API now operates directly rather than through experimental namespaces, with comprehensive migration documentation provided.

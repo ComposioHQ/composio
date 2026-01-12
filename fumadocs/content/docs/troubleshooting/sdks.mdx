@@ -1,0 +1,55 @@
+---
+title: SDKs
+description: Troubleshooting SDK issues
+---
+
+## Debug network issues
+
+Enable debug logging to see API calls and identify if issues are SDK or API related. Look for the `x-request-id` in logs to share with support.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```bash
+# Set environment variable
+COMPOSIO_LOGGING_LEVEL=debug
+```
+  </Tab>
+  <Tab value="TypeScript">
+```bash
+// Set environment variable
+COMPOSIO_LOG_LEVEL=debug
+```
+  </Tab>
+</Tabs>
+
+## Check SDK version
+
+Ensure you're using the latest version:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```bash
+pip install --upgrade composio
+```
+  </Tab>
+  <Tab value="TypeScript">
+```bash
+npm install @composio/core@latest
+```
+  </Tab>
+</Tabs>
+
+Check current version:
+- Python: [PyPI](https://pypi.org/project/composio/)
+- TypeScript: [npm](https://www.npmjs.com/package/@composio/core)
+
+## Common issues
+
+- **Type errors or parameter confusion**: Search [DeepWiki](https://deepwiki.com/ComposioHQ/composio) or use the Ask AI assistant
+- **Tool-specific issues**: Check the [specific tool's documentation](/toolkits/introduction)
+- **Bug reporting**: Create a [GitHub issue](https://github.com/ComposioHQ/composio/issues/new?labels=bug) with debug logs and reproduction steps
+
+## Getting help
+
+- **Email**: support@composio.dev
+- **Discord**: [#support-form](https://discord.com/channels/1170785031560646836/1268871288156323901)

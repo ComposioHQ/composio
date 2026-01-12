@@ -1,0 +1,254 @@
+---
+title: Supabase SQL Agent
+description: Build an agent that executes SQL queries on Supabase using natural language
+---
+
+With Composio's managed authentication and tool calling, it's easy to build
+AI agents that interact with the real world while reducing boilerplate for
+setup and authentication management. This guide will walk you through using
+the Supabase CLI agent built with `Composio` and `LlamaIndex`.
+
+
+## Requirements
+
+* Python 3.10+
+* [UV](https://docs.astral.sh/uv/getting-started/installation/) (recommended) or pip
+* Composio API key
+* OpenAI API key
+* Understanding of building AI agents (Preferably with LlamaIndex)
+
+## Build an agent to perform Supabase tasks
+
+```python
+from composio import Composio
+from composio_llamaindex import LlamaIndexProvider
+
+from llama_index.llms.openai import OpenAI
+from llama_index.core.agent.workflow import FunctionAgent
+from llama_index.core.workflow import Context
+
+
+def create_agent(user_id: str, composio_client: Composio[LlamaIndexProvider]):
+   """
+   Create a function agent that can perform Supabase tasks.
+   """
+
+   # Setup client
+   llm = OpenAI(model="gpt-5")
+
+   # Get All the tools
+   tools = composio_client.tools.get(
+      user_id=user_id,
+      tools=[
+         "SUPABASE_LIST_ALL_PROJECTS",
+         "SUPABASE_BETA_RUN_SQL_QUERY",
+      ],
+   )
+
+   agent = FunctionAgent(
+      tools=tools,
+      llm=llm,
+      system_prompt=(
+         "You are a helpful assistant that can help with supabase queries."
+      ),
+   )
+
+   #  Since this is a continuosly running agent, we need to maintain state across
+   # different user messages
+   ctx = Context(workflow=agent)
+   return agent, ctx
+```
+
+This agent can convert your natural language queries to SQL queries and execute
+them on supabase for you. For you agent to be able to execute queries, you need
+to authenticate the agent for supabase.
+
+
+## Authenticating users
+
+To authenticate your users with Composio you need an auth config for the given
+app, In this case you need one for supabase. You can create and manage auth configs
+from the [dashboard](https://platform.composio.dev/?next_page=/auth-configs?create_auth_config=supabase).
+Composio platform provides composio managed authentication for some apps to help
+you fast-track your development, `supabase` being one of them. You can use these
+default auth configs for development, but for production you should always use
+your own oauth app configuration.
+
+Using dashboard is the preferred way of managing authentication configs, but if
+you want to do it manually you can follow the guide below
+
+<details>
+
+<summary>Click to expand</summary>
+
+---
+
+To create an authentication config for `supabase` you need `client_id` and `client_secret`
+from your from your [Google OAuth Console](https://developers.google.com/identity/protocols/oauth2).
+Once you have the required credentials you can use the following piece of
+code to set up authentication for `supabase`. 
+
+```python
+from composio import Composio
+from composio_langchain import LangchainProvider
+
+def create_auth_config(composio_client: Composio[OpenAIProvider]):
+    """
+    Create a auth config for the supabase toolkit.
+    """
+    client_id = os.getenv("SUPABASE_CLIENT_ID")
+    client_secret = os.getenv("SUPABASE_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        raise ValueError("SUPABASE_CLIENT_ID and SUPABASE_CLIENT_SECRET must be set")
+
+    return composio_client.auth_configs.create(
+        toolkit="supabase",
+        options={
+            "name": "default_supabase_auth_config",
+            "type": "use_custom_auth",
+            "auth_scheme": "OAUTH2",
+            "credentials": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+        },
+    )
+```
+
+This will create an authentication config for `supabase` which you can use to
+authenticate your users for your app. Ideally you should just create one
+authentication object per project, so check for an existing auth config
+before you create a new one.
+
+```python
+def fetch_auth_config(composio_client: Composio[OpenAIProvider]):
+    """
+    Fetch the auth config for a given user id.
+    """
+    auth_configs = composio_client.auth_configs.list()
+    for auth_config in auth_configs.items:
+        if auth_config.toolkit == "supabase":
+            return auth_config
+
+    return None
+```
+</details>
+
+Once you have authentication management in place, we can start with connecting
+your users to your `supabase` app. Let's implement a function to connect the users
+to your `supabase` app via composio.
+
+```python
+# Function to initiate a connected account
+def create_connection(composio_client: Composio[OpenAIProvider], user_id: str):
+    """
+    Create a connection for a given user id and auth config id.
+    """
+    # Fetch or create the auth config for the supabase toolkit
+    auth_config = fetch_auth_config(composio_client=composio_client)
+    if not auth_config:
+        auth_config = create_auth_config(composio_client=composio_client)
+
+    # Create a connection for the user
+    return composio_client.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config.id,
+    )
+```
+
+Now, when creating tools for your agent always check if the user already has a
+connected account before creating a new one.
+
+```python
+def check_connected_account_exists(
+    composio_client: Composio[LangchainProvider],
+    user_id: str,
+):
+    """
+    Check if a connected account exists for a given user id.
+    """
+    # Fetch all connected accounts for the user
+    connected_accounts = composio_client.connected_accounts.list(
+        user_ids=[user_id],
+        toolkit_slugs=["SUPABASE"],
+    )
+
+    # Check if there's an active connected account
+    for account in connected_accounts.items:
+        if account.status == "ACTIVE":
+            return True
+
+        # Ideally you should not have inactive accounts, but if you do, you should delete them
+        print(f"[warning] inactive account {account.id} found for user id: {user_id}")
+    return False
+```
+
+
+## Create a chat loop
+
+```python
+async def run_loop(user_id: str):
+    # Initialize composio client.
+    composio_client = Composio(provider=LlamaIndexProvider())
+
+    # Setup connection if required
+    if not check_connected_account_exists(
+        composio_client=composio_client,
+        user_id=user_id,
+    ):
+        connection_request = create_connection(
+            composio_client=composio_client,
+            user_id=user_id,
+        )
+        print(
+            f"Authenticate with the following link: {connection_request.redirect_url}"
+        )
+
+    # Create agent
+    agent, ctx = create_agent(
+        user_id=user_id,
+        composio_client=composio_client,
+    )
+
+    # Run a simple REPL loop
+    while True:
+        user_input = input("user > ")
+        if user_input.lower() == "exit":
+            break
+
+        result = await agent.run(user_msg=user_input, ctx=ctx)
+        print("agent > ", result)
+    print("Exiting...")
+```
+
+## Using Composio for managed auth and tools
+
+Composio reduces a lot of boilerplate for building AI agents with ability access
+and use a wide variety of apps. For example in this cookbook, to build `supabase`
+integration without composio you would have to write code to
+
+- manage `supabase` oauth app
+- manage user connections
+- tools for your agents to interact with `supabase`
+
+Using composio simplifies all of the above to a few lines of code as we've seen the cookbook.
+
+## Best practices
+
+**🔒 User Management**:
+
+- Use unique, consistent `user_id` values for each person
+- Each user maintains their own supabase connection
+- User IDs can be email addresses, usernames, or any unique identifier
+
+## Troubleshooting
+
+**Connection Issues**:
+- Ensure your `.env` file has valid `COMPOSIO_API_KEY` and `OPENAI_API_KEY`
+- Check that the user has completed `supabase` authorization
+- Verify the user_id matches exactly between requests
+
+**API Errors**:
+- Check the server logs for detailed error messages
+- Ensure request payloads match the expected format
+- Visit `/docs` endpoint for API schema validation

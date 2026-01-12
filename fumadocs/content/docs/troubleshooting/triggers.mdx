@@ -1,0 +1,33 @@
+---
+title: Triggers
+description: Troubleshooting trigger issues
+---
+
+## Unable to create trigger
+
+Check the error message - the account might not have sufficient permissions or required scopes.
+
+## Type errors with trigger payloads
+
+Having issues with trigger payload types? Search [DeepWiki](https://deepwiki.com/ComposioHQ/composio) or use the Ask AI assistant for type definitions and examples.
+
+## Not receiving trigger payloads
+
+Even if the action occurred (email received, Jira issue created, etc.), there may be delays:
+
+- **Gmail triggers**: Uses polling with minimum 1-minute frequency - expect delays of up to a minute
+- **Other services**: May have their own polling intervals or webhook delivery delays
+
+## Reporting trigger issues
+
+When reporting to support, provide:
+
+- **Error message**: Complete error details
+- **Connected account**: The account ID used for creating the trigger
+- **cURL command**: To reproduce the issue
+- **Reproduction steps**: Any additional steps needed
+
+## Getting help
+
+- **Email**: support@composio.dev
+- **Discord**: [#support-form](https://discord.com/channels/1170785031560646836/1268871288156323901)
