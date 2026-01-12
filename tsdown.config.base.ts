@@ -18,10 +18,10 @@ export const baseConfig = {
   outExtensions: (ctx) => ({
     js: isESM(ctx)
       ? '.mjs'
-      : '.js',
+      : '.cjs',
     dts: isESM(ctx)
       ? '.d.mts'
-      : '.d.ts',
+      : '.d.cts',
   }),
 
   /**

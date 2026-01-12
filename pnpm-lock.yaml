@@ -1007,6 +1007,18 @@ importers:
         specifier: 'catalog:'
         version: 4.37.1(@cloudflare/workers-types@4.20250917.0)
 
+  ts/packages/core/test-e2e/node-cjs:
+    devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../..
+
+  ts/packages/core/test-e2e/node-esm:
+    devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../..
+
   ts/packages/json-schema-to-zod:
     devDependencies:
       '@types/json-schema':

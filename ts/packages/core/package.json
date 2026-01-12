@@ -15,11 +15,11 @@
       "edge-light": "./dist/platform/workerd.mjs",
       "node": {
         "import": "./dist/platform/node.mjs",
-        "require": "./dist/platform/node.js"
+        "require": "./dist/platform/node.cjs"
       },
       "default": {
         "import": "./dist/platform/node.mjs",
-        "require": "./dist/platform/node.js"
+        "require": "./dist/platform/node.cjs"
       }
     }
   },
@@ -30,12 +30,12 @@
         "default": "./dist/index.mjs"
       },
       "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       },
       "default": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
     },
     "./platform": {
@@ -53,8 +53,8 @@
           "default": "./dist/platform/node.mjs"
         },
         "require": {
-          "types": "./dist/platform/node.d.ts",
-          "default": "./dist/platform/node.js"
+          "types": "./dist/platform/node.d.cts",
+          "default": "./dist/platform/node.cjs"
         }
       },
       "default": {
@@ -63,8 +63,8 @@
           "default": "./dist/platform/node.mjs"
         },
         "require": {
-          "types": "./dist/platform/node.d.ts",
-          "default": "./dist/platform/node.js"
+          "types": "./dist/platform/node.d.cts",
+          "default": "./dist/platform/node.cjs"
         }
       }
     },
