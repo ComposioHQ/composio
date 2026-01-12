@@ -1,5 +1,16 @@
 # @composio/openai-agents
 
+## 0.4.0
+
+### Minor Changes
+
+- c7e1217: Add support for dedicated tools for tool router
+
+### Patch Changes
+
+- Updated dependencies [c7e1217]
+  - @composio/core@0.4.0
+
 ## 0.3.4
 
 ### Patch Changes
