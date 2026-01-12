@@ -16,6 +16,7 @@
     },
     "test:e2e": {
       "dependsOn": ["build"],
+      "env": ["COMPOSIO_API_KEY"],
       "cache": false
     },
     "clean": {
