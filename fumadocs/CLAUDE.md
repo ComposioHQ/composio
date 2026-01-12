@@ -42,40 +42,52 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 
 ## Twoslash - TypeScript Code Block Type Checking
 
-TypeScript code blocks can be type-checked at build time using Twoslash.
+**ALL TypeScript code blocks are type-checked at build time.** This ensures documentation stays in sync with the SDK.
 
-> **Note**: This only validates TypeScript (`ts`, `typescript`) code blocks. Python code blocks are NOT type-checked. A separate Python validation pipeline (using `mypy` or `pyright`) could be added in the future.
+> **Note**: This only validates TypeScript (`ts`, `typescript`, `tsx`) code blocks. Python code blocks are NOT type-checked.
 
-### How to use
-Add `twoslash` to the code fence to enable type checking:
+### Key features
+- **Default on**: All TypeScript blocks are validated. No annotation needed.
+- **Build-time validation**: Type errors fail the build.
+- **CI enforcement**: `.github/workflows/docs-typescript-check.yml` runs on PRs to fumadocs/
 
+### Common patterns
+
+**Basic snippet with setup code (hidden from output):**
 ````md
-```ts twoslash
-import { Composio } from "@composio/core";
-const composio = new Composio({ apiKey: "test" });
-//    ^? - hover shows type info in rendered docs
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'key' });
+const userId = 'user_123';
+// ---cut---
+// Only code below this line is shown in docs
+const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
 ```
 ````
 
-### Key features
-- **Build-time validation**: Code blocks are compiled during build. Type errors fail the build.
-- **Opt-in**: Only blocks with `twoslash` annotation are checked. Regular code blocks are unaffected.
-- **CI enforcement**: `.github/workflows/fumadocs-build.yml` runs on PRs to fumadocs/
+**Skip type checking (for external deps or pseudocode):**
+````md
+```typescript
+// @noErrors
+import { SomeExternalThing } from 'not-installed-package';
+```
+````
 
 ### Annotations
-- `// ^?` - Show type on hover at that position
-- `// @errors: 2322` - Expect specific error (won't fail build)
+- `// ---cut---` - Hide code above from output (but include for compilation)
 - `// @noErrors` - Skip all type checking for this block
-- `// ---cut---` - Hide code above this line from output (but include for compilation)
+- `// @errors: 2322` - Expect specific error code (won't fail build)
+- `// ^?` - Show type on hover at that position
 
 ### Configuration
-- **Config**: `source.config.ts` - `transformerTwoslash({ explicitTrigger: true })`
+- **Config**: `source.config.ts` - `transformerTwoslash({ explicitTrigger: false })`
 - **SDK packages**: Installed as devDependencies for import resolution
 
 ### Troubleshooting
 - If imports fail, ensure the package is in `devDependencies`
-- Use `// @noErrors` for pseudocode or partial examples
-- Check CI logs for specific error codes (e.g., 2322 = type mismatch)
+- Use `// @noErrors` for examples with external dependencies not in package.json
+- Use `// ---cut---` to add setup code (imports, variable declarations) that compiles but isn't shown
+- Check CI logs for specific error codes (e.g., 2304 = cannot find name, 2322 = type mismatch)
 
 ## Deployment
 - Vercel project: `composio/fumadocs`
