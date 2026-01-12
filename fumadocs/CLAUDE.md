@@ -40,9 +40,11 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 4. **Root directory on Vercel**: Set to `fumadocs` with "Include files outside root directory" DISABLED
 5. **Mobile nav**: Always test CSS changes on mobile. Fumadocs uses different nav patterns (dropdown on mobile, horizontal on desktop). Avoid absolute positioning or pseudo-elements that assume horizontal layout.
 
-## Twoslash - Code Block Type Checking
+## Twoslash - TypeScript Code Block Type Checking
 
 TypeScript code blocks can be type-checked at build time using Twoslash.
+
+> **Note**: This only validates TypeScript (`ts`, `typescript`) code blocks. Python code blocks are NOT type-checked. A separate Python validation pipeline (using `mypy` or `pyright`) could be added in the future.
 
 ### How to use
 Add `twoslash` to the code fence to enable type checking:
