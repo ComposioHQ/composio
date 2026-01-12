@@ -1,0 +1,12 @@
+{
+  "name": "@test-e2e/composio-core-node-esm",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "bash run-docker-test.sh"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*"
+  }
+}
