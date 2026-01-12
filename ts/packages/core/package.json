@@ -83,7 +83,7 @@
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
     "test": "vitest run",
-    "test:e2e": "pnpm -r --filter './test-e2e/*' test",
+    "test:e2e": "pnpm -r --filter './test-e2e/*' test:e2e",
     "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "generate:docs": "tsx scripts/generate-docs.ts"
   },
@@ -112,7 +112,6 @@
     "openai": "^5.16.0",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
-    "uuid": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
