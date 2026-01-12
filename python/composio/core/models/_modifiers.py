@@ -360,6 +360,30 @@ def apply_modifier_by_type(
 ) -> "Tool": ...
 
 
+@t.overload
+def apply_modifier_by_type(
+    modifiers: Modifiers,
+    toolkit: str,
+    tool: str,
+    *,
+    type: BeforeExecuteMetaModifierL,
+    session_id: str,
+    params: t.Dict[str, t.Any],
+) -> t.Dict[str, t.Any]: ...
+
+
+@t.overload
+def apply_modifier_by_type(
+    modifiers: Modifiers,
+    toolkit: str,
+    tool: str,
+    *,
+    type: AfterExecuteMetaModifierL,
+    session_id: str,
+    response: "ToolExecutionResponse",
+) -> "ToolExecutionResponse": ...
+
+
 def apply_modifier_by_type(
     modifiers: Modifiers,
     toolkit: str,
@@ -384,46 +408,62 @@ def apply_modifier_by_type(
         if session_id is None:
             raise ValueError("session_id is required for meta modifiers")
 
-        data = params if type == "before_execute_meta" else response
-        if data is None:
-            raise ValueError("No data provided for meta modifier")
+        if type == "before_execute_meta":
+            if params is None:
+                raise ValueError("params is required for before_execute_meta")
+            result_params: t.Dict[str, t.Any] = params
+            for modifier in modifiers:
+                if modifier.type == type:
+                    # Check if modifier should be applied
+                    should_apply = (
+                        (len(modifier.tools) == 0 and len(modifier.toolkits) == 0)
+                        or tool in modifier.tools
+                        or toolkit in modifier.toolkits
+                    )
 
-        for modifier in modifiers:
-            if modifier.type == type:
-                # Check if modifier should be applied
-                should_apply = (
-                    (len(modifier.tools) == 0 and len(modifier.toolkits) == 0)
-                    or tool in modifier.tools
-                    or toolkit in modifier.toolkits
-                )
+                    if should_apply and modifier.modifier is not None:
+                        result_params = t.cast(BeforeExecuteMeta, modifier.modifier)(
+                            tool, toolkit, session_id, result_params
+                        )
+            return result_params
+        else:  # after_execute_meta
+            if response is None:
+                raise ValueError("response is required for after_execute_meta")
+            result_response: "ToolExecutionResponse" = response
+            for modifier in modifiers:
+                if modifier.type == type:
+                    # Check if modifier should be applied
+                    should_apply = (
+                        (len(modifier.tools) == 0 and len(modifier.toolkits) == 0)
+                        or tool in modifier.tools
+                        or toolkit in modifier.toolkits
+                    )
 
-                if should_apply and modifier.modifier is not None:
-                    if type == "before_execute_meta":
-                        data = t.cast(BeforeExecuteMeta, modifier.modifier)(
-                            tool, toolkit, session_id, t.cast(t.Dict[str, t.Any], data)
+                    if should_apply and modifier.modifier is not None:
+                        result_response = t.cast(AfterExecuteMeta, modifier.modifier)(
+                            tool, toolkit, session_id, result_response
                         )
-                    else:
-                        data = t.cast(AfterExecuteMeta, modifier.modifier)(
-                            tool,
-                            toolkit,
-                            session_id,
-                            t.cast("ToolExecutionResponse", data),
-                        )
-        return data
+            return result_response
 
     # For regular modifiers
-    data = schema or request or response
-    if data is None:
+    result: ModifierInOut
+    if schema is not None:
+        result = schema
+    elif request is not None:
+        result = request
+    elif response is not None:
+        result = response
+    else:
         raise ValueError("No data provided")
 
     for modifier in modifiers:
-        data = modifier.apply(
+        result = modifier.apply(
             toolkit=toolkit,
             tool=tool,
-            data=data,
+            data=result,
             modifer_type=type,
         )
-    return data
+    return result
 
 
 class BeforeExecuteMeta(t.Protocol):

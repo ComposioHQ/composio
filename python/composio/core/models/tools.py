@@ -206,19 +206,22 @@ class Tools(Resource, t.Generic[TProvider]):
         """
         # Fetch meta tools from the API
         tools_response = self._client.tool_router.session.tools(session_id=session_id)
-        tools_list = list(tools_response.items)
+        tools_list: t.List[Tool] = list(tools_response.items)
 
         # Apply schema modifiers if provided
         if modifiers is not None:
             from composio.core.models._modifiers import apply_modifier_by_type
 
             tools_list = [
-                apply_modifier_by_type(
-                    modifiers=modifiers,
-                    toolkit=tool.toolkit.slug,
-                    tool=tool.slug,
-                    type="schema",
-                    schema=tool,
+                t.cast(
+                    Tool,
+                    apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit=tool.toolkit.slug,
+                        tool=tool.slug,
+                        type="schema",
+                        schema=tool,
+                    ),
                 )
                 for tool in tools_list
             ]
