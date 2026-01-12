@@ -446,6 +446,28 @@ class TestToolRouter:
             == "https://example.com/callback"
         )
 
+    def test_create_session_with_wait_for_connections(self, tool_router, mock_client):
+        """Test creating a session with wait_for_connections in manage_connections config."""
+        session = tool_router.create(
+            user_id="user_123",
+            manage_connections={
+                "enable": True,
+                "callback_url": "https://example.com/callback",
+                "wait_for_connections": True,
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["manage_connections"]["enable"] is True
+        assert (
+            kwargs["manage_connections"]["callback_url"]
+            == "https://example.com/callback"
+        )
+        assert kwargs["manage_connections"]["enable_wait_for_connections"] is True
+
     def test_create_session_with_auth_configs(self, tool_router, mock_client):
         """Test creating a session with auth configs."""
         session = tool_router.create(
@@ -750,8 +772,9 @@ class TestToolRouter:
         mock_tool.slug = "GMAIL_FETCH_EMAILS"
         mock_tool.toolkit.slug = "gmail"
         mock_tool.input_parameters = {}
-        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
-        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
 
         # Setup provider mock
@@ -765,18 +788,16 @@ class TestToolRouter:
             client=mock_client, provider=mock_provider, auto_upload_download_files=True
         )
 
-        # Verify get_raw_composio_tools was called
-        mock_tools_instance.get_raw_composio_tools.assert_called_once()
+        # Verify get_raw_tool_router_meta_tools was called
+        mock_tools_instance.get_raw_tool_router_meta_tools.assert_called_once()
 
         # Verify provider's wrap_tools was called
         mock_provider.wrap_tools.assert_called_once()
         assert result == "mocked-wrapped-tools"
 
     @patch("composio.core.models.tools.Tools")
-    @patch("composio.core.models._modifiers.apply_modifier_by_type")
     def test_tools_function_with_modifiers(
         self,
-        mock_apply_modifier,
         mock_tools_class,
         tool_router,
         mock_client,
@@ -788,12 +809,10 @@ class TestToolRouter:
         mock_tool.slug = "GMAIL_FETCH_EMAILS"
         mock_tool.toolkit.slug = "gmail"
         mock_tool.input_parameters = {}
-        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
-        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
-
-        # Setup apply_modifier_by_type to return the tool unchanged
-        mock_apply_modifier.return_value = mock_tool
 
         # Setup provider mock
         mock_provider.wrap_tools.return_value = "mocked-wrapped-tools"
@@ -809,8 +828,9 @@ class TestToolRouter:
 
         # Verify provider's wrap_tools was called
         mock_provider.wrap_tools.assert_called_once()
-        # Verify apply_modifier_by_type was called with the modifier
-        assert mock_apply_modifier.called
+        # Verify get_raw_tool_router_meta_tools was called with modifiers
+        call_args = mock_tools_instance.get_raw_tool_router_meta_tools.call_args
+        assert call_args.kwargs.get("modifiers") == modifiers
         assert result == "mocked-wrapped-tools"
 
     def test_session_mcp_type_http(self, tool_router, mock_client):
@@ -989,8 +1009,9 @@ class TestToolRouterExecution:
         mock_tool.slug = "GMAIL_SEND_EMAIL"
         mock_tool.toolkit.slug = "gmail"
         mock_tool.input_parameters = {}
-        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
-        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
         mock_tools_instance._wrap_execute_tool_for_tool_router = MagicMock(
             return_value=lambda slug, args: {
                 "data": {},
@@ -1024,14 +1045,6 @@ class TestToolRouterExecution:
             mock_execute_response
         )
 
-        # Setup mock tool
-        mock_tool = MagicMock()
-        mock_tool.slug = "GMAIL_SEND_EMAIL"
-        mock_tool.toolkit.slug = "gmail"
-
-        # Mock get_raw_composio_tool_by_slug
-        mock_client.tools.retrieve.return_value = mock_tool
-
         # Create a real Tools instance to test the execute function
         from composio.core.models.tools import Tools as RealTools
 
@@ -1059,14 +1072,6 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Test that modifiers are applied before and after tool execution."""
-        # Setup mock tool
-        mock_tool = MagicMock()
-        mock_tool.slug = "GMAIL_SEND_EMAIL"
-        mock_tool.toolkit.slug = "gmail"
-
-        # Mock get_raw_composio_tool_by_slug
-        mock_client.tools.retrieve.return_value = mock_tool
-
         # Setup execute_meta response
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
@@ -1118,14 +1123,6 @@ class TestToolRouterExecution:
 
     def test_execute_tool_error_handling(self, tool_router, mock_client, mock_provider):
         """Test that tool execution errors are handled correctly."""
-        # Setup mock tool
-        mock_tool = MagicMock()
-        mock_tool.slug = "GMAIL_SEND_EMAIL"
-        mock_tool.toolkit.slug = "gmail"
-
-        # Mock get_raw_composio_tool_by_slug
-        mock_client.tools.retrieve.return_value = mock_tool
-
         # Setup execute_meta to return an error
         mock_execute_response = MagicMock()
         mock_execute_response.data = {}
@@ -1165,8 +1162,9 @@ class TestToolRouterIntegration:
         mock_tool.slug = "TOOL1"
         mock_tool.toolkit.slug = "github"
         mock_tool.input_parameters = {}
-        mock_tools_instance.get_raw_composio_tools.return_value = [mock_tool]
-        mock_tools_instance._file_helper.process_schema_recursively.return_value = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
 
         # Setup provider mock

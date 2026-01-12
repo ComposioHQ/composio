@@ -74,8 +74,20 @@ SchemaModifierL: t.TypeAlias = t.Literal["schema"]
 class Modifier:
     def __init__(
         self,
-        modifier: t.Optional[AfterExecute | BeforeExecute | SchemaModifier],
-        type_: AfterExecuteModifierL | BeforeExecuteModifierL | SchemaModifierL,
+        modifier: t.Optional[
+            AfterExecute
+            | BeforeExecute
+            | SchemaModifier
+            | BeforeExecuteMeta
+            | AfterExecuteMeta
+        ],
+        type_: (
+            AfterExecuteModifierL
+            | BeforeExecuteModifierL
+            | SchemaModifierL
+            | AfterExecuteMetaModifierL
+            | BeforeExecuteMetaModifierL
+        ),
         tools: t.List[str],
         toolkits: t.List[str],
     ) -> None:
@@ -234,6 +246,84 @@ def schema_modifier(
     raise ValueError("Either tools or toolkits must be provided")
 
 
+@t.overload
+def before_execute_meta(modifier: t.Optional[BeforeExecuteMeta]) -> Modifier: ...
+
+
+@t.overload
+def before_execute_meta(
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> t.Callable[[BeforeExecuteMeta], Modifier]: ...
+
+
+def before_execute_meta(
+    modifier: t.Optional[BeforeExecuteMeta] = None,
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> Modifier | t.Callable[[BeforeExecuteMeta], Modifier]:
+    if modifier is not None:
+        return Modifier(
+            modifier=modifier,
+            type_="before_execute_meta",
+            tools=tools or [],
+            toolkits=toolkits or [],
+        )
+
+    if tools is not None or toolkits is not None:
+        return t.cast(
+            t.Callable[[BeforeExecuteMeta], Modifier],
+            functools.partial(
+                before_execute_meta,
+                tools=tools or [],
+                toolkits=toolkits or [],
+            ),
+        )
+
+    raise ValueError("Either tools or toolkits must be provided")
+
+
+@t.overload
+def after_execute_meta(modifier: t.Optional[AfterExecuteMeta]) -> Modifier: ...
+
+
+@t.overload
+def after_execute_meta(
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> t.Callable[[AfterExecuteMeta], Modifier]: ...
+
+
+def after_execute_meta(
+    modifier: t.Optional[AfterExecuteMeta] = None,
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> Modifier | t.Callable[[AfterExecuteMeta], Modifier]:
+    if modifier is not None:
+        return Modifier(
+            modifier=modifier,
+            type_="after_execute_meta",
+            tools=tools or [],
+            toolkits=toolkits or [],
+        )
+
+    if tools is not None or toolkits is not None:
+        return t.cast(
+            t.Callable[[AfterExecuteMeta], Modifier],
+            functools.partial(
+                after_execute_meta,
+                tools=tools or [],
+                toolkits=toolkits or [],
+            ),
+        )
+
+    raise ValueError("Either tools or toolkits must be provided")
+
+
 Modifiers = t.List[Modifier]
 
 
@@ -275,12 +365,53 @@ def apply_modifier_by_type(
     toolkit: str,
     tool: str,
     *,
-    type: t.Literal["before_execute", "after_execute", "schema"],
+    type: t.Literal[
+        "before_execute",
+        "after_execute",
+        "schema",
+        "before_execute_meta",
+        "after_execute_meta",
+    ],
     schema: t.Optional["Tool"] = None,
     request: t.Optional["ToolExecuteParams"] = None,
     response: t.Optional["ToolExecutionResponse"] = None,
-) -> ModifierInOut:
+    session_id: t.Optional[str] = None,
+    params: t.Optional[t.Dict[str, t.Any]] = None,
+) -> t.Union[ModifierInOut, t.Dict[str, t.Any]]:
     """Apply a modifier to a tool."""
+    # For meta modifiers, we handle them differently
+    if type in ("before_execute_meta", "after_execute_meta"):
+        if session_id is None:
+            raise ValueError("session_id is required for meta modifiers")
+
+        data = params if type == "before_execute_meta" else response
+        if data is None:
+            raise ValueError("No data provided for meta modifier")
+
+        for modifier in modifiers:
+            if modifier.type == type:
+                # Check if modifier should be applied
+                should_apply = (
+                    (len(modifier.tools) == 0 and len(modifier.toolkits) == 0)
+                    or tool in modifier.tools
+                    or toolkit in modifier.toolkits
+                )
+
+                if should_apply and modifier.modifier is not None:
+                    if type == "before_execute_meta":
+                        data = t.cast(BeforeExecuteMeta, modifier.modifier)(
+                            tool, toolkit, session_id, t.cast(t.Dict[str, t.Any], data)
+                        )
+                    else:
+                        data = t.cast(AfterExecuteMeta, modifier.modifier)(
+                            tool,
+                            toolkit,
+                            session_id,
+                            t.cast("ToolExecutionResponse", data),
+                        )
+        return data
+
+    # For regular modifiers
     data = schema or request or response
     if data is None:
         raise ValueError("No data provided")
@@ -293,6 +424,38 @@ def apply_modifier_by_type(
             modifer_type=type,
         )
     return data
+
+
+class BeforeExecuteMeta(t.Protocol):
+    """
+    A modifier that is called before the meta tool is executed in a session context.
+    """
+
+    def __call__(
+        self,
+        tool: str,
+        toolkit: str,
+        session_id: str,
+        params: t.Dict[str, t.Any],
+    ) -> t.Dict[str, t.Any]: ...
+
+
+class AfterExecuteMeta(t.Protocol):
+    """
+    A modifier that is called after the meta tool is executed in a session context.
+    """
+
+    def __call__(
+        self,
+        tool: str,
+        toolkit: str,
+        session_id: str,
+        response: ToolExecutionResponse,
+    ) -> ToolExecutionResponse: ...
+
+
+AfterExecuteMetaModifierL: t.TypeAlias = t.Literal["after_execute_meta"]
+BeforeExecuteMetaModifierL: t.TypeAlias = t.Literal["before_execute_meta"]
 
 
 class ToolOptions(te.TypedDict):
