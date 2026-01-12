@@ -14,9 +14,10 @@ on:
 jobs:
   test-e2e:
     name: E2E Test Typescript SDK
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
+    runs-on: ubuntu-22.04  # Use Ubuntu 22.04 for stability
+    permissions: read-all
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
 
     steps:
       - name: Checkout Code
@@ -37,7 +38,13 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
+      - name: Verify API Key
+        run: |
+          if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "::error::COMPOSIO_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ COMPOSIO_API_KEY is configured"
+
       - name: Run E2E Tests
         run: pnpm run test:e2e
-        env:
-          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
