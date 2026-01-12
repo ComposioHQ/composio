@@ -19,7 +19,7 @@ composio = Composio()
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
+```typescript
 import { Composio } from "@composio/core";
 
 const composio = new Composio({
@@ -64,12 +64,8 @@ def add_custom_auth(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-const authModifier = ({ toolSlug, toolkitSlug, params }: {
-  toolSlug: string;
-  toolkitSlug: string;
-  params: any;
-}) => {
+```typescript
+const authModifier = (toolSlug: string, toolkitSlug: string, params: any) => {
   // Add authentication parameters for specific toolkits
   if (toolkitSlug === "NOTION") {
     if (!params.customAuthParams) {
@@ -116,11 +112,7 @@ print(result)
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const authModifier = ({ params }: { toolSlug: string; toolkitSlug: string; params: any }) => params;
-// ---cut---
+```typescript
 const result = await composio.tools.execute(
   "NOTION_GET_DATABASE_ITEMS",
   {

@@ -44,12 +44,7 @@ def add_two_numbers(request: AddTwoNumbersInput) -> int:
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-// @noErrors
-import { Composio } from '@composio/core';
-import { z } from 'zod';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 const tool = await composio.tools.createCustomTool({
   slug: 'CALCULATE_SQUARE',
   name: 'Calculate Square',
@@ -113,12 +108,7 @@ def get_issue_info(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-// @noErrors
-import { Composio } from '@composio/core';
-import { z } from 'zod';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_STAR_COMPOSIOHQ_REPOSITORY',
   name: 'Github star composio repositories',
@@ -185,12 +175,7 @@ def get_issue_info_direct(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-// @noErrors
-import { Composio } from '@composio/core';
-import { z } from 'zod';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_DIRECT_API',
   name: 'Direct GitHub API Call',
@@ -257,12 +242,7 @@ def get_issue_info(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-// @noErrors
-import { Composio } from '@composio/core';
-import { z } from 'zod';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_SEARCH_REPOSITORIES',
   name: 'Search GitHub Repositories',
@@ -324,10 +304,7 @@ response = composio.tools.execute(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 const result = await composio.tools.execute('TOOL_SLUG', {
   arguments: {
     // Tool input parameters

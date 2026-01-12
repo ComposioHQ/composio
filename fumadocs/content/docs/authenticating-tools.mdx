@@ -129,10 +129,10 @@ print(f"Visit: {redirect_url} to authenticate your account")
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
+```typescript
 import { Composio } from '@composio/core';
 
-const composio = new Composio({ apiKey: "your_api_key" });
+const composio = new Composio({apiKey: "your_api_key"});
 
 // Use the "AUTH CONFIG ID" from your dashboard
 const authConfigId = 'your_auth_config_id';
@@ -202,10 +202,10 @@ print(f"Connection established: {connected_account.id}")
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
+```typescript
 import { Composio } from '@composio/core';
 
-const composio = new Composio({ apiKey: "YOUR_COMPOSIO_API_KEY" });
+const composio = new Composio({apiKey: "YOUR_COMPOSIO_API_KEY"});
 
 // Use the "AUTH CONFIG ID" from your dashboard
 const authConfigId = 'your_auth_config_id';
@@ -249,12 +249,8 @@ connection_request = composio.connected_accounts.initiate(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio, AuthScheme } from '@composio/core';
-const composio = new Composio({ apiKey: "your_api_key" });
-const userId = 'user_123';
-const authConfigId = 'your_auth_config_id';
-// ---cut---
+```typescript
+import { AuthScheme } from '@composio/core';
 // For Zendesk - include subdomain
 const connRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
   config: AuthScheme.OAuth2({
@@ -300,7 +296,7 @@ print(f"Connection established: {connection_request.id}")
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
+```typescript
 import { Composio, AuthScheme } from '@composio/core';
 
 const composio = new Composio({ apiKey: 'your_api_key' });
@@ -350,7 +346,7 @@ print(f"Required fields: {auth_config.expected_input_fields}")
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
+```typescript
 import { Composio } from '@composio/core';
 
 const composio = new Composio({ apiKey: 'your_api_key' });
@@ -420,11 +416,7 @@ print(connected_account.id)
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const connectionRequest = await composio.connectedAccounts.initiate('user_123', 'auth_config_id', {});
-// ---cut---
+```typescript
 // Wait for the connection to be established
 const connectedAccount = await connectionRequest.waitForConnection();
 console.log(connectedAccount.id);
@@ -466,10 +458,7 @@ for connection in filtered_connections.items:
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 // Get a specific connected account by its nanoid
 const connectedAccount = await composio.connectedAccounts.get('your_connected_account_id');
 console.log(`Status: ${connectedAccount.status}`);

@@ -55,8 +55,7 @@ print(result)
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-// @noErrors
+```typescript
 import { Composio } from '@composio/core';
 import { AnthropicProvider } from '@composio/anthropic';
 import { Anthropic } from '@anthropic-ai/sdk';
@@ -141,8 +140,7 @@ asyncio.run(main())
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-// @noErrors
+```typescript
 import { Composio } from '@composio/core';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
@@ -214,7 +212,7 @@ print(result)
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
+```typescript
 import { Composio } from "@composio/core";
 
 const userId = "user-k7334";
@@ -270,10 +268,7 @@ print(response)
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 // Send a proxy request to the endpoint
 const { data } = await composio.tools.proxyExecute({
     endpoint:'/repos/composiohq/composio/issues/1',
@@ -319,11 +314,7 @@ print(result)  # Print Google Drive file details
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio } from '@composio/core';
-import path from 'path';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 // Upload a local file to Google Drive
 const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
   userId: 'user-4235***',
@@ -360,10 +351,7 @@ print(result)
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript twoslash
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
+```typescript
 // Download a file from Google Drive
 const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
     userId: 'user-1235***',
@@ -382,10 +370,7 @@ console.log(result);
 
 You can disable automatic file handling when initializing the TypeScript SDK. When disabled, handle file uploads and downloads manually using `files.upload` and `files.download`:
 
-```typescript twoslash
-import { Composio } from '@composio/core';
-import path from 'path';
-// ---cut---
+```typescript
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   autoUploadDownloadFiles: false
@@ -393,7 +378,7 @@ const composio = new Composio({
 
 // Now you need to handle files manually using composio.files API
 const fileData = await composio.files.upload({
-  file: path.join(__dirname, 'document.pdf'),
+  filePath: path.join(__dirname, 'document.pdf'),
   toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
   toolkitSlug: 'googledrive'
 });
