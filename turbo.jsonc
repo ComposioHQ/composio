@@ -6,7 +6,10 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "tsdown.config.ts",
-        "../../../tsdown.config.base.ts"
+        // for core
+        "../../../tsdown.config.base.ts",
+        // for providers
+        "../../../../tsdown.config.base.ts"
       ],
       "outputs": ["dist/"]
     },
