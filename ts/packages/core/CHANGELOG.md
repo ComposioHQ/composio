@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.4.0
+
+### Minor Changes
+
+- c7e1217: Add support for dedicated tools for tool router
+
 ## 0.3.4
 
 ### Patch Changes
