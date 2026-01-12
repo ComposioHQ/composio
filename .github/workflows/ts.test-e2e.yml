@@ -13,9 +13,19 @@ on:
 
 jobs:
   test-e2e:
-    name: E2E Test Typescript SDK
+    name: E2E Test Typescript SDK (Node ${{ matrix.node-version }})
     runs-on: ubuntu-22.04  # Use Ubuntu 22.04 for stability
     permissions: read-all
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [
+          # may throw ERR_REQUIRE_ESM
+          "20.18.0",
+          # supports ESM by default
+          "20.19.0",
+          "22.12.0"
+        ]
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
 
@@ -29,7 +39,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "20"
+          node-version: "${{ matrix.node-version }}"
           cache: "pnpm"
 
       - name: Install Dependencies
@@ -48,3 +58,5 @@ jobs:
 
       - name: Run E2E Tests
         run: pnpm run test:e2e
+        env:
+          COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}

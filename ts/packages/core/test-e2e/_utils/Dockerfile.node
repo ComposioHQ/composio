@@ -1,23 +1,26 @@
 # Reusable Dockerfile for Node.js e2e tests
-# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.17.0 --build-arg TEST_DIR=... --build-arg TEST_CMD="node test.cjs" -t test-name .
-ARG NODE_VERSION=20.17.0
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.19.0 --build-arg TEST_DIR=... --build-arg TEST_CMD="node test.cjs" -t test-name .
+ARG NODE_VERSION=20.19.0
 
 FROM node:${NODE_VERSION}-slim
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
+# Install corepack to use pnpm.
+# See: https://vercel.com/kb/guide/corepack-errors-github-actions.
+RUN npm i -g corepack@latest && corepack enable
+
 # Copy pnpm workspace files
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY tsconfig.base.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs package.json tsconfig.base.json tsdown.config.base.ts ./
 
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 
 # Install dependencies using pnpm
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Test directory (relative to /app)
 ARG TEST_DIR
