@@ -995,7 +995,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
-            tools=self._create_tools_fn(session.session_id, session.tool_router_tools),
+            tools=self._create_tools_fn(session.session_id),
             authorize=self._create_authorize_fn(session.session_id),
             toolkits=self._create_toolkits_fn(session.session_id),
         )
