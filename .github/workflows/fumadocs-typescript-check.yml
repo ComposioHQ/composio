@@ -1,4 +1,4 @@
-name: Fumadocs - Build & Type Check
+name: Fumadocs - TypeScript Code Validation
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
       - 'fumadocs/**'
 
 jobs:
-  build:
+  typescript-check:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,8 +24,8 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Type check
+      - name: TypeScript type check
         run: bun run types:check
 
-      - name: Build (validates Twoslash code blocks)
+      - name: Build (validates Twoslash TypeScript code blocks)
         run: bun run build
