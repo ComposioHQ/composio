@@ -1075,10 +1075,21 @@ class Triggers(Resource):
             ) from e
 
         # Try V3 first (has 'type' === 'composio.trigger.message' and 'metadata')
+        # Validate metadata is a dict with all required fields (matching TypeScript's zod schema)
+        v3_metadata = data.get("metadata") if isinstance(data, dict) else None
+        v3_metadata_valid = (
+            isinstance(v3_metadata, dict)
+            and "log_id" in v3_metadata
+            and "trigger_slug" in v3_metadata
+            and "trigger_id" in v3_metadata
+            and "connected_account_id" in v3_metadata
+            and "auth_config_id" in v3_metadata
+            and "user_id" in v3_metadata
+        )
         if (
             isinstance(data, dict)
             and data.get("type") == "composio.trigger.message"
-            and "metadata" in data
+            and v3_metadata_valid
             and "id" in data
         ):
             return (
@@ -1206,16 +1217,16 @@ class Triggers(Resource):
                 "id": metadata["trigger_id"],
                 "uuid": metadata["trigger_id"],
                 "user_id": metadata["user_id"],
-                "toolkit_slug": metadata["trigger_slug"].split("_")[0]
+                "toolkit_slug": metadata["trigger_slug"].split("_")[0].upper()
                 if "_" in metadata["trigger_slug"]
-                else "",
+                else "UNKNOWN",
                 "trigger_slug": metadata["trigger_slug"],
                 "metadata": {
                     "id": metadata["trigger_id"],
                     "uuid": metadata["trigger_id"],
-                    "toolkit_slug": metadata["trigger_slug"].split("_")[0]
+                    "toolkit_slug": metadata["trigger_slug"].split("_")[0].upper()
                     if "_" in metadata["trigger_slug"]
-                    else "",
+                    else "UNKNOWN",
                     "trigger_slug": metadata["trigger_slug"],
                     "trigger_data": None,
                     "trigger_config": {},

@@ -12,7 +12,11 @@
  * 5. Configure the webhook URL in your Composio dashboard: `https://<your-telebit-url>/webhook`
  */
 
-import { Composio } from '@composio/core';
+import {
+  Composio,
+  ComposioWebhookSignatureVerificationError,
+  ComposioWebhookPayloadError,
+} from '@composio/core';
 import 'dotenv/config';
 
 const PORT = process.env.PORT || 3000;
@@ -83,10 +87,7 @@ const server = Bun.serve({
         console.error('\n❌ Webhook verification failed:', error);
 
         // Return 401 for signature verification errors
-        if (
-          error instanceof Error &&
-          error.name === 'ComposioWebhookSignatureVerificationError'
-        ) {
+        if (error instanceof ComposioWebhookSignatureVerificationError) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), {
             status: 401,
             headers: { 'Content-Type': 'application/json' },
@@ -94,7 +95,7 @@ const server = Bun.serve({
         }
 
         // Return 400 for payload parsing errors
-        if (error instanceof Error && error.name === 'ComposioWebhookPayloadError') {
+        if (error instanceof ComposioWebhookPayloadError) {
           return new Response(JSON.stringify({ error: 'Bad Request' }), {
             status: 400,
             headers: { 'Content-Type': 'application/json' },
