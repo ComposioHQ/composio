@@ -1,8 +1,18 @@
 # Breaking Changes Analysis - CORRECTED
 
+## Version Information
+
+### TypeScript/JavaScript
+- **Package**: `@composio/core` and provider packages
+- **Version**: `0.3.4` → `0.4.0`
+
+### Python
+- **Package**: `composio-core` and provider packages
+- **Version**: `1.25.0` → `1.26.0`
+
 ## Executive Summary
 
-After validation, **most changes are NOT breaking** for JavaScript/TypeScript users.
+After validation, **most changes are NOT breaking** for JavaScript/TypeScript users or Python users.
 
 ## ✅ **CONFIRMED: NOT Breaking**
 
@@ -104,6 +114,11 @@ await composio.mcp.create(...)
 | `toolkitSlug` value changed | 🟡 RARE | ❌ NO | 🟡 Only if checking value |
 | Modifier type signature | ❌ NO | 🟡 MAYBE | 🟡 Only if explicitly typed |
 | `experimental.mcp` removed | ✅ YES | ✅ YES | ✅ YES |
+| **New: `wait_for_connections` property** | ❌ NO | ❌ NO | ❌ NO |
+| **New: Session-specific modifiers** | ❌ NO | ❌ NO | ❌ NO |
+| **New: `getRawToolRouterMetaTools` method** | ❌ NO | ❌ NO | ❌ NO |
+| **Internal: Tool router uses session API** | ❌ NO | ❌ NO | ❌ NO |
+| **Internal: Optimized tool execution** | ❌ NO | ❌ NO | ❌ NO |
 
 ---
 
@@ -199,14 +214,148 @@ oldModifier(newContext); // ✅ WORKS!
 
 ---
 
+---
+
+## Recent Updates (Tool Router Improvements)
+
+### ✅ **NEW FEATURES (Non-Breaking)**
+
+#### 1. `wait_for_connections` Property in Manage Connections
+**Added**: `wait_for_connections` boolean property to `ToolRouterManageConnectionsConfig`
+
+```typescript
+// TypeScript
+const session = await composio.toolRouter.create(userId, {
+  manageConnections: {
+    enable: true,
+    callbackUrl: 'https://example.com/callback',
+    waitForConnections: true  // NEW: Wait for connections to be ready
+  }
+});
+```
+
+```python
+# Python
+session = tool_router.create(
+    user_id="user_123",
+    manage_connections={
+        "enable": True,
+        "callback_url": "https://example.com/callback",
+        "wait_for_connections": True  # NEW: Wait for connections to be ready
+    }
+)
+```
+
+**Impact**: ✅ **NON-BREAKING** - Optional parameter with sensible defaults
+
+#### 2. New Session-Specific Modifier Types
+**Added**: `SessionExecuteMetaModifiers` and `SessionMetaToolOptions` types for better session-based tool execution
+
+```typescript
+// TypeScript - New meta-specific modifiers
+const tools = await session.tools({
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => schema,
+  beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => params,
+  afterExecute: ({ toolSlug, toolkitSlug, sessionId, result }) => result
+});
+```
+
+```python
+# Python - New meta-specific modifiers
+from composio.core.models import before_execute_meta, after_execute_meta
+
+@before_execute_meta
+def before_modifier(tool, toolkit, session_id, params):
+    return params
+
+@after_execute_meta
+def after_modifier(tool, toolkit, session_id, response):
+    return response
+
+tools = session.tools(modifiers=[before_modifier, after_modifier])
+```
+
+**Impact**: ✅ **NON-BREAKING** - New optional types, existing code works unchanged
+
+#### 3. Dedicated Method for Tool Router Meta Tools
+**Added**: `get_raw_tool_router_meta_tools(session_id, modifiers?)` method in Tools class
+
+```typescript
+// TypeScript
+const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    // Customize schema
+    return schema;
+  }
+});
+```
+
+```python
+# Python
+meta_tools = tools_model.get_raw_tool_router_meta_tools(
+    session_id="session_123",
+    modifiers=[schema_modifier]
+)
+```
+
+**Impact**: ✅ **NON-BREAKING** - New method, doesn't affect existing APIs
+
+### 🔧 **INTERNAL IMPROVEMENTS (No User Impact)**
+
+#### 1. Tool Router Now Uses Dedicated Session API
+**Changed**: Tool router sessions now fetch tools directly from the session API endpoint instead of using tool slugs
+
+**Before**:
+```python
+# Internal: Used get_raw_composio_tools(tools=tool_slugs)
+```
+
+**After**:
+```python
+# Internal: Uses get_raw_tool_router_meta_tools(session_id)
+```
+
+**Impact**: ✅ **NON-BREAKING** - Internal implementation detail, no API changes
+
+#### 2. Optimized Tool Execution
+**Changed**: Eliminated unnecessary tool fetching during tool router execution
+
+**Before**:
+```python
+# Internal: Fetched tool schema before execution
+tool = self.get_raw_composio_tool_by_slug(slug)
+# ... then executed
+```
+
+**After**:
+```python
+# Internal: Direct execution without fetching, uses hardcoded 'composio' toolkit
+# ... execute directly
+```
+
+**Impact**: ✅ **NON-BREAKING** + Performance improvement
+
+#### 3. Method Signature Update
+**Changed**: `_create_tools_fn(session_id)` - removed unused `tool_slugs` parameter
+
+**Impact**: ✅ **NON-BREAKING** - Internal/private method, not part of public API
+
+---
+
 ## Conclusion
 
 This release is **backward compatible** for 99% of use cases. The changes:
 
-✅ **Add new optional features** (sessionId tracking)
+✅ **Add new optional features** (sessionId tracking, wait_for_connections)
 ✅ **Simplify types** (more permissive)
 ✅ **Improve API consistency** (meta tools use 'composio' toolkit)
+✅ **Improve performance** (eliminated unnecessary tool fetching)
+✅ **Add new modifier types** (session-specific meta modifiers)
 🟡 **Remove experimental features** (clear deprecation path)
 
-**Recommendation**: Release as **MINOR version** (1.x.x → 1.x+1.0) with clear release notes about new features and experimental API removal.
+**Recommendation**: 
+- **TypeScript**: Release as **MINOR version** (`0.3.4` → `0.4.0`)
+- **Python**: Release as **MINOR version** (`1.25.0` → `1.26.0`)
+
+Both releases include clear release notes about new features and experimental API removal.
 
