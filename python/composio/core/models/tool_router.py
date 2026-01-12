@@ -584,6 +584,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         tools_model = ToolsModel(
             client=self._client,
             provider=self._provider,
+            auto_upload_download_files=self._auto_upload_download_files,
         )
 
         def tools_fn(modifiers: t.Optional[Modifiers] = None) -> t.Any:
