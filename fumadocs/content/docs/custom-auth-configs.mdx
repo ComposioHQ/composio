@@ -101,7 +101,11 @@ print(connected_account)
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
 const connReq = await composio.connectedAccounts.initiate(userId, "ac_1234");
 
 console.log(connReq.redirectUrl);
@@ -175,7 +179,8 @@ def authorize_app(toolkit: str):
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+// @noErrors
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {

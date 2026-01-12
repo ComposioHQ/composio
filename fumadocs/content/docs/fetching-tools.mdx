@@ -18,7 +18,11 @@ tools = composio.tools.get(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
 const tools = await composio.tools.get(userId, {
   toolkits: ["GITHUB"]
 });
@@ -39,7 +43,10 @@ tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
 ```
   </Tab>
@@ -75,7 +82,11 @@ raw_tools = composio.tools.get_raw_composio_tools(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
 // Fetch with limit for a specific user
 const limitedTools = await composio.tools.get(userId, {
   toolkits: ["GITHUB"],
@@ -111,7 +122,11 @@ raw_tools = composio.tools.get_raw_composio_tools(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
 // Fetch specific tools by name
 const specificTools = await composio.tools.get(userId, {
   tools: ["GITHUB_LIST_STARGAZERS", "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"]
@@ -141,7 +156,11 @@ tools = composio.tools.get(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
 // Filter by OAuth scopes (single toolkit only)
 const scopedTools = await composio.tools.get(userId, {
   toolkits: ["GITHUB"],
@@ -184,7 +203,11 @@ raw_tools = composio.tools.get_raw_composio_tools(
 ```
   </Tab>
   <Tab value="TypeScript">
-```typescript
+```typescript twoslash
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
 // Search tools semantically
 const searchResults = await composio.tools.get(userId, {
   search: "create google calendar event"
