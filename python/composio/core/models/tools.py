@@ -162,6 +162,73 @@ class Tools(Resource, t.Generic[TProvider]):
             )
         return tools_list
 
+    def get_raw_tool_router_meta_tools(
+        self,
+        session_id: str,
+        modifiers: t.Optional["Modifiers"] = None,
+    ) -> list[Tool]:
+        """
+        Fetches the meta tools for a tool router session.
+
+        This method fetches the meta tools from the Composio API and transforms them to
+        the expected format. It provides access to the underlying meta tool data without
+        provider-specific wrapping.
+
+        :param session_id: The session ID to get the meta tools for
+        :param modifiers: Optional modifiers to apply to the tool schemas
+        :return: The list of meta tools
+
+        Example:
+            ```python
+            from composio import Composio
+
+            composio = Composio()
+            tools_model = composio.tools
+
+            # Get meta tools for a session
+            meta_tools = tools_model.get_raw_tool_router_meta_tools("session_123")
+            print(meta_tools)
+
+            # Get meta tools with schema modifiers
+            from composio.core.models import schema_modifier
+
+            @schema_modifier
+            def modify_schema(tool: str, toolkit: str, schema):
+                # Customize the schema
+                schema.description = f"Modified: {schema.description}"
+                return schema
+
+            meta_tools = tools_model.get_raw_tool_router_meta_tools(
+                "session_123",
+                modifiers=[modify_schema]
+            )
+            ```
+        """
+        # Fetch meta tools from the API
+        tools_response = self._client.tool_router.session.tools(session_id=session_id)
+        # Cast to Tool type - session.tools returns compatible Item type from different response schema
+        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
+
+        # Apply schema modifiers if provided
+        if modifiers is not None:
+            from composio.core.models._modifiers import apply_modifier_by_type
+
+            tools_list = [
+                t.cast(
+                    Tool,
+                    apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit=tool.toolkit.slug,
+                        tool=tool.slug,
+                        type="schema",
+                        schema=tool,
+                    ),
+                )
+                for tool in tools_list
+            ]
+
+        return tools_list
+
     def _get(
         self,
         user_id: str,
@@ -352,10 +419,8 @@ class Tools(Resource, t.Generic[TProvider]):
             :param arguments: The tool arguments
             :return: Tool execution response
             """
-            # Get tool schema for modifiers
-            tool = self.get_raw_composio_tool_by_slug(slug)
-
             # Apply before_execute modifiers
+            # Meta tools are always from the 'composio' toolkit
             processed_arguments = arguments
             if modifiers is not None:
                 params: ToolExecuteParams = {
@@ -364,7 +429,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 type_before: t.Literal["before_execute"] = "before_execute"
                 modified_params = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    toolkit="composio",
                     tool=slug,
                     type=type_before,
                     request=params,
@@ -392,7 +457,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 type_after: t.Literal["after_execute"] = "after_execute"
                 result = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    toolkit="composio",
                     tool=slug,
                     type=type_after,
                     response=result,
@@ -643,7 +708,6 @@ __all__ = [
     "Tools",
     "ToolExecuteParams",
     "ToolExecutionResponse",
-    "Modifiers",
     "Modifiers",
     "after_execute",
     "before_execute",

@@ -162,10 +162,15 @@ class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
         enable: Whether to use tools to manage connections. Defaults to True.
                 If False, you need to manage connections manually.
         callback_url: Optional callback URL to use for OAuth redirects.
+        wait_for_connections: Whether to wait for users to finish authenticating
+                             connections before proceeding to the next step. Defaults to False.
+                             If set to True, a wait for connections tool call will happen and
+                             finish when the connections are ready.
     """
 
     enable: bool
     callback_url: str
+    wait_for_connections: bool
 
 
 @dataclass
@@ -559,17 +564,15 @@ class ToolRouter(Resource, t.Generic[TProvider]):
     def _create_tools_fn(
         self,
         session_id: str,
-        tool_slugs: t.Sequence[str],
     ) -> ToolsFn:
         """
         Create a tools function that wraps tools for the provider.
 
         :param session_id: The session ID
-        :param tool_slugs: List of tool slugs to wrap
+        :param tool_slugs: List of tool slugs to wrap (not used anymore, kept for backward compatibility)
         :return: Function that returns provider-wrapped tools
         """
-        from composio.core.models._modifiers import apply_modifier_by_type
-        from composio.core.models.tools import Tool, Tools as ToolsModel
+        from composio.core.models.tools import Tools as ToolsModel
         from composio.core.provider import AgenticProvider, NonAgenticProvider
 
         if self._provider is None:
@@ -628,10 +631,14 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 )
 
                 # With custom modifiers
-                tools = session.tools(modifiers={
-                    'pre_execute': lambda tool, args: print(f"Executing {tool}"),
-                    'post_execute': lambda tool, result: print(f"Result: {result}"),
-                })
+                from composio.core.models import schema_modifier
+
+                @schema_modifier
+                def modify_schema(tool: str, toolkit: str, schema):
+                    print(f"Executing {tool} from {toolkit}")
+                    return schema
+
+                tools = session.tools(modifiers=[modify_schema])
                 ```
 
             Note:
@@ -639,22 +646,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 only the tools enabled for this session based on the configuration
                 provided during session creation.
             """
-            # Get raw tool schemas
-            router_tools = tools_model.get_raw_composio_tools(tools=list(tool_slugs))
 
-            # Apply schema modifiers
-            if modifiers is not None:
-                type_schema: t.Literal["schema"] = "schema"
-                router_tools = [
-                    apply_modifier_by_type(
-                        modifiers=modifiers,
-                        toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
-                        tool=tool.slug,
-                        type=type_schema,
-                        schema=t.cast(Tool, tool),
-                    )
-                    for tool in router_tools
-                ]
+            # Get raw meta tools from the session (instead of using tool_slugs)
+            # This fetches tools directly from the tool router session
+            router_tools = tools_model.get_raw_tool_router_meta_tools(
+                session_id=session_id,
+                modifiers=modifiers,
+            )
 
             # Always enhance schema descriptions (type hints and required notes)
             for tool in router_tools:
@@ -663,15 +661,6 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                         schema=tool.input_parameters,
                     )
                 )
-
-            # Process file uploadable schemas
-            if self._auto_upload_download_files:
-                for tool in router_tools:
-                    tool.input_parameters = (
-                        tools_model._file_helper.process_file_uploadable_schema(
-                            schema=tool.input_parameters,
-                        )
-                    )
 
             # Wrap tools with provider
             if issubclass(type(self._provider), NonAgenticProvider):
@@ -794,7 +783,10 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                                       connections. Defaults to True.
                                     - 'callback_url' (str, optional): Callback URL for
                                       OAuth redirects.
-                                    Example: {'enable': True, 'callback_url': 'https://example.com/callback'}
+                                    - 'wait_for_connections' (bool, optional): Whether to wait
+                                      for users to finish authenticating connections before
+                                      proceeding to the next step. Defaults to False.
+                                    Example: {'enable': True, 'callback_url': 'https://example.com/callback', 'wait_for_connections': True}
         :param auth_configs: Optional mapping of toolkit slug to auth config ID.
                            Example: {'github': 'ac_xxx', 'slack': 'ac_yyy'}
         :param connected_accounts: Optional mapping of toolkit slug to connected account ID.
@@ -859,6 +851,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 manage_connections={
                     'enable': True,
                     'callback_url': 'https://example.com/callback',
+                    'wait_for_connections': True,
                 }
             )
 
@@ -933,9 +926,14 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                             transformed_config["tags"] = transformed_tags
                     tools_payload[toolkit_slug] = transformed_config
 
-        # Parse callback_uri
+        # Parse callback_url and wait_for_connections from manage_connections config
         callback_url = (
             manage_connections.get("callback_url")
+            if isinstance(manage_connections, dict)
+            else omit
+        )
+        wait_for_connections = (
+            manage_connections.get("wait_for_connections")
             if isinstance(manage_connections, dict)
             else omit
         )
@@ -951,6 +949,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         }
         if callback_url is not None and callback_url is not omit:
             connections_config["callback_url"] = callback_url
+        if wait_for_connections is not None and wait_for_connections is not omit:
+            connections_config["enable_wait_for_connections"] = wait_for_connections
 
         create_params["manage_connections"] = connections_config
 
@@ -996,7 +996,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
-            tools=self._create_tools_fn(session.session_id, session.tool_router_tools),
+            tools=self._create_tools_fn(session.session_id),
             authorize=self._create_authorize_fn(session.session_id),
             toolkits=self._create_toolkits_fn(session.session_id),
         )
@@ -1034,7 +1034,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
-            tools=self._create_tools_fn(session.session_id, session.tool_router_tools),
+            tools=self._create_tools_fn(session.session_id),
             authorize=self._create_authorize_fn(session.session_id),
             toolkits=self._create_toolkits_fn(session.session_id),
         )
