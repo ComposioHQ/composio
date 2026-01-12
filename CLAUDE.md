@@ -165,7 +165,8 @@ CI                       # CI environment flag
 - **Error Classes**: `ts/packages/core/src/errors/`
 - **Examples**: `ts/examples/` and `examples/`
 - **Documentation**: `ts/docs/` and `fern/`
-- **Build Configs**: `turbo.json`, `tsconfig.base.json`
+- **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
+- **E2E Tests**: `ts/e2e-tests/`
 
 ## Testing Commands
 
