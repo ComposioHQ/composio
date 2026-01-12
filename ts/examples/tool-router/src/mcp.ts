@@ -6,7 +6,7 @@ import ora from 'ora';
 
 const composio = new Composio();
 const trProgress = ora("Creating tool router session...").start();
-const { mcp } = await composio.create('jkomyno', {
+const { mcp } = await composio.create('default', {
   toolkits: ['gmail'], 
   manageConnections: true,
   tools: {
