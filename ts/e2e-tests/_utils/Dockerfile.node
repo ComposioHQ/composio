@@ -23,7 +23,9 @@ COPY ts/packages/ ./ts/packages/
 COPY ts/e2e-tests/ ./ts/e2e-tests/
 
 # Install dependencies using pnpm
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Note: We intentionally don't use --mount=type=cache for the pnpm store here
+# because it causes native binding issues (e.g., rolldown-binding) across builds
+RUN pnpm install --frozen-lockfile
 
 # Test directory (relative to /app)
 ARG TEST_DIR

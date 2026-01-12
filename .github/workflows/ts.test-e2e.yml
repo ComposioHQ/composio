@@ -15,7 +15,7 @@ jobs:
   # Node.js E2E tests, running in Docker to isolate environment
   test-e2e-node-docker:
     name: E2E Test Node.js (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions: read-all
     strategy:
       fail-fast: false
@@ -40,7 +40,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "${{ matrix.node-version }}"
+          node-version: "20"
           cache: "pnpm"
 
       - name: Install Dependencies
@@ -62,7 +62,7 @@ jobs:
   # Cloudflare Workerd E2E tests
   test-e2e-cloudflare:
     name: E2E Test Cloudflare Workerd
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
