@@ -40,6 +40,41 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 4. **Root directory on Vercel**: Set to `fumadocs` with "Include files outside root directory" DISABLED
 5. **Mobile nav**: Always test CSS changes on mobile. Fumadocs uses different nav patterns (dropdown on mobile, horizontal on desktop). Avoid absolute positioning or pseudo-elements that assume horizontal layout.
 
+## Twoslash - Code Block Type Checking
+
+TypeScript code blocks can be type-checked at build time using Twoslash.
+
+### How to use
+Add `twoslash` to the code fence to enable type checking:
+
+````md
+```ts twoslash
+import { Composio } from "@composio/core";
+const composio = new Composio({ apiKey: "test" });
+//    ^? - hover shows type info in rendered docs
+```
+````
+
+### Key features
+- **Build-time validation**: Code blocks are compiled during build. Type errors fail the build.
+- **Opt-in**: Only blocks with `twoslash` annotation are checked. Regular code blocks are unaffected.
+- **CI enforcement**: `.github/workflows/fumadocs-build.yml` runs on PRs to fumadocs/
+
+### Annotations
+- `// ^?` - Show type on hover at that position
+- `// @errors: 2322` - Expect specific error (won't fail build)
+- `// @noErrors` - Skip all type checking for this block
+- `// ---cut---` - Hide code above this line from output (but include for compilation)
+
+### Configuration
+- **Config**: `source.config.ts` - `transformerTwoslash({ explicitTrigger: true })`
+- **SDK packages**: Installed as devDependencies for import resolution
+
+### Troubleshooting
+- If imports fail, ensure the package is in `devDependencies`
+- Use `// @noErrors` for pseudocode or partial examples
+- Check CI logs for specific error codes (e.g., 2322 = type mismatch)
+
 ## Deployment
 - Vercel project: `composio/fumadocs`
 - Uses `bun install` and `bun run build`
