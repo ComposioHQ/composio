@@ -22,7 +22,7 @@
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
-    "ai": "^6.0.3",
+    "ai": "catalog:",
     "dotenv": "^16.4.1"
   },
   "devDependencies": {

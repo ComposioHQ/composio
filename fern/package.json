@@ -59,7 +59,7 @@
 		"@types/node": "^20.17.57",
 		"@types/react": "^18.3.23",
 		"@types/yaml": "^1.9.7",
-		"ai": "^6.0.3",
+		"ai": "catalog:",
 		"composio-core": "^0.5.39",
 		"hono": "^4.7.11",
 		"messages": "link:@langchain/core/messages",
