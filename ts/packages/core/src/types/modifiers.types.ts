@@ -1,5 +1,5 @@
 import { BaseAgenticProvider, BaseComposioProvider } from '../provider/BaseProvider';
-import { ToolExecuteParams, ToolExecuteResponse, Tool } from './tool.types';
+import { ToolExecuteParams, ToolExecuteResponse, Tool, ToolExecuteMetaParams } from './tool.types';
 
 /**
  * Modifier for altering the tool execute parameters before execution.
@@ -393,6 +393,13 @@ export type ExecuteToolModifiers = {
 };
 
 /**
+ * Type alias for meta tool execution arguments.
+ * Represents the arguments passed to a meta tool during execution.
+ * This is derived from ToolExecuteMetaParams but guaranteed to be non-null.
+ */
+export type MetaToolArguments = NonNullable<ToolExecuteMetaParams['arguments']>;
+
+/**
  * Modifier for altering the meta tool execute parameters before execution in a session context.
  *
  * This function is specifically designed for meta tools executed within a tool router session,
@@ -402,8 +409,8 @@ export type ExecuteToolModifiers = {
  * @param {string} toolSlug - The slug identifier of the meta tool being executed
  * @param {string} toolkitSlug - The toolkit slug (always 'composio' for meta tools)
  * @param {string} sessionId - The session ID for the tool router context
- * @param {Record<string, unknown>} params - The parameters being passed to the meta tool
- * @returns {Record<string, unknown>} The modified parameters
+ * @param {MetaToolArguments} params - The parameters being passed to the meta tool
+ * @returns {MetaToolArguments} The modified parameters
  *
  * @example
  * ```typescript
@@ -422,8 +429,8 @@ export type beforeExecuteMetaModifier = (context: {
   toolSlug: string;
   toolkitSlug: string;
   sessionId: string;
-  params: Record<string, unknown>;
-}) => Promise<Record<string, unknown>> | Record<string, unknown>;
+  params: MetaToolArguments;
+}) => Promise<MetaToolArguments> | MetaToolArguments;
 
 /**
  * Modifier for altering the meta tool execution response after execution completes in a session context.
