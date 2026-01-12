@@ -206,7 +206,8 @@ class Tools(Resource, t.Generic[TProvider]):
         """
         # Fetch meta tools from the API
         tools_response = self._client.tool_router.session.tools(session_id=session_id)
-        tools_list: t.List[Tool] = list(tools_response.items)
+        # Cast to Tool type - session.tools returns compatible Item type from different response schema
+        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
 
         # Apply schema modifiers if provided
         if modifiers is not None:
