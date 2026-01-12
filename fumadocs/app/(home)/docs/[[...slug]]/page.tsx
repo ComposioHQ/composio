@@ -15,12 +15,14 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  const MDX = page.data.body;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = page.data as any;
+  const MDX = data.body;
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription className="mb-4">{page.data.description}</DocsDescription>
+    <DocsPage toc={data.toc} full={data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+      <DocsTitle>{data.title}</DocsTitle>
+      <DocsDescription className="mb-4">{data.description}</DocsDescription>
       <DocsBody>
         <MDX
           components={getMDXComponents({

@@ -5,6 +5,7 @@ import {
   frontmatterSchema,
   metaSchema,
 } from 'fumadocs-mdx/config';
+import { transformerTwoslash } from '@shikijs/twoslash';
 import { z } from 'zod';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
@@ -80,6 +81,12 @@ export const changelog = defineCollections({
 
 export default defineConfig({
   mdxOptions: {
-    // MDX options
+    rehypeCodeOptions: {
+      transformers: [
+        transformerTwoslash({
+          explicitTrigger: true, // Only process blocks with ```ts twoslash
+        }),
+      ],
+    },
   },
 });
