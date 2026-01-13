@@ -1,0 +1,13 @@
+{
+  "name": "peer-deps-test",
+  "version": "1.0.0",
+  "type": "module",
+  "// dependencies": {
+    "@composio/core": "file:/app/ts/packages/core"
+  },
+  "dependencies": {
+    "@composio/core": "0.3.4",
+    "openai": "^5.20.3",
+    "zod": "^4.3.5"
+  }
+}
