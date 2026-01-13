@@ -271,7 +271,11 @@ export const downloadFileFromS3 = async ({
     name: fileName,
     mimeType: mimeType,
     s3Url: s3Url,
-    filePath: filePath,
+
+    /**
+     * @todo: fix in follow-up PR.
+     */
+    filePath: filePath as string,
   };
 };
 
