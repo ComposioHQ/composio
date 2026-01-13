@@ -8,5 +8,5 @@ export type FileDownloadData = {
   name: string;
   mimeType: string;
   s3Url: string;
-  filePath: string | null;
+  filePath: string;
 };

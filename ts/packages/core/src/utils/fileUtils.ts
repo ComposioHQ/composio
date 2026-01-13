@@ -3,7 +3,7 @@ import ComposioClient from '@composio/client';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from './constants';
 import logger from './logger';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
-import { getRandomShortId, getRandomUUID } from './uuid';
+import { getRandomShortId } from './uuid';
 import { platform } from '#platform';
 
 // Helper function to get file extension from MIME type

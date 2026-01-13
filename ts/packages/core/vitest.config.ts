@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '#platform': path.resolve(__dirname, 'src/platform/node.ts'),
+      '#files': path.resolve(__dirname, 'src/models/Files.node.ts'),
     },
   },
   test: {
