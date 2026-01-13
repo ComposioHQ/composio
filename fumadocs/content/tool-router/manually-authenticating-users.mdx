@@ -28,6 +28,9 @@ print(f"Connected: {connected_account.id}")
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123");
 
 const connectionRequest = await session.authorize("gmail");
@@ -63,10 +66,14 @@ for toolkit in toolkits.items:
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
 const toolkits = await session.toolkits();
 
 toolkits.items.forEach((toolkit) => {
-  console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount?.id ?? "Not connected"}`);
+  console.log(`${toolkit.name}: ${toolkit.connection?.connectedAccount?.id ?? "Not connected"}`);
 });
 ```
 </Tab>
@@ -87,6 +94,9 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123", {
   manageConnections: false,
 });
@@ -143,7 +153,7 @@ const session = await composio.create("user_123", {
 const toolkits = await session.toolkits();
 
 const connected = toolkits.items
-  .filter((t) => t.connection.connectedAccount)
+  .filter((t) => t.connection?.connectedAccount)
   .map((t) => t.slug);
 
 const pending = requiredToolkits.filter((slug) => !connected.includes(slug));

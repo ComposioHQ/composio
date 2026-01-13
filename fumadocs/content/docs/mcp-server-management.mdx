@@ -25,6 +25,9 @@ print(f"Created server: {server.id}")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const server = await composio.mcp.create(
   "my-gmail-server",
   {
@@ -69,6 +72,9 @@ production_servers = composio.mcp.list(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // List all servers
 const servers = await composio.mcp.list({
   limit: 10,
@@ -111,6 +117,9 @@ print(f"Toolkits: {server.toolkits}")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // Get by ID
 const server = await composio.mcp.get("mcp_server_id");
 
@@ -136,6 +145,9 @@ updated = composio.mcp.update(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const updated = await composio.mcp.update(
   "mcp_server_id",
   {
@@ -168,6 +180,9 @@ if result['deleted']:
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const result = await composio.mcp.delete("mcp_server_id");
 if (result.deleted) {
   console.log("Server deleted successfully");
@@ -200,6 +215,9 @@ server = composio.mcp.create(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const server = await composio.mcp.create(
   "productivity-suite",
   {
@@ -252,8 +270,14 @@ instance_manual = server.generate(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // Generate instance for user
-const instance = await server.generate("user@example.com");
+const instance = await composio.mcp.generate(
+  "user@example.com",
+  "mcp_server_id"
+);
 
 console.log("URL:", instance.url);
 console.log("Tools:", instance.allowedTools);
@@ -262,7 +286,7 @@ console.log("Tools:", instance.allowedTools);
 // Set manuallyManageConnections: true to disable it:
 const instanceManual = await composio.mcp.generate(
   "user@example.com",
-  server.id,
+  "mcp_server_id",
   { manuallyManageConnections: true }
 );
 ```

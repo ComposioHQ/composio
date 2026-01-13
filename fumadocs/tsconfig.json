@@ -17,7 +17,9 @@
     "incremental": true,
     "paths": {
       "@/*": ["./*"],
-      "fumadocs-mdx:collections/*": [".source/*"]
+      "fumadocs-mdx:collections/*": [".source/*"],
+      "zod": ["./node_modules/fumadocs-mdx/node_modules/zod"],
+      "zod/v3": ["./node_modules/fumadocs-mdx/node_modules/zod/v3"]
     },
     "plugins": [
       {

@@ -24,6 +24,9 @@ session = composio.create(user_id="user_123")
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123");
 ```
 </Tab>
@@ -46,9 +49,12 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123", {
   manageConnections: {
-    callbackUri: "https://yourapp.com/chat",
+    callbackUrl: "https://yourapp.com/chat",
   },
 });
 ```

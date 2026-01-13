@@ -38,6 +38,9 @@ print(f"Personal account connected: {personal_connection.id}")
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123");
 
 // Connect first account (work)
@@ -85,6 +88,9 @@ session2 = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // This session will use a specific Gmail account
 const session = await composio.create("user_123", {
   connectedAccounts: {
@@ -122,10 +128,14 @@ for toolkit in toolkits.items:
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
 const toolkits = await session.toolkits();
 
 for (const toolkit of toolkits.items) {
-  if (toolkit.connection.connectedAccount) {
+  if (toolkit.connection?.connectedAccount) {
     console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount.id}`);
   }
 }

@@ -142,6 +142,9 @@ print(f"Available Versions: {toolkit.meta.available_versions}")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // Get toolkit information including available versions
 const toolkit = await composio.toolkits.get("github");
 

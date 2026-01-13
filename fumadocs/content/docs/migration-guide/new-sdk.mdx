@@ -107,6 +107,7 @@ toolset = ComposioToolSet()
   </Tab>
   <Tab value="TypeScript (previous)">
 ```typescript
+// @noErrors
 import { OpenAIToolSet } from 'composio-core';
 
 const toolset = new OpenAIToolSet();
@@ -134,6 +135,7 @@ tools = composio.tools.get(
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 // import { VercelProvider } from '@composio/vercel';
 
@@ -181,6 +183,7 @@ tools = toolset.get_tools(apps=[App.GITHUB, App.LINEAR, App.SLACK], check_connec
   </Tab>
   <Tab value="TypeScript (previous)">
 ```typescript
+// @noErrors
 import { OpenAIToolSet } from 'composio-core';
 
 const toolset = new OpenAIToolSet();
@@ -228,6 +231,7 @@ tools_4 = composio.tools.get(user_id="john", search="hackernews posts")
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const userId = 'user@acme.org';
@@ -272,6 +276,7 @@ print(tool.model_dump_json())
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
@@ -315,6 +320,7 @@ print(result)
   </Tab>
   <Tab value="TypeScript v3">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 import { AnthropicProvider } from '@composio/anthropic';
 import Anthropic from '@anthropic-ai/sdk';
@@ -423,6 +429,7 @@ tools = composio.tools.get(
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 import { OpenAI } from 'openai';
 
@@ -477,6 +484,7 @@ tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 const result_1 = await composio.tools.execute(
   'HACKERNEWS_GET_LATEST_POSTS',
   {
@@ -522,6 +530,7 @@ tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 const result_2 = await composio.tools.execute(
   'HACKERNEWS_GET_USER',
   {
@@ -578,6 +587,7 @@ def get_github_repo_topics(
   </Tab>
   <Tab value="TypeScript (previous)">
 ```typescript
+// @noErrors
 import { OpenAIToolSet, type ActionExecutionResDto } from "composio-core";
 import { z } from "zod";
 
@@ -654,6 +664,7 @@ def get_issue_info(
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 import z from "zod";
 
@@ -737,6 +748,7 @@ print(integration.id)
   </Tab>
   <Tab value="TypeScript (previous)">
 ```typescript
+// @noErrors
 import { OpenAIToolSet } from "composio-core";
 
 const composioToolset = new OpenAIToolSet();
@@ -787,6 +799,7 @@ print(auth_config)
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
@@ -862,6 +875,7 @@ except Exception as e:
   </Tab>
   <Tab value="TypeScript (previous)">
 ```typescript
+// @noErrors
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();
@@ -913,6 +927,7 @@ print(connected_account)
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -987,6 +1002,7 @@ composio.triggers.enable(id="ti_abcd123")
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
@@ -1042,6 +1058,7 @@ print(disabled_instance)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 await composio.triggers.disable("ti_abcd123");
 ```
   </Tab>
@@ -1059,6 +1076,7 @@ print(enabled_instance)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 await composio.triggers.enable("ti_abcd123");
 ```
   </Tab>
@@ -1124,6 +1142,7 @@ async def webhook_handler(request: Request):
   </Tab>
   <Tab value="Next.js">
 ```typescript title="app/api/webhook/route.ts"
+// @noErrors
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { TriggerEvent } from '@composio/core';
 import crypto from 'crypto';

@@ -45,6 +45,10 @@ def add_two_numbers(request: AddTwoNumbersInput) -> int:
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+import { z } from 'zod/v3';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const tool = await composio.tools.createCustomTool({
   slug: 'CALCULATE_SQUARE',
   name: 'Calculate Square',
@@ -109,6 +113,10 @@ def get_issue_info(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+import { z } from 'zod/v3';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_STAR_COMPOSIOHQ_REPOSITORY',
   name: 'Github star composio repositories',
@@ -176,6 +184,10 @@ def get_issue_info_direct(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+import { z } from 'zod/v3';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_DIRECT_API',
   name: 'Direct GitHub API Call',
@@ -186,9 +198,12 @@ const tool = await composio.tools.createCustomTool({
   }),
   execute: async (input, connectionConfig, executeToolRequest) => {
     // Use connectionConfig for direct API calls
+    if (!connectionConfig || connectionConfig.authScheme !== 'OAUTH2') {
+      throw new Error('OAuth2 connection required');
+    }
     const result = await fetch(`https://api.github.com/repos/${input.repo}`, {
       headers: {
-        Authorization: `Bearer ${connectionConfig.access_token}`,
+        Authorization: `Bearer ${connectionConfig.val.access_token}`,
       },
     });
 
@@ -243,6 +258,10 @@ def get_issue_info(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+import { z } from 'zod/v3';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const tool = await composio.tools.createCustomTool({
   slug: 'GITHUB_SEARCH_REPOSITORIES',
   name: 'Search GitHub Repositories',
@@ -305,6 +324,9 @@ response = composio.tools.execute(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const result = await composio.tools.execute('TOOL_SLUG', {
   arguments: {
     // Tool input parameters
