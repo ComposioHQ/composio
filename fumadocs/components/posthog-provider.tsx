@@ -2,18 +2,23 @@
 
 import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  const [isInitialized, setIsInitialized] = useState(false);
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY && !posthog.__loaded) {
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         api_host:
           process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
         person_profiles: 'identified_only',
         capture_pageview: false, // We capture manually below
         capture_pageleave: true,
+        loaded: (posthog) => {
+          setIsInitialized(true);
+        },
       });
     }
   }, []);
@@ -24,7 +29,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PHProvider client={posthog}>
-      <SuspendedPostHogPageView />
+      {isInitialized && <SuspendedPostHogPageView />}
       {children}
     </PHProvider>
   );
