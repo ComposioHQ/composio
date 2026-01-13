@@ -1,6 +1,7 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import './global.css';
 import { IBM_Plex_Mono } from 'next/font/google';
+import { PostHogProvider } from '@/components/posthog-provider';
 
 const ibmPlexMono = IBM_Plex_Mono({
   weight: ['400', '500', '600'],
@@ -25,20 +26,22 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         />
       </head>
       <body className="flex flex-col min-h-screen font-sans">
-        <RootProvider
-          theme={{
-            defaultTheme: 'light',
-            attribute: 'class',
-            enableSystem: false,
-          }}
-          search={{
-            options: {
-              api: '/api/search',
-            },
-          }}
-        >
-          {children}
-        </RootProvider>
+        <PostHogProvider>
+          <RootProvider
+            theme={{
+              defaultTheme: 'light',
+              attribute: 'class',
+              enableSystem: false,
+            }}
+            search={{
+              options: {
+                api: '/api/search',
+              },
+            }}
+          >
+            {children}
+          </RootProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
