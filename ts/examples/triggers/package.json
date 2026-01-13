@@ -8,6 +8,7 @@
     "clean": "git clean -xdf node_modules",
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
+    "webhook:server": "bun src/webhook-server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["composio", "example", "triggers"],

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import functools
 import hashlib
 import hmac
@@ -9,7 +10,7 @@ import traceback
 import typing as t
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from enum import Enum
 from unittest import mock
 
 from composio_client.types import TriggersTypeRetrieveResponse
@@ -82,6 +83,57 @@ class _TriggerData(te.TypedDict):
     originalPayload: t.Dict
 
 
+class WebhookVersion(str, Enum):
+    """Webhook payload version."""
+
+    V1 = "V1"
+    V2 = "V2"
+    V3 = "V3"
+
+
+class WebhookPayloadV1(te.TypedDict):
+    """V1 webhook payload structure."""
+
+    trigger_name: str
+    connection_id: str
+    trigger_id: str
+    payload: t.Dict[str, t.Any]
+    log_id: str
+
+
+class WebhookPayloadV2(te.TypedDict):
+    """V2 webhook payload structure."""
+
+    type: str
+    timestamp: str
+    log_id: str
+    data: t.Dict[str, t.Any]
+
+
+class WebhookPayloadV3Metadata(te.TypedDict):
+    """V3 webhook payload metadata."""
+
+    log_id: str
+    trigger_slug: str
+    trigger_id: str
+    connected_account_id: str
+    auth_config_id: str
+    user_id: str
+
+
+class WebhookPayloadV3(te.TypedDict):
+    """V3 webhook payload structure."""
+
+    id: str
+    timestamp: str
+    type: t.Literal["composio.trigger.message"]
+    metadata: WebhookPayloadV3Metadata
+    data: t.Dict[str, t.Any]
+
+
+WebhookPayload = t.Union[WebhookPayloadV1, WebhookPayloadV2, WebhookPayloadV3]
+
+
 class TriggerConnectedAccountSchema(t.TypedDict):
     id: str
     uuid: str
@@ -113,6 +165,14 @@ class TriggerEvent(t.TypedDict):
     original_payload: t.Optional[
         t.Dict[str, t.Any]
     ]  # The original payload of the trigger
+
+
+class VerifyWebhookResult(t.TypedDict):
+    """Result of webhook verification."""
+
+    version: WebhookVersion  # The webhook version (V1, V2, or V3)
+    payload: TriggerEvent  # The parsed and normalized webhook payload
+    raw_payload: WebhookPayload  # The original parsed payload
 
 
 _ = {
@@ -808,24 +868,30 @@ class Triggers(Resource):
 
     def verify_webhook(
         self,
+        *,
+        id: str,
         payload: str,
-        signature: str,
         secret: str,
+        signature: str,
+        timestamp: str,
         tolerance: int = 300,
-    ) -> TriggerEvent:
+    ) -> VerifyWebhookResult:
         """
         Verify an incoming webhook payload and signature.
 
         This method validates that the webhook request is authentic by:
-        1. Verifying the HMAC-SHA256 signature matches the payload
-        2. Optionally checking that the webhook timestamp is within the tolerance window
+        1. Validating the webhook timestamp is within the tolerance window
+        2. Verifying the HMAC-SHA256 signature using the correct algorithm
+        3. Parsing the payload and detecting the webhook version (V1, V2, or V3)
 
+        :param id: The webhook message ID from the 'webhook-id' header (format: 'msg_xxx')
         :param payload: The raw webhook payload as a string (request body)
-        :param signature: The signature from the webhook header (e.g., 'x-composio-signature')
-        :param secret: The webhook secret used to sign the payload
+        :param secret: The webhook secret used to sign the payload (from Composio dashboard)
+        :param signature: The signature from the 'webhook-signature' header (format: 'v1,base64EncodedSignature')
+        :param timestamp: The webhook timestamp from the 'webhook-timestamp' header (Unix seconds)
         :param tolerance: Maximum allowed age of the webhook in seconds (default: 300 = 5 minutes).
                          Set to 0 to disable timestamp validation.
-        :return: The verified and parsed webhook payload as a TriggerEvent
+        :return: VerifyWebhookResult containing version, normalized payload, and raw payload
         :raises WebhookSignatureVerificationError: If the signature verification fails
         :raises WebhookPayloadError: If the payload cannot be parsed or is invalid
 
@@ -834,46 +900,62 @@ class Triggers(Resource):
             @app.route('/webhook', methods=['POST'])
             def webhook():
                 try:
-                    event = composio.triggers.verify_webhook(
+                    result = composio.triggers.verify_webhook(
+                        id=request.headers.get('webhook-id', ''),
                         payload=request.get_data(as_text=True),
-                        signature=request.headers.get('x-composio-signature', ''),
+                        signature=request.headers.get('webhook-signature', ''),
+                        timestamp=request.headers.get('webhook-timestamp', ''),
                         secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
                     )
 
                     # Process the verified payload
-                    print(f"Received trigger: {event['trigger_slug']}")
+                    print(f"Version: {result['version']}")
+                    print(f"Received trigger: {result['payload']['trigger_slug']}")
                     return 'OK', 200
                 except WebhookSignatureVerificationError:
                     return 'Unauthorized', 401
         """
-        # Verify signature
-        self._verify_webhook_signature(payload, signature, secret)
-
-        # Parse and validate payload
-        try:
-            data = t.cast(_TriggerData, json.loads(payload))
-        except json.JSONDecodeError as e:
-            raise exceptions.WebhookPayloadError(
-                f"Failed to parse webhook payload as JSON: {e}"
-            ) from e
-
-        # Transform to TriggerEvent format
-        event = self._transform_trigger_data(data)
-
         # Validate timestamp if tolerance is set
         if tolerance > 0:
-            self._validate_webhook_timestamp(data, tolerance)
+            self._validate_webhook_timestamp_header(timestamp, tolerance)
 
-        return event
+        # Verify signature using the correct algorithm
+        self._verify_webhook_signature(
+            webhook_id=id,
+            webhook_timestamp=timestamp,
+            payload=payload,
+            signature=signature,
+            secret=secret,
+        )
+
+        # Parse and detect version
+        version, raw_payload, normalized_payload = self._parse_webhook_payload(payload)
+
+        return {
+            "version": version,
+            "payload": normalized_payload,
+            "raw_payload": raw_payload,
+        }
 
     def _verify_webhook_signature(
-        self, payload: str, signature: str, secret: str
+        self,
+        *,
+        webhook_id: str,
+        webhook_timestamp: str,
+        payload: str,
+        signature: str,
+        secret: str,
     ) -> None:
         """
         Verify the HMAC-SHA256 signature of a webhook payload.
 
+        The signature is computed as: HMAC-SHA256(webhookId.webhookTimestamp.payload, secret)
+        and then base64 encoded with a 'v1,' prefix.
+
+        :param webhook_id: The webhook message ID from header
+        :param webhook_timestamp: The webhook timestamp from header
         :param payload: The raw webhook payload
-        :param signature: The signature to verify
+        :param signature: The signature to verify (format: 'v1,base64EncodedSignature')
         :param secret: The webhook secret
         :raises WebhookSignatureVerificationError: If verification fails
         """
@@ -894,64 +976,274 @@ class Triggers(Resource):
                 "You can find your webhook secret in your Composio dashboard."
             )
 
-        expected_signature = hmac.new(
-            key=secret.encode("utf-8"),
-            msg=payload.encode("utf-8"),
-            digestmod=hashlib.sha256,
-        ).hexdigest()
-
-        # Use timing-safe comparison to prevent timing attacks
-        if not hmac.compare_digest(signature, expected_signature):
+        if not webhook_id:
             raise exceptions.WebhookSignatureVerificationError(
-                "The signature provided is invalid."
+                "No webhook ID was provided. "
+                "Please pass the value of the 'webhook-id' header."
             )
 
-    def _validate_webhook_timestamp(self, data: _TriggerData, tolerance: int) -> None:
-        """
-        Validate that the webhook timestamp is within the allowed tolerance.
+        if not webhook_timestamp:
+            raise exceptions.WebhookSignatureVerificationError(
+                "No webhook timestamp was provided. "
+                "Please pass the value of the 'webhook-timestamp' header."
+            )
 
-        :param data: The parsed trigger data
+        # Parse signature header - format is "v1,base64Sig" or "v1,sig1 v1,sig2"
+        # Split by space to handle multiple signatures
+        signature_parts = signature.split(" ")
+        v1_signatures: t.List[str] = []
+
+        for part in signature_parts:
+            if part.startswith("v1,"):
+                v1_signatures.append(part[3:])  # Remove "v1," prefix
+
+        if not v1_signatures:
+            raise exceptions.WebhookSignatureVerificationError(
+                "No valid v1 signature found in the signature header. "
+                "Expected format: 'v1,base64EncodedSignature'"
+            )
+
+        # Construct the string to sign: webhookId.webhookTimestamp.payload
+        to_sign = f"{webhook_id}.{webhook_timestamp}.{payload}"
+
+        # Compute expected signature
+        expected_signature_bytes = hmac.new(
+            key=secret.encode("utf-8"),
+            msg=to_sign.encode("utf-8"),
+            digestmod=hashlib.sha256,
+        ).digest()
+        expected_signature_b64 = base64.b64encode(expected_signature_bytes).decode(
+            "utf-8"
+        )
+
+        # Check if any of the provided signatures match (timing-safe)
+        for provided_sig in v1_signatures:
+            try:
+                if hmac.compare_digest(provided_sig, expected_signature_b64):
+                    return  # Signature is valid
+            except Exception:
+                continue  # Invalid signature format, try next
+
+        raise exceptions.WebhookSignatureVerificationError(
+            "The signature provided is invalid."
+        )
+
+    def _validate_webhook_timestamp_header(
+        self, timestamp: str, tolerance: int
+    ) -> None:
+        """
+        Validate that the webhook timestamp header is within the allowed tolerance.
+
+        :param timestamp: The webhook timestamp from header (Unix seconds)
         :param tolerance: Maximum allowed age in seconds
         :raises WebhookSignatureVerificationError: If timestamp is outside tolerance
         :raises WebhookPayloadError: If timestamp format is invalid
         """
-        # Check for timestamp in various locations
-        timestamp_str: t.Optional[str] = None
-
-        # Check root level
-        if "timestamp" in data:  # type: ignore
-            timestamp_str = data.get("timestamp")  # type: ignore
-        elif "webhookTimestamp" in data:  # type: ignore
-            timestamp_str = data.get("webhookTimestamp")  # type: ignore
-        # Check metadata level
-        elif "metadata" in data and "timestamp" in data["metadata"]:  # type: ignore
-            timestamp_str = data["metadata"].get("timestamp")  # type: ignore
-
-        if timestamp_str is None:
-            # If no timestamp is present, skip validation for backwards compatibility
-            return
-
         try:
-            # Parse ISO 8601 timestamp
-            webhook_time = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-            # Ensure timezone-aware comparison
-            if webhook_time.tzinfo is None:
-                webhook_time = webhook_time.replace(tzinfo=timezone.utc)
-        except (ValueError, AttributeError) as e:
+            timestamp_seconds = int(timestamp)
+        except (ValueError, TypeError) as e:
             raise exceptions.WebhookPayloadError(
-                f"Invalid timestamp in webhook payload: {timestamp_str}. "
-                "Expected ISO 8601 format."
+                f"Invalid webhook timestamp: {timestamp}. "
+                "Expected Unix timestamp in seconds."
             ) from e
 
-        current_time = datetime.now(timezone.utc)
-        time_difference = abs((current_time - webhook_time).total_seconds())
+        current_time = int(time.time())
+        time_difference = abs(current_time - timestamp_seconds)
 
         if time_difference > tolerance:
             raise exceptions.WebhookSignatureVerificationError(
                 f"The webhook timestamp is outside the allowed tolerance. "
-                f"The webhook was sent {int(time_difference)} seconds ago, "
+                f"The webhook was sent {time_difference} seconds ago, "
                 f"but the maximum allowed age is {tolerance} seconds."
             )
+
+    def _parse_webhook_payload(
+        self, payload: str
+    ) -> t.Tuple[WebhookVersion, WebhookPayload, TriggerEvent]:
+        """
+        Parse webhook payload and detect version.
+
+        :param payload: The raw webhook payload string
+        :return: Tuple of (version, raw_payload, normalized_payload)
+        :raises WebhookPayloadError: If payload cannot be parsed
+        """
+        try:
+            data = json.loads(payload)
+        except json.JSONDecodeError as e:
+            raise exceptions.WebhookPayloadError(
+                f"Failed to parse webhook payload as JSON: {e}"
+            ) from e
+
+        # Try V3 first (has 'type' === 'composio.trigger.message' and 'metadata')
+        # Validate metadata is a dict with all required fields (matching TypeScript's zod schema)
+        v3_metadata = data.get("metadata") if isinstance(data, dict) else None
+        v3_metadata_valid = (
+            isinstance(v3_metadata, dict)
+            and "log_id" in v3_metadata
+            and "trigger_slug" in v3_metadata
+            and "trigger_id" in v3_metadata
+            and "connected_account_id" in v3_metadata
+            and "auth_config_id" in v3_metadata
+            and "user_id" in v3_metadata
+        )
+        if (
+            isinstance(data, dict)
+            and data.get("type") == "composio.trigger.message"
+            and v3_metadata_valid
+            and "id" in data
+            and "data" in data
+        ):
+            return (
+                WebhookVersion.V3,
+                t.cast(WebhookPayloadV3, data),
+                self._normalize_v3_payload(t.cast(WebhookPayloadV3, data)),
+            )
+
+        # Try V2 (has 'type', 'timestamp', 'data' with nested fields)
+        if (
+            isinstance(data, dict)
+            and "type" in data
+            and "timestamp" in data
+            and "data" in data
+            and isinstance(data.get("data"), dict)
+            and "connection_id" in data.get("data", {})
+        ):
+            return (
+                WebhookVersion.V2,
+                t.cast(WebhookPayloadV2, data),
+                self._normalize_v2_payload(t.cast(WebhookPayloadV2, data)),
+            )
+
+        # Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload')
+        if (
+            isinstance(data, dict)
+            and "trigger_name" in data
+            and "connection_id" in data
+            and "trigger_id" in data
+            and "payload" in data
+        ):
+            return (
+                WebhookVersion.V1,
+                t.cast(WebhookPayloadV1, data),
+                self._normalize_v1_payload(t.cast(WebhookPayloadV1, data)),
+            )
+
+        raise exceptions.WebhookPayloadError(
+            "Webhook payload does not match any known version (V1, V2, or V3). "
+            "Please ensure the payload structure is correct."
+        )
+
+    def _normalize_v1_payload(self, data: WebhookPayloadV1) -> TriggerEvent:
+        """Normalize V1 payload to TriggerEvent format."""
+        return t.cast(
+            TriggerEvent,
+            {
+                "id": data["trigger_id"],
+                "uuid": data["trigger_id"],
+                "user_id": "",  # V1 doesn't have user_id
+                "toolkit_slug": "",  # V1 doesn't have toolkit_slug
+                "trigger_slug": data["trigger_name"],
+                "metadata": {
+                    "id": data["trigger_id"],
+                    "uuid": data["trigger_id"],
+                    "toolkit_slug": "",
+                    "trigger_slug": data["trigger_name"],
+                    "trigger_data": None,
+                    "trigger_config": {},
+                    "connected_account": {
+                        "id": data["connection_id"],
+                        "uuid": data["connection_id"],
+                        "auth_config_id": "",
+                        "auth_config_uuid": "",
+                        "user_id": "",
+                        "status": "ACTIVE",
+                    },
+                },
+                "payload": data["payload"],
+                "original_payload": None,
+            },
+        )
+
+    def _normalize_v2_payload(self, data: WebhookPayloadV2) -> TriggerEvent:
+        """Normalize V2 payload to TriggerEvent format."""
+        payload_data = data["data"]
+        return t.cast(
+            TriggerEvent,
+            {
+                "id": payload_data.get(
+                    "trigger_nano_id", payload_data.get("trigger_id", "")
+                ),
+                "uuid": payload_data.get("trigger_id", ""),
+                "user_id": payload_data.get("user_id", ""),
+                "toolkit_slug": data["type"].upper() if data.get("type") else "",
+                "trigger_slug": data["type"].upper() if data.get("type") else "",
+                "metadata": {
+                    "id": payload_data.get("trigger_nano_id", ""),
+                    "uuid": payload_data.get("trigger_id", ""),
+                    "toolkit_slug": data["type"].upper() if data.get("type") else "",
+                    "trigger_slug": data["type"].upper() if data.get("type") else "",
+                    "trigger_data": None,
+                    "trigger_config": {},
+                    "connected_account": {
+                        "id": payload_data.get("connection_nano_id", ""),
+                        "uuid": payload_data.get("connection_id", ""),
+                        "auth_config_id": "",
+                        "auth_config_uuid": "",
+                        "user_id": payload_data.get("user_id", ""),
+                        "status": "ACTIVE",
+                    },
+                },
+                "payload": {
+                    k: v
+                    for k, v in payload_data.items()
+                    if k
+                    not in (
+                        "connection_id",
+                        "connection_nano_id",
+                        "trigger_nano_id",
+                        "trigger_id",
+                        "user_id",
+                    )
+                },
+                "original_payload": None,
+            },
+        )
+
+    def _normalize_v3_payload(self, data: WebhookPayloadV3) -> TriggerEvent:
+        """Normalize V3 payload to TriggerEvent format."""
+        metadata = data["metadata"]
+        return t.cast(
+            TriggerEvent,
+            {
+                "id": metadata["trigger_id"],
+                "uuid": metadata["trigger_id"],
+                "user_id": metadata["user_id"],
+                "toolkit_slug": metadata["trigger_slug"].split("_")[0].upper()
+                if "_" in metadata["trigger_slug"]
+                else "UNKNOWN",
+                "trigger_slug": metadata["trigger_slug"],
+                "metadata": {
+                    "id": metadata["trigger_id"],
+                    "uuid": metadata["trigger_id"],
+                    "toolkit_slug": metadata["trigger_slug"].split("_")[0].upper()
+                    if "_" in metadata["trigger_slug"]
+                    else "UNKNOWN",
+                    "trigger_slug": metadata["trigger_slug"],
+                    "trigger_data": None,
+                    "trigger_config": {},
+                    "connected_account": {
+                        "id": metadata["connected_account_id"],
+                        "uuid": metadata["connected_account_id"],
+                        "auth_config_id": metadata["auth_config_id"],
+                        "auth_config_uuid": metadata["auth_config_id"],
+                        "user_id": metadata["user_id"],
+                        "status": "ACTIVE",
+                    },
+                },
+                "payload": data["data"],
+                "original_payload": None,
+            },
+        )
 
     def _transform_trigger_data(self, data: _TriggerData) -> TriggerEvent:
         """
