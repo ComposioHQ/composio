@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.5.0
+
+### Minor Changes
+
+- ded64be: Add Cloudflare Workers compatibility for `@composio/core`, tested end-to-end.
+
 ## 0.4.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @composio/anthropic
 
+## 0.5.0
+
+### Minor Changes
+
+- d80f3e2: Bump core dependency to 0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
