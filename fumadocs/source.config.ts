@@ -4,6 +4,7 @@ import {
   defineCollections,
   frontmatterSchema,
   metaSchema,
+  applyMdxPreset,
 } from 'fumadocs-mdx/config';
 import { transformerTwoslash } from '@shikijs/twoslash';
 import { z } from 'zod';
@@ -39,10 +40,21 @@ export const toolRouter = defineDocs({
   },
 });
 
+// Reference docs use defineCollections with custom mdxOptions to exclude twoslash
+// (SDK reference docs are auto-generated and don't need type checking)
 export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
     schema: docsSchema,
+    mdxOptions: applyMdxPreset({
+      rehypeCodeOptions: {
+        themes: {
+          light: 'github-light',
+          dark: 'github-dark',
+        },
+        // No twoslash transformer - SDK reference docs skip type checking
+      },
+    }),
   },
   meta: {
     schema: metaSchema,

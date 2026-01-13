@@ -108,6 +108,9 @@ export async function createAuthConfig(composioClient: Composio<OpenAIProvider>)
 This will create a Gmail authentication config to authenticate your app's users. Ideally, create one authentication object per project, so check for an existing auth config before creating a new one.
 
 ```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+// ---cut---
 export async function fetchAuthConfig(composioClient: Composio<OpenAIProvider>) {
     /**
      * Fetch the auth config for a given user id.
@@ -134,7 +137,13 @@ Once you have authentication management in place, we can start with connecting y
 
 ```typescript
 import { Hono } from 'hono';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
 
+declare function fetchAuthConfig(client: Composio<OpenAIProvider>): Promise<{ id: string } | null>;
+declare function createAuthConfig(client: Composio<OpenAIProvider>): Promise<{ id: string }>;
+declare const composioClient: Composio<OpenAIProvider>;
+// ---cut---
 // Function to initiate a connected account
 export async function createConnection(composioClient: Composio<OpenAIProvider>, userId: string) {
     /**
@@ -213,6 +222,16 @@ Check [config/composio.ts](./src/config/composio.ts) module for more details.
 When invoking an agent, make sure you validate the `user_id`.
 
 ```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+import { OpenAI } from 'openai';
+import { Hono } from 'hono';
+
+const app = new Hono();
+declare const composioClient: Composio<OpenAIProvider>;
+declare const openaiClient: OpenAI;
+declare function runGmailAgent(c: Composio<OpenAIProvider>, o: OpenAI, u: string, p: string): Promise<any[]>;
+// ---cut---
 export function checkConnectedAccountExists(
     composioClient: Composio<OpenAIProvider>,
     userId: string,
@@ -236,7 +255,7 @@ export function checkConnectedAccountExists(
     });
 }
 
-export async function validateUserId(userId: string, composioClient: ComposioClient): Promise<string> {
+export async function validateUserId(userId: string, composioClient: Composio<OpenAIProvider>): Promise<string> {
     /**
      * Validate the user id, if no connected account is found, create a new connection.
      */
