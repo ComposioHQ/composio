@@ -1,12 +1,5 @@
 # @composio/google
 
-## 1.0.0
-
-### Patch Changes
-
-- Updated dependencies [ded64be]
-  - @composio/core@0.5.0
-
 ## 0.4.0
 
 ### Minor Changes
