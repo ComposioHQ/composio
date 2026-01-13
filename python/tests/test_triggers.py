@@ -867,6 +867,46 @@ class TestVerifyWebhook:
 
         assert "does not match any known version" in str(exc_info.value)
 
+    def test_verify_webhook_v3_missing_data_field_raises_error(
+        self, triggers, test_secret, test_webhook_id, test_timestamp
+    ):
+        """Test that V3-like payload missing 'data' field raises WebhookPayloadError.
+
+        This tests the fix for a potential KeyError crash when a malformed payload
+        has valid V3 markers (type, id, metadata) but is missing the required 'data' field.
+        """
+        # Payload with V3 markers but missing 'data' field
+        v3_like_payload_missing_data = {
+            "id": "evt-123",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "type": "composio.trigger.message",
+            "metadata": {
+                "log_id": "log-123",
+                "trigger_slug": "GITHUB_PUSH_EVENT",
+                "trigger_id": "trigger-nano-123",
+                "connected_account_id": "conn-nano-123",
+                "auth_config_id": "auth-nano-123",
+                "user_id": "user-456",
+            },
+            # Note: 'data' field is intentionally missing
+        }
+        payload = json.dumps(v3_like_payload_missing_data)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
+
+        with pytest.raises(exceptions.WebhookPayloadError) as exc_info:
+            triggers.verify_webhook(
+                id=test_webhook_id,
+                payload=payload,
+                signature=signature,
+                timestamp=test_timestamp,
+                secret=test_secret,
+            )
+
+        # Should be rejected as unrecognized format, not crash with KeyError
+        assert "does not match any known version" in str(exc_info.value)
+
     # Timestamp validation tests
 
     def test_verify_webhook_timestamp_within_tolerance(

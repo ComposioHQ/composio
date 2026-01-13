@@ -1091,6 +1091,7 @@ class Triggers(Resource):
             and data.get("type") == "composio.trigger.message"
             and v3_metadata_valid
             and "id" in data
+            and "data" in data
         ):
             return (
                 WebhookVersion.V3,
