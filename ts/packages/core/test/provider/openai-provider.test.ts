@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OpenAIProvider } from '../../src/provider/OpenAIProvider';
 import { Tool } from '../../src/types/tool.types';
 import { OpenAI } from 'openai';
-import { Stream } from 'openai/streaming';
+import { Stream } from 'openai/core/streaming';
 import { toolMocks } from '../utils/mocks/data.mock';
 import { ExecuteToolModifiers } from '../../src/types/modifiers.types';
 

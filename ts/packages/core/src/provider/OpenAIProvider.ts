@@ -8,7 +8,7 @@
  * This will be shipped with the SDK and users don't need to install it separately.
  */
 import { OpenAI } from 'openai';
-import { Stream } from 'openai/streaming';
+import { Stream } from 'openai/core/streaming';
 import { BaseNonAgenticProvider } from './BaseProvider';
 import { Tool, ToolExecuteParams } from '../types/tool.types';
 import logger from '../utils/logger';
