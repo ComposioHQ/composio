@@ -18,7 +18,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.get('/', c => {
   return c.json({
     message: 'Composio Core Platform E2E Test Worker',
-    endpoints: ['/test/import', '/test/hackernews'],
+    endpoints: ['/test/import', '/test/files/upload', '/test/files/download', '/test/hackernews'],
   });
 });
 
@@ -48,6 +48,84 @@ app.get('/test/import', c => {
       },
       { status: 500 }
     );
+  }
+});
+
+/**
+ * Test: Files upload operation (should fail in Cloudflare Workers)
+ * Tests that files.upload() throws an appropriate error in edge runtimes
+ */
+app.get('/test/files/upload', async c => {
+  try {
+    const composio = new Composio({
+      apiKey: c.env.COMPOSIO_API_KEY,
+    });
+
+    // Attempt to call files.upload - should throw an error
+    await composio.files.upload({
+      file: 'https://example.com/test.pdf',
+      toolSlug: 'test-tool',
+      toolkitSlug: 'test-toolkit',
+    });
+
+    // If we get here, the test failed - upload should have thrown
+    return c.json(
+      {
+        success: false,
+        error: 'Expected files.upload() to throw an error in Cloudflare Workers, but it did not',
+      },
+      { status: 500 }
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isExpectedError = errorMessage.includes('not supported in Cloudflare Workers');
+
+    return c.json({
+      success: isExpectedError,
+      message: isExpectedError
+        ? 'files.upload() correctly throws an error in Cloudflare Workers'
+        : 'files.upload() threw an unexpected error',
+      error: errorMessage,
+    });
+  }
+});
+
+/**
+ * Test: Files download operation (should fail in Cloudflare Workers)
+ * Tests that files.download() throws an appropriate error in edge runtimes
+ */
+app.get('/test/files/download', async c => {
+  try {
+    const composio = new Composio({
+      apiKey: c.env.COMPOSIO_API_KEY,
+    });
+
+    // Attempt to call files.download - should throw an error
+    await composio.files.download({
+      s3Url: 'https://s3.example.com/test.pdf',
+      toolSlug: 'test-tool',
+      mimeType: 'application/pdf',
+    });
+
+    // If we get here, the test failed - download should have thrown
+    return c.json(
+      {
+        success: false,
+        error: 'Expected files.download() to throw an error in Cloudflare Workers, but it did not',
+      },
+      { status: 500 }
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isExpectedError = errorMessage.includes('not supported in Cloudflare Workers');
+
+    return c.json({
+      success: isExpectedError,
+      message: isExpectedError
+        ? 'files.download() correctly throws an error in Cloudflare Workers'
+        : 'files.download() threw an unexpected error',
+      error: errorMessage,
+    });
   }
 });
 

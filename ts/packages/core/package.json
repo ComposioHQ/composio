@@ -21,6 +21,18 @@
         "import": "./dist/platform/node.mjs",
         "require": "./dist/platform/node.cjs"
       }
+    },
+    "#files": {
+      "workerd": "./dist/models/Files.workerd.mjs",
+      "edge-light": "./dist/models/Files.workerd.mjs",
+      "node": {
+        "import": "./dist/models/Files.node.mjs",
+        "require": "./dist/models/Files.node.cjs"
+      },
+      "default": {
+        "import": "./dist/models/Files.node.mjs",
+        "require": "./dist/models/Files.node.cjs"
+      }
     }
   },
   "exports": {

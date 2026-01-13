@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "paths": {
-      "#platform": ["./src/platform/node.ts", "./src/platform/workerd.ts"]
+      "#platform": ["./src/platform/node.ts", "./src/platform/workerd.ts"],
+      "#files": ["./src/models/Files.node.ts", "./src/models/Files.workerd.ts"]
     }
   },
   "include": ["src/**/*.ts"]

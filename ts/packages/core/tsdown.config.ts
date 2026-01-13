@@ -4,7 +4,13 @@ import { baseConfig } from '../../../tsdown.config.base';
 export default defineConfig({
   ...baseConfig,
   tsconfig: 'tsconfig.build.json',
-  entry: ['src/index.ts', 'src/platform/node.ts', 'src/platform/workerd.ts'],
+  entry: [
+    'src/index.ts',
+    'src/platform/node.ts',
+    'src/platform/workerd.ts',
+    'src/models/Files.node.ts',
+    'src/models/Files.workerd.ts',
+  ],
   attw: {
     ...baseConfig.attw,
     ignoreRules: [
@@ -26,5 +32,5 @@ export default defineConfig({
    * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)
    * as not all of them are available in Cloudflare Workers / Vercel Edge runtimes.
    */
-  external: [...(baseConfig.external ?? []), '#platform'],
+  external: [...(baseConfig.external ?? []), '#platform', '#files'],
 });
