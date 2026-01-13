@@ -15,7 +15,9 @@ const allPages = [
   ...toolkitsSource.getPages(),
 ];
 
-export const { GET } = createSearchAPI('advanced', {
+// Use staticGET to pre-build search index at build time
+// This avoids runtime OpenAPI loading issues on Vercel serverless
+export const { staticGET: GET } = createSearchAPI('advanced', {
   indexes: allPages.map((page) => ({
     id: page.url,
     title: page.data.title ?? 'Untitled',

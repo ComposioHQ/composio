@@ -33,6 +33,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
           }}
           search={{
             options: {
+              type: 'static',
               api: '/api/search',
             },
           }}
