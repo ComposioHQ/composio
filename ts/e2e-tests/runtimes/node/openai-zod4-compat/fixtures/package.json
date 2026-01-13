@@ -1,9 +1,9 @@
 {
   "name": "peer-deps-test",
-  "version": "1.0.0",
+  "private": true,
   "type": "module",
   "dependencies": {
-    "@composio/core": "file:/app/ts/packages/core",
+    "@composio/core": "workspace:*",
     "openai": "^6.16.0",
     "zod": "^4.3.5"
   }
