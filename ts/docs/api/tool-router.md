@@ -24,13 +24,13 @@ When using Tool Router with MCP clients, you don't need to pass a provider:
 
 ```bash
 # npm
-npm install @composio/core@0.2.7-alpha.1
+npm install @composio/core@0.4.0
 
 # pnpm
-pnpm add @composio/core@0.2.7-alpha.1
+pnpm add @composio/core@0.4.0
 
 # yarn
-yarn add @composio/core@0.2.7-alpha.1
+yarn add @composio/core@0.4.0
 ```
 
 ```typescript
@@ -206,7 +206,23 @@ const session = await composio.create('user_123', {
   toolkits: ['gmail'],
   manageConnections: {
     enable: true,
-    callbackUrl: 'https://your-app.com/auth/callback'
+    callbackUrl: 'https://your-app.com/auth/callback',
+    waitForConnections: true // Wait for user to complete authentication before proceeding
+  }
+});
+```
+
+#### Wait for Connections
+
+The `waitForConnections` property (new in v0.4.0) allows the tool router session to wait for users to complete authentication before proceeding to the next step. When set to `true`, the session will block execution until all required connections are established.
+
+```typescript
+const session = await composio.create('user_123', {
+  toolkits: ['gmail', 'slack'],
+  manageConnections: {
+    enable: true,
+    callbackUrl: 'https://your-app.com/auth/callback',
+    waitForConnections: true // Session waits for connections to complete
   }
 });
 ```
@@ -254,18 +270,60 @@ Retrieve the tools available in the session, formatted for your AI framework.
 ```typescript
 const tools = await session.tools();
 
-// With modifiers
+// With session-specific modifiers (new in v0.4.0)
 const tools = await session.tools({
-  beforeExecute: ({ toolSlug, params }) => {
-    console.log(`Executing ${toolSlug}`);
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    // Customize the tool schema
+    return schema;
+  },
+  beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => {
+    console.log(`Executing ${toolSlug} in session ${sessionId}`);
     return params;
   },
-  afterExecute: ({ toolSlug, result }) => {
-    console.log(`Completed ${toolSlug}`);
+  afterExecute: ({ toolSlug, toolkitSlug, sessionId, result }) => {
+    console.log(`Completed ${toolSlug} in session ${sessionId}`);
     return result;
   }
 });
 ```
+
+#### Session-Specific Modifiers
+
+Tool Router sessions now support enhanced modifier types (introduced in v0.4.0) that include session context:
+
+- **`modifySchema`**: Customize tool schemas before they're sent to the AI model
+- **`beforeExecute`**: Modify parameters before execution, with access to session ID
+- **`afterExecute`**: Transform results after execution, with access to session ID
+
+These modifiers provide better context for session-based tool execution, allowing you to track which session is executing which tools.
+
+### Meta Tools
+
+Tool Router provides meta tools for managing connections and session state. You can access these directly using the `getRawToolRouterMetaTools` method (introduced in v0.4.0):
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Get raw meta tools for a session
+const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    // Customize meta tool schemas
+    console.log(`Modifying schema for ${toolSlug}`);
+    return schema;
+  }
+});
+
+console.log('Available meta tools:', metaTools.map(t => t.name));
+```
+
+Meta tools allow you to:
+- Authorize new toolkit connections within a session
+- Query toolkit connection states
+- Manage session configuration
+
+This method is useful when you need direct access to the underlying meta tools without creating a full session object.
 
 ### `authorize()`
 
@@ -611,24 +669,40 @@ The response includes:
 
 ## Using Modifiers
 
-Add custom behavior before and after tool execution:
+Add custom behavior before and after tool execution. Tool Router supports enhanced session-specific modifiers (v0.4.0+):
 
 ```typescript
-import { ExecuteToolModifiers } from "@composio/core";
+import { SessionExecuteMetaModifiers } from "@composio/core";
 
-const modifiers: ExecuteToolModifiers = {
-  beforeExecute: ({ toolSlug, params }) => {
-    console.log(`Executing ${toolSlug}`);
+const modifiers: SessionExecuteMetaModifiers = {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    // Customize tool schema
+    console.log(`Modifying schema for ${toolSlug}`);
+    return schema;
+  },
+  beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => {
+    console.log(`[Session: ${sessionId}] Executing ${toolSlug} from ${toolkitSlug}`);
+    // Add custom logging, validation, or parameter transformation
     return params;
   },
-  afterExecute: ({ toolSlug, result }) => {
-    console.log(`Executed ${toolSlug}`);
+  afterExecute: ({ toolSlug, toolkitSlug, sessionId, result }) => {
+    console.log(`[Session: ${sessionId}] Executed ${toolSlug} from ${toolkitSlug}`);
+    // Transform results, add telemetry, or handle errors
     return result;
   },
 };
 
 const tools = await session.tools(modifiers);
 ```
+
+### Modifier Types
+
+Tool Router provides specialized modifier types for session-based execution:
+
+- **`SessionExecuteMetaModifiers`**: Complete set of modifiers with session context
+- **`SessionMetaToolOptions`**: Configuration options for meta tools
+
+These types include the `sessionId` in their parameters, allowing you to track and manage tool execution across different user sessions.
 
 ## Best Practices
 
@@ -673,6 +747,7 @@ interface ToolRouterCreateSessionConfig {
   manageConnections?: boolean | {
     enable?: boolean;
     callbackUrl?: string;
+    waitForConnections?: boolean; // NEW in v0.4.0: Wait for connections to complete
   };
   workbench?: {
     enableProxyExecution?: boolean;
@@ -723,4 +798,78 @@ interface ToolkitConnectionState {
   };
 }
 ```
+
+### SessionExecuteMetaModifiers (v0.4.0+)
+
+```typescript
+interface SessionExecuteMetaModifiers {
+  modifySchema?: (context: {
+    toolSlug: string;
+    toolkitSlug: string;
+    schema: any;
+  }) => any;
+  
+  beforeExecute?: (context: {
+    toolSlug: string;
+    toolkitSlug: string;
+    sessionId: string;
+    params: any;
+  }) => any;
+  
+  afterExecute?: (context: {
+    toolSlug: string;
+    toolkitSlug: string;
+    sessionId: string;
+    result: any;
+  }) => any;
+}
+```
+
+## What's New in v0.4.0
+
+### 1. Wait for Connections
+
+The new `waitForConnections` property allows sessions to wait for users to complete authentication before proceeding:
+
+```typescript
+const session = await composio.create('user_123', {
+  toolkits: ['gmail', 'slack'],
+  manageConnections: {
+    enable: true,
+    callbackUrl: 'https://your-app.com/callback',
+    waitForConnections: true // NEW
+  }
+});
+```
+
+### 2. Enhanced Session Modifiers
+
+Session-specific modifiers now include session context, making it easier to track and manage tool execution:
+
+```typescript
+const tools = await session.tools({
+  beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => {
+    console.log(`[${sessionId}] Executing ${toolSlug}`);
+    return params;
+  }
+});
+```
+
+### 3. Direct Meta Tools Access
+
+New method to fetch meta tools directly from a session:
+
+```typescript
+const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', {
+  modifySchema: ({ toolSlug, schema }) => schema
+});
+```
+
+### 4. Performance Improvements
+
+- Optimized tool fetching with fewer API calls
+- Improved session API architecture for better reliability
+- Simplified internal tool execution paths
+
+All changes in v0.4.0 are fully backward compatible with existing code.
 

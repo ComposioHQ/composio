@@ -5,8 +5,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { MCP } from './models/MCP.experimental';
-import { MCP as DeprecatedMCP } from './models/MCP';
+import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -197,11 +196,6 @@ export class Composio<
   use: (id: string) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
 
   /**
-   * Experimental features
-   */
-  experimental: {};
-
-  /**
    * Creates a new instance of the Composio SDK.
    *
    * The constructor initializes the SDK with the provided configuration options,
@@ -288,21 +282,6 @@ export class Composio<
      */
     this.create = this.toolRouter.create.bind(this.toolRouter);
     this.use = this.toolRouter.use.bind(this.toolRouter);
-
-    /**
-     * Initialize Experimental features
-     */
-    this.experimental = {
-      create: async (
-        userId: string,
-        routerConfig?: ToolRouterCreateSessionConfig
-      ): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
-        return this.toolRouter.create(userId, routerConfig);
-      },
-      use: async (id: string): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
-        return this.toolRouter.use(id);
-      },
-    };
 
     /**
      * Initialize the client telemetry.

@@ -18,6 +18,7 @@ vi.mock('../../src/models/Tools', () => {
   return {
     Tools: vi.fn().mockImplementation(() => ({
       getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+      getRawToolRouterMetaTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
       wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
     })),
   };
@@ -1639,6 +1640,7 @@ describe('ToolRouter', () => {
       vi.clearAllMocks();
       (Tools as any).mockImplementation(() => ({
         getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+        getRawToolRouterMetaTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
         wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
       }));
     });
@@ -1655,15 +1657,10 @@ describe('ToolRouter', () => {
       });
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
-        {
-          tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
-        },
-        undefined
-      );
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
         undefined
       );
 
@@ -1685,15 +1682,12 @@ describe('ToolRouter', () => {
       const tools = await session.tools(modifiers);
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
-        {
-          tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
-        },
-        { modifySchema: modifiers.modifySchema }
-      );
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
+        modifySchema: modifiers.modifySchema,
+      });
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
         modifiers
       );
 
@@ -1705,6 +1699,7 @@ describe('ToolRouter', () => {
 
       (Tools as any).mockImplementation(() => ({
         getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
+        getRawToolRouterMetaTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
         wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
       }));
 
@@ -1729,28 +1724,22 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalledTimes(2);
 
       const firstToolsInstance = (Tools as any).mock.results[0].value;
-      expect(firstToolsInstance.getRawComposioTools).toHaveBeenCalledWith(
-        {
-          tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
-        },
-        { modifySchema: modifier1.modifySchema }
-      );
+      expect(firstToolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
+        modifySchema: modifier1.modifySchema,
+      });
       expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
         modifier1
       );
 
       const secondToolsInstance = (Tools as any).mock.results[1].value;
-      expect(secondToolsInstance.getRawComposioTools).toHaveBeenCalledWith(
-        {
-          tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
-        },
-        { modifySchema: modifier2.modifySchema }
-      );
+      expect(secondToolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
+        modifySchema: modifier2.modifySchema,
+      });
       expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
         modifier2
       );
     });
@@ -1772,15 +1761,13 @@ describe('ToolRouter', () => {
         apiKey: 'test-api-key',
       });
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
-        {
-          tools: ['CUSTOM_TOOL_1', 'CUSTOM_TOOL_2'],
-        },
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(
+        'custom_session_123',
         undefined
       );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         'custom_session_123',
-        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
         undefined
       );
     });
@@ -1802,15 +1789,13 @@ describe('ToolRouter', () => {
         apiKey: 'test-api-key',
       });
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
-        {
-          tools: [],
-        },
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(
+        'empty_session_123',
         undefined
       );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         'empty_session_123',
-        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
         undefined
       );
     });
@@ -1963,15 +1948,10 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalled();
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
-        {
-          tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
-        },
-        undefined
-      );
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
-        [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
         undefined
       );
     });
