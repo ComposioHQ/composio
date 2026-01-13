@@ -190,7 +190,7 @@ export class ConnectedAccounts {
         id: authConfigId,
       },
       connection: {
-        callback_url: options?.callbackUrl,
+        ...(options?.callbackUrl && { callback_url: options.callbackUrl }),
         user_id: userId,
         state,
       },

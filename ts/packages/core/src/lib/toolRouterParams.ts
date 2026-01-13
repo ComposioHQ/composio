@@ -106,7 +106,7 @@ export const transformToolRouterManageConnectionsParams = (
   const config = parsedResult.data;
   return {
     enable: config.enable ?? true,
-    callback_url: config.callbackUrl,
+    ...(config.callbackUrl && { callback_url: config.callbackUrl }),
     enable_wait_for_connections: config.waitForConnections,
   };
 };
