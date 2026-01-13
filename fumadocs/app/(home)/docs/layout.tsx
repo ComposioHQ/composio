@@ -17,7 +17,7 @@ export default function Layout({ children }: LayoutProps<'/docs'>) {
     <DocsLayout
       tree={pageTree}
       nav={{ enabled: false, title: null }}
-      searchToggle={{ enabled: false }}
+      searchToggle={{ enabled: true }}
       sidebar={{ collapsible: false, footer: null }}
       themeSwitch={{ enabled: false }}
     >

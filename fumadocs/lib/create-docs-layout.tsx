@@ -10,7 +10,7 @@ export function createDocsLayout(source: Source) {
       <DocsLayout
         tree={source.pageTree}
         nav={{ enabled: false, title: null }}
-        searchToggle={{ enabled: false }}
+        searchToggle={{ enabled: true }}
         sidebar={{ collapsible: false, footer: null }}
         themeSwitch={{ enabled: false }}
       >
