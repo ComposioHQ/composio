@@ -9,14 +9,20 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY && !posthog.__loaded) {
+    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+      // Already loaded (e.g., HMR, StrictMode remount)
+      if (posthog.__loaded) {
+        setIsInitialized(true);
+        return;
+      }
+
       posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
         api_host:
           process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
         person_profiles: 'identified_only',
         capture_pageview: false, // We capture manually below
         capture_pageleave: true,
-        loaded: (posthog) => {
+        loaded: () => {
           setIsInitialized(true);
         },
       });
