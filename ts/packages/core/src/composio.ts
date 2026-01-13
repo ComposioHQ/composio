@@ -14,7 +14,7 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import { Files } from './models/Files';
+import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';

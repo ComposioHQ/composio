@@ -1,0 +1,38 @@
+# Reusable Dockerfile for Node.js e2e tests
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.19.0 --build-arg TEST_DIR=... --build-arg TEST_CMD="node test.cjs" -t test-name .
+ARG NODE_VERSION=20.19.0
+
+FROM node:${NODE_VERSION}-slim
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+WORKDIR /app
+
+# Install corepack to use pnpm.
+# See: https://vercel.com/kb/guide/corepack-errors-github-actions.
+RUN npm i -g corepack@latest && corepack enable
+
+# Copy pnpm workspace files
+COPY pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs package.json tsconfig.base.json tsdown.config.base.ts ./
+
+# Copy all ts/packages (pre-built)
+COPY ts/packages/ ./ts/packages/
+
+# Copy e2e tests
+COPY ts/e2e-tests/ ./ts/e2e-tests/
+
+# Install dependencies using pnpm
+# Note: We intentionally don't use --mount=type=cache for the pnpm store here
+# because it causes native binding issues (e.g., rolldown-binding) across builds
+RUN pnpm install --frozen-lockfile
+
+# Test directory (relative to /app)
+ARG TEST_DIR
+WORKDIR /app/${TEST_DIR}
+
+# Command to run the test (e.g., "node test.cjs", "node test.mjs", "pnpm test")
+ARG TEST_CMD="echo 'No TEST_CMD specified'"
+ENV TEST_CMD=${TEST_CMD}
+
+CMD ["sh", "-c", "${TEST_CMD}"]

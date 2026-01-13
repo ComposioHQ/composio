@@ -45,7 +45,7 @@ cat > "$TOOLSET_PATH/package.json" << EOL
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": ["composio", "provider", "${TOOLSET_NAME}"],
@@ -57,7 +57,7 @@ cat > "$TOOLSET_PATH/package.json" << EOL
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:"
   }
 }
