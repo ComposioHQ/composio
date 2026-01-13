@@ -123,15 +123,15 @@
 }
 
 .dark {
-  --composio-sidebar: #252220;
+  --composio-sidebar: #131211;
 
   /* Fumadocs overrides - Dark */
-  --color-fd-background: #1a1815;
+  --color-fd-background: #131211;
   --color-fd-foreground: #e8e4e0;
-  --color-fd-muted: #2a2725;
+  --color-fd-muted: #1e1d1c;
   --color-fd-muted-foreground: #a8a29e; /* Improved contrast */
-  --color-fd-border: #3d3935;
-  --color-fd-card: #1a1815;
+  --color-fd-border: #2c2a28;
+  --color-fd-card: #131211;
   --color-fd-card-foreground: #e8e4e0;
   --color-fd-popover: #252220;
   --color-fd-popover-foreground: #e8e4e0;
@@ -157,7 +157,7 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 5%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
@@ -306,7 +306,7 @@ a:focus-visible {
    ========================================================================== */
 
 [data-card]:hover {
-  border-color: var(--composio-orange);
+  border-color: color-mix(in srgb, var(--composio-orange) 50%, transparent);
 }
 
 [data-fumadocs-tabs] [data-state="active"] {
