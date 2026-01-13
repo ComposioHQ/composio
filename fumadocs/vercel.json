@@ -1,5 +1,6 @@
 {
   "installCommand": "bun install",
   "buildCommand": "bun run build",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet ."
 }
