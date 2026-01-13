@@ -59,6 +59,10 @@ result = composio.tools.execute(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+declare const user: { id: string };
+// ---cut---
 // Use your database's user ID (UUID, primary key, etc.)
 const userId = user.id; // e.g., "550e8400-e29b-41d4-a716-446655440000"
 
@@ -112,6 +116,10 @@ result = composio.tools.execute(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+declare const organization: { id: string };
+// ---cut---
 // Use the organization ID as userId
 const userId = organization.id; // e.g., "org_550e8400"
 
@@ -157,6 +165,11 @@ In B2B applications, typically an admin connects accounts once and all team memb
 - Permission checks ensure users can only access their organization's connections
 
 ```typescript
+import { ConnectionRequest } from '@composio/core';
+declare function storeConnectionRequest(orgId: string, adminId: string, req: ConnectionRequest): Promise<void>;
+declare function userCanSendMessages(userId: string, orgId: string): Promise<boolean>;
+declare const app: { post: (path: string, handler: (req: any, res: any) => Promise<any>) => void };
+// ---cut---
 import { Composio } from '@composio/core';
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -220,6 +233,8 @@ In B2C applications, each user connects and manages their own accounts. Every us
 - No permission checks needed since users only access their own data
 
 ```typescript
+declare const app: { get: (path: string, handler: (req: any, res: any) => Promise<any>) => void };
+// ---cut---
 import { Composio } from '@composio/core';
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -294,6 +309,10 @@ org_shared_tools = composio.tools.get(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+declare const req: { user: { id: string; organizationId: string } };
+// ---cut---
 // Wrong: Using individual user ID for org-connected tool
 const userTools = await composio.tools.get(req.user.id, {
   toolkits: ['slack'], // Fails - Slack is connected at org level
