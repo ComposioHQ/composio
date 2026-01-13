@@ -665,22 +665,22 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       payload.data;
 
     return {
-      id: trigger_id,
-      uuid: trigger_nano_id,
+      id: trigger_nano_id,
+      uuid: trigger_id,
       triggerSlug,
       toolkitSlug,
       userId: user_id,
       payload: restData,
       originalPayload: restData,
       metadata: {
-        id: trigger_id,
-        uuid: trigger_nano_id,
+        id: trigger_nano_id,
+        uuid: trigger_id,
         toolkitSlug,
         triggerSlug,
         triggerConfig: {},
         connectedAccount: {
-          id: connection_id,
-          uuid: connection_nano_id,
+          id: connection_nano_id,
+          uuid: connection_id,
           authConfigId: '',
           authConfigUUID: '',
           userId: user_id,
