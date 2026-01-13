@@ -1,0 +1,9 @@
+{
+  "name": "@test-e2e/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./temp-project": "./src/temp-project.mjs"
+  }
+}

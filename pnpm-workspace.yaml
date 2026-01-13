@@ -1,14 +1,15 @@
 packages:
-  - ts/packages/core
+  - ts/e2e-tests/_utils
   - ts/e2e-tests/runtimes/node/*
   - ts/e2e-tests/runtimes/cloudflare/*
+  - ts/examples/*
+  - ts/packages/core
   - ts/packages/cli
   - ts/packages/json-schema-to-zod
   - ts/packages/json-schema-to-zod/test/e2e/*
   - ts/packages/providers/*
   - ts/packages/ts-builders
   - ts/packages/wrappers/*
-  - ts/examples/*
   - fern
   - fern/llms-txt-worker
   - fern/pages/examples/*
@@ -21,6 +22,7 @@ catalog:
   '@composio/client': 0.1.0-alpha.54
   '@modelcontextprotocol/sdk': ^1.24.0
   ai: ^6.0.3
+  # openai: ^6.9.1
   openai: ^5.20.3
   publint: ^0.3.16
   tsdown: ^0.18.4

@@ -15,6 +15,12 @@
 
 set -e
 
+# Environment variables to pass through to Docker container (if set)
+PASSTHROUGH_ENV_VARS=(
+  "COMPOSIO_API_KEY"
+  # "OPENAI_API_KEY"
+)
+
 # Default values
 NODE_VERSION="20.19.0"
 TEST_NAME=""
@@ -66,14 +72,25 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+DEBUG_LOG="$REPO_ROOT/$TEST_DIR/DEBUG.log"
 
 echo "🧪 Running Docker e2e test: $TEST_NAME"
 echo "   Node.js version: $NODE_VERSION"
 echo "   Test directory: $TEST_DIR"
 echo "   Test command: $TEST_CMD"
+echo "   Debug log: $DEBUG_LOG"
 echo ""
 
+# Initialize debug log
+echo "=== Docker E2E Test: $TEST_NAME ===" > "$DEBUG_LOG"
+echo "Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> "$DEBUG_LOG"
+echo "Node.js: $NODE_VERSION" >> "$DEBUG_LOG"
+echo "Test directory: $TEST_DIR" >> "$DEBUG_LOG"
+echo "Test command: $TEST_CMD" >> "$DEBUG_LOG"
+echo "" >> "$DEBUG_LOG"
+
 echo "🐳 Building test image..."
+echo "=== Docker Build ===" >> "$DEBUG_LOG"
 
 cd "$REPO_ROOT"
 
@@ -84,11 +101,32 @@ docker build \
   --build-arg TEST_DIR="$TEST_DIR" \
   --build-arg TEST_CMD="$TEST_CMD" \
   -t "$TEST_NAME" \
-  .
+  . # 2>&1 | tee -a "$DEBUG_LOG"
 
 echo ""
 echo "🧪 Running test in Docker container..."
-docker run --rm "$TEST_NAME"
+echo "" >> "$DEBUG_LOG"
+echo "=== Docker Run ===" >> "$DEBUG_LOG"
+
+# Build docker run args for env vars
+DOCKER_ENV_ARGS=()
+for var in "${PASSTHROUGH_ENV_VARS[@]}"; do
+  if [[ -n "${!var}" ]]; then
+    DOCKER_ENV_ARGS+=("-e" "$var=${!var}")
+  fi
+done
+
+docker run --rm "${DOCKER_ENV_ARGS[@]}" "$TEST_NAME" 2>&1 | tee -a "$DEBUG_LOG"
+EXIT_CODE=${PIPESTATUS[0]}
+
+echo "" >> "$DEBUG_LOG"
+echo "=== Exit Code: $EXIT_CODE ===" >> "$DEBUG_LOG"
+
+if [[ $EXIT_CODE -ne 0 ]]; then
+  echo ""
+  echo "❌ Docker test failed! See $DEBUG_LOG for details."
+  exit $EXIT_CODE
+fi
 
 echo ""
 echo "✅ Docker test completed successfully!"
