@@ -110,24 +110,26 @@ def subscribe(timeout: float = ...) -> TriggerSubscription
 
 ### verify_webhook()
 
-Verify an incoming webhook payload and signature.  This method validates that the webhook request is authentic by: 1. Verifying the HMAC-SHA256 signature matches the payload 2. Optionally checking that the webhook timestamp is within the tolerance window
+Verify an incoming webhook payload and signature.  This method validates that the webhook request is authentic by: 1. Validating the webhook timestamp is within the tolerance window 2. Verifying the HMAC-SHA256 signature using the correct algorithm 3. Parsing the payload and detecting the webhook version (V1, V2, or V3)
 
 ```python
-def verify_webhook(payload: str, signature: str, secret: str, tolerance: int = ...) -> TriggerEvent
+def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp: str, tolerance: int = ...) -> VerifyWebhookResult
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
+| `id` | `str` |
 | `payload` | `str` |
-| `signature` | `str` |
 | `secret` | `str` |
+| `signature` | `str` |
+| `timestamp` | `str` |
 | `tolerance?` | `int` |
 
 **Returns**
 
-`TriggerEvent` — The verified and parsed webhook payload as a TriggerEvent :raises WebhookSignatureVerificationError: If the signature verification fails :raises WebhookPayloadError: If the payload cannot be parsed or is invalid
+`VerifyWebhookResult` — VerifyWebhookResult containing version, normalized payload, and raw payload :raises WebhookSignatureVerificationError: If the signature verification fails :raises WebhookPayloadError: If the payload cannot be parsed or is invalid
 
 **Example**
 
@@ -136,14 +138,17 @@ def verify_webhook(payload: str, signature: str, secret: str, tolerance: int = .
     @app.route('/webhook', methods=['POST'])
     def webhook():
         try:
-            event = composio.triggers.verify_webhook(
+            result = composio.triggers.verify_webhook(
+                id=request.headers.get('webhook-id', ''),
                 payload=request.get_data(as_text=True),
-                signature=request.headers.get('x-composio-signature', ''),
+                signature=request.headers.get('webhook-signature', ''),
+                timestamp=request.headers.get('webhook-timestamp', ''),
                 secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
             )
 
             # Process the verified payload
-            print(f"Received trigger: {event['trigger_slug']}")
+            print(f"Version: {result['version']}")
+            print(f"Received trigger: {result['payload']['trigger_slug']}")
             return 'OK', 200
         except WebhookSignatureVerificationError:
             return 'Unauthorized', 401
@@ -151,4 +156,4 @@ def verify_webhook(payload: str, signature: str, secret: str, tolerance: int = .
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L629)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L689)

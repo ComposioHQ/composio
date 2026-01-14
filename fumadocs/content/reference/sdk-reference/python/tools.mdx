@@ -49,6 +49,56 @@ def get_raw_composio_tools(tools: list[str | None] = ..., search: str | None = .
 
 ---
 
+### get_raw_tool_router_meta_tools()
+
+Fetches the meta tools for a tool router session.  This method fetches the meta tools from the Composio API and transforms them to the expected format. It provides access to the underlying meta tool data without provider-specific wrapping.
+
+```python
+def get_raw_tool_router_meta_tools(session_id: str, modifiers: 'Modifiers' | None = ...) -> list[Tool]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `session_id` | `str` |
+| `modifiers?` | `'Modifiers' \| None` |
+
+**Returns**
+
+`list[Tool]` — The list of meta tools
+
+**Example**
+
+```python
+```python
+    from composio import Composio
+
+    composio = Composio()
+    tools_model = composio.tools
+
+    # Get meta tools for a session
+    meta_tools = tools_model.get_raw_tool_router_meta_tools("session_123")
+    print(meta_tools)
+
+    # Get meta tools with schema modifiers
+    from composio.core.models import schema_modifier
+
+    @schema_modifier
+    def modify_schema(tool: str, toolkit: str, schema):
+        # Customize the schema
+        schema.description = f"Modified: {schema.description}"
+        return schema
+
+    meta_tools = tools_model.get_raw_tool_router_meta_tools(
+        "session_123",
+        modifiers=[modify_schema]
+    )
+    ```
+```
+
+---
+
 ### get()
 
 Get a tool or list of tools based on the provided arguments.
