@@ -132,15 +132,12 @@ function fetchFilteredData(
             )
           ),
           Match.when(false, withTypes =>
+            // Use filtered getTools() and extract slugs - more efficient than fetching ALL enums
             Effect.logDebug(`Fetching tool names for ${slugs.length} toolkit(s)...`).pipe(
-              Effect.flatMap(() => client.getToolsAsEnums()),
-              Effect.map(allTools => ({
+              Effect.flatMap(() => client.getTools(slugs)),
+              Effect.map(tools => ({
                 withTypes,
-                // Filter tool enums by toolkit prefix
-                tools: allTools.filter(tool => {
-                  const prefix = tool.split('_')[0]?.toLowerCase();
-                  return slugs.some(s => s.toLowerCase() === prefix);
-                }),
+                tools: tools.map(tool => tool.slug),
               }))
             )
           ),

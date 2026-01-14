@@ -32,7 +32,7 @@ const data: MetricRow[] = [
   {
     name: '`--toolkits entelligence`',
     before: { requests: 5, megabytes: 2.35 },
-    after: { requests: 3, megabytes: 718.68 / 1024 }, // Convert KB to MB
+    after: { requests: 3, megabytes: 76.21 / 1024 }, // Convert KB to MB
   },
   {
     name: '`--type-tools` + `--toolkits entelligence`',
