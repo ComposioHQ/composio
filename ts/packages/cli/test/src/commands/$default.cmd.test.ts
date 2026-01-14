@@ -76,7 +76,7 @@ describe('CLI: composio', () => {
 
             - ts                                                                                                       Handle TypeScript projects.
 
-            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...  Updates the local type stubs with the latest app data.
+            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...  Generate TypeScript types for toolkits, tools, and triggers from the Composio API
           "
         `);
       })
