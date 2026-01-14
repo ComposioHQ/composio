@@ -11,14 +11,12 @@ The `PATCH /api/v3/auth_configs/{id}` endpoint now implements proper partial upd
 | Field                         | Before (Buggy)           | After (Correct)                   |
 | ----------------------------- | ------------------------ | --------------------------------- |
 | `credentials`                 | Required on every update | Optional—merged with existing     |
-| `proxy_config`                | Cleared if omitted       | Preserved if omitted              |
 | `tool_access_config`          | Reset to `{}` if omitted | Preserved if omitted              |
 | `scopes` (type: default)      | Cleared if omitted       | Preserved if omitted              |
 | `restrict_to_following_tools` | Reset to `[]` if omitted | Preserved if omitted              |
-| `shared_credentials`          | Replaced entirely        | Unchanged—still replaced entirely |
 
 <Note>
-**Merge vs Replace**: The `credentials` object is merged (send only fields you want to change). The `shared_credentials` object is replaced entirely (always send the complete dict).
+**Merge Behavior**: The `credentials` object is merged—send only the fields you want to change, and existing fields are preserved.
 </Note>
 
 ## New Capabilities
@@ -34,16 +32,18 @@ from composio import Composio
 composio = Composio()
 
 # Only send the field you want to update - other credentials are preserved
+
 composio.auth_configs.update(
-    "ac_yourAuthConfigId",
-    options={
-        "type": "custom",
-        "credentials": {
-            "client_secret": "new_rotated_secret",
-        },
-    },
+"ac_yourAuthConfigId",
+options={
+"type": "custom",
+"credentials": {
+"client_secret": "new_rotated_secret",
+},
+},
 )
-```
+
+````
 
 ```typescript title="TypeScript SDK"
 import { Composio } from "@composio/core";
@@ -57,7 +57,7 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
     client_secret: "new_rotated_secret",
   },
 });
-```
+````
 
 </CodeBlocks>
 
@@ -72,16 +72,18 @@ from composio import Composio
 composio = Composio()
 
 # Update tool restrictions - credentials are automatically preserved
+
 composio.auth_configs.update(
-    "ac_yourAuthConfigId",
-    options={
-        "type": "custom",
-        "tool_access_config": {
-            "tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
-        },
-    },
+"ac_yourAuthConfigId",
+options={
+"type": "custom",
+"tool_access_config": {
+"tools_available_for_execution": ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
+},
+},
 )
-```
+
+````
 
 ```typescript title="TypeScript SDK"
 import { Composio } from "@composio/core";
@@ -98,7 +100,7 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
     toolsAvailableForExecution: ["GMAIL_SEND_EMAIL", "GMAIL_READ_EMAIL"],
   },
 });
-```
+````
 
 </CodeBlocks>
 
@@ -114,7 +116,6 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
 
 | To Clear             | Python SDK                                                    | TypeScript SDK                                         |
 | -------------------- | ------------------------------------------------------------- | ------------------------------------------------------ |
-| `proxy_config`       | `"proxy_config": None`                                        | `proxyConfig: null` (via HTTP API)                     |
 | `tool_access_config` | `"tool_access_config": {"tools_available_for_execution": []}` | `toolAccessConfig: { toolsAvailableForExecution: [] }` |
 | `scopes` (default)   | `"scopes": ""`                                                | `scopes: ""` (via HTTP API)                            |
 
@@ -125,16 +126,18 @@ from composio import Composio
 composio = Composio()
 
 # Explicitly clear tool restrictions with empty array
+
 composio.auth_configs.update(
-    "ac_yourAuthConfigId",
-    options={
-        "type": "custom",
-        "tool_access_config": {
-            "tools_available_for_execution": [],
-        },
-    },
+"ac_yourAuthConfigId",
+options={
+"type": "custom",
+"tool_access_config": {
+"tools_available_for_execution": [],
+},
+},
 )
-```
+
+````
 
 ```typescript title="TypeScript SDK - Clear tool restrictions"
 import { Composio } from "@composio/core";
@@ -151,7 +154,7 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
     toolsAvailableForExecution: [],
   },
 });
-```
+````
 
 </CodeBlocks>
 
@@ -165,12 +168,6 @@ curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"type": "custom", "credentials": {"client_secret": "new_secret"}}'
-
-# Clear proxy_config
-curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"type": "custom", "proxy_config": null}'
 
 # Clear tool restrictions
 curl -X PATCH "https://backend.composio.dev/api/v3/auth_configs/{id}" \
