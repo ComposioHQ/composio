@@ -2,6 +2,7 @@ import { Command, Options } from '@effect/cli';
 import { pipe, Console, Effect, Option, Array } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
@@ -135,6 +136,10 @@ export function generatePythonTypeStubs({
           `✅ Type stubs generated successfully.\n` +
             `Generated files are available at: ${outputDir}`
         );
+
+    // Log API metrics
+    const metrics = yield* client.getMetrics();
+    yield* logMetrics(metrics);
 
     return outputDir;
   });

@@ -164,6 +164,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
 
       // These methods don't need caching as they operate on already fetched data
       // or perform validation that should always be fresh
+      getMetrics: () => underlyingRepository.getMetrics(),
       validateToolkits: toolkitSlugs => underlyingRepository.validateToolkits(toolkitSlugs),
       filterToolkitsBySlugs: (toolkits, toolkitSlugs) =>
         underlyingRepository.filterToolkitsBySlugs(toolkits, toolkitSlugs),
