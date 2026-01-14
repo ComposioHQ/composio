@@ -1,0 +1,540 @@
+{
+  "slug": "NOTION_ARCHIVE_NOTION_PAGE",
+  "name": "Archive Notion Page",
+  "description": "Archives (moves to trash) or unarchives (restores from trash) a specified Notion page.",
+  "available_versions": ["20260113_00"],
+  "version": "20260113_00",
+  "toolkit": {
+    "slug": "notion",
+    "name": "notion",
+    "logo": "https://logos.composio.dev/api/notion"
+  },
+  "input_parameters": {
+    "properties": {
+      "archive": {
+        "default": true,
+        "description": "Set to `true` to move the page to trash (archive), or `false` to restore it from trash (unarchive). Defaults to `true`.",
+        "title": "Archive",
+        "type": "boolean"
+      },
+      "page_id": {
+        "description": "The unique identifier (UUID) of the Notion page to be archived or unarchived. This must be a page ID, not a database ID. Database IDs cannot be used with this action - databases must be archived using the archive database action instead. Page IDs can be obtained using NOTION_SEARCH_NOTION_PAGE with filter_value='page' or from the 'id' field of page objects returned by other Notion actions.",
+        "examples": ["a1b2c3d4-e5f6-7890-1234-567890abcdef"],
+        "title": "Page Id",
+        "type": "string"
+      }
+    },
+    "required": ["page_id"],
+    "title": "ArchiveNotionPageRequest",
+    "type": "object"
+  },
+  "output_parameters": {
+    "properties": {
+      "data": {
+        "additionalProperties": false,
+        "description": "Data from the action execution",
+        "properties": {
+          "archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Indicates whether the page is archived. Set to true when the page is archived.",
+            "title": "Archived"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "properties": {
+                  "external": {
+                    "description": "External file configuration.",
+                    "properties": {
+                      "url": {
+                        "description": "Publicly accessible HTTPS link to remote content.",
+                        "title": "Url",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["url"],
+                    "title": "ExternalFile",
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "external",
+                    "description": "The constant string 'external'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "external"],
+                "title": "ExternalCover",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "file": {
+                    "description": "Notion-hosted file configuration.",
+                    "properties": {
+                      "expiry_time": {
+                        "description": "Timestamp in ISO 8601 format indicating when access expires.",
+                        "title": "Expiry Time",
+                        "type": "string"
+                      },
+                      "url": {
+                        "description": "An authenticated HTTP GET URL to the file. The URL is valid for one hour.",
+                        "title": "Url",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["url", "expiry_time"],
+                    "title": "NotionHostedFile",
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "file",
+                    "description": "The constant string 'file'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "file"],
+                "title": "FileCover",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Page cover image as a file object (external or Notion-hosted).",
+            "title": "Cover"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "properties": {
+                  "id": {
+                    "description": "UUID string identifying the user uniquely.",
+                    "title": "Id",
+                    "type": "string"
+                  },
+                  "object": {
+                    "const": "user",
+                    "description": "Always \"user\".",
+                    "title": "Object",
+                    "type": "string"
+                  }
+                },
+                "required": ["object", "id"],
+                "title": "UserPartial",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Partial user object representing the user who created the page.",
+            "title": "Created By"
+          },
+          "created_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Creation timestamp in ISO 8601 format.",
+            "title": "Created Time"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "properties": {
+                  "emoji": {
+                    "description": "The emoji character itself.",
+                    "title": "Emoji",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "emoji",
+                    "description": "The constant string 'emoji'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "emoji"],
+                "title": "EmojiIcon",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "custom_emoji": {
+                    "description": "Container object for custom emoji data.",
+                    "properties": {
+                      "id": {
+                        "description": "Unique identifier for the custom emoji.",
+                        "title": "Id",
+                        "type": "string"
+                      },
+                      "name": {
+                        "description": "Display name of the custom emoji.",
+                        "title": "Name",
+                        "type": "string"
+                      },
+                      "url": {
+                        "description": "HTTPS URL pointing to the emoji image.",
+                        "title": "Url",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name", "url"],
+                    "title": "CustomEmojiData",
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "custom_emoji",
+                    "description": "The constant value 'custom_emoji'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "custom_emoji"],
+                "title": "CustomEmojiIcon",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "external": {
+                    "description": "External file configuration.",
+                    "properties": {
+                      "url": {
+                        "description": "Publicly accessible HTTPS link to remote content.",
+                        "title": "Url",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["url"],
+                    "title": "ExternalFile",
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "external",
+                    "description": "The constant string 'external'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "external"],
+                "title": "ExternalIcon",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "file": {
+                    "description": "Notion-hosted file configuration.",
+                    "properties": {
+                      "expiry_time": {
+                        "description": "Timestamp in ISO 8601 format indicating when access expires.",
+                        "title": "Expiry Time",
+                        "type": "string"
+                      },
+                      "url": {
+                        "description": "An authenticated HTTP GET URL to the file. The URL is valid for one hour.",
+                        "title": "Url",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["url", "expiry_time"],
+                    "title": "NotionHostedFile",
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "file",
+                    "description": "The constant string 'file'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "file"],
+                "title": "FileIcon",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Page icon, which can be an emoji or file object (external or uploaded).",
+            "title": "Icon"
+          },
+          "id": {
+            "description": "Unique page identifier in UUIDv4 format.",
+            "title": "Id",
+            "type": "string"
+          },
+          "in_trash": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Indicates whether the page is in trash. Set to true when the page is archived.",
+            "title": "In Trash"
+          },
+          "last_edited_by": {
+            "anyOf": [
+              {
+                "properties": {
+                  "id": {
+                    "description": "UUID string identifying the user uniquely.",
+                    "title": "Id",
+                    "type": "string"
+                  },
+                  "object": {
+                    "const": "user",
+                    "description": "Always \"user\".",
+                    "title": "Object",
+                    "type": "string"
+                  }
+                },
+                "required": ["object", "id"],
+                "title": "UserPartial",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Partial user object representing the user who last edited the page.",
+            "title": "Last Edited By"
+          },
+          "last_edited_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Most recent modification timestamp in ISO 8601 format.",
+            "title": "Last Edited Time"
+          },
+          "object": {
+            "const": "page",
+            "description": "Always the literal value 'page'.",
+            "title": "Object",
+            "type": "string"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "properties": {
+                  "database_id": {
+                    "description": "UUIDv4 string identifying the parent database.",
+                    "title": "Database Id",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "database_id",
+                    "description": "The constant string 'database_id'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "database_id"],
+                "title": "DatabaseParent",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "data_source_id": {
+                    "description": "UUIDv4 string identifying the parent data source.",
+                    "title": "Data Source Id",
+                    "type": "string"
+                  },
+                  "database_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "UUIDv4 string for the grandparent database (convenience field).",
+                    "title": "Database Id"
+                  },
+                  "type": {
+                    "const": "data_source_id",
+                    "description": "The constant string 'data_source_id'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "data_source_id"],
+                "title": "DataSourceParent",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "page_id": {
+                    "description": "UUIDv4 string identifying the parent page.",
+                    "title": "Page Id",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "page_id",
+                    "description": "The constant string 'page_id'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "page_id"],
+                "title": "PageParent",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "const": "workspace",
+                    "description": "The constant string 'workspace'.",
+                    "title": "Type",
+                    "type": "string"
+                  },
+                  "workspace": {
+                    "const": true,
+                    "description": "Always true, indicating the page is at workspace level.",
+                    "title": "Workspace",
+                    "type": "boolean"
+                  }
+                },
+                "required": ["type", "workspace"],
+                "title": "WorkspaceParent",
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "block_id": {
+                    "description": "UUIDv4 string identifying the parent block.",
+                    "title": "Block Id",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "block_id",
+                    "description": "The constant string 'block_id'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "block_id"],
+                "title": "BlockParent",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Parent container information specifying where the page is located.",
+            "title": "Parent"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Key-value pairs of page property data. The structure depends on the parent type and specific properties defined for the page.",
+            "title": "Properties"
+          },
+          "public_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Public web URL if the page is published; otherwise null.",
+            "title": "Public Url"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Standard Notion page URL.",
+            "title": "Url"
+          }
+        },
+        "required": ["object", "id"],
+        "title": "Data",
+        "type": "object"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Error if any occurred during the execution of the action",
+        "title": "Error"
+      },
+      "successful": {
+        "description": "Whether or not the action execution was successful or not",
+        "title": "Successful",
+        "type": "boolean"
+      }
+    },
+    "required": ["data", "successful"],
+    "title": "ArchiveNotionPageResponseWrapper",
+    "type": "object"
+  },
+  "scopes": ["Read content"],
+  "tags": ["destructiveHint", "openWorldHint"],
+  "no_auth": false,
+  "status": "active",
+  "is_deprecated": false,
+  "deprecated": {
+    "displayName": "Archive Notion Page",
+    "version": "20260113_00",
+    "available_versions": ["20260113_00"],
+    "is_deprecated": false,
+    "toolkit": {
+      "logo": "https://logos.composio.dev/api/notion"
+    }
+  }
+}
