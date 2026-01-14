@@ -27,7 +27,8 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
       rootDir: outputDir,
       declaration: true,
       emitDeclarationOnly: false,
-      noEmitOnError: true,
+      noEmitOnError: false,
+      isolatedModules: true,
     } satisfies ts.CompilerOptions;
 
     const virtualFileMap = new Map(
@@ -59,8 +60,19 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
     const program = ts.createProgram(virtualFileNames, compilerOptions, tsHost);
     const emitResult = program.emit();
 
-    // Check for syntax or semantic errors
-    const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+    // Check for syntax errors only (ignore module resolution errors like TS2307)
+    // Module resolution errors are expected since we're transpiling generated code
+    // that imports from @composio/core which may not be installed in the target directory
+    const moduleResolutionErrorCodes = new Set([
+      2307, // Cannot find module
+      2792, // Cannot find module (for type-only imports)
+      2305, // Module has no exported member
+      2339, // Property does not exist on type (often from unresolved imports)
+    ]);
+    const diagnostics = ts
+      .getPreEmitDiagnostics(program)
+      .concat(emitResult.diagnostics)
+      .filter(d => !moduleResolutionErrorCodes.has(d.code));
 
     if (diagnostics.length > 0) {
       const formatDiagnostic = (diagnostic: ts.Diagnostic): string => {
