@@ -28,6 +28,143 @@ import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { jsFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
 import { transpileTypeScriptSources } from 'src/generation/typescript/transpile';
 import { BANNER } from 'src/generation/constants';
+import type { Toolkit } from 'src/models/toolkits';
+import type { TriggerType } from 'src/models/trigger-types';
+import type { Tool, ToolsAsEnums } from 'src/models/tools';
+
+/**
+ * Result type for fetching toolkit data
+ */
+type FetchResult = {
+  toolkits: ReadonlyArray<Toolkit>;
+  triggerTypes: ReadonlyArray<TriggerType>;
+  typeableTools:
+    | { withTypes: true; tools: ReadonlyArray<Tool> }
+    | { withTypes: false; tools: ToolsAsEnums };
+};
+
+/**
+ * Fetches data for specific toolkits when --toolkits filter is provided.
+ * Makes targeted API calls for only the requested toolkits.
+ */
+function fetchFilteredData(
+  client: ComposioToolkitsRepository,
+  slugs: ReadonlyArray<string>,
+  typeTools: boolean
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    yield* Console.log(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
+
+    const [filteredToolkits, filteredTriggerTypes, filteredTypeableTools] = yield* Effect.all(
+      [
+        // Fetch only the specified toolkits by slug
+        Effect.logDebug(`Fetching ${slugs.length} toolkit(s) by slug...`).pipe(
+          Effect.flatMap(() =>
+            client
+              .getToolkitsBySlugs(slugs)
+              .pipe(
+                Effect.catchTag('services/InvalidToolkitsError', error =>
+                  Effect.fail(
+                    new Error(
+                      `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. Toolkit not found.`
+                    )
+                  )
+                )
+              )
+          )
+        ),
+        // Fetch only trigger types for the specified toolkits
+        Effect.logDebug(`Fetching trigger types for ${slugs.length} toolkit(s)...`).pipe(
+          Effect.flatMap(() => client.getTriggerTypes(slugs))
+        ),
+        // Fetch tools for the specified toolkits
+        Match.value(typeTools).pipe(
+          Match.when(true, withTypes =>
+            Effect.logDebug(`Fetching tools with schemas for ${slugs.length} toolkit(s)...`).pipe(
+              Effect.flatMap(() => client.getTools(slugs)),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.when(false, withTypes =>
+            Effect.logDebug(`Fetching tool names for ${slugs.length} toolkit(s)...`).pipe(
+              Effect.flatMap(() => client.getToolsAsEnums()),
+              Effect.map(allTools => ({
+                withTypes,
+                // Filter tool enums by toolkit prefix
+                tools: allTools.filter(tool => {
+                  const prefix = tool.split('_')[0]?.toLowerCase();
+                  return slugs.some(s => s.toLowerCase() === prefix);
+                }),
+              }))
+            )
+          ),
+          Match.exhaustive
+        ),
+      ],
+      { concurrency: 'unbounded' }
+    );
+
+    yield* Console.log(
+      `Filtering to ${filteredToolkits.length} toolkit(s): ${filteredToolkits.map(t => t.slug).join(', ')}`
+    );
+
+    return {
+      toolkits: filteredToolkits,
+      triggerTypes: filteredTriggerTypes,
+      typeableTools: filteredTypeableTools,
+    };
+  });
+}
+
+/**
+ * Fetches all toolkit data when no --toolkits filter is provided.
+ * Fetches everything from the API.
+ */
+function fetchAllData(
+  client: ComposioToolkitsRepository,
+  typeTools: boolean
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    yield* Console.log('Fetching all toolkits, tools, and triggers from Composio API...');
+
+    // Fetch all data in parallel
+    // Note: getToolsAsEnums is only called when typeTools === false
+    const [allToolkits, allTriggerTypes, allTypeableTools] = yield* Effect.all(
+      [
+        Effect.logDebug('Fetching all toolkits...').pipe(
+          Effect.flatMap(() => client.getToolkits())
+        ),
+        Effect.logDebug('Fetching all trigger types...').pipe(
+          Effect.flatMap(() => client.getTriggerTypes())
+        ),
+        Match.value(typeTools).pipe(
+          Match.when(true, withTypes =>
+            Effect.logDebug('Fetching all tools with schemas...').pipe(
+              Effect.flatMap(() => client.getTools()),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.when(false, withTypes =>
+            Effect.logDebug('Fetching all tool names...').pipe(
+              Effect.flatMap(() => client.getToolsAsEnums()),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.exhaustive
+        ),
+      ],
+      { concurrency: 'unbounded' }
+    );
+
+    yield* Console.log(`Found ${allToolkits.length} toolkit(s)`);
+
+    return {
+      toolkits: allToolkits,
+      triggerTypes: allTriggerTypes,
+      typeableTools: allTypeableTools,
+    };
+  });
+}
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -135,73 +272,15 @@ export function generateTypescriptTypeStubs({
     yield* Effect.log(`Writing type stubs to ${outputDir}...`);
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
-    // Fetch data from Composio API
-    yield* Console.log('Fetching latest data from Composio API. This may take a while...');
+    // Normalize toolkit slugs if specified (lowercase for API filtering)
+    const toolkitSlugsFilter = Array.isNonEmptyArray(toolkitsOpt)
+      ? toolkitsOpt.map(s => s.toLowerCase())
+      : null;
 
-    // Validate toolkit slugs if specified
-    const hasToolkitsFilter = Array.isNonEmptyArray(toolkitsOpt);
-    const validatedToolkitSlugs = hasToolkitsFilter
-      ? yield* client
-          .validateToolkits(toolkitsOpt)
-          .pipe(
-            Effect.catchTag('services/InvalidToolkitsError', error =>
-              Effect.fail(
-                new Error(
-                  `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. ` +
-                    `Available toolkits: ${error.availableToolkits.slice(0, 10).join(', ')}${error.availableToolkits.length > 10 ? '...' : ''}`
-                )
-              )
-            )
-          )
-      : [];
-
-    const [triggerTypesAsEnums, toolsAsEnums] = yield* Effect.all([
-      Effect.logDebug('Fetching trigger types...').pipe(
-        Effect.flatMap(() => client.getTriggerTypesAsEnums())
-      ),
-      Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
-    ]);
-
-    const [allToolkits, triggerTypes] = yield* Effect.all(
-      [
-        Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
-        Effect.logDebug('Fetching trigger types payloads...').pipe(
-          Effect.flatMap(() => client.getTriggerTypes(triggerTypesAsEnums.length))
-        ),
-      ],
-      { concurrency: 'unbounded' }
-    );
-
-    // Filter toolkits if --toolkits was specified
-    const toolkits = hasToolkitsFilter
-      ? client.filterToolkitsBySlugs(allToolkits, validatedToolkitSlugs)
-      : allToolkits;
-
-    if (hasToolkitsFilter) {
-      yield* Console.log(
-        `Filtering to ${toolkits.length} toolkit(s): ${toolkits.map(t => t.slug).join(', ')}`
-      );
-    }
-
-    // Only fetch tools if `--type-tools` was specified
-    const typeableTools = yield* Match.value(typeTools).pipe(
-      Match.when(true, typePredicate =>
-        Effect.logDebug('Fetching tools...').pipe(
-          Effect.flatMap(() => client.getTools(toolsAsEnums.length)),
-          Effect.map(tools => ({
-            withTypes: typePredicate,
-            tools,
-          }))
-        )
-      ),
-      Match.when(false, typePredicate =>
-        Effect.succeed({
-          withTypes: typePredicate,
-          tools: toolsAsEnums,
-        })
-      ),
-      Match.exhaustive
-    );
+    // Fetch data using two distinct strategies based on whether --toolkits filter is provided
+    const { toolkits, triggerTypes, typeableTools } = yield* toolkitSlugsFilter !== null
+      ? fetchFilteredData(client, toolkitSlugsFilter, typeTools)
+      : fetchAllData(client, typeTools);
 
     yield* Console.log('Writing TypeScript type stubs to disk...');
     const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });

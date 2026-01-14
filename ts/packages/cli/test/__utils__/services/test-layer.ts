@@ -92,10 +92,41 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       new ComposioToolkitsRepository({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
+        getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
+          const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
+          const found = toolkitsData.toolkits.filter(t =>
+            normalizedSlugs.has(String.toLowerCase(t.slug))
+          );
+          if (found.length !== slugs.length) {
+            const foundSlugs = new Set(found.map(t => String.toLowerCase(t.slug)));
+            const notFound = slugs.filter(s => !foundSlugs.has(String.toLowerCase(s)));
+            return Effect.fail(
+              new InvalidToolkitsError({
+                invalidToolkits: [...notFound],
+                availableToolkits: toolkitsData.toolkits.map(t => t.slug),
+              })
+            );
+          }
+          return Effect.succeed(found);
+        },
         getToolsAsEnums: () => Effect.succeed(toolkitsData.tools.map(tool => tool.slug)),
         getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
-        getTriggerTypes: limit => Effect.succeed(toolkitsData.triggerTypes.slice(0, limit)),
-        getTools: limit => Effect.succeed(toolkitsData.tools.slice(0, limit)),
+        getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
+          let triggers = toolkitsData.triggerTypes;
+          if (toolkitSlugs && toolkitSlugs.length > 0) {
+            const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+            triggers = triggers.filter(t => prefixes.some(p => t.slug.startsWith(p)));
+          }
+          return Effect.succeed(triggers);
+        },
+        getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
+          let tools = toolkitsData.tools;
+          if (toolkitSlugs && toolkitSlugs.length > 0) {
+            const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+            tools = tools.filter(t => prefixes.some(p => t.slug.startsWith(p)));
+          }
+          return Effect.succeed(tools);
+        },
         validateToolkits: (toolkitSlugs: ReadonlyArray<string>) => {
           const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
           const availableSlugs = toolkitsData.toolkits.map(toolkit =>

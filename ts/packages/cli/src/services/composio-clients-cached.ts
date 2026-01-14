@@ -124,6 +124,9 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
         );
       },
 
+      // getToolkitsBySlugs is not cached - it fetches specific toolkits and should always be fresh
+      getToolkitsBySlugs: slugs => underlyingRepository.getToolkitsBySlugs(slugs),
+
       getToolsAsEnums: () => {
         return createCachedEffect(
           CACHE_FILES.toolsAsEnums,
@@ -142,23 +145,29 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
         );
       },
 
-      getTriggerTypes: (limit: number) => {
+      getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
+        // When filtering by toolkit, don't use cache - fetch fresh data
+        if (toolkitSlugs && toolkitSlugs.length > 0) {
+          return underlyingRepository.getTriggerTypes(toolkitSlugs);
+        }
         return createCachedEffect(
-          // We don't care about the limit in the cache file name
           CACHE_FILES.triggerTypes,
           TriggerTypesFromJSON,
           TriggerTypesToJSON,
-          underlyingRepository.getTriggerTypes(limit)
+          underlyingRepository.getTriggerTypes()
         );
       },
 
-      getTools: (limit: number) => {
+      getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
+        // When filtering by toolkit, don't use cache - fetch fresh data
+        if (toolkitSlugs && toolkitSlugs.length > 0) {
+          return underlyingRepository.getTools(toolkitSlugs);
+        }
         return createCachedEffect(
-          // We don't care about the limit in the cache file name
           CACHE_FILES.tools,
           ToolsFromJSON,
           ToolsToJSON,
-          underlyingRepository.getTools(limit)
+          underlyingRepository.getTools()
         );
       },
 
