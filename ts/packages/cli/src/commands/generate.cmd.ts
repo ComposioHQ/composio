@@ -14,14 +14,14 @@ export const outputOpt = Options.optional(
 export const typeTools = Options.boolean('type-tools').pipe(
   Options.withDefault(false),
   Options.withDescription(
-    'Whether to emit type stubs for tools. This only applies to TypeScript projects.'
+    'Generate typed input/output schemas for each tool (TypeScript only, slower)'
   )
 );
 
 export const toolkitsOpt = Options.text('toolkits').pipe(
   Options.repeated,
   Options.withDescription(
-    'Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)'
+    'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
   )
 );
 
@@ -33,7 +33,7 @@ export const toolkitsOpt = Options.text('toolkits').pipe(
  */
 export const generateCmd = Command.make('generate', { outputOpt, typeTools, toolkitsOpt }).pipe(
   Command.withDescription(
-    'Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).'
+    'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)'
   ),
   Command.withHandler(({ outputOpt, typeTools, toolkitsOpt }) =>
     Effect.gen(function* () {
