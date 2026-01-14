@@ -1,0 +1,787 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generateTypeFromJsonSchema > control group - simple schemas without discriminator > should generate type for NOTION_ARCHIVE_NOTION_PAGE (two properties) 1`] = `
+"type NOTION_ARCHIVE_NOTION_PAGE_INPUT = {
+  /**
+   * Archive
+   * @description Set to \`true\` to move the page to trash (archive), or \`false\` to restore it from trash (unarchive). Defaults to \`true\`.
+   * @default true
+   */
+  archive: boolean;
+  /**
+   * Page Id
+   * @description The unique identifier (UUID) of the Notion page to be archived or unarchived. This must be a page ID, not a database ID. Database IDs cannot be used with this action - databases must be archived using the archive database action instead. Page IDs can be obtained using NOTION_SEARCH_NOTION_PAGE with filter_value='page' or from the 'id' field of page objects returned by other Notion actions.
+   */
+  page_id?: string;
+};"
+`;
+
+exports[`generateTypeFromJsonSchema > control group - simple schemas without discriminator > should generate type for NOTION_CREATE_COMMENT (moderate complexity with nested objects) 1`] = `
+"type NOTION_CREATE_COMMENT_INPUT = {
+  /**
+   * Comment
+   * @description Content of the comment as a NotionRichText object or a JSON string. Simplest form: {'content': 'Looks good!'} or {'text': 'Looks good!'} (both 'content' and 'text' are accepted as the field name). Can also be passed as a JSON string: '{"content": "Looks good!"}'. Optional styling fields: bold, italic, link, etc. Do NOT wrap this in a list or use Notion API block JSON.
+   */
+  comment?: {
+      /**
+       * Block Property
+       * @description The block property of the block to be added. Possible properties are \`paragraph\`, \`heading_1\`, \`heading_2\`, \`heading_3\`, \`callout\`, \`to_do\`, \`toggle\`, \`quote\`, \`bulleted_list_item\`, \`numbered_list_item\`. Other properties possible are \`file\`, \`image\`, \`video\` (link required), and \`divider\` (creates a horizontal divider line, no content required).
+       * @default paragraph
+       * @enum {string}
+       */
+      block_property: "paragraph" | "heading_1" | "heading_2" | "heading_3" | "callout" | "to_do" | "toggle" | "quote" | "bulleted_list_item" | "numbered_list_item" | "file" | "image" | "video" | "divider";
+      /**
+       * Bold
+       * @description Indicates if the text is bold.
+       * @default false
+       */
+      bold: boolean;
+      /**
+       * Code
+       * @description Indicates if the text is formatted as code.
+       * @default false
+       */
+      code: boolean;
+      /**
+       * Color
+       * @description The color of the text background or text itself.
+       * @default default
+       */
+      color: string;
+      /**
+       * Content
+       * @description The textual content of the rich text object. ENHANCED: Now automatically parses markdown formatting including bold (**text**), italic (*text*), strikethrough (~~text~~), inline code (\`code\`), and links ([text](url)). Required for paragraph, heading_1, heading_2, heading_3, callout, to_do, toggle, quote.
+       * @default null
+       */
+      content: string | null;
+      /**
+       * Italic
+       * @description Indicates if the text is italic.
+       * @default false
+       */
+      italic: boolean;
+      /**
+       * Link
+       * @description The URL of the rich text object or the file to be uploaded or image/video link
+       * @default null
+       */
+      link: string | null;
+      /**
+       * Strikethrough
+       * @description Indicates if the text has strikethrough.
+       * @default false
+       */
+      strikethrough: boolean;
+      /**
+       * Underline
+       * @description Indicates if the text is underlined.
+       * @default false
+       */
+      underline: boolean;
+  };
+  /**
+   * Discussion Id
+   * @description The ID of an existing discussion thread to which the comment will be added. This is required if \`parent_page_id\` is not provided.
+   * @default null
+   */
+  discussion_id: string | null;
+  /**
+   * Parent Page Id
+   * @description The ID of the Notion page where the comment will be added. This is required if \`discussion_id\` is not provided. Page IDs can be obtained using other Notion actions that fetch page details or list pages.
+   * @default null
+   */
+  parent_page_id: string | null;
+};"
+`;
+
+exports[`generateTypeFromJsonSchema > control group - simple schemas without discriminator > should generate type for NOTION_DELETE_BLOCK (simple single property) 1`] = `
+"type NOTION_DELETE_BLOCK_INPUT = {
+  /**
+   * Block Id
+   * @description Identifier of the block, page, or database to be deleted (archived). Must be a valid Notion block/page/database ID in UUID format (with or without hyphens). To find page IDs and their titles, consider using an action like \`NOTION_FETCH_DATA\`.
+   */
+  block_id?: string;
+};"
+`;
+
+exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $defs references > should generate type for NOTION_APPEND_TEXT_BLOCKS (discriminator with oneOf) 1`] = `
+"type NOTION_APPEND_TEXT_BLOCKS_INPUT = {
+  /**
+   * After
+   * @description Optional UUID of an existing child block. New blocks will be inserted after this block.
+   * @default null
+   */
+  after: string | null;
+  /**
+   * Block Id
+   * @description The UUID of the parent block or page to append children to.
+   */
+  block_id?: string;
+  /**
+   * Children
+   * @description Array of text block objects to append (also accepts 'blocks' as parameter name). Supported types:
+   *     - paragraph: Regular text paragraph
+   *     - heading_1, heading_2, heading_3: Section headings
+   *     - bulleted_list_item: Bullet point
+   *     - numbered_list_item: Numbered list item
+   *
+   *     ⚠️ Text content limited to 2000 characters per rich_text text.content field.
+   *     Max 100 blocks per request.
+   */
+  children?: ({
+      /**
+       * Object
+       * @description Always 'block'.
+       * @default block
+       * @constant
+       */
+      object: "block";
+      /**
+       * ParagraphInput
+       * @description Paragraph content.
+       */
+      paragraph: {
+          /**
+           * BlockColor
+           * @description Color of the paragraph text or background.
+           * @default default
+           * @enum {string}
+           */
+          color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+          /**
+           * Rich Text
+           * @description Array of rich text objects. Each text.content is limited to 2000 chars.
+           */
+          rich_text: {
+              /**
+               * @description Optional text styling annotations (bold, italic, etc.).
+               * @default null
+               */
+              annotations: {
+                  /**
+                   * Bold
+                   * @description Whether the text is bold.
+                   * @default false
+                   */
+                  bold: boolean;
+                  /**
+                   * Code
+                   * @description Whether the text is formatted as inline code.
+                   * @default false
+                   */
+                  code: boolean;
+                  /**
+                   * BlockColor
+                   * @description Color of the text or background.
+                   * @default default
+                   * @enum {string}
+                   */
+                  color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+                  /**
+                   * Italic
+                   * @description Whether the text is italic.
+                   * @default false
+                   */
+                  italic: boolean;
+                  /**
+                   * Strikethrough
+                   * @description Whether the text has strikethrough.
+                   * @default false
+                   */
+                  strikethrough: boolean;
+                  /**
+                   * Underline
+                   * @description Whether the text is underlined.
+                   * @default false
+                   */
+                  underline: boolean;
+              } | null;
+              /**
+               * TextContent
+               * @description The text content object.
+               */
+              text: {
+                  /**
+                   * Content
+                   * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   */
+                  content: string;
+                  /**
+                   * @description Optional link for the text.
+                   * @default null
+                   */
+                  link: {
+                      /**
+                       * Url
+                       * @description The URL the text links to.
+                       */
+                      url: string;
+                  } | null;
+              };
+              /**
+               * Type
+               * @description Type of rich text. Currently only 'text' is supported for input.
+               * @default text
+               * @constant
+               */
+              type: "text";
+          }[];
+      };
+      /**
+       * Type
+       * @description Block type.
+       * @default paragraph
+       * @constant
+       */
+      type: "paragraph";
+  } | {
+      /**
+       * HeadingInput
+       * @description Heading 1 content.
+       */
+      heading_1: {
+          /**
+           * BlockColor
+           * @description Color of the heading.
+           * @default default
+           * @enum {string}
+           */
+          color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+          /**
+           * Is Toggleable
+           * @description Whether the heading can be toggled to show/hide content.
+           * @default false
+           */
+          is_toggleable: boolean;
+          /**
+           * Rich Text
+           * @description Array of rich text objects for the heading text.
+           */
+          rich_text: {
+              /**
+               * @description Optional text styling annotations (bold, italic, etc.).
+               * @default null
+               */
+              annotations: {
+                  /**
+                   * Bold
+                   * @description Whether the text is bold.
+                   * @default false
+                   */
+                  bold: boolean;
+                  /**
+                   * Code
+                   * @description Whether the text is formatted as inline code.
+                   * @default false
+                   */
+                  code: boolean;
+                  /**
+                   * BlockColor
+                   * @description Color of the text or background.
+                   * @default default
+                   * @enum {string}
+                   */
+                  color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+                  /**
+                   * Italic
+                   * @description Whether the text is italic.
+                   * @default false
+                   */
+                  italic: boolean;
+                  /**
+                   * Strikethrough
+                   * @description Whether the text has strikethrough.
+                   * @default false
+                   */
+                  strikethrough: boolean;
+                  /**
+                   * Underline
+                   * @description Whether the text is underlined.
+                   * @default false
+                   */
+                  underline: boolean;
+              } | null;
+              /**
+               * TextContent
+               * @description The text content object.
+               */
+              text: {
+                  /**
+                   * Content
+                   * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   */
+                  content: string;
+                  /**
+                   * @description Optional link for the text.
+                   * @default null
+                   */
+                  link: {
+                      /**
+                       * Url
+                       * @description The URL the text links to.
+                       */
+                      url: string;
+                  } | null;
+              };
+              /**
+               * Type
+               * @description Type of rich text. Currently only 'text' is supported for input.
+               * @default text
+               * @constant
+               */
+              type: "text";
+          }[];
+      };
+      /**
+       * Object
+       * @description Always 'block'.
+       * @default block
+       * @constant
+       */
+      object: "block";
+      /**
+       * Type
+       * @description Block type.
+       * @default heading_1
+       * @constant
+       */
+      type: "heading_1";
+  } | {
+      /**
+       * HeadingInput
+       * @description Heading 2 content.
+       */
+      heading_2: {
+          /**
+           * BlockColor
+           * @description Color of the heading.
+           * @default default
+           * @enum {string}
+           */
+          color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+          /**
+           * Is Toggleable
+           * @description Whether the heading can be toggled to show/hide content.
+           * @default false
+           */
+          is_toggleable: boolean;
+          /**
+           * Rich Text
+           * @description Array of rich text objects for the heading text.
+           */
+          rich_text: {
+              /**
+               * @description Optional text styling annotations (bold, italic, etc.).
+               * @default null
+               */
+              annotations: {
+                  /**
+                   * Bold
+                   * @description Whether the text is bold.
+                   * @default false
+                   */
+                  bold: boolean;
+                  /**
+                   * Code
+                   * @description Whether the text is formatted as inline code.
+                   * @default false
+                   */
+                  code: boolean;
+                  /**
+                   * BlockColor
+                   * @description Color of the text or background.
+                   * @default default
+                   * @enum {string}
+                   */
+                  color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+                  /**
+                   * Italic
+                   * @description Whether the text is italic.
+                   * @default false
+                   */
+                  italic: boolean;
+                  /**
+                   * Strikethrough
+                   * @description Whether the text has strikethrough.
+                   * @default false
+                   */
+                  strikethrough: boolean;
+                  /**
+                   * Underline
+                   * @description Whether the text is underlined.
+                   * @default false
+                   */
+                  underline: boolean;
+              } | null;
+              /**
+               * TextContent
+               * @description The text content object.
+               */
+              text: {
+                  /**
+                   * Content
+                   * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   */
+                  content: string;
+                  /**
+                   * @description Optional link for the text.
+                   * @default null
+                   */
+                  link: {
+                      /**
+                       * Url
+                       * @description The URL the text links to.
+                       */
+                      url: string;
+                  } | null;
+              };
+              /**
+               * Type
+               * @description Type of rich text. Currently only 'text' is supported for input.
+               * @default text
+               * @constant
+               */
+              type: "text";
+          }[];
+      };
+      /**
+       * Object
+       * @description Always 'block'.
+       * @default block
+       * @constant
+       */
+      object: "block";
+      /**
+       * Type
+       * @description Block type.
+       * @default heading_2
+       * @constant
+       */
+      type: "heading_2";
+  } | {
+      /**
+       * HeadingInput
+       * @description Heading 3 content.
+       */
+      heading_3: {
+          /**
+           * BlockColor
+           * @description Color of the heading.
+           * @default default
+           * @enum {string}
+           */
+          color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+          /**
+           * Is Toggleable
+           * @description Whether the heading can be toggled to show/hide content.
+           * @default false
+           */
+          is_toggleable: boolean;
+          /**
+           * Rich Text
+           * @description Array of rich text objects for the heading text.
+           */
+          rich_text: {
+              /**
+               * @description Optional text styling annotations (bold, italic, etc.).
+               * @default null
+               */
+              annotations: {
+                  /**
+                   * Bold
+                   * @description Whether the text is bold.
+                   * @default false
+                   */
+                  bold: boolean;
+                  /**
+                   * Code
+                   * @description Whether the text is formatted as inline code.
+                   * @default false
+                   */
+                  code: boolean;
+                  /**
+                   * BlockColor
+                   * @description Color of the text or background.
+                   * @default default
+                   * @enum {string}
+                   */
+                  color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+                  /**
+                   * Italic
+                   * @description Whether the text is italic.
+                   * @default false
+                   */
+                  italic: boolean;
+                  /**
+                   * Strikethrough
+                   * @description Whether the text has strikethrough.
+                   * @default false
+                   */
+                  strikethrough: boolean;
+                  /**
+                   * Underline
+                   * @description Whether the text is underlined.
+                   * @default false
+                   */
+                  underline: boolean;
+              } | null;
+              /**
+               * TextContent
+               * @description The text content object.
+               */
+              text: {
+                  /**
+                   * Content
+                   * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   */
+                  content: string;
+                  /**
+                   * @description Optional link for the text.
+                   * @default null
+                   */
+                  link: {
+                      /**
+                       * Url
+                       * @description The URL the text links to.
+                       */
+                      url: string;
+                  } | null;
+              };
+              /**
+               * Type
+               * @description Type of rich text. Currently only 'text' is supported for input.
+               * @default text
+               * @constant
+               */
+              type: "text";
+          }[];
+      };
+      /**
+       * Object
+       * @description Always 'block'.
+       * @default block
+       * @constant
+       */
+      object: "block";
+      /**
+       * Type
+       * @description Block type.
+       * @default heading_3
+       * @constant
+       */
+      type: "heading_3";
+  } | {
+      /**
+       * ListItemInput
+       * @description Bulleted list item content.
+       */
+      bulleted_list_item: {
+          /**
+           * BlockColor
+           * @description Color of the list item.
+           * @default default
+           * @enum {string}
+           */
+          color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+          /**
+           * Rich Text
+           * @description Array of rich text objects for the list item text.
+           */
+          rich_text: {
+              /**
+               * @description Optional text styling annotations (bold, italic, etc.).
+               * @default null
+               */
+              annotations: {
+                  /**
+                   * Bold
+                   * @description Whether the text is bold.
+                   * @default false
+                   */
+                  bold: boolean;
+                  /**
+                   * Code
+                   * @description Whether the text is formatted as inline code.
+                   * @default false
+                   */
+                  code: boolean;
+                  /**
+                   * BlockColor
+                   * @description Color of the text or background.
+                   * @default default
+                   * @enum {string}
+                   */
+                  color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+                  /**
+                   * Italic
+                   * @description Whether the text is italic.
+                   * @default false
+                   */
+                  italic: boolean;
+                  /**
+                   * Strikethrough
+                   * @description Whether the text has strikethrough.
+                   * @default false
+                   */
+                  strikethrough: boolean;
+                  /**
+                   * Underline
+                   * @description Whether the text is underlined.
+                   * @default false
+                   */
+                  underline: boolean;
+              } | null;
+              /**
+               * TextContent
+               * @description The text content object.
+               */
+              text: {
+                  /**
+                   * Content
+                   * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   */
+                  content: string;
+                  /**
+                   * @description Optional link for the text.
+                   * @default null
+                   */
+                  link: {
+                      /**
+                       * Url
+                       * @description The URL the text links to.
+                       */
+                      url: string;
+                  } | null;
+              };
+              /**
+               * Type
+               * @description Type of rich text. Currently only 'text' is supported for input.
+               * @default text
+               * @constant
+               */
+              type: "text";
+          }[];
+      };
+      /**
+       * Object
+       * @description Always 'block'.
+       * @default block
+       * @constant
+       */
+      object: "block";
+      /**
+       * Type
+       * @description Block type.
+       * @default bulleted_list_item
+       * @constant
+       */
+      type: "bulleted_list_item";
+  } | {
+      /**
+       * ListItemInput
+       * @description Numbered list item content.
+       */
+      numbered_list_item: {
+          /**
+           * BlockColor
+           * @description Color of the list item.
+           * @default default
+           * @enum {string}
+           */
+          color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+          /**
+           * Rich Text
+           * @description Array of rich text objects for the list item text.
+           */
+          rich_text: {
+              /**
+               * @description Optional text styling annotations (bold, italic, etc.).
+               * @default null
+               */
+              annotations: {
+                  /**
+                   * Bold
+                   * @description Whether the text is bold.
+                   * @default false
+                   */
+                  bold: boolean;
+                  /**
+                   * Code
+                   * @description Whether the text is formatted as inline code.
+                   * @default false
+                   */
+                  code: boolean;
+                  /**
+                   * BlockColor
+                   * @description Color of the text or background.
+                   * @default default
+                   * @enum {string}
+                   */
+                  color: "default" | "gray" | "brown" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink" | "red" | "gray_background" | "brown_background" | "orange_background" | "yellow_background" | "green_background" | "blue_background" | "purple_background" | "pink_background" | "red_background";
+                  /**
+                   * Italic
+                   * @description Whether the text is italic.
+                   * @default false
+                   */
+                  italic: boolean;
+                  /**
+                   * Strikethrough
+                   * @description Whether the text has strikethrough.
+                   * @default false
+                   */
+                  strikethrough: boolean;
+                  /**
+                   * Underline
+                   * @description Whether the text is underlined.
+                   * @default false
+                   */
+                  underline: boolean;
+              } | null;
+              /**
+               * TextContent
+               * @description The text content object.
+               */
+              text: {
+                  /**
+                   * Content
+                   * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   */
+                  content: string;
+                  /**
+                   * @description Optional link for the text.
+                   * @default null
+                   */
+                  link: {
+                      /**
+                       * Url
+                       * @description The URL the text links to.
+                       */
+                      url: string;
+                  } | null;
+              };
+              /**
+               * Type
+               * @description Type of rich text. Currently only 'text' is supported for input.
+               * @default text
+               * @constant
+               */
+              type: "text";
+          }[];
+      };
+      /**
+       * Object
+       * @description Always 'block'.
+       * @default block
+       * @constant
+       */
+      object: "block";
+      /**
+       * Type
+       * @description Block type.
+       * @default numbered_list_item
+       * @constant
+       */
+      type: "numbered_list_item";
+  })[];
+};"
+`;

@@ -1,0 +1,676 @@
+{
+  "slug": "NOTION_CREATE_COMMENT",
+  "name": "Create comment",
+  "description": "Adds a comment to a Notion page (via `parent_page_id`) OR to an existing discussion thread (via `discussion_id`); cannot create new discussion threads on specific blocks (inline comments).",
+  "available_versions": ["20260113_00"],
+  "version": "20260113_00",
+  "toolkit": {
+    "slug": "notion",
+    "name": "notion",
+    "logo": "https://logos.composio.dev/api/notion"
+  },
+  "input_parameters": {
+    "properties": {
+      "comment": {
+        "additionalProperties": false,
+        "description": "Content of the comment as a NotionRichText object or a JSON string. Simplest form: {'content': 'Looks good!'} or {'text': 'Looks good!'} (both 'content' and 'text' are accepted as the field name). Can also be passed as a JSON string: '{\"content\": \"Looks good!\"}'. Optional styling fields: bold, italic, link, etc. Do NOT wrap this in a list or use Notion API block JSON.",
+        "examples": [
+          {
+            "content": "Looks good to me!"
+          },
+          {
+            "text": "Great work!"
+          },
+          {
+            "bold": true,
+            "content": "Fix typo"
+          }
+        ],
+        "properties": {
+          "block_property": {
+            "default": "paragraph",
+            "description": "The block property of the block to be added. Possible properties are `paragraph`, `heading_1`, `heading_2`, `heading_3`, `callout`, `to_do`, `toggle`, `quote`, `bulleted_list_item`, `numbered_list_item`. Other properties possible are `file`, `image`, `video` (link required), and `divider` (creates a horizontal divider line, no content required).",
+            "enum": [
+              "paragraph",
+              "heading_1",
+              "heading_2",
+              "heading_3",
+              "callout",
+              "to_do",
+              "toggle",
+              "quote",
+              "bulleted_list_item",
+              "numbered_list_item",
+              "file",
+              "image",
+              "video",
+              "divider"
+            ],
+            "examples": [
+              "paragraph",
+              "heading_1",
+              "heading_2",
+              "heading_3",
+              "bulleted_list_item",
+              "numbered_list_item",
+              "to_do",
+              "callout",
+              "toggle",
+              "quote",
+              "divider"
+            ],
+            "title": "Block Property",
+            "type": "string"
+          },
+          "bold": {
+            "default": false,
+            "description": "Indicates if the text is bold.",
+            "examples": [true, false],
+            "title": "Bold",
+            "type": "boolean"
+          },
+          "code": {
+            "default": false,
+            "description": "Indicates if the text is formatted as code.",
+            "examples": [true, false],
+            "title": "Code",
+            "type": "boolean"
+          },
+          "color": {
+            "default": "default",
+            "description": "The color of the text background or text itself.",
+            "examples": ["blue_background", "yellow_background", "gray", "purple"],
+            "title": "Color",
+            "type": "string"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The textual content of the rich text object. ENHANCED: Now automatically parses markdown formatting including bold (**text**), italic (*text*), strikethrough (~~text~~), inline code (`code`), and links ([text](url)). Required for paragraph, heading_1, heading_2, heading_3, callout, to_do, toggle, quote.",
+            "examples": [
+              "Hello World",
+              "This is **bold** and *italic* text",
+              "Visit [our site](https://example.com)",
+              "Use `code` snippets",
+              "~~Strikethrough~~ text"
+            ],
+            "title": "Content"
+          },
+          "italic": {
+            "default": false,
+            "description": "Indicates if the text is italic.",
+            "examples": [true, false],
+            "title": "Italic",
+            "type": "boolean"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The URL of the rich text object or the file to be uploaded or image/video link",
+            "examples": ["https://www.google.com"],
+            "title": "Link"
+          },
+          "strikethrough": {
+            "default": false,
+            "description": "Indicates if the text has strikethrough.",
+            "examples": [true, false],
+            "title": "Strikethrough",
+            "type": "boolean"
+          },
+          "underline": {
+            "default": false,
+            "description": "Indicates if the text is underlined.",
+            "examples": [true, false],
+            "title": "Underline",
+            "type": "boolean"
+          }
+        },
+        "title": "Comment",
+        "type": "object"
+      },
+      "discussion_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The ID of an existing discussion thread to which the comment will be added. This is required if `parent_page_id` is not provided.",
+        "examples": ["yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"],
+        "title": "Discussion Id"
+      },
+      "parent_page_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "The ID of the Notion page where the comment will be added. This is required if `discussion_id` is not provided. Page IDs can be obtained using other Notion actions that fetch page details or list pages.",
+        "examples": ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"],
+        "title": "Parent Page Id"
+      }
+    },
+    "required": ["comment"],
+    "title": "CreateCommentRequest",
+    "type": "object"
+  },
+  "output_parameters": {
+    "properties": {
+      "data": {
+        "additionalProperties": false,
+        "description": "Data from the action execution",
+        "properties": {
+          "attachments": {
+            "anyOf": [
+              {
+                "items": {
+                  "description": "File attachment on a comment.",
+                  "properties": {
+                    "category": {
+                      "description": "The category of this attachment. Possible values are: 'audio', 'image', 'pdf', 'productivity', and 'video'.",
+                      "title": "Category",
+                      "type": "string"
+                    },
+                    "file": {
+                      "description": "File object containing temporary download information.",
+                      "properties": {
+                        "expiry_time": {
+                          "description": "ISO 8601 timestamp indicating when the temporary download URL expires.",
+                          "title": "Expiry Time",
+                          "type": "string"
+                        },
+                        "url": {
+                          "description": "A temporary download link generated at the time of retrieving the comment.",
+                          "title": "Url",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["url", "expiry_time"],
+                      "title": "NotionCommentAttachmentFile",
+                      "type": "object"
+                    }
+                  },
+                  "required": ["category", "file"],
+                  "title": "NotionCommentAttachment",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Array of file attachments on the comment (maximum 3 attachments).",
+            "title": "Attachments"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "description": "Partial user object containing information about the comment author.",
+                "properties": {
+                  "id": {
+                    "description": "Unique identifier for the user in UUID format.",
+                    "title": "Id",
+                    "type": "string"
+                  },
+                  "object": {
+                    "const": "user",
+                    "default": "user",
+                    "description": "Always 'user'.",
+                    "title": "Object",
+                    "type": "string"
+                  }
+                },
+                "required": ["id"],
+                "title": "NotionPartialUser",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Partial user object containing information about the comment author.",
+            "title": "Created By"
+          },
+          "created_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "ISO 8601 timestamp marking when the comment was created.",
+            "title": "Created Time"
+          },
+          "discussion_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Thread identifier associating the comment with a discussion in UUIDv4 format.",
+            "title": "Discussion Id"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "description": "Custom display name configuration for the comment author.",
+                "properties": {
+                  "resolved_name": {
+                    "description": "The finalized display name that is rendered in the comment.",
+                    "title": "Resolved Name",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "Type of display name. One of: 'integration', 'user', or 'custom'.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "resolved_name"],
+                "title": "NotionDisplayName",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Custom display name configuration for the comment author, overriding the default author name.",
+            "title": "Display Name"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Unique identifier for the comment in UUIDv4 format.",
+            "title": "Id"
+          },
+          "last_edited_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "ISO 8601 timestamp of the most recent modification to the comment.",
+            "title": "Last Edited Time"
+          },
+          "object": {
+            "anyOf": [
+              {
+                "const": "comment",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Always 'comment'.",
+            "title": "Object"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "description": "Parent reference when the comment is on a page.",
+                "properties": {
+                  "page_id": {
+                    "description": "Page identifier in UUIDv4 format.",
+                    "title": "Page Id",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "page_id",
+                    "default": "page_id",
+                    "description": "Type identifier for page parent.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["page_id"],
+                "title": "NotionCommentParentPage",
+                "type": "object"
+              },
+              {
+                "description": "Parent reference when the comment is on a block.",
+                "properties": {
+                  "block_id": {
+                    "description": "Block identifier in UUIDv4 format.",
+                    "title": "Block Id",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "block_id",
+                    "default": "block_id",
+                    "description": "Type identifier for block parent.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": ["block_id"],
+                "title": "NotionCommentParentBlock",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "References the comment's parent (page or block).",
+            "title": "Parent"
+          },
+          "rich_text": {
+            "anyOf": [
+              {
+                "items": {
+                  "description": "Rich text element supporting text, mention, and equation types.",
+                  "properties": {
+                    "annotations": {
+                      "anyOf": [
+                        {
+                          "description": "Styling configuration for rich text.",
+                          "properties": {
+                            "bold": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null,
+                              "description": "Whether the text is bold.",
+                              "title": "Bold"
+                            },
+                            "code": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null,
+                              "description": "Whether the text is formatted as code.",
+                              "title": "Code"
+                            },
+                            "color": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null,
+                              "description": "Text color. One of: 'default', 'gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red', or any of these with '_background' suffix.",
+                              "title": "Color"
+                            },
+                            "italic": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null,
+                              "description": "Whether the text is italic.",
+                              "title": "Italic"
+                            },
+                            "strikethrough": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null,
+                              "description": "Whether the text has strikethrough.",
+                              "title": "Strikethrough"
+                            },
+                            "underline": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null,
+                              "description": "Whether the text is underlined.",
+                              "title": "Underline"
+                            }
+                          },
+                          "title": "RichTextAnnotations",
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Styling configuration for the rich text."
+                    },
+                    "equation": {
+                      "anyOf": [
+                        {
+                          "description": "Equation content for an equation-type rich text element.",
+                          "properties": {
+                            "expression": {
+                              "description": "LaTeX formula expression.",
+                              "title": "Expression",
+                              "type": "string"
+                            }
+                          },
+                          "required": ["expression"],
+                          "title": "RichTextEquation",
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Present when type is 'equation'. Contains the LaTeX expression."
+                    },
+                    "href": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "URL if the text is a link, otherwise null.",
+                      "title": "Href"
+                    },
+                    "mention": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": true,
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Present when type is 'mention'. Contains mention-specific properties for database, date, link_preview, page, user, or template_mention types.",
+                      "title": "Mention"
+                    },
+                    "plain_text": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Unformatted text content, providing a convenient way to access text without styling.",
+                      "title": "Plain Text"
+                    },
+                    "text": {
+                      "anyOf": [
+                        {
+                          "description": "Text content for a text-type rich text element.",
+                          "properties": {
+                            "content": {
+                              "description": "The actual text content.",
+                              "title": "Content",
+                              "type": "string"
+                            },
+                            "link": {
+                              "anyOf": [
+                                {
+                                  "description": "Link object within text content.",
+                                  "properties": {
+                                    "url": {
+                                      "description": "The URL of the link.",
+                                      "title": "Url",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["url"],
+                                  "title": "RichTextLink",
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null,
+                              "description": "Link object containing URL, or null if no link."
+                            }
+                          },
+                          "required": ["content"],
+                          "title": "RichTextTextContent",
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Present when type is 'text'. Contains the text content and optional link."
+                    },
+                    "type": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Type of rich text element. One of: 'text', 'mention', 'equation'.",
+                      "title": "Type"
+                    }
+                  },
+                  "title": "RichTextElement",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Array of rich text objects representing the content of the comment, which supports rich text formatting and links.",
+            "title": "Rich Text"
+          }
+        },
+        "title": "Data",
+        "type": "object"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Error if any occurred during the execution of the action",
+        "title": "Error"
+      },
+      "successful": {
+        "description": "Whether or not the action execution was successful or not",
+        "title": "Successful",
+        "type": "boolean"
+      }
+    },
+    "required": ["data", "successful"],
+    "title": "CreateCommentResponseWrapper",
+    "type": "object"
+  },
+  "scopes": ["comment:write"],
+  "tags": ["important", "openWorldHint"],
+  "no_auth": false,
+  "status": "active",
+  "is_deprecated": false,
+  "deprecated": {
+    "displayName": "Create comment",
+    "version": "20260113_00",
+    "available_versions": ["20260113_00"],
+    "is_deprecated": false,
+    "toolkit": {
+      "logo": "https://logos.composio.dev/api/notion"
+    }
+  }
+}
