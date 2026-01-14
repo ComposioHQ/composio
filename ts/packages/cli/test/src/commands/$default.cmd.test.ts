@@ -72,7 +72,7 @@ describe('CLI: composio', () => {
 
             - py                                                                                                       Handle Python projects.
 
-            - py generate [(-o, --output-dir directory)] --toolkits text...                                            Updates the local type stubs with the latest app data.
+            - py generate [(-o, --output-dir directory)] --toolkits text...                                            Generate Python type stubs for toolkits, tools, and triggers from the Composio API
 
             - ts                                                                                                       Handle TypeScript projects.
 
