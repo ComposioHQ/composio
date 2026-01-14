@@ -304,21 +304,25 @@ export class TelemetryTransport {
     });
 
     // Handle SIGINT (Ctrl+C) and SIGTERM (kill command)
-    const signalHandler = (signal: string) => {
-      logger.debug(`Received ${signal}, flushing telemetry...`);
-      this.flush()
-        .catch(error => {
-          logger.debug('Error flushing telemetry on signal', error);
-        })
-        .finally(() => {
-          // Re-emit the signal to allow normal process termination
-          process.removeListener(signal as NodeJS.Signals, () => signalHandler(signal));
-          process.kill(process.pid, signal);
-        });
+    // Store handler references so they can be properly removed
+    const createSignalHandler = (signal: NodeJS.Signals) => {
+      const handler = () => {
+        logger.debug(`Received ${signal}, flushing telemetry...`);
+        this.flush()
+          .catch(error => {
+            logger.debug('Error flushing telemetry on signal', error);
+          })
+          .finally(() => {
+            // Remove the handler before re-emitting to prevent infinite loop
+            process.removeListener(signal, handler);
+            process.kill(process.pid, signal);
+          });
+      };
+      return handler;
     };
 
-    process.on('SIGINT', () => signalHandler('SIGINT'));
-    process.on('SIGTERM', () => signalHandler('SIGTERM'));
+    process.on('SIGINT', createSignalHandler('SIGINT'));
+    process.on('SIGTERM', createSignalHandler('SIGTERM'));
   }
 }
 
