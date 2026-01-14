@@ -21,6 +21,7 @@ import { Console, Effect, Option, pipe, Array } from 'effect';
 import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
@@ -246,6 +247,10 @@ export function generateTypescriptTypeStubs({
           `✅ Type stubs generated successfully.\n` +
             `Generated files are available at: ${outputDir}`
         );
+
+    // Log API metrics
+    const metrics = yield* client.getMetrics();
+    yield* logMetrics(metrics);
 
     return outputDir;
   });
