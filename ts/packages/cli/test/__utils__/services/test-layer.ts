@@ -116,7 +116,7 @@ export const TestLayer = (input?: TestLiveInput) =>
           let triggers = toolkitsData.triggerTypes;
           if (toolkitSlugs && toolkitSlugs.length > 0) {
             const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-            triggers = triggers.filter(t => prefixes.some(p => t.slug.startsWith(p)));
+            triggers = triggers.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
           }
           return Effect.succeed(triggers);
         },
@@ -124,7 +124,7 @@ export const TestLayer = (input?: TestLiveInput) =>
           let tools = toolkitsData.tools;
           if (toolkitSlugs && toolkitSlugs.length > 0) {
             const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-            tools = tools.filter(t => prefixes.some(p => t.slug.startsWith(p)));
+            tools = tools.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
           }
           return Effect.succeed(tools);
         },
