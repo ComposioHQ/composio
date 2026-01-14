@@ -82,7 +82,7 @@
     },
     "./generated": {
       "types": "./generated/index.d.ts",
-      "default": "./generated/index.js"
+      "import": "./generated/index.mjs"
     }
   },
   "files": [
