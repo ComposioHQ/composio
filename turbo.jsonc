@@ -1,0 +1,46 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "tsdown.config.ts",
+        // for core
+        "../../../tsdown.config.base.ts",
+        // for providers
+        "../../../../tsdown.config.base.ts"
+      ],
+      "outputs": ["dist/"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/"]
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "env": ["COMPOSIO_API_KEY"],
+      "cache": false
+    },
+    "test:e2e:node": {
+      "dependsOn": ["^build"],
+      "env": ["COMPOSIO_API_KEY", "COMPOSIO_E2E_NODE_VERSION"],
+      "cache": false
+    },
+    "test:e2e:cloudflare": {
+      "dependsOn": ["^build"],
+      "env": ["COMPOSIO_API_KEY"],
+      "cache": false
+    },
+    "clean": {
+      "cache": false
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "//#clean": {
+      "cache": false
+    }
+  }
+}

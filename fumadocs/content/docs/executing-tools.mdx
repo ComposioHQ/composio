@@ -1,0 +1,398 @@
+---
+title: Executing Tools
+description: Learn how to execute Composio tools with different providers and frameworks
+keywords: [execute, run, tool calling, function calling, direct execution]
+---
+
+LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, act, observe, and adapt.
+
+In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like Gmail, Slack, or GitHub, and Composio handles authentication and user scoping.
+
+<Callout type="info">
+**User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Learn how to structure User IDs in [User Management](/docs/user-management). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](/docs/authenticating-tools).
+</Callout>
+
+## Using Chat Completions
+
+Use the Composio SDK with providers like OpenAI, Anthropic, and Google AI. To learn how to set up these providers, see [Providers](/docs/providers/openai).
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+from composio_openai import OpenAIProvider
+from openai import OpenAI
+from datetime import datetime
+
+# Use a unique identifier for each user in your application
+user_id = "user-k7334"
+
+# Create composio client
+composio = Composio(provider=OpenAIProvider(), api_key="your_composio_api_key")
+
+# Create openai client
+openai = OpenAI()
+
+# Get calendar tools for this user
+tools = composio.tools.get(
+    user_id=user_id,
+    tools=["GOOGLECALENDAR_EVENTS_LIST"]
+)
+
+# Ask the LLM to check calendar
+result = openai.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": f"What's on my calendar for the next 7 days?"}
+    ]
+)
+
+# Handle tool calls
+result = composio.provider.handle_tool_calls(user_id=user_id, response=result)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { AnthropicProvider } from '@composio/anthropic';
+import { Anthropic } from '@anthropic-ai/sdk';
+
+// Use a unique identifier for each user in your application
+const userId = 'user-k7334';
+
+// Create anthropic client
+const anthropic = new Anthropic();
+
+// Create Composio client
+const composio = new Composio({
+  apiKey: "your-composio-api-key",
+  provider: new AnthropicProvider(),
+});
+
+// Get calendar tools for this user
+const tools = await composio.tools.get(userId, {
+  tools: ['GOOGLECALENDAR_EVENTS_LIST'],
+});
+
+// Ask the LLM to check calendar
+const msg = await anthropic.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  tools: tools,
+  messages: [
+    {
+      role: 'user',
+      content: `What's on my calendar for the next 7 days?`,
+    },
+  ],
+  max_tokens: 1024,
+});
+
+// Handle tool calls
+const result = await composio.provider.handleToolCalls(userId, msg);
+console.log('Results:', JSON.stringify(result, null, 2));
+```
+  </Tab>
+</Tabs>
+
+## Using Agentic Frameworks
+
+Agentic frameworks automatically handle the tool execution loop. Composio provides support for frameworks like this by making sure the tools are formatted into the correct objects for the agentic framework to execute.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+import asyncio
+from agents import Agent, Runner
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+# Use a unique identifier for each user in your application
+user_id = "user-k7334"
+
+# Initialize Composio toolset
+composio = Composio(provider=OpenAIAgentsProvider(), api_key="your_composio_api_key")
+
+# Get all tools for the user
+tools = composio.tools.get(
+    user_id=user_id,
+    toolkits=["COMPOSIO_SEARCH"],
+)
+
+# Create an agent with the tools
+agent = Agent(
+    name="Deep Researcher",
+    instructions="You are an investigative journalist.",
+    tools=tools,
+)
+
+async def main():
+    result = await Runner.run(
+        starting_agent=agent,
+        input=("Do a thorough DEEP research on Golden Gate Bridge"),
+    )
+    print(result.final_output)
+
+# Run the agent
+asyncio.run(main())
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { generateText } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { VercelProvider } from '@composio/vercel';
+
+// Use a unique identifier for each user in your application
+const userId = 'user-k7334';
+
+// Initialize Composio toolset
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new VercelProvider(),
+});
+
+// Get all tools for the user
+const tools = await composio.tools.get(userId, {
+  toolkits: ['HACKERNEWS_GET_LATEST_POSTS'],
+  limit: 10,
+});
+
+// Generate text with tool use
+const { text } = await generateText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  messages: [
+    {
+      role: 'user',
+      content: 'Do a thorough DEEP research on the top articles on Hacker News about Composio',
+    },
+  ],
+  tools,
+});
+
+console.log(text);
+```
+  </Tab>
+</Tabs>
+
+## Direct Tool Execution
+
+If you just want to call a tool without using any framework or LLM provider, you can use the `execute` method directly.
+
+<Callout type="info">
+**Finding tool parameters and types:**
+
+**Platform UI**: [Auth Configs](https://platform.composio.dev?next_page=/auth-configs) → Select your toolkit → Tools & Triggers → Select the tool to see its required and optional parameters
+
+**CLI**: For Python and TypeScript projects, run `composio generate` to generate types. [Learn more →](/docs/cli#generate-type-definitions)
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+user_id = "user-k7334"
+# Configure toolkit versions at SDK level
+composio = Composio(
+    api_key="your_composio_key",
+    toolkit_versions={"github": "20251027_00"}
+)
+
+# Find available arguments for any tool in the Composio dashboard
+result = composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    user_id=user_id,
+    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5}
+)
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const userId = "user-k7334";
+// Configure toolkit versions at SDK level
+const composio = new Composio({
+    apiKey: "your_composio_key",
+    toolkitVersions: { github: "20251027_00" }
+});
+
+// Find available arguments for any tool in the Composio dashboard
+const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
+  userId,
+  arguments: {
+    "owner": "ComposioHQ",
+    "repo": "composio",
+    "page": 1,
+    "per_page": 5
+  },
+});
+console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
+```
+  </Tab>
+</Tabs>
+
+<Callout>
+The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/toolkit-versioning) for all configuration options.
+</Callout>
+
+### Proxy Execute
+
+You can proxy requests to any supported toolkit API and let Composio inject the authentication state. This is useful when you need an API endpoint that isn't available as a predefined tool.
+
+The `endpoint` can be a relative path or absolute URL. Composio uses the `connected_account_id` to determine the toolkit and resolve relative paths against the appropriate base URL.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Send a proxy request to the endpoint
+response = composio.tools.proxy(
+    endpoint="/repos/composiohq/composio/issues/1",
+    method="GET",
+    connected_account_id="ca_jI6********",  # use connected account for github
+    parameters=[
+        {
+            "name": "Accept",
+            "value": "application/vnd.github.v3+json",
+            "type": "header",
+        },
+    ],
+)
+
+print(response)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Send a proxy request to the endpoint
+const { data } = await composio.tools.proxyExecute({
+    endpoint:'/repos/composiohq/composio/issues/1',
+    method: 'GET',
+    connectedAccountId: 'ca_jI*****', // use connected account for github
+    parameters:[
+        {
+            "name": "Accept",
+            "value": "application/vnd.github.v3+json",
+            "in": "header",
+        },
+    ],
+});
+
+console.log(data);
+```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn how to [create custom tools](/docs/custom-tools).
+</Callout>
+
+## Automatic File Handling
+
+Composio handles file operations automatically. Pass file paths to tools that need them, and get local file paths back from tools that return files.
+
+### File Upload
+
+Pass local file paths, URLs, or File objects to tools that accept files:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Upload a local file to Google Drive
+result = composio.tools.execute(
+    slug="GOOGLEDRIVE_UPLOAD_FILE",
+    user_id="user-1235***",
+    arguments={"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+)
+
+print(result)  # Print Google Drive file details
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import path from 'path';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Upload a local file to Google Drive
+const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+  userId: 'user-4235***',
+  arguments: {
+    file_to_upload: path.join(__dirname, 'document.pdf')
+  }
+});
+
+console.log(result.data);  // Contains Google Drive file details
+```
+  </Tab>
+</Tabs>
+
+### File Download
+
+When tools return files, Composio downloads them to the local directory and provides the file path in the response:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+composio = Composio(
+    api_key="your_composio_key",
+    file_download_dir="./downloads"  # Optional: Specify download directory
+)
+
+result = composio.tools.execute(
+    "GOOGLEDRIVE_DOWNLOAD_FILE",
+    user_id="user-1235***",
+    arguments={"file_id": "your_file_id"},
+)
+
+# Result includes local file path
+print(result)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Download a file from Google Drive
+const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
+    userId: 'user-1235***',
+    arguments: {
+      file_id: 'your-file-id'
+    }
+  });
+
+// Result includes local file path
+console.log(result);
+```
+  </Tab>
+</Tabs>
+
+### Disabling Auto File Handling
+
+You can disable automatic file handling when initializing the TypeScript SDK. When disabled, handle file uploads and downloads manually using `files.upload` and `files.download`:
+
+```typescript
+import { Composio } from '@composio/core';
+import path from 'path';
+// ---cut---
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  autoUploadDownloadFiles: false
+});
+
+// Now you need to handle files manually using composio.files API
+const fileData = await composio.files.upload({
+  file: path.join(__dirname, 'document.pdf'),
+  toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
+  toolkitSlug: 'googledrive'
+});
+```

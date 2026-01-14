@@ -1,0 +1,523 @@
+---
+title: "MCP (Model Control Protocol) & Experimental ToolRouter"
+date: "2025-09-26"
+---
+
+
+Composio now introduces **comprehensive MCP (Model Control Protocol) support** and an **experimental ToolRouter** for creating isolated, scoped sessions with advanced toolkit management. These features enable seamless integration with modern AI frameworks and provide powerful session-based tool routing capabilities.
+
+### Why Use MCP & ToolRouter?
+
+- **Framework Integration**: Native MCP support for Vercel AI, Mastra, OpenAI Agents, and LangChain
+- **Session Isolation**: Create isolated sessions with specific toolkit configurations
+- **Advanced Authentication**: Flexible auth config management per toolkit
+- **Scoped Access**: Control which tools are available within each session
+- **Multi-Service Workflows**: Route tool calls efficiently across different services
+- **Development & Testing**: Perfect for testing and development with scoped MCP server access
+
+### TypeScript SDK (v0.1.53)
+
+#### **Added: MCP API**
+
+**Core MCP Features:**
+- **MCP Server Creation**: Create and manage MCP server configurations
+- **User-Specific URLs**: Generate unique MCP server URLs for individual users
+- **Toolkit Configuration**: Support for multiple toolkits with custom auth configs
+- **Tool Filtering**: Specify allowed tools per configuration
+- **Connection Management**: Choose between manual and automatic account management
+
+**Basic Usage:**
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// Create MCP configuration
+const mcpConfig = await composio.mcp.create('my-server-name', {
+  toolkits: [
+    { toolkit: 'github', authConfigId: 'ac_233434343' },
+    { toolkit: 'gmail', authConfigId: 'ac_567890123' }
+  ],
+  allowedTools: ['GITHUB_CREATE_ISSUE', 'GMAIL_SEND_EMAIL'],
+  manuallyManageConnections: false,
+});
+
+// Generate server instance for a user
+const serverInstance = await composio.mcp.generate('user123', mcpConfig.id);
+console.log('MCP URL:', serverInstance.url);
+```
+
+**Framework Integration Examples:**
+
+```typescript
+// @noErrors
+// Vercel AI Integration
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { experimental_createMCPClient as createMCPClient } from 'ai';
+
+const mcpClient = await createMCPClient({
+  name: 'composio-mcp-client',
+  transport: new SSEClientTransport(new URL(serverInstance.url)),
+});
+
+// Mastra Integration
+import { MCPClient as MastraMCPClient } from '@mastra/mcp';
+
+const mcpClient = new MastraMCPClient({
+  servers: {
+    composio: { url: new URL(mcpSession.url) },
+  },
+});
+
+// OpenAI Agents Integration
+import { hostedMcpTool } from '@openai/agents';
+
+const tools = [
+  hostedMcpTool({
+    serverLabel: 'composio',
+    serverUrl: mcpSession.url,
+  }),
+];
+```
+
+#### **Added: Experimental ToolRouter**
+
+**Core ToolRouter Features:**
+- **Session-Based Routing**: Create isolated sessions for specific users and toolkit combinations
+- **Dynamic Configuration**: Configure toolkits and auth configs per session
+- **MCP Server URLs**: Each session gets a unique MCP server endpoint
+- **Flexible Toolkit Management**: Support for string names or detailed toolkit configurations
+- **Connection Control**: Manual or automatic connection management per session
+
+**Basic Usage:**
+
+```typescript
+// @noErrors
+// Create session with simple toolkit names
+const session = await composio.experimental.toolRouter.createSession('user_123', {
+  toolkits: ['gmail', 'slack', 'github'],
+});
+
+// Create session with auth configs
+const session = await composio.experimental.toolRouter.createSession('user_456', {
+  toolkits: [
+    { toolkit: 'gmail', authConfigId: 'ac_gmail_work' },
+    { toolkit: 'slack', authConfigId: 'ac_slack_team' },
+    { toolkit: 'github', authConfigId: 'ac_github_personal' },
+  ],
+  manuallyManageConnections: true,
+});
+
+console.log('Session ID:', session.sessionId);
+console.log('MCP URL:', session.url);
+```
+
+**Advanced Multi-Service Integration:**
+
+```typescript
+// @noErrors
+// Complex workflow session
+const integrationSession = await composio.experimental.toolRouter.createSession('user_789', {
+  toolkits: [
+    { toolkit: 'gmail', authConfigId: 'ac_gmail_work' },
+    { toolkit: 'slack', authConfigId: 'ac_slack_team' },
+    { toolkit: 'github', authConfigId: 'ac_github_personal' },
+    { toolkit: 'notion', authConfigId: 'ac_notion_workspace' },
+    { toolkit: 'calendar', authConfigId: 'ac_gcal_primary' },
+  ],
+});
+
+// Use with any MCP client
+const mcpClient = new MCPClient(integrationSession.url);
+```
+
+**Framework-Specific Examples:**
+
+```typescript
+// @noErrors
+// Mastra Integration
+const mcpSession = await composio.experimental.toolRouter.createSession(userId, {
+  toolkits: ["gmail"],
+  manuallyManageConnections: true,
+});
+
+const agent = new MastraAgent({
+  name: 'Gmail Assistant',
+  model: openai('gpt-4o-mini'),
+  tools: await mcpClient.getTools(),
+});
+
+// OpenAI Agents Integration
+const tools = [
+  hostedMcpTool({
+    serverLabel: 'composio tool router',
+    serverUrl: mcpSession.url,
+    requireApproval: {
+      never: { toolNames: ['GMAIL_FETCH_EMAILS'] },
+    },
+  }),
+];
+```
+
+
+
+### Python SDK (v0.8.17)
+
+#### **Added: MCP Support**
+
+**Core MCP Features:**
+- **Server Configuration**: Create and manage MCP server configurations
+- **Toolkit Management**: Support for both simple toolkit names and detailed configurations
+- **Authentication Control**: Per-toolkit auth config specification
+- **Tool Filtering**: Specify allowed tools across all toolkits
+- **User Instance Generation**: Generate user-specific MCP server instances
+
+**Basic Usage:**
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Create MCP server with toolkit configurations
+server = composio.mcp.create(
+    'personal-mcp-server',
+    toolkits=[
+        {
+            'toolkit': 'github',
+            'auth_config_id': 'ac_xyz',
+        },
+        {
+            'toolkit': 'slack',
+            'auth_config_id': 'ac_abc',
+        },
+    ],
+    allowed_tools=['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
+    manually_manage_connections=False
+)
+
+# Generate server instance for a user
+mcp_instance = server.generate('user_12345')
+print(f"MCP URL: {mcp_instance['url']}")
+```
+
+**Simple Toolkit Usage:**
+
+```python
+# Using simple toolkit names
+server = composio.mcp.create(
+    'simple-mcp-server',
+    toolkits=['composio_search', 'text_to_pdf'],
+    allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
+)
+
+# All tools from toolkits (default behavior)
+server = composio.mcp.create(
+    'all-tools-server',
+    toolkits=['composio_search', 'text_to_pdf']
+    # allowed_tools=None means all tools from these toolkits
+)
+```
+
+**LangChain Integration:**
+
+```python
+import asyncio
+from composio import Composio
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+
+composio = Composio()
+
+mcp_config = composio.mcp.create(
+    name="langchain-slack-mcp",
+    toolkits=[{"toolkit": "slack", "auth_config_id": "<auth-config-id>"}],
+)
+
+mcp_server = mcp_config.generate(user_id='<user-id>')
+
+client = MultiServerMCPClient({
+    "composio": {
+        "url": mcp_server["url"],
+        "transport": "streamable_http",
+    }
+})
+
+async def langchain_mcp(message: str):
+    tools = await client.get_tools()
+    agent = create_react_agent("openai:gpt-4.1", tools)
+    response = await agent.ainvoke({"messages": message})
+    return response
+
+response = asyncio.run(langchain_mcp("Show me 20 most used slack channels"))
+```
+
+#### **Added: Experimental ToolRouter**
+
+**Core ToolRouter Features:**
+- **Session Management**: Create isolated tool routing sessions for users
+- **Toolkit Configuration**: Support for both simple toolkit names and detailed configurations
+- **Session Isolation**: Each session gets its own MCP URL and session ID
+- **Flexible Authentication**: Per-session auth config management
+- **Scoped Tool Access**: Control which tools are available within each session
+
+**Basic Usage:**
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Create a tool router session
+session = composio.experimental.tool_router.create_session(
+    user_id='user_123',
+    toolkits=['github', 'slack'],
+    manually_manage_connections=False
+)
+
+print(f"Session ID: {session['session_id']}")
+print(f"MCP URL: {session['url']}")
+```
+
+**Advanced Configuration:**
+
+```python
+# Create session with detailed toolkit configurations
+session = composio.experimental.tool_router.create_session(
+    user_id='user_456',
+    toolkits=[
+        {
+            'toolkit': 'github',
+            'auth_config_id': 'ac_github_123'
+        },
+        {
+            'toolkit': 'slack',
+            'auth_config_id': 'ac_slack_456'
+        }
+    ],
+    manually_manage_connections=True
+)
+
+# Minimal session (no specific toolkits)
+session = composio.experimental.tool_router.create_session(
+    user_id='user_789'
+)
+```
+
+**Integration with AI Frameworks:**
+
+```python
+import asyncio
+from composio import Composio
+from langchain_mcp_adapters.client import MultiServerMCPClient
+
+composio = Composio()
+
+# Create tool router session
+session = composio.experimental.tool_router.create_session(
+    user_id='ai_user',
+    toolkits=['composio_search', 'text_to_pdf']
+)
+
+# Use with LangChain MCP client
+client = MultiServerMCPClient({
+    "composio": {
+        "url": session["url"],
+        "transport": "streamable_http",
+    }
+})
+
+async def use_tool_router():
+    tools = await client.get_tools()
+    # Use tools in your AI workflow
+    return tools
+
+tools = asyncio.run(use_tool_router())
+```
+
+
+
+### Migration Guide
+
+#### **TypeScript SDK: Migrating to New MCP API**
+
+The new MCP API provides enhanced functionality and better integration patterns. Here's how to migrate from the previous MCP implementation:
+
+##### **Before (Legacy MCP)**
+
+```typescript
+// @noErrors
+// Legacy MCP approach (still accessible via deprecated.mcp)
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Old MCP server creation
+const legacyMCP = await composio.deprecated.mcp.createServer({
+  name: 'my-server',
+  toolkits: ['github', 'gmail'],
+});
+
+// Direct URL usage
+const mcpUrl = legacyMCP.url;
+```
+
+##### **After (New MCP API)**
+
+```typescript
+// @noErrors
+// New MCP API approach
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// Step 1: Create MCP configuration
+const mcpConfig = await composio.mcp.create('my-server', {
+  toolkits: [
+    { toolkit: 'github', authConfigId: 'ac_github_123' },
+    { toolkit: 'gmail', authConfigId: 'ac_gmail_456' }
+  ],
+  allowedTools: ['GITHUB_CREATE_ISSUE', 'GMAIL_SEND_EMAIL'],
+  manuallyManageConnections: false,
+});
+
+// Step 2: Generate user-specific server instance
+const serverInstance = await composio.mcp.generate('user_123', mcpConfig.id);
+const mcpUrl = serverInstance.url;
+```
+
+##### **Key Migration Changes**
+
+1. **Two-Step Process**:
+   - **Before**: Single step server creation
+   - **After**: Create configuration, then generate user instances
+
+2. **Enhanced Configuration**:
+   - **Before**: Simple toolkit names only
+   - **After**: Detailed toolkit configs with auth, tool filtering, connection management
+
+3. **User-Specific URLs**:
+   - **Before**: Single server URL for all users
+   - **After**: Unique URLs per user for better isolation
+
+4. **Backward Compatibility**:
+   - **Legacy Access**: Old MCP functionality remains available via `composio.deprecated.mcp`
+   - **Gradual Migration**: Migrate at your own pace without breaking existing implementations
+
+##### **Migration Benefits**
+
+- **Better Security**: User-specific sessions with isolated access
+- **Enhanced Control**: Fine-grained toolkit and tool management
+- **Framework Integration**: Native support for modern AI frameworks
+- **Scalability**: Better resource management and user isolation
+
+##### **Migration Timeline**
+
+- **Phase 1**: New MCP API available alongside legacy implementation
+- **Phase 2**: Legacy MCP accessible via `deprecated.mcp` namespace
+- **Phase 3**: Full deprecation (timeline to be announced)
+
+**Recommendation**: Start new projects with the new MCP API and gradually migrate existing implementations to benefit from enhanced features and better framework integration.
+
+
+### Key Benefits & Use Cases
+
+#### **Development & Testing**
+- **Isolated Environments**: Test different toolkit combinations without affecting production
+- **Scoped Access**: Limit tool access for security and testing purposes
+- **Framework Flexibility**: Works with any MCP-compatible client or framework
+
+#### **Production Workflows**
+- **Multi-Service Integration**: Seamlessly combine tools from different services
+- **User-Specific Sessions**: Each user gets their own isolated session with appropriate permissions
+- **Authentication Management**: Fine-grained control over authentication per toolkit
+
+#### **Framework Compatibility**
+- **Vercel AI**: Native integration with Vercel AI SDK
+- **Mastra**: Full support for Mastra agents and workflows
+- **OpenAI Agents**: Direct integration with OpenAI's agent framework
+- **LangChain**: Complete LangGraph and LangChain compatibility
+- **Custom Clients**: Works with any MCP-compatible client
+
+#### **Enterprise Features**
+- **Session Management**: Track and manage multiple user sessions
+- **Resource Control**: Limit concurrent sessions and resource usage
+- **Audit Trail**: Full logging and monitoring of tool usage
+- **Security**: Isolated sessions prevent cross-user data access
+
+
+### Migration & Compatibility
+
+Both MCP and ToolRouter features are designed to complement existing Composio functionality:
+
+```typescript
+// @noErrors
+// Can be used alongside regular tool management
+const regularTools = await composio.tools.get({ toolkits: ['github'] });
+const mcpSession = await composio.experimental.toolRouter.createSession(userId, {
+  toolkits: ['gmail', 'slack']
+});
+
+// Both approaches can coexist and serve different purposes
+```
+
+The experimental ToolRouter API provides a preview of advanced session management capabilities, while the MCP API offers production-ready Model Control Protocol support for modern AI frameworks.
+
+
+
+### Bug Fixes
+
+#### **Fixed: ToolRouter Dependency Issue**
+
+**Python SDK (v0.8.19)**
+
+**Issue Fixed:**
+- **ToolRouter Functionality**: Fixed ToolRouter tests that were failing due to missing `tool_router` attribute in HttpClient
+- **Dependency Update**: Updated `composio-client` dependency from version 1.9.1 to 1.10.0+ to include ToolRouter functionality
+- **Version Compatibility**: Resolved compatibility issues between ToolRouter implementation and client library
+
+**Details:**
+ToolRouter functionality was briefly broken in versions 0.8.15 to 0.8.18 due to a dependency version mismatch. The `composio-client` library version 1.9.1 did not include the `tool_router` attribute, causing all ToolRouter integration tests to fail with `AttributeError: 'HttpClient' object has no attribute 'tool_router'`.
+
+This has been fixed in version 0.8.19 by:
+- Updating the `composio-client` dependency to version 1.10.0+
+- Ensuring all ToolRouter functionality is now available
+- All ToolRouter integration tests now pass successfully
+
+**Previous Issue:**
+```python
+# This would fail in versions 0.8.15-0.8.18
+session = composio.experimental.tool_router.create_session(user_id='test')
+# AttributeError: 'HttpClient' object has no attribute 'tool_router'
+```
+
+**Fixed in 0.8.19:**
+```python
+# This now works correctly
+session = composio.experimental.tool_router.create_session(user_id='test')
+# Returns: {'session_id': '...', 'url': '...'}
+```
+
+#### **Fixed: Missing Descriptions in Auth Config Fields**
+
+**Python SDK (v0.8.17) & TypeScript SDK (v0.1.53)**
+
+**Issue Fixed:**
+- **Auth Config Connection Fields**: Added missing descriptions to toolkit auth configuration connection fields
+- **Auth Config Creation Fields**: Added missing descriptions to toolkit auth configuration creation fields
+- **Field Documentation**: Improved field documentation and help text for better developer experience
+
+**Details:**
+Previously, when developers were setting up auth configurations for toolkits, many fields lacked proper descriptions, making it difficult to understand what information was required. This fix ensures all auth config fields now include:
+
+- Clear, descriptive field labels
+- Helpful placeholder text where appropriate
+- Detailed explanations of field requirements
+
+This improvement affects all toolkits and makes the authentication setup process more intuitive and error-free.

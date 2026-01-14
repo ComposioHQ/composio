@@ -1,0 +1,462 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+@import 'fumadocs-openapi/css/preset.css';
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   COMPOSIO DOCS
+
+   Palette:
+   - Light: Content #ffffff, Sidebar #f7f5f2
+   - Dark:  Content #1a1815, Sidebar #252220
+   - Accent: #ea580c (Tailwind orange-600)
+
+   Typography:
+   - All text: Inter
+   - Code: IBM Plex Mono
+   ========================================================================== */
+
+@theme inline {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --radius: 0.625rem;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+/* ==========================================================================
+   Design Tokens
+   ========================================================================== */
+
+:root {
+  /* Brand */
+  --composio-orange: #ea580c;
+  --composio-sidebar: #f7f5f2;
+
+  /* Fumadocs overrides - Light */
+  --color-fd-background: #ffffff;
+  --color-fd-foreground: #171414;
+  --color-fd-muted: #f6f4f2;
+  --color-fd-muted-foreground: #5c5858; /* Improved contrast */
+  --color-fd-border: #e5e0df;
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: #171414;
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: #171414;
+  --color-fd-primary: #171414;
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: #f6f4f2;
+  --color-fd-secondary-foreground: #171414;
+  --color-fd-accent: #f6f4f2;
+  --color-fd-accent-foreground: #171414;
+  --color-fd-ring: #e5e0df;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --composio-sidebar: #131211;
+
+  /* Fumadocs overrides - Dark */
+  --color-fd-background: #131211;
+  --color-fd-foreground: #e8e4e0;
+  --color-fd-muted: #1e1d1c;
+  --color-fd-muted-foreground: #a8a29e; /* Improved contrast */
+  --color-fd-border: #2c2a28;
+  --color-fd-card: #131211;
+  --color-fd-card-foreground: #e8e4e0;
+  --color-fd-popover: #252220;
+  --color-fd-popover-foreground: #e8e4e0;
+  --color-fd-primary: #e8e4e0;
+  --color-fd-primary-foreground: #1a1815;
+  --color-fd-secondary: #2a2725;
+  --color-fd-secondary-foreground: #e8e4e0;
+  --color-fd-accent: #2a2725;
+  --color-fd-accent-foreground: #e8e4e0;
+  --color-fd-ring: #3d3935;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 5%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+html {
+  background-color: var(--color-fd-background);
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+/* Headings */
+h1, h2, h3, h4 {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Code - IBM Plex Mono (uses --font-mono from Next.js) */
+pre, code, kbd, samp {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+:not(pre) > code {
+  background: var(--color-fd-muted);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+pre {
+  border-radius: var(--radius);
+}
+
+/* ==========================================================================
+   Links
+   ========================================================================== */
+
+:is(.prose, [data-fumadocs-body]) a:not([data-card]) {
+  color: var(--composio-orange);
+  text-decoration: none;
+}
+
+/* Heading anchors stay neutral */
+.prose :is(h1, h2, h3, h4) a {
+  color: inherit;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ==========================================================================
+   Navigation - HomeLayout + DocsLayout nested structure
+   ========================================================================== */
+
+#nd-home-layout {
+  --fd-layout-width: 100%;
+}
+
+#nd-sidebar {
+  position: sticky;
+  top: 3.5rem;
+  height: calc(100vh - 3.5rem);
+  background-color: var(--composio-sidebar);
+}
+
+/* Hide empty sidebar header when no title is set */
+#nd-sidebar > div:first-child:has(a:empty) {
+  display: none;
+}
+
+/* Sidebar nav items */
+#nd-sidebar [data-radix-scroll-area-viewport] a,
+#nd-sidebar [data-radix-scroll-area-viewport] button {
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  color: var(--color-fd-foreground);
+}
+
+#nd-sidebar [data-radix-scroll-area-viewport] a[data-active="true"] {
+  color: var(--composio-orange);
+}
+
+/* Section headers (separators) - more spacing for visual group separation */
+#nd-sidebar p.inline-flex {
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-fd-muted-foreground);
+}
+
+/* First section header - less top margin */
+#nd-sidebar p.inline-flex:first-of-type {
+  margin-top: 0 !important;
+}
+
+#nd-sidebar-mobile {
+  background-color: var(--composio-sidebar);
+}
+
+[data-active="true"] {
+  color: var(--composio-orange);
+  background: transparent;
+}
+
+/* ==========================================================================
+   Docs Page
+   ========================================================================== */
+
+#nd-page {
+  padding-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  #nd-page {
+    padding-top: 2rem;
+  }
+}
+
+/* ==========================================================================
+   Components
+   ========================================================================== */
+
+[data-card]:hover {
+  border-color: color-mix(in srgb, var(--composio-orange) 50%, transparent);
+}
+
+[data-fumadocs-tabs] [data-state="active"] {
+  color: var(--composio-orange);
+  border-color: var(--composio-orange);
+}
+
+.prose blockquote {
+  border-left-color: var(--composio-orange);
+  background: var(--color-fd-muted);
+  padding: 1rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* ==========================================================================
+   Header Components
+   ========================================================================== */
+
+/* Shared transition timing */
+:root {
+  --header-transition: 0.15s ease;
+}
+
+/* Header spacing & rhythm */
+#nd-nav {
+  gap: 2rem;
+}
+
+/* Nav links container */
+#nd-nav nav {
+  gap: 0.25rem;
+}
+
+/* Nav link items - consistent height (36px touch target) */
+#nd-nav nav > a {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fd-muted-foreground);
+  border-radius: 0.375rem;
+  transition: color var(--header-transition), background var(--header-transition);
+}
+
+#nd-nav nav > a:hover {
+  color: var(--color-fd-foreground);
+  background: var(--color-fd-accent);
+}
+
+#nd-nav nav > a:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* Active nav link */
+#nd-nav a[data-active="true"] {
+  color: var(--composio-orange);
+  position: relative;
+}
+
+#nd-nav a[data-active="true"]:hover {
+  background: transparent;
+}
+
+#nd-nav a[data-active="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: -0.8rem;
+  left: 0.25rem;
+  right: 0.25rem;
+  height: 2px;
+  background: var(--composio-orange);
+}
+
+/* Hide underline on mobile nav */
+@media (max-width: 767px) {
+  #nd-nav a[data-active="true"]::after {
+    display: none;
+  }
+}
+
+/* Right side items - consistent gaps */
+#nd-nav > div:last-child {
+  gap: 0.5rem;
+}
+
+/* GitHub icon link */
+#nd-nav a[href*="github.com"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.375rem;
+  color: var(--color-fd-muted-foreground);
+  transition: color var(--header-transition), background var(--header-transition);
+}
+
+#nd-nav a[href*="github.com"]:hover {
+  color: var(--color-fd-foreground);
+  background: var(--color-fd-accent);
+}
+
+#nd-nav a[href*="github.com"]:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* Search toggle - match style */
+#nd-nav [data-search-toggle] {
+  height: 2.25rem;
+  border-radius: 0.375rem;
+  transition: border-color var(--header-transition);
+}
+
+#nd-nav [data-search-toggle]:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+/* Dashboard button - CTA with consistent height */
+nav a[href*="app.composio"] {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  background: var(--color-fd-primary);
+  color: var(--color-fd-primary-foreground);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: opacity var(--header-transition);
+}
+
+nav a[href*="app.composio"]:hover {
+  opacity: 0.9;
+}
+
+nav a[href*="app.composio"]:focus-visible {
+  outline: 2px solid var(--composio-orange);
+  outline-offset: 2px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

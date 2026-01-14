@@ -1,0 +1,25 @@
+{
+  "name": "@test-e2e/cf-workers-basic",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "vitest run",
+    "test:e2e:cloudflare": "vitest run",
+    "dev": "wrangler dev",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "dotenv": "^16.4.5",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  },
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "hono": "^4.10.3",
+    "openai": "^4.94.0"
+  }
+}

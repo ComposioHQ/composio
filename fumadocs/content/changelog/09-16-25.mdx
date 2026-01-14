@@ -1,0 +1,127 @@
+---
+title: "Toolkit Versioning in SDKs"
+date: "2025-09-16"
+---
+
+Composio Toolkit Versioning provides **granular control over tool versions** across all your integrations. Instead of always using the latest version of tools, developers can now specify exact toolkit versions, ensuring consistent behavior and controlled updates in production environments.
+
+### Why Use Toolkit Versioning?
+
+- **Version Stability**: Pin specific toolkit versions to avoid unexpected changes in production
+- **Controlled Updates**: Test new toolkit versions before deploying to production
+- **Environment Consistency**: Ensure the same toolkit versions across development, staging, and production
+- **Rollback Capability**: Easily revert to previous toolkit versions if issues arise
+- **Fine-grained Control**: Set different versions for different toolkits based on your needs
+
+---
+
+### Python SDK (v0.8.11)
+
+**Added**
+
+- **Toolkit Versioning Support**: New `toolkit_versions` parameter for controlling tool versions
+    - Added `toolkit_versions` parameter to `Composio` class initialization
+    - Support for global version setting (e.g., `'latest'`)
+    - Support for per-toolkit version mapping (e.g., `{'github': '20250902_00', 'slack': '20250902_00'}`)
+    - Environment variable support with `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_NAME>` pattern
+    - New `toolkit_version.py` utility module for version resolution logic
+
+**Examples:**
+
+```python
+# Global version for all toolkits, only `latest` is supported
+composio = Composio(toolkit_versions='latest')
+
+# Per-toolkit version mapping
+composio = Composio(toolkit_versions={
+    'github': '20250902_00',
+    'slack': '20250902_00',
+    'gmail': '20250901_01'
+})
+
+# Using environment variables
+# Set COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00
+composio = Composio()  # Automatically picks up env vars
+
+# Get tools with specific versions
+tools = composio.tools.get('default', {'toolkits': ['github']})
+```
+
+### TypeScript SDK (v0.1.52)
+
+**Added**
+
+- **Toolkit Versioning Support**: Added `toolkitVersions` configuration option
+    - New `toolkitVersions` parameter in `Composio` class constructor
+    - Support for global version string or per-toolkit version mapping
+    - Environment variable parsing with `getToolkitVersionsFromEnv()` utility
+    - Enhanced `getRawComposioToolBySlug()` method for version-specific tool retrieval
+    - Version-aware tool filtering and search capabilities
+
+**Examples:**
+
+```typescript
+// @noErrors
+// Global version for all toolkits
+const composio = new Composio({
+  toolkitVersions: '20250902_00'
+});
+
+// Per-toolkit version mapping
+const composio = new Composio({
+  toolkitVersions: {
+    'github': '20250902_00',
+    'slack': '20250902_00',
+    'gmail': '20250901_01'
+  }
+});
+
+// Using environment variables
+// Set COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00
+const composio = new Composio(); // Automatically picks up env vars
+
+// Get specific tool version
+const tool = await composio.tools.getRawComposioToolBySlug(
+  'GITHUB_GET_REPO',
+);
+
+// Get tools with version-aware filtering
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 10
+});
+```
+
+### Key Benefits
+
+- **Environment Variables**: Set `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_NAME>=<VERSION>` for automatic version resolution
+- **Flexible Configuration**: Choose between global versions or per-toolkit version mapping
+- **Backward Compatibility**: Existing code works unchanged - versioning is opt-in
+- **Version Fallback**: Automatically falls back to 'latest' when no version is specified
+- **Cross-Platform Consistency**: Identical developer experience across Python and TypeScript
+
+### Version Format
+
+Toolkit versions follow the format: `YYYYMMDD_NN` (e.g., `20250902_00`) or use `'latest'` for the most recent version only supported at global scope and not individual toolkit level.
+
+### Environment Variables
+
+```bash
+# Set specific versions for different toolkits
+export COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00
+export COMPOSIO_TOOLKIT_VERSION_SLACK=20250902_00
+export COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_01
+```
+
+### Migration Note
+
+This feature is fully backward compatible. Existing code will continue to work without changes, using the latest versions by default. To enable versioning, simply add the `toolkit_versions` parameter during SDK initialization.
+
+---
+
+### Additional Updates
+
+- **Package Updates**: Bumped all Python provider packages to v0.8.10
+- **Documentation**: Enhanced API documentation with versioning examples
+- **Testing**: Added comprehensive test coverage (400+ new test cases) for versioning functionality
+- **Examples**: New versioning examples demonstrating practical usage patterns

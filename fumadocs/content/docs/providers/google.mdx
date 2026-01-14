@@ -1,0 +1,117 @@
+---
+title: Google Gen AI Provider
+description: Use Composio with Gemini through the Google Gen AI SDK
+keywords: [gemini]
+---
+
+The Google provider transforms Composio tools into a format compatible with Gemini's function calling capabilities through it's API
+
+## Setup
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```bash
+pip install google-genai composio_google
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @google/genai
+npm i @composio/core @composio/gemini
+```
+</Tab>
+</Tabs>
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio_gemini import GeminiProvider
+from google import genai
+from google.genai import types
+
+# Create composio client
+composio = Composio(provider=GeminiProvider())
+# Create google client
+client = genai.Client()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import {Composio} from '@composio/core';
+import {GoogleProvider} from '@composio/google'
+import {GoogleGenAI} from '@google/genai'
+
+const composio = new Composio({
+    apiKey: "your-composio-api-key",
+    provider: new GoogleProvider()
+})
+
+const ai = new GoogleGenAI({
+    apiKey: "your-gemini-api-key"
+})
+```
+</Tab>
+</Tabs>
+
+## Usage
+
+<Tabs items={["Python", "TypeScript"]}>
+<Tab value="Python">
+```python
+user_id = "0000-1111-2222"
+tools = composio.tools.get(user_id, tools=["COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH"])
+
+# Create genai client config
+config = types.GenerateContentConfig(tools=tools)
+
+# # Use the chat interface.
+chat = client.chats.create(model="gemini-2.0-flash", config=config)
+response = chat.send_message("search about the latest info on windsurf acquisition.")
+print(response.text)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import {Composio} from '@composio/core';
+import {GoogleProvider} from '@composio/google'
+import {GoogleGenAI} from '@google/genai'
+const composio = new Composio({ apiKey: "key", provider: new GoogleProvider() });
+const ai = new GoogleGenAI({ apiKey: "key" });
+// ---cut---
+// Use a unique identifier for each user in your application
+const user_id = "your-external-user-id"
+
+// Get tools - this returns already wrapped tools when using GoogleProvider
+const tools = await composio.tools.get(user_id, 'HACKERNEWS_GET_USER')
+
+const response = await ai.models.generateContent({
+    model: 'gemini-2.0-flash-001',
+    contents: "Search for the user 'pg's",
+    config: {
+        tools: [{ functionDeclarations: tools }],
+    },
+});
+
+if (response.functionCalls && response.functionCalls.length > 0) {
+    console.log(`Calling tool ${response.functionCalls[0].name}`);
+    const functionCall = {
+        name: response.functionCalls[0].name || '',
+        args: response.functionCalls[0].args || {},
+    };
+    const result = await composio.provider.executeToolCall(user_id, functionCall);
+    console.log(`Result: ${result}`);
+} else {
+    console.log('No function calls in the response');
+    console.log(response.text);
+}
+```
+</Tab>
+</Tabs>
+
+## Modifiers
+
+Modifiers are functions that can be used to intercept and optionally **modify** the schema, the tool call request and the response from the tool call.
+
+OpenAI provider modifiers are the standard framework modifiers.
+Read more here: [Modifying tool schemas](/docs/modify-tool-behavior/modifying-tool-schemas)

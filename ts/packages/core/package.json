@@ -1,39 +1,102 @@
 {
   "name": "@composio/core",
-  "version": "0.3.4",
+  "type": "module",
+  "version": "0.5.1",
   "description": "",
   "main": "src/index.ts",
-  "type": "module",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
     "types": "dist/index.d.mts"
   },
+  "imports": {
+    "#platform": {
+      "workerd": "./dist/platform/workerd.mjs",
+      "edge-light": "./dist/platform/workerd.mjs",
+      "node": {
+        "import": "./dist/platform/node.mjs",
+        "require": "./dist/platform/node.cjs"
+      },
+      "default": {
+        "import": "./dist/platform/node.mjs",
+        "require": "./dist/platform/node.cjs"
+      }
+    },
+    "#files": {
+      "workerd": "./dist/models/Files.workerd.mjs",
+      "edge-light": "./dist/models/Files.workerd.mjs",
+      "node": {
+        "import": "./dist/models/Files.node.mjs",
+        "require": "./dist/models/Files.node.cjs"
+      },
+      "default": {
+        "import": "./dist/models/Files.node.mjs",
+        "require": "./dist/models/Files.node.cjs"
+      }
+    }
+  },
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "types": {
-        "import": "./dist/index.d.mts",
-        "require": "./dist/index.d.cts",
-        "default": "./dist/index.d.cts"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
       },
-      "require": "./dist/index.cjs"
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./platform": {
+      "workerd": {
+        "types": "./dist/platform/workerd.d.mts",
+        "default": "./dist/platform/workerd.mjs"
+      },
+      "edge-light": {
+        "types": "./dist/platform/workerd.d.mts",
+        "default": "./dist/platform/workerd.mjs"
+      },
+      "node": {
+        "import": {
+          "types": "./dist/platform/node.d.mts",
+          "default": "./dist/platform/node.mjs"
+        },
+        "require": {
+          "types": "./dist/platform/node.d.cts",
+          "default": "./dist/platform/node.cjs"
+        }
+      },
+      "default": {
+        "import": {
+          "types": "./dist/platform/node.d.mts",
+          "default": "./dist/platform/node.mjs"
+        },
+        "require": {
+          "types": "./dist/platform/node.d.cts",
+          "default": "./dist/platform/node.cjs"
+        }
+      }
     },
     "./generated": {
-      "import": "./generated/index.js",
-      "types": "./generated/index.d.ts"
+      "types": "./generated/index.d.ts",
+      "default": "./generated/index.js"
     }
   },
   "files": [
     "README.md",
     "dist",
-    "generated"
+    "generated",
+    "src/platform"
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json"
+    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],
   "author": "",
@@ -43,8 +106,8 @@
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.7.0",
     "tsdown": "catalog:",
-    "tsup": "catalog:",
     "tsx": "catalog:",
+    "typedoc": "^0.28.5",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
@@ -60,7 +123,6 @@
     "openai": "^5.16.0",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
-    "uuid": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"

@@ -563,6 +563,88 @@ const result = await openaiProvider.executeToolCall(
 );
 ```
 
+## Tool Router Modifiers (v0.4.0+)
+
+Tool Router sessions support enhanced modifier types that include session context. This is useful for tracking and managing tool execution across different user sessions.
+
+### Using Session Modifiers with Tool Router
+
+```typescript
+import { Composio } from '@composio/core';
+import { SessionExecuteMetaModifiers } from '@composio/core';
+
+const composio = new Composio();
+
+const session = await composio.create('user_123', {
+  toolkits: ['gmail', 'slack'],
+});
+
+// Use session-specific modifiers
+const tools = await session.tools({
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    // Customize tool schemas
+    console.log(`Modifying schema for ${toolSlug} from ${toolkitSlug}`);
+    return schema;
+  },
+  beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => {
+    // Access session ID for tracking
+    console.log(`[Session: ${sessionId}] Executing ${toolSlug} from ${toolkitSlug}`);
+    
+    // Add session-specific metadata
+    params.sessionMetadata = {
+      sessionId,
+      timestamp: new Date().toISOString(),
+    };
+    
+    return params;
+  },
+  afterExecute: ({ toolSlug, toolkitSlug, sessionId, result }) => {
+    // Transform results with session context
+    console.log(`[Session: ${sessionId}] Completed ${toolSlug}`);
+    
+    if (result.successful) {
+      result.data.sessionId = sessionId;
+      result.data.executedAt = new Date().toISOString();
+    }
+    
+    return result;
+  },
+});
+```
+
+### Session-Specific Modifier Benefits
+
+The session-specific modifiers provide several advantages:
+
+1. **Session Tracking**: Access to `sessionId` allows you to track which session executed which tools
+2. **User Context**: Associate tool executions with specific users through session IDs
+3. **Audit Logging**: Log tool executions with session context for compliance and debugging
+4. **Performance Monitoring**: Track tool execution performance per session
+
+### Getting Meta Tools Directly
+
+You can also fetch tool router meta tools directly using the new method:
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Get raw meta tools for a session
+const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', {
+  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
+    // Customize meta tool schemas
+    if (toolSlug === 'composio_authorize_toolkit') {
+      schema.description = 'Custom description for authorization';
+    }
+    return schema;
+  }
+});
+
+// Use the meta tools with your AI framework
+console.log('Available meta tools:', metaTools.map(t => t.name));
+```
+
 ## Type Definitions
 
 ```typescript
@@ -594,5 +676,37 @@ interface ProviderOptions<TProvider> {
   modifySchema?: TransformToolSchemaModifier;
   beforeExecute?: beforeExecuteModifier; // Only applied by agentic providers
   afterExecute?: afterExecuteModifier; // Only applied by agentic providers
+}
+
+// Session-Specific Modifiers (v0.4.0+)
+interface SessionExecuteMetaModifiers {
+  modifySchema?: (context: {
+    toolSlug: string;
+    toolkitSlug: string;
+    schema: any;
+  }) => any;
+  
+  beforeExecute?: (context: {
+    toolSlug: string;
+    toolkitSlug: string;
+    sessionId: string;
+    params: any;
+  }) => any;
+  
+  afterExecute?: (context: {
+    toolSlug: string;
+    toolkitSlug: string;
+    sessionId: string;
+    result: any;
+  }) => any;
+}
+
+// Session Meta Tool Options (v0.4.0+)
+interface SessionMetaToolOptions {
+  modifySchema?: (context: {
+    toolSlug: string;
+    toolkitSlug: string;
+    schema: any;
+  }) => any;
 }
 ```

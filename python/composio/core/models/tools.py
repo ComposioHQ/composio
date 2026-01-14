@@ -61,6 +61,7 @@ class Tools(Resource, t.Generic[TProvider]):
         provider: TProvider,
         file_download_dir: t.Optional[str] = None,
         toolkit_versions: t.Optional[ToolkitVersionParam] = None,
+        auto_upload_download_files: bool = True,
     ):
         """
         Initialize the tools resource.
@@ -69,12 +70,14 @@ class Tools(Resource, t.Generic[TProvider]):
         :param provider: The provider to use for the tools resource.
         :param file_download_dir: Output directory for downloadable files
         :param toolkit_versions: The versions of the toolkits to use. Defaults to 'latest' if not provided.
+        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
         """
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
         self._file_helper = FileHelper(client=self._client, outdir=file_download_dir)
         self._toolkit_versions = toolkit_versions
+        self._auto_upload_download_files = auto_upload_download_files
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
@@ -159,6 +162,73 @@ class Tools(Resource, t.Generic[TProvider]):
             )
         return tools_list
 
+    def get_raw_tool_router_meta_tools(
+        self,
+        session_id: str,
+        modifiers: t.Optional["Modifiers"] = None,
+    ) -> list[Tool]:
+        """
+        Fetches the meta tools for a tool router session.
+
+        This method fetches the meta tools from the Composio API and transforms them to
+        the expected format. It provides access to the underlying meta tool data without
+        provider-specific wrapping.
+
+        :param session_id: The session ID to get the meta tools for
+        :param modifiers: Optional modifiers to apply to the tool schemas
+        :return: The list of meta tools
+
+        Example:
+            ```python
+            from composio import Composio
+
+            composio = Composio()
+            tools_model = composio.tools
+
+            # Get meta tools for a session
+            meta_tools = tools_model.get_raw_tool_router_meta_tools("session_123")
+            print(meta_tools)
+
+            # Get meta tools with schema modifiers
+            from composio.core.models import schema_modifier
+
+            @schema_modifier
+            def modify_schema(tool: str, toolkit: str, schema):
+                # Customize the schema
+                schema.description = f"Modified: {schema.description}"
+                return schema
+
+            meta_tools = tools_model.get_raw_tool_router_meta_tools(
+                "session_123",
+                modifiers=[modify_schema]
+            )
+            ```
+        """
+        # Fetch meta tools from the API
+        tools_response = self._client.tool_router.session.tools(session_id=session_id)
+        # Cast to Tool type - session.tools returns compatible Item type from different response schema
+        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
+
+        # Apply schema modifiers if provided
+        if modifiers is not None:
+            from composio.core.models._modifiers import apply_modifier_by_type
+
+            tools_list = [
+                t.cast(
+                    Tool,
+                    apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit=tool.toolkit.slug,
+                        tool=tool.slug,
+                        type="schema",
+                        schema=tool,
+                    ),
+                )
+                for tool in tools_list
+            ]
+
+        return tools_list
+
     def _get(
         self,
         user_id: str,
@@ -192,10 +262,22 @@ class Tools(Resource, t.Generic[TProvider]):
         self._tool_schemas.update(
             {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
         )
+
+        # Always enhance schema descriptions (type hints and required notes)
+        # regardless of auto_upload_download_files setting
         for tool in tools_list:
-            tool.input_parameters = self._file_helper.process_schema_recursively(
+            tool.input_parameters = self._file_helper.enhance_schema_descriptions(
                 schema=tool.input_parameters,
             )
+
+        # Only process file_uploadable schemas when auto_upload_download_files is True
+        if self._auto_upload_download_files:
+            for tool in tools_list:
+                tool.input_parameters = (
+                    self._file_helper.process_file_uploadable_schema(
+                        schema=tool.input_parameters,
+                    )
+                )
 
         if issubclass(type(self.provider), NonAgenticProvider):
             return t.cast(NonAgenticProvider, self.provider).wrap_tools(
@@ -337,10 +419,8 @@ class Tools(Resource, t.Generic[TProvider]):
             :param arguments: The tool arguments
             :return: Tool execution response
             """
-            # Get tool schema for modifiers
-            tool = self.get_raw_composio_tool_by_slug(slug)
-
             # Apply before_execute modifiers
+            # Meta tools are always from the 'composio' toolkit
             processed_arguments = arguments
             if modifiers is not None:
                 params: ToolExecuteParams = {
@@ -349,7 +429,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 type_before: t.Literal["before_execute"] = "before_execute"
                 modified_params = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    toolkit="composio",
                     tool=slug,
                     type=type_before,
                     request=params,
@@ -377,7 +457,7 @@ class Tools(Resource, t.Generic[TProvider]):
                 type_after: t.Literal["after_execute"] = "after_execute"
                 result = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit=tool.toolkit.slug if tool.toolkit else "unknown",
+                    toolkit="composio",
                     tool=slug,
                     type=type_after,
                     response=result,
@@ -559,10 +639,11 @@ class Tools(Resource, t.Generic[TProvider]):
                 "dangerously_skip_version_check", dangerously_skip_version_check
             )
 
-        arguments = self._file_helper.substitute_file_uploads(
-            tool=tool,
-            request=arguments,
-        )
+        if self._auto_upload_download_files:
+            arguments = self._file_helper.substitute_file_uploads(
+                tool=tool,
+                request=arguments,
+            )
         response = (
             self._execute_custom_tool(
                 slug=slug,
@@ -582,10 +663,11 @@ class Tools(Resource, t.Generic[TProvider]):
                 dangerously_skip_version_check=dangerously_skip_version_check,
             )
         )
-        response = self._file_helper.substitute_file_downloads(
-            tool=tool,
-            response=response,
-        )
+        if self._auto_upload_download_files:
+            response = self._file_helper.substitute_file_downloads(
+                tool=tool,
+                response=response,
+            )
         if modifiers is not None:
             response = apply_modifier_by_type(
                 modifiers=modifiers,
@@ -626,7 +708,6 @@ __all__ = [
     "Tools",
     "ToolExecuteParams",
     "ToolExecutionResponse",
-    "Modifiers",
     "Modifiers",
     "after_execute",
     "before_execute",

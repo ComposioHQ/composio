@@ -2,15 +2,22 @@
   "name": "@composio/ts-builders",
   "version": "0.1.24",
   "description": "Fork of @prisma/ts-builders",
-  "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
     }
   },
@@ -23,12 +30,12 @@
   "devDependencies": {
     "@types/babel__helper-validator-identifier": "^7.15.2",
     "helper-validator-identifier": "link:@types/@babel/helper-validator-identifier",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "vitest": "catalog:"
   },
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "files": [

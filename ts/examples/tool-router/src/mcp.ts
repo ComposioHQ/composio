@@ -6,12 +6,12 @@ import ora from 'ora';
 
 const composio = new Composio();
 const trProgress = ora("Creating tool router session...").start();
-const { mcp } = await composio.create('dhawal', {
+const { mcp } = await composio.create('default', {
   toolkits: ['gmail'], 
   manageConnections: true,
   tools: {
     'gmail': {
-      enable: ['gmail_search_emails'],
+      enable: ['GMAIL_FETCH_EMAILS'],
     }
   }
 });
@@ -32,7 +32,7 @@ mcpProgress.succeed(`${Object.values(tools).length} tools retrieved from MCP`);
 console.log(`🤖 Waiting for agent response...`);
 const stream = await streamText({
   model: openai('gpt-4o-mini'),
-  prompt: 'Find my last email from gmail?',
+  prompt: 'Summarize my latest received email from gmail.',
   stopWhen: stepCountIs(10),
   onStepFinish: (step) => {
     if (step.toolCalls.length > 0) {

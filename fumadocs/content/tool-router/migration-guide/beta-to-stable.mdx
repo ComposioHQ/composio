@@ -1,0 +1,113 @@
+---
+title: Beta to Stable Migration
+description: Migrate from Tool Router beta to the stable version
+keywords: [upgrade, migrate, experimental, beta]
+---
+
+The stable version includes improved session management, multiple configuring options, and enhanced authentication capabilities.
+
+## The basics
+
+<Steps>
+<Step>
+### Upgrade composio package
+
+Upgrade to the latest stable version:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```bash
+pip install --upgrade composio
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core@latest
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+### Update session creation
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Beta (before)
+session = composio.experimental.tool_router.create_session(
+    user_id="user@example.com"
+)
+
+# Stable (after)
+session = composio.create(
+    user_id="user@example.com"
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+// Beta (before)
+const session = await composio.experimental.toolRouter.createSession('user_123');
+
+// Stable (after)
+const session = await composio.create('user_123');
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+### Moving users (optional)
+
+If you have existing users on tool router and you don't want them to authenticate again:
+- Tool Router will auto-detect auth configs and connected accounts it created (from the beta version).
+- If you have custom auth configs (not created by Tool Router):
+    - Search for the Auth config for that connected account. See [Connected Accounts](/docs/connected-accounts) to fetch existing accounts programmatically.
+    - While creating a session configure to use this Auth config.
+    - You need to repeat this for each toolkit you want to enable for that session.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config"
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123',
+    {
+        authConfigs: {
+            github: "ac_your_github_config",
+            slack: "ac_your_slack_config",
+        },
+    }
+);
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+### Explore new capabilities
+
+Check out these new features available in the stable version:
+
+- **[Native tools](/tool-router/using-as-a-native-tool)**: Use Tool Router with any AI framework
+- **Better [session](/tool-router/users-and-sessions) and [auth](/tool-router/authentication) config**
+- **[Multi-account support](/tool-router/managing-multiple-accounts)**: Manage multiple accounts per user seamlessly
+- **[Manual authentication](/tool-router/manually-authenticating-users)**: Control when and how users authenticate
+- **[Custom auth](/tool-router/using-custom-auth-configs)**: Support for toolkits that don't have composio managed auth
+- **[White labeling](/tool-router/white-labeling-authentication)**: Customize authentication screens with your branding
+</Step>
+</Steps>

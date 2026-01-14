@@ -1,5 +1,23 @@
 # @composio/core
 
+## 0.5.1
+
+### Patch Changes
+
+- 3055048: Update client dependencies and auth config update params to be optional
+
+## 0.5.0
+
+### Minor Changes
+
+- ded64be: Add Cloudflare Workers compatibility for `@composio/core`, tested end-to-end.
+
+## 0.4.0
+
+### Minor Changes
+
+- c7e1217: Add support for dedicated tools for tool router
+
 ## 0.3.4
 
 ### Patch Changes

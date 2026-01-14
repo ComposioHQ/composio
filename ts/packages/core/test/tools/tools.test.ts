@@ -769,15 +769,15 @@ describe('Tools', () => {
       });
 
       it('should throw error if tool is not found', async () => {
-        const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
-        getRawComposioToolBySlugSpy.mockResolvedValueOnce(undefined as any);
+        const apiError = new Error('Tool not found');
+        mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(apiError);
 
         await expect(
           context.tools.executeMetaTool('NONEXISTENT_TOOL', {
             sessionId,
             arguments: { query: 'test' },
           })
-        ).rejects.toThrow('Tool NONEXISTENT_TOOL not found');
+        ).rejects.toThrow('Tool not found');
       });
 
       it('should apply beforeExecute modifier', async () => {
@@ -810,7 +810,8 @@ describe('Tools', () => {
 
         expect(beforeExecute).toHaveBeenCalledWith({
           toolSlug,
-          toolkitSlug: 'test-toolkit',
+          toolkitSlug: 'composio',
+          sessionId,
           params: { query: 'original' },
         });
 
@@ -850,7 +851,8 @@ describe('Tools', () => {
 
         expect(afterExecute).toHaveBeenCalledWith({
           toolSlug,
-          toolkitSlug: 'test-toolkit',
+          toolkitSlug: 'composio',
+          sessionId,
           result: {
             data: { results: true },
             error: null,
@@ -917,7 +919,8 @@ describe('Tools', () => {
 
         expect(beforeExecute).toHaveBeenCalledWith({
           toolSlug,
-          toolkitSlug: 'unknown',
+          toolkitSlug: 'composio',
+          sessionId,
           params: { query: 'test' },
         });
       });

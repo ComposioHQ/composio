@@ -1,10 +1,10 @@
 import crypto from 'crypto';
-import pathModule from 'path';
 import ComposioClient from '@composio/client';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from './constants';
 import logger from './logger';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
-import { getRandomShortId, getRandomUUID } from './uuid';
+import { getRandomShortId } from './uuid';
+import { platform } from '#platform';
 
 // Helper function to get file extension from MIME type
 const getExtensionFromMimeType = (mimeType: string): string => {
@@ -93,17 +93,22 @@ const generateTimestampedFilename = (extension: string, prefix?: string): string
 };
 
 const readFileContent = async (
-  path: string
+  filePath: string
 ): Promise<{ fileName: string; content: string; mimeType: string }> => {
   try {
-    const content = require('fs').readFileSync(path);
+    if (!platform.supportsFileSystem) {
+      throw new Error('File system operations are not supported in this runtime environment');
+    }
+    const content = platform.readFileSync(filePath);
     return {
-      fileName: generateTimestampedFilename(path.split('.').pop() || 'txt'),
-      content: content.toString('base64'),
+      fileName: generateTimestampedFilename(filePath.split('.').pop() || 'txt'),
+      content: Buffer.isBuffer(content)
+        ? content.toString('base64')
+        : Buffer.from(content).toString('base64'),
       mimeType: 'application/octet-stream',
     };
   } catch (error) {
-    throw new Error(`Error reading file at ${path}: ${error}`);
+    throw new Error(`Error reading file at ${filePath}: ${error}`);
   }
 };
 
@@ -121,7 +126,7 @@ const readFileContentFromURL = async (
   // Extract clean filename from URL, removing query parameters
   const url = new URL(path);
   const pathname = url.pathname;
-  let fileName = pathModule.basename(pathname);
+  let fileName = platform.basename(pathname);
 
   // If no filename from URL, generate one with appropriate extension
   if (!fileName || fileName === '/') {
@@ -228,7 +233,7 @@ export const getFileDataAfterUploadingToS3 = async (
   const fileData = await readFile(file);
   logger.debug(`Uploading file to S3...`);
   const s3key = await uploadFileToS3(
-    pathModule.basename(fileData.fileName),
+    platform.basename(fileData.fileName),
     fileData.content,
     toolSlug,
     toolkitSlug,
@@ -266,7 +271,11 @@ export const downloadFileFromS3 = async ({
     name: fileName,
     mimeType: mimeType,
     s3Url: s3Url,
-    filePath: filePath,
+
+    /**
+     * @todo: fix in follow-up PR.
+     */
+    filePath: filePath as string,
   };
 };
 
@@ -277,15 +286,13 @@ export const downloadFileFromS3 = async ({
  */
 export const getComposioDir = (createDirIfNotExists: boolean = false) => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const os = require('os');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('path');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
-    const composioDir = path.join(os.homedir(), COMPOSIO_DIR);
-    if (createDirIfNotExists && !fs.existsSync(composioDir)) {
-      fs.mkdirSync(composioDir, { recursive: true });
+    const homeDir = platform.homedir();
+    if (!homeDir) {
+      return null;
+    }
+    const composioDir = platform.joinPath(homeDir, COMPOSIO_DIR);
+    if (createDirIfNotExists && platform.supportsFileSystem && !platform.existsSync(composioDir)) {
+      platform.mkdirSync(composioDir);
     }
     return composioDir;
   } catch (_error) {
@@ -300,15 +307,17 @@ export const getComposioDir = (createDirIfNotExists: boolean = false) => {
  */
 export const getComposioTempFilesDir = (createDirIfNotExists: boolean = false) => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const os = require('os');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('path');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
-    const composioFilesDir = path.join(os.homedir(), COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
-    if (createDirIfNotExists && !fs.existsSync(composioFilesDir)) {
-      fs.mkdirSync(composioFilesDir, { recursive: true });
+    const homeDir = platform.homedir();
+    if (!homeDir) {
+      return null;
+    }
+    const composioFilesDir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+    if (
+      createDirIfNotExists &&
+      platform.supportsFileSystem &&
+      !platform.existsSync(composioFilesDir)
+    ) {
+      platform.mkdirSync(composioFilesDir);
     }
     return composioFilesDir;
   } catch (_error) {
@@ -325,18 +334,22 @@ export const getComposioTempFilesDir = (createDirIfNotExists: boolean = false) =
  */
 export const saveFile = (file: string, content: string | Buffer, isTempFile: boolean = false) => {
   try {
-    const path = require('path');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
+    if (!platform.supportsFileSystem) {
+      logger.debug('File system operations are not supported in this runtime environment');
+      return null;
+    }
     const composioFilesDir = isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
-    const filePath = path.join(composioFilesDir, path.basename(file));
+    if (!composioFilesDir) {
+      return null;
+    }
+    const filePath = platform.joinPath(composioFilesDir, platform.basename(file));
 
     logger.info(`Saving file to: ${filePath}`);
 
     if (Buffer.isBuffer(content)) {
-      fs.writeFileSync(filePath, content);
+      platform.writeFileSync(filePath, content);
     } else {
-      fs.writeFileSync(filePath, content, 'utf8');
+      platform.writeFileSync(filePath, content, 'utf8');
     }
 
     return filePath;

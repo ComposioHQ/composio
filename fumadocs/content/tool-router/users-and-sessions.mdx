@@ -1,0 +1,286 @@
+---
+title: Users and sessions
+description: Understand how Tool Router scopes tools and connections per user
+keywords: [session, user id, enable toolkits, disable toolkits]
+---
+
+A **user ID** is an identifier from your system (database ID, UUID, or any unique string) that scopes connected accounts and tool access to a specific user. User IDs can represent individuals, teams, or organizations. See [User Management](/docs/user-management) for patterns.
+
+A **session** is an ephemeral configuration that combines:
+- Which user's connected accounts to use
+- Which toolkits are available
+- Which auth configs to use
+
+Tool Router's meta-tools are the same for everyone. The session determines the context they operate within.
+
+## Creating a session
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123");
+```
+</Tab>
+</Tabs>
+
+### Enabling toolkits
+
+Restrict the session to specific toolkits:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Using array format
+session = composio.create(
+    user_id="user_123",
+    toolkits=["github", "gmail", "slack"]
+)
+
+# Using object format with enable key
+session = composio.create(
+    user_id="user_123",
+    toolkits={"enable": ["github", "gmail", "slack"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Using array format
+const session = await composio.create("user_123", {
+  toolkits: ["github", "gmail", "slack"],
+});
+
+// Using object format with enable key
+const session2 = await composio.create("user_123", {
+  toolkits: { enable: ["github", "gmail", "slack"] },
+});
+```
+</Tab>
+</Tabs>
+
+### Disabling toolkits
+
+Keep all toolkits enabled except specific ones:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    toolkits={"disable": ["exa", "firecrawl"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: { disable: ["exa", "firecrawl"] },
+});
+```
+</Tab>
+</Tabs>
+
+### Custom auth configs
+
+Use your own OAuth credentials instead of Composio's defaults:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config"
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  authConfigs: {
+    github: "ac_your_github_config",
+    slack: "ac_your_slack_config",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+See [White-labeling authentication](/tool-router/white-labeling-authentication) for branding, or [Using custom auth configs](/tool-router/using-custom-auth-configs) for toolkits that require your own credentials.
+
+## Connected accounts
+
+Connected accounts are stored in Composio and persist across sessions. When a user connects their GitHub account in one session, it remains available in future sessions. Sessions configure *which* connections to use, but don't own the connections themselves.
+
+### Account selection
+
+If a user has multiple connected accounts for the same toolkit, you can specify which one to use:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": "ca_work_gmail",
+        "github": "ca_personal_github"
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  connectedAccounts: {
+    gmail: "ca_work_gmail",
+    github: "ca_personal_github",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+### Precedence
+
+When executing a tool, Tool Router selects the connected account in this order:
+
+1. `connectedAccounts` override if provided in session config
+2. `authConfigs` override - finds or creates connection on that config
+3. Auth config previously created by Tool Router for this toolkit
+4. Creates new auth config using Composio managed auth (tagged as Tool Router created)
+5. Error if no Composio managed auth scheme exists for the toolkit
+
+If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
+
+## Session methods
+
+### mcp
+
+Get the MCP server URL to use with any MCP-compatible client.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+mcp_url = session.mcp.url
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const { mcp } = session;
+console.log(mcp.url);
+```
+</Tab>
+</Tabs>
+
+For framework examples, see [Using with MCP clients](/tool-router/using-with-mcp-clients) or [Using as a native tool](/tool-router/using-as-a-native-tool).
+
+### tools()
+
+Get native tools from the session for use with AI frameworks.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>
+
+### authorize()
+
+Manually authenticate a user to a toolkit outside of the chat flow.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+connection_request = session.authorize("github")
+
+print(connection_request.redirect_url)
+
+connected_account = connection_request.wait_for_connection()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const connectionRequest = await session.authorize("github", {
+  callbackUrl: "https://myapp.com/callback",
+});
+
+console.log(connectionRequest.redirectUrl);
+
+const connectedAccount = await connectionRequest.waitForConnection();
+```
+</Tab>
+</Tabs>
+
+For more details, see [Manually authenticating users](/tool-router/manually-authenticating-users).
+
+### toolkits()
+
+List available toolkits and their connection status. You can use this to build a UI showing which apps are connected.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+toolkits = session.toolkits()
+
+for toolkit in toolkits.items:
+    status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
+    print(f"{toolkit.name}: {status}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const toolkits = await session.toolkits();
+
+toolkits.items.forEach((toolkit) => {
+  console.log(`${toolkit.name}: ${toolkit.connection?.connectedAccount?.id ?? "Not connected"}`);
+});
+```
+</Tab>
+</Tabs>
+
+Returns the first 20 toolkits by default.

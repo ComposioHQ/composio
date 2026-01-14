@@ -39,7 +39,6 @@
 		"supergateway": "^3.4.3"
 	},
 	"devDependencies": {
-		"@openai/agents": "^0.2.1",
 		"@ai-sdk/anthropic": "^1.2.12",
 		"@anthropic-ai/sdk": "^0.52.0",
 		"@composio/core": "workspace:*",
@@ -54,6 +53,7 @@
 		"@langchain/openai": "^0.5.10",
 		"@llamaindex/openai": "^0.4.20",
 		"@llamaindex/workflow": "^1.1.24",
+		"@openai/agents": "^0.2.1",
 		"@types/convict": "^6.1.6",
 		"@types/glob": "^8.1.0",
 		"@types/node": "^20.17.57",

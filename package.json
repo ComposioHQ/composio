@@ -12,7 +12,10 @@
   "scripts": {
     "build": "turbo build",
     "build:packages": "turbo build --filter=./ts/packages/**",
-    "test": "turbo test --filter=./ts/packages/**",
+    "test": "turbo test --filter=./ts/packages/** --filter=!@test-e2e/*",
+    "test:e2e": "turbo test:e2e --filter='@test-e2e/*'",
+    "test:e2e:node": "turbo test:e2e:node --filter='@test-e2e/node-*'",
+    "test:e2e:cloudflare": "turbo test:e2e:cloudflare --filter='@test-e2e/cf-*'",
     "test:ui": "vitest --ui",
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
     "lint": "eslint ts/packages --ext .ts,.tsx",
@@ -41,7 +44,6 @@
       "js-yaml": ">=4.1.1",
       "hono": ">=4.10.3",
       "next": ">=15.4.7",
-      "ai": ">=5.0.102",
       "@mastra/core>ai": ">=5.0.102",
       "@eslint/plugin-kit@<0.3.4": ">=0.3.4",
       "vite@>=6.0.0 <=6.3.5": ">=6.3.6",
@@ -57,6 +59,7 @@
     }
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
     "@changesets/cli": "^2.29.8",
     "@composio/anthropic": "workspace:*",
     "@composio/core": "workspace:*",
@@ -68,8 +71,10 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
+    "publint": "catalog:",
     "semver": "^7.7.2",
     "tsx": "catalog:",
+    "tsdown": "catalog:",
     "turbo": "^2.5.0",
     "typescript-eslint": "^8.31.0",
     "vitest": "catalog:",

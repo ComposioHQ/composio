@@ -5,8 +5,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { MCP } from './models/MCP.experimental';
-import { MCP as DeprecatedMCP } from './models/MCP';
+import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -15,7 +14,7 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import { Files } from './models/Files';
+import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
@@ -138,13 +137,22 @@ export class Composio<
   /**
    * Core models for Composio.
    */
+
+  /** List, retrieve, and execute tools */
   tools: Tools<unknown, unknown, TProvider>;
+  /** Retrieve toolkit metadata and authorize user connections */
   toolkits: Toolkits;
+  /** Manage webhook triggers and event subscriptions */
   triggers: Triggers<TProvider>;
+  /** The tool provider instance used for wrapping tools in framework-specific formats */
   provider: TProvider;
+  /** Upload and download files */
   files: Files;
+  /** Manage authentication configurations for toolkits */
   authConfigs: AuthConfigs;
+  /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
+  /** Model Context Protocol server management */
   mcp: MCP;
   /**
    * Experimental feature, use with caution
@@ -186,11 +194,6 @@ export class Composio<
    * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
    */
   use: (id: string) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
-
-  /**
-   * Experimental features
-   */
-  experimental: {};
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -279,21 +282,6 @@ export class Composio<
      */
     this.create = this.toolRouter.create.bind(this.toolRouter);
     this.use = this.toolRouter.use.bind(this.toolRouter);
-
-    /**
-     * Initialize Experimental features
-     */
-    this.experimental = {
-      create: async (
-        userId: string,
-        routerConfig?: ToolRouterCreateSessionConfig
-      ): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
-        return this.toolRouter.create(userId, routerConfig);
-      },
-      use: async (id: string): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
-        return this.toolRouter.use(id);
-      },
-    };
 
     /**
      * Initialize the client telemetry.

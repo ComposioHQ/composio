@@ -165,7 +165,8 @@ CI                       # CI environment flag
 - **Error Classes**: `ts/packages/core/src/errors/`
 - **Examples**: `ts/examples/` and `examples/`
 - **Documentation**: `ts/docs/` and `fern/`
-- **Build Configs**: `turbo.json`, `tsconfig.base.json`
+- **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
+- **E2E Tests**: `ts/e2e-tests/`
 
 ## Testing Commands
 
@@ -179,6 +180,39 @@ cd ts/packages/core && pnpm test
 # Run tests with UI
 pnpm test:ui
 ```
+
+### TypeScript E2E Tests
+
+E2E tests for `@composio/core` are located in `ts/e2e-tests/` and test runtime compatibility across different JavaScript environments.
+
+```bash
+# Run all e2e tests (Node.js + Cloudflare)
+pnpm test:e2e
+
+# Run only Node.js e2e tests (CJS/ESM compatibility, runs in Docker)
+pnpm test:e2e:node
+
+# Run only Cloudflare Workers e2e tests
+pnpm test:e2e:cloudflare
+
+# Run Node.js tests with a specific Node version
+COMPOSIO_E2E_NODE_VERSION=22.12.0 pnpm test:e2e:node
+```
+
+**E2E Test Structure:**
+```
+ts/e2e-tests/
+├── _utils/                    # Shared Docker infrastructure
+├── runtimes/
+│   ├── node/                  # Node.js runtime tests
+│   │   ├── cjs-basic/         # CommonJS compatibility
+│   │   └── esm-basic/         # ESM compatibility
+│   └── cloudflare/            # Cloudflare runtime tests
+│       └── cf-workers-basic/  # Cloudflare Workers tests
+└── README.md                  # E2E test documentation
+```
+
+> **Note:** When adding new e2e tests, update `ts/e2e-tests/README.md` with the new test information.
 
 ## Common Patterns
 

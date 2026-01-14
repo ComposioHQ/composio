@@ -1,0 +1,131 @@
+---
+title: "Toolkit Version Support for Triggers"
+date: "2025-11-10"
+---
+
+### Summary
+Added toolkit version support to trigger operations (`create` and `getType`) in both Python and TypeScript SDKs. This allows users to explicitly specify which toolkit version to use when creating trigger instances and retrieving trigger type information, ensuring consistent behavior across different toolkit versions.
+
+Trigger operations now respect the global `toolkitVersions` configuration set during Composio initialization, providing better control over which trigger versions are used in your applications.
+
+### Key Changes
+
+#### TypeScript SDK (`ts/packages/core/`)
+- Added `toolkit_versions` parameter to `triggers.create()` method
+  - Passes the global toolkit versions configuration when creating trigger instances
+  - Defaults to `'latest'` when no version is specified
+- Modified `triggers.getType()` to respect global toolkit versions
+  - Now accepts toolkit version configuration to fetch trigger types for specific versions
+  - Improved error messages to include version-related fixes
+- Updated trigger type documentation with comprehensive examples
+- Added behavior documentation explaining version usage patterns
+
+#### Python SDK (`python/composio/core/models/`)
+- Added `toolkit_versions` parameter to `triggers.create()` method
+  - Uses global toolkit version configuration when creating trigger instances
+  - Converts `None` to `omit` for API compatibility
+- Modified `triggers.get_type()` to respect toolkit versions
+  - Implemented custom method replacing direct client binding
+  - Passes toolkit version configuration to API calls
+- Added comprehensive docstrings explaining version behavior
+
+### Behavior
+
+**Creating Triggers with Toolkit Versions:**
+
+```typescript
+// @noErrors
+// TypeScript - Configure versions at initialization
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  toolkitVersions: {
+    gmail: '12082025_00',
+    github: '10082025_01'
+  }
+});
+
+// Create trigger - uses version '12082025_00' for Gmail
+const trigger = await composio.triggers.create('user@example.com', 'GMAIL_NEW_MESSAGE', {
+  connectedAccountId: 'ca_abc123',
+  triggerConfig: {
+    labelIds: 'INBOX',
+    userId: 'me',
+    interval: 60,
+  },
+});
+```
+
+```python
+# Python - Configure versions at initialization
+composio = Composio(
+    api_key="your-api-key",
+    toolkit_versions={"gmail": "12082025_00", "github": "10082025_01"}
+)
+
+# Create trigger - uses version '12082025_00' for Gmail
+trigger = composio.triggers.create(
+    slug="GMAIL_NEW_MESSAGE",
+    user_id="user@example.com",
+    trigger_config={"labelIds": "INBOX", "userId": "me", "interval": 60}
+)
+```
+
+**Retrieving Trigger Types with Specific Versions:**
+
+```typescript
+// @noErrors
+// TypeScript
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  toolkitVersions: { github: '10082025_01' }
+});
+
+// Get trigger type for specific version
+const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
+// Returns trigger type for version '10082025_01'
+```
+
+```python
+# Python
+composio = Composio(
+    api_key="your-api-key",
+    toolkit_versions={"github": "10082025_01"}
+)
+
+# Get trigger type for specific version
+trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+# Returns trigger type for version '10082025_01'
+```
+
+### Benefits
+
+- **Version Control**: Explicitly specify which toolkit version to use for triggers
+- **Consistency**: Ensure trigger behavior remains consistent across toolkit updates
+- **Testing**: Test trigger integrations with specific versions before updating
+- **Debugging**: Easier to debug issues by pinning to specific toolkit versions
+- **Production Safety**: Avoid unexpected changes from automatic version updates
+
+### Migration Guide
+
+This is a **non-breaking change**. Existing code will continue to work with default behavior:
+
+**Before (still works):**
+```typescript
+// @noErrors
+// Uses 'latest' version by default
+const trigger = await composio.triggers.create('user', 'GITHUB_COMMIT_EVENT', {...});
+```
+
+**After (recommended for production):**
+```typescript
+// @noErrors
+// Explicitly configure versions for better control
+const composio = new Composio({
+  apiKey: 'your-api-key',
+  toolkitVersions: { github: '10082025_01' }
+});
+
+const trigger = await composio.triggers.create('user', 'GITHUB_COMMIT_EVENT', {...});
+```
+
+For more details on toolkit versioning, see the [Toolkit Versioning documentation](/docs/toolkit-versioning).

@@ -1,0 +1,304 @@
+---
+title: Triggers
+description: Trigger (Instance) class
+---
+
+## Usage
+
+Access this class through the `composio.triggers` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.triggers.list();
+```
+
+## Methods
+
+### create()
+
+Create a new trigger instance for a user
+If the connected account id is not provided, the first connected account for the user and toolkit will be used
+
+```typescript
+async create(userId: string, slug: string, body?: { connectedAccountId?: string; triggerConfig?: Record<string, unknown> }): Promise<{ triggerId: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | The user id of the trigger instance |
+| `slug` | `string` | The slug of the trigger instance |
+| `body?` | `object` | The parameters to create the trigger instance |
+
+**Returns**
+
+`Promise<...>` — The created trigger instance
+
+---
+
+### delete()
+
+Delete a trigger instance
+
+```typescript
+async delete(triggerId: string): Promise<{ triggerId: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `triggerId` | `string` | The slug of the trigger instance |
+
+**Returns**
+
+`Promise<...>`
+
+---
+
+### disable()
+
+Disable a trigger instance
+
+```typescript
+async disable(triggerId: string): Promise<ManageUpdateResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `triggerId` | `string` | The id of the trigger instance |
+
+**Returns**
+
+`Promise<ManageUpdateResponse>` — The updated trigger instance
+
+---
+
+### enable()
+
+Enable a trigger instance
+
+```typescript
+async enable(triggerId: string): Promise<ManageUpdateResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `triggerId` | `string` | The id of the trigger instance |
+
+**Returns**
+
+`Promise<ManageUpdateResponse>` — The updated trigger instance
+
+---
+
+### getType()
+
+Retrieve a trigger type by its slug for the provided version of the app
+Use the global toolkit versions param when initializing composio to pass a toolkitversion
+
+```typescript
+async getType(slug: string): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `string` | The slug of the trigger type |
+
+**Returns**
+
+`Promise<...>` — The trigger type object
+
+---
+
+### listActive()
+
+Fetch list of all the active triggers
+
+```typescript
+async listActive(query?: object): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `query?` | `object` | The query parameters to filter the trigger instances |
+
+**Returns**
+
+`Promise<...>` — List of trigger instances
+
+**Example**
+
+```typescript
+const triggers = await triggers.listActive({
+  authConfigIds: ['123'],
+  connectedAccountIds: ['456'],
+});
+```
+
+---
+
+### listEnum()
+
+Fetches the list of all the available trigger enums
+
+This method is used by the CLI where filters are not required.
+
+```typescript
+async listEnum(): Promise<TriggersTypeRetrieveEnumResponse>
+```
+
+**Returns**
+
+`Promise<TriggersTypeRetrieveEnumResponse>`
+
+---
+
+### listTypes()
+
+List all the trigger types
+
+```typescript
+async listTypes(query?: { cursor?: string; limit?: null | number; toolkits?: null | string[] }): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `query?` | `object` | The query parameters to filter the trigger types |
+
+**Returns**
+
+`Promise<...>` — The list of trigger types
+
+---
+
+### subscribe()
+
+Subscribe to all the triggers
+
+```typescript
+async subscribe(fn: object, filters: object): Promise<void>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `fn` | `object` | The function to call when a trigger is received |
+| `filters` | `object` | The filters to apply to the triggers |
+
+**Returns**
+
+`Promise<void>`
+
+**Example**
+
+```typescript
+triggers.subscribe((data) => {
+  console.log(data);
+}, );
+```
+
+---
+
+### unsubscribe()
+
+Unsubscribe from all the triggers
+
+```typescript
+async unsubscribe(): Promise<void>
+```
+
+**Returns**
+
+`Promise<void>`
+
+**Example**
+
+```typescript
+composio.trigger.subscribe((data) => {
+  console.log(data);
+});
+
+await triggers.unsubscribe();
+```
+
+---
+
+### update()
+
+Update an existing trigger instance
+
+```typescript
+async update(triggerId: string, body: { status: 'enable' | 'disable' }): Promise<{ status: 'success' }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `triggerId` | `string` | The Id of the trigger instance |
+| `body` | `object` | The parameters to update the trigger instance |
+
+**Returns**
+
+`Promise<...>` — The updated trigger instance response
+
+---
+
+### verifyWebhook()
+
+Verify an incoming webhook payload and signature.
+
+This method validates that the webhook request is authentic by:
+1. Verifying the HMAC-SHA256 signature matches the payload
+2. Optionally checking that the webhook timestamp is within the tolerance window
+
+```typescript
+verifyWebhook(params: { payload: string; secret: string; signature: string; tolerance?: number }): object
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `object` | The verification parameters |
+
+**Returns**
+
+`object` — The verified and parsed webhook payload
+
+**Example**
+
+```typescript
+// In an Express.js webhook handler
+app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  try {
+    const payload = composio.triggers.verifyWebhook({
+      payload: req.body.toString(),
+      signature: req.headers['x-composio-signature'] as string,
+      secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+    });
+
+    // Process the verified payload
+    console.log('Received trigger:', payload.triggerSlug);
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Webhook verification failed:', error);
+    res.status(401).send('Unauthorized');
+  }
+});
+```
+
+---

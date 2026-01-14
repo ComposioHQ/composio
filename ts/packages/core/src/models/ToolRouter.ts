@@ -36,6 +36,8 @@ import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import { Tools } from './Tools';
 import {
   ExecuteToolModifiers,
+  SessionExecuteMetaModifiers,
+  SessionMetaToolOptions,
   ProviderOptions,
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';
@@ -48,6 +50,9 @@ import { ValidationError } from '../errors';
 import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
+  transformToolRouterManageConnectionsParams,
+  transformToolRouterWorkbenchParams,
+  transformToolRouterToolkitsParams,
 } from '../lib/toolRouterParams';
 
 export class ToolRouter<
@@ -164,31 +169,23 @@ export class ToolRouter<
    * Creates a function that wraps the tools based on the provider.
    * The returned tools will be of the type the frameworks expects.
    *
-   * @param userId - The user id to get the tools for
-   * @param tools - The tools to wrap
-   * @returns A function that wraps the tools based on the provider.
+   * @param sessionId - The session id to get the tools for
+   * @returns A function that wraps the tools based on the provider with session-specific modifiers.
    */
   private createToolsFn = (
-    sessionId: string,
-    toolSlugs: string[]
-  ): ((modifiers?: ProviderOptions<TProvider>) => Promise<ReturnType<TProvider['wrapTools']>>) => {
-    return async (modifiers?: ProviderOptions<TProvider>) => {
+    sessionId: string
+  ): ((modifiers?: SessionMetaToolOptions) => Promise<ReturnType<TProvider['wrapTools']>>) => {
+    return async (modifiers?: SessionMetaToolOptions) => {
       const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-      const tools = await ToolsModel.getRawComposioTools(
-        {
-          tools: toolSlugs,
-        },
+      const tools = await ToolsModel.getRawToolRouterMetaTools(
+        sessionId,
         modifiers?.modifySchema
           ? {
               modifySchema: modifiers?.modifySchema,
             }
           : undefined
       );
-      const wrappedTools = ToolsModel.wrapToolsForToolRouter(
-        sessionId,
-        tools,
-        modifiers as ExecuteToolModifiers
-      );
+      const wrappedTools = ToolsModel.wrapToolsForToolRouter(sessionId, tools, modifiers);
       return wrappedTools as ReturnType<TProvider['wrapTools']>;
     };
   };
@@ -256,38 +253,17 @@ export class ToolRouter<
   ): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
 
-    const manageConnectedAccounts =
-      typeof routerConfig.manageConnections === 'boolean'
-        ? routerConfig.manageConnections
-        : (routerConfig.manageConnections?.enable ?? true);
-
-    const toolkits = Array.isArray(routerConfig.toolkits)
-      ? { enable: routerConfig.toolkits }
-      : routerConfig.toolkits;
-
-    const tags = transformToolRouterTagsParams(routerConfig.tags);
-    const tools = transformToolRouterToolsParams(routerConfig.tools);
-
     const payload: SessionCreateParams = {
       user_id: userId,
-      toolkits,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
-      tools: tools,
-      tags: tags,
-      manage_connections: {
-        enable: manageConnectedAccounts,
-        callback_url:
-          typeof routerConfig.manageConnections === 'object'
-            ? routerConfig.manageConnections.callbackUrl
-            : undefined,
-      },
-      workbench: routerConfig.workbench
-        ? {
-            enable_proxy_execution: routerConfig.workbench?.enableProxyExecution,
-            auto_offload_threshold: routerConfig.workbench?.autoOffloadThreshold,
-          }
-        : undefined,
+      toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
+      tools: transformToolRouterToolsParams(routerConfig.tools),
+      tags: transformToolRouterTagsParams(routerConfig.tags),
+      manage_connections: transformToolRouterManageConnectionsParams(
+        routerConfig.manageConnections
+      ),
+      workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
     };
 
     const session = await this.client.toolRouter.session.create(payload);
@@ -295,7 +271,7 @@ export class ToolRouter<
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
@@ -323,7 +299,7 @@ export class ToolRouter<
     return {
       sessionId: session.session_id,
       mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.session_id, session.tool_router_tools),
+      tools: this.createToolsFn(session.session_id),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
     };
