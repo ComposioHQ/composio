@@ -78,16 +78,12 @@ export function generatePythonTypeStubs({
           )
       : [];
 
-    const triggerTypesAsEnums = yield* Effect.logDebug('Fetching trigger types...').pipe(
-      Effect.flatMap(() => client.getTriggerTypesAsEnums())
-    );
-
     const [allToolkits, tools, triggerTypes] = yield* Effect.all(
       [
         Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
         Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
-        Effect.logDebug('Fetching trigger types payloads...').pipe(
-          Effect.flatMap(() => client.getTriggerTypes(triggerTypesAsEnums.length))
+        Effect.logDebug('Fetching trigger types...').pipe(
+          Effect.flatMap(() => client.getTriggerTypes())
         ),
       ],
       { concurrency: 'unbounded' }

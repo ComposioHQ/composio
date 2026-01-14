@@ -66,6 +66,24 @@ export const ToolkitsResponse = Schema.Struct({
 }).annotations({ identifier: 'ToolkitsResponse' });
 export type ToolkitsResponse = Schema.Schema.Type<typeof ToolkitsResponse>;
 
+// Similar to Toolkits, without auth_schemes, with auth_config_details instead
+export const ToolkitRetrieveResponse = Schema.Struct({
+  name: Schema.String,
+  slug: Schema.Trim.pipe(Schema.nonEmptyString()),
+  is_local_toolkit: Schema.Boolean,
+  composio_managed_auth_schemes: Schema.optionalWith(Schema.Array(Schema.String), {
+    default: () => [],
+  }),
+  no_auth: Schema.optionalWith(Schema.Boolean, { default: () => false }),
+  meta: Schema.Struct({
+    description: Schema.optionalWith(Schema.String, { default: () => '' }),
+    categories: Schema.optionalWith(Schema.Array(Schema.Unknown), { default: () => [] }),
+    created_at: Schema.DateTimeUtc,
+    updated_at: Schema.DateTimeUtc,
+  }),
+}).annotations({ identifier: 'ToolkitRetrieveResponse' });
+export type ToolkitRetrieveResponse = Schema.Schema.Type<typeof ToolkitRetrieveResponse>;
+
 export const ToolsAsEnumsResponse = ToolsAsEnums;
 export type ToolsAsEnumsResponse = Schema.Schema.Type<typeof ToolsAsEnumsResponse>;
 
@@ -246,13 +264,18 @@ type PaginatedSchema = Schema.Schema<
   any
 >;
 
+// Maximum items per page allowed by the server
+const MAX_PAGE_SIZE = 1000;
+
+// Maximum concurrent requests per each endpoint
+const MAX_CONCURRENT_REQUESTS_PER_ENDPOINT = 4;
+
 // Utility function for calling paginated Composio API endpoints.
-// Automatically fetches all pages until the specified limit is reached.
+// Automatically fetches all pages, using MAX_PAGE_SIZE per request.
 const callClientWithPagination = <T, S extends PaginatedSchema>(
   clientSingleton: ComposioClientSingleton,
-  apiCall: (client: _RawComposioClient, cursor?: string) => APIPromise<T>,
-  responseSchema: S,
-  limit: number
+  apiCall: (client: _RawComposioClient, cursor?: string, limit?: number) => APIPromise<T>,
+  responseSchema: S
 ): Effect.Effect<
   { data: Schema.Schema.Type<S>; metrics: Metrics },
   HttpError | NoSuchElementException
@@ -265,7 +288,7 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
     const fetchPage = (cursor?: string): Effect.Effect<StreamedResponse, HttpServerError> =>
       Effect.gen(function* () {
         const response = yield* Effect.tryPromise({
-          try: () => apiCall(client, cursor).asResponse(),
+          try: () => apiCall(client, cursor, MAX_PAGE_SIZE).asResponse(),
           catch: e => {
             const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
 
@@ -313,7 +336,8 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
     let currentCursor: string | null = null;
     let totalPages = 0;
 
-    while (allItems.length < limit) {
+    // Fetch all pages using MAX_PAGE_SIZE per request
+    while (true) {
       const { json, byteSize } = yield* fetchPage(currentCursor ?? undefined);
       totalByteSize += byteSize;
       totalRequests += 1;
@@ -334,7 +358,7 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
 
     return {
       data: {
-        items: allItems.slice(0, limit),
+        items: allItems,
         total_pages: totalPages,
         next_cursor: currentCursor,
       } as DecodedPage,
@@ -411,21 +435,42 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
         toolkits: {
           /**
            * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
-           * If limit is provided, automatically handles pagination to fetch up to that many items.
+           * Automatically handles pagination to fetch all items.
            */
-          list: (params?: { limit?: number }) =>
-            params?.limit
-              ? withMetrics(
-                  callClientWithPagination(
-                    clientSingleton,
-                    (client, cursor) => client.toolkits.list({ cursor }),
-                    ToolkitsResponse,
-                    params.limit
-                  )
-                )
-              : withMetrics(
-                  callClient(clientSingleton, client => client.toolkits.list(), ToolkitsResponse)
-                ),
+          list: () =>
+            withMetrics(
+              callClientWithPagination(
+                clientSingleton,
+                (client, cursor, limit) => client.toolkits.list({ cursor, limit }),
+                ToolkitsResponse
+              )
+            ),
+          /**
+           * Retrieves a single toolkit by its slug.
+           * Transforms the response to match the Toolkit schema.
+           */
+          retrieve: (slug: string) =>
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.toolkits.retrieve(slug),
+                ToolkitRetrieveResponse
+              )
+            ).pipe(
+              // Transform to Toolkit format by adding missing fields
+              Effect.map(
+                retrieved =>
+                  ({
+                    name: retrieved.name,
+                    slug: retrieved.slug,
+                    auth_schemes: [], // retrieve endpoint doesn't return auth_schemes
+                    composio_managed_auth_schemes: retrieved.composio_managed_auth_schemes,
+                    is_local_toolkit: retrieved.is_local_toolkit,
+                    no_auth: retrieved.no_auth,
+                    meta: retrieved.meta,
+                  }) satisfies Toolkit
+              )
+            ),
         },
         tools: {
           /**
@@ -440,16 +485,17 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               )
             ),
           /**
-           * Retrieve a list of tools, automatically handling pagination to fetch up to $limit items.
+           * Retrieve a list of tools, automatically handling pagination.
+           * @param toolkitSlugs - Optional array of toolkit slugs to filter by
            */
-          list: (params: { limit: number }) =>
+          list: (toolkitSlugs?: ReadonlyArray<string>) =>
             withMetrics(
               callClientWithPagination(
                 clientSingleton,
-                (client, cursor) =>
-                  client.tools.list({ cursor, limit: params.limit, toolkit_versions: 'latest' }),
-                ToolsResponse,
-                params.limit
+                (client, cursor, limit) =>
+                  client.tools.list({
+                    cursor, toolkit_slug: toolkitSlugs?.join(',') ?? '', toolkit_versions: 'latest', limit, }),
+                ToolsResponse
               )
             ),
         },
@@ -466,15 +512,20 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               )
             ),
           /**
-           * Retrieve a list of trigger types, automatically handling pagination to fetch up to $limit items.
+           * Retrieve a list of trigger types, automatically handling pagination.
+           * @param toolkitSlugs - Optional array of toolkit slugs to filter by
            */
-          list: (params: { limit: number }) =>
+          list: (toolkitSlugs?: ReadonlyArray<string>) =>
             withMetrics(
               callClientWithPagination(
                 clientSingleton,
-                (client, cursor) => client.triggersTypes.list({ cursor, limit: params.limit }),
-                TriggerTypesResponse,
-                params.limit
+                (client, cursor, limit) =>
+                  client.triggersTypes.list({
+                    cursor,
+                    limit,
+                    toolkit_slugs: toolkitSlugs ? [...toolkitSlugs] : undefined,
+                  }),
+                TriggerTypesResponse
               )
             ),
         },
@@ -515,9 +566,40 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
     effect: Effect.gen(function* () {
       const client = yield* ComposioClientLive;
 
-      const getToolkits = (limit?: number) =>
-        client.toolkits.list({ limit }).pipe(
+      const getToolkits = () =>
+        client.toolkits.list().pipe(
           Effect.map(response => response.items),
+          Effect.flatMap(
+            Effect.fn(function* (toolkits) {
+              // Sort apps by slug.
+              // TODO: make sure this happens on the server-side.
+              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
+              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
+            })
+          )
+        );
+
+      /**
+       * Fetches specific toolkits by their slugs.
+       * Makes parallel API calls to retrieve each toolkit.
+       * @param slugs - Array of toolkit slugs to fetch
+       */
+      const getToolkitsBySlugs = (slugs: ReadonlyArray<string>) =>
+        Effect.all(
+          slugs.map(slug =>
+            client.toolkits.retrieve(slug).pipe(
+              Effect.catchTag('services/HttpServerError', () =>
+                Effect.fail(
+                  new InvalidToolkitsError({
+                    invalidToolkits: [slug],
+                    availableToolkits: [],
+                  })
+                )
+              )
+            )
+          ),
+          { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
+        ).pipe(
           Effect.flatMap(
             Effect.fn(function* (toolkits) {
               // Sort apps by slug.
@@ -530,10 +612,16 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
 
       return {
         getToolkits,
+        getToolkitsBySlugs,
         getMetrics: () => client.getMetrics(),
         getToolsAsEnums: () => client.tools.retrieveEnum(),
-        getTools: (limit: number) =>
-          client.tools.list({ limit }).pipe(
+        /**
+         * Fetches tools with optional toolkit filtering.
+         * When toolkitSlugs is provided, fetches all matching tools.
+         * @param toolkitSlugs - Optional array of toolkit slugs to filter by
+         */
+        getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
+          client.tools.list(toolkitSlugs).pipe(
             Effect.map(response => response.items),
             Effect.flatMap(
               Effect.fn(function* (tools) {
@@ -545,8 +633,13 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
             )
           ),
         getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
-        getTriggerTypes: (limit: number) =>
-          client.triggersTypes.list({ limit }).pipe(
+        /**
+         * Fetches trigger types with optional toolkit filtering.
+         * When toolkitSlugs is provided, fetches all matching trigger types.
+         * @param toolkitSlugs - Optional array of toolkit slugs to filter by
+         */
+        getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
+          client.triggersTypes.list(toolkitSlugs).pipe(
             Effect.map(response => response.items),
             Effect.flatMap(
               Effect.fn(function* (triggerTypes) {
