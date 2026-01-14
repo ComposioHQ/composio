@@ -250,7 +250,11 @@ connection_request = composio.connected_accounts.initiate(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
-import { AuthScheme } from '@composio/core';
+import { Composio, AuthScheme } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+const authConfigId = 'ac_zendesk';
+// ---cut---
 // For Zendesk - include subdomain
 const connRequest = await composio.connectedAccounts.initiate(userId, authConfigId, {
   config: AuthScheme.OAuth2({
@@ -417,6 +421,10 @@ print(connected_account.id)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const connectionRequest = await composio.connectedAccounts.initiate('user_123', 'ac_123', {});
+// ---cut---
 // Wait for the connection to be established
 const connectedAccount = await connectionRequest.waitForConnection();
 console.log(connectedAccount.id);
@@ -459,6 +467,9 @@ for connection in filtered_connections.items:
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // Get a specific connected account by its nanoid
 const connectedAccount = await composio.connectedAccounts.get('your_connected_account_id');
 console.log(`Status: ${connectedAccount.status}`);

@@ -38,6 +38,12 @@ const composio = new Composio({
 The tools are passed to the agent as a parameter.
 
 ```typescript
+import { Composio } from "@composio/core";
+import { MastraProvider } from "@composio/mastra";
+import { Agent } from "@mastra/core/agent";
+import { openai } from "@ai-sdk/openai";
+const composio = new Composio({ provider: new MastraProvider() });
+// ---cut---
 const userId = "john doe";
 
 const tools = await composio.tools.get(
@@ -48,6 +54,7 @@ const tools = await composio.tools.get(
 );
 
 const agent = new Agent({
+  id: "supabase-agent",
   name: "Supabase Agent",
   instructions: "You think therefore you are.",
   model: openai("gpt-4.1"),

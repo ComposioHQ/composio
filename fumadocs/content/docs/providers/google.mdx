@@ -73,6 +73,12 @@ print(response.text)
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import {Composio} from '@composio/core';
+import {GoogleProvider} from '@composio/google'
+import {GoogleGenAI} from '@google/genai'
+const composio = new Composio({ apiKey: "key", provider: new GoogleProvider() });
+const ai = new GoogleGenAI({ apiKey: "key" });
+// ---cut---
 // Use a unique identifier for each user in your application
 const user_id = "your-external-user-id"
 

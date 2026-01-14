@@ -23,6 +23,9 @@ session = composio.create(user_id="user_123")
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123");
 ```
 </Tab>
@@ -50,13 +53,16 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // Using array format
 const session = await composio.create("user_123", {
   toolkits: ["github", "gmail", "slack"],
 });
 
 // Using object format with enable key
-const session = await composio.create("user_123", {
+const session2 = await composio.create("user_123", {
   toolkits: { enable: ["github", "gmail", "slack"] },
 });
 ```
@@ -78,6 +84,9 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123", {
   toolkits: { disable: ["exa", "firecrawl"] },
 });
@@ -103,6 +112,9 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123", {
   authConfigs: {
     github: "ac_your_github_config",
@@ -137,6 +149,9 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123", {
   connectedAccounts: {
     gmail: "ca_work_gmail",
@@ -173,6 +188,10 @@ mcp_url = session.mcp.url
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
 const { mcp } = session;
 console.log(mcp.url);
 ```
@@ -193,6 +212,10 @@ tools = session.tools()
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
 const tools = await session.tools();
 ```
 </Tab>
@@ -214,6 +237,10 @@ connected_account = connection_request.wait_for_connection()
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
 const connectionRequest = await session.authorize("github", {
   callbackUrl: "https://myapp.com/callback",
 });
@@ -243,10 +270,14 @@ for toolkit in toolkits.items:
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
 const toolkits = await session.toolkits();
 
 toolkits.items.forEach((toolkit) => {
-  console.log(`${toolkit.name}: ${toolkit.connection.connectedAccount?.id ?? "Not connected"}`);
+  console.log(`${toolkit.name}: ${toolkit.connection?.connectedAccount?.id ?? "Not connected"}`);
 });
 ```
 </Tab>

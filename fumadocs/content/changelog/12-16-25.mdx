@@ -32,12 +32,14 @@ This parameter was used to filter toolkits by their local status, but since no t
 
 **Before:**
 ```typescript
+// @noErrors
 // This will no longer work
 const toolkits = await fetch('/api/v3/toolkits?is_local=true');
 ```
 
 **After:**
 ```typescript
+// @noErrors
 // Simply remove the is_local parameter
 const toolkits = await fetch('/api/v3/toolkits');
 ```
@@ -48,6 +50,7 @@ The field will continue to be present in responses but will always return `false
 
 **Before:**
 ```typescript
+// @noErrors
 const toolkit = await composio.toolkits.get('github');
 if (toolkit.is_local_toolkit) {
   // This condition will never be true
@@ -57,6 +60,7 @@ if (toolkit.is_local_toolkit) {
 
 **After:**
 ```typescript
+// @noErrors
 const toolkit = await composio.toolkits.get('github');
 // Remove is_local_toolkit checks - they're no longer meaningful
 ```

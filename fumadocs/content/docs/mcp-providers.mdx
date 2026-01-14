@@ -238,6 +238,7 @@ export const mcpClient = new MCPClient({
 
 // Create a development workflow agent
 export const devAgent = new Agent({
+  id: "dev-assistant",
   name: "Dev Assistant",
   description: "AI assistant for development workflow automation",
   instructions: "Help manage GitHub repos, Linear issues, and Notion documentation.",

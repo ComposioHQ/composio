@@ -83,6 +83,12 @@ print(result)
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from "@composio/core";
+import { AnthropicProvider } from "@composio/anthropic";
+import Anthropic from '@anthropic-ai/sdk';
+const composio = new Composio({ provider: new AnthropicProvider() });
+const anthropic = new Anthropic();
+// ---cut---
 const userId = "your-user-id";
 const tools = await composio.tools.get(userId, {
   tools: ["GITHUB_LIST_STARGAZERS"]

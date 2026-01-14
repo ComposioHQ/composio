@@ -80,6 +80,9 @@ print(auth_config)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const authConfig = await composio.authConfigs.create("NOTION", {
     name: "Notion",
     type: "use_custom_auth",
@@ -194,6 +197,9 @@ print(auth_config)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const authConfig = await composio.authConfigs.create('PERPLEXITYAI', {
   name: 'Perplexity AI',
   type: 'use_custom_auth',
@@ -225,6 +231,9 @@ print(required_fields)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const toolkits = await composio.toolkits.get("NOTION");
 
 // Extract field names from authConfigDetails

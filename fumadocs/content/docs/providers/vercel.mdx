@@ -32,6 +32,12 @@ const composio = new Composio({
 ## Usage
 
 ```typescript
+import { Composio } from '@composio/core';
+import { VercelProvider } from '@composio/vercel';
+import { generateText } from 'ai';
+import { openai } from "@ai-sdk/openai";
+const composio = new Composio({ provider: new VercelProvider() });
+// ---cut---
 // create an auth config for gmail
 // then create a connected account with an external user id that identifies the user
 const externalUserId = "your-external-user-id";

@@ -48,6 +48,9 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 const session = await composio.create("user_123", {
   authConfigs: {
     posthog: "ac_your_posthog_config",

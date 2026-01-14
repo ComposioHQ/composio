@@ -29,6 +29,10 @@ active_accounts = composio.connected_accounts.list(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
 // List all accounts for a user
 const accounts = await composio.connectedAccounts.list({
   userIds: [userId]
@@ -58,6 +62,10 @@ print(f"Toolkit: {account.toolkit.slug}")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const connectedAccountId = 'ca_123';
+// ---cut---
 const account = await composio.connectedAccounts.get(connectedAccountId);
 
 console.log('Status:', account.status);
@@ -85,6 +93,10 @@ if account.state:
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const account = await composio.connectedAccounts.get('ca_123');
+// ---cut---
 // Get the connected account's authentication state
 if (account.state) {
   // The state contains the auth scheme and credentials
@@ -123,6 +135,10 @@ except Exception as e:
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const connectedAccountId = 'ca_123';
+// ---cut---
 try {
   const refreshed = await composio.connectedAccounts.refresh(connectedAccountId);
   console.log('Redirect URL:', refreshed.redirect_url);
@@ -156,6 +172,10 @@ print(f"Account enabled status: {enabled.success}")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const connectedAccountId = 'ca_123';
+// ---cut---
 // Disable an account
 const disabled = await composio.connectedAccounts.disable(connectedAccountId);
 console.log('Account disabled status:', disabled.success);
@@ -185,6 +205,10 @@ print("Account deleted successfully")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const connectedAccountId = 'ca_123';
+// ---cut---
 // Delete a connected account
 await composio.connectedAccounts.delete(connectedAccountId);
 console.log('Account deleted successfully');
@@ -235,6 +259,11 @@ except Exception as e:
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+const authConfigId = 'ac_123';
+// ---cut---
 // First account
 try {
   const firstAccount = await composio.connectedAccounts.initiate(
@@ -287,6 +316,11 @@ print(f"Tool executed: {result}")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+const connectedAccountId = 'ca_123';
+// ---cut---
 // Execute tool with a specific connected account
 const result = await composio.tools.execute('GMAIL_GET_PROFILE', {
   userId: userId,

@@ -64,11 +64,21 @@ Each folder has `meta.json` for ordering:
 }
 ```
 
+## TypeScript Code Blocks
+
+All TypeScript code blocks in MDX files are **type-checked at build time** using Twoslash. This ensures docs stay in sync with the SDK.
+
+- Use `// @noErrors` to skip checking for partial snippets
+- Use `// ---cut---` to hide setup code from output
+- Run `bun run build` locally to validate before pushing
+
+See `CLAUDE.md` for detailed patterns and troubleshooting.
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
 | `bun run dev` | Dev server |
-| `bun run build` | Production build |
+| `bun run build` | Production build (validates TS code blocks) |
 | `bun run types:check` | Type check |
 

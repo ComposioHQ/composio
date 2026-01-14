@@ -39,6 +39,10 @@ print(connection_request.redirect_url)
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.toolRouter.create('user_123', { toolkits: ['github'] });
+// ---cut---
 const connectionRequest = await session.authorize("github");
 console.log(connectionRequest.redirectUrl);
 // https://connect.composio.dev/link/ln_abc123
