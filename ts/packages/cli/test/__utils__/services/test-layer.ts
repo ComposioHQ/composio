@@ -1,4 +1,5 @@
 import path from 'node:path';
+import * as nodeFs from 'node:fs/promises';
 import * as tempy from 'tempy';
 import { CliApp, CliConfig } from '@effect/cli';
 import { FetchHttpClient, FileSystem } from '@effect/platform';
@@ -190,6 +191,7 @@ export const runEffect =
     Effect.provide(self, TestLayer(input)).pipe(Effect.scoped, Effect.runPromise);
 
 function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: string }) {
+  // Copy fixture to temp dir and replace workspace symlinks with real copies for isolation.
   return Effect.gen(function* () {
     if (fixture === undefined) {
       return;
@@ -215,6 +217,9 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     const task = Effect.gen(function* () {
       yield* fs.makeDirectory(tmpFixturesPath, { recursive: true });
       yield* fs.copy(realFixturePath, tmpFixturesPath);
+
+      // Materialize workspace symlinks (link:/workspace:) so tests use temp copies, not real workspace
+      yield* materializeLinkedDeps(fs, tmpFixturesPath);
     });
 
     const repeated = Effect.retryOrElse(policy, () =>
@@ -227,6 +232,40 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
 
     return tmpFixturesPath;
   }).pipe(Effect.provide(BunFileSystem.layer));
+}
+
+/**
+ * Replace workspace symlinks (link:/workspace:) with real copies (excluding node_modules).
+ * This ensures tests run against temp fixture, not the developer's real workspace.
+ */
+function materializeLinkedDeps(fs: FileSystem.FileSystem, fixturePath: string) {
+  return Effect.gen(function* () {
+    const pkgJsonPath = path.join(fixturePath, 'package.json');
+    if (!(yield* fs.exists(pkgJsonPath))) return;
+
+    const pkgJson = JSON.parse(yield* fs.readFileString(pkgJsonPath)) as Record<string, any>;
+    const allDeps = {
+      ...pkgJson.dependencies,
+      ...pkgJson.devDependencies,
+      ...pkgJson.optionalDependencies,
+    } as Record<string, string>;
+
+    for (const [name, spec] of Object.entries(allDeps)) {
+      if (!spec.startsWith('link:') && !spec.startsWith('workspace:')) continue;
+
+      const depPath = path.join(fixturePath, 'node_modules', ...name.split('/'));
+      const realPath = yield* Effect.promise(() => nodeFs.realpath(depPath)).pipe(Effect.option);
+      if (realPath._tag === 'None' || realPath.value.startsWith(fixturePath)) continue;
+
+      yield* fs.remove(depPath);
+      yield* Effect.promise(() =>
+        nodeFs.cp(realPath.value, depPath, {
+          recursive: true,
+          filter: src => !src.includes('/node_modules'),
+        })
+      );
+    }
+  });
 }
 
 function setupComposioSessionRepository() {
