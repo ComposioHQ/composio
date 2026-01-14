@@ -103,7 +103,7 @@ export default defineConfig({
         transformerTwoslash({
           explicitTrigger: false, // All TypeScript blocks are validated
           typesCache: createFileSystemTypesCache({
-            dir: '.cache/twoslash',
+            dir: '.next/cache/twoslash', // Inside .next/cache so Vercel persists it
           }),
         }),
       ],
