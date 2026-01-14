@@ -92,6 +92,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       new ComposioToolkitsRepository({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
+        getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
         getToolsAsEnums: () => Effect.succeed(toolkitsData.tools.map(tool => tool.slug)),
         getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
         getTriggerTypes: limit => Effect.succeed(toolkitsData.triggerTypes.slice(0, limit)),
@@ -120,7 +121,6 @@ export const TestLayer = (input?: TestLiveInput) =>
         },
       })
     );
-
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
 
     // Mock `node:os`

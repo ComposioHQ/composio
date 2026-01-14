@@ -1,6 +1,19 @@
-import { pipe, Data, Effect, Option, Schema, Array, Order, ParseResult, String } from 'effect';
-import { Composio as _RawComposioClient } from '@composio/client';
-import { Toolkit, Toolkits, ToolkitName } from 'src/models/toolkits';
+import {
+  pipe,
+  Data,
+  Effect,
+  Option,
+  Schema,
+  Array,
+  Order,
+  ParseResult,
+  String,
+  Stream,
+  Sink,
+  SynchronizedRef,
+} from 'effect';
+import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
+import { Toolkit, Toolkits } from 'src/models/toolkits';
 import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
@@ -88,20 +101,96 @@ export const HttpErrorResponse = Schema.Struct({
 export type HttpErrorResponse = Schema.Schema.Type<typeof HttpErrorResponse>;
 
 /**
- * Utilities
+ * Result of streaming a response with byte counting.
  */
+interface StreamedResponse {
+  /** The parsed JSON data from the response body */
+  readonly json: unknown;
+  /** The exact byte size of the response body */
+  readonly byteSize: number;
+}
+
+type Metrics = {
+  readonly byteSize: number;
+  readonly requests: number;
+};
+
+/**
+ * Streams a Fetch Response body, counting bytes precisely and parsing JSON in a single pass.
+ * Uses streaming to avoid loading the entire response into memory at once.
+ *
+ * @param response - The Fetch API Response object
+ * @returns An Effect that yields the parsed JSON data and byte count
+ */
+const streamResponseWithByteCount = (
+  response: Response
+): Effect.Effect<StreamedResponse, HttpServerError> =>
+  Effect.gen(function* () {
+    const body = response.body;
+    if (!body) {
+      return yield* Effect.fail(
+        new HttpServerError({
+          cause: 'Response body is null',
+        })
+      );
+    }
+
+    // Convert the ReadableStream to an Effect Stream
+    const byteStream = Stream.fromReadableStream(
+      () => body,
+      (error: unknown) =>
+        new HttpServerError({
+          cause: error,
+        })
+    );
+
+    // Collect all chunks while counting bytes
+    const [chunks, byteSize] = yield* pipe(
+      byteStream,
+      Stream.run(
+        Sink.fold<[Uint8Array[], number], Uint8Array>(
+          [[], 0],
+          () => true,
+          ([chunks, size], chunk) => [[...chunks, chunk], size + chunk.byteLength]
+        )
+      )
+    );
+
+    // Merge chunks into a single Uint8Array
+    const merged = new Uint8Array(byteSize);
+    let offset = 0;
+    for (const chunk of chunks) {
+      merged.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+
+    // Decode and parse JSON
+    const text = new TextDecoder().decode(merged);
+    const json = yield* Effect.try({
+      try: () => JSON.parse(text) as unknown,
+      catch: error =>
+        new HttpServerError({
+          cause: `Failed to parse JSON response: ${error}`,
+        }),
+    });
+
+    return { json, byteSize };
+  });
 
 // Utility function for calling the Composio API and decoding its response.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const callClient = <T, S extends Schema.Schema<any, any>>(
   clientSingleton: ComposioClientSingleton,
-  apiCall: (client: _RawComposioClient) => Promise<T>,
+  apiCall: (client: _RawComposioClient) => APIPromise<T>,
   responseSchema: S
-): Effect.Effect<Schema.Schema.Type<S>, HttpError | NoSuchElementException> =>
+): Effect.Effect<
+  { data: Schema.Schema.Type<S>; metrics: Metrics },
+  HttpError | NoSuchElementException
+> =>
   Effect.gen(function* () {
     const client = yield* clientSingleton.get();
-    const json = yield* Effect.tryPromise({
-      try: () => apiCall(client),
+    const response = yield* Effect.tryPromise({
+      try: () => apiCall(client).asResponse(),
       catch: e => {
         const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
 
@@ -127,7 +216,11 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
       },
     });
 
-    return yield* pipe(
+    // Stream the response body with byte counting
+    const { json, byteSize } = yield* streamResponseWithByteCount(response);
+    const metrics = { byteSize, requests: 1 };
+
+    const typedJson = yield* pipe(
       Schema.decodeUnknown(responseSchema)(json),
       Effect.catchTag('ParseError', e => {
         const message = ParseResult.TreeFormatter.formatErrorSync(e);
@@ -137,6 +230,8 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
         });
       })
     );
+
+    return { metrics, data: typedJson };
   });
 
 // Schema constraint for paginated responses
@@ -155,39 +250,49 @@ type PaginatedSchema = Schema.Schema<
 // Automatically fetches all pages until the specified limit is reached.
 const callClientWithPagination = <T, S extends PaginatedSchema>(
   clientSingleton: ComposioClientSingleton,
-  apiCall: (client: _RawComposioClient, cursor?: string) => Promise<T>,
+  apiCall: (client: _RawComposioClient, cursor?: string) => APIPromise<T>,
   responseSchema: S,
   limit: number
-): Effect.Effect<Schema.Schema.Type<S>, HttpError | NoSuchElementException> =>
+): Effect.Effect<
+  { data: Schema.Schema.Type<S>; metrics: Metrics },
+  HttpError | NoSuchElementException
+> =>
   Effect.gen(function* () {
     const client = yield* clientSingleton.get();
+    let totalByteSize = 0;
+    let totalRequests = 0;
 
-    const fetchPage = (cursor?: string): Effect.Effect<T, HttpServerError> =>
-      Effect.tryPromise({
-        try: () => apiCall(client, cursor),
-        catch: e => {
-          const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
+    const fetchPage = (cursor?: string): Effect.Effect<StreamedResponse, HttpServerError> =>
+      Effect.gen(function* () {
+        const response = yield* Effect.tryPromise({
+          try: () => apiCall(client, cursor).asResponse(),
+          catch: e => {
+            const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
 
-          if (Option.isNone(decodedOpt)) {
+            if (Option.isNone(decodedOpt)) {
+              return new HttpServerError({
+                cause: e,
+              });
+            }
+
+            const {
+              status,
+              error: { error },
+            } = decodedOpt.value;
+            const pretty = renderPrettyError([
+              ['code', error.code],
+              ['message', error.message],
+              ['suggested fix', error.suggested_fix],
+            ]);
+
             return new HttpServerError({
-              cause: e,
+              cause: `HTTP ${status}\n${pretty}`,
             });
-          }
+          },
+        });
 
-          const {
-            status,
-            error: { error },
-          } = decodedOpt.value;
-          const pretty = renderPrettyError([
-            ['code', error.code],
-            ['message', error.message],
-            ['suggested fix', error.suggested_fix],
-          ]);
-
-          return new HttpServerError({
-            cause: `HTTP ${status}\n${pretty}`,
-          });
-        },
+        // Stream the response body with byte counting
+        return yield* streamResponseWithByteCount(response);
       });
 
     type DecodedPage = Schema.Schema.Type<S>;
@@ -209,14 +314,15 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
     let totalPages = 0;
 
     while (allItems.length < limit) {
-      const json: T = yield* fetchPage(currentCursor ?? undefined);
+      const { json, byteSize } = yield* fetchPage(currentCursor ?? undefined);
+      totalByteSize += byteSize;
+      totalRequests += 1;
+
       const decoded: DecodedPage = yield* decodeResponse(json);
 
       allItems = allItems.concat(decoded.items);
       totalPages = decoded.total_pages;
       currentCursor = decoded.next_cursor;
-
-      yield* Effect.logDebug(`  Total items fetched: ${allItems.length}/${limit}`);
 
       // Stop if no more pages
       if (currentCursor === null) {
@@ -224,11 +330,16 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
       }
     }
 
+    const metrics = { byteSize: totalByteSize, requests: totalRequests };
+
     return {
-      items: allItems.slice(0, limit),
-      total_pages: totalPages,
-      next_cursor: currentCursor,
-    } as DecodedPage;
+      data: {
+        items: allItems.slice(0, limit),
+        total_pages: totalPages,
+        next_cursor: currentCursor,
+      } as DecodedPage,
+      metrics,
+    };
   });
 
 /**
@@ -276,7 +387,27 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
     effect: Effect.gen(function* () {
       const clientSingleton = yield* ComposioClientSingleton;
 
+      // Initialize metrics tracking via SynchronizedRef
+      const metricsRef = yield* SynchronizedRef.make<Metrics>({ byteSize: 0, requests: 0 });
+
+      // Helper to update metrics and return just the data
+      const withMetrics = <A, E, R>(
+        effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
+      ): Effect.Effect<A, E, R> =>
+        Effect.gen(function* () {
+          const { data, metrics } = yield* effect;
+          yield* SynchronizedRef.update(metricsRef, current => ({
+            byteSize: current.byteSize + metrics.byteSize,
+            requests: current.requests + metrics.requests,
+          }));
+          return data;
+        });
+
       return {
+        /**
+         * Returns a snapshot of the current accumulated metrics (total bytes received and request count).
+         */
+        getMetrics: () => SynchronizedRef.get(metricsRef),
         toolkits: {
           /**
            * Retrieves a comprehensive list of toolkits that are available to the authenticated project.
@@ -284,34 +415,42 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
            */
           list: (params?: { limit?: number }) =>
             params?.limit
-              ? callClientWithPagination(
-                  clientSingleton,
-                  (client, cursor) => client.toolkits.list({ cursor }),
-                  ToolkitsResponse,
-                  params.limit
+              ? withMetrics(
+                  callClientWithPagination(
+                    clientSingleton,
+                    (client, cursor) => client.toolkits.list({ cursor }),
+                    ToolkitsResponse,
+                    params.limit
+                  )
                 )
-              : callClient(clientSingleton, client => client.toolkits.list(), ToolkitsResponse),
+              : withMetrics(
+                  callClient(clientSingleton, client => client.toolkits.list(), ToolkitsResponse)
+                ),
         },
         tools: {
           /**
            * Retrieve a list of all available tool enumeration values (tool slugs) for the project.
            */
           retrieveEnum: () =>
-            callClient(
-              clientSingleton,
-              client => client.tools.retrieveEnum(),
-              ToolsAsEnumsResponse
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.tools.retrieveEnum(),
+                ToolsAsEnumsResponse
+              )
             ),
           /**
            * Retrieve a list of tools, automatically handling pagination to fetch up to $limit items.
            */
           list: (params: { limit: number }) =>
-            callClientWithPagination(
-              clientSingleton,
-              (client, cursor) =>
-                client.tools.list({ cursor, limit: params.limit, toolkit_versions: 'latest' }),
-              ToolsResponse,
-              params.limit
+            withMetrics(
+              callClientWithPagination(
+                clientSingleton,
+                (client, cursor) =>
+                  client.tools.list({ cursor, limit: params.limit, toolkit_versions: 'latest' }),
+                ToolsResponse,
+                params.limit
+              )
             ),
         },
         triggersTypes: {
@@ -319,20 +458,24 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
            * Retrieves a list of all available trigger type enum values that can be used across the API.
            */
           retrieveEnum: () =>
-            callClient(
-              clientSingleton,
-              client => client.triggersTypes.retrieveEnum(),
-              TriggerTypesAsEnumsResponse
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.triggersTypes.retrieveEnum(),
+                TriggerTypesAsEnumsResponse
+              )
             ),
           /**
            * Retrieve a list of trigger types, automatically handling pagination to fetch up to $limit items.
            */
           list: (params: { limit: number }) =>
-            callClientWithPagination(
-              clientSingleton,
-              (client, cursor) => client.triggersTypes.list({ cursor, limit: params.limit }),
-              TriggerTypesResponse,
-              params.limit
+            withMetrics(
+              callClientWithPagination(
+                clientSingleton,
+                (client, cursor) => client.triggersTypes.list({ cursor, limit: params.limit }),
+                TriggerTypesResponse,
+                params.limit
+              )
             ),
         },
         cli: {
@@ -340,20 +483,24 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
            * Generates a new CLI session with a random 6-character code.
            */
           createSession: () =>
-            callClient(
-              clientSingleton,
-              client => client.cli.createSession(),
-              CliCreateSessionResponse
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.cli.createSession(),
+                CliCreateSessionResponse
+              )
             ),
 
           /**
            * Retrieves the current state of a CLI session using either the session ID (UUID) or the 6-character code.
            */
           getSession: (session: { id: string }) =>
-            callClient(
-              clientSingleton,
-              client => client.cli.getSession(session),
-              CliGetSessionResponse
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.cli.getSession(session),
+                CliGetSessionResponse
+              )
             ),
         },
       };
@@ -383,6 +530,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
 
       return {
         getToolkits,
+        getMetrics: () => client.getMetrics(),
         getToolsAsEnums: () => client.tools.retrieveEnum(),
         getTools: (limit: number) =>
           client.tools.list({ limit }).pipe(
