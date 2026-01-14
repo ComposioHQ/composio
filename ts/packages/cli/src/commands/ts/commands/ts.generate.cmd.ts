@@ -211,7 +211,7 @@ export function generateTypescriptTypeStubs({
       outputDir,
       emitSingleFile: Boolean(compact), // Ensure boolean type
       banner: BANNER,
-      importExtension: 'mjs',
+      importExtension: 'js',
     })(index);
 
     // Write all generated files

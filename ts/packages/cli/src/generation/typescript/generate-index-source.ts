@@ -32,7 +32,7 @@ const BARREL_OBJECT_NAME = 'Toolkits';
 export type GenerateTypeScriptIndexMapSourceParams = {
   banner: string;
   emitSingleFile: boolean;
-  importExtension: 'ts' | 'mjs';
+  importExtension: 'ts' | 'js';
 };
 
 export function generateIndexSource(params: GenerateTypeScriptIndexMapSourceParams) {

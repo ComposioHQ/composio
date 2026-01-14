@@ -12,7 +12,7 @@ type GenerateTypeScriptSourcesParams = {
   banner: string;
   emitSingleFile: boolean;
   outputDir: string;
-  importExtension: 'ts' | 'mjs';
+  importExtension: 'ts' | 'js';
 };
 
 export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParams) {

@@ -1,0 +1,14 @@
+{
+  "name": "@test-e2e/typescript-mjs-import-nodenext",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "node test.mjs",
+    "test:e2e:node": "node test.mjs"
+  },
+  "devDependencies": {
+    "@composio/cli": "workspace:*",
+    "typescript": "^5.9.2"
+  }
+}
