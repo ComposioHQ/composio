@@ -254,7 +254,7 @@ function materializeLinkedDeps(fs: FileSystem.FileSystem, fixturePath: string) {
       if (!spec.startsWith('link:') && !spec.startsWith('workspace:')) continue;
 
       const depPath = path.join(fixturePath, 'node_modules', ...name.split('/'));
-      const realPath = yield* Effect.promise(() => nodeFs.realpath(depPath)).pipe(Effect.option);
+      const realPath = yield* Effect.tryPromise(() => nodeFs.realpath(depPath)).pipe(Effect.option);
       if (realPath._tag === 'None' || realPath.value.startsWith(fixturePath)) continue;
 
       yield* fs.remove(depPath);
