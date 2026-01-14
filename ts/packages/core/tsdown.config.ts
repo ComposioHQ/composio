@@ -4,6 +4,7 @@ import { baseConfig } from '../../../tsdown.config.base';
 export default defineConfig({
   ...baseConfig,
   tsconfig: 'tsconfig.build.json',
+  copy: [{ from: 'pack/**/*', to: '.', flatten: false }],
   entry: [
     'src/index.ts',
     'src/platform/node.ts',
