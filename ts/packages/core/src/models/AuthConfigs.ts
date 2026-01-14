@@ -128,6 +128,7 @@ export class AuthConfigs {
               name: parsedOptions.data.name,
               authScheme: parsedOptions.data.authScheme,
               credentials: parsedOptions.data.credentials,
+              is_enabled_for_tool_router: parsedOptions.data.isEnabledForToolRouter,
               proxy_config: parsedOptions.data.proxyConfig
                 ? {
                     proxy_url: parsedOptions.data.proxyConfig.proxyUrl,
@@ -145,6 +146,7 @@ export class AuthConfigs {
               type: parsedOptions.data.type,
               credentials: parsedOptions.data.credentials,
               name: parsedOptions.data.name,
+              is_enabled_for_tool_router: parsedOptions.data.isEnabledForToolRouter,
               tool_access_config: parsedOptions.data.toolAccessConfig
                 ? {
                     tools_for_connected_account_creation:
@@ -223,6 +225,7 @@ export class AuthConfigs {
         ? {
             type: 'custom',
             credentials: parsedData.data.credentials,
+            is_enabled_for_tool_router: parsedData.data.isEnabledForToolRouter,
             tool_access_config: {
               tools_for_connected_account_creation:
                 parsedData.data.toolAccessConfig?.toolsForConnectedAccountCreation,
@@ -234,6 +237,7 @@ export class AuthConfigs {
         : {
             type: 'default',
             scopes: parsedData.data.scopes,
+            is_enabled_for_tool_router: parsedData.data.isEnabledForToolRouter,
             tool_access_config: {
               tools_for_connected_account_creation:
                 parsedData.data.toolAccessConfig?.toolsForConnectedAccountCreation,

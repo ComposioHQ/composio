@@ -16,8 +16,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20250917.0
     '@composio/client':
-      specifier: 0.1.0-alpha.54
-      version: 0.1.0-alpha.54
+      specifier: 0.1.0-alpha.55
+      version: 0.1.0-alpha.55
     '@modelcontextprotocol/sdk':
       specifier: ^1.24.0
       version: 1.24.1
@@ -882,7 +882,7 @@ importers:
         version: 1.0.0-alpha.1
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.54
+        version: 0.1.0-alpha.55
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -976,7 +976,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.54
+        version: 0.1.0-alpha.55
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1712,8 +1712,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@0.1.0-alpha.54':
-    resolution: {integrity: sha512-3whr4XjaMQUTcxmkaePMPeISUEE3NDRmGaf6lHReS9M2t6jiQbuZT3OktBvvw9QHrH+AZPXgaDoH65Hlr4qGWA==}
+  '@composio/client@0.1.0-alpha.55':
+    resolution: {integrity: sha512-nINJ2bgqZi+eyNSPSd1p9hc7CryXqYonlhJqaw6U9gUeLYBq27ASpIM3ddi61j+6U6+ZKeaX1FmO3hcJwH4wCw==}
 
   '@composio/mcp@1.0.3-0':
     resolution: {integrity: sha512-IpbfST0SSs/CEv+PIf6+EL0feNuJhQyUrOHJLPge8NhyLLrCyVqvujRIPyRUUjy0NDsked/Mm5VpJmYM6OACbg==}
@@ -7835,7 +7835,7 @@ snapshots:
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.10(zod@4.3.5)
-      '@vercel/oidc': 3.0.5
+      '@vercel/oidc': 3.1.0
       zod: 4.3.5
 
   '@ai-sdk/gateway@2.0.0(zod@3.25.76)':
@@ -8439,7 +8439,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@0.1.0-alpha.54': {}
+  '@composio/client@0.1.0-alpha.55': {}
 
   '@composio/mcp@1.0.3-0': {}
 
