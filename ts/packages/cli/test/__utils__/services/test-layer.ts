@@ -12,6 +12,7 @@ import {
   Layer,
   Logger,
   LogLevel,
+  Option,
   Schedule,
   String,
 } from 'effect';
@@ -219,14 +220,12 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
       yield* fs.copy(realFixturePath, tmpFixturesPath);
 
       // Materialize workspace symlinks (link:/workspace:) so tests use temp copies, not real workspace
-      yield* materializeLinkedDeps(fs, tmpFixturesPath);
+      yield* materializeLinkedDeps(fs, tmpFixturesPath, realFixturePath);
     });
 
-    const repeated = Effect.retryOrElse(policy, () =>
+    yield* Effect.retryOrElse(task, policy, () =>
       Effect.die(`Failed to copy fixture to: ${tmpFixturesPath}`)
     );
-
-    yield* repeated(task);
 
     yield* Effect.logDebug(`Copied fixture to: ${tmpFixturesPath}`);
 
@@ -238,7 +237,11 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
  * Replace workspace symlinks (link:/workspace:) with real copies (excluding node_modules).
  * This ensures tests run against temp fixture, not the developer's real workspace.
  */
-function materializeLinkedDeps(fs: FileSystem.FileSystem, fixturePath: string) {
+function materializeLinkedDeps(
+  fs: FileSystem.FileSystem,
+  fixturePath: string,
+  originalFixturePath: string
+) {
   return Effect.gen(function* () {
     const pkgJsonPath = path.join(fixturePath, 'package.json');
     if (!(yield* fs.exists(pkgJsonPath))) return;
@@ -254,18 +257,93 @@ function materializeLinkedDeps(fs: FileSystem.FileSystem, fixturePath: string) {
       if (!spec.startsWith('link:') && !spec.startsWith('workspace:')) continue;
 
       const depPath = path.join(fixturePath, 'node_modules', ...name.split('/'));
-      const realPath = yield* Effect.tryPromise(() => nodeFs.realpath(depPath)).pipe(Effect.option);
-      if (realPath._tag === 'None' || realPath.value.startsWith(fixturePath)) continue;
 
-      yield* fs.remove(depPath);
-      yield* Effect.promise(() =>
-        nodeFs.cp(realPath.value, depPath, {
-          recursive: true,
-          filter: src => !src.includes('/node_modules'),
-        })
-      );
+      // Try to resolve existing symlink, or fall back to resolving spec from original fixture
+      const sourcePath = yield* resolveSourcePath({
+        depPath,
+        fixturePath,
+        originalFixturePath,
+        spec,
+      });
+
+      if (sourcePath === null) continue;
+
+      // Use nodeFs directly to avoid potential Effect/platform issues
+      yield* Effect.tryPromise({
+        try: () => nodeFs.rm(depPath, { recursive: true, force: true }),
+        catch: error => new Error(`Failed to remove ${depPath}: ${error}`),
+      });
+      yield* Effect.tryPromise({
+        try: () => nodeFs.mkdir(depPath, { recursive: true }),
+        catch: error => new Error(`Failed to create directory ${depPath}: ${error}`),
+      });
+      yield* Effect.tryPromise({
+        try: () =>
+          nodeFs.copyFile(
+            path.join(sourcePath, 'package.json'),
+            path.join(depPath, 'package.json')
+          ),
+        catch: error => new Error(`Failed to copy package.json: ${error}`),
+      });
+
+      const distSrc = path.join(sourcePath, 'dist');
+      const distExists = yield* checkPathExists(distSrc);
+      if (distExists) {
+        yield* Effect.tryPromise({
+          try: () => nodeFs.cp(distSrc, path.join(depPath, 'dist'), { recursive: true }),
+          catch: error => new Error(`Failed to copy dist directory: ${error}`),
+        });
+      }
     }
   });
+}
+
+/**
+ * Resolve the source path for a linked dependency.
+ * Returns the real path if it exists and is outside the fixture, or resolves from the original fixture.
+ */
+function resolveSourcePath(params: {
+  depPath: string;
+  fixturePath: string;
+  originalFixturePath: string;
+  spec: string;
+}): Effect.Effect<string | null> {
+  const { depPath, fixturePath, originalFixturePath, spec } = params;
+
+  return Effect.gen(function* () {
+    // Try to resolve existing symlink
+    const realPathOption = yield* Effect.tryPromise({
+      try: () => nodeFs.realpath(depPath),
+      catch: () => null,
+    }).pipe(Effect.option);
+
+    const realPath = Option.getOrNull(realPathOption);
+
+    // If symlink exists and points outside fixture, use it
+    if (realPath !== null && !realPath.startsWith(fixturePath)) {
+      return realPath;
+    }
+
+    // For link: specs, try to resolve from original fixture
+    if (spec.startsWith('link:')) {
+      const linkTarget = spec.slice('link:'.length);
+      const resolvedSource = path.resolve(originalFixturePath, linkTarget);
+      const exists = yield* checkPathExists(resolvedSource);
+      if (exists) return resolvedSource;
+    }
+
+    return null;
+  });
+}
+
+/**
+ * Check if a path exists using Effect patterns.
+ */
+function checkPathExists(targetPath: string): Effect.Effect<boolean> {
+  return Effect.tryPromise({
+    try: () => nodeFs.access(targetPath),
+    catch: () => null,
+  }).pipe(Effect.isSuccess);
 }
 
 function setupComposioSessionRepository() {
