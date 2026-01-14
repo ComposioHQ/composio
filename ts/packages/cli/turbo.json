@@ -3,10 +3,12 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
       "outputs": ["dist/**", "dist/**/*.d.ts"]
     },
     "build:bin": {
       "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
       "outputs": ["dist/**", "dist/**/*.d.ts"]
     }
   }
