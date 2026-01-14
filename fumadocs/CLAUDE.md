@@ -51,11 +51,14 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 - **Build-time validation**: Type errors fail the build.
 - **CI enforcement**: `.github/workflows/docs-typescript-check.yml` runs on PRs to fumadocs/
 
+### Exclusions
+- **Reference docs** (`/content/reference/`): Excluded from Twoslash via collection-level `mdxOptions` in `source.config.ts`. These are auto-generated and don't need type checking.
+
 ### Common patterns
 
 **Basic snippet with setup code (hidden from output):**
 ````md
-```typescript twoslash
+```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'key' });
 const userId = 'user_123';
@@ -65,11 +68,42 @@ const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
 ```
 ````
 
-**Skip type checking (for external deps or pseudocode):**
+**Using SDK-exported types for callbacks:**
+The SDK exports types for modifiers - use them instead of inline type annotations:
+````md
+```typescript
+import { Composio, TransformToolSchemaModifier } from '@composio/core';
+
+const modifySchema: TransformToolSchemaModifier = ({ toolSlug, toolkitSlug, schema }) => {
+  // TypeScript infers all parameter types!
+  return schema;
+};
+```
+````
+
+Available modifier types from `@composio/core`:
+- `beforeExecuteModifier` - for `beforeExecute` callbacks
+- `afterExecuteModifier` - for `afterExecute` callbacks
+- `TransformToolSchemaModifier` - for `modifySchema` callbacks
+
+**Skip type checking (for partial snippets or external deps):**
 ````md
 ```typescript
 // @noErrors
 import { SomeExternalThing } from 'not-installed-package';
+```
+````
+
+**Declare external variables in hidden section:**
+When code uses variables that aren't defined in the snippet, declare them before the cut:
+````md
+```typescript
+import { Composio } from '@composio/core';
+
+declare const composio: Composio;
+declare const userId: string;
+// ---cut---
+const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
 ```
 ````
 
@@ -82,12 +116,15 @@ import { SomeExternalThing } from 'not-installed-package';
 ### Configuration
 - **Config**: `source.config.ts` - `transformerTwoslash({ explicitTrigger: false })`
 - **SDK packages**: Installed as devDependencies for import resolution
+- **Reference exclusion**: Uses `applyMdxPreset` with custom `rehypeCodeOptions` (no twoslash transformer)
 
 ### Troubleshooting
 - If imports fail, ensure the package is in `devDependencies`
 - Use `// @noErrors` for examples with external dependencies not in package.json
 - Use `// ---cut---` to add setup code (imports, variable declarations) that compiles but isn't shown
 - Check CI logs for specific error codes (e.g., 2304 = cannot find name, 2322 = type mismatch)
+- For callback types, prefer importing SDK types over inline `{ foo: string; bar: any }` annotations
+- Run `bun run build` locally to validate all code blocks before pushing
 
 ## Deployment
 - Vercel project: `composio/fumadocs`
