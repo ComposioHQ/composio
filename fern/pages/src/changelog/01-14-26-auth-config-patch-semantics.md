@@ -1,5 +1,17 @@
 # True PATCH Semantics for Auth Config Updates
 
+## Version Information
+
+### TypeScript/JavaScript
+- Package: `@composio/core` and provider packages
+- Version: `0.5.1`+
+
+### Python
+- Package: `composio-core` and provider packages
+- Version: `0.10.7`+
+
+---
+
 The `PATCH /api/v3/auth_configs/{id}` endpoint now implements proper partial update semantics. Previously, omitting fields would clear them (behaving like PUT). Now, omitted fields are preserved—only explicitly provided fields are modified.
 
 <Warning>
