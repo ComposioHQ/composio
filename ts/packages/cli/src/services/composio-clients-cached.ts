@@ -6,18 +6,20 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
 import { ComposioToolkitsRepository } from './composio-clients';
 import { NodeOs } from './node-os';
-import { toolkitsFromJSON, toolkitsToJSON } from 'src/models/toolkits';
+import { toolkitsFromJSON, toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import {
   toolsAsEnumsFromJSON,
   toolsAsEnumsToJSON,
   ToolsFromJSON,
   ToolsToJSON,
+  type Tools,
 } from 'src/models/tools';
 import {
   TriggerTypesAsEnumsFromJSON,
   TriggerTypesAsEnumsToJSON,
   TriggerTypesFromJSON,
   TriggerTypesToJSON,
+  type TriggerTypes,
 } from 'src/models/trigger-types';
 import { ConfigLive } from './config';
 
@@ -39,7 +41,8 @@ function createCachedEffect<T, E, R>(
   cacheFileName: string,
   decoder: (input: string) => Effect.Effect<T, ParseResult.ParseError>,
   encoder: (input: T) => Effect.Effect<string, ParseResult.ParseError>,
-  computation: Effect.Effect<T, E, R>
+  computation: Effect.Effect<T, E, R>,
+  cacheFilter?: (data: T) => T
 ): Effect.Effect<T, E, R> {
   // First define the cache-handling function that will run with all required services
   const cacheEffect = Effect.gen(function* () {
@@ -68,7 +71,7 @@ function createCachedEffect<T, E, R>(
       );
 
       if (Option.isSome(cachedResult)) {
-        return cachedResult.value;
+        return cacheFilter ? cacheFilter(cachedResult.value) : cachedResult.value;
       }
     }
 
@@ -124,6 +127,20 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
         );
       },
 
+      getToolkitsBySlugs: slugs => {
+        const cacheFilter = (data: Toolkits): Toolkits => {
+          const slugSet = new Set(slugs.map(s => s.toUpperCase()));
+          return data.filter(t => slugSet.has(t.slug.toUpperCase()));
+        };
+        return createCachedEffect(
+          CACHE_FILES.toolkits,
+          toolkitsFromJSON,
+          toolkitsToJSON,
+          underlyingRepository.getToolkitsBySlugs(slugs),
+          cacheFilter
+        );
+      },
+
       getToolsAsEnums: () => {
         return createCachedEffect(
           CACHE_FILES.toolsAsEnums,
@@ -142,23 +159,37 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
         );
       },
 
-      getTriggerTypes: (limit: number) => {
+      getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
+        const cacheFilter =
+          toolkitSlugs && toolkitSlugs.length > 0
+            ? (data: TriggerTypes): TriggerTypes => {
+                const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+                return data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
+              }
+            : undefined;
         return createCachedEffect(
-          // We don't care about the limit in the cache file name
           CACHE_FILES.triggerTypes,
           TriggerTypesFromJSON,
           TriggerTypesToJSON,
-          underlyingRepository.getTriggerTypes(limit)
+          underlyingRepository.getTriggerTypes(toolkitSlugs),
+          cacheFilter
         );
       },
 
-      getTools: (limit: number) => {
+      getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
+        const cacheFilter =
+          toolkitSlugs && toolkitSlugs.length > 0
+            ? (data: Tools): Tools => {
+                const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+                return data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
+              }
+            : undefined;
         return createCachedEffect(
-          // We don't care about the limit in the cache file name
           CACHE_FILES.tools,
           ToolsFromJSON,
           ToolsToJSON,
-          underlyingRepository.getTools(limit)
+          underlyingRepository.getTools(toolkitSlugs),
+          cacheFilter
         );
       },
 
