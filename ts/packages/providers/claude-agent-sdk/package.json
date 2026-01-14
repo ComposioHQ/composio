@@ -1,6 +1,6 @@
 {
   "name": "@composio/claude-agent-sdk",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Composio provider for Claude Agent SDK",
   "main": "src/index.ts",
   "publishConfig": {
@@ -48,7 +48,7 @@
     "zod": "^3.25.76"
   },
   "peerDependencies": {
-    "@composio/core": "0.5.0",
+    "@composio/core": "0.5.1",
     "@anthropic-ai/claude-agent-sdk": ">=0.1.0"
   },
   "devDependencies": {
