@@ -27,7 +27,7 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
       rootDir: outputDir,
       declaration: true,
       emitDeclarationOnly: false,
-      noEmitOnError: true,
+      noEmitOnError: false,
     } satisfies ts.CompilerOptions;
 
     const virtualFileMap = new Map(
@@ -54,6 +54,13 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
       }
 
       return ogGetSourceFile(filename, languageVersion, onError, shouldCreateNewSourceFile);
+    };
+
+    // Override writeFile to emit .mjs files directly instead of .js
+    const ogWriteFile = tsHost.writeFile;
+    tsHost.writeFile = (fileName, data, writeByteOrderMark, onError, sourceFiles, info) => {
+      const mjsFileName = fileName.replace(/\.js$/, '.mjs');
+      return ogWriteFile(mjsFileName, data, writeByteOrderMark, onError, sourceFiles, info);
     };
 
     const program = ts.createProgram(virtualFileNames, compilerOptions, tsHost);
