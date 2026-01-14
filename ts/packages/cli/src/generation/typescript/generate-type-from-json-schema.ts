@@ -12,13 +12,19 @@ export function generateTypeFromJsonSchema(
   name: string,
   schema: { readonly [x: string]: unknown }
 ) {
+  // Preprocess the schema to remove discriminator objects that reference non-existent $defs.
+  // The Composio API returns schemas with discriminator.mapping that point to #/$defs/... paths,
+  // but the actual types are inlined in oneOf/anyOf arrays. openapi-typescript can handle
+  // oneOf/anyOf without discriminator, so we simply remove it.
+  const processedProperties = removeDiscriminators(schema['properties']);
+
   const openApi3Definition = {
     openapi: '3.1.0',
     components: {
       schemas: {
         [name]: {
           type: 'object',
-          properties: schema['properties'],
+          properties: processedProperties,
         },
       },
     },
@@ -139,4 +145,31 @@ export function generateTypeFromJsonSchema(
 
 function isInterfaceComponents(node: ts.Node): node is ts.InterfaceDeclaration {
   return ts.isInterfaceDeclaration(node) && node.name.escapedText === 'components';
+}
+
+/**
+ * Recursively removes `discriminator` objects from a JSON schema.
+ * This is needed because Composio's API returns schemas with discriminator.mapping
+ * that reference #/$defs/... paths, but the types are inlined in oneOf/anyOf arrays
+ * rather than defined in a $defs section. openapi-typescript fails to resolve these refs.
+ * Since oneOf/anyOf work fine without discriminator, we simply remove it.
+ */
+function removeDiscriminators(obj: unknown): unknown {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(removeDiscriminators);
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === 'discriminator') {
+      // Skip discriminator objects entirely
+      continue;
+    }
+    result[key] = removeDiscriminators(value);
+  }
+  return result;
 }
