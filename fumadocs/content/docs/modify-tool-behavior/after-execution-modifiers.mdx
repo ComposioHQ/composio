@@ -63,6 +63,7 @@ print(result)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 const response = await openai.chat.completions.create({
   model: "gpt-4o-mini",
   messages,
@@ -141,6 +142,7 @@ tools = composio.tools.get(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { v4 as uuidv4 } from "uuid";

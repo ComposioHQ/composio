@@ -4,7 +4,10 @@ import {
   defineCollections,
   frontmatterSchema,
   metaSchema,
+  applyMdxPreset,
 } from 'fumadocs-mdx/config';
+import { transformerTwoslash } from '@shikijs/twoslash';
+import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs';
 import { z } from 'zod';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
@@ -38,10 +41,21 @@ export const toolRouter = defineDocs({
   },
 });
 
+// Reference docs use defineCollections with custom mdxOptions to exclude twoslash
+// (SDK reference docs are auto-generated and don't need type checking)
 export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
     schema: docsSchema,
+    mdxOptions: applyMdxPreset({
+      rehypeCodeOptions: {
+        themes: {
+          light: 'github-light',
+          dark: 'github-dark',
+        },
+        // No twoslash transformer - SDK reference docs skip type checking
+      },
+    }),
   },
   meta: {
     schema: metaSchema,
@@ -80,6 +94,19 @@ export const changelog = defineCollections({
 
 export default defineConfig({
   mdxOptions: {
-    // MDX options
+    rehypeCodeOptions: {
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark',
+      },
+      transformers: [
+        transformerTwoslash({
+          explicitTrigger: false, // All TypeScript blocks are validated
+          typesCache: createFileSystemTypesCache({
+            dir: '.next/cache/twoslash', // Inside .next/cache so Vercel persists it
+          }),
+        }),
+      ],
+    },
   },
 });

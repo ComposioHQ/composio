@@ -88,6 +88,7 @@ message_text = payload["data"]["message_text"]
 ```
 
 ```typescript
+// @noErrors
 // Before (V2)
 const triggerSlug = payload.type;  // "gmail_new_gmail_message"
 const connectionId = payload.data.connection_id;

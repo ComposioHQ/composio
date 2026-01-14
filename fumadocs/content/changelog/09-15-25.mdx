@@ -58,6 +58,7 @@ connection_request = composio.connected_accounts.link(
 **Examples:**
 
 ```tsx
+// @noErrors
 // Basic usage - create a connection request
 const connectionRequest = await composio.connectedAccounts.link('user_123', 'auth_config_123');
 const redirectUrl = connectionRequest.redirectUrl;

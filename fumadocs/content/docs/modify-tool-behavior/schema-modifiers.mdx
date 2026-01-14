@@ -49,6 +49,7 @@ tools = composio.tools.get(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 const userId = "your@email.com";
 
 const tools = await composio.tools.get(
@@ -131,6 +132,7 @@ print(result)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 import { OpenAI } from 'openai';
 
@@ -228,6 +230,7 @@ print(tools)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
 import { v4 as uuidv4 } from 'uuid';

@@ -136,6 +136,11 @@ async def webhook_handler(request: Request):
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { TriggerEvent } from '@composio/core';
+type NextApiRequest = { body: any };
+type NextApiResponse = { status: (code: number) => { json: (data: any) => void }; json: (data: any) => void };
+type GitHubStarEventData = { repository_name: string; starred_by: string };
+// ---cut---
 export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
   const payload = req.body;
 
@@ -203,6 +208,9 @@ def verify_webhook_signature(request: Request, body: bytes) -> bool:
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import crypto from 'crypto';
+type NextApiRequest = { headers: Record<string, string | undefined> };
+// ---cut---
 function verifyWebhookSignature(
   req: NextApiRequest,
   body: string
@@ -302,6 +310,9 @@ print(trigger.payload)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // Get trigger type to inspect payload structure
 const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
 console.log(triggerType.payload);
@@ -357,6 +368,9 @@ composio.triggers.enable(trigger_id="ti_abcd123")
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
 // Disable a trigger
 await composio.triggers.disable('ti_abcd123');
 

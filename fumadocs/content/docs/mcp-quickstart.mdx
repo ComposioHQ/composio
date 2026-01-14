@@ -91,6 +91,9 @@ print(server.id)
       </Tab>
       <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+// ---cut---
 // Create MCP server with multiple toolkits
 const server = await composio.mcp.create("mcp-config-73840", {  // Pick a unique name for your MCP server
   toolkits: [
@@ -137,6 +140,10 @@ print(f"MCP Server URL: {instance['url']}")
       </Tab>
       <Tab value="TypeScript">
 ```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const server = { id: 'mcp-config-73840' };
+// ---cut---
 // Generate server instance for user
 const instance = await composio.mcp.generate("user-73840", server.id);  // Use the user ID for which you created the connected account
 
@@ -231,6 +238,7 @@ export const client = new MCPClient({
 });
 
 export const agent = new Agent({
+  id: "assistant",
   name: "Assistant",
   description: "Helpful AI with MCP tools",
   instructions: "Use the MCP tools to answer.",

@@ -23,6 +23,7 @@ result = composio.tools.execute(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 // Throws ComposioToolVersionRequiredError
 const result = await composio.tools.execute({
     toolSlug: "GITHUB_CREATE_ISSUE",
@@ -57,6 +58,7 @@ composio = Composio(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 // Pin specific versions for each toolkit
@@ -92,6 +94,7 @@ print(result)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 // Specify version directly in execute call
 const result = await composio.tools.execute("GITHUB_LIST_STARGAZERS", {
     userId: "user-k7334",
@@ -138,6 +141,7 @@ result = composio.tools.execute(
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 const result = await composio.tools.execute({
     toolSlug: "GITHUB_CREATE_ISSUE",
     userId: "user-123",

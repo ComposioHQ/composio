@@ -71,6 +71,7 @@ First, we fetch all connected accounts for a user and create a mapping of toolki
 slugs to their connection IDs:
 
 ```typescript app/api/composio/toolkits.ts
+// @noErrors
 export async function GET() {
   // ... auth logic ...
 
@@ -93,6 +94,7 @@ export async function GET() {
 Next, we fetch toolkit information for each supported toolkit and combine it with the connection status:
 
 ```typescript app/api/composio/toolkits.ts
+// @noErrors
 export async function GET() {
   // ... auth logic ...
   // ... connected accounts mapping ...
@@ -133,6 +135,7 @@ When a user wants to connect their account, we create a connection request that 
 
 
 ```typescript app/api/connections/initiate/route.ts
+// @noErrors
 export async function POST(request: Request) {
   // ... auth and validation ...
 
@@ -160,6 +163,7 @@ After initiating a connection, we need to wait for the OAuth flow to complete. W
 
 
 ```typescript app/api/connections/status/route.ts
+// @noErrors
 export async function GET(request: Request) {
   // ... auth and validation ...
 
@@ -182,6 +186,7 @@ export async function GET(request: Request) {
 When a user wants to disconnect their account, we remove the connection using the connection ID:
 
 ```typescript app/api/connections/delete/route.ts
+// @noErrors
 export async function DELETE(request: Request) {
   // ... auth and validation ...
 
@@ -206,6 +211,7 @@ Once users have connected their accounts, we need to track which toolkits are en
 We keep track of which toolkits the user has enabled in the chat interface:
 
 ```typescript components/chat.tsx
+// @noErrors
 const { ... } = useChat({
     // ... other config ...
     experimental_prepareRequestBody: (body) => {
@@ -229,6 +235,7 @@ const { ... } = useChat({
 We fetch Composio tools based on the enabled toolkit slugs:
 
 ```typescript lib/ai/tools/composio.ts
+// @noErrors
 export async function getComposioTools(userId: string, toolkitSlugs: string[]) {
   // ... validation ...
 
@@ -240,6 +247,7 @@ export async function getComposioTools(userId: string, toolkitSlugs: string[]) {
 ```
 
 ```typescript app/api/chat.ts
+// @noErrors
 export async function POST(request: Request) {
   // ... auth and parsing ...
 
@@ -267,6 +275,7 @@ By default, tool calls appear as raw JSON in the chat interface. To create a bet
 You can find the `ToolCall` component at `components/tool-call.tsx`. Here's how to integrate it into your message rendering:
 
 ```typescript components/messages.tsx
+// @noErrors
 if (type === 'tool-invocation') {
   const { toolInvocation } = part;
   const { toolName, toolCallId, state, args, result } = toolInvocation;

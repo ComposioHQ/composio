@@ -34,6 +34,7 @@ Trigger operations now respect the global `toolkitVersions` configuration set du
 **Creating Triggers with Toolkit Versions:**
 
 ```typescript
+// @noErrors
 // TypeScript - Configure versions at initialization
 const composio = new Composio({
   apiKey: 'your-api-key',
@@ -72,6 +73,7 @@ trigger = composio.triggers.create(
 **Retrieving Trigger Types with Specific Versions:**
 
 ```typescript
+// @noErrors
 // TypeScript
 const composio = new Composio({
   apiKey: 'your-api-key',
@@ -109,12 +111,14 @@ This is a **non-breaking change**. Existing code will continue to work with defa
 
 **Before (still works):**
 ```typescript
+// @noErrors
 // Uses 'latest' version by default
 const trigger = await composio.triggers.create('user', 'GITHUB_COMMIT_EVENT', {...});
 ```
 
 **After (recommended for production):**
 ```typescript
+// @noErrors
 // Explicitly configure versions for better control
 const composio = new Composio({
   apiKey: 'your-api-key',
