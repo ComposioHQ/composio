@@ -20,8 +20,38 @@ const composio = new Composio({
   allowTracking: false,
 });
 
-// const authConfigs = await composio.authConfigs.list();
-// console.log(authConfigs);
-const client = composio.getClient()
-const authConfigs = await client.authConfigs.list()
-console.log(authConfigs)
+/**
+ * Main function to run the example
+ */
+async function main() {
+  try {
+    console.log('🚀 Starting Upload file Example...');
+
+    console.log('🔄 Uploading file...');
+    const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+      dangerouslySkipVersionCheck: true,
+      arguments: {
+        file_to_upload: path.join(__dirname, 'image.png'),
+      },
+      userId: 'default',
+    });
+    console.log('✅ File uploaded successfully...');
+    console.log(JSON.stringify(result, null, 2));
+
+    console.log('🔄 Downloading file...');
+    const result2 = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
+      dangerouslySkipVersionCheck: true,
+      arguments: {
+        file_id: (result.data.response_data as unknown as { id: string }).id,
+      },
+      userId: 'default',
+    });
+    console.log('✅ File downloaded successfully...');
+    console.log(JSON.stringify(result2, null, 2));
+  } catch (error) {
+    console.error('❌ Error running example:', error);
+  }
+}
+
+// Run the example
+main().catch(console.error);
