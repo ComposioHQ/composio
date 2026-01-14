@@ -80,13 +80,16 @@ function createCachedEffect<T, E, R>(
     // Fetch from the underlying service
     const result = yield* computation;
 
-    // Write to cache (best effort: don't fail if cache write fails)
-    yield* encoder(result).pipe(
-      Effect.flatMap(content => fs.writeFileString(cacheFilePath, content)),
-      Effect.catchAll(error =>
-        Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
-      )
-    );
+    // Write to cache only if we're fetching the full dataset (no cacheFilter).
+    // Filtered API calls fetch partial data that would corrupt the shared cache file.
+    if (!cacheFilter) {
+      yield* encoder(result).pipe(
+        Effect.flatMap(content => fs.writeFileString(cacheFilePath, content)),
+        Effect.catchAll(error =>
+          Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
+        )
+      );
+    }
 
     return result;
   });
