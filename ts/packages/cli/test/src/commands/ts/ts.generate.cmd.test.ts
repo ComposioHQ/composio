@@ -788,12 +788,12 @@ describe('CLI: composio ts generate', () => {
               const files = yield* fs.readDirectory(outputDir);
               const fileNames = files.map(file => path.basename(file));
 
-              // Should have .ts files but no .mjs files
+              // Should have .ts files but no .js files
               const tsFiles = fileNames.filter(name => name.endsWith('.ts'));
-              const mjsFiles = fileNames.filter(name => name.endsWith('.mjs'));
+              const jsFiles = fileNames.filter(name => name.endsWith('.js'));
 
               expect(tsFiles.length).toBeGreaterThan(0);
-              expect(mjsFiles.length).toBe(0);
+              expect(jsFiles.length).toBe(0);
             })
         );
 
