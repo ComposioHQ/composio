@@ -52,6 +52,7 @@
     "@llamaindex/workflow": "^1.1.24",
     "@mastra/core": "1.0.0-beta.21",
     "@openai/agents": "^0.3.7",
+    "@shikijs/vitepress-twoslash": "^3.21.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/mdx": "^2.0.13",
     "@types/node": "^24.10.2",

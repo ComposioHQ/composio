@@ -7,6 +7,7 @@ import {
   applyMdxPreset,
 } from 'fumadocs-mdx/config';
 import { transformerTwoslash } from '@shikijs/twoslash';
+import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs';
 import { z } from 'zod';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
@@ -101,6 +102,9 @@ export default defineConfig({
       transformers: [
         transformerTwoslash({
           explicitTrigger: false, // All TypeScript blocks are validated
+          typesCache: createFileSystemTypesCache({
+            dir: '.cache/twoslash',
+          }),
         }),
       ],
     },
