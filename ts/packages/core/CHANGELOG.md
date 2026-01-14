@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.5.1
+
+### Patch Changes
+
+- 3055048: Update client dependencies and auth config update params to be optional
+
 ## 0.5.0
 
 ### Minor Changes
