@@ -262,11 +262,14 @@ async update(triggerId: string, body: { status: 'enable' | 'disable' }): Promise
 Verify an incoming webhook payload and signature.
 
 This method validates that the webhook request is authentic by:
-1. Verifying the HMAC-SHA256 signature matches the payload
+1. Verifying the HMAC-SHA256 signature matches the payload using the correct signing format
 2. Optionally checking that the webhook timestamp is within the tolerance window
 
+The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${payload}, secret)`
+and is expected in the format: `v1,base64EncodedSignature`
+
 ```typescript
-verifyWebhook(params: { payload: string; secret: string; signature: string; tolerance?: number }): object
+verifyWebhook(params: object): VerifyWebhookResult
 ```
 
 **Parameters**
@@ -277,7 +280,7 @@ verifyWebhook(params: { payload: string; secret: string; signature: string; tole
 
 **Returns**
 
-`object` — The verified and parsed webhook payload
+`VerifyWebhookResult` — The verified and parsed webhook payload with version information
 
 **Example**
 
@@ -285,14 +288,17 @@ verifyWebhook(params: { payload: string; secret: string; signature: string; tole
 // In an Express.js webhook handler
 app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   try {
-    const payload = composio.triggers.verifyWebhook({
+    const result = composio.triggers.verifyWebhook({
       payload: req.body.toString(),
-      signature: req.headers['x-composio-signature'] as string,
+      signature: req.headers['webhook-signature'] as string,
+      webhookId: req.headers['webhook-id'] as string,
+      webhookTimestamp: req.headers['webhook-timestamp'] as string,
       secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
     });
 
     // Process the verified payload
-    console.log('Received trigger:', payload.triggerSlug);
+    console.log('Webhook version:', result.version);
+    console.log('Received trigger:', result.payload.triggerSlug);
     res.status(200).send('OK');
   } catch (error) {
     console.error('Webhook verification failed:', error);

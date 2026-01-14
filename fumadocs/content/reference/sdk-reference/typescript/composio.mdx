@@ -51,17 +51,16 @@ const composio = new Composio({
 
 | Name | Type | Description |
 |------|------|-------------|
-| `authConfigs` | `AuthConfigs` |  |
-| `connectedAccounts` | `ConnectedAccounts` |  |
+| `authConfigs` | `AuthConfigs` | Manage authentication configurations for toolkits |
+| `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections |
 | `create` | `object` | Creates a new tool router session for a user. |
-| `experimental` | `object` | Experimental features |
-| `files` | `Files` |  |
-| `mcp` | `MCP` |  |
-| `provider` | `TProvider` |  |
-| `toolkits` | `Toolkits` |  |
+| `files` | `Files` | Upload and download files |
+| `mcp` | `MCP` | Model Context Protocol server management |
+| `provider` | `TProvider` | The tool provider instance used for wrapping tools in framework-specific formats |
+| `toolkits` | `Toolkits` | Retrieve toolkit metadata and authorize user connections |
 | `toolRouter` | `ToolRouter` | Experimental feature, use with caution |
-| `tools` | `Tools` | Core models for Composio. |
-| `triggers` | `Triggers` |  |
+| `tools` | `Tools` | List, retrieve, and execute tools |
+| `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
 | `use` | `(id: string) => Promise<ToolRouterSession>` | Use an existing tool router session |
 
 ## Methods
@@ -110,6 +109,43 @@ const composioWithCustomHeaders = composio.createSession({
 
 // Use the session for making API calls with the custom headers
 await composioWithCustomHeaders.tools.list();
+```
+
+---
+
+### flush()
+
+Flush any pending telemetry and wait for it to complete.
+
+In Node.js-compatible environments, telemetry is automatically flushed on process exit.
+However, in environments like Cloudflare Workers that don't support process exit events,
+you should call this method manually to ensure all telemetry is sent.
+
+```typescript
+async flush(): Promise<void>
+```
+
+**Returns**
+
+`Promise<void>` — A promise that resolves when all pending telemetry has been sent.
+
+**Example**
+
+```typescript
+// In a Cloudflare Worker, use ctx.waitUntil to ensure telemetry is flushed
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
+
+    // Do your work...
+    const result = await composio.tools.execute(...);
+
+    // Ensure telemetry flushes before worker terminates
+    ctx.waitUntil(composio.flush());
+
+    return new Response(JSON.stringify(result));
+  }
+};
 ```
 
 ---
