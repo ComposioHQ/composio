@@ -20,7 +20,7 @@ import { Command, Options } from '@effect/cli';
 import { Console, Effect, Option, pipe, Array } from 'effect';
 import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
-import { ComposioToolkitsRepository, InvalidToolkitsError } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
@@ -50,13 +50,15 @@ export const transpiled = Options.boolean('transpiled').pipe(
 
 export const typeTools = Options.boolean('type-tools').pipe(
   Options.withDefault(false),
-  Options.withDescription('Whether to emit type stubs for tools')
+  Options.withDescription(
+    'Generate typed input/output schemas for each tool (slower, fetches full tool definitions)'
+  )
 );
 
 export const toolkitsOpt = Options.text('toolkits').pipe(
   Options.repeated,
   Options.withDescription(
-    'Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)'
+    'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
   )
 );
 
@@ -66,7 +68,11 @@ const _tsCmd$Generate = Command.make('generate', {
   transpiled: transpiled,
   typeTools,
   toolkitsOpt,
-}).pipe(Command.withDescription('Updates the local type stubs with the latest app data.'));
+}).pipe(
+  Command.withDescription(
+    'Generate TypeScript types for toolkits, tools, and triggers from the Composio API'
+  )
+);
 
 /**
  * Validates that the output directory is not inside node_modules
