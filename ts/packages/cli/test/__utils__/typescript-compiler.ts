@@ -90,8 +90,8 @@ export function assertTranspiledTypeScriptIsValid({
       )
     );
 
-    expect(exitCode).toBe(0);
     expect(stderr).toBe('');
+    expect(exitCode).toBe(0);
     return stdout;
   });
 }
