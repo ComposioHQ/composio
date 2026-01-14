@@ -2,7 +2,7 @@
   "name": "@composio/cli",
   "version": "0.1.24",
   "description": "Composio CLI",
-  "main": "dist/bin.js",
+  "main": "./dist/bin.mjs",
   "bin": {
     "composio": "./dist/composio"
   },
@@ -14,8 +14,8 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "dist/bin.js",
-    "types": "dist/bin.d.ts"
+    "main": "dist/bin.mjs",
+    "types": "dist/bin.d.mts"
   },
   "files": [
     "README.md",
@@ -28,7 +28,7 @@
     "install:bin": "bun run ./scripts/install-binary.ts ./dist/composio",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
-    "build": "tsup",
+    "build": "tsdown",
     "bin": "./dist/composio",
     "test": "vitest run",
     "prepublishOnly": "pnpm run build && pnpm run build:bin",
@@ -53,7 +53,7 @@
     "@types/decompress": "^4.2.7",
     "@types/semver": "^7.7.0",
     "tempy": "^3.1.0",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
@@ -79,5 +79,11 @@
     "superjson": "^2.2.2",
     "ts-morph": "^26.0.0"
   },
-  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
+  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",
+  "module": "./dist/bin.mjs",
+  "types": "./dist/bin.d.mts",
+  "exports": {
+    ".": "./dist/bin.mjs",
+    "./package.json": "./package.json"
+  }
 }

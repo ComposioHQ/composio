@@ -1,0 +1,12 @@
+{
+  "name": "@test-e2e/node-cjs-basic",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:e2e": "bash run-docker-test.sh",
+    "test:e2e:node": "bash run-docker-test.sh"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*"
+  }
+}
