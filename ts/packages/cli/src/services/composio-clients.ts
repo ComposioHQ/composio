@@ -30,6 +30,7 @@ import { renderPrettyError } from './utils/pretty-error';
  */
 export class HttpServerError extends Data.TaggedError('services/HttpServerError')<{
   readonly cause?: unknown;
+  readonly status?: number;
 }> {}
 
 /**
@@ -169,6 +170,7 @@ const handleHttpErrorResponse = (response: Response): Effect.Effect<never, HttpS
         return yield* Effect.fail(
           new HttpServerError({
             cause: `HTTP ${status}\n${pretty}`,
+            status,
           })
         );
       }
@@ -178,6 +180,7 @@ const handleHttpErrorResponse = (response: Response): Effect.Effect<never, HttpS
     return yield* Effect.fail(
       new HttpServerError({
         cause: `HTTP ${status} ${statusText}`,
+        status,
       })
     );
   });
@@ -613,13 +616,19 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         Effect.all(
           slugs.map(slug =>
             client.toolkits.retrieve(slug).pipe(
-              Effect.catchTag('services/HttpServerError', () =>
-                Effect.fail(
-                  new InvalidToolkitsError({
-                    invalidToolkits: [slug],
-                    availableToolkits: [],
-                  })
-                )
+              // Only convert 404 errors to InvalidToolkitsError.
+              // Other HTTP errors (500, 401, network failures, etc.) should propagate as-is.
+              Effect.catchTag('services/HttpServerError', e =>
+                Effect.if(e.status === 404, {
+                  onTrue: () =>
+                    Effect.fail(
+                      new InvalidToolkitsError({
+                        invalidToolkits: [slug],
+                        availableToolkits: [],
+                      })
+                    ),
+                  onFalse: () => Effect.fail(e),
+                })
               )
             )
           ),
