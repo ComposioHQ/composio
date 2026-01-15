@@ -148,11 +148,15 @@ function isInterfaceComponents(node: ts.Node): node is ts.InterfaceDeclaration {
 }
 
 /**
- * Recursively removes `discriminator` objects from a JSON schema.
+ * Recursively removes OpenAPI `discriminator` objects from a JSON schema.
  * This is needed because Composio's API returns schemas with discriminator.mapping
  * that reference #/$defs/... paths, but the types are inlined in oneOf/anyOf arrays
  * rather than defined in a $defs section. openapi-typescript fails to resolve these refs.
  * Since oneOf/anyOf work fine without discriminator, we simply remove it.
+ *
+ * IMPORTANT: We only remove `discriminator` keys when the value is an actual OpenAPI
+ * discriminator object (identified by having a `propertyName` field per the OpenAPI spec).
+ * This avoids accidentally stripping user-defined properties that happen to be named "discriminator".
  */
 function removeDiscriminators(obj: unknown): unknown {
   if (obj === null || typeof obj !== 'object') {
@@ -165,11 +169,26 @@ function removeDiscriminators(obj: unknown): unknown {
 
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (key === 'discriminator') {
-      // Skip discriminator objects entirely
+    if (key === 'discriminator' && isOpenApiDiscriminator(value)) {
+      // Skip OpenAPI discriminator objects (must have `propertyName` per spec)
       continue;
     }
     result[key] = removeDiscriminators(value);
   }
   return result;
+}
+
+/**
+ * Checks if a value is an OpenAPI discriminator object.
+ * Per the OpenAPI 3.0/3.1 spec, a discriminator object MUST have a `propertyName` field.
+ * @see https://spec.openapis.org/oas/v3.1.0#discriminator-object
+ */
+function isOpenApiDiscriminator(value: unknown): boolean {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    'propertyName' in value &&
+    typeof (value as Record<string, unknown>)['propertyName'] === 'string'
+  );
 }
