@@ -134,6 +134,55 @@ type Metrics = {
 };
 
 /**
+ * Handles HTTP error responses by reading the body and formatting a proper error message.
+ * Attempts to decode the response as HttpErrorResponse for structured errors,
+ * otherwise falls back to a generic error with status code.
+ *
+ * @param response - The Fetch API Response object with a non-OK status
+ * @returns An Effect that always fails with HttpServerError containing formatted error details
+ */
+const handleHttpErrorResponse = (response: Response): Effect.Effect<never, HttpServerError> =>
+  Effect.gen(function* () {
+    const status = response.status;
+    const statusText = response.statusText;
+
+    // Try to read the error body as JSON
+    const errorBodyOpt = yield* Effect.tryPromise({
+      try: () => response.json() as Promise<unknown>,
+      catch: () => new HttpServerError({ cause: 'Failed to parse error response body' }),
+    }).pipe(Effect.option);
+
+    // Try to decode as structured error response
+    if (Option.isSome(errorBodyOpt)) {
+      const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(errorBodyOpt.value);
+
+      if (Option.isSome(decodedOpt)) {
+        const {
+          error: { error },
+        } = decodedOpt.value;
+        const pretty = renderPrettyError([
+          ['code', error.code],
+          ['message', error.message],
+          ['suggested fix', error.suggested_fix],
+        ]);
+
+        return yield* Effect.fail(
+          new HttpServerError({
+            cause: `HTTP ${status}\n${pretty}`,
+          })
+        );
+      }
+    }
+
+    // Fallback to generic error message
+    return yield* Effect.fail(
+      new HttpServerError({
+        cause: `HTTP ${status} ${statusText}`,
+      })
+    );
+  });
+
+/**
  * Streams a Fetch Response body, counting bytes precisely and parsing JSON in a single pass.
  * Uses streaming to avoid loading the entire response into memory at once.
  *
@@ -209,30 +258,16 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
     const client = yield* clientSingleton.get();
     const response = yield* Effect.tryPromise({
       try: () => apiCall(client).asResponse(),
-      catch: e => {
-        const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
-
-        if (Option.isNone(decodedOpt)) {
-          return new HttpServerError({
-            cause: e,
-          });
-        }
-
-        const {
-          status,
-          error: { error },
-        } = decodedOpt.value;
-        const pretty = renderPrettyError([
-          ['code', error.code],
-          ['message', error.message],
-          ['suggested fix', error.suggested_fix],
-        ]);
-
-        return new HttpServerError({
-          cause: `HTTP ${status}\n${pretty}`,
-        });
-      },
+      catch: e =>
+        new HttpServerError({
+          cause: e,
+        }),
     });
+
+    // Check HTTP status before streaming - .asResponse() doesn't throw on HTTP errors
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
 
     // Stream the response body with byte counting
     const { json, byteSize } = yield* streamResponseWithByteCount(response);
@@ -289,30 +324,16 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
       Effect.gen(function* () {
         const response = yield* Effect.tryPromise({
           try: () => apiCall(client, cursor, MAX_PAGE_SIZE).asResponse(),
-          catch: e => {
-            const decodedOpt = Schema.decodeUnknownOption(HttpErrorResponse)(e);
-
-            if (Option.isNone(decodedOpt)) {
-              return new HttpServerError({
-                cause: e,
-              });
-            }
-
-            const {
-              status,
-              error: { error },
-            } = decodedOpt.value;
-            const pretty = renderPrettyError([
-              ['code', error.code],
-              ['message', error.message],
-              ['suggested fix', error.suggested_fix],
-            ]);
-
-            return new HttpServerError({
-              cause: `HTTP ${status}\n${pretty}`,
-            });
-          },
+          catch: e =>
+            new HttpServerError({
+              cause: e,
+            }),
         });
+
+        // Check HTTP status before streaming - .asResponse() doesn't throw on HTTP errors
+        if (!response.ok) {
+          return yield* handleHttpErrorResponse(response);
+        }
 
         // Stream the response body with byte counting
         return yield* streamResponseWithByteCount(response);
@@ -494,7 +515,11 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
                 clientSingleton,
                 (client, cursor, limit) =>
                   client.tools.list({
-                    cursor, toolkit_slug: toolkitSlugs?.length ? toolkitSlugs.join(',') : undefined, toolkit_versions: 'latest', limit, }),
+                    cursor,
+                    toolkit_slug: toolkitSlugs?.length ? toolkitSlugs.join(',') : undefined,
+                    toolkit_versions: 'latest',
+                    limit,
+                  }),
                 ToolsResponse
               )
             ),
