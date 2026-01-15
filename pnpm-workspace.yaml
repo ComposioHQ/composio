@@ -1,8 +1,9 @@
 packages:
-  - ts/packages/core
   - ts/e2e-tests/runtimes/node/*
   - ts/e2e-tests/runtimes/cloudflare/*
+  - ts/examples/*
   - ts/packages/cli
+  - ts/packages/core
   - ts/packages/json-schema-to-zod
   - ts/packages/json-schema-to-zod/test/e2e/*
   - ts/packages/providers/*
