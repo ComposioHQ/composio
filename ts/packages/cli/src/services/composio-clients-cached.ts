@@ -1,10 +1,10 @@
 import path from 'node:path';
-import { Effect, Option, ParseResult, Layer } from 'effect';
+import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
-import { ComposioToolkitsRepository } from './composio-clients';
+import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
 import { NodeOs } from './node-os';
 import { toolkitsFromJSON, toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import {
@@ -42,7 +42,7 @@ function createCachedEffect<T, E, R>(
   decoder: (input: string) => Effect.Effect<T, ParseResult.ParseError>,
   encoder: (input: T) => Effect.Effect<string, ParseResult.ParseError>,
   computation: Effect.Effect<T, E, R>,
-  cacheFilter?: (data: T) => T
+  cacheFilter?: (data: T) => Effect.Effect<T, E, never>
 ): Effect.Effect<T, E, R> {
   // First define the cache-handling function that will run with all required services
   const cacheEffect = Effect.gen(function* () {
@@ -71,7 +71,9 @@ function createCachedEffect<T, E, R>(
       );
 
       if (Option.isSome(cachedResult)) {
-        return cacheFilter ? cacheFilter(cachedResult.value) : cachedResult.value;
+        return yield* cacheFilter
+          ? cacheFilter(cachedResult.value)
+          : Effect.succeed(cachedResult.value);
       }
     }
 
@@ -131,9 +133,24 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       },
 
       getToolkitsBySlugs: slugs => {
-        const cacheFilter = (data: Toolkits): Toolkits => {
+        const cacheFilter = (data: Toolkits) => {
           const slugSet = new Set(slugs.map(s => s.toUpperCase()));
-          return data.filter(t => slugSet.has(t.slug.toUpperCase()));
+          const filtered = data.filter(t => slugSet.has(t.slug.toUpperCase()));
+
+          // Validate all requested slugs were found in the cache
+          const foundSlugs = new Set(filtered.map(t => t.slug.toUpperCase()));
+          const missingSlugs = slugs.filter(s => !foundSlugs.has(s.toUpperCase()));
+
+          if (Arr.isNonEmptyReadonlyArray(missingSlugs)) {
+            return Effect.fail(
+              new InvalidToolkitsError({
+                invalidToolkits: missingSlugs,
+                availableToolkits: data.map(t => t.slug),
+              })
+            );
+          }
+
+          return Effect.succeed(filtered);
         };
         return createCachedEffect(
           CACHE_FILES.toolkits,
@@ -165,9 +182,11 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
         const cacheFilter =
           toolkitSlugs && toolkitSlugs.length > 0
-            ? (data: TriggerTypes): TriggerTypes => {
+            ? (data: TriggerTypes) => {
                 const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-                return data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
+                return Effect.succeed(
+                  data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)))
+                );
               }
             : undefined;
         return createCachedEffect(
@@ -182,9 +201,11 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
         const cacheFilter =
           toolkitSlugs && toolkitSlugs.length > 0
-            ? (data: Tools): Tools => {
+            ? (data: Tools) => {
                 const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-                return data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
+                return Effect.succeed(
+                  data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)))
+                );
               }
             : undefined;
         return createCachedEffect(
