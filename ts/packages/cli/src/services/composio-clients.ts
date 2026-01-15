@@ -494,7 +494,7 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
                 clientSingleton,
                 (client, cursor, limit) =>
                   client.tools.list({
-                    cursor, toolkit_slug: toolkitSlugs?.join(',') ?? '', toolkit_versions: 'latest', limit, }),
+                    cursor, toolkit_slug: toolkitSlugs?.length ? toolkitSlugs.join(',') : undefined, toolkit_versions: 'latest', limit, }),
                 ToolsResponse
               )
             ),
