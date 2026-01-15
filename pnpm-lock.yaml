@@ -313,6 +313,15 @@ importers:
         specifier: workspace:*
         version: link:../../../../packages/core
 
+  ts/e2e-tests/runtimes/node/typescript-mjs-import-nodenext:
+    devDependencies:
+      '@composio/cli':
+        specifier: workspace:*
+        version: link:../../../../packages/cli
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   ts/examples/anthropic:
     dependencies:
       '@anthropic-ai/claude-agent-sdk':

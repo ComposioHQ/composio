@@ -1,5 +1,9 @@
 # Reusable Dockerfile for Node.js e2e tests
 # Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.19.0 --build-arg TEST_DIR=... --build-arg TEST_CMD="node test.cjs" -t test-name .
+#
+# Uses official node:slim images. For multi-version testing, run the build/run
+# multiple times with different NODE_VERSION values from the shell script.
+
 ARG NODE_VERSION=20.19.0
 
 FROM node:${NODE_VERSION}-slim
@@ -9,12 +13,17 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-# Install corepack to use pnpm.
-# See: https://vercel.com/kb/guide/corepack-errors-github-actions.
-RUN npm i -g corepack@latest && corepack enable
+# Install corepack (for pnpm) and bun
+RUN npm i -g corepack@latest bun && corepack enable
 
 # Copy pnpm workspace files
-COPY pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs package.json tsconfig.base.json tsdown.config.base.ts ./
+COPY pnpm-lock.yaml \
+  pnpm-workspace.yaml \
+  .pnpmfile.cjs \
+  package.json \
+  tsconfig.base.json \
+  tsdown.config.base.ts \
+  ./
 
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
@@ -27,11 +36,20 @@ COPY ts/e2e-tests/ ./ts/e2e-tests/
 # because it causes native binding issues (e.g., rolldown-binding) across builds
 RUN pnpm install --frozen-lockfile
 
+# Build and install composio CLI binary
+# This is a simplified version of ts/packages/cli/scripts/build-binary.ts + install-binary.ts
+WORKDIR /app/ts/packages/cli
+RUN bun build ./src/bin.ts \
+  --env DEBUG_OVERRIDE_* \
+  --compile \
+  --production \
+  --outfile /usr/local/bin/composio
+
 # Test directory (relative to /app)
 ARG TEST_DIR
 WORKDIR /app/${TEST_DIR}
 
-# Command to run the test (e.g., "node test.cjs", "node test.mjs", "pnpm test")
+# Command to run the test (e.g., "node test.cjs", "node test.mjs", "pnpm test", "bun test")
 ARG TEST_CMD="echo 'No TEST_CMD specified'"
 ENV TEST_CMD=${TEST_CMD}
 

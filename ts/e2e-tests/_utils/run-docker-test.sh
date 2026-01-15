@@ -2,21 +2,26 @@
 # Reusable Docker test runner for e2e tests
 #
 # Usage:
-#   run-docker-test.sh --name <name> --dir <dir> --cmd <cmd> [--node <version>]
+#   run-docker-test.sh --name <name> --dir <dir> --cmd <cmd>
 #
 # Arguments:
-#   --name, -n    Name for the Docker image (e.g., "composio-cjs-test")
-#   --dir,  -d    Relative path from repo root to test directory (e.g., "ts/packages/core/test-e2e/node-cjs")
-#   --cmd,  -c    Command to run (e.g., "node test.cjs", "node test.mjs", "pnpm test"). Default: "pnpm test"
-#   --node        Node.js version. Default: 20.19.0
+#   --name, -n           Name for the Docker image (e.g., "composio-cjs-test")
+#   --dir,  -d           Relative path from repo root to test directory (e.g., "ts/packages/core/test-e2e/node-cjs")
+#   --cmd,  -c           Command to run (e.g., "node test.cjs", "node test.mjs", "pnpm test"). Default: "pnpm test"
 #
 # Example:
-#   ./run-docker-test.sh --name "composio-cjs-test" --dir "ts/packages/core/test-e2e/node-cjs" --cmd "node test.cjs" --node "20.17.0"
+#   ./run-docker-test.sh --name "composio-cjs-test" --dir "ts/packages/core/test-e2e/node-cjs" --cmd "node test.cjs"
 
 set -e
 
+# Environment variables to pass through to Docker container (if set)
+PASSTHROUGH_ENV_VARS=(
+  "COMPOSIO_API_KEY"
+  # "OPENAI_API_KEY"
+)
+
 # Default values
-NODE_VERSION="20.19.0"
+NODE_VERSION="${COMPOSIO_E2E_NODE_VERSION:-20.19.0}"
 TEST_NAME=""
 TEST_DIR=""
 TEST_CMD="pnpm test"
@@ -36,13 +41,9 @@ while [[ $# -gt 0 ]]; do
       TEST_CMD="$2"
       shift 2
       ;;
-    --node)
-      NODE_VERSION="$2"
-      shift 2
-      ;;
     *)
       echo "Error: Unknown argument '$1'"
-      echo "Usage: run-docker-test.sh --name <name> --dir <dir> --cmd <cmd> [--node <version>]"
+      echo "Usage: run-docker-test.sh --name <name> --dir <dir> --cmd <cmd>"
       exit 1
       ;;
   esac
@@ -66,29 +67,56 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+DEBUG_LOG="$REPO_ROOT/$TEST_DIR/DEBUG.log"
 
 echo "🧪 Running Docker e2e test: $TEST_NAME"
 echo "   Node.js version: $NODE_VERSION"
 echo "   Test directory: $TEST_DIR"
 echo "   Test command: $TEST_CMD"
+echo "   Debug log: $DEBUG_LOG"
 echo ""
-
-echo "🐳 Building test image..."
 
 cd "$REPO_ROOT"
 
-# Build Docker image
+echo ""
+echo "========================================"
+echo "🐳 Building and testing with Node.js $NODE_VERSION"
+echo "========================================"
+
+IMAGE_NAME="${TEST_NAME}-node${NODE_VERSION}"
+
 docker build \
   -f "$SCRIPT_DIR/Dockerfile.node" \
   --build-arg NODE_VERSION="$NODE_VERSION" \
   --build-arg TEST_DIR="$TEST_DIR" \
   --build-arg TEST_CMD="$TEST_CMD" \
-  -t "$TEST_NAME" \
-  .
+  -t "$IMAGE_NAME" \
+  . # 2>&1 | tee -a "$DEBUG_LOG"
 
 echo ""
 echo "🧪 Running test in Docker container..."
-docker run --rm "$TEST_NAME"
+echo "" >> "$DEBUG_LOG"
+echo "=== Docker Run ===" >> "$DEBUG_LOG"
+
+# Build docker run args for env vars
+DOCKER_ENV_ARGS=()
+for var in "${PASSTHROUGH_ENV_VARS[@]}"; do
+  if [[ -n "${!var}" ]]; then
+    DOCKER_ENV_ARGS+=("-e" "$var=${!var}")
+  fi
+done
+
+docker run --rm "${DOCKER_ENV_ARGS[@]}" "$IMAGE_NAME" 2>&1 | tee -a "$DEBUG_LOG"
+EXIT_CODE=${PIPESTATUS[0]}
+
+echo "" >> "$DEBUG_LOG"
+echo "=== Exit Code: $EXIT_CODE ===" >> "$DEBUG_LOG"
+
+if [[ $EXIT_CODE -ne 0 ]]; then
+  echo ""
+  echo "❌ Docker test failed! See $DEBUG_LOG for details."
+  exit $EXIT_CODE
+fi
 
 echo ""
-echo "✅ Docker test completed successfully!"
+echo "✅ Docker test passed!"

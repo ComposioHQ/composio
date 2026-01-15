@@ -21,12 +21,14 @@ export const outputOpt = Options.optional(
 export const toolkitsOpt = Options.text('toolkits').pipe(
   Options.repeated,
   Options.withDescription(
-    'Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)'
+    'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
   )
 );
 
 const _pyCmd$Generate = Command.make('generate', { outputOpt, toolkitsOpt }).pipe(
-  Command.withDescription('Updates the local type stubs with the latest app data.')
+  Command.withDescription(
+    'Generate Python type stubs for toolkits, tools, and triggers from the Composio API'
+  )
 );
 
 export const pyCmd$Generate = _pyCmd$Generate.pipe(Command.withHandler(generatePythonTypeStubs));

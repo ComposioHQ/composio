@@ -231,7 +231,7 @@ describe('CLI: composio ts generate', () => {
                 },
               });
 
-              const testSourceCodePath = path.join(cwd, 'src', 'index.js');
+              const testSourceCodePath = path.join(cwd, 'src', 'index.mjs');
               const testSourceCode = yield* fs.readFileString(testSourceCodePath);
               expect(testSourceCode).toMatchInlineSnapshot(`
                 "import { Toolkits } from '@composio/core/generated';
@@ -472,7 +472,7 @@ describe('CLI: composio ts generate', () => {
               },
             });
 
-            const testSourceCodePath = path.join(cwd, 'src', 'index.js');
+            const testSourceCodePath = path.join(cwd, 'src', 'index.mjs');
             const testSourceCode = yield* fs.readFileString(testSourceCodePath);
             expect(testSourceCode).toMatchInlineSnapshot(`
                 "import { Toolkits } from '@composio/core/generated';
@@ -707,7 +707,7 @@ describe('CLI: composio ts generate', () => {
           })
         );
 
-        it.scoped('[Given] --transpiled [Then] it generates both .ts and .js files', () =>
+        it.scoped('[Given] --transpiled [Then] it generates both .ts and .mjs files', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -722,7 +722,9 @@ describe('CLI: composio ts generate', () => {
             const fileNames = files.map(file => path.basename(file));
 
             // Should have both .ts and .js files
-            const tsFiles = fileNames.filter(name => name.endsWith('.ts'));
+            const tsFiles = fileNames.filter(
+              name => name.endsWith('.ts') && !name.endsWith('.d.ts')
+            );
             const jsFiles = fileNames.filter(name => name.endsWith('.js'));
             const dtsFiles = fileNames.filter(name => name.endsWith('.d.ts'));
 
@@ -758,7 +760,9 @@ describe('CLI: composio ts generate', () => {
             const fileNames = files.map(file => path.basename(file));
 
             // Should have both .ts and .js files since compiled is true by default for @composio/core/generated
-            const tsFiles = fileNames.filter(name => name.endsWith('.ts'));
+            const tsFiles = fileNames.filter(
+              name => name.endsWith('.ts') && !name.endsWith('.d.ts')
+            );
             const jsFiles = fileNames.filter(name => name.endsWith('.js'));
             const dtsFiles = fileNames.filter(name => name.endsWith('.d.ts'));
 
