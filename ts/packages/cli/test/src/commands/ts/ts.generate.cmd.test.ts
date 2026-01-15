@@ -53,6 +53,38 @@ describe('CLI: composio ts generate', () => {
               yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
               yield* fs.makeDirectory(generatedDir, { recursive: true });
 
+              // Create a mock package.json to override the symlink resolution for ESM imports.
+              // This is necessary because we're using symlinks in test-layer.ts to isolate the test environment.
+              const corePackageJson = path.join(nodeModulesDir, 'package.json');
+              yield* fs.writeFileString(
+                corePackageJson,
+                JSON.stringify(
+                  {
+                    name: '@composio/core',
+                    type: 'module',
+                    exports: {
+                      '.': {
+                        types: './index.d.ts',
+                        default: './index.js',
+                      },
+                      './generated': {
+                        types: './generated/index.d.ts',
+                        default: './generated/index.js',
+                      },
+                    },
+                  },
+                  null,
+                  2
+                )
+              );
+
+              // Create minimal type stubs for @composio/core root exports (needed for transpilation)
+              yield* fs.writeFileString(
+                path.join(nodeModulesDir, 'index.d.ts'),
+                'export type TriggerEvent<T> = { payload: T };'
+              );
+              yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
+
               const outputDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
               const args = ['ts', 'generate'];
               yield* cli(args);
@@ -261,6 +293,37 @@ describe('CLI: composio ts generate', () => {
             const generatedDir = path.join(nodeModulesDir, 'generated');
             yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
             yield* fs.makeDirectory(generatedDir, { recursive: true });
+
+            // Create a mock package.json to override the symlink resolution for ESM imports
+            const corePackageJson = path.join(nodeModulesDir, 'package.json');
+            yield* fs.writeFileString(
+              corePackageJson,
+              JSON.stringify(
+                {
+                  name: '@composio/core',
+                  type: 'module',
+                  exports: {
+                    '.': {
+                      types: './index.d.ts',
+                      default: './index.js',
+                    },
+                    './generated': {
+                      types: './generated/index.d.ts',
+                      default: './generated/index.js',
+                    },
+                  },
+                },
+                null,
+                2
+              )
+            );
+
+            // Create minimal type stubs for @composio/core root exports (needed for transpilation)
+            yield* fs.writeFileString(
+              path.join(nodeModulesDir, 'index.d.ts'),
+              'export type TriggerEvent<T> = { payload: T };'
+            );
+            yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
 
             const outputDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
             const args = ['ts', 'generate', '--type-tools'];
@@ -714,6 +777,23 @@ describe('CLI: composio ts generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, 'generated-compiled');
 
+            // Create mock @composio/core for transpilation to resolve imports
+            const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
+            yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
+            yield* fs.writeFileString(
+              path.join(nodeModulesDir, 'package.json'),
+              JSON.stringify({
+                name: '@composio/core',
+                type: 'module',
+                exports: { '.': { types: './index.d.ts', default: './index.js' } },
+              })
+            );
+            yield* fs.writeFileString(
+              path.join(nodeModulesDir, 'index.d.ts'),
+              'export type TriggerEvent<T> = { payload: T };'
+            );
+            yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
+
             const args = ['ts', 'generate', '--transpiled', '--output-dir', outputDir];
             yield* cli(args);
 
@@ -751,6 +831,27 @@ describe('CLI: composio ts generate', () => {
             const generatedDir = path.join(nodeModulesDir, 'generated');
             yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
             yield* fs.makeDirectory(generatedDir, { recursive: true });
+
+            // Create mock package.json and type stubs for transpilation
+            yield* fs.writeFileString(
+              path.join(nodeModulesDir, 'package.json'),
+              JSON.stringify({
+                name: '@composio/core',
+                type: 'module',
+                exports: {
+                  '.': { types: './index.d.ts', default: './index.js' },
+                  './generated': {
+                    types: './generated/index.d.ts',
+                    default: './generated/index.js',
+                  },
+                },
+              })
+            );
+            yield* fs.writeFileString(
+              path.join(nodeModulesDir, 'index.d.ts'),
+              'export type TriggerEvent<T> = { payload: T };'
+            );
+            yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
 
             const args = ['ts', 'generate'];
             yield* cli(args);
