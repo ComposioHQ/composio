@@ -120,7 +120,7 @@
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",
-    "openai": "^5.16.0",
+    "openai": "catalog:",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
     "zod-to-json-schema": "catalog:"

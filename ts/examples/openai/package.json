@@ -25,7 +25,7 @@
     "@modelcontextprotocol/sdk": "catalog:",
     "@openai/agents": "^0.1.4",
     "dotenv": "^16.4.1",
-    "openai": "^5.16.0",
+    "openai": "catalog:",
     "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
