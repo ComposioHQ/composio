@@ -308,7 +308,8 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
           list: (params: { limit: number }) =>
             callClientWithPagination(
               clientSingleton,
-              (client, cursor) => client.tools.list({ cursor, limit: params.limit }),
+              (client, cursor) =>
+                client.tools.list({ cursor, limit: params.limit, toolkit_versions: 'latest' }),
               ToolsResponse,
               params.limit
             ),
