@@ -18,4 +18,4 @@ fi
 
 echo "Bun is installed."
 echo "Checking if Bun version matches .bun-version file..."
-bun run "$SCRIPT_DIR/check-bun-version.ts"
+bun run "$SCRIPT_DIR/pre-install/check-bun-version.ts"
