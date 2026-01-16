@@ -23,13 +23,13 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         fetch-depth: 1
 
     - name: Run Claude Code Review
       id: claude-review
-      uses: anthropics/claude-code-action@beta
+      uses: anthropics/claude-code-action@4d750aec5c86b9f7ca38aab8ac6c2d1a1f6c3e55 # v0.0.21
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
