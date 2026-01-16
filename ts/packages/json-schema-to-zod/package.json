@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsdown",
+    "build": "bun run --bun tsdown",
     "test": "vitest run",
     "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
@@ -39,7 +39,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
     "@types/node": "^24.0.1",

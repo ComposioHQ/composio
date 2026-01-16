@@ -25,7 +25,7 @@ jobs:
       COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Log trigger source
         run: |
@@ -41,6 +41,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+        env:
+          BYPASS_BUN_VERSION_CHECK: '1'
+
       - name: Install Python Dependencies
         working-directory: ./fern
         run: |

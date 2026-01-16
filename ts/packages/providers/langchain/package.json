@@ -30,13 +30,13 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsdown",
+    "build": "bun run --bun tsdown",
     "test": "vitest run"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@composio/core": "0.5.2",
     "@langchain/core": "^1.1.4"

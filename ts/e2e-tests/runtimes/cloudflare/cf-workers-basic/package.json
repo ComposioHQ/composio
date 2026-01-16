@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@composio/core": "workspace:*",
-    "hono": "^4.10.3",
+    "hono": "catalog:",
     "openai": "catalog:"
   }
 }

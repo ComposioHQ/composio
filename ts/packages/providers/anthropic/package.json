@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsdown",
+    "build": "bun run --bun tsdown",
     "test": "vitest run"
   },
   "keywords": [
@@ -40,7 +40,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
     "@composio/core": "0.5.2",

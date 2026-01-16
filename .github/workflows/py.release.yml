@@ -18,20 +18,20 @@ jobs:
         working-directory: ./python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
 
       - name: Build Artifacts
         run: |
-            pip install uv
             make env
             make build
 
       - name: Publish Artifacts
         if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
         with:
           packages-dir: ./python/dist
           user: ${{ secrets.PYPI_USERNAME }}

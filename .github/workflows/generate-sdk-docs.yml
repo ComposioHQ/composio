@@ -16,21 +16,18 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm --filter @composio/core generate:docs
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b601f8cf3c8c27d2d6cf # v7.0.8
         with:
           commit-message: 'docs: auto-generate TypeScript SDK reference'
           title: 'docs: Update TypeScript SDK reference'
@@ -46,16 +43,16 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
 
       - run: cd python && uv run --with griffe python scripts/generate-docs.py
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b601f8cf3c8c27d2d6cf # v7.0.8
         with:
           commit-message: 'docs: auto-generate Python SDK reference'
           title: 'docs: Update Python SDK reference'

@@ -16,7 +16,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.35",
     "@composio/core": "workspace:*",

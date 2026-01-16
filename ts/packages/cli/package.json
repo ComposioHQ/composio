@@ -4,7 +4,7 @@
   "description": "Composio CLI",
   "main": "./dist/bin.mjs",
   "bin": {
-    "composio": "./dist/composio"
+    "composio": "./bin/composio.mjs"
   },
   "type": "module",
   "repository": {
@@ -19,6 +19,7 @@
   },
   "files": [
     "README.md",
+    "bin",
     "dist"
   ],
   "scripts": {
@@ -29,7 +30,7 @@
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
-    "build": "tsdown",
+    "build": "bun run --bun tsdown",
     "bin": "./dist/composio",
     "test": "vitest run",
     "prepublishOnly": "pnpm run build && pnpm run build:bin",
@@ -44,7 +45,7 @@
   ],
   "author": "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@effect/eslint-plugin": "^0.3.2",
     "@effect/language-service": "^0.27.1",

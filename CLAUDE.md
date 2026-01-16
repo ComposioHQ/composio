@@ -168,6 +168,16 @@ CI                       # CI environment flag
 - **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
 - **E2E Tests**: `ts/e2e-tests/`
 
+## Maintenance Tasks
+
+### When Updating GitHub Actions
+
+When modifying files in `.github/workflows/`, update the "Prerequisites" section in `ts/docs/internal/release.md` with the current tool versions:
+
+- **Node.js**: `cat .nvmrc`
+- **Bun**: `cat .bun-version`
+- **pnpm**: `cat package.json | jq -r .packageManager | cut -d'@' -f2`
+
 ## Testing Commands
 
 ```bash

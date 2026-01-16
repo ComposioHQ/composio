@@ -9,24 +9,38 @@ ARG NODE_VERSION=20.19.0
 FROM node:${NODE_VERSION}-slim
 
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV BUN_INSTALL="/usr/local"
+ENV PATH="$BUN_INSTALL/bin:$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
+COPY package.json \
+  .bun-version \
+  ./
+
+RUN apt update -y && \
+  apt install -y curl unzip
+
 # Install corepack (for pnpm) and bun
-RUN npm i -g corepack@latest bun && corepack enable
+RUN npm i -g corepack@latest \
+  && corepack enable \
+  && curl -fsSL https://bun.com/install | BUN_INSTALL=/usr/local bash \
+  && bun --version
 
 # Copy pnpm workspace files
 COPY pnpm-lock.yaml \
   pnpm-workspace.yaml \
   .pnpmfile.cjs \
-  package.json \
   tsconfig.base.json \
   tsdown.config.base.ts \
   ./
 
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
+
+# Copy pre-install scripts
+COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
+COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
 
 # Copy e2e tests
 COPY ts/e2e-tests/ ./ts/e2e-tests/

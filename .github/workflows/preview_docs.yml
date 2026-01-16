@@ -16,7 +16,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@db6bcf6eb8d88a8aa03265b887ec7bd84d64cd68 # v2.1.1
+        with:
+          bun-version-file: '.bun-version'
 
       - name: Install dependencies
         run: pnpm install
@@ -56,6 +61,6 @@ jobs:
           echo "Preview your docs: $URL" > preview_url.txt
 
       - name: Comment URL in PR
-        uses: thollander/actions-comment-pull-request@v2.4.3
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # 3.0.1
         with:
-          filePath: fern/preview_url.txt
+          file-path: fern/preview_url.txt

@@ -2,14 +2,14 @@ name: Test Python SDK
 
 on:
   push:
-    branches: [main, next]
+    branches: [master, next]
     paths:
       - "python/**/*.py"
       - ".github/workflows/py.test.yml"
       - "python/pyproject.toml"
       - "python/requirements*.txt"
   pull_request:
-    branches: [main, next]
+    branches: [master, next]
     paths:
       - "python/**/*.py"
       - ".github/workflows/py.test.yml"
@@ -26,15 +26,15 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache pip dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: ~/.cache/pip
           key: pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
@@ -84,20 +84,15 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install UV
-        run: pip install uv
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
 
       - name: Install Dependencies
         run: |
           cd python/
-          uv venv --python 3.11
+          uv venv
           source .venv/bin/activate
           uv pip install -e .
 
@@ -141,20 +136,15 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install UV
-        run: pip install uv
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
 
       - name: Install Dependencies
         run: |
           cd python/
-          uv venv --python 3.11
+          uv venv
           source .venv/bin/activate
           uv pip install -e .
           uv pip install ruff
@@ -180,15 +170,15 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install UV
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6.0.1
         with:
-          uv-version: '0.8.19'  # Pin to a recent version that supports --group syntax
+          version: '0.8.19'
 
       - name: Cache UV dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: ~/.cache/uv
           key: uv-0.8.19-py3.12-${{ hashFiles('python/pyproject.toml') }}
@@ -199,7 +189,7 @@ jobs:
         working-directory: ./python
         run: |
           # Let UV manage Python version to satisfy workspace requirements
-          uv sync --group dev --python 3.12
+          uv sync --group dev
 
       - name: Verify API Key
         run: |
@@ -220,7 +210,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: integration-test-results
           path: |

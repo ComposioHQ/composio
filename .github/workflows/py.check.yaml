@@ -5,31 +5,29 @@ on:
       - master
     paths:
       - "python/**/*.py"
-      - ".github/workflows/py.checks.yaml"
+      - ".github/workflows/py.check.yaml"
   pull_request:
     types: [opened, synchronize]
     paths:
       - "python/**/*.py"
-      - ".github/workflows/py.checks.yaml"
+      - ".github/workflows/py.check.yaml"
 
 jobs:
   common-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 50
 
-      - name: Set up Python
+      - name: Setup Python with UV
         id: setup-python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+        uses: ./.github/actions/setup-python-uv
 
       - name: nox cache
         id: nox-cache
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: python/.nox
           key: nox-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
@@ -38,7 +36,7 @@ jobs:
 
       - name: Mypy cache
         id: mypy-cache
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: python/.mypy_cache
           key: mypy-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
@@ -47,17 +45,16 @@ jobs:
 
       - name: Ruff cache
         id: ruff-cache
-        uses: actions/cache@v4
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: python/.ruff_cache
-          key: mypy-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
+          key: ruff-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
           restore-keys: |
             ruff-
 
       - name: Install deps
         run: |
           cd python/
-          pip install uv
           make env
 
       - name: Lint and type checks

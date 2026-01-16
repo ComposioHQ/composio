@@ -23,22 +23,25 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         fetch-depth: 1
 
     - name: Run Claude Code Review
       id: claude-review
-      uses: anthropics/claude-code-action@beta
+      uses: anthropics/claude-code-action@1b8ee3b94104046d71fde52ec3557651ad8c0d71 # v1.0.29
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        track_progress: true # Forces tag mode with tracking comments
 
         # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
         # model: "claude-opus-4-20250514"
 
         # Direct prompt for automated review (no @claude mention needed)
-        direct_prompt: |
-          
+        prompt: |
+          REPO: ${{ github.repository }}
+          PR NUMBER: ${{ github.event.pull_request.number }}
+
           Please review this pull request for documentation changes and provide feedback on:
           - Grammar and spelling
           - Clarity and readability
@@ -60,8 +63,10 @@ jobs:
         #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
         #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
 
-        # Optional: Add specific tools for running tests or linting
-        allowed_tools: "Bash(*)"
+        # https://code.claude.com/docs/en/cli-reference#cli-flags
+        # -- model: "claude-opus-4-20250514"
+        claude_args: |
+          --allowedTools "Bash(*)"
 
         # Optional: Skip review for certain conditions
         # if: |
