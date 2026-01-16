@@ -37,7 +37,7 @@ runs:
         cache: ${{ inputs.enable-caching == 'true' && 'pnpm' || '' }}
 
     - name: Setup Bun
-      uses: oven-sh/setup-bun@db6bcf6eb8d88a8aa03265b887ec7bd84d64cd68 # v2.0.2
+      uses: oven-sh/setup-bun@db6bcf6eb8d88a8aa03265b887ec7bd84d64cd68 # v2.1.1
       with:
         bun-version: ${{ inputs.bun-version }}
         bun-version-file: ${{ inputs.bun-version == '' && inputs.bun-version-file || '' }}
