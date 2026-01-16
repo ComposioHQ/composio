@@ -189,7 +189,7 @@ jobs:
         working-directory: ./python
         run: |
           # Let UV manage Python version to satisfy workspace requirements
-          uv sync --group dev --python 3.12
+          uv sync --group dev
 
       - name: Verify API Key
         run: |
