@@ -3,7 +3,7 @@
 	"version": "0.0.0",
 	"type": "module",
 	"private": true,
-	"packageManager": "pnpm@10.17.0",
+	"packageManager": "pnpm@10.28.0",
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
 		"clean": "git clean -xdf node_modules",
@@ -61,7 +61,7 @@
 		"@types/yaml": "^1.9.7",
 		"ai": "catalog:",
 		"composio-core": "^0.5.39",
-		"hono": "^4.7.11",
+		"hono": "catalog:",
 		"messages": "link:@langchain/core/messages",
 		"next": "^15.3.3",
 		"only-allow": "^1.2.1",

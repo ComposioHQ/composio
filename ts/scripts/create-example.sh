@@ -36,7 +36,7 @@ cat > "$EXAMPLE_PATH/package.json" << EOL
   "keywords": ["composio", "example", "${EXAMPLE_NAME}"],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "dependencies": {
     "@composio/core": "workspace:*",
     "dotenv": "^16.4.1"

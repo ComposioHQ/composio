@@ -14,7 +14,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.1",
     "@ai-sdk/openai": "^3.0.1",
