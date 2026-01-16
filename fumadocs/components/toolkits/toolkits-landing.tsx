@@ -3,10 +3,11 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink } from 'lucide-react';
-import toolkitsData from '@/public/data/toolkits.json';
-import type { Toolkit } from '@/types/toolkit';
+import type { ToolkitSummary } from '@/types/toolkit';
 
-const toolkits = toolkitsData as Toolkit[];
+interface ToolkitsLandingProps {
+  toolkits: ToolkitSummary[];
+}
 
 // Popular toolkit slugs (shown at top when no filters)
 const POPULAR_SLUGS = [
@@ -21,12 +22,7 @@ const POPULAR_SLUGS = [
   'hubspot',
 ];
 
-// Get unique categories
-const categories = Array.from(
-  new Set(toolkits.map((t) => t.category).filter(Boolean))
-).sort() as string[];
-
-function ToolkitIcon({ toolkit }: { toolkit: Toolkit }) {
+function ToolkitIcon({ toolkit }: { toolkit: ToolkitSummary }) {
   return (
     <div
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-fd-border/50 bg-fd-background bg-center bg-no-repeat text-sm font-medium text-fd-muted-foreground sm:h-10 sm:w-10"
@@ -61,7 +57,7 @@ function CopySlugButton({ slug }: { slug: string }) {
   );
 }
 
-function ToolkitRow({ toolkit }: { toolkit: Toolkit }) {
+function ToolkitRow({ toolkit }: { toolkit: ToolkitSummary }) {
   return (
     <Link
       href={`/toolkits/${toolkit.slug}`}
@@ -90,16 +86,43 @@ function ToolkitRow({ toolkit }: { toolkit: Toolkit }) {
   );
 }
 
-export function ToolkitsLanding() {
+export function ToolkitsLanding({ toolkits }: ToolkitsLandingProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('all');
+
+  // Show data generation message if no toolkits at all
+  if (toolkits.length === 0) {
+    return (
+      <div className="space-y-5 sm:space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-fd-foreground sm:text-3xl">Toolkits</h1>
+          <p className="mt-1.5 text-sm text-fd-muted-foreground sm:mt-2 sm:text-base">
+            Browse toolkits supported by Composio
+          </p>
+        </div>
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+          <p className="text-fd-foreground">Toolkit data is not available.</p>
+          <p className="mt-2 text-sm text-fd-muted-foreground">
+            Run <code className="rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs">bun run generate:toolkits</code> to generate toolkit data.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Get unique categories from passed toolkits
+  const categories = useMemo(() => {
+    return Array.from(
+      new Set(toolkits.map((t) => t.category).filter(Boolean))
+    ).sort() as string[];
+  }, [toolkits]);
 
   // Get popular toolkits
   const popularToolkits = useMemo(() => {
     return POPULAR_SLUGS
       .map((slug) => toolkits.find((t) => t.slug === slug))
-      .filter((t): t is Toolkit => t !== undefined);
-  }, []);
+      .filter((t): t is ToolkitSummary => t !== undefined);
+  }, [toolkits]);
 
   const filteredToolkits = useMemo(() => {
     let result = toolkits;
@@ -125,7 +148,7 @@ export function ToolkitsLanding() {
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
-    const groups: Record<string, Toolkit[]> = {};
+    const groups: Record<string, ToolkitSummary[]> = {};
 
     // First sort all toolkits alphabetically (trim to handle leading spaces)
     const sorted = [...filteredToolkits].sort((a, b) =>

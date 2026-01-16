@@ -3,12 +3,153 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
-import type { Toolkit, Tool, Trigger } from '@/types/toolkit';
+import type { Toolkit, Tool, Trigger, ParametersSchema, SchemaProperty, AuthConfigDetail, AuthField } from '@/types/toolkit';
 
 interface ToolkitDetailProps {
   toolkit: Toolkit;
   tools: Tool[];
   triggers: Trigger[];
+}
+
+function getTypeString(prop: SchemaProperty): string {
+  if (Array.isArray(prop.type)) {
+    return prop.type.join(' | ');
+  }
+  if (prop.type === 'array' && prop.items) {
+    const itemType = getTypeString(prop.items);
+    return `${itemType}[]`;
+  }
+  return prop.type || 'any';
+}
+
+function SchemaTable({ schema, title }: { schema: ParametersSchema; title: string }) {
+  if (!schema?.properties || Object.keys(schema.properties).length === 0) {
+    return null;
+  }
+
+  const requiredFields = new Set(schema.required || []);
+
+  return (
+    <div className="mt-3">
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">
+        {title}
+      </h4>
+      <div className="overflow-x-auto rounded-md border border-fd-border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-fd-border bg-fd-muted/50">
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Name</th>
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Type</th>
+              <th className="px-3 py-2 text-left font-medium text-fd-foreground">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(schema.properties).map(([name, prop]) => (
+              <tr key={name} className="border-b border-fd-border/50 last:border-0">
+                <td className="px-3 py-2 align-top">
+                  <code className="rounded bg-fd-muted px-1 py-0.5 text-xs">{name}</code>
+                  {requiredFields.has(name) && (
+                    <span className="ml-1 text-xs text-orange-500">*</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 align-top">
+                  <code className="text-xs text-fd-muted-foreground">{getTypeString(prop)}</code>
+                </td>
+                <td className="px-3 py-2 align-top text-fd-muted-foreground">
+                  {prop.description || '—'}
+                  {prop.default !== undefined && (
+                    <span className="ml-2 text-xs">
+                      (default: <code className="rounded bg-fd-muted px-1">{String(prop.default)}</code>)
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AuthFieldsTable({ fields }: { fields: AuthField[] }) {
+  if (!fields || fields.length === 0) return null;
+
+  return (
+    <div className="overflow-x-auto rounded-md border border-fd-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-fd-border bg-fd-muted/50">
+            <th className="px-3 py-2 text-left font-medium text-fd-foreground">Field</th>
+            <th className="px-3 py-2 text-left font-medium text-fd-foreground">Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fields.map((field, index) => (
+            <tr key={`${field.name}-${index}`} className="border-b border-fd-border/50 last:border-0">
+              <td className="px-3 py-2 align-top">
+                <code className="rounded bg-fd-muted px-1 py-0.5 text-xs">{field.displayName || field.name}</code>
+                {field.required && <span className="ml-1 text-xs text-orange-500">*</span>}
+              </td>
+              <td className="px-3 py-2 align-top">
+                <code className="text-xs text-fd-muted-foreground">{field.type}</code>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AuthConfigSection({ authConfigDetails }: { authConfigDetails: AuthConfigDetail[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!authConfigDetails || authConfigDetails.length === 0) return null;
+
+  // Combine required and optional fields into one array
+  const combineFields = (section?: { required: AuthField[]; optional: AuthField[] }) => {
+    if (!section) return [];
+    return [...(section.required || []), ...(section.optional || [])];
+  };
+
+  return (
+    <div className="rounded-md border border-fd-border">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-fd-accent/30"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-fd-foreground">Authentication</span>
+          {authConfigDetails.map((config) => (
+            <span
+              key={config.name}
+              className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-foreground"
+            >
+              {config.mode}
+            </span>
+          ))}
+        </div>
+        <span className="text-fd-muted-foreground">
+          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </span>
+      </button>
+      {expanded && (
+        <div className="border-t border-fd-border bg-fd-muted/20 px-4 py-4 space-y-6">
+          {authConfigDetails.map((config) => (
+            <div key={config.name}>
+              <h4 className="text-sm font-medium text-fd-foreground mb-3">{config.mode}</h4>
+
+              <AuthFieldsTable fields={[
+                ...combineFields(config.fields.auth_config_creation),
+                ...combineFields(config.fields.connected_account_initiation),
+              ]} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ToolkitIcon({ toolkit }: { toolkit: Toolkit }) {
@@ -36,6 +177,19 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Type guard to check if item is a Tool
+  const isTool = (item: Tool | Trigger): item is Tool => {
+    return 'inputParameters' in item || 'outputParameters' in item;
+  };
+
+  // Type guard to check if item is a Trigger
+  const isTrigger = (item: Tool | Trigger): item is Trigger => {
+    return 'payload' in item;
+  };
+
+  const hasToolParams = isTool(item) && (item.inputParameters || item.outputParameters);
+  const hasTriggerPayload = isTrigger(item) && item.payload;
+
   return (
     <div className="border-b border-fd-border/50 last:border-0">
       <button
@@ -60,6 +214,25 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
       {expanded && (
         <div className="bg-fd-muted/20 px-4 py-3 pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
+
+          {/* Show input/output parameters for Tools */}
+          {isTool(item) && hasToolParams && (
+            <div className="mt-4 space-y-4">
+              {item.inputParameters && (
+                <SchemaTable schema={item.inputParameters} title="Input Parameters" />
+              )}
+              {item.outputParameters && (
+                <SchemaTable schema={item.outputParameters} title="Output Response" />
+              )}
+            </div>
+          )}
+
+          {/* Show payload for Triggers */}
+          {isTrigger(item) && hasTriggerPayload && (
+            <div className="mt-4">
+              <SchemaTable schema={item.payload!} title="Payload" />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -170,22 +343,14 @@ export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) 
                   Authentication guide
                 </Link>
               </div>
-              {toolkit.authSchemes.length > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-fd-muted-foreground">
-                  <span>Auth:</span>
-                  {toolkit.authSchemes.map((scheme, index) => (
-                    <span
-                      key={`${scheme}-${index}`}
-                      className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-foreground"
-                    >
-                      {scheme}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
       </div>
+
+      {/* Authentication Configuration */}
+      {toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0 && (
+        <AuthConfigSection authConfigDetails={toolkit.authConfigDetails} />
+      )}
 
       {/* Tools & Triggers */}
       {(tools.length > 0 || triggers.length > 0) && (

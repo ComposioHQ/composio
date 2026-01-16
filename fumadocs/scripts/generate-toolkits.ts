@@ -2,37 +2,46 @@
  * Toolkit Generator Script
  *
  * Fetches all toolkits from Composio API and generates:
- * - /public/data/toolkits.json (all toolkits with tools & triggers)
+ * - /public/data/toolkits.json.gz (lightweight list for index page)
+ * - /public/data/toolkits/{slug}.json.gz (individual gzipped files for detail pages)
  *
  * Run: bun run generate:toolkits
+ *
+ * Local dev: Skips if data exists. Set FORCE_TOOLKIT_REGEN=true to regenerate.
+ * Vercel: Always regenerates fresh data on every deploy.
  */
 
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, rm } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join } from 'path';
+import { gzipSync } from 'zlib';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
+
+const OUTPUT_DIR = join(process.cwd(), 'public/data');
+const INDEX_FILE = join(OUTPUT_DIR, 'toolkits.json.gz');
+const TOOLKITS_DIR = join(OUTPUT_DIR, 'toolkits');
+
+// On Vercel, always regenerate. Locally, skip if exists (for faster dev).
+const isVercel = !!process.env.VERCEL;
+const FORCE_REGEN = isVercel || process.env.FORCE_TOOLKIT_REGEN === 'true';
+
+// Skip if data exists locally (dev convenience)
+if (!FORCE_REGEN && existsSync(INDEX_FILE) && existsSync(TOOLKITS_DIR)) {
+  console.log('✓ Toolkit data exists, skipping (set FORCE_TOOLKIT_REGEN=true to regenerate)');
+  process.exit(0);
+}
 
 if (!API_KEY) {
   console.error('Error: COMPOSIO_API_KEY environment variable is required');
   process.exit(1);
 }
 
-const OUTPUT_DIR = join(process.cwd(), 'public/data');
+console.log(isVercel ? 'Vercel build - generating fresh data...' : 'Generating toolkit data...');
 
-interface Tool {
-  slug: string;
-  name: string;
-  description: string;
-}
-
-interface Trigger {
-  slug: string;
-  name: string;
-  description: string;
-}
-
-interface Toolkit {
+// Types
+interface ToolkitSummary {
   slug: string;
   name: string;
   logo: string | null;
@@ -42,10 +51,52 @@ interface Toolkit {
   toolCount: number;
   triggerCount: number;
   version: string | null;
-  tools: Tool[];
-  triggers: Trigger[];
 }
 
+interface Tool {
+  slug: string;
+  name: string;
+  description: string;
+  inputParameters?: ParametersSchema;
+  outputParameters?: ParametersSchema;
+}
+
+interface Trigger {
+  slug: string;
+  name: string;
+  description: string;
+  payload?: ParametersSchema;
+}
+
+interface ParametersSchema {
+  type: 'object';
+  properties: Record<string, unknown>;
+  required?: string[];
+}
+
+interface AuthField {
+  name: string;
+  displayName: string;
+  type: string;
+  required: boolean;
+}
+
+interface AuthConfigDetail {
+  name: string;
+  mode: string;
+  fields: {
+    auth_config_creation?: { required: AuthField[]; optional: AuthField[] };
+    connected_account_initiation?: { required: AuthField[]; optional: AuthField[] };
+  };
+}
+
+interface ToolkitFull extends ToolkitSummary {
+  tools: Tool[];
+  triggers: Trigger[];
+  authConfigDetails: AuthConfigDetail[];
+}
+
+// API Fetching Functions
 async function fetchToolkits(): Promise<any[]> {
   console.log('Fetching toolkits from API...');
 
@@ -82,7 +133,6 @@ async function fetchToolkitChangelog(): Promise<Map<string, string>> {
   const data = await response.json();
   const versionMap = new Map<string, string>();
 
-  // Response format: { items: [{ slug, name, display_name, versions: [{ version, changelog }] }] }
   const items = data.items || [];
   for (const entry of items) {
     const slug = entry.slug?.toLowerCase();
@@ -96,28 +146,72 @@ async function fetchToolkitChangelog(): Promise<Map<string, string>> {
   return versionMap;
 }
 
+async function fetchAllItems<T>(
+  baseUrl: string,
+  params: Record<string, string>,
+  transform: (item: any) => T
+): Promise<T[]> {
+  const allItems: T[] = [];
+  let cursor: string | undefined;
+  const limit = 1000; // API max is 1000
+
+  do {
+    const url = new URL(baseUrl);
+    Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+    url.searchParams.set('limit', limit.toString());
+    if (cursor) {
+      url.searchParams.set('cursor', cursor);
+    }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY!,
+      },
+    });
+
+    if (!response.ok) break;
+
+    const data = await response.json();
+    const items = data.items || data || [];
+    allItems.push(...items.map(transform));
+
+    // Check for next page cursor
+    cursor = data.next_cursor || data.nextCursor;
+  } while (cursor);
+
+  return allItems;
+}
+
 async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
-  const response = await fetch(`${API_BASE}/tools?toolkit_slug=${slug}&limit=1000`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
-    },
-  });
-
-  if (!response.ok) return [];
-
-  const data = await response.json();
-  const items = data.items || data || [];
-
-  return items.map((raw: any) => ({
-    slug: raw.slug || '',
-    name: raw.name || raw.display_name || raw.slug || '',
-    description: raw.description || '',
-  }));
+  return fetchAllItems<Tool>(
+    `${API_BASE}/tools`,
+    { toolkit_slug: slug, toolkit_versions: 'latest' },
+    (raw) => ({
+      slug: raw.slug || '',
+      name: raw.name || raw.slug || '',
+      description: raw.description || '',
+      inputParameters: transformSchema(raw.input_parameters),
+      outputParameters: transformSchema(raw.output_parameters),
+    })
+  );
 }
 
 async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
-  const response = await fetch(`${API_BASE}/triggers_types?toolkit_slugs=${slug}`, {
+  return fetchAllItems<Trigger>(
+    `${API_BASE}/triggers_types`,
+    { toolkit_slugs: slug, toolkit_versions: 'latest' },
+    (raw) => ({
+      slug: raw.slug || '',
+      name: raw.name || raw.slug || '',
+      description: raw.description || '',
+      payload: transformSchema(raw.payload),
+    })
+  );
+}
+
+async function fetchToolkitAuthDetails(slug: string): Promise<AuthConfigDetail[]> {
+  const response = await fetch(`${API_BASE}/toolkits/${slug}`, {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': API_KEY!,
@@ -127,16 +221,82 @@ async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
   if (!response.ok) return [];
 
   const data = await response.json();
-  const items = data.items || data || [];
+  const authDetails = data.auth_config_details || [];
 
-  return items.map((raw: any) => ({
-    slug: raw.slug || '',
-    name: raw.name || raw.display_name || raw.slug || '',
-    description: raw.description || '',
+  return authDetails.map((raw: any) => ({
+    name: raw.name || '',
+    mode: raw.mode || '',
+    fields: {
+      auth_config_creation: raw.fields?.auth_config_creation
+        ? {
+            required: (raw.fields.auth_config_creation.required || []).map(mapAuthField),
+            optional: (raw.fields.auth_config_creation.optional || []).map(mapAuthField),
+          }
+        : undefined,
+      connected_account_initiation: raw.fields?.connected_account_initiation
+        ? {
+            required: (raw.fields.connected_account_initiation.required || []).map(mapAuthField),
+            optional: (raw.fields.connected_account_initiation.optional || []).map(mapAuthField),
+          }
+        : undefined,
+    },
   }));
 }
 
-function transformToolkit(raw: any): Toolkit {
+// Transform helpers - trim schema to essential fields only
+function trimSchemaProperty(prop: any): Record<string, unknown> {
+  const trimmed: Record<string, unknown> = {};
+
+  // Keep only essential fields
+  if (prop.type) trimmed.type = prop.type;
+  if (prop.description) trimmed.description = prop.description;
+  if (prop.enum) trimmed.enum = prop.enum;
+
+  // Handle nested items (arrays)
+  if (prop.items) {
+    trimmed.items = trimSchemaProperty(prop.items);
+  }
+
+  // Handle nested properties (objects)
+  if (prop.properties) {
+    const trimmedProps: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(prop.properties)) {
+      trimmedProps[key] = trimSchemaProperty(value);
+    }
+    trimmed.properties = trimmedProps;
+  }
+
+  return trimmed;
+}
+
+function transformSchema(raw: any): ParametersSchema | undefined {
+  if (!raw?.properties || Object.keys(raw.properties).length === 0) {
+    return undefined;
+  }
+
+  // Trim each property to essential fields only
+  const trimmedProperties: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw.properties)) {
+    trimmedProperties[key] = trimSchemaProperty(value);
+  }
+
+  return {
+    type: 'object',
+    properties: trimmedProperties,
+    required: raw.required,
+  };
+}
+
+function mapAuthField(f: any): AuthField {
+  return {
+    name: f.name || '',
+    displayName: f.displayName || f.display_name || f.name || '',
+    type: f.type || 'string',
+    required: f.required ?? f.is_required ?? false,
+  };
+}
+
+function transformToolkitSummary(raw: any): ToolkitSummary {
   return {
     slug: raw.slug?.toLowerCase() || '',
     name: raw.name || raw.slug || '',
@@ -144,74 +304,112 @@ function transformToolkit(raw: any): Toolkit {
     description: raw.meta?.description || raw.description || '',
     category: raw.meta?.categories?.[0]?.name || raw.meta?.categories?.[0] || null,
     authSchemes: raw.auth_schemes || raw.authSchemes || [],
-    toolCount: raw.tool_count || raw.toolCount || 0,
-    triggerCount: raw.trigger_count || raw.triggerCount || 0,
+    toolCount: raw.meta?.tools_count || raw.tool_count || raw.toolCount || 0,
+    triggerCount: raw.meta?.triggers_count || raw.trigger_count || raw.triggerCount || 0,
     version: null,
-    tools: [],
-    triggers: [],
   };
 }
 
 async function main() {
   console.log('Starting toolkit generation...\n');
 
-  // Create output directory
+  // Create output directories
   await mkdir(OUTPUT_DIR, { recursive: true });
 
-  // Fetch all toolkits and changelog in parallel
+  // Clean and recreate toolkits directory
+  try {
+    await rm(TOOLKITS_DIR, { recursive: true, force: true });
+  } catch {
+    // Directory might not exist
+  }
+  await mkdir(TOOLKITS_DIR, { recursive: true });
+
+  // Fetch base data
   const [rawToolkits, versionMap] = await Promise.all([
     fetchToolkits(),
     fetchToolkitChangelog(),
   ]);
   console.log(`Found ${rawToolkits.length} toolkits\n`);
 
-  // Transform toolkits
-  const toolkits: Toolkit[] = rawToolkits.map(transformToolkit);
-
-  // Add versions from changelog
-  for (const toolkit of toolkits) {
+  // Transform to summaries
+  const summaries: ToolkitSummary[] = rawToolkits.map(transformToolkitSummary);
+  for (const toolkit of summaries) {
     toolkit.version = versionMap.get(toolkit.slug) || null;
   }
 
-  // Fetch tools and triggers for each toolkit in batches
-  console.log('Fetching tools and triggers...');
-  const batchSize = 10;
-  let completed = 0;
+  // Write lightweight file for list page (gzipped)
+  const indexJson = JSON.stringify(summaries);
+  const indexGzipped = gzipSync(indexJson);
+  await writeFile(join(OUTPUT_DIR, 'toolkits.json.gz'), indexGzipped);
+  console.log(`Written: toolkits.json.gz (${Math.round(indexGzipped.length / 1024)}KB, uncompressed: ${Math.round(indexJson.length / 1024)}KB)`);
 
-  for (let i = 0; i < toolkits.length; i += batchSize) {
-    const batch = toolkits.slice(i, i + batchSize);
+  // On preview, skip individual toolkit files (saves ~2 min)
+  // Individual toolkit pages will 404, but landing page works
+  if (process.env.VERCEL_ENV === 'preview') {
+    console.log('\nPreview build - skipping individual toolkit files');
+    console.log('Landing page works, individual pages will 404');
+    return;
+  }
+
+  // Fetch full details for each toolkit and write individual files
+  console.log('\nFetching detailed data and writing individual files...');
+  const batchSize = 50; // Parallel toolkit fetches
+  const delayBetweenBatches = 100; // Brief delay to avoid rate limits
+  let completed = 0;
+  let totalSize = 0;
+  let largestFile = { slug: '', size: 0 };
+
+  for (let i = 0; i < summaries.length; i += batchSize) {
+    const batch = summaries.slice(i, i + batchSize);
 
     await Promise.all(
-      batch.map(async (toolkit) => {
-        const [tools, triggers] = await Promise.all([
-          fetchToolsForToolkit(toolkit.slug.toUpperCase()),
-          fetchTriggersForToolkit(toolkit.slug.toUpperCase()),
+      batch.map(async (summary) => {
+        const [tools, triggers, authConfigDetails] = await Promise.all([
+          fetchToolsForToolkit(summary.slug),
+          fetchTriggersForToolkit(summary.slug),
+          fetchToolkitAuthDetails(summary.slug),
         ]);
 
-        toolkit.tools = tools;
-        toolkit.triggers = triggers;
-        toolkit.toolCount = tools.length;
-        toolkit.triggerCount = triggers.length;
+        const fullToolkit: ToolkitFull = {
+          ...summary,
+          tools,
+          triggers,
+          authConfigDetails,
+          toolCount: tools.length,
+          triggerCount: triggers.length,
+        };
+
+        // Write individual toolkit file (gzipped)
+        const json = JSON.stringify(fullToolkit);
+        const gzipped = gzipSync(json);
+        const filePath = join(TOOLKITS_DIR, `${summary.slug}.json.gz`);
+        await writeFile(filePath, gzipped);
+
+        // Track sizes (compressed)
+        const fileSize = gzipped.length;
+        totalSize += fileSize;
+        if (fileSize > largestFile.size) {
+          largestFile = { slug: summary.slug, size: fileSize };
+        }
 
         completed++;
-        process.stdout.write(`\r  Progress: ${completed}/${toolkits.length}`);
+        process.stdout.write(`\r  Progress: ${completed}/${summaries.length}`);
       })
     );
+
+    // Delay between batches to avoid rate limits
+    if (i + batchSize < summaries.length) {
+      await new Promise((resolve) => setTimeout(resolve, delayBetweenBatches));
+    }
   }
 
   console.log('\n');
-
-  // Write single file
-  await writeFile(
-    join(OUTPUT_DIR, 'toolkits.json'),
-    JSON.stringify(toolkits, null, 2)
-  );
-
-  const fileSizeKB = Math.round(JSON.stringify(toolkits).length / 1024);
   console.log('Generation complete!');
-  console.log(`  Output: public/data/toolkits.json`);
-  console.log(`  Toolkits: ${toolkits.length}`);
-  console.log(`  File size: ~${fileSizeKB}KB`);
+  console.log(`  Index file: toolkits.json.gz (${Math.round(indexGzipped.length / 1024)}KB)`);
+  console.log(`  Individual files: ${summaries.length} gzipped files in /public/data/toolkits/`);
+  console.log(`  Total compressed size: ${Math.round(totalSize / 1024 / 1024)}MB`);
+  console.log(`  Largest file: ${largestFile.slug}.json.gz (${Math.round(largestFile.size / 1024)}KB)`);
+  console.log(`  Average file size: ${Math.round(totalSize / summaries.length / 1024)}KB`);
 }
 
 main().catch((error) => {

@@ -1,198 +1,118 @@
-# Toolkits Page - Implementation Plan
+# Toolkits Page
 
-## Decisions Made
+## Design Decisions
 
 ### No Sidebar
-- Toolkits section has no sidebar navigation
-- Only breadcrumb navigation (`← Back to Toolkits`)
-- Keeps UI clean, avoids 855 items in sidebar
+- 862 toolkits would bloat sidebar
+- Breadcrumb navigation only
 
-### No Input Parameters on Toolkit Pages
-- Users don't need param schemas in docs
+### No Input Parameters
 - LLMs read schemas automatically
-- Platform playground is better for exploring params
+- Platform playground is better for exploration
 
 ### No Scopes Display
-- We only have scope names, not descriptions
-- Raw scope strings aren't useful to users
-- Just show auth method badge (OAuth2, API_KEY, etc.)
+- Only have scope names, not descriptions
+- Auth method badge is sufficient
 
-### Search-First Experience
-- Landing page shows search + category filter + cards
-- Don't render all 855 cards upfront
-- Filter client-side from pre-generated JSON
-
-### Build-Time Generation
-- `bun run generate:toolkits` - separate command
-- Not run on `bun run dev` (too slow)
-- Run on CI push
-- JSON files committed to git (works offline)
+### Search-First Landing
+- Search + category filter + cards
+- Client-side filtering from pre-generated JSON
 
 ---
 
 ## URL Structure
 
 ```
-/toolkits                   → Landing page (search + filter + cards)
-/toolkits/premium-tools     → Premium tools pricing/limits info
+/toolkits                   → Landing (search + filter + cards)
+/toolkits/premium-tools     → Premium tools info (MDX)
 /toolkits/{slug}            → Individual toolkit page
 ```
 
 ---
 
-## Landing Page (`/toolkits`)
+## Data Architecture
+
+### File Structure
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Toolkits                                   [Request Tools →] │
-│ All the toolkits that we support.                           │
-│                                                              │
-│ 🔍 Search toolkits...                                        │
-│                                                              │
-│ [All] [Communication] [Developer Tools] [CRM] [Storage]...  │
-│                                                              │
-│ ┌─────────┐ ┌─────────┐ ┌─────────┐                         │
-│ │ Gmail   │ │ Slack   │ │ GitHub  │                         │
-│ │ GMAIL   │ │ SLACK   │ │ GITHUB  │                         │
-│ │ desc... │ │ desc... │ │ desc... │                         │
-│ │[OAUTH2] │ │[OAUTH2] │ │[OAUTH2] │                         │
-│ │ 🔧37 ⚡2 │ │ 🔧130 ⚡9│ │ 🔧829 ⚡6│                         │
-│ └─────────┘ └─────────┘ └─────────┘                         │
-│                                                              │
-│ ⭐ Some tools are premium. [Learn about pricing →]           │
-└─────────────────────────────────────────────────────────────┘
+public/data/
+├── toolkits.json.gz          # Index (~64KB compressed)
+└── toolkits/
+    ├── gmail.json.gz         # Full toolkit data (~8KB avg)
+    ├── github.json.gz
+    └── ... (862 files, ~7MB total)
 ```
+
+### Why Gzip + Individual Files?
+
+- Gzip: 45MB → 7MB (85% reduction)
+- Per-toolkit files: detail pages load only what they need
+- Server-side decompression: 2-9ms, negligible
+
+### Why Not Git?
+
+- 862 auto-generated files would bloat git history
+- Generated at build time, not committed
 
 ---
 
-## Individual Toolkit Page (`/toolkits/{slug}`)
+## Build Strategy
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ ← Back to Toolkits                                          │
-│                                                              │
-│ [Logo] Gmail                         [Open in Platform →]   │
-│ GMAIL (copy)                                                │
-│ Gmail is Google's email service...                          │
-│                                                              │
-│ [OAuth2]  37 Tools  2 Triggers  Communication               │
-├─────────────────────────────────────────────────────────────┤
-│ ## Authentication                                            │
-│ This toolkit uses OAuth2.                                   │
-│ [Create Auth Config →]  [How authentication works →]        │
-├─────────────────────────────────────────────────────────────┤
-│ ## Tools                                                     │
-│ 🔍 Search tools...                                           │
-│                                                              │
-│ | Name              | Description                           │
-│ |-------------------|---------------------------------------|
-│ | Send email        | Sends an email message to...          │
-│ | Create draft      | Creates a draft email...              │
-├─────────────────────────────────────────────────────────────┤
-│ ## Triggers (only if count > 0)                              │
-│ | Name              | Description                           │
-│ |-------------------|---------------------------------------|
-│ | New email         | Fires when a new email arrives...     │
-└─────────────────────────────────────────────────────────────┘
-```
+- **Production**: Full generation (~2 min) - all pages static
+- **Preview**: Index only (~30s) - landing works, individual pages 404
+- **Local dev**: Skips if data exists
 
----
-
-## Data & Generation
-
-### Single File Architecture
-
-All toolkit data (including tools and triggers) is stored in a **single JSON file**:
-
-```
-/public/data/toolkits.json     → All toolkits with tools & triggers (~5-10MB)
-```
-
-### Why Single File?
-
-- **Fully static** - No API calls at runtime, fast and reliable
-- **No repo bloat** - One file instead of 800+ individual files
-- **Git-friendly** - Git compresses JSON well
-- **Simple** - Easy to understand and maintain
-- **Open source friendly** - Public data, no secrets
+Fast preview builds enable quick iteration. Individual toolkit pages rarely need testing on preview.
 
 ### Generator Script
-`scripts/generate-toolkits.ts`
 
-Run: `bun run generate:toolkits`
+```typescript
+// Generate index (summaries) - always
+await generateIndex();
 
-### JSON Structure
-
-```json
-// toolkits.json
-[
-  {
-    "slug": "gmail",
-    "name": "Gmail",
-    "logo": "https://...",
-    "description": "Gmail is Google's...",
-    "category": "Communication",
-    "authSchemes": ["OAUTH2"],
-    "toolCount": 37,
-    "triggerCount": 2,
-    "version": "20260102_00",
-    "tools": [
-      { "slug": "GMAIL_SEND_EMAIL", "name": "Send email", "description": "..." }
-    ],
-    "triggers": [
-      { "slug": "GMAIL_NEW_EMAIL", "name": "New email", "description": "..." }
-    ]
-  }
-]
-```
-
----
-
-## Scripts
-
-```json
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "generate:toolkits": "bun scripts/generate-toolkits.ts"
-  }
+// On preview, skip individual files
+if (process.env.VERCEL_ENV === 'preview') {
+  return; // Landing page works, details 404
 }
+
+// Production: generate all individual toolkit files
+await generateIndividualFiles();
 ```
 
-| Command | Regenerates? | Use case |
-|---------|--------------|----------|
-| `bun run dev` | ❌ | Local dev |
-| `bun run build` | ❌ | Fast build |
-| `bun run generate:toolkits` | ✅ | Manual |
-| CI push | ✅ | Auto regenerate |
+### Environment Variables
+
+```
+COMPOSIO_API_KEY        # Required
+COMPOSIO_API_BASE       # Optional, defaults to prod API
+FORCE_TOOLKIT_REGEN     # Set "true" to regenerate locally
+```
 
 ---
 
-## Components to Build
+## Runtime Data Loading
 
-1. `ToolkitSearch` - Search input
-2. `CategoryFilter` - Filter chips  
-3. `ToolkitCard` - Individual card
-4. `ToolkitGrid` - Cards container
-5. `ToolsTable` - Searchable tools table
-6. `Breadcrumb` - Navigation
+`lib/toolkit-data.ts` - Simple gzip reader:
 
----
+```typescript
+async function readGzippedJson<T>(filePath: string): Promise<T> {
+  const compressed = await readFile(filePath);
+  const decompressed = gunzipSync(compressed);
+  return JSON.parse(decompressed.toString('utf-8'));
+}
 
-## Implementation Order
+// Returns null on error (graceful degradation)
+export async function getToolkitBySlug(slug: string): Promise<Toolkit | null>
 
-1. [x] Generator script (`scripts/generate-toolkits.ts`)
-2. [x] Landing page + components (category grouping, alphabet sections)
-3. [x] Individual toolkit page (version display, auth badges, tool/trigger list with copy)
-4. [x] Premium tools page (`/toolkits/premium-tools`)
-5. [x] Hybrid architecture (static index + server-side API fetch)
-6. [ ] Polish/styling
-7. [ ] CI hooks for auto-regeneration
+// Returns [] on error (graceful degradation)
+export async function getToolkitSummaries(): Promise<ToolkitSummary[]>
+```
 
 ---
 
-## Future: CI Hooks
+## Key Principles
 
-- Trigger docs regeneration from toolkit repo changes
-- Trigger docs regeneration from API repo changes
+1. **Static pages everywhere** - All 862 pages pre-rendered at build time
+2. **Fresh data on every deploy** - No caching, no stale data
+3. **Simple over fast** - 2 min build is acceptable for simplicity
+4. **No git bloat** - Generated files not committed
+5. **Graceful degradation** - Empty arrays/null on errors
