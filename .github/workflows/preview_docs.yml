@@ -58,6 +58,6 @@ jobs:
           echo "Preview your docs: $URL" > preview_url.txt
 
       - name: Comment URL in PR
-        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77571d79be56e96dcb1d # v2.4.3
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # 3.0.1
         with:
-          filePath: fern/preview_url.txt
+          file-path: fern/preview_url.txt

@@ -56,7 +56,7 @@ jobs:
 
       - name: Post audit comment to PR
         if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@71efef56b184328c478a1e6587f8622fcfbaa07e # v3.0.1
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # 3.0.1
         with:
           file-path: audit-comment.txt
           comment-tag: pnpm-audit-security-warning
