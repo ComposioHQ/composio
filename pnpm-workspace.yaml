@@ -34,7 +34,8 @@ catalog:
   zod: ^4.1.0
   zod-to-json-schema: ^3.25.1
 
-minimumReleaseAge: 1440
+# minimum number of minutes that must pass after a version is published before pnpm will install it
+minimumReleaseAge: 300 # 5 hours. In most cases, malicious releases are discovered and removed from the registry within an hour.
 
 minimumReleaseAgeExclude:
   - '@composio/client'

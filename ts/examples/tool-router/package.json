@@ -1,7 +1,7 @@
 {
   "name": "tool-router-example",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.10",
   "description": "Example project for Tool-router",
   "main": "src/index.ts",
   "scripts": {
@@ -19,7 +19,7 @@
   "packageManager": "pnpm@10.28.0",
   "dependencies": {
     "@ai-sdk/mcp": "^0.0.11",
-    "@ai-sdk/openai": "^2.0.72",
+    "@ai-sdk/openai": "^3.0.11",
     "@anthropic-ai/claude-agent-sdk": "^0.1.55",
     "@composio/core": "workspace:*",
     "@composio/openai-agents": "workspace:*",

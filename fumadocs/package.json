@@ -30,7 +30,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@ai-sdk/anthropic": "^3.0.12",
+    "@ai-sdk/anthropic": "^3.0.11",
     "@ai-sdk/mcp": "^1.0.6",
     "@ai-sdk/openai": "^3.0.9",
     "@anthropic-ai/claude-agent-sdk": "^0.2.5",
