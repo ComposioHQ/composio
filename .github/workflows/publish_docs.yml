@@ -41,6 +41,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+        env:
+          BYPASS_BUN_VERSION_CHECK: '1'
+
       - name: Install Python Dependencies
         working-directory: ./fern
         run: |

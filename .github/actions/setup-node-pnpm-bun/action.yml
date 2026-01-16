@@ -1,5 +1,5 @@
-name: 'Setup Node.js with PNPM'
-description: 'Sets up Node.js and PNPM with caching, using .nvmrc for version'
+name: 'Setup Node.js, pnpm, Bun'
+description: 'Sets up Node.js and pnpm with caching (using .nvmrc for version), and Bun (using .bun-version for version)'
 
 inputs:
   node-version:
@@ -10,15 +10,23 @@ inputs:
     description: 'Path to .nvmrc or similar file'
     required: false
     default: '.nvmrc'
+  bun-version:
+    description: 'Bun version to use. Defaults to .bun-version file'
+    required: false
+    default: ''
+  bun-version-file:
+    description: 'Path to .bun-version or similar file'
+    required: false
+    default: '.bun-version'
   enable-caching:
-    description: 'Enable PNPM caching'
+    description: 'Enable pnpm caching'
     required: false
     default: 'true'
 
 runs:
   using: 'composite'
   steps:
-    - name: Setup PNPM
+    - name: Setup pnpm
       uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
 
     - name: Setup Node.js
@@ -27,3 +35,9 @@ runs:
         node-version: ${{ inputs.node-version }}
         node-version-file: ${{ inputs.node-version == '' && inputs.node-version-file || '' }}
         cache: ${{ inputs.enable-caching == 'true' && 'pnpm' || '' }}
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@db6bcf6eb8d88a8aa03265b887ec7bd84d64cd68 # v2.0.2
+      with:
+        bun-version: ${{ inputs.bun-version }}
+        bun-version-file: ${{ inputs.bun-version == '' && inputs.bun-version-file || '' }}

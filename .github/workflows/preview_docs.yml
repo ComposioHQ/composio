@@ -20,6 +20,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+        env:
+          BYPASS_BUN_VERSION_CHECK: '1'
 
       - name: Install git
         run: |

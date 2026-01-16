@@ -34,8 +34,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup Node.js with PNPM
-        uses: ./.github/actions/setup-node-pnpm
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -68,8 +68,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup Node.js with PNPM
-        uses: ./.github/actions/setup-node-pnpm
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
         with:
           node-version: '22.12.0'
 

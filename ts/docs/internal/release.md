@@ -36,7 +36,7 @@ The manual release process is available for cases where direct control over the 
 ### Prerequisites
 
 - Node.js (Latest LTS)
-- PNPM (v10.8.0 or later)
+- pnpm (v10.8.0 or later)
 - Access to npm registry
 - Write access to the repository
 
