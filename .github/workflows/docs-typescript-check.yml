@@ -3,14 +3,14 @@ name: Docs - TypeScript Code Validation
 on:
   pull_request:
     paths:
-      - 'fumadocs/**'
+      - 'docs/**'
 
 jobs:
   typescript-check:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./fumadocs
+        working-directory: ./docs
 
     steps:
       - name: Checkout repository

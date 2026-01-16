@@ -13,7 +13,7 @@ uv run --with griffe python scripts/generate-docs.py
 
 1. griffe extracts docstrings from `composio/**/*.py` → structured data
 2. `generate-docs.py` transforms data → MDX files
-3. Output written to `fumadocs/content/reference/sdk-reference/python/`
+3. Output written to `docs/content/reference/sdk-reference/python/`
 
 ## Configuration
 

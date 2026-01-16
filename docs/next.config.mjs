@@ -28,7 +28,7 @@ const config = {
         destination: '/tool-router',
         permanent: true,
       },
-      // Provider redirects (old fern URLs -> new fumadocs URLs)
+      // Provider redirects (old fern URLs -> new docs URLs)
       {
         source: '/providers/openai',
         destination: '/docs/providers/openai',
