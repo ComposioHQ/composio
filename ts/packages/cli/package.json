@@ -4,7 +4,7 @@
   "description": "Composio CLI",
   "main": "./dist/bin.mjs",
   "bin": {
-    "composio": "./dist/composio"
+    "composio": "./bin/composio.mjs"
   },
   "type": "module",
   "repository": {
@@ -19,6 +19,7 @@
   },
   "files": [
     "README.md",
+    "bin",
     "dist"
   ],
   "scripts": {
