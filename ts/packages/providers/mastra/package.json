@@ -1,6 +1,6 @@
 {
   "name": "@composio/mastra",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Agentic Provider for mastra in Composio SDK",
   "main": "src/index.ts",
   "publishConfig": {
@@ -42,7 +42,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
-    "@composio/core": "0.5.1",
+    "@composio/core": "0.5.2",
     "@mastra/core": "^0.21.1",
     "@mastra/mcp": "^0.12.0"
   },

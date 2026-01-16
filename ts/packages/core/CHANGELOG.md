@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.5.2
+
+### Patch Changes
+
+- 277f02b: Fix bundling issues with external providers
+
 ## 0.5.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@composio/langchain",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "",
   "main": "dist/index.js",
   "publishConfig": {
@@ -38,7 +38,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
-    "@composio/core": "0.5.1",
+    "@composio/core": "0.5.2",
     "@langchain/core": "^1.1.4"
   },
   "devDependencies": {
