@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "turbo build",
+    "build:bin": "turbo build:bin --filter=./ts/packages/cli",
     "build:packages": "turbo build --filter=./ts/packages/**",
     "test": "turbo test --filter=./ts/packages/** --filter=!@test-e2e/*",
     "test:e2e": "turbo test:e2e --filter='@test-e2e/*'",
