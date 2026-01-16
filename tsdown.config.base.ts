@@ -61,7 +61,7 @@ export const baseConfig = {
   /**
    * External dependencies that should not be bundled, but provided by the consumer.
    */
-  external: ['zod', /^node:/],
+  external: ['zod', '@composio/core', /^node:/],
 
   /**
    * Control how Node.js built-in module imports are handled.

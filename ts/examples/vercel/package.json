@@ -17,7 +17,7 @@
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.1",
-    "@ai-sdk/openai": "^3.0.1",
+    "@ai-sdk/openai": "^3.0.12",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
