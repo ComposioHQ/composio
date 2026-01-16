@@ -31,29 +31,31 @@ jobs:
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@4d750aec5c86b9f7ca38aab8ac6c2d1a1f6c3e55 # v0.0.21
+        uses: anthropics/claude-code-action@1b8ee3b94104046d71fde52ec3557651ad8c0d71 # v1.0.29
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
-          
+          # Optional: Custom settings and environment variables for Claude
+          # settings: |
+          #   {
+          #     "env": {
+          #       "NODE_ENV": "test",
+          #       "CI": "true"
+          #     }
+          #   }
+
+          # https://code.claude.com/docs/en/cli-reference#cli-flags
+          # -- model: "claude-opus-4-20250514"
+          # claude_args: |
+          #   --allowedTools "Bash(pnpm install),Bash(pnpm build:packages),Bash(pnpm build:bin),Bash(pnpm test:*)"
+          #   --model: "claude-opus-4-20250514"
+          #   --append-system-prompt: |
+            #   Follow our coding standards
+            #   Ensure all new code has tests
+            #   Use TypeScript for new files
+
           # Optional: Customize the trigger phrase (default: @claude)
           # trigger_phrase: "/claude"
           
           # Optional: Trigger when specific user is assigned to an issue
           # assignee_trigger: "claude-bot"
-          
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
-          
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
-          
-          # Optional: Custom environment variables for Claude
-          # claude_env: |
-          #   NODE_ENV: test
-

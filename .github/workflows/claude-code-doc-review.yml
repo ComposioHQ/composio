@@ -29,16 +29,19 @@ jobs:
 
     - name: Run Claude Code Review
       id: claude-review
-      uses: anthropics/claude-code-action@4d750aec5c86b9f7ca38aab8ac6c2d1a1f6c3e55 # v0.0.21
+      uses: anthropics/claude-code-action@1b8ee3b94104046d71fde52ec3557651ad8c0d71 # v1.0.29
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        track_progress: true # Forces tag mode with tracking comments
 
         # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
         # model: "claude-opus-4-20250514"
 
         # Direct prompt for automated review (no @claude mention needed)
-        direct_prompt: |
-          
+        prompt: |
+          REPO: ${{ github.repository }}
+          PR NUMBER: ${{ github.event.pull_request.number }}
+
           Please review this pull request for documentation changes and provide feedback on:
           - Grammar and spelling
           - Clarity and readability
@@ -60,8 +63,10 @@ jobs:
         #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
         #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
 
-        # Optional: Add specific tools for running tests or linting
-        allowed_tools: "Bash(*)"
+        # https://code.claude.com/docs/en/cli-reference#cli-flags
+        # -- model: "claude-opus-4-20250514"
+        claude_args: |
+          --allowedTools "Bash(*)"
 
         # Optional: Skip review for certain conditions
         # if: |
