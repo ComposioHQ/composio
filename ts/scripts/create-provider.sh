@@ -45,7 +45,7 @@ cat > "$TOOLSET_PATH/package.json" << EOL
     "dist"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "bun run --bun tsdown",
     "test": "vitest run"
   },
   "keywords": ["composio", "provider", "${TOOLSET_NAME}"],

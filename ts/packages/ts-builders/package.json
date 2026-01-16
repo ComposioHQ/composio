@@ -35,7 +35,7 @@
   },
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsdown",
+    "build": "bun run --bun tsdown",
     "test": "vitest run"
   },
   "files": [
