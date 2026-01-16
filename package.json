@@ -34,7 +34,7 @@
     "changeset:release": "pnpm run build:packages && changeset publish",
     "changeset:pre-enter": "changeset pre enter",
     "changeset:pre-exit": "changeset pre exit",
-    "clean": "git clean -xdf node_modules",
+    "clean": "git clean -xdf .turbo node_modules ts/packages/**/.turbo ts/packages/**/node_modules ts/packages/**/dist",
     "clean:workspace": "pnpm turbo clean"
   },
   "packageManager": "pnpm@10.28.0",
