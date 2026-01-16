@@ -2,7 +2,7 @@
  * TypeScript SDK Documentation Generator
  *
  * Generates MDX documentation from TypeScript source code using TypeDoc.
- * Output is written to the fumadocs content directory.
+ * Output is written to the docs content directory.
  *
  * Run: pnpm --filter @composio/core generate:docs
  */
@@ -18,7 +18,7 @@ const PACKAGE_DIR = join(SCRIPT_DIR, '..');
 const MODELS_DIR = join(PACKAGE_DIR, 'src/models');
 const OUTPUT_DIR = join(
   PACKAGE_DIR,
-  '../../../fumadocs/content/reference/sdk-reference/typescript'
+  '../../../docs/content/reference/sdk-reference/typescript'
 );
 const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
 

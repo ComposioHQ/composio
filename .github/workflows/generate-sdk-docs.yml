@@ -37,7 +37,7 @@ jobs:
           body: Auto-generated TypeScript SDK docs.
           branch: docs/auto-update-ts-sdk-reference
           base: next
-          add-paths: fumadocs/content/reference/sdk-reference/typescript/
+          add-paths: docs/content/reference/sdk-reference/typescript/
 
   generate-python-docs:
     runs-on: ubuntu-latest
@@ -62,4 +62,4 @@ jobs:
           body: Auto-generated Python SDK docs.
           branch: docs/auto-update-python-sdk-reference
           base: next
-          add-paths: fumadocs/content/reference/sdk-reference/python/
+          add-paths: docs/content/reference/sdk-reference/python/
