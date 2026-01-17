@@ -99,27 +99,33 @@ This auth config is now ready to be used in your application!
 connection_request = composio.connected_accounts.initiate(
     user_id="user_id",
     auth_config_id="ac_1234",
+    callback_url="https://yourapp.com/oauth/callback"
 )
-print(connection_request)
+
+# Redirect the user to connection_request.redirect_url
+print(connection_request.redirect_url)
 
 # Wait for the connection to be established
 connected_account = connection_request.wait_for_connection()
 print(connected_account)
 ```
 ```typescript TypeScript maxLines=60
-const connReq = await composio.connectedAccounts.initiate(userId, "ac_1234");
+const connReq = await composio.connectedAccounts.initiate(userId, "ac_1234", {
+  callbackUrl: "https://yourapp.com/oauth/callback",
+});
 
+// Redirect the user to connReq.redirectUrl
 console.log(connReq.redirectUrl);
 
 const connection = await composio.connectedAccounts.waitForConnection(
-connReq.id
+  connReq.id
 );
 
 console.log(connection);
-
 ```
 
 </CodeGroup>
+
 
 ### White-labeling the OAuth Consent Screen
 
@@ -173,6 +179,7 @@ def authorize_app(toolkit: str):
     connection_request = composio.connected_accounts.initiate(
         user_id=user_id,
         auth_config_id=auth_config_id,
+        callback_url="https://yourapp.com/oauth/callback"
     )
     return RedirectResponse(url=connection_request.redirect_url)
 ```
