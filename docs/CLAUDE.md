@@ -37,7 +37,7 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 1. **CSS variables**: Use `var(--composio-orange)` not `var(--orange)`. Check `global.css` for defined variables.
 2. **Date format**: Changelog dates must be YYYY-MM-DD format (validated in schema and runtime)
 3. **Toolkits data**: `public/data/toolkits.json` must exist - errors are thrown, not silently ignored
-4. **Root directory on Vercel**: Set to `fumadocs` with "Include files outside root directory" DISABLED
+4. **Root directory on Vercel**: Set to `docs` with "Include files outside root directory" DISABLED
 5. **Mobile nav**: Always test CSS changes on mobile. Fumadocs uses different nav patterns (dropdown on mobile, horizontal on desktop). Avoid absolute positioning or pseudo-elements that assume horizontal layout.
 
 ## Twoslash - TypeScript Code Block Type Checking
@@ -49,7 +49,7 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 ### Key features
 - **Default on**: All TypeScript blocks are validated. No annotation needed.
 - **Build-time validation**: Type errors fail the build.
-- **CI enforcement**: `.github/workflows/docs-typescript-check.yml` runs on PRs to fumadocs/
+- **CI enforcement**: `.github/workflows/docs-typescript-check.yml` runs on PRs to docs/
 
 ### Exclusions
 - **Reference docs** (`/content/reference/`): Excluded from Twoslash via collection-level `mdxOptions` in `source.config.ts`. These are auto-generated and don't need type checking.
@@ -127,6 +127,6 @@ const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
 - Run `bun run build` locally to validate all code blocks before pushing
 
 ## Deployment
-- Vercel project: `composio/fumadocs`
+- Vercel project: `composio/docs`
 - Uses `bun install` and `bun run build`
-- Root directory: `fumadocs` (this is a monorepo subfolder)
+- Root directory: `docs` (this is a monorepo subfolder)

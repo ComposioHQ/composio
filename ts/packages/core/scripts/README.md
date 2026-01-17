@@ -12,7 +12,7 @@ pnpm generate:docs
 
 1. TypeDoc extracts JSDoc from `src/models/*.ts` → JSON AST
 2. `generate-docs.ts` transforms AST → MDX files
-3. Output written to `fumadocs/content/reference/sdk-reference/typescript/`
+3. Output written to `docs/content/reference/sdk-reference/typescript/`
 
 ## Configuration
 

@@ -3,7 +3,7 @@
 Python SDK Documentation Generator
 
 Generates MDX documentation from Python source code using griffe.
-Output is written to the fumadocs content directory.
+Output is written to the docs content directory.
 
 Run: cd python && uv run --with griffe python scripts/generate-docs.py
 """
@@ -27,7 +27,7 @@ SCRIPT_DIR = Path(__file__).parent
 PACKAGE_DIR = SCRIPT_DIR.parent
 OUTPUT_DIR = (
     PACKAGE_DIR.parent
-    / "fumadocs"
+    / "docs"
     / "content"
     / "reference"
     / "sdk-reference"

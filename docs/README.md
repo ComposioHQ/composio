@@ -14,7 +14,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 ```
-fumadocs/
+docs/
 ├── app/                  # Next.js app router
 ├── content/              # MDX content
 │   ├── docs/
