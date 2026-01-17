@@ -68,6 +68,7 @@ export class Tools<
   private provider: TProvider;
   private autoUploadDownloadFiles: boolean;
   private toolkitVersions: ToolkitVersionParam;
+  private downloadPath?: string;
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
@@ -82,6 +83,7 @@ export class Tools<
     this.provider = config.provider;
     this.autoUploadDownloadFiles = config?.autoUploadDownloadFiles ?? true;
     this.toolkitVersions = config?.toolkitVersions ?? 'latest';
+    this.downloadPath = config?.downloadPath;
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider.
@@ -145,7 +147,9 @@ export class Tools<
    */
   private async applyDefaultSchemaModifiers(tools: Tool[]): Promise<Tool[]> {
     if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client);
+      const fileToolModifier = new FileToolModifier(this.client, {
+        downloadPath: this.downloadPath,
+      });
       return await Promise.all(
         tools.map(tool =>
           fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
@@ -180,7 +184,9 @@ export class Tools<
     let modifiedParams = params;
     // if auto upload download files is enabled, upload the files to the Composio API
     if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client);
+      const fileToolModifier = new FileToolModifier(this.client, {
+        downloadPath: this.downloadPath,
+      });
       modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
         toolSlug,
         toolkitSlug,
@@ -226,7 +232,9 @@ export class Tools<
     let modifiedResult = result;
     // if auto upload download files is enabled, download the files from the Composio API
     if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client);
+      const fileToolModifier = new FileToolModifier(this.client, {
+        downloadPath: this.downloadPath,
+      });
       modifiedResult = await fileToolModifier.fileDownloadModifier(tool, {
         toolSlug,
         toolkitSlug,

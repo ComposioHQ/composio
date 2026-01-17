@@ -253,10 +253,16 @@ export const downloadFileFromS3 = async ({
   toolSlug,
   s3Url,
   mimeType,
+  downloadPath,
 }: {
   toolSlug: string;
   s3Url: string;
   mimeType: string;
+  /**
+   * Custom directory path for downloading files.
+   * If provided, files will be saved to this directory instead of the default temp directory.
+   */
+  downloadPath?: string;
 }): Promise<FileDownloadData> => {
   const response = await fetch(s3Url);
   if (!response.ok) {
@@ -266,7 +272,10 @@ export const downloadFileFromS3 = async ({
 
   const extension = getExtensionFromMimeType(mimeType);
   const fileName = generateTimestampedFilename(extension, `${toolSlug}_`);
-  const filePath = saveFile(fileName, Buffer.from(data), true);
+  const filePath = saveFile(fileName, Buffer.from(data), {
+    isTempFile: true,
+    customDir: downloadPath,
+  });
   return {
     name: fileName,
     mimeType: mimeType,
@@ -326,23 +335,60 @@ export const getComposioTempFilesDir = (createDirIfNotExists: boolean = false) =
 };
 
 /**
- * Saves a file to the Composio directory.
+ * Options for saving a file.
+ */
+export type SaveFileOptions = {
+  /**
+   * Whether the file is a temporary file.
+   * @default false
+   */
+  isTempFile?: boolean;
+  /**
+   * Custom directory path for saving the file.
+   * If provided, the file will be saved to this directory instead of the default Composio directory.
+   */
+  customDir?: string;
+};
+
+/**
+ * Saves a file to the Composio directory or a custom directory.
  * @param file - The name of the file to save.
  * @param content - The content of the file to save. Can be a string or Buffer.
- * @param isTempFile - Whether the file is a temporary file.
+ * @param options - Options for saving the file. Can be a boolean for backwards compatibility (isTempFile).
  * @returns The path to the saved file.
  */
-export const saveFile = (file: string, content: string | Buffer, isTempFile: boolean = false) => {
+export const saveFile = (
+  file: string,
+  content: string | Buffer,
+  options: SaveFileOptions | boolean = false
+) => {
   try {
     if (!platform.supportsFileSystem) {
       logger.debug('File system operations are not supported in this runtime environment');
       return null;
     }
-    const composioFilesDir = isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
-    if (!composioFilesDir) {
+
+    // Handle backwards compatibility with boolean parameter
+    const opts: SaveFileOptions = typeof options === 'boolean' ? { isTempFile: options } : options;
+    const { isTempFile = false, customDir } = opts;
+
+    // Determine the target directory
+    let targetDir: string | null;
+    if (customDir) {
+      // Use custom directory, create if it doesn't exist
+      if (!platform.existsSync(customDir)) {
+        platform.mkdirSync(customDir);
+      }
+      targetDir = customDir;
+    } else {
+      // Use default Composio directory
+      targetDir = isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
+    }
+
+    if (!targetDir) {
       return null;
     }
-    const filePath = platform.joinPath(composioFilesDir, platform.basename(file));
+    const filePath = platform.joinPath(targetDir, platform.basename(file));
 
     logger.info(`Saving file to: ${filePath}`);
 

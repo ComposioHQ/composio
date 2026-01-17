@@ -129,7 +129,10 @@ const hydrateFiles = async (
  *     mimeType: "<detected-or-fallback>"
  *   }
  */
-const hydrateDownloads = async (value: unknown, ctx: { toolSlug: string }): Promise<unknown> => {
+const hydrateDownloads = async (
+  value: unknown,
+  ctx: { toolSlug: string; downloadPath?: string }
+): Promise<unknown> => {
   // ─────────────────────────────── 1. direct S3 ref ─────────────────────────
   if (isPlainObject(value) && typeof value.s3url === 'string') {
     const { s3url, mimetype } = value as {
@@ -144,6 +147,7 @@ const hydrateDownloads = async (value: unknown, ctx: { toolSlug: string }): Prom
         toolSlug: ctx.toolSlug,
         s3Url: s3url,
         mimeType: mimetype ?? 'application/octet-stream',
+        downloadPath: ctx.downloadPath,
       });
 
       logger.debug(`Downloaded → ${dl.filePath}`);
@@ -189,9 +193,11 @@ function isPlainObject(val: unknown): val is Record<string, unknown> {
 
 export class FileToolModifier {
   private client: ComposioClient;
+  private downloadPath?: string;
 
-  constructor(client: ComposioClient) {
+  constructor(client: ComposioClient, options?: { downloadPath?: string }) {
     this.client = client;
+    this.downloadPath = options?.downloadPath;
   }
 
   /**
@@ -278,7 +284,10 @@ export class FileToolModifier {
     const { result, toolSlug } = options;
 
     // Walk result.data without mutating the original
-    const dataWithDownloads = await hydrateDownloads(result.data, { toolSlug });
+    const dataWithDownloads = await hydrateDownloads(result.data, {
+      toolSlug,
+      downloadPath: this.downloadPath,
+    });
 
     return { ...result, data: dataWithDownloads as typeof result.data };
   }

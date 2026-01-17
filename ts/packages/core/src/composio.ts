@@ -76,6 +76,18 @@ export type ComposioConfig<
    */
   disableVersionCheck?: boolean;
   /**
+   * Custom directory path for downloading files.
+   * When specified, downloaded files will be saved to this directory instead of the default
+   * `$HOME/.composio/temp_files/` directory.
+   *
+   * This is useful for isolated environments (e.g., sandboxed VMs, containers) where you need
+   * files to be downloaded to a specific location.
+   *
+   * @example '/app/downloads'
+   * @example '/tmp/composio-files'
+   */
+  downloadPath?: string;
+  /**
    * The versions of the toolkits to use for tool execution and retrieval.
    * Omit to use 'latest' for all toolkits.
    *
