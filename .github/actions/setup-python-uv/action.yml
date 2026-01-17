@@ -19,10 +19,16 @@ inputs:
     required: false
     default: 'true'
 
+outputs:
+  python-version:
+    description: 'The installed Python version (e.g., 3.12.0)'
+    value: ${{ steps.setup-python.outputs.python-version }}
+
 runs:
   using: 'composite'
   steps:
     - name: Setup Python
+      id: setup-python
       uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: ${{ inputs.python-version }}
