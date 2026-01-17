@@ -35,9 +35,22 @@ For setup guides by toolkit: [OAuth Configuration Guides](https://composio.dev/o
 
 When reporting to support, provide:
 
-- **Error message**: Complete error details and screenshots
-- **Auth config ID**: The `authConfigId` being used
-- **Connected account ID**: If a connection was already created
+- **Error message**: Complete error details and screenshots. For example:
+
+  <img
+    src="../../../../assets/images/troubleshooting/auth-error-example.png"
+    alt="Example: This app is blocked error screen shown by Google when un-verified sensitive scopes are configured"
+    style={{ maxWidth: '640px', width: '100%', marginTop: '12px', marginLeft: '0.5rem', borderRadius: '8px', display: 'block' }}
+  />
+
+- **Auth config and account IDs**: Include the `authConfigId` used for the request and, if a connection already exists, the `connected_account_id`
+
+  <img
+    src="../../../../assets/images/troubleshooting/authConfigId-from-Dashboard.png"
+    alt="Finding authConfigId and connected account ID in the Composio dashboard"
+    style={{ maxWidth: '900px', width: '100%', marginTop: '12px', marginLeft: '0.5rem', borderRadius: '8px', display: 'block' }}
+  />
+
 - **OAuth provider**: Which service you're trying to connect
 
 ## Getting help

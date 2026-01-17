@@ -12,7 +12,27 @@ When reporting API issues to support, provide the following:
 
 - **cURL command**: Include the exact cURL to reproduce the issue
 - **Request ID**: Add `x-request-id: <uuid>` header to your request and share the UUID (generate at [uuidgenerator.net](https://www.uuidgenerator.net/))
-- **Error details**: Share the complete error message
+
+  <img
+    src="../../../../assets/images/troubleshooting/enabling-requestId-api.png"
+    alt="Example of `x-request-id` header"
+    style={{ maxWidth: '800px', width: '100%', marginTop: '12px', marginLeft: '0.5rem', borderRadius: '8px', display: 'block' }}
+  />
+
+- **Error details**: Share the complete error message. For example:
+
+  ```json
+  {
+    "error": {
+      "message": "Validation error while processing request",
+      "error_code": 10400,
+      "suggested_fix": "Please check the payload.",
+      "errors": [
+        "Error in payload.text.arguments: Only one of 'text' or 'arguments' must be provided"
+      ]
+    }
+  }
+  ```
 - **Reproduction steps**: Include any steps needed to reproduce the issue
 
 ## Getting help
