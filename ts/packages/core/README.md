@@ -27,90 +27,26 @@ pnpm add @composio/core
 
 ## Getting Started
 
-### Basic Usage with OpenAI Provider
+### Basic Usage with OpenAI Agents
 
 ```typescript
 import { Composio } from '@composio/core';
-import { OpenAI } from 'openai';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+import { Agent, run } from '@openai/agents';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Initialize Composio with your API key
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new OpenAIAgentsProvider(),
 });
 
-async function main() {
-  try {
-    // Fetch tools - single tool or multiple tools
-    const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
-    // Or fetch multiple tools: await composio.tools.get('default', { toolkits: ['hackernews'] });
+const tools = await composio.tools.get('default', { toolkits: ['hackernews'] });
 
-    const query = "Find information about the HackerNews user 'pg'";
+const agent = new Agent({
+  name: 'Hackernews Assistant',
+  tools: tools,
+});
 
-    // Create chat completion with tools
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that can use tools to answer questions.',
-        },
-        { role: 'user', content: query },
-      ],
-      tools: tools,
-      tool_choice: 'auto',
-    });
-
-    // Handle tool calls if the assistant decides to use them
-    if (response.choices[0].message.tool_calls) {
-      console.log(
-        '🔧 Assistant is using tool:',
-        response.choices[0].message.tool_calls[0].function.name
-      );
-
-      // Execute the tool call
-      const toolResult = await composio.provider.executeToolCall(
-        'default',
-        response.choices[0].message.tool_calls[0],
-        {
-          connectedAccountId: '', // Optional: specify connected account
-        }
-      );
-
-      console.log('✅ Tool execution result:', JSON.parse(toolResult));
-
-      // Get final response from assistant with tool result
-      const finalResponse = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that can use tools to answer questions.',
-          },
-          { role: 'user', content: query },
-          response.choices[0].message,
-          {
-            role: 'tool',
-            tool_call_id: response.choices[0].message.tool_calls[0].id,
-            content: toolResult,
-          },
-        ],
-      });
-
-      console.log('🤖 Final response:', finalResponse.choices[0].message.content);
-    } else {
-      console.log('🤖 Response:', response.choices[0].message.content);
-    }
-  } catch (error) {
-    console.error('❌ Error:', error);
-  }
-}
-
-main();
+const result = await run(agent, 'Tell me about the user `pg` on Hackernews');
+console.log(result.finalOutput);
 ```
 
 ## Configuration
