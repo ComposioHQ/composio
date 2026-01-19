@@ -2,11 +2,11 @@ name: Test Typescript SDK
 
 on:
   push:
-    branches: [main, next]
+    branches: [master, next]
     paths:
       - "ts/**"
   pull_request:
-    branches: [main, next]
+    branches: [master, next]
     paths:
       - "ts/**"
 

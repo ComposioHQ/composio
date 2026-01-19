@@ -2,7 +2,7 @@ name: Build Typescript SDK
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "ts/**"
   pull_request:
