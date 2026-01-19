@@ -16,12 +16,22 @@ export class Files {
   }
 
   /**
-   * Upload a file to S3 and return the file data.
-   * @param filePath - The path to the file to upload or a URL of the file to upload.
-   * @param toolSlug - The slug of the tool that is uploading the file.
-   * @param toolkitSlug - The slug of the toolkit that is uploading the file.
-   * @returns The file data.
-   */
+   * Upload a file and return the file data.
+   *
+   * @param params - The upload parameters.
+   * @param {File | string} params.file - The path to the file to upload, a URL of the file, or a File object.
+   * @param {string} params.toolSlug - The slug of the tool that is uploading the file.
+   * @param {string} params.toolkitSlug - The slug of the toolkit that is uploading the file.
+   * @returns {Promise<FileUploadData>} The uploaded file data.
+   *
+   * @example
+   *
+   * const fileData = await composio.files.upload({
+   *   file: 'path/to/file.pdf',
+   *   toolSlug: 'google_drive_upload',
+   *   toolkitSlug: 'google_drive'
+   * });
+   * */
   async upload({
     file,
     toolSlug,
