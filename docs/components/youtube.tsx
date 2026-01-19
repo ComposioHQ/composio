@@ -10,6 +10,9 @@ export function YouTube({ id, title = 'YouTube video' }: YouTubeProps) {
         className="h-full w-full border-0"
         src={`https://www.youtube.com/embed/${id}`}
         title={title}
+        width={560}
+        height={315}
+        loading="lazy"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
       />

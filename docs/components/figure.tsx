@@ -12,6 +12,8 @@ interface FigureProps {
   caption?: string;
   size?: FigureSize;
   className?: string;
+  width?: number;
+  height?: number;
 }
 
 const sizeClasses: Record<FigureSize, string> = {
@@ -21,7 +23,7 @@ const sizeClasses: Record<FigureSize, string> = {
   full: 'max-w-full',    // Full-width diagrams
 };
 
-export function Figure({ src, alt, caption, size = 'full', className }: FigureProps) {
+export function Figure({ src, alt, caption, size = 'full', className, width, height }: FigureProps) {
   const isConstrained = size !== 'full';
 
   return (
@@ -30,6 +32,9 @@ export function Figure({ src, alt, caption, size = 'full', className }: FigurePr
         <img
           src={src}
           alt={alt}
+          width={width}
+          height={height}
+          loading="lazy"
           className={cn(
             'rounded-lg border border-fd-border',
             sizeClasses[size],

@@ -10,7 +10,8 @@ export interface Trigger {
   description: string;
 }
 
-export interface Toolkit {
+// Light version for landing page (no tools/triggers arrays)
+export interface ToolkitSummary {
   slug: string;
   name: string;
   logo: string | null;
@@ -20,6 +21,10 @@ export interface Toolkit {
   toolCount: number;
   triggerCount: number;
   version: string | null;
+}
+
+// Full version with tools and triggers
+export interface Toolkit extends ToolkitSummary {
   tools: Tool[];
   triggers: Trigger[];
 }

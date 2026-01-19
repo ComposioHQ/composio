@@ -52,9 +52,9 @@ export function TopNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 ${
                 isActive(item.href)
-                  ? 'text-[var(--orange)]'
+                  ? 'text-[var(--composio-orange)]'
                   : 'text-fd-muted-foreground hover:text-fd-foreground'
               }`}
             >

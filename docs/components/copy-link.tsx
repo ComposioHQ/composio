@@ -22,14 +22,14 @@ export function CopyLink({ href, children, className }: CopyLinkProps) {
   return (
     <button
       onClick={handleCopy}
-      className={`inline-flex items-center gap-1.5 group cursor-pointer whitespace-nowrap ${className}`}
-      title="Copy link"
+      className={`inline-flex items-center gap-1.5 group cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded ${className}`}
+      aria-label="Copy link to clipboard"
     >
       <span>{children}</span>
       {copied ? (
-        <Check className="w-3 h-3 text-green-500" />
+        <Check className="w-3 h-3 text-green-500" aria-hidden="true" />
       ) : (
-        <Link className="w-3 h-3 opacity-0 group-hover:opacity-70 transition-opacity" />
+        <Link className="w-3 h-3 opacity-0 group-hover:opacity-70 transition-opacity" aria-hidden="true" />
       )}
     </button>
   );

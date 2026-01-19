@@ -78,8 +78,7 @@ export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) 
     return tools.filter(
       (tool) =>
         tool.name.toLowerCase().includes(search) ||
-        tool.slug.toLowerCase().includes(search) ||
-        tool.description.toLowerCase().includes(search)
+        tool.slug.toLowerCase().includes(search)
     );
   }, [tools, toolSearch]);
 
@@ -89,8 +88,7 @@ export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) 
     return triggers.filter(
       (trigger) =>
         trigger.name.toLowerCase().includes(search) ||
-        trigger.slug.toLowerCase().includes(search) ||
-        trigger.description.toLowerCase().includes(search)
+        trigger.slug.toLowerCase().includes(search)
     );
   }, [triggers, toolSearch]);
 
@@ -224,13 +222,16 @@ export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) 
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fd-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fd-muted-foreground" aria-hidden="true" />
             <input
               type="text"
-              placeholder={`Search ${activeTab}...`}
+              name="tool-search"
+              aria-label={`Search ${activeTab}`}
+              placeholder={`Search ${activeTab}…`}
+              autoComplete="off"
               value={toolSearch}
               onChange={(e) => setToolSearch(e.target.value)}
-              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:border-fd-primary focus:outline-none focus:ring-1 focus:ring-fd-primary"
+              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20"
             />
           </div>
 

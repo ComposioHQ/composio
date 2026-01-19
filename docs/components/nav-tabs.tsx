@@ -27,7 +27,7 @@ export function NavTabs() {
         <Link
           key={tab.href}
           href={tab.href}
-          className={`nav-tab ${isActive(tab.href, tab.exact) ? 'active' : ''}`}
+          className={`nav-tab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 rounded ${isActive(tab.href, tab.exact) ? 'active' : ''}`}
         >
           {tab.label}
         </Link>

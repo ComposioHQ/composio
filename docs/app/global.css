@@ -256,6 +256,17 @@ a:focus-visible {
   padding: 0.375rem 0.5rem;
   border-radius: 0.375rem;
   color: var(--color-fd-foreground);
+  transition: background-color 0.15s ease;
+}
+
+#nd-sidebar [data-radix-scroll-area-viewport] a:hover,
+#nd-sidebar [data-radix-scroll-area-viewport] button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
+.dark #nd-sidebar [data-radix-scroll-area-viewport] button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] a[data-active="true"] {
@@ -304,6 +315,19 @@ a:focus-visible {
 /* ==========================================================================
    Components
    ========================================================================== */
+
+/* Form inputs - remove default outline, rely on focus-visible styles */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
 
 [data-card]:hover {
   border-color: color-mix(in srgb, var(--composio-orange) 50%, transparent);
@@ -364,30 +388,12 @@ a:focus-visible {
 }
 
 /* Active nav link */
-#nd-nav a[data-active="true"] {
+#nd-nav nav > a[data-active="true"] {
   color: var(--composio-orange);
-  position: relative;
 }
 
-#nd-nav a[data-active="true"]:hover {
+#nd-nav nav > a[data-active="true"]:hover {
   background: transparent;
-}
-
-#nd-nav a[data-active="true"]::after {
-  content: '';
-  position: absolute;
-  bottom: -0.8rem;
-  left: 0.25rem;
-  right: 0.25rem;
-  height: 2px;
-  background: var(--composio-orange);
-}
-
-/* Hide underline on mobile nav */
-@media (max-width: 767px) {
-  #nd-nav a[data-active="true"]::after {
-    display: none;
-  }
 }
 
 /* Right side items - consistent gaps */
@@ -451,6 +457,21 @@ nav a[href*="app.composio"]:focus-visible {
   outline: 2px solid var(--composio-orange);
   outline-offset: 2px;
 }
+
+/* ==========================================================================
+   Table of Contents (Right Sidebar)
+   ========================================================================== */
+
+/* Prevent "On this page" from being cut off by header */
+#nd-toc {
+  top: 4rem;
+}
+
+/* TOC - scope primary color to orange for active indicator */
+#nd-toc {
+  --color-fd-primary: var(--composio-orange);
+}
+
 
 @layer base {
   * {

@@ -2,7 +2,8 @@
  * Toolkit Generator Script
  *
  * Fetches all toolkits from Composio API and generates:
- * - /public/data/toolkits.json (all toolkits with tools & triggers)
+ * - /public/data/toolkits.json (full data with tools & triggers - for detail pages)
+ * - /public/data/toolkits-list.json (light version without tools/triggers - for landing page)
  *
  * Run: bun run generate:toolkits
  */
@@ -201,17 +202,26 @@ async function main() {
 
   console.log('\n');
 
-  // Write single file
+  // Write full file (for detail pages - read from filesystem)
   await writeFile(
     join(OUTPUT_DIR, 'toolkits.json'),
     JSON.stringify(toolkits, null, 2)
   );
 
-  const fileSizeKB = Math.round(JSON.stringify(toolkits).length / 1024);
+  // Write light file (for landing page - imported in client component)
+  // Excludes tools and triggers arrays to keep bundle size small
+  const toolkitsLight = toolkits.map(({ tools, triggers, ...rest }) => rest);
+  await writeFile(
+    join(OUTPUT_DIR, 'toolkits-list.json'),
+    JSON.stringify(toolkitsLight, null, 2)
+  );
+
+  const fullSizeKB = Math.round(JSON.stringify(toolkits).length / 1024);
+  const lightSizeKB = Math.round(JSON.stringify(toolkitsLight).length / 1024);
   console.log('Generation complete!');
-  console.log(`  Output: public/data/toolkits.json`);
+  console.log(`  Full: public/data/toolkits.json (~${fullSizeKB}KB)`);
+  console.log(`  Light: public/data/toolkits-list.json (~${lightSizeKB}KB)`);
   console.log(`  Toolkits: ${toolkits.length}`);
-  console.log(`  File size: ~${fileSizeKB}KB`);
 }
 
 main().catch((error) => {

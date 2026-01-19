@@ -1,47 +1,48 @@
-import {
-  source,
-  toolRouterSource,
-  referenceSource,
-  examplesSource,
-  toolkitsSource,
-} from '@/lib/source';
+// Use direct imports from collections to avoid top-level await in lib/source.ts
+import { docs, toolRouter, examples, toolkits } from 'fumadocs-mdx:collections/server';
 import { createSearchAPI } from 'fumadocs-core/search/server';
-import { NextResponse } from 'next/server';
+import { loader } from 'fumadocs-core/source';
+import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 
-function getSearchIndexes() {
-  const allPages = [
-    ...source.getPages(),
-    ...toolRouterSource.getPages(),
-    ...referenceSource.getPages(),
-    ...examplesSource.getPages(),
-    ...toolkitsSource.getPages(),
-  ];
+// Create loaders directly here to avoid the problematic lib/source.ts import
+const docsSource = loader({
+  baseUrl: '/docs',
+  source: docs.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
 
-  return allPages.map((page) => ({
+const toolRouterSource = loader({
+  baseUrl: '/tool-router',
+  source: toolRouter.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+const examplesSource = loader({
+  baseUrl: '/examples',
+  source: examples.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+const toolkitsSource = loader({
+  baseUrl: '/toolkits',
+  source: toolkits.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+const allPages = [
+  ...docsSource.getPages(),
+  ...toolRouterSource.getPages(),
+  ...examplesSource.getPages(),
+  ...toolkitsSource.getPages(),
+];
+
+export const { GET } = createSearchAPI('advanced', {
+  indexes: allPages.map((page) => ({
     id: page.url,
     title: page.data.title ?? 'Untitled',
     description: page.data.description,
     url: page.url,
     structuredData: page.data.structuredData,
     keywords: 'keywords' in page.data ? page.data.keywords : undefined,
-  }));
-}
-
-let searchHandler: ReturnType<typeof createSearchAPI>['GET'] | null = null;
-
-export async function GET(request: Request) {
-  try {
-    if (!searchHandler) {
-      const indexes = getSearchIndexes();
-      const api = createSearchAPI('advanced', { indexes });
-      searchHandler = api.GET;
-    }
-    return searchHandler(request);
-  } catch (error) {
-    console.error('Search API error:', error);
-    return NextResponse.json(
-      { error: 'Search failed', message: String(error) },
-      { status: 500 }
-    );
-  }
-}
+  })),
+});
