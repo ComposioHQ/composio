@@ -1,24 +1,42 @@
-import {
-  source,
-  toolRouterSource,
-  referenceSource,
-  examplesSource,
-  toolkitsSource,
-} from '@/lib/source';
+import { docs, toolRouter, examples, toolkits } from 'fumadocs-mdx:collections/server';
+import { loader } from 'fumadocs-core/source';
+import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { createSearchAPI } from 'fumadocs-core/search/server';
 
-// Make route static - index is generated at build time, not runtime
-export const revalidate = false;
+// Create loaders directly to avoid lib/source.ts top-level await
+// Note: reference/API docs excluded - they require OpenAPI which has async init issues
+const docsSource = loader({
+  baseUrl: '/docs',
+  source: docs.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+const toolRouterSource = loader({
+  baseUrl: '/tool-router',
+  source: toolRouter.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+const examplesSource = loader({
+  baseUrl: '/examples',
+  source: examples.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+const toolkitsSource = loader({
+  baseUrl: '/toolkits',
+  source: toolkits.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
 
 const allPages = [
-  ...source.getPages(),
+  ...docsSource.getPages(),
   ...toolRouterSource.getPages(),
-  ...referenceSource.getPages(),
   ...examplesSource.getPages(),
   ...toolkitsSource.getPages(),
 ];
 
-export const { staticGET: GET } = createSearchAPI('advanced', {
+export const { GET } = createSearchAPI('advanced', {
   indexes: allPages.map((page) => ({
     id: page.url,
     title: page.data.title ?? 'Untitled',
