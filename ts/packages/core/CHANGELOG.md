@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.5.3
+
+### Patch Changes
+
+- 498505d: Fix file upload and download in tools with anyOf schemas
+
 ## 0.5.2
 
 ### Patch Changes
