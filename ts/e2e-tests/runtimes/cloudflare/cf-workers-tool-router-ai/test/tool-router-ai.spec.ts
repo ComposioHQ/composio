@@ -45,7 +45,7 @@ describe('Tool Router AI - Cloudflare Workers compatibility', () => {
     expect(body.mcpUrl).toBeDefined();
   });
 
-  it('should execute agent with Vercel AI SDK streamText', async () => {
+  it('should execute agent with Vercel AI SDK', async () => {
     const request = new IncomingRequest('http://localhost/test/agent');
     const ctx = createExecutionContext();
     const response = await app.fetch(request, env, ctx);
