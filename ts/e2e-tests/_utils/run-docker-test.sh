@@ -17,7 +17,7 @@ set -e
 # Environment variables to pass through to Docker container (if set)
 PASSTHROUGH_ENV_VARS=(
   "COMPOSIO_API_KEY"
-  # "OPENAI_API_KEY"
+  "OPENAI_API_KEY"
 )
 
 # Default values
