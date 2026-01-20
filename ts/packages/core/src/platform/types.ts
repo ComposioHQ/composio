@@ -39,18 +39,18 @@ export interface Platform {
   /**
    * Reads a file synchronously and returns its contents.
    * @param filePath - The path to the file.
-   * @param encoding - Optional encoding (e.g., 'utf8'). If not provided, returns a Buffer.
-   * @returns The file contents as a string (if encoding provided) or Buffer.
+   * @param encoding - Optional encoding (e.g., 'utf8'). If not provided, returns a Uint8Array.
+   * @returns The file contents as a string (if encoding provided) or Uint8Array.
    */
-  readFileSync(filePath: string, encoding?: BufferEncoding): string | Buffer;
+  readFileSync(filePath: string, encoding?: BufferEncoding): string | Uint8Array;
 
   /**
    * Writes content to a file synchronously.
    * @param filePath - The path to the file.
-   * @param content - The content to write (string or Buffer).
+   * @param content - The content to write (string or Uint8Array).
    * @param encoding - Optional encoding for string content.
    */
-  writeFileSync(filePath: string, content: string | Buffer, encoding?: BufferEncoding): void;
+  writeFileSync(filePath: string, content: string | Uint8Array, encoding?: BufferEncoding): void;
 
   /**
    * Indicates whether this platform supports file system operations.

@@ -41,14 +41,18 @@ export const platform: Platform = {
     // No-op in edge runtimes - directories cannot be created
   },
 
-  readFileSync(_filePath: string, _encoding?: BufferEncoding): never {
+  readFileSync(_filePath: string, _encoding?: BufferEncoding): string | Uint8Array {
     throw new Error(
       'File system operations are not supported in this runtime environment (Cloudflare Workers/Edge). ' +
         'Use environment variables or external storage services instead.'
     );
   },
 
-  writeFileSync(_filePath: string, _content: string | Buffer, _encoding?: BufferEncoding): never {
+  writeFileSync(
+    _filePath: string,
+    _content: string | Uint8Array,
+    _encoding?: BufferEncoding
+  ): void {
     throw new Error(
       'File system operations are not supported in this runtime environment (Cloudflare Workers/Edge). ' +
         'Use environment variables or external storage services instead.'

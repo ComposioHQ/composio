@@ -1,10 +1,29 @@
-import crypto from 'crypto';
 import ComposioClient from '@composio/client';
+import crypto from 'node:crypto';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from './constants';
 import logger from './logger';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
 import { getRandomShortId } from './uuid';
 import { platform } from '#platform';
+
+// Helper function to convert Uint8Array to base64 string (cross-platform)
+const uint8ArrayToBase64 = (bytes: Uint8Array): string => {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
+// Helper function to convert base64 string to Uint8Array (cross-platform)
+const base64ToUint8Array = (base64: string): Uint8Array => {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
 
 // Helper function to get file extension from MIME type
 const getExtensionFromMimeType = (mimeType: string): string => {
@@ -102,9 +121,10 @@ const readFileContent = async (
     const content = platform.readFileSync(filePath);
     return {
       fileName: generateTimestampedFilename(filePath.split('.').pop() || 'txt'),
-      content: Buffer.isBuffer(content)
-        ? content.toString('base64')
-        : Buffer.from(content).toString('base64'),
+      content:
+        content instanceof Uint8Array
+          ? uint8ArrayToBase64(content)
+          : uint8ArrayToBase64(new TextEncoder().encode(content)),
       mimeType: 'application/octet-stream',
     };
   } catch (error) {
@@ -120,7 +140,7 @@ const readFileContentFromURL = async (
     throw new Error(`Failed to fetch file: ${response.statusText}`);
   }
   const arrayBuffer = await response.arrayBuffer();
-  const content = Buffer.from(arrayBuffer);
+  const content = new Uint8Array(arrayBuffer);
   const mimeType = response.headers.get('content-type') || 'application/octet-stream';
 
   // Extract clean filename from URL, removing query parameters
@@ -143,7 +163,7 @@ const readFileContentFromURL = async (
   }
 
   return {
-    content: content.toString('base64'),
+    content: uint8ArrayToBase64(content),
     mimeType,
     fileName,
   };
@@ -157,10 +177,11 @@ const uploadFileToS3 = async (
   mimeType: string,
   client: ComposioClient
 ): Promise<string> => {
+  const contentBytes = base64ToUint8Array(content);
   const response = await client.files.createPresignedURL({
     filename: fileName,
     mimetype: mimeType,
-    md5: crypto.createHash('md5').update(Buffer.from(content, 'base64')).digest('hex'),
+    md5: crypto.createHash('md5').update(contentBytes).digest('hex'),
     tool_slug: toolSlug,
     toolkit_slug: toolkitSlug,
   });
@@ -169,17 +190,19 @@ const uploadFileToS3 = async (
 
   if (type === 'new' || type === 'update') {
     logger.debug(`Uploading ${key} file to S3: ${key}`);
-    const buffer = Buffer.from(content, 'base64');
     const signedURL =
       response.type === 'update' ? response.update_presigned_url : response.new_presigned_url;
 
     // Upload the file using the presigned URL
+    // Create a new ArrayBuffer to ensure compatibility with fetch API
+    const uploadBuffer = new ArrayBuffer(contentBytes.byteLength);
+    new Uint8Array(uploadBuffer).set(contentBytes);
     const uploadResponse = await fetch(signedURL, {
       method: 'PUT',
-      body: buffer,
+      body: uploadBuffer,
       headers: {
         'Content-Type': mimeType,
-        'Content-Length': buffer.length.toString(),
+        'Content-Length': contentBytes.length.toString(),
       },
     });
 
@@ -201,7 +224,7 @@ const readFile = async (
     const content = await file.arrayBuffer();
     return {
       fileName: file.name,
-      content: Buffer.from(content).toString('base64'),
+      content: uint8ArrayToBase64(new Uint8Array(content)),
       mimeType: file.type,
     };
   } else if (typeof file === 'string') {
@@ -266,7 +289,7 @@ export const downloadFileFromS3 = async ({
 
   const extension = getExtensionFromMimeType(mimeType);
   const fileName = generateTimestampedFilename(extension, `${toolSlug}_`);
-  const filePath = saveFile(fileName, Buffer.from(data), true);
+  const filePath = saveFile(fileName, new Uint8Array(data), true);
   return {
     name: fileName,
     mimeType: mimeType,
@@ -332,7 +355,11 @@ export const getComposioTempFilesDir = (createDirIfNotExists: boolean = false) =
  * @param isTempFile - Whether the file is a temporary file.
  * @returns The path to the saved file.
  */
-export const saveFile = (file: string, content: string | Buffer, isTempFile: boolean = false) => {
+export const saveFile = (
+  file: string,
+  content: string | Uint8Array,
+  isTempFile: boolean = false
+) => {
   try {
     if (!platform.supportsFileSystem) {
       logger.debug('File system operations are not supported in this runtime environment');
@@ -346,7 +373,7 @@ export const saveFile = (file: string, content: string | Buffer, isTempFile: boo
 
     logger.info(`Saving file to: ${filePath}`);
 
-    if (Buffer.isBuffer(content)) {
+    if (content instanceof Uint8Array) {
       platform.writeFileSync(filePath, content);
     } else {
       platform.writeFileSync(filePath, content, 'utf8');

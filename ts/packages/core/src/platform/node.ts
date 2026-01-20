@@ -34,16 +34,20 @@ export const platform: Platform = {
     fs.mkdirSync(dirPath, { recursive: true });
   },
 
-  readFileSync(filePath: string, encoding?: BufferEncoding): string | Buffer {
+  readFileSync(filePath: string, encoding?: BufferEncoding): string | Uint8Array {
     if (encoding) {
       return fs.readFileSync(filePath, encoding);
     }
-    return fs.readFileSync(filePath);
+    // Convert Buffer to Uint8Array for cross-platform compatibility
+    const buffer = fs.readFileSync(filePath);
+    return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   },
 
-  writeFileSync(filePath: string, content: string | Buffer, encoding?: BufferEncoding): void {
+  writeFileSync(filePath: string, content: string | Uint8Array, encoding?: BufferEncoding): void {
     if (encoding && typeof content === 'string') {
       fs.writeFileSync(filePath, content, encoding);
+    } else if (content instanceof Uint8Array) {
+      fs.writeFileSync(filePath, Buffer.from(content));
     } else {
       fs.writeFileSync(filePath, content);
     }

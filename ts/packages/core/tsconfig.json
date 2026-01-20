@@ -13,7 +13,11 @@
     "resolveJsonModule": true,
     "paths": {
       "#platform": ["./src/platform/node.ts", "./src/platform/workerd.ts"],
-      "#files": ["./src/models/Files.node.ts", "./src/models/Files.workerd.ts"]
+      "#files": ["./src/models/Files.node.ts", "./src/models/Files.workerd.ts"],
+      "#file_tool_modifier": [
+        "./src/utils/modifiers/FileToolModifier.node.ts",
+        "./src/utils/modifiers/FileToolModifier.workerd.ts"
+      ]
     }
   },
   "include": ["src/**/*.ts"]

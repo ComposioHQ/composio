@@ -1,4 +1,4 @@
-import { defineConfig, UserConfig } from 'tsdown';
+import { defineConfig } from 'tsdown';
 import { baseConfig } from '../../../tsdown.config.base';
 
 export default defineConfig({
@@ -11,6 +11,8 @@ export default defineConfig({
     'src/platform/workerd.ts',
     'src/models/Files.node.ts',
     'src/models/Files.workerd.ts',
+    'src/utils/modifiers/FileToolModifier.node.ts',
+    'src/utils/modifiers/FileToolModifier.workerd.ts',
   ],
   attw: {
     ...baseConfig.attw,
@@ -33,5 +35,5 @@ export default defineConfig({
    * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)
    * as not all of them are available in Cloudflare Workers / Vercel Edge runtimes.
    */
-  external: [...(baseConfig.external ?? []), '#platform', '#files'],
+  external: [...(baseConfig.external ?? []), '#platform', '#files', '#file_tool_modifier'],
 });
