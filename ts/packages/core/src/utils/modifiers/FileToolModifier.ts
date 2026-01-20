@@ -10,6 +10,52 @@ import { ComposioFileUploadError } from '../../errors/FileModifierErrors';
 import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../fileUtils';
 
 /**
+ * Transforms a single JSON schema property, recursively handling nested properties,
+ * anyOf, oneOf, and allOf.
+ */
+const transformSchema = (property: JSONSchemaProperty): JSONSchemaProperty => {
+  if (property.file_uploadable) {
+    // Transform file-uploadable property
+    return {
+      title: property.title,
+      description: property.description,
+      format: 'path',
+      type: 'string',
+      file_uploadable: true,
+    };
+  }
+
+  const newProperty = { ...property };
+
+  if (property.type === 'object' && property.properties) {
+    // Recursively transform nested properties
+    newProperty.properties = transformProperties(property.properties);
+  }
+
+  if (property.anyOf) {
+    newProperty.anyOf = property.anyOf.map(transformSchema);
+  }
+
+  if (property.oneOf) {
+    newProperty.oneOf = property.oneOf.map(transformSchema);
+  }
+
+  if (property.allOf) {
+    newProperty.allOf = property.allOf.map(transformSchema);
+  }
+
+  if (property.items) {
+    if (Array.isArray(property.items)) {
+      newProperty.items = property.items.map(transformSchema);
+    } else {
+      newProperty.items = transformSchema(property.items);
+    }
+  }
+
+  return newProperty;
+};
+
+/**
  * Transforms the properties of the tool schema to include the file upload URL.
  *
  * Attaches the format: 'path' to the properties that are file uploadable for agents.
@@ -21,28 +67,72 @@ const transformProperties = (properties: JSONSchemaProperty): JSONSchemaProperty
   const newProperties: JSONSchemaProperty = {};
 
   for (const [key, property] of Object.entries(properties) as [string, JSONSchemaProperty][]) {
-    if (property.file_uploadable) {
-      // Transform file-uploadable property
-      newProperties[key] = {
-        title: property.title,
-        description: property.description,
-        format: 'path',
-        type: 'string',
-        file_uploadable: true,
-      };
-    } else if (property.type === 'object' && property.properties) {
-      // Recursively transform nested properties
-      newProperties[key] = {
-        ...property,
-        properties: transformProperties(property.properties),
-      };
-    } else {
-      // Copy the property as-is
-      newProperties[key] = property;
-    }
+    newProperties[key] = transformSchema(property);
   }
 
   return newProperties;
+};
+
+/**
+ * Recursively checks if a schema (or any of its variants) contains a specific file property.
+ */
+const schemaHasFileProperty = (
+  schema: JSONSchemaProperty | undefined,
+  property: 'file_uploadable' | 'file_downloadable'
+): boolean => {
+  if (!schema) return false;
+  if (schema[property]) return true;
+
+  // Check nested properties
+  if (schema.properties) {
+    for (const prop of Object.values(schema.properties) as JSONSchemaProperty[]) {
+      if (schemaHasFileProperty(prop, property)) return true;
+    }
+  }
+
+  // Check anyOf/oneOf/allOf variants
+  if (schema.anyOf) {
+    for (const variant of schema.anyOf) {
+      if (schemaHasFileProperty(variant, property)) return true;
+    }
+  }
+  if (schema.oneOf) {
+    for (const variant of schema.oneOf) {
+      if (schemaHasFileProperty(variant, property)) return true;
+    }
+  }
+  if (schema.allOf) {
+    for (const variant of schema.allOf) {
+      if (schemaHasFileProperty(variant, property)) return true;
+    }
+  }
+
+  // Check array items
+  if (schema.items) {
+    if (Array.isArray(schema.items)) {
+      for (const item of schema.items) {
+        if (schemaHasFileProperty(item, property)) return true;
+      }
+    } else {
+      if (schemaHasFileProperty(schema.items, property)) return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Recursively checks if a schema (or any of its variants) contains file_uploadable properties.
+ */
+const schemaHasFileUploadable = (schema: JSONSchemaProperty | undefined): boolean => {
+  return schemaHasFileProperty(schema, 'file_uploadable');
+};
+
+/**
+ * Recursively checks if a schema (or any of its variants) contains file_downloadable properties.
+ */
+const schemaHasFileDownloadable = (schema: JSONSchemaProperty | undefined): boolean => {
+  return schemaHasFileProperty(schema, 'file_downloadable');
 };
 
 /**
@@ -76,7 +166,28 @@ const hydrateFiles = async (
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 2. Object → traverse each property
+  // 2. Handle anyOf/oneOf/allOf - try each variant that may contain file_uploadable
+  // ──────────────────────────────────────────────────────────────────────────
+  const schemaVariants = [
+    ...(schema?.anyOf ?? []),
+    ...(schema?.oneOf ?? []),
+    ...(schema?.allOf ?? []),
+  ];
+
+  if (schemaVariants.length > 0) {
+    // Find variants that have file_uploadable properties
+    const uploadableVariants = schemaVariants.filter(schemaHasFileUploadable);
+
+    // Process with each uploadable variant - we try all since we can't know which one matches at runtime
+    let result = value;
+    for (const variant of uploadableVariants) {
+      result = await hydrateFiles(result, variant, ctx);
+    }
+    return result;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // 3. Object → traverse each property
   // ──────────────────────────────────────────────────────────────────────────
   if (schema?.type === 'object' && schema.properties && isPlainObject(value)) {
     const transformed: Record<string, unknown> = {};
@@ -88,7 +199,7 @@ const hydrateFiles = async (
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 3. Array → traverse each item
+  // 4. Array → traverse each item
   // ──────────────────────────────────────────────────────────────────────────
   if (schema?.type === 'array' && schema.items && Array.isArray(value)) {
     // `items` can be a single schema or an array of schemas; we handle both.
@@ -100,9 +211,49 @@ const hydrateFiles = async (
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 4. Primitive or schema-less branch → return unchanged
+  // 5. Primitive or schema-less branch → return unchanged
   // ──────────────────────────────────────────────────────────────────────────
   return value;
+};
+
+/**
+ * Downloads a file from S3 and returns a replacement object.
+ */
+const downloadS3File = async (
+  value: Record<string, unknown>,
+  ctx: { toolSlug: string }
+): Promise<unknown> => {
+  const { s3url, mimetype } = value as {
+    s3url: string;
+    mimetype?: string;
+  };
+
+  try {
+    logger.debug(`Downloading from S3: ${s3url}`);
+
+    const dl = await downloadFileFromS3({
+      toolSlug: ctx.toolSlug,
+      s3Url: s3url,
+      mimeType: mimetype ?? 'application/octet-stream',
+    });
+
+    logger.debug(`Downloaded → ${dl.filePath}`);
+
+    return {
+      uri: dl.filePath,
+      file_downloaded: dl.filePath ? true : false,
+      s3url,
+      mimeType: dl.mimeType,
+    };
+  } catch (err) {
+    logger.error(`Download failed: ${s3url}`, { cause: err });
+    return {
+      uri: '',
+      file_downloaded: false,
+      s3url,
+      mimeType: mimetype ?? 'application/octet-stream',
+    };
+  }
 };
 
 /**
@@ -118,68 +269,84 @@ const hydrateFiles = async (
  *
  * The function is side-effect-free: it never mutates the input value.
  */
-/**
- * Walk a value (object, array, primitive).
- * Wherever an object contains a string `s3url`, download the file and
- * return a replacement object:
- *   {
- *     uri: "<local path>",
- *     file_downloaded: true|false,
- *     s3url: "<original url>",
- *     mimeType: "<detected-or-fallback>"
- *   }
- */
-const hydrateDownloads = async (value: unknown, ctx: { toolSlug: string }): Promise<unknown> => {
-  // ─────────────────────────────── 1. direct S3 ref ─────────────────────────
+const hydrateDownloads = async (
+  value: unknown,
+  schema: JSONSchemaProperty | undefined,
+  ctx: { toolSlug: string }
+): Promise<unknown> => {
+  // ──────────────────────────────────────────────────────────────────────────
+  // 1. Direct S3 reference (data-driven detection)
+  // ──────────────────────────────────────────────────────────────────────────
   if (isPlainObject(value) && typeof value.s3url === 'string') {
-    const { s3url, mimetype } = value as {
-      s3url: string;
-      mimetype?: string;
-    };
-
-    try {
-      logger.debug(`Downloading from S3: ${s3url}`);
-
-      const dl = await downloadFileFromS3({
-        toolSlug: ctx.toolSlug,
-        s3Url: s3url,
-        mimeType: mimetype ?? 'application/octet-stream',
-      });
-
-      logger.debug(`Downloaded → ${dl.filePath}`);
-
-      return {
-        uri: dl.filePath,
-        file_downloaded: dl.filePath ? true : false,
-        s3url,
-        mimeType: dl.mimeType,
-      };
-    } catch (err) {
-      logger.error(`Download failed: ${s3url}`, { cause: err });
-      return {
-        uri: '',
-        file_downloaded: false,
-        s3url,
-        mimeType: mimetype ?? 'application/octet-stream',
-      };
-    }
+    return downloadS3File(value, ctx);
   }
 
-  // ─────────────────────────────── 2. object branch ─────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────
+  // 2. Schema-guided: Handle file_downloadable property
+  // ──────────────────────────────────────────────────────────────────────────
+  if (schema?.file_downloadable && isPlainObject(value) && typeof value.s3url === 'string') {
+    return downloadS3File(value, ctx);
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // 3. Handle anyOf/oneOf/allOf - try each variant that may contain file_downloadable
+  // ──────────────────────────────────────────────────────────────────────────
+  const schemaVariants = [
+    ...(schema?.anyOf ?? []),
+    ...(schema?.oneOf ?? []),
+    ...(schema?.allOf ?? []),
+  ];
+
+  if (schemaVariants.length > 0) {
+    // Find variants that have file_downloadable properties
+    const downloadableVariants = schemaVariants.filter(schemaHasFileDownloadable);
+
+    // Process with each downloadable variant
+    let result = value;
+    for (const variant of downloadableVariants) {
+      result = await hydrateDownloads(result, variant, ctx);
+    }
+
+    // If no downloadable variants found, still traverse the value for s3url objects
+    if (downloadableVariants.length === 0) {
+      return hydrateDownloads(value, undefined, ctx);
+    }
+
+    return result;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // 4. Object → traverse each property
+  // ──────────────────────────────────────────────────────────────────────────
   if (isPlainObject(value)) {
     const pairs = await Promise.all(
-      Object.entries(value).map(async ([k, v]) => [k, await hydrateDownloads(v, ctx)])
+      Object.entries(value).map(async ([k, v]) => [
+        k,
+        await hydrateDownloads(v, schema?.properties?.[k], ctx),
+      ])
     );
     return Object.fromEntries(pairs);
   }
 
-  // ─────────────────────────────── 3. array branch ──────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────
+  // 5. Array → traverse each item
+  // ──────────────────────────────────────────────────────────────────────────
   if (Array.isArray(value)) {
-    return Promise.all(value.map(item => hydrateDownloads(item, ctx)));
+    const itemSchema = schema?.items
+      ? Array.isArray(schema.items)
+        ? schema.items[0]
+        : schema.items
+      : undefined;
+
+    return Promise.all(
+      value.map(item => hydrateDownloads(item, itemSchema as JSONSchemaProperty | undefined, ctx))
+    );
   }
 
-  // ─────────────────────────────── 4. primitive ─────────────────────────────
-  return value; // leave unchanged
+  // ──────────────────────────────────────────────────────────────────────────
+  // 6. Primitive → return unchanged
+  // ──────────────────────────────────────────────────────────────────────────
+  return value;
 };
 
 // Small helper to recognise plain objects
@@ -262,13 +429,14 @@ export class FileToolModifier {
    *
    * @description This modifier is used to download a file and
    *
+   * @param tool - The tool schema containing output parameters.
    * @param toolSlug - The slug of the tool that is being executed.
    * @param toolkitSlug - The slug of the toolkit that is being executed.
    * @param result - The result of the tool execution.
    * @returns The result with the file download URL included.
    */
   async fileDownloadModifier(
-    _tool: Tool, // no longer needed for the traversal itself
+    tool: Tool,
     options: {
       toolSlug: string;
       toolkitSlug: string; // kept for API parity, unused here
@@ -277,8 +445,10 @@ export class FileToolModifier {
   ): Promise<ToolExecuteResponse> {
     const { result, toolSlug } = options;
 
-    // Walk result.data without mutating the original
-    const dataWithDownloads = await hydrateDownloads(result.data, { toolSlug });
+    // Walk result.data without mutating the original, using output schema for guidance
+    const dataWithDownloads = await hydrateDownloads(result.data, tool.outputParameters, {
+      toolSlug,
+    });
 
     return { ...result, data: dataWithDownloads as typeof result.data };
   }

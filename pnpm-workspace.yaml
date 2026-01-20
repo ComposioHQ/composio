@@ -20,7 +20,7 @@ catalog:
   '@cloudflare/workers-types': ^4.20250917.0
   '@composio/client': 0.1.0-alpha.55
   '@modelcontextprotocol/sdk': ^1.25.2
-  ai: ^6.0.3
+  ai: ^6.0.27
   hono: ^4.11.4
   openai: ^6.16.0
   pnpm: ^10.28.0
@@ -34,8 +34,7 @@ catalog:
   zod: ^4.1.0
   zod-to-json-schema: ^3.25.1
 
-# minimum number of minutes that must pass after a version is published before pnpm will install it
-minimumReleaseAge: 300 # 5 hours. In most cases, malicious releases are discovered and removed from the registry within an hour.
+minimumReleaseAge: 300
 
 minimumReleaseAgeExclude:
   - '@composio/client'

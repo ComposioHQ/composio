@@ -18,7 +18,10 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.12",
     "@composio/core": "workspace:*",
+    "@composio/vercel": "workspace:*",
+    "ai": "catalog:",
     "dotenv": "^16.4.1",
     "openai": "catalog:",
     "zod": "catalog:",
