@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v6
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -31,7 +31,7 @@ jobs:
 
       - name: Publish Artifacts
         if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ./python/dist
           user: ${{ secrets.PYPI_USERNAME }}

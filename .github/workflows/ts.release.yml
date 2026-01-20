@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v6
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -32,7 +32,7 @@ jobs:
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - name: Create Release Pull Request & Publish packages
         id: changesets
-        uses: changesets/action@c8bada60c408975afd1a20b3db81d6eee6789308 # v1.4.9
+        uses: changesets/action@v1
         if: github.event_name != 'workflow_dispatch' # only run on master merges
         env:
           GITHUB_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
 
       - name: Send Slack Notification
         if: steps.changesets.outputs.published == 'true'
-        uses: slackapi/slack-github-action@b4590ed38561d3cb7512cbee19cef0e0a6064ff1 # v1.24.0
+        uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
             {

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v6
         with:
           fetch-depth: 50
 
@@ -27,7 +27,7 @@ jobs:
 
       - name: nox cache
         id: nox-cache
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@v4
         with:
           path: python/.nox
           key: nox-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
@@ -36,7 +36,7 @@ jobs:
 
       - name: Mypy cache
         id: mypy-cache
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@v4
         with:
           path: python/.mypy_cache
           key: mypy-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
@@ -45,7 +45,7 @@ jobs:
 
       - name: Ruff cache
         id: ruff-cache
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@v4
         with:
           path: python/.ruff_cache
           key: ruff-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}

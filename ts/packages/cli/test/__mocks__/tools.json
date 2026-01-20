@@ -49465,7 +49465,7 @@
             "monalisa/octocat@*",
             "monalisa/octocat@v2",
             "monalisa/*",
-            "actions/checkout@v3",
+            "actions/checkout@v6",
             "your-org/your-repo/.github/workflows/main.yml@refs/heads/main"
           ],
           "items": { "properties": {}, "type": "string" },

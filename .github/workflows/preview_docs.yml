@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v6
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@db6bcf6eb8d88a8aa03265b887ec7bd84d64cd68 # v2.1.1
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: '.bun-version'
 
@@ -61,6 +61,6 @@ jobs:
           echo "Preview your docs: $URL" > preview_url.txt
 
       - name: Comment URL in PR
-        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # 3.0.1
+        uses: thollander/actions-comment-pull-request@v3
         with:
           file-path: fern/preview_url.txt
