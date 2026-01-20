@@ -138,6 +138,7 @@ app.get('/test/hackernews', async c => {
   try {
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      autoUploadDownloadFiles: false,
     });
 
     const userDetails = await composio.tools.execute('HACKERNEWS_GET_USER', {
