@@ -178,12 +178,15 @@ const hydrateFiles = async (
     // Find variants that have file_uploadable properties
     const uploadableVariants = schemaVariants.filter(schemaHasFileUploadable);
 
-    // Process with each uploadable variant - we try all since we can't know which one matches at runtime
-    let result = value;
-    for (const variant of uploadableVariants) {
-      result = await hydrateFiles(result, variant, ctx);
+    if (uploadableVariants.length > 0) {
+      // Process with each uploadable variant - we try all since we can't know which one matches at runtime
+      let result = value;
+      for (const variant of uploadableVariants) {
+        result = await hydrateFiles(result, variant, ctx);
+      }
+      return result;
     }
-    return result;
+    // If no uploadable variants found, fall through to check base properties
   }
 
   // ──────────────────────────────────────────────────────────────────────────

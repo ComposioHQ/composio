@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import typing as t
 from pathlib import Path
@@ -162,25 +161,124 @@ class FileHelper(WithLogger):
         self._client = client
         self._outdir = Path(outdir or LOCAL_OUTPUT_FILE_DIRECTORY)
 
-    def _file_uploadable(self, schema: t.Dict):
-        if "allOf" in schema:
-            return any(
-                (
-                    _schema.get("file_uploadable", False)
-                    if isinstance(_schema, dict)
-                    else False
-                )
-                for _schema in schema["allOf"]
-            )
-        return schema.get("file_uploadable", False)
+    def _has_file_property(
+        self, schema: t.Dict, property_name: str = "file_uploadable"
+    ) -> bool:
+        """Check if a schema (or any of its variants) contains a file property.
 
-    def _process_file_uploadable(self, schema: t.Dict):
+        Recursively checks anyOf, oneOf, allOf, nested properties, and array items.
+        """
+        if not isinstance(schema, dict):
+            return False
+
+        # Direct property check
+        if schema.get(property_name, False):
+            return True
+
+        # Check anyOf variants
+        if "anyOf" in schema:
+            for variant in schema["anyOf"]:
+                if self._has_file_property(variant, property_name):
+                    return True
+
+        # Check oneOf variants
+        if "oneOf" in schema:
+            for variant in schema["oneOf"]:
+                if self._has_file_property(variant, property_name):
+                    return True
+
+        # Check allOf variants
+        if "allOf" in schema:
+            for variant in schema["allOf"]:
+                if self._has_file_property(variant, property_name):
+                    return True
+
+        # Check nested properties
+        if "properties" in schema:
+            for prop in schema["properties"].values():
+                if self._has_file_property(prop, property_name):
+                    return True
+
+        # Check array items
+        if "items" in schema:
+            items = schema["items"]
+            if isinstance(items, list):
+                for item in items:
+                    if self._has_file_property(item, property_name):
+                        return True
+            elif isinstance(items, dict):
+                if self._has_file_property(items, property_name):
+                    return True
+
+        return False
+
+    def _file_uploadable(self, schema: t.Dict) -> bool:
+        """Check if a schema has file_uploadable property."""
+        return self._has_file_property(schema, "file_uploadable")
+
+    def _process_file_uploadable(self, schema: t.Dict) -> t.Dict:
         return {
             "type": "string",
             "format": "path",
             "description": schema.get("description", "Path to file."),
             "title": schema.get("title"),
+            "file_uploadable": True,
         }
+
+    def _transform_schema_for_file_upload(self, schema: t.Dict) -> t.Dict:
+        """Recursively transform a schema, converting file_uploadable fields to path format.
+
+        Handles anyOf, oneOf, allOf, nested properties, and array items.
+        """
+        if not isinstance(schema, dict):
+            return schema
+
+        # Direct file_uploadable - transform it
+        if schema.get("file_uploadable", False):
+            return self._process_file_uploadable(schema)
+
+        # Create a copy to avoid mutating the original
+        new_schema = dict(schema)
+
+        # Transform anyOf variants
+        if "anyOf" in schema:
+            new_schema["anyOf"] = [
+                self._transform_schema_for_file_upload(variant)
+                for variant in schema["anyOf"]
+            ]
+
+        # Transform oneOf variants
+        if "oneOf" in schema:
+            new_schema["oneOf"] = [
+                self._transform_schema_for_file_upload(variant)
+                for variant in schema["oneOf"]
+            ]
+
+        # Transform allOf variants
+        if "allOf" in schema:
+            new_schema["allOf"] = [
+                self._transform_schema_for_file_upload(variant)
+                for variant in schema["allOf"]
+            ]
+
+        # Transform nested properties
+        if "properties" in schema:
+            new_schema["properties"] = {
+                key: self._transform_schema_for_file_upload(prop)
+                for key, prop in schema["properties"].items()
+            }
+
+        # Transform array items
+        if "items" in schema:
+            items = schema["items"]
+            if isinstance(items, list):
+                new_schema["items"] = [
+                    self._transform_schema_for_file_upload(item) for item in items
+                ]
+            elif isinstance(items, dict):
+                new_schema["items"] = self._transform_schema_for_file_upload(items)
+
+        return new_schema
 
     def enhance_schema_descriptions(self, schema: t.Dict) -> t.Dict:
         """Add type hints and required notes to parameter descriptions.
@@ -213,12 +311,15 @@ class FileHelper(WithLogger):
 
         This method converts file_uploadable fields to path format.
         Should only be called when auto_upload_download_files is True.
+        Recursively handles anyOf, oneOf, allOf, nested properties, and array items.
         """
-        for _param, _schema in schema["properties"].items():
-            if self._file_uploadable(schema=_schema):
-                schema["properties"][_param] = self._process_file_uploadable(
-                    schema=_schema
-                )
+        if "properties" not in schema:
+            return schema
+
+        schema["properties"] = {
+            key: self._transform_schema_for_file_upload(prop)
+            for key, prop in schema["properties"].items()
+        }
         return schema
 
     def process_schema_recursively(self, schema: t.Dict) -> t.Dict:
@@ -230,6 +331,28 @@ class FileHelper(WithLogger):
         self.process_file_uploadable_schema(schema)
         self.enhance_schema_descriptions(schema)
         return schema
+
+    def _find_uploadable_schema_variant(self, schema: t.Dict) -> t.Optional[t.Dict]:
+        """Find a schema variant that contains file_uploadable properties."""
+        # Check anyOf variants
+        if "anyOf" in schema:
+            for variant in schema["anyOf"]:
+                if self._has_file_property(variant, "file_uploadable"):
+                    return variant
+
+        # Check oneOf variants
+        if "oneOf" in schema:
+            for variant in schema["oneOf"]:
+                if self._has_file_property(variant, "file_uploadable"):
+                    return variant
+
+        # Check allOf - merge all variants
+        if "allOf" in schema:
+            for variant in schema["allOf"]:
+                if self._has_file_property(variant, "file_uploadable"):
+                    return variant
+
+        return None
 
     def _substitute_file_uploads_recursively(
         self,
@@ -245,7 +368,10 @@ class FileHelper(WithLogger):
             if _param not in params:
                 continue
 
-            if self._file_uploadable(schema=params[_param]):
+            param_schema = params[_param]
+
+            # Direct file_uploadable check
+            if param_schema.get("file_uploadable", False):
                 # skip if the file is not provided
                 if request[_param] is None or request[_param] == "":
                     del request[_param]
@@ -259,16 +385,81 @@ class FileHelper(WithLogger):
                 ).model_dump()
                 continue
 
+            # Check anyOf/oneOf/allOf for file_uploadable
+            uploadable_variant = self._find_uploadable_schema_variant(param_schema)
+            if uploadable_variant is not None:
+                # If the variant itself is file_uploadable
+                if uploadable_variant.get("file_uploadable", False):
+                    if request[_param] is None or request[_param] == "":
+                        del request[_param]
+                        continue
+
+                    request[_param] = FileUploadable.from_path(
+                        client=self._client,
+                        file=request[_param],
+                        tool=tool.slug,
+                        toolkit=tool.toolkit.slug,
+                    ).model_dump()
+                    continue
+
+                # If the variant has nested properties with file_uploadable
+                if (
+                    isinstance(request[_param], dict)
+                    and uploadable_variant.get("type") == "object"
+                ):
+                    request[_param] = self._substitute_file_uploads_recursively(
+                        schema=uploadable_variant,
+                        request=request[_param],
+                        tool=tool,
+                    )
+                    continue
+
+            # Handle nested objects
             if (
                 isinstance(request[_param], dict)
-                and params[_param].get("type") == "object"
+                and param_schema.get("type") == "object"
             ):
                 request[_param] = self._substitute_file_uploads_recursively(
-                    schema=params[_param],
+                    schema=param_schema,
                     request=request[_param],
                     tool=tool,
                 )
                 continue
+
+            # Handle arrays with file_uploadable items
+            if (
+                isinstance(request[_param], list)
+                and param_schema.get("type") == "array"
+                and "items" in param_schema
+            ):
+                items_schema = param_schema["items"]
+                if isinstance(items_schema, dict):
+                    processed_items = []
+                    for item in request[_param]:
+                        if self._has_file_property(items_schema, "file_uploadable"):
+                            if items_schema.get("file_uploadable", False):
+                                if item is not None and item != "":
+                                    processed_items.append(
+                                        FileUploadable.from_path(
+                                            client=self._client,
+                                            file=item,
+                                            tool=tool.slug,
+                                            toolkit=tool.toolkit.slug,
+                                        ).model_dump()
+                                    )
+                            elif isinstance(item, dict):
+                                processed_items.append(
+                                    self._substitute_file_uploads_recursively(
+                                        schema=items_schema,
+                                        request=item,
+                                        tool=tool,
+                                    )
+                                )
+                            else:
+                                processed_items.append(item)
+                        else:
+                            processed_items.append(item)
+                    request[_param] = processed_items
 
         return request
 
@@ -280,30 +471,28 @@ class FileHelper(WithLogger):
         )
 
     def _is_file_downloadable(self, schema: t.Dict) -> bool:
+        """Check if a schema has file_downloadable property."""
+        return self._has_file_property(schema, "file_downloadable")
+
+    def _find_downloadable_schema_variant(self, schema: t.Dict) -> t.Optional[t.Dict]:
+        """Find a schema variant that contains file_downloadable properties."""
+        # Check anyOf variants
+        if "anyOf" in schema:
+            for variant in schema["anyOf"]:
+                if self._has_file_property(variant, "file_downloadable"):
+                    return variant
+
+        # Check oneOf variants
+        if "oneOf" in schema:
+            for variant in schema["oneOf"]:
+                if self._has_file_property(variant, "file_downloadable"):
+                    return variant
+
+        # Check allOf variants
         if "allOf" in schema:
-            return any(
-                (
-                    _schema.get("file_downloadable", False)
-                    if isinstance(_schema, dict)
-                    else False
-                )
-                for _schema in schema["allOf"]
-            )
-        return schema.get("file_downloadable", False)
-
-    def _find_file_downloadable_from_any_of(
-        self, schemas: list[dict]
-    ) -> t.Optional[t.Dict]:
-        for schema in schemas:
-            if "type" not in schema or schema["type"] != "object":
-                continue
-
-            if self._is_file_downloadable(schema=schema):
-                return schema
-
-            # Hack to avoid recursive check, maybe use recursion
-            if '"file_downloadable":true' in json.dumps(schema):
-                return schema
+            for variant in schema["allOf"]:
+                if self._has_file_property(variant, "file_downloadable"):
+                    return variant
 
         return None
 
@@ -317,34 +506,115 @@ class FileHelper(WithLogger):
             return request
 
         params = schema["properties"]
-        for _param in request:
+        for _param in list(request.keys()):
             if _param not in params:
                 continue
 
-            if self._is_file_downloadable(schema=params[_param]):
-                request[_param] = str(
-                    FileDownloadable(**request[_param]).download(
-                        self._outdir / tool.toolkit.slug / tool.slug
-                    )
-                )
+            param_schema = params[_param]
+            param_value = request[_param]
+
+            # Skip None values
+            if param_value is None:
                 continue
 
-            if "anyOf" in params[_param]:
-                obj = self._find_file_downloadable_from_any_of(params[_param]["anyOf"])
-                if obj is None:
-                    continue
-                params[_param] = obj
+            # Direct file_downloadable check
+            if param_schema.get("file_downloadable", False):
+                if isinstance(param_value, dict) and "s3url" in param_value:
+                    request[_param] = str(
+                        FileDownloadable(**param_value).download(
+                            self._outdir / tool.toolkit.slug / tool.slug
+                        )
+                    )
+                continue
 
-            if (
-                isinstance(request[_param], dict)
-                and params[_param].get("type") == "object"
-            ):
+            # Check anyOf/oneOf/allOf for file_downloadable
+            downloadable_variant = self._find_downloadable_schema_variant(param_schema)
+            if downloadable_variant is not None:
+                # If the variant itself is file_downloadable
+                if downloadable_variant.get("file_downloadable", False):
+                    if isinstance(param_value, dict) and "s3url" in param_value:
+                        request[_param] = str(
+                            FileDownloadable(**param_value).download(
+                                self._outdir / tool.toolkit.slug / tool.slug
+                            )
+                        )
+                    continue
+
+                # If the variant has nested properties with file_downloadable
+                if (
+                    isinstance(param_value, dict)
+                    and downloadable_variant.get("type") == "object"
+                ):
+                    request[_param] = self._substitute_file_downloads_recursively(
+                        schema=downloadable_variant,
+                        request=param_value,
+                        tool=tool,
+                    )
+                    continue
+
+            # Handle nested objects
+            if isinstance(param_value, dict) and param_schema.get("type") == "object":
                 request[_param] = self._substitute_file_downloads_recursively(
-                    schema=params[_param],
-                    request=request[_param],
+                    schema=param_schema,
+                    request=param_value,
                     tool=tool,
                 )
                 continue
+
+            # Handle arrays with file_downloadable items
+            if (
+                isinstance(param_value, list)
+                and param_schema.get("type") == "array"
+                and "items" in param_schema
+            ):
+                items_schema = param_schema["items"]
+                if isinstance(items_schema, dict):
+                    processed_items = []
+                    for item in param_value:
+                        if item is None:
+                            processed_items.append(item)
+                            continue
+
+                        if self._has_file_property(items_schema, "file_downloadable"):
+                            if items_schema.get("file_downloadable", False):
+                                if isinstance(item, dict) and "s3url" in item:
+                                    processed_items.append(
+                                        str(
+                                            FileDownloadable(**item).download(
+                                                self._outdir
+                                                / tool.toolkit.slug
+                                                / tool.slug
+                                            )
+                                        )
+                                    )
+                                else:
+                                    processed_items.append(item)
+                            elif isinstance(item, dict):
+                                # Check for anyOf/oneOf/allOf in items schema
+                                item_variant = self._find_downloadable_schema_variant(
+                                    items_schema
+                                )
+                                if item_variant is not None:
+                                    processed_items.append(
+                                        self._substitute_file_downloads_recursively(
+                                            schema=item_variant,
+                                            request=item,
+                                            tool=tool,
+                                        )
+                                    )
+                                else:
+                                    processed_items.append(
+                                        self._substitute_file_downloads_recursively(
+                                            schema=items_schema,
+                                            request=item,
+                                            tool=tool,
+                                        )
+                                    )
+                            else:
+                                processed_items.append(item)
+                        else:
+                            processed_items.append(item)
+                    request[_param] = processed_items
 
         return request
 

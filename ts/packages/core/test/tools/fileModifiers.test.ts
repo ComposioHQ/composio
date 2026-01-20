@@ -654,6 +654,114 @@ describe('FileToolModifier', () => {
       expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
       expect(result.arguments?.fileInput).toBeNull();
     });
+
+    it('should upload file from base properties when anyOf has no file_uploadable', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      // Schema with anyOf at property level (no file_uploadable) but file_uploadable in sibling property
+      const toolWithMixedSchema: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            metadata: {
+              anyOf: [{ type: 'string' }, { type: 'null' }],
+            },
+            file: {
+              type: 'string',
+              file_uploadable: true,
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const params = {
+        arguments: {
+          metadata: 'some metadata',
+          file: '/path/to/file.txt',
+        },
+        userId: 'test-user',
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithMixedSchema, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith('/path/to/file.txt', {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        client: mockClient,
+      });
+      expect(result.arguments?.file).toEqual(mockFileData);
+      expect(result.arguments?.metadata).toBe('some metadata');
+    });
+
+    it('should upload file when schema has anyOf without file_uploadable alongside properties with file_uploadable', async () => {
+      const mockFileData = {
+        name: 'document.pdf',
+        mimetype: 'application/pdf',
+        s3key: 'uploads/document.pdf',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      // Schema where the root has both anyOf (without file_uploadable) and properties (with file_uploadable)
+      const toolWithAnyOfAndProperties: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          anyOf: [{ required: ['text'] }, { required: ['file'] }],
+          properties: {
+            text: {
+              type: 'string',
+            },
+            file: {
+              type: 'string',
+              file_uploadable: true,
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const params = {
+        arguments: {
+          file: '/path/to/document.pdf',
+        },
+        userId: 'test-user',
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithAnyOfAndProperties, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith(
+        '/path/to/document.pdf',
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        }
+      );
+      expect(result.arguments?.file).toEqual(mockFileData);
+    });
   });
 
   describe('fileDownloadModifier', () => {
