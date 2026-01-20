@@ -4,11 +4,13 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
 import type { Toolkit, Tool, Trigger } from '@/types/toolkit';
+import { PageActions } from '@/components/page-actions';
 
 interface ToolkitDetailProps {
   toolkit: Toolkit;
   tools: Tool[];
   triggers: Trigger[];
+  path: string;
 }
 
 function ToolkitIcon({ toolkit }: { toolkit: Toolkit }) {
@@ -66,7 +68,7 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
   );
 }
 
-export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) {
+export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailProps) {
   const [copied, setCopied] = useState(false);
   const [versionCopied, setVersionCopied] = useState(false);
   const [toolSearch, setToolSearch] = useState('');
@@ -182,6 +184,9 @@ export function ToolkitDetail({ toolkit, tools, triggers }: ToolkitDetailProps) 
                 </div>
               )}
             </div>
+
+            {/* Page actions */}
+            <PageActions path={path} />
           </div>
       </div>
 

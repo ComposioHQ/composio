@@ -1,23 +1,38 @@
-import { source } from '@/lib/source';
+import { getLLMText, source, toolRouterSource, examplesSource } from '@/lib/source';
 
 export const revalidate = false;
 
+async function getTextForPages(pages: ReturnType<typeof source.getPages>) {
+  return Promise.all(
+    pages.map(async (page) => {
+      try {
+        return await getLLMText(page);
+      } catch {
+        // Graceful fallback if getText fails
+        return `# ${page.data.title} (${page.url})\n\n${page.data.description || ''}`;
+      }
+    })
+  );
+}
+
 export async function GET() {
   try {
-    const pages = source.getPages();
-    const results: string[] = [];
+    const [docsResults, toolRouterResults, examplesResults] = await Promise.all([
+      getTextForPages(source.getPages()),
+      getTextForPages(toolRouterSource.getPages()),
+      getTextForPages(examplesSource.getPages()),
+    ]);
 
-    for (const page of pages) {
-      try {
-        const processed = await page.data.getText('processed');
-        results.push(`# ${page.data.title}\n\n${processed}`);
-      } catch {
-        // Fallback to basic info if getText fails
-        results.push(`# ${page.data.title}\n\n${page.data.description || ''}`);
-      }
-    }
+    const results = [
+      '# Documentation\n',
+      ...docsResults,
+      '\n# Tool Router\n',
+      ...toolRouterResults,
+      '\n# Examples\n',
+      ...examplesResults,
+    ];
 
-    return new Response(results.join('\n\n'), {
+    return new Response(results.join('\n\n---\n\n'), {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
       },

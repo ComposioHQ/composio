@@ -3,7 +3,6 @@ import { referenceSource } from '@/lib/source';
 import { APIPage } from '@/components/api-page';
 import {
   DocsBody,
-  DocsDescription,
   DocsPage,
   DocsTitle,
 } from 'fumadocs-ui/layouts/docs/page';
@@ -12,6 +11,7 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import type { ApiPageProps } from 'fumadocs-openapi/ui';
+import { PageActions } from '@/components/page-actions';
 
 interface OpenAPIPageData {
   title: string;
@@ -34,6 +34,7 @@ export default async function Page({
     return (
       <DocsPage full tableOfContentPopover={{ enabled: false }}>
         <h1 className="text-2xl font-semibold mb-4">{pageData.title}</h1>
+        <PageActions path={page.url} />
         <DocsBody>
           <APIPage {...pageData.getAPIPageProps()} />
         </DocsBody>
@@ -49,7 +50,7 @@ export default async function Page({
   return (
     <DocsPage toc={mdxData.toc} full={mdxData.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
       <DocsTitle>{mdxData.title}</DocsTitle>
-      <DocsDescription>{mdxData.description}</DocsDescription>
+      <PageActions path={page.url} />
       <DocsBody>
         <MDX
           components={getMDXComponents({

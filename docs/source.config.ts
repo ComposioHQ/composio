@@ -99,14 +99,18 @@ export default defineConfig({
         light: 'github-light',
         dark: 'github-dark',
       },
-      transformers: [
-        transformerTwoslash({
-          explicitTrigger: false, // All TypeScript blocks are validated
-          typesCache: createFileSystemTypesCache({
-            dir: '.next/cache/twoslash', // Inside .next/cache so Vercel persists it
-          }),
-        }),
-      ],
+      // Twoslash disabled in dev (heap memory issues), enabled in build/CI
+      transformers:
+        process.env.NODE_ENV === 'production'
+          ? [
+              transformerTwoslash({
+                explicitTrigger: false,
+                typesCache: createFileSystemTypesCache({
+                  dir: '.next/cache/twoslash',
+                }),
+              }),
+            ]
+          : [],
     },
   },
 });

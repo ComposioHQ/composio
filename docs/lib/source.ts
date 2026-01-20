@@ -55,12 +55,90 @@ export function getPageImage(page: InferPageType<typeof source>) {
   };
 }
 
+/**
+ * Converts MDX content to clean markdown for AI agents.
+ * Strips JSX components and converts them to plain text equivalents.
+ */
+function mdxToCleanMarkdown(content: string): string {
+  let result = content;
+
+  // Remove frontmatter
+  result = result.replace(/^---[\s\S]*?---\n*/m, '');
+
+  // Convert YouTube to link
+  result = result.replace(
+    /<YouTube\s+id="([^"]+)"\s+title="([^"]+)"\s*\/>/g,
+    '[Video: $2](https://youtube.com/watch?v=$1)'
+  );
+
+  // Convert Callout to blockquote
+  result = result.replace(
+    /<Callout[^>]*title="([^"]*)"[^>]*>([\s\S]*?)<\/Callout>/g,
+    '> **$1**: $2'
+  );
+  result = result.replace(
+    /<Callout[^>]*>([\s\S]*?)<\/Callout>/g,
+    '> $1'
+  );
+
+  // Convert Card - handle multiline and various attribute orders
+  // Self-closing Cards with description attribute
+  result = result.replace(
+    /<Card[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?description="([^"]*)"[\s\S]*?\/>/g,
+    '- [$1]($2): $3'
+  );
+  // Cards with children content (non-self-closing)
+  result = result.replace(
+    /<Card[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
+    '- [$1]($2): $3'
+  );
+  // Cards with href before title
+  result = result.replace(
+    /<Card[\s\S]*?href="([^"]*)"[\s\S]*?title="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
+    '- [$2]($1): $3'
+  );
+
+  // Convert ProviderCard to markdown link
+  result = result.replace(
+    /<ProviderCard[\s\S]*?name="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?languages=\{\[([^\]]*)\]\}[\s\S]*?\/>/g,
+    (_, name, href, langs) => `- [${name}](${href}) (${langs.replace(/"/g, '')})`
+  );
+
+  // Convert Tabs/Tab content - keep inner content
+  result = result.replace(/<TabsList>[\s\S]*?<\/TabsList>/g, '');
+  result = result.replace(/<TabsTrigger[^>]*>[^<]*<\/TabsTrigger>/g, '');
+  result = result.replace(/<TabsContent[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/TabsContent>/g, '\n**$1:**\n$2');
+  result = result.replace(/<Tab[\s\S]*?value="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Tab>/g, '\n**$1:**\n$2');
+
+  // Convert Steps/Step
+  result = result.replace(/<Step>\s*###\s*(.+)/g, '### Step: $1');
+  result = result.replace(/<\/?Steps?>/g, '');
+
+  // Remove wrapper components (Cards, ProviderGrid, Tabs, Frame, div, etc.)
+  result = result.replace(/<\/?(Cards|ProviderGrid|Tabs|Frame|div)[^>]*>/g, '');
+
+  // Remove remaining self-closing JSX tags (including those with JSX expressions)
+  result = result.replace(/<[A-Z][a-zA-Z]*[\s\S]*?\/>/g, '');
+
+  // Remove remaining JSX opening/closing tags but keep content
+  result = result.replace(/<\/?[A-Z][a-zA-Z]*[^>]*>/g, '');
+
+  // Clean up leftover JSX artifacts like lone } or {
+  result = result.replace(/^\s*[{}]\s*$/gm, '');
+
+  // Clean up excessive newlines
+  result = result.replace(/\n{3,}/g, '\n\n');
+
+  return result.trim();
+}
+
 export async function getLLMText(page: InferPageType<typeof source>) {
-  const processed = await page.data.getText('processed');
+  const content = await page.data.getText('raw');
+  const cleanContent = mdxToCleanMarkdown(content);
 
-  return `# ${page.data.title}
+  return `# ${page.data.title} (${page.url})
 
-${processed}`;
+${cleanContent}`;
 }
 
 export function formatDate(dateStr: string): string {

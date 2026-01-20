@@ -39,6 +39,7 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 3. **Toolkits data**: `public/data/toolkits.json` must exist - errors are thrown, not silently ignored
 4. **Root directory on Vercel**: Set to `docs` with "Include files outside root directory" DISABLED
 5. **Mobile nav**: Always test CSS changes on mobile. Fumadocs uses different nav patterns (dropdown on mobile, horizontal on desktop). Avoid absolute positioning or pseudo-elements that assume horizontal layout.
+6. **Twoslash in dev**: Twoslash is disabled in `bun dev` due to heap memory issues (loads full TypeScript compiler). Type checking only runs during `bun run build`. Run build locally to catch type errors before pushing.
 
 ## Twoslash - TypeScript Code Block Type Checking
 
@@ -50,6 +51,7 @@ CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**
 - **Default on**: All TypeScript blocks are validated. No annotation needed.
 - **Build-time validation**: Type errors fail the build.
 - **CI enforcement**: `.github/workflows/docs-typescript-check.yml` runs on PRs to docs/
+- **Disabled in dev**: Twoslash is disabled during `bun dev` to prevent heap memory issues. It only runs during `bun run build` / CI.
 
 ### Exclusions
 - **Reference docs** (`/content/reference/`): Excluded from Twoslash via collection-level `mdxOptions` in `source.config.ts`. These are auto-generated and don't need type checking.

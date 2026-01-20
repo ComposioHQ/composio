@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
+import { PageActions } from '@/components/page-actions';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { Metadata } from 'next';
@@ -101,6 +102,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     const MDXContent = page.data.body;
     return (
       <article className="prose prose-fd max-w-none">
+        <PageActions path={page.url} />
         <MDXContent components={getMDXComponents()} />
       </article>
     );
@@ -118,6 +120,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
           toolkit={toolkit}
           tools={toolkit.tools}
           triggers={toolkit.triggers}
+          path={`/toolkits/${toolkit.slug}`}
         />
       );
     }

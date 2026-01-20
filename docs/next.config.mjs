@@ -11,6 +11,13 @@ const config = {
   turbopack: {
     root: __dirname,
   },
+  async rewrites() {
+    return [
+      // Serve markdown for AI agents: /any/path.md → /llms.mdx/any/path
+      { source: '/:path*.md', destination: '/llms.mdx/:path*' },
+      { source: '/:path*.mdx', destination: '/llms.mdx/:path*' },
+    ];
+  },
   async redirects() {
     return [
       {
