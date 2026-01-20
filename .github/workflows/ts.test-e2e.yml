@@ -63,6 +63,7 @@ jobs:
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
@@ -86,6 +87,11 @@ jobs:
             exit 1
           fi
           echo "✅ COMPOSIO_API_KEY is configured"
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::OPENAI_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ OPENAI_API_KEY is configured"
 
       - name: Run Cloudflare Workers E2E Tests
         run: pnpm run test:e2e:cloudflare
