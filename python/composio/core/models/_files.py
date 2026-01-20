@@ -434,7 +434,7 @@ class FileHelper(WithLogger):
             ):
                 items_schema = param_schema["items"]
                 if isinstance(items_schema, dict):
-                    processed_items = []
+                    processed_items: t.List[t.Any] = []
                     for item in request[_param]:
                         if self._has_file_property(items_schema, "file_uploadable"):
                             if items_schema.get("file_uploadable", False):
@@ -569,7 +569,7 @@ class FileHelper(WithLogger):
             ):
                 items_schema = param_schema["items"]
                 if isinstance(items_schema, dict):
-                    processed_items = []
+                    processed_items: t.List[t.Any] = []
                     for item in param_value:
                         if item is None:
                             processed_items.append(item)
