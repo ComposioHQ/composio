@@ -762,6 +762,90 @@ describe('FileToolModifier', () => {
       );
       expect(result.arguments?.file).toEqual(mockFileData);
     });
+
+    it('should upload array items with file_uploadable inside anyOf', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const toolWithArrayAnyOf: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            files: {
+              type: 'array',
+              items: {
+                anyOf: [{ type: 'string', file_uploadable: true }, { type: 'null' }],
+              },
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const params = {
+        arguments: {
+          files: ['/path/to/file1.txt', '/path/to/file2.txt'],
+        },
+        userId: 'test-user',
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithArrayAnyOf, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(2);
+      expect((result.arguments?.files as unknown[])?.[0]).toEqual(mockFileData);
+      expect((result.arguments?.files as unknown[])?.[1]).toEqual(mockFileData);
+    });
+
+    it('should preserve null items in array with file_uploadable inside anyOf', async () => {
+      const toolWithArrayAnyOf: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            files: {
+              type: 'array',
+              items: {
+                anyOf: [{ type: 'string', file_uploadable: true }, { type: 'null' }],
+              },
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const params = {
+        arguments: {
+          files: [null, null],
+        },
+        userId: 'test-user',
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithArrayAnyOf, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
+      expect(result.arguments?.files).toEqual([null, null]);
+    });
   });
 
   describe('fileDownloadModifier', () => {

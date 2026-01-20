@@ -437,6 +437,7 @@ class FileHelper(WithLogger):
                     processed_items: t.List[t.Any] = []
                     for item in request[_param]:
                         if self._has_file_property(items_schema, "file_uploadable"):
+                            # Check for direct file_uploadable
                             if items_schema.get("file_uploadable", False):
                                 if item is not None and item != "":
                                     processed_items.append(
@@ -447,16 +448,49 @@ class FileHelper(WithLogger):
                                             toolkit=tool.toolkit.slug,
                                         ).model_dump()
                                     )
-                            elif isinstance(item, dict):
-                                processed_items.append(
-                                    self._substitute_file_uploads_recursively(
-                                        schema=items_schema,
-                                        request=item,
-                                        tool=tool,
-                                    )
-                                )
+                                else:
+                                    processed_items.append(item)
                             else:
-                                processed_items.append(item)
+                                # Check for file_uploadable inside anyOf/oneOf/allOf
+                                item_variant = self._find_uploadable_schema_variant(
+                                    items_schema
+                                )
+                                if item_variant is not None:
+                                    # Variant has direct file_uploadable - upload string items
+                                    if item_variant.get("file_uploadable", False):
+                                        if item is not None and item != "":
+                                            processed_items.append(
+                                                FileUploadable.from_path(
+                                                    client=self._client,
+                                                    file=item,
+                                                    tool=tool.slug,
+                                                    toolkit=tool.toolkit.slug,
+                                                ).model_dump()
+                                            )
+                                        else:
+                                            processed_items.append(item)
+                                    # Variant has nested file_uploadable - recurse for dict items
+                                    elif isinstance(item, dict):
+                                        processed_items.append(
+                                            self._substitute_file_uploads_recursively(
+                                                schema=item_variant,
+                                                request=item,
+                                                tool=tool,
+                                            )
+                                        )
+                                    else:
+                                        processed_items.append(item)
+                                elif isinstance(item, dict):
+                                    # No uploadable variant found, but item is dict - recurse
+                                    processed_items.append(
+                                        self._substitute_file_uploads_recursively(
+                                            schema=items_schema,
+                                            request=item,
+                                            tool=tool,
+                                        )
+                                    )
+                                else:
+                                    processed_items.append(item)
                         else:
                             processed_items.append(item)
                     request[_param] = processed_items

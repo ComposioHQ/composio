@@ -954,3 +954,83 @@ class TestFileUploadWithMixedSchemas:
         # Both values should be preserved unchanged
         assert result["metadata"] == "test data"
         assert result["count"] == 42
+
+    def test_upload_array_items_with_file_uploadable_in_anyof(
+        self, file_helper, mock_tool
+    ):
+        """Test that array items with file_uploadable inside anyOf are uploaded."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {"type": "string", "file_uploadable": True},
+                            {"type": "null"},
+                        ]
+                    },
+                }
+            },
+        }
+
+        # Should try to upload each file in the array
+        with pytest.raises(Exception):  # Will fail because files don't exist
+            file_helper._substitute_file_uploads_recursively(
+                tool=mock_tool,
+                schema=mock_tool.input_parameters,
+                request={"files": ["/path/to/file1.txt", "/path/to/file2.txt"]},
+            )
+
+    def test_upload_array_items_with_file_uploadable_in_oneof(
+        self, file_helper, mock_tool
+    ):
+        """Test that array items with file_uploadable inside oneOf are uploaded."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {"type": "string", "file_uploadable": True},
+                            {"type": "string", "format": "uri"},
+                        ]
+                    },
+                }
+            },
+        }
+
+        # Should try to upload the file
+        with pytest.raises(Exception):
+            file_helper._substitute_file_uploads_recursively(
+                tool=mock_tool,
+                schema=mock_tool.input_parameters,
+                request={"attachments": ["/path/to/attachment.pdf"]},
+            )
+
+    def test_upload_array_null_items_preserved_with_anyof(self, file_helper, mock_tool):
+        """Test that null items in arrays with anyOf file_uploadable are preserved."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {"type": "string", "file_uploadable": True},
+                            {"type": "null"},
+                        ]
+                    },
+                }
+            },
+        }
+
+        result = file_helper._substitute_file_uploads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.input_parameters,
+            request={"files": [None, "", None]},
+        )
+
+        # Null and empty items should be preserved
+        assert result["files"] == [None, "", None]
