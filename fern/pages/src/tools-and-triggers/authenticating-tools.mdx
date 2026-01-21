@@ -218,7 +218,10 @@ Some services like Zendesk require additional parameters such as `subdomain`:
 connection_request = composio.connected_accounts.initiate(
   user_id=user_id,
   auth_config_id=auth_config_id,
-  config=auth_scheme.oauth2(subdomain="mycompany")  # For mycompany.zendesk.com
+  config={
+    "auth_scheme": "OAUTH2",
+    "val": {"subdomain": "mycompany"}  # For mycompany.zendesk.com
+  }
 )
 ```
 
