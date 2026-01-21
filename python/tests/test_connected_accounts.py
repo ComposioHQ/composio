@@ -183,6 +183,30 @@ class TestConnectedAccounts:
                 user_id="user-1", auth_config_id="auth-1", allow_multiple=False
             )
 
+    def test_initiate_filters_by_active_status_when_checking_existing_accounts(
+        self, connected_accounts, mock_client
+    ):
+        """
+        Test that initiate only considers ACTIVE accounts when checking for duplicates.
+        This ensures expired or inactive accounts don't block new connection creation.
+        """
+        mock_accounts = Mock()
+        mock_accounts.items = []
+        mock_client.connected_accounts.list.return_value = mock_accounts
+
+        mock_response = Mock()
+        mock_response.id = "conn-123"
+        mock_response.connection_data.val.status = "PENDING"
+        mock_response.connection_data.val.redirect_url = "https://redirect"
+        mock_client.connected_accounts.create.return_value = mock_response
+
+        connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
+
+        # Verify that list is called with statuses=["ACTIVE"] to filter only active accounts
+        mock_client.connected_accounts.list.assert_called_once_with(
+            user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
+        )
+
     def test_initiate_warns_and_creates_when_allow_multiple(
         self, connected_accounts, mock_client, caplog
     ):
@@ -211,7 +235,7 @@ class TestConnectedAccounts:
             )
 
         mock_client.connected_accounts.list.assert_called_once_with(
-            user_ids=["user-1"], auth_config_ids=["auth-1"]
+            user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
         )
         call_kwargs = mock_client.connected_accounts.create.call_args.kwargs
         assert call_kwargs["auth_config"] == {"id": "auth-1"}

@@ -113,6 +113,15 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.initiate(userId, authConfigId, options);
 
+      // Verify list is called with ACTIVE status filter
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_ids: [userId],
+          auth_config_ids: [authConfigId],
+          statuses: [ConnectedAccountStatuses.ACTIVE],
+        })
+      );
+
       expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
         auth_config: {
           id: authConfigId,
@@ -223,6 +232,43 @@ describe('ConnectedAccounts', () => {
 
       await expect(connectedAccounts.initiate(userId, authConfigId)).rejects.toThrow(
         ComposioMultipleConnectedAccountsError
+      );
+    });
+
+    it('should filter by ACTIVE status when checking for existing accounts', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      // Mock list response to return empty list (no ACTIVE accounts)
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_123',
+        connectionData: {
+          val: {
+            authScheme: AuthSchemeTypes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      await connectedAccounts.initiate(userId, authConfigId);
+
+      // Verify that list is called with statuses filter set to ACTIVE only
+      // This ensures expired/inactive accounts don't block new connection creation
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_ids: [userId],
+          auth_config_ids: [authConfigId],
+          statuses: [ConnectedAccountStatuses.ACTIVE],
+        })
       );
     });
 

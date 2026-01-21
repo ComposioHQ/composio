@@ -161,6 +161,7 @@ export class ConnectedAccounts {
     const connectedAccount = await this.list({
       userIds: [userId],
       authConfigIds: [authConfigId],
+      statuses: [ConnectedAccountStatuses.ACTIVE],
     });
     if (connectedAccount.items.length > 0 && !options?.allowMultiple) {
       throw new ComposioMultipleConnectedAccountsError(

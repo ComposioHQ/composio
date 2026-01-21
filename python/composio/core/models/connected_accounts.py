@@ -363,8 +363,7 @@ class ConnectedAccounts:
         """
         # Check if there are multiple connected accounts for the authConfig of the user
         connected_accounts = self.list(
-            user_ids=[user_id],
-            auth_config_ids=[auth_config_id],
+            user_ids=[user_id], auth_config_ids=[auth_config_id], statuses=["ACTIVE"]
         )
         if connected_accounts.items and not allow_multiple:
             raise exceptions.ComposioMultipleConnectedAccountsError(
