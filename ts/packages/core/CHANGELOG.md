@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.5.4
+
+### Patch Changes
+
+- b3f5875: Fix multi connected account flag to check only active accounts
+
 ## 0.5.3
 
 ### Patch Changes
