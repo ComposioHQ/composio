@@ -24,7 +24,7 @@ const triggers = await composio.triggers.listActive({
   authConfigIds: ['auth-config-id'],
   connectedAccountIds: ['connected-account-id'],
   limit: 10,
-  page: 1,
+  cursor: 'cursor-string', // Use cursor for pagination
   showDisabled: false,
   triggerIds: ['trigger-id'],
   triggerNames: ['trigger-name'],

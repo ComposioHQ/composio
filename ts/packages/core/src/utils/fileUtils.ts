@@ -165,29 +165,24 @@ const uploadFileToS3 = async (
     toolkit_slug: toolkitSlug,
   });
 
-  const { key, type } = response;
+  const { key, new_presigned_url } = response;
 
-  if (type === 'new' || type === 'update') {
-    logger.debug(`Uploading ${key} file to S3: ${key}`);
-    const buffer = Buffer.from(content, 'base64');
-    const signedURL =
-      response.type === 'update' ? response.update_presigned_url : response.new_presigned_url;
+  // Upload file using presigned URL
+  // Note: API now always returns type: 'new' with new_presigned_url
+  logger.debug(`Uploading ${key} file to S3: ${key}`);
+  const buffer = Buffer.from(content, 'base64');
 
-    // Upload the file using the presigned URL
-    const uploadResponse = await fetch(signedURL, {
-      method: 'PUT',
-      body: buffer,
-      headers: {
-        'Content-Type': mimeType,
-        'Content-Length': buffer.length.toString(),
-      },
-    });
+  const uploadResponse = await fetch(new_presigned_url, {
+    method: 'PUT',
+    body: buffer,
+    headers: {
+      'Content-Type': mimeType,
+      'Content-Length': buffer.length.toString(),
+    },
+  });
 
-    if (!uploadResponse.ok) {
-      throw new Error(`Failed to upload file to S3: ${uploadResponse.statusText}`);
-    }
-  } else {
-    logger.debug(`File already exists in S3: ${key}`);
+  if (!uploadResponse.ok) {
+    throw new Error(`Failed to upload file to S3: ${uploadResponse.statusText}`);
   }
 
   return key;

@@ -198,6 +198,22 @@ export const ToolRouterCreateSessionConfigSchema = z
       })
       .optional()
       .describe('The execution config for the tool router session'),
+    experimental: z
+      .object({
+        assistivePrompt: z
+          .object({
+            userTimezone: z
+              .string()
+              .optional()
+              .describe(
+                'IANA timezone identifier (e.g., "America/New_York", "Europe/London") for timezone-aware assistive prompts'
+              ),
+          })
+          .optional()
+          .describe('Configuration for assistive prompt generation'),
+      })
+      .optional()
+      .describe('Experimental features configuration - not stable, may be modified or removed'),
   })
   .partial()
   .describe('The config for the tool router session');
@@ -289,6 +305,17 @@ export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptions
 export type ToolRouterToolkitsFn = (
   options?: ToolRouterToolkitsOptions
 ) => Promise<ToolkitConnectionsDetails>;
+/**
+ * Experimental features response from session creation.
+ * Only returned on session creation, not on GET.
+ */
+export interface ToolRouterSessionExperimental {
+  /**
+   * The assistive system prompt to inject into your agent for optimal tool router usage.
+   */
+  assistivePrompt?: string;
+}
+
 export interface ToolRouterSession<
   TToolCollection,
   TTool,
@@ -318,4 +345,9 @@ export interface ToolRouterSession<
    * Supports pagination and filtering by toolkit slugs.
    */
   toolkits: ToolRouterToolkitsFn;
+  /**
+   * Experimental features including the generated system prompt.
+   * Only returned on session creation, not on GET.
+   */
+  experimental?: ToolRouterSessionExperimental;
 }
