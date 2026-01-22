@@ -1,0 +1,133 @@
+---
+description: Apply when fixing bugs, addressing issues, or resolving defects in the codebase
+globs: 
+alwaysApply: false
+---
+
+# Bug Fix Testing Requirements
+
+When fixing bugs or addressing issues in the codebase, always ensure proper test coverage:
+
+## Required Actions
+
+1. **Identify existing tests** - Check if there are existing tests for the affected code
+   - TypeScript: Look in `ts/packages/<package>/test/` directories
+   - Python: Look in `python/tests/` directory
+
+2. **Add regression tests** - Create tests that:
+   - Reproduce the original bug (the test should fail before the fix)
+   - Verify the fix works correctly (the test should pass after the fix)
+   - Cover edge cases related to the bug
+
+3. **Update existing tests** - If the fix changes expected behavior:
+   - Update affected test assertions
+   - Add new test cases for the changed behavior
+   - Ensure no unrelated tests are broken
+
+## Test Location Guidelines
+
+**Important:** Add regression tests to existing test files that cover the affected feature/module. Do NOT create new test files specifically for regressions.
+
+### TypeScript
+
+**Test Structure:**
+- Tests location: `ts/packages/<package-name>/test/<feature>/<feature>.test.ts`
+- Mocks location: `ts/packages/<package-name>/test/utils/mocks/`
+- E2E tests: `ts/e2e-tests/`
+
+**Framework:** Vitest
+
+**Test Pattern:**
+```typescript
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+describe('FeatureName', () => {
+  beforeEach(() => {
+    // Setup
+  });
+
+  afterEach(() => {
+    // Cleanup
+  });
+
+  describe('methodName', () => {
+    it('should <expected_behavior> when <condition>', async () => {
+      // Arrange
+      // Act
+      // Assert
+      expect(result).toEqual(expected);
+    });
+  });
+});
+```
+
+**Mocking:**
+- Use `vi.mock()` for module mocking
+- Use `vi.spyOn()` for spying on methods
+- Use `vi.fn()` for creating mock functions
+- Store reusable mocks in `test/utils/mocks/`
+
+### Python
+
+**Test Structure:**
+- Tests location: `python/tests/test_<feature>.py`
+- Shared fixtures: `python/tests/conftest.py`
+
+**Framework:** pytest with markers (`core`, `openai`, `langchain`, `vercel`)
+
+**Test Pattern:**
+```python
+import pytest
+from unittest.mock import MagicMock, patch
+
+@pytest.fixture
+def mock_client():
+    """Create a mock client."""
+    client = MagicMock()
+    return client
+
+class TestFeatureName:
+    """Test cases for FeatureName."""
+
+    def test_method_expected_behavior_when_condition(self, mock_client):
+        """Test that method behaves correctly when condition."""
+        # Arrange
+        # Act
+        # Assert
+        assert result == expected
+
+    def test_method_handles_error_gracefully(self, mock_client):
+        """Test that method handles errors gracefully."""
+        mock_client.some_method.side_effect = Exception("Error")
+        
+        with pytest.raises(Exception, match="Error"):
+            # Act
+            pass
+```
+
+**Mocking:**
+- Use `@pytest.fixture` for reusable test dependencies
+- Use `unittest.mock.MagicMock` for mock objects
+- Use `@patch` decorator for patching modules
+- Use `mock.return_value` and `mock.side_effect` for return values
+
+## Test Naming Conventions
+
+**TypeScript:**
+- `describe()` blocks: Feature/class name
+- `it()` blocks: `'should <expected_behavior> when <condition>'`
+- Example: `it('should throw validation error when both tools and toolkits are provided')`
+
+**Python:**
+- Class: `TestFeatureName`
+- Method: `test_<feature>_<expected_behavior>_when_<condition>`
+- Example: `test_create_session_with_toolkits_list`
+
+## Verification
+
+Before completing the bug fix:
+1. Run the new/updated tests to confirm they pass
+   - TypeScript: `pnpm test` or `cd ts/packages/<package> && pnpm test`
+   - Python: `make tst` or `pytest -m <marker>`
+2. Run the full test suite to ensure no regressions
+3. Document the test in the PR/commit message
