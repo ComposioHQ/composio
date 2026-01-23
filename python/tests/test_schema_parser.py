@@ -303,6 +303,25 @@ class TestJsonSchemaToModel:
         instance = model_class(tags=["tag1", "tag2"])
         assert instance.tags == ["tag1", "tag2"]
 
+    def test_anonymous_nested_object_in_array(self):
+        """Test arrays with anonymous nested objects (no title) don't crash (Issue #2435)."""
+        json_schema = {
+            "title": "TestTool",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"id": {"type": "string"}},
+                    },
+                }
+            },
+        }
+        model_class = json_schema_to_model(json_schema)
+        instance = model_class(items=[{"id": "123"}])
+        assert instance.items[0].id == "123"
+
 
 class TestPydanticModelFromParamSchema:
     """Test cases for pydantic_model_from_param_schema function."""

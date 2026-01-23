@@ -2,6 +2,7 @@
 Shared utils.
 """
 
+import hashlib
 import typing as t
 import uuid
 from functools import reduce
@@ -170,6 +171,24 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t
     return field_definitions  # type: ignore
 
 
+def _generate_model_name_from_schema(json_schema: t.Dict[str, t.Any]) -> str:
+    """
+    Generate a deterministic model name from schema properties.
+
+    This is used when a JSON schema lacks a 'title' field. The name is generated
+    by hashing the property names to ensure the same schema always produces the
+    same model name.
+
+    :param json_schema: The JSON schema to generate a name for.
+    :return: A deterministic model name string.
+    """
+    properties = json_schema.get("properties", {})
+    # Create a stable string from sorted property names
+    props_str = ",".join(sorted(properties.keys())) if properties else "empty"
+    schema_hash = hashlib.md5(props_str.encode()).hexdigest()[:8]
+    return f"DynamicModel_{schema_hash}"
+
+
 def json_schema_to_model(
     json_schema: t.Dict[str, t.Any],
     skip_default: bool = False,
@@ -182,6 +201,8 @@ def json_schema_to_model(
     :return: Pydantic `BaseModel` type
     """
     model_name = json_schema.get("title")
+    if model_name is None:
+        model_name = _generate_model_name_from_schema(json_schema)
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
