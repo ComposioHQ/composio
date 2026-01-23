@@ -33,6 +33,30 @@ interface Trigger {
   description: string;
 }
 
+interface AuthConfigField {
+  name: string;
+  displayName: string;
+  type: string;
+  description: string;
+  required: boolean;
+  default?: string | null;
+}
+
+interface AuthConfigDetail {
+  mode: string;
+  name: string;
+  fields: {
+    auth_config_creation: {
+      required: AuthConfigField[];
+      optional: AuthConfigField[];
+    };
+    connected_account_initiation: {
+      required: AuthConfigField[];
+      optional: AuthConfigField[];
+    };
+  };
+}
+
 interface Toolkit {
   slug: string;
   name: string;
@@ -45,6 +69,7 @@ interface Toolkit {
   version: string | null;
   tools: Tool[];
   triggers: Trigger[];
+  authConfigDetails?: AuthConfigDetail[];
 }
 
 async function fetchToolkits(): Promise<any[]> {
@@ -108,9 +133,10 @@ async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
   if (!response.ok) return [];
 
   const data = await response.json();
-  const items = data.items || data || [];
+  const rawItems = data.items || data;
+  const items = Array.isArray(rawItems) ? rawItems : [];
 
-  return items.map((raw: any) => ({
+  return items.filter((raw: any) => raw && typeof raw === 'object').map((raw: any) => ({
     slug: raw.slug || '',
     name: raw.name || raw.display_name || raw.slug || '',
     description: raw.description || '',
@@ -128,12 +154,70 @@ async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
   if (!response.ok) return [];
 
   const data = await response.json();
-  const items = data.items || data || [];
+  const rawItems = data.items || data;
+  const items = Array.isArray(rawItems) ? rawItems : [];
 
-  return items.map((raw: any) => ({
+  return items.filter((raw: any) => raw && typeof raw === 'object').map((raw: any) => ({
     slug: raw.slug || '',
     name: raw.name || raw.display_name || raw.slug || '',
     description: raw.description || '',
+  }));
+}
+
+async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]> {
+  const response = await fetch(`${API_BASE}/toolkits/${slug}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY!,
+    },
+  });
+
+  if (!response.ok) return [];
+
+  const data = await response.json();
+  const authConfigDetails = data.auth_config_details || [];
+
+  return authConfigDetails.map((raw: any) => ({
+    mode: raw.mode || '',
+    name: raw.name || raw.mode || '',
+    fields: {
+      auth_config_creation: {
+        required: (raw.fields?.auth_config_creation?.required || []).map((f: any) => ({
+          name: f.name || '',
+          displayName: f.displayName || f.name || '',
+          type: f.type || 'string',
+          description: f.description || '',
+          required: f.required ?? true,
+          default: f.default ?? null,
+        })),
+        optional: (raw.fields?.auth_config_creation?.optional || []).map((f: any) => ({
+          name: f.name || '',
+          displayName: f.displayName || f.name || '',
+          type: f.type || 'string',
+          description: f.description || '',
+          required: f.required ?? false,
+          default: f.default ?? null,
+        })),
+      },
+      connected_account_initiation: {
+        required: (raw.fields?.connected_account_initiation?.required || []).map((f: any) => ({
+          name: f.name || '',
+          displayName: f.displayName || f.name || '',
+          type: f.type || 'string',
+          description: f.description || '',
+          required: f.required ?? true,
+          default: f.default ?? null,
+        })),
+        optional: (raw.fields?.connected_account_initiation?.optional || []).map((f: any) => ({
+          name: f.name || '',
+          displayName: f.displayName || f.name || '',
+          type: f.type || 'string',
+          description: f.description || '',
+          required: f.required ?? false,
+          default: f.default ?? null,
+        })),
+      },
+    },
   }));
 }
 
@@ -174,8 +258,8 @@ async function main() {
     toolkit.version = versionMap.get(toolkit.slug) || null;
   }
 
-  // Fetch tools and triggers for each toolkit in batches
-  console.log('Fetching tools and triggers...');
+  // Fetch tools, triggers, and auth config details for each toolkit in batches
+  console.log('Fetching tools, triggers, and auth config details...');
   const batchSize = 10;
   let completed = 0;
 
@@ -184,15 +268,17 @@ async function main() {
 
     await Promise.all(
       batch.map(async (toolkit) => {
-        const [tools, triggers] = await Promise.all([
+        const [tools, triggers, authConfigDetails] = await Promise.all([
           fetchToolsForToolkit(toolkit.slug.toUpperCase()),
           fetchTriggersForToolkit(toolkit.slug.toUpperCase()),
+          fetchAuthConfigDetails(toolkit.slug),
         ]);
 
         toolkit.tools = tools;
         toolkit.triggers = triggers;
         toolkit.toolCount = tools.length;
         toolkit.triggerCount = triggers.length;
+        toolkit.authConfigDetails = authConfigDetails.length > 0 ? authConfigDetails : undefined;
 
         completed++;
         process.stdout.write(`\r  Progress: ${completed}/${toolkits.length}`);

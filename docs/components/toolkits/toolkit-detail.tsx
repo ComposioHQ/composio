@@ -3,8 +3,10 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
-import type { Toolkit, Tool, Trigger } from '@/types/toolkit';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { PageActions } from '@/components/page-actions';
+import { AuthDetailsSection } from '@/components/toolkits/auth-details-section';
 
 interface ToolkitDetailProps {
   toolkit: Toolkit;
@@ -22,9 +24,47 @@ function ToolkitIcon({ toolkit }: { toolkit: Toolkit }) {
         backgroundSize: '60%',
       } : undefined}
     >
-      {!toolkit.logo && toolkit.name.trim().charAt(0).toUpperCase()}
+      {!toolkit.logo && (toolkit.name?.trim() || toolkit.slug).charAt(0).toUpperCase()}
     </div>
   );
+}
+
+// Format default value for display
+function formatDefault(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+// Convert parameter schema to TypeTable format
+function paramsToTypeTable(params: Record<string, ParameterSchema>): Record<string, {
+  type: string;
+  description?: string;
+  default?: string;
+  required?: boolean;
+}> {
+  const result: Record<string, {
+    type: string;
+    description?: string;
+    default?: string;
+    required?: boolean;
+  }> = {};
+
+  for (const [name, param] of Object.entries(params)) {
+    result[name] = {
+      type: param.type || 'string',
+      description: param.description || undefined,
+      default: formatDefault(param.default),
+      required: param.required,
+    };
+  }
+
+  return result;
+}
+
+// Check if item is a Tool with parameters
+function isTool(item: Tool | Trigger): item is Tool {
+  return 'input_parameters' in item || 'output_parameters' in item;
 }
 
 function ToolItem({ item }: { item: Tool | Trigger }) {
@@ -37,6 +77,10 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const tool = isTool(item) ? item : null;
+  const hasInputParams = tool?.input_parameters && Object.keys(tool.input_parameters).length > 0;
+  const hasOutputParams = tool?.output_parameters && Object.keys(tool.output_parameters).length > 0;
 
   return (
     <div className="border-b border-fd-border/50 last:border-0">
@@ -60,8 +104,22 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
         </span>
       </button>
       {expanded && (
-        <div className="bg-fd-muted/20 px-4 py-3 pl-10">
+        <div className="space-y-4 bg-fd-muted/20 px-4 py-3 pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
+
+          {hasInputParams && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Input Parameters</h4>
+              <TypeTable type={paramsToTypeTable(tool.input_parameters!)} />
+            </div>
+          )}
+
+          {hasOutputParams && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Output</h4>
+              <TypeTable type={paramsToTypeTable(tool.output_parameters!)} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -75,22 +133,24 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
   const [activeTab, setActiveTab] = useState<'tools' | 'triggers'>('tools');
 
   const filteredTools = useMemo(() => {
-    if (!toolSearch) return tools;
+    const toolsArray = tools || [];
+    if (!toolSearch) return toolsArray;
     const search = toolSearch.toLowerCase();
-    return tools.filter(
+    return toolsArray.filter(
       (tool) =>
-        tool.name.toLowerCase().includes(search) ||
-        tool.slug.toLowerCase().includes(search)
+        tool.name?.toLowerCase().includes(search) ||
+        tool.slug?.toLowerCase().includes(search)
     );
   }, [tools, toolSearch]);
 
   const filteredTriggers = useMemo(() => {
-    if (!toolSearch) return triggers;
+    const triggersArray = triggers || [];
+    if (!toolSearch) return triggersArray;
     const search = toolSearch.toLowerCase();
-    return triggers.filter(
+    return triggersArray.filter(
       (trigger) =>
-        trigger.name.toLowerCase().includes(search) ||
-        trigger.slug.toLowerCase().includes(search)
+        trigger.name?.toLowerCase().includes(search) ||
+        trigger.slug?.toLowerCase().includes(search)
     );
   }, [triggers, toolSearch]);
 
@@ -126,7 +186,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
             {/* Title row */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{toolkit.name.trim()}</h1>
+                <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{(toolkit.name?.trim() || toolkit.slug)}</h1>
                 <button
                   onClick={copySlug}
                   className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
@@ -160,35 +220,21 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
                   target="_blank"
                   className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
                 >
-                  Try {toolkit.name.trim()}
+                  Try {(toolkit.name?.trim() || toolkit.slug)}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Link>
-                <Link
-                  href="/docs/authenticating-tools"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-background px-3 py-1.5 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
-                >
-                  Authentication guide
-                </Link>
               </div>
-              {toolkit.authSchemes.length > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-fd-muted-foreground">
-                  <span>Auth:</span>
-                  {toolkit.authSchemes.map((scheme, index) => (
-                    <span
-                      key={`${scheme}-${index}`}
-                      className="rounded bg-fd-muted px-1.5 py-0.5 text-xs text-fd-foreground"
-                    >
-                      {scheme}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Page actions */}
             <PageActions path={path} />
           </div>
       </div>
+
+      {/* Authentication Details */}
+      {toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0 && (
+        <AuthDetailsSection authConfigDetails={toolkit.authConfigDetails} />
+      )}
 
       {/* Tools & Triggers */}
       {(tools.length > 0 || triggers.length > 0) && (

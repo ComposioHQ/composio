@@ -1,4 +1,4 @@
-import { docs, toolRouter, reference, examples, toolkits, changelog } from 'fumadocs-mdx:collections/server';
+import { docs, reference, examples, toolkits, changelog } from 'fumadocs-mdx:collections/server';
 import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi } from './openapi';
@@ -8,12 +8,6 @@ import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 export const source = loader({
   baseUrl: '/docs',
   source: docs.toFumadocsSource(),
-  plugins: [lucideIconsPlugin()],
-});
-
-export const toolRouterSource = loader({
-  baseUrl: '/tool-router',
-  source: toolRouter.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 

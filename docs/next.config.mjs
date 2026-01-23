@@ -31,8 +31,75 @@ const config = {
         permanent: true,
       },
       {
+        source: '/tool-router',
+        destination: '/docs/quickstart',
+        permanent: true,
+      },
+      {
         source: '/tool-router/overview',
-        destination: '/tool-router',
+        destination: '/docs/quickstart',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/quickstart',
+        destination: '/docs/quickstart-tool-router',
+        permanent: true,
+      },
+      // Core concepts moved from tool-router to docs
+      {
+        source: '/tool-router/users-and-sessions',
+        destination: '/docs/users-and-sessions',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/migration-guide',
+        destination: '/docs/migration-guide/tool-router-beta',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/migration-guide/beta-to-stable',
+        destination: '/docs/migration-guide/tool-router-beta',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/authentication',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/tools-and-toolkits',
+        destination: '/docs/tools-and-toolkits',
+        permanent: true,
+      },
+      // Authentication pages moved from tool-router to docs
+      {
+        source: '/tool-router/using-in-chat-authentication',
+        destination: '/docs/authenticating-users/in-chat-authentication',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/manually-authenticating-users',
+        destination: '/docs/authenticating-users/manually-authenticating',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/using-custom-auth-configs',
+        destination: '/docs/guides/using-custom-auth-configuration',
+        permanent: true,
+      },
+      {
+        source: '/docs/authenticating-users/using-custom-auth-configs',
+        destination: '/docs/guides/using-custom-auth-configuration',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/white-labeling-authentication',
+        destination: '/docs/guides/white-labeling-authentication',
+        permanent: true,
+      },
+      {
+        source: '/tool-router/managing-multiple-accounts',
+        destination: '/docs/guides/managing-multiple-connected-accounts',
         permanent: true,
       },
       // Provider redirects (old fern URLs -> new docs URLs)
@@ -105,6 +172,22 @@ const config = {
       {
         source: '/rest-api/:path*',
         destination: '/reference/api-reference/:path*',
+        permanent: true,
+      },
+      // Features section redirects
+      {
+        source: '/docs/using-triggers',
+        destination: '/docs/triggers',
+        permanent: true,
+      },
+      {
+        source: '/docs/mcp-quickstart',
+        destination: '/docs/mcp/mcp-quickstart',
+        permanent: true,
+      },
+      {
+        source: '/docs/mcp-server-management',
+        destination: '/docs/mcp/mcp-server-management',
         permanent: true,
       },
     ];

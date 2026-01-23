@@ -1,4 +1,4 @@
-import { getLLMText, source, toolRouterSource, examplesSource } from '@/lib/source';
+import { getLLMText, source, examplesSource } from '@/lib/source';
 
 export const revalidate = false;
 
@@ -17,17 +17,14 @@ async function getTextForPages(pages: ReturnType<typeof source.getPages>) {
 
 export async function GET() {
   try {
-    const [docsResults, toolRouterResults, examplesResults] = await Promise.all([
+    const [docsResults, examplesResults] = await Promise.all([
       getTextForPages(source.getPages()),
-      getTextForPages(toolRouterSource.getPages()),
       getTextForPages(examplesSource.getPages()),
     ]);
 
     const results = [
       '# Documentation\n',
       ...docsResults,
-      '\n# Tool Router\n',
-      ...toolRouterResults,
       '\n# Examples\n',
       ...examplesResults,
     ];

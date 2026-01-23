@@ -40,11 +40,6 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
-        text: 'Tool Router',
-        url: '/tool-router',
-        active: 'nested-url',
-      },
-      {
         text: 'Toolkits',
         url: '/toolkits',
         active: 'nested-url',

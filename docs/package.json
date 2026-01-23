@@ -36,6 +36,7 @@
     "@anthropic-ai/claude-agent-sdk": "^0.2.5",
     "@anthropic-ai/sdk": "^0.71.2",
     "@composio/anthropic": "^0.4.0",
+    "@composio/claude-agent-sdk": "^0.4.0",
     "@composio/core": "^0.4.0",
     "@composio/google": "^0.4.0",
     "@composio/langchain": "^0.4.0",
