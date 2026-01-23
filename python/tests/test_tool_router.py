@@ -601,6 +601,29 @@ class TestToolRouter:
         kwargs = call_args.kwargs
         assert "experimental" not in kwargs
 
+    def test_create_session_with_experimental_empty_string_timezone(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with empty string timezone is excluded.
+
+        This ensures consistency with TypeScript SDK which uses truthy check.
+        """
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "",  # Empty string should be excluded
+                },
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify experimental is not included when timezone is empty string
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
+
     def test_create_session_experimental_response_transformation(
         self, tool_router, mock_client
     ):

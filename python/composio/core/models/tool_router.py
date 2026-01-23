@@ -1039,7 +1039,8 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             assistive_prompt_config = experimental.get("assistive_prompt")
             if assistive_prompt_config is not None:
                 user_timezone = assistive_prompt_config.get("user_timezone")
-                if user_timezone is not None:
+                # Only include if user_timezone is a non-empty string
+                if user_timezone:
                     create_params["experimental"] = {
                         "assistive_prompt_config": {
                             "user_timezone": user_timezone,
