@@ -293,7 +293,7 @@ This method attempts to refresh OAuth tokens or other credentials associated wit
 the connected account. This is useful when a token has expired or is about to expire.
 
 ```typescript
-async refresh(nanoid: string): Promise<ConnectedAccountRefreshResponse>
+async refresh(nanoid: string, options?: { redirectUrl?: string; validateCredentials?: boolean }): Promise<ConnectedAccountRefreshResponse>
 ```
 
 **Parameters**
@@ -301,6 +301,7 @@ async refresh(nanoid: string): Promise<ConnectedAccountRefreshResponse>
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the connected account to refresh |
+| `options?` | `object` |  |
 
 **Returns**
 
