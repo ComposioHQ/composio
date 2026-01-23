@@ -739,7 +739,7 @@ class Triggers(Resource):
         connected_account_ids: t.Optional[list[str]] = None,
         show_disabled: t.Optional[bool] = None,
         limit: t.Optional[int] = None,
-        page: t.Optional[int] = None,
+        cursor: t.Optional[str] = None,
     ):
         """
         List all active triggers
@@ -750,7 +750,7 @@ class Triggers(Resource):
         :param connected_account_ids: List of connected account IDs to filter by
         :param show_disabled: Whether to show disabled triggers
         :param limit: Limit the number of triggers to return
-        :param page: Page number to return
+        :param cursor: Cursor for pagination. Use the nextCursor from the response to get the next page.
         :return: List of active triggers
         """
         return self._client.trigger_instances.list_active(
@@ -760,7 +760,7 @@ class Triggers(Resource):
             query_connected_account_ids_1=connected_account_ids,
             query_show_disabled_1=show_disabled,
             limit=limit if limit is not None else omit,
-            page=page if page is not None else omit,
+            cursor=cursor if cursor is not None else omit,
         )
 
     def list(

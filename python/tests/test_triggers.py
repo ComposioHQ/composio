@@ -142,7 +142,7 @@ class TestTriggers:
             connected_account_ids=["conn-123"],
             show_disabled=False,
             limit=10,
-            page=1,
+            cursor="cursor-abc",
         )
 
         mock_client.trigger_instances.list_active.assert_called_once()
@@ -153,7 +153,7 @@ class TestTriggers:
         assert call_kwargs["query_connected_account_ids_1"] == ["conn-123"]
         assert call_kwargs["query_show_disabled_1"] is False
         assert call_kwargs["limit"] == 10
-        assert call_kwargs["page"] == 1
+        assert call_kwargs["cursor"] == "cursor-abc"
         assert result == mock_trigger_instances
 
     def test_list_trigger_types_without_filters(self, triggers, mock_client):
