@@ -340,6 +340,8 @@ export class Composio<
    * The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
    * but allows you to specify custom request options that will be used for all API calls made through this session.
    *
+   * @deprecated DEPRECATED: This method will be removed in a future version of the SDK.
+   *
    * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
    *                                          This follows the Fetch API RequestInit interface with additional options.
    * @returns {Composio<TProvider>} A new Composio instance with the custom request options applied.
