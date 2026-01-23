@@ -311,7 +311,9 @@ export class ToolRouter<
    * console.log(session.mcp.headers);
    * ```
    */
-  async use(id: string): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
+  async use(
+    id: string
+  ): Promise<Omit<ToolRouterSession<TToolCollection, TTool, TProvider>, 'experimental'>> {
     const session = await this.client.toolRouter.session.retrieve(id);
     return {
       sessionId: session.session_id,
