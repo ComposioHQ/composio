@@ -323,6 +323,16 @@ export class Tools<
       });
     }
 
+    const shouldAutoApplyImportant =
+      'toolkits' in queryParams.data &&
+      !('tools' in queryParams.data) &&
+      !('tags' in queryParams.data) &&
+      !('search' in queryParams.data) &&
+      queryParams.data.important !== false;
+
+    const effectiveImportant =
+      'important' in queryParams.data ? queryParams.data.important : shouldAutoApplyImportant;
+
     // check if the query params contains atleast one of the following: tools, toolkits, search, authConfigIds
     if (
       !(
@@ -355,6 +365,7 @@ export class Tools<
       ...('authConfigIds' in queryParams.data
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
+      ...(effectiveImportant ? { important: 'true' } : {}),
       ...{ toolkit_versions: this.toolkitVersions },
     };
 

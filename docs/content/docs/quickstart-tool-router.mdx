@@ -1,5 +1,5 @@
 ---
-title: Quickstart
+title: Quickstart (Tool Router)
 description: Build an AI agent with access to 1000+ tools
 keywords: [tutorial, setup, first agent]
 ---
@@ -33,7 +33,7 @@ npm install dotenv @composio/core @anthropic-ai/claude-agent-sdk
 <Step>
 ### Create session and run agent
 
-[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+[Sessions](/docs/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Callout type="info">
 - Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
@@ -41,7 +41,7 @@ npm install dotenv @composio/core @anthropic-ai/claude-agent-sdk
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Callout>
 
-When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/docs/authenticating-users/manually-authenticating).
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -228,7 +228,7 @@ npm install dotenv @composio/core @openai/agents zod@3
 <Step>
 ### Create session and run agent
 
-[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+[Sessions](/docs/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Callout type="info">
 - Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
@@ -236,7 +236,7 @@ npm install dotenv @composio/core @openai/agents zod@3
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Callout>
 
-When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/docs/authenticating-users/manually-authenticating).
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -381,7 +381,7 @@ npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 <Step>
 ### Create session and run agent
 
-[Sessions](/tool-router/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+[Sessions](/docs/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
 
 <Callout type="info">
 - Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
@@ -389,7 +389,7 @@ npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 - `userId` is your user's unique identifier. See [User Management](/docs/user-management) for details.
 </Callout>
 
-When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/tool-router/manually-authenticating-users).
+When the agent needs authentication, it will prompt the user with a link to connect their account. If you want to customise the authentication flow and have more control over the user experience, see [Manual Authentication](/docs/authenticating-users/manually-authenticating).
 
 ```typescript
 import "dotenv/config";
@@ -687,19 +687,16 @@ When you run this agent, Tool Router:
 ## Next steps
 
 <Cards>
-  <Card title="Session management" href="/tool-router/users-and-sessions">
+  <Card title="Session management" href="/docs/users-and-sessions">
     Learn about users, sessions, and how they work.
   </Card>
-  <Card title="Tools and toolkits" href="/tool-router/tools-and-toolkits">
+  <Card title="Tools and toolkits" href="/docs/tools-and-toolkits">
     Learn about tools, toolkits, and how to configure them.
   </Card>
-  <Card title="Manual authentication" href="/tool-router/manually-authenticating-users">
+  <Card title="Manual authentication" href="/docs/authenticating-users/manually-authenticating">
     Customise the authentication flow for your users.
   </Card>
-  <Card title="Using MCP" href="/tool-router/using-with-mcp-clients">
+  <Card title="Using MCP" href="/docs/mcp">
     Connect Tool Router to any MCP-compatible client.
-  </Card>
-  <Card title="Using as a native tool" href="/tool-router/using-as-a-native-tool">
-    Use Tool Router as a native tool with any AI framework.
   </Card>
 </Cards>

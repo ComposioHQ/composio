@@ -88,6 +88,29 @@ describe('Tools', () => {
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         toolkit_slug: 'github',
+        important: 'true',
+        limit: 10,
+        toolkit_versions: 'latest',
+      });
+    });
+
+    it('should respect explicit important=false to opt-out', async () => {
+      const userId = 'test-user';
+      const query = {
+        toolkits: ['github'],
+        important: false,
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
         limit: 10,
         toolkit_versions: 'latest',
       });
@@ -133,6 +156,7 @@ describe('Tools', () => {
 
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         toolkit_slug: 'todoist',
+        important: 'true',
         limit: 10,
         scopes: ['task:add', 'task:read'],
         toolkit_versions: 'latest',
@@ -160,6 +184,29 @@ describe('Tools', () => {
         limit: 10,
         search: 'add task',
         scopes: ['task:add'],
+        toolkit_versions: 'latest',
+      });
+    });
+
+    it('should respect explicit important=true', async () => {
+      const userId = 'test-user';
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        important: true,
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        important: 'true',
+        limit: 10,
         toolkit_versions: 'latest',
       });
     });
@@ -1079,6 +1126,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith({
           toolkit_slug: 'github',
+          important: 'true',
           toolkit_versions: '20251201_03',
         });
       });
@@ -1103,6 +1151,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith({
           toolkit_slug: 'github',
+          important: 'true',
           toolkit_versions: {
             github: '20251201_01',
             slack: 'latest',
@@ -1453,6 +1502,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith({
           toolkit_slug: 'github',
+          important: 'true',
           toolkit_versions: {
             github: '20251201_08',
             slack: 'latest',
@@ -1483,6 +1533,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith({
           toolkit_slug: 'github',
+          important: 'true',
           toolkit_versions: {
             github: '20251201_04', // user config wins
             gmail: '20251201_05', // from user config
@@ -1510,6 +1561,7 @@ describe('Tools', () => {
 
         expect(mockClient.tools.list).toHaveBeenCalledWith({
           toolkit_slug: 'github',
+          important: 'true',
           toolkit_versions: '20251201_09', // global version ignores env vars
         });
       });

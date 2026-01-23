@@ -31,16 +31,6 @@ export const docs = defineDocs({
   },
 });
 
-export const toolRouter = defineDocs({
-  dir: 'content/tool-router',
-  docs: {
-    schema: docsSchema,
-  },
-  meta: {
-    schema: metaSchema,
-  },
-});
-
 // Reference docs use defineCollections with custom mdxOptions to exclude twoslash
 // (SDK reference docs are auto-generated and don't need type checking)
 export const reference = defineDocs({

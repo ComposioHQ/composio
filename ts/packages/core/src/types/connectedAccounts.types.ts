@@ -191,3 +191,9 @@ export const CreateConnectedAccountLinkResponseSchema = z.object({
 export type CreateConnectedAccountLinkResponse = z.infer<
   typeof CreateConnectedAccountLinkResponseSchema
 >;
+
+export const ConnectedAccountRefreshOptionsSchema = z.object({
+  redirectUrl: z.string().optional(),
+  validateCredentials: z.boolean().optional(),
+});
+export type ConnectedAccountRefreshOptions = z.infer<typeof ConnectedAccountRefreshOptionsSchema>;

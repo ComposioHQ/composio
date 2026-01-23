@@ -4,4 +4,5 @@ import { createOpenAPI } from 'fumadocs-openapi/server';
 // Run `bun run scripts/fetch-openapi.ts` to update the spec
 export const openapi = createOpenAPI({
   input: ['./public/openapi.json'],
+  proxyUrl: '/api/proxy',
 });

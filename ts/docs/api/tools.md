@@ -312,7 +312,7 @@ console.log({
 ```typescript
 // You must provide one of the following parameter combinations:
 // 1. tools array only
-// 2. toolkits with optional important flag
+// 2. toolkits (optionally filter to important tools)
 // 3. toolkits with search functionality
 
 type ToolsOnlyParams = {
@@ -327,8 +327,20 @@ type ToolkitsOnlyParams = {
   tools?: never; // Cannot be used with toolkits
   toolkits: string[]; // List of toolkit slugs to filter by
   limit?: number; // Limit the number of results
-  search?: never; // Cannot be used with important flag
-  scopes?: string[]; // Optional list of required OAuth scopes
+  search?: string; // Optional search term
+  tags?: string[]; // Optional tags filter
+  important?: boolean; // Filter to only important/featured tools
+  scopes?: never; 
+};
+
+type ToolkitScopeOnlyParams = {
+  tools?: never;
+  toolkits: [string];
+  scopes: string[];
+  limit?: number;
+  search?: string;
+  tags?: string[];
+  important?: boolean; // Filter to only important/featured tools
 };
 
 type ToolkitSearchOnlyParams = {
@@ -336,11 +348,13 @@ type ToolkitSearchOnlyParams = {
   toolkits?: string[]; // Optional list of toolkit slugs to filter by
   limit?: number; // Limit the number of results
   search: string; // Search term
-  scopes?: string[]; // Optional list of required OAuth scopes
+  scopes?: never;
 };
 
-type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
+type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitScopeOnlyParams | ToolkitSearchOnlyParams;
 ```
+
+Note: When querying by `toolkits` only (without `tools`, `tags`, or `search`), the SDK automatically applies `important: true` to prioritize the most useful tools. Set `important: false` explicitly to opt-out.
 
 Note: The parameters are organized into three mutually exclusive combinations:
 

@@ -8,6 +8,7 @@
 import ComposioClient from '@composio/client';
 import {
   ConnectedAccountDeleteResponse,
+  ConnectedAccountRefreshParams,
   ConnectedAccountRefreshResponse,
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
@@ -23,6 +24,8 @@ import {
   CreateConnectedAccountLinkOptions,
   CreateConnectedAccountLinkOptionsSchema,
   ConnectedAccountStatuses,
+  ConnectedAccountRefreshOptions,
+  ConnectedAccountRefreshOptionsSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
@@ -371,8 +374,27 @@ export class ConnectedAccounts {
    * const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123');
    * ```
    */
-  async refresh(nanoid: string): Promise<ConnectedAccountRefreshResponse> {
-    return this.client.connectedAccounts.refresh(nanoid);
+  async refresh(
+    nanoid: string,
+    options?: ConnectedAccountRefreshOptions
+  ): Promise<ConnectedAccountRefreshResponse> {
+    let params: ConnectedAccountRefreshParams | undefined = undefined;
+
+    if (options) {
+      const parsedOptions = ConnectedAccountRefreshOptionsSchema.safeParse(options);
+      if (!parsedOptions.success) {
+        throw new ValidationError('Failed to parse connected account refresh options', {
+          cause: parsedOptions.error,
+        });
+      }
+
+      params = {
+        body_redirect_url: parsedOptions.data.redirectUrl,
+        validate_credentials: parsedOptions.data.validateCredentials,
+      };
+    }
+
+    return this.client.connectedAccounts.refresh(nanoid, params);
   }
 
   /**

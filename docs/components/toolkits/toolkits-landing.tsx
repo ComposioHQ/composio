@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink } from 'lucide-react';
+import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink, Grip } from 'lucide-react';
 import toolkitsData from '@/public/data/toolkits-list.json';
 import type { ToolkitSummary } from '@/types/toolkit';
 
@@ -129,11 +129,11 @@ export function ToolkitsLanding() {
 
     // First sort all toolkits alphabetically (trim to handle leading spaces)
     const sorted = [...filteredToolkits].sort((a, b) =>
-      a.name.trim().localeCompare(b.name.trim())
+      (a.name?.trim() || '').localeCompare(b.name?.trim() || '')
     );
 
     sorted.forEach((toolkit) => {
-      const firstChar = toolkit.name.trim().charAt(0).toUpperCase();
+      const firstChar = (toolkit.name?.trim() || '#').charAt(0).toUpperCase();
       // Group all numbers under '#'
       const letter = /[0-9]/.test(firstChar) ? '#' : firstChar;
       if (!groups[letter]) {
@@ -160,15 +160,27 @@ export function ToolkitsLanding() {
             Browse {toolkits.length} toolkits supported by Composio
           </p>
         </div>
-        <a
-          href="https://request.composio.dev/boards/tool-requests"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
-        >
-          Request a tool
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href="https://platform.composio.dev/auth?next_page=%2Ftool-router"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-background px-3 py-1.5 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
+          >
+            Playground
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          <a
+            href="https://request.composio.dev/boards/tool-requests"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
+          >
+            <Grip className="h-3.5 w-3.5" />
+            Request Tools
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
       </div>
 
       {/* Premium Tools Card */}

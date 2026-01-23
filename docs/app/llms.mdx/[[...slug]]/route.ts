@@ -1,6 +1,5 @@
 import {
   source,
-  toolRouterSource,
   referenceSource,
   examplesSource,
   toolkitsSource,
@@ -377,7 +376,6 @@ async function openapiPageToMarkdown(
 // Map URL prefixes to their sources
 const sources = [
   { prefix: 'docs', source },
-  { prefix: 'tool-router', source: toolRouterSource },
   { prefix: 'reference', source: referenceSource },
   { prefix: 'examples', source: examplesSource },
   { prefix: 'toolkits', source: toolkitsSource },

@@ -8,24 +8,42 @@ interface ProviderCardProps {
   name: string;
   href: string;
   logo?: string;
+  logoDark?: string;
   icon?: ReactNode;
   languages?: ('Python' | 'TypeScript')[];
 }
 
-export function ProviderCard({ name, href, logo, icon, languages }: ProviderCardProps) {
+export function ProviderCard({ name, href, logo, logoDark, icon, languages }: ProviderCardProps) {
   return (
     <Link
       href={href}
       className="flex items-center gap-5 rounded-lg border border-fd-border bg-fd-card p-5 transition-all hover:bg-fd-accent/50 hover:border-[color-mix(in_srgb,var(--composio-orange)_50%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
     >
       <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-        {logo ? (
+        {logo && logoDark ? (
+          <>
+            <Image
+              src={logo}
+              alt={`${name} logo`}
+              width={48}
+              height={48}
+              className="h-10 w-auto dark:hidden"
+            />
+            <Image
+              src={logoDark}
+              alt={`${name} logo`}
+              width={48}
+              height={48}
+              className="h-10 w-auto hidden dark:block"
+            />
+          </>
+        ) : logo ? (
           <Image
             src={logo}
             alt={`${name} logo`}
             width={48}
             height={48}
-            className="h-10 w-auto dark:invert"
+            className="h-10 w-auto"
           />
         ) : icon ? (
           <span className="text-fd-muted-foreground">{icon}</span>
