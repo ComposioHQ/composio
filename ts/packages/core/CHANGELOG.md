@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.5.5
+
+### Patch Changes
+
+- b132aad: Update client dependencies and introduce experimentatl tool router features
+
 ## 0.5.4
 
 ### Patch Changes
