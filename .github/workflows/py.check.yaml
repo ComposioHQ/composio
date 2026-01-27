@@ -68,3 +68,5 @@ jobs:
         run: |
           cd python/
           uv run nox -s type_inference
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
