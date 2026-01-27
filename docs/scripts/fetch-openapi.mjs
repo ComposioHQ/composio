@@ -14,6 +14,7 @@ const OPENAPI_URL = process.env.OPENAPI_SPEC_URL || 'https://backend.composio.de
 // Endpoints to ignore (same as fern openapi-overrides.yml)
 const IGNORED_PATHS = [
   '/api/v3/mcp/validate/{uuid}',
+  '/api/v3/labs/tool_router/session',
   '/api/v3/cli/get-session',
   '/api/v3/cli/create-session',
   '/api/v3/auth/session/logout',
@@ -78,6 +79,31 @@ async function fetchAndFilterSpec() {
   if (spec.tags) {
     spec.tags = spec.tags.filter(tag => !IGNORED_TAGS.includes(tag.name));
   }
+
+  // Remove CookieAuth from security schemes
+  if (spec.components?.securitySchemes?.CookieAuth) {
+    delete spec.components.securitySchemes.CookieAuth;
+    console.log('Removed CookieAuth from securitySchemes');
+  }
+
+  // Remove CookieAuth from all endpoint security arrays
+  let cookieAuthRemovedCount = 0;
+  for (const methods of Object.values(spec.paths)) {
+    for (const operation of Object.values(methods)) {
+      if (operation.security) {
+        const originalLength = operation.security.length;
+        operation.security = operation.security.filter(sec => !('CookieAuth' in sec));
+        if (operation.security.length < originalLength) {
+          cookieAuthRemovedCount++;
+        }
+        // Remove empty security array
+        if (operation.security.length === 0) {
+          delete operation.security;
+        }
+      }
+    }
+  }
+  console.log(`Removed CookieAuth from ${cookieAuthRemovedCount} endpoint security definitions`);
 
   console.log(`Removed ${removedCount} endpoints/operations`);
   console.log(`Final spec has ${Object.keys(filteredPaths).length} paths`);

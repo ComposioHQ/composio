@@ -1,84 +1,90 @@
 ---
 title: Tools and toolkits
-description: Access 800+ toolkits through Tool Router
-keywords: [available tools, browse toolkits]
+description: Understand how tools and toolkits work in Composio
+keywords: [tools, toolkits, meta tools, context management]
 ---
 
-Tool Router gives your agent access to most Composio toolkits by default. For details on configuring which toolkits are available in a session, see [Users and sessions](/docs/users-and-sessions#enabling-toolkits).
+Composio offers 800+ toolkits, but loading all the tools into context would overwhelm your agent. Instead, your agent has access to 5 meta tools that discover, authenticate, and execute the right tools at runtime.
+
+## Meta tools
+
+When you create a session, your agent gets these 5 meta tools:
+
+| Meta tool | What it does |
+|-----------|--------------|
+| `COMPOSIO_SEARCH_TOOLS` | Discover relevant tools across 800+ apps |
+| `COMPOSIO_MANAGE_CONNECTIONS` | Handle OAuth and API key authentication |
+| `COMPOSIO_MULTI_EXECUTE_TOOL` | Execute up to 20 tools in parallel |
+| `COMPOSIO_REMOTE_WORKBENCH` | Run Python code in a persistent sandbox |
+| `COMPOSIO_REMOTE_BASH_TOOL` | Execute bash commands for file and data processing |
+
+Meta tool calls in a session are correlated using a `session_id`, allowing them to share context. The tools can also store useful information (like IDs and relationships discovered during execution) in memory for subsequent calls.
+
+### How it works
+
+```
+User: "Create a GitHub issue for this bug"
+    ↓
+1. Agent calls COMPOSIO_SEARCH_TOOLS
+   → Returns GITHUB_CREATE_ISSUE with input schema
+   → Returns connection status: "not connected"
+   → Returns execution plan and tips
+    ↓
+2. Agent calls COMPOSIO_MANAGE_CONNECTIONS (because not connected)
+   → Returns auth link for GitHub
+   → User clicks link and authenticates
+    ↓
+3. Agent calls COMPOSIO_MULTI_EXECUTE_TOOL
+   → Executes GITHUB_CREATE_ISSUE with arguments
+   → Returns the created issue details
+    ↓
+Done. (For large results, agent can use REMOTE_WORKBENCH to process)
+```
+
+### What SEARCH_TOOLS returns
+
+`COMPOSIO_SEARCH_TOOLS` returns:
+
+- **Tools with schemas** - Matching tools with their slugs, descriptions, and input parameters
+- **Connection status** - Whether the user has already authenticated with each toolkit
+- **Execution plan** - Recommended steps and common pitfalls for the task
+- **Related tools** - Prerequisites, alternatives, and follow-up tools
+
+### Processing large results
+
+For most tasks, `COMPOSIO_MULTI_EXECUTE_TOOL` returns results directly. But when dealing with large responses or bulk operations, your agent uses the workbench tools:
+
+- **`COMPOSIO_REMOTE_WORKBENCH`** - Run Python code in a persistent sandbox. Use for bulk operations (e.g., labeling 100 emails), complex data transformations, or when results need further analysis with helper functions like `invoke_llm`.
+
+- **`COMPOSIO_REMOTE_BASH_TOOL`** - Execute bash commands for simpler file operations and data extraction using tools like `jq`, `awk`, `sed`, and `grep`.
 
 ## Toolkits and tools
 
-A **toolkit** is a collection of related tools for a service and a **tool** is an individual action your agent can execute.
+A **toolkit** is a collection of related tools for a service. For example, the `github` toolkit contains tools for creating issues, managing pull requests, and starring repositories.
 
-| Toolkit | Tools |
-|---------|-------|
-| `github` | `GITHUB_CREATE_A_COMMIT`, `GITHUB_ACTIVITY_LIST_STARGAZERS_FOR_REPO`, `GITHUB_SEARCH_REPO_S`, ... |
-| `gmail` | `GMAIL_SEND_EMAIL`, `GMAIL_FETCH_EMAILS`, `GMAIL_CREATE_EMAIL_DRAFT`, ... |
-| `linear` | `LINEAR_CREATE_LINEAR_ISSUE`, `LINEAR_UPDATE_ISSUE`, `LINEAR_CREATE_LINEAR_LABEL`, ... |
+A **tool** is an individual action your agent can execute. Each tool has an input schema (required and optional parameters) and an output schema (what it returns). Tools follow a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_ISSUE`.
 
-## Available toolkits
-
-Browse all available toolkits in the [Composio platform](https://platform.composio.dev) under "All Toolkits". Each toolkit page shows its tools (with input and output parameters) and authentication methods supported for that toolkit.
-
-You can also list toolkits programmatically:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-# Returns top 20 toolkits by default
-toolkits = composio.toolkits.get()
-
-for toolkit in toolkits:
-    print(toolkit.name)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-// Returns top 20 toolkits by default
-const toolkits = await composio.toolkits.get();
-
-for (const toolkit of toolkits) {
-  console.log(toolkit.name);
-}
-```
-</Tab>
-</Tabs>
-
-For details on browsing tools within toolkits and inspecting schemas, see [Fetching tools and schemas](/docs/fetching-tools).
-
-<Callout type="info">
-Some toolkits require you to provide your own credentials. See [Using custom auth configs](/docs/guides/using-custom-auth-configuration).
+<Callout>
+If you know exactly which tools you need, you can [execute them directly](/docs/tools-direct/executing-tools) without meta tools.
 </Callout>
 
-<Callout type="info">
-Need a toolkit that doesn't exist? [Request it here](https://request.composio.dev/boards/tool-requests).
-</Callout>
+## Authentication
 
-## Default session behavior
+Tools execute with the user's authenticated credentials. When a user connects their GitHub account, all GitHub tools run with their permissions.
 
-When you create a session, all toolkits are available:
+If a tool requires authentication and the user hasn't connected yet, the agent can use `COMPOSIO_MANAGE_CONNECTIONS` to prompt them.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-session = composio.create(user_id="user_123")
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create("user_123");
-```
-</Tab>
-</Tabs>
+<Card icon={<Key />} title="Authentication" href="/docs/authentication">
+  Learn how Composio handles user authentication
+</Card>
 
-Your agent can search and use tools from any toolkit. To restrict or configure which toolkits are available, see [Users and sessions](/docs/users-and-sessions#enabling-toolkits).
+## Useful links
 
-<Callout type="info">
-Triggers can be used alongside Tool Router to respond to events in connected apps. See [Triggers](/docs/triggers) for setup instructions.
-</Callout>
+<Cards>
+  <Card icon={<Blocks />} title="Browse toolkits" href="/toolkits">
+    Explore all available toolkits
+  </Card>
+  <Card icon={<BookOpen />} title="Fetching tools" href="/docs/toolkits/fetching-tools-and-toolkits">
+    Browse the catalog and fetch tools for sessions
+  </Card>
+</Cards>

@@ -10,7 +10,7 @@ The Vercel provider for Composio formats the Composio tools and adds this `execu
 
 ## Usage with Tools
 
-Use Composio Tool Router as a native tool with the Vercel AI SDK.
+Use Composio as a native tool with the Vercel AI SDK.
 
 ### Installation
 
@@ -20,7 +20,7 @@ npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
 
 ### Usage
 
-Create a Tool Router session and use it as a native tool with Vercel AI SDK:
+Create a session and use it as a native tool with Vercel AI SDK:
 
 <Callout type="info">
 - Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
@@ -71,7 +71,7 @@ console.log("Tip: If prompted to authenticate, complete the auth flow and run ag
 
 ## Usage with MCP
 
-Use Composio Tool Router with the Vercel AI SDK for a fully managed MCP experience.
+Use Composio with the Vercel AI SDK for a fully managed MCP experience.
 
 ### Installation
 
@@ -81,7 +81,7 @@ npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 
 ### Usage
 
-Use Tool Router with Vercel AI SDK's `streamText` for completions:
+Use Composio with Vercel AI SDK's `streamText` for completions:
 
 <Callout type="info">
 - Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
@@ -102,10 +102,10 @@ const composio = new Composio();
 // Unique identifier of the user
 const userId = "user_123";
 
-// Create a tool router session for the user
+// Create a session for the user
 const { mcp } = await composio.create(userId);
 
-// Create an MCP client to connect to the Composio tool router
+// Create an MCP client to connect to the Composio MCP server
 const client = await createMCPClient({
   transport: {
     type: "http",

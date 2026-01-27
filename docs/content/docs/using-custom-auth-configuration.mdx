@@ -4,7 +4,7 @@ description: Set up auth configs for toolkits without Composio managed authentic
 keywords: [custom credentials, no managed auth]
 ---
 
-Some toolkits don't have Composio managed authentication and require you to provide your own credentials. When Tool Router tries to use these toolkits, it will throw an error asking you to create an auth config.
+Some toolkits don't have Composio managed authentication and require you to provide your own credentials. When sessions try to use these toolkits, an error will be thrown asking you to create an auth config.
 
 <Steps>
 <Step>
@@ -31,7 +31,7 @@ For detailed instructions on getting credentials for specific toolkits, see [Cus
 </Step>
 
 <Step>
-### Use in Tool Router
+### Use in your session
 
 Pass your auth config ID when creating a session:
 
@@ -60,6 +60,6 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
-Tool Router will now use your auth config when users connect to this toolkit.
+Your session will now use this auth config when users connect to this toolkit.
 </Step>
 </Steps>

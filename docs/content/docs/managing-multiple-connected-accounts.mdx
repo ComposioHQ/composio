@@ -10,7 +10,7 @@ Users can connect multiple accounts for the same toolkit (e.g., personal and wor
 
 When multiple accounts are connected for the same toolkit:
 - Each session can only use **one account per toolkit** at a time
-- Tool Router uses the **most recently connected account** by default
+- Sessions use the **most recently connected account** by default
 - You can override this by explicitly selecting an account
 - Each account maintains its own authentication and permissions
 
@@ -64,7 +64,7 @@ Store the account IDs returned after connection to explicitly select accounts la
 
 ## Selecting a specific account for a session
 
-Each Tool Router session can only use one account per toolkit at a time. To use a specific account in a session, pass it in the session config:
+Each session can only use one account per toolkit at a time. To use a specific account in a session, pass it in the session config:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
