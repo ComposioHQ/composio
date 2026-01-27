@@ -66,3 +66,53 @@ def fix(session: Session):
     """Fix linter issues"""
     session.install("ruff")
     session.run(*ruff, "check", "--fix", *modules_for_ruff)
+
+
+@nox.session
+def type_inference(session: Session):
+    """Type check provider return type inference tests.
+
+    This session verifies that mypy correctly infers provider-specific return
+    types from `Composio.tools.get()` when using @overload signatures.
+
+    Unlike the `chk` session, this installs all provider packages so mypy can
+    resolve the provider types and verify the type inference works correctly.
+    """
+    # Install core SDK and mypy
+    session.install(".", "mypy==1.13.0", *type_stubs)
+
+    # Install all provider packages for type resolution
+    session.install(
+        "./providers/anthropic",
+        "./providers/autogen",
+        "./providers/claude_agent_sdk",
+        "./providers/crewai",
+        "./providers/gemini",
+        "./providers/google",
+        "./providers/google_adk",
+        "./providers/langchain",
+        "./providers/langgraph",
+        "./providers/llamaindex",
+        "./providers/openai",
+        "./providers/openai_agents",
+    )
+
+    # Run mypy on type inference test files
+    # Note: explicitly listed files are checked even if they match the exclude pattern in `mypy.ini`
+    session.run(
+        "mypy",
+        "--config-file",
+        "config/mypy.ini",
+        "tests/test_type_inference.py",
+        "tests/test_type_inference_anthropic.py",
+        "tests/test_type_inference_autogen.py",
+        "tests/test_type_inference_claude_agent_sdk.py",
+        "tests/test_type_inference_crewai.py",
+        "tests/test_type_inference_gemini.py",
+        "tests/test_type_inference_google.py",
+        "tests/test_type_inference_google_adk.py",
+        "tests/test_type_inference_langchain.py",
+        "tests/test_type_inference_langgraph.py",
+        "tests/test_type_inference_llamaindex.py",
+        "tests/test_type_inference_openai_agents.py",
+    )

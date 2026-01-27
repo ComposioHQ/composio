@@ -33,10 +33,18 @@ ToolkitsFn = t.Callable[
 ]
 
 
-class ToolsFn(t.Protocol):
-    """Protocol for the tools function that returns provider-wrapped tools."""
+TToolCollection = t.TypeVar("TToolCollection", covariant=True)
 
-    def __call__(self, modifiers: t.Optional["Modifiers"] = None) -> t.Any:
+
+class ToolsFn(t.Protocol[TToolCollection]):
+    """Protocol for the tools function that returns provider-wrapped tools.
+
+    The return type is generic to support provider-specific tool collections.
+    For example, AnthropicProvider returns list[ToolParam], OpenAIProvider
+    returns list[ChatCompletionToolParam], etc.
+    """
+
+    def __call__(self, modifiers: t.Optional["Modifiers"] = None) -> TToolCollection:
         """Get provider-wrapped tools for execution with your AI framework."""
         ...
 
@@ -320,11 +328,15 @@ class ToolRouterSession(t.Generic[TProvider]):
         authorize: Function to authorize a toolkit
         toolkits: Function to get toolkit connection states
         experimental: Optional experimental features data from the session response
+
+    Note:
+        The `tools` function returns a provider-specific tool collection.
+        The return type is inferred from TProvider's TToolCollection type parameter.
     """
 
     session_id: str
     mcp: ToolRouterMCPServerConfig
-    tools: ToolsFn
+    tools: "ToolsFn[t.Any]"  # Type is determined by TProvider at runtime
     authorize: AuthorizeFn
     toolkits: ToolkitsFn
     experimental: t.Optional[ToolRouterSessionExperimental] = None

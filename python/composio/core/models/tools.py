@@ -38,6 +38,65 @@ from ._modifiers import (
     schema_modifier,
 )
 
+# =============================================================================
+# TYPE_CHECKING imports for provider-specific return type annotations
+# =============================================================================
+# These imports are only used for static type checking and do not affect runtime.
+# Each provider type is imported conditionally to avoid dependency issues when
+# provider packages are not installed.
+
+if t.TYPE_CHECKING:
+    # Core providers (always available)
+    from composio.core.provider._openai import OpenAIProvider
+    from composio.core.provider._openai_responses import OpenAIResponsesProvider
+    from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
+
+    # Alias for OpenAI Responses API tool type
+    ResponsesTool = t.Dict[str, t.Any]
+
+    # External provider types - these may not be installed
+    # Anthropic
+    from anthropic.types.tool_param import ToolParam as AnthropicToolParam
+    from composio_anthropic import AnthropicProvider
+
+    # LangChain
+    from langchain_core.tools import StructuredTool
+    from composio_langchain import LangchainProvider
+
+    # LangGraph
+    from composio_langgraph import LanggraphProvider
+
+    # LlamaIndex
+    from llama_index.core.tools import FunctionTool as LlamaIndexFunctionTool
+    from composio_llamaindex import LlamaIndexProvider
+
+    # OpenAI Agents
+    from agents import FunctionTool as OpenAIAgentsFunctionTool
+    from composio_openai_agents import OpenAIAgentsProvider
+
+    # CrewAI
+    from crewai.tools import BaseTool as CrewAIBaseTool
+    from composio_crewai import CrewAIProvider
+
+    # Autogen
+    from autogen_core.tools import FunctionTool as AutogenFunctionTool
+    from composio_autogen import AutogenProvider
+
+    # Gemini
+    from composio_gemini import GeminiProvider
+
+    # Google (Vertex AI)
+    from google.cloud.aiplatform_v1beta1.types import FunctionDeclaration
+    from composio_google import GoogleProvider
+
+    # Google ADK
+    from google.adk.tools import FunctionTool as GoogleAdkFunctionTool
+    from composio_google_adk import GoogleAdkProvider
+
+    # Claude Agent SDK
+    from mcp.types import Tool as SdkMcpTool
+    from composio_claude_agent_sdk import ClaudeAgentSDKProvider
+
 
 class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
@@ -292,59 +351,225 @@ class Tools(Resource, t.Generic[TProvider]):
             ),
         )
 
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        slug: str,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tool by slug"""
+    # =========================================================================
+    # Provider-specific @overload signatures for type inference
+    # =========================================================================
+    # These overloads enable type checkers (pyright, mypy) to infer the correct
+    # return type based on the provider type. For example:
+    #   composio = Composio(provider=AnthropicProvider())
+    #   tools = composio.tools.get(...)  # Inferred as list[ToolParam]
+    #
+    # The order matters: specific provider overloads come first, fallback last.
 
+    # --- OpenAI Provider (core) ---
     @t.overload
     def get(
-        self,
+        self: "Tools[OpenAIProvider]",
         user_id: str,
         *,
-        tools: list[str],
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tools by tool slugs"""
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        toolkits: list[str],
-        scopes: t.Optional[t.List[str]] = None,
-        limit: t.Optional[int] = None,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tools by toolkit slugs (Only important tools are returned)"""
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        search: str,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Search tool by search term"""
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        toolkits: list[str],
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
         search: t.Optional[str] = None,
-        limit: t.Optional[int] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tool by search term and/or toolkit slugs and search term"""
+        limit: t.Optional[int] = None,
+    ) -> "list[ChatCompletionToolParam]": ...
+
+    # --- OpenAI Responses Provider (core) ---
+    @t.overload
+    def get(
+        self: "Tools[OpenAIResponsesProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[ResponsesTool]": ...
+
+    # --- Anthropic Provider ---
+    @t.overload
+    def get(
+        self: "Tools[AnthropicProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[AnthropicToolParam]": ...
+
+    # --- LangChain Provider ---
+    @t.overload
+    def get(
+        self: "Tools[LangchainProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[StructuredTool]": ...
+
+    # --- LangGraph Provider ---
+    @t.overload
+    def get(
+        self: "Tools[LanggraphProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[StructuredTool]": ...
+
+    # --- LlamaIndex Provider ---
+    @t.overload
+    def get(
+        self: "Tools[LlamaIndexProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[LlamaIndexFunctionTool]": ...
+
+    # --- OpenAI Agents Provider ---
+    @t.overload
+    def get(
+        self: "Tools[OpenAIAgentsProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[OpenAIAgentsFunctionTool]": ...
+
+    # --- CrewAI Provider ---
+    @t.overload
+    def get(
+        self: "Tools[CrewAIProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[CrewAIBaseTool]": ...
+
+    # --- Autogen Provider ---
+    @t.overload
+    def get(
+        self: "Tools[AutogenProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[AutogenFunctionTool]": ...
+
+    # --- Gemini Provider ---
+    @t.overload
+    def get(
+        self: "Tools[GeminiProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[t.Any]": ...
+
+    # --- Google Provider ---
+    @t.overload
+    def get(
+        self: "Tools[GoogleProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[FunctionDeclaration]": ...
+
+    # --- Google ADK Provider ---
+    @t.overload
+    def get(
+        self: "Tools[GoogleAdkProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[GoogleAdkFunctionTool]": ...
+
+    # --- Claude Agent SDK Provider ---
+    @t.overload
+    def get(
+        self: "Tools[ClaudeAgentSDKProvider]",
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> "list[SdkMcpTool]": ...
+
+    # --- Fallback for unknown/custom providers ---
+    @t.overload
+    def get(
+        self,
+        user_id: str,
+        *,
+        slug: t.Optional[str] = None,
+        tools: t.Optional[list[str]] = None,
+        search: t.Optional[str] = None,
+        toolkits: t.Optional[list[str]] = None,
+        scopes: t.Optional[t.List[str]] = None,
+        modifiers: t.Optional[Modifiers] = None,
+        limit: t.Optional[int] = None,
+    ) -> t.Any: ...
 
     def get(
         self,
@@ -357,8 +582,23 @@ class Tools(Resource, t.Generic[TProvider]):
         scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
-    ):
-        """Get a tool or list of tools based on the provided arguments."""
+    ) -> t.Any:
+        """
+        Get a tool or list of tools based on the provided arguments.
+
+        The return type is automatically inferred based on the provider type.
+        For example, when using AnthropicProvider, returns list[ToolParam].
+
+        :param user_id: The user ID to get tools for.
+        :param slug: Get a single tool by slug.
+        :param tools: Get tools by a list of tool slugs.
+        :param search: Search tools by search term.
+        :param toolkits: Get tools from specific toolkits.
+        :param scopes: Filter by scopes.
+        :param modifiers: Optional modifiers to apply.
+        :param limit: Limit the number of tools returned.
+        :return: Provider-specific tool collection (e.g., list[ToolParam] for Anthropic).
+        """
         if slug is not None:
             return self._get(user_id=user_id, tools=[slug], modifiers=modifiers)
         return self._get(
