@@ -37,6 +37,9 @@ export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
     mdxOptions: applyMdxPreset({
       rehypeCodeOptions: {
         themes: {
@@ -56,6 +59,9 @@ export const examples = defineDocs({
   dir: 'content/examples',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -66,6 +72,9 @@ export const toolkits = defineDocs({
   dir: 'content/toolkits',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,

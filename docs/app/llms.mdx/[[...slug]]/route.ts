@@ -426,60 +426,102 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug?: string[] }> }
 ) {
-  const { slug = [] } = await params;
-  const [prefix, ...rest] = slug;
+  try {
+    const { slug = [] } = await params;
+    const [prefix, ...rest] = slug;
 
-  // Find the matching source
-  const match = sources.find((s) => s.prefix === prefix);
-  if (!match) notFound();
+    // Find the matching source
+    const match = sources.find((s) => s.prefix === prefix);
+    if (!match) notFound();
 
-  // Get the page from that source (MDX pages)
-  const page = match.source.getPage(rest.length > 0 ? rest : undefined);
-
-  if (page) {
-    // Check if this is an OpenAPI page
-    if ('getAPIPageProps' in page.data) {
-      const markdown = await openapiPageToMarkdown(
-        page as { url: string; data: OpenAPIPageData }
-      );
-      return new Response(markdown, {
-        headers: {
-          'Content-Type': 'text/markdown; charset=utf-8',
-        },
-      });
+    // Get the page from that source (MDX pages)
+    let page;
+    try {
+      page = match.source.getPage(rest.length > 0 ? rest : undefined);
+    } catch (e) {
+      console.error('Error in getPage:', e);
+      page = null;
     }
 
-    // Regular MDX page
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return new Response(await getLLMText(page as any), {
-        headers: {
-          'Content-Type': 'text/markdown; charset=utf-8',
-        },
-      });
-    } catch {
-      return new Response(
-        `# ${page.data.title} (${page.url})\n\n${page.data.description || ''}`,
-        {
+    if (page) {
+      // Check if this is an OpenAPI page
+      if ('getAPIPageProps' in page.data) {
+        try {
+          const markdown = await openapiPageToMarkdown(
+            page as unknown as { url: string; data: OpenAPIPageData }
+          );
+          return new Response(markdown, {
+            headers: {
+              'Content-Type': 'text/markdown; charset=utf-8',
+            },
+          });
+        } catch (e) {
+          console.error('Error generating OpenAPI markdown:', e);
+          const title = page.data?.title || 'API Reference';
+          const description = page.data?.description || '';
+          return new Response(
+            `# ${title}\n\n${description}`,
+            {
+              headers: {
+                'Content-Type': 'text/markdown; charset=utf-8',
+              },
+            }
+          );
+        }
+      }
+
+      // Regular MDX page
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new Response(await getLLMText(page as any), {
           headers: {
             'Content-Type': 'text/markdown; charset=utf-8',
           },
-        }
-      );
+        });
+      } catch (e) {
+        console.error('Error generating LLM text:', e);
+        const title = page.data?.title || 'Documentation';
+        const description = page.data?.description || '';
+        return new Response(
+          `# ${title} (${page.url || ''})\n\n${description}`,
+          {
+            headers: {
+              'Content-Type': 'text/markdown; charset=utf-8',
+            },
+          }
+        );
+      }
     }
-  }
 
-  // Special handling for JSON toolkit pages
-  if (prefix === 'toolkits' && rest.length === 1) {
-    const toolkit = await getToolkit(rest[0]);
-    if (toolkit) {
-      return new Response(toolkitToMarkdown(toolkit), {
+    // Special handling for JSON toolkit pages
+    if (prefix === 'toolkits' && rest.length === 1) {
+      const toolkit = await getToolkit(rest[0]);
+      if (toolkit) {
+        return new Response(toolkitToMarkdown(toolkit), {
+          headers: {
+            'Content-Type': 'text/markdown; charset=utf-8',
+          },
+        });
+      }
+    }
+
+    notFound();
+  } catch (e) {
+    // Don't catch notFound - let it propagate
+    if (e && typeof e === 'object' && 'digest' in e) {
+      throw e;
+    }
+    console.error('Unexpected error in llms.mdx route:', e);
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    const errorStack = e instanceof Error ? e.stack : '';
+    return new Response(
+      `# Error\n\nAn error occurred while generating the markdown content.\n\n**Error:** ${errorMessage}\n\n**Stack:**\n\`\`\`\n${errorStack}\n\`\`\``,
+      {
+        status: 200, // Return 200 so we can see the error
         headers: {
           'Content-Type': 'text/markdown; charset=utf-8',
         },
-      });
-    }
+      }
+    );
   }
-
-  notFound();
 }
