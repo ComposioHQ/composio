@@ -30,7 +30,9 @@ if TYPE_CHECKING:
 def test_autogen_provider_toolkits() -> None:
     """Verify Autogen provider returns list[FunctionTool] for toolkits query."""
     if TYPE_CHECKING:
-        composio: Composio[AutogenProvider] = Composio(provider=AutogenProvider())
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
+            provider=AutogenProvider()
+        )
         tools = composio.tools.get(user_id="test", toolkits=["github"])
 
         # Type checker should infer: list[FunctionTool]
@@ -40,7 +42,9 @@ def test_autogen_provider_toolkits() -> None:
 def test_autogen_provider_slug() -> None:
     """Verify Autogen provider returns list[FunctionTool] for slug query."""
     if TYPE_CHECKING:
-        composio: Composio[AutogenProvider] = Composio(provider=AutogenProvider())
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
+            provider=AutogenProvider()
+        )
         tools = composio.tools.get(user_id="test", slug="GITHUB_CREATE_REPO")
 
         assert_type(tools, list[FunctionTool])
@@ -49,7 +53,9 @@ def test_autogen_provider_slug() -> None:
 def test_autogen_provider_tools_list() -> None:
     """Verify Autogen provider returns list[FunctionTool] for tools list query."""
     if TYPE_CHECKING:
-        composio: Composio[AutogenProvider] = Composio(provider=AutogenProvider())
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
+            provider=AutogenProvider()
+        )
         tools = composio.tools.get(
             user_id="test",
             tools=["GITHUB_CREATE_REPO", "GITHUB_GET_USER"],
@@ -61,7 +67,9 @@ def test_autogen_provider_tools_list() -> None:
 def test_autogen_provider_search() -> None:
     """Verify Autogen provider returns list[FunctionTool] for search query."""
     if TYPE_CHECKING:
-        composio: Composio[AutogenProvider] = Composio(provider=AutogenProvider())
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
+            provider=AutogenProvider()
+        )
         tools = composio.tools.get(user_id="test", search="github repository")
 
         assert_type(tools, list[FunctionTool])

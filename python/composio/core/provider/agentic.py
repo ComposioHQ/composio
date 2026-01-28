@@ -20,7 +20,7 @@ class AgenticProviderExecuteFn(t.Protocol):
         ...
 
 
-class AgenticProvider(BaseProvider, t.Generic[TTool, TToolCollection]):
+class AgenticProvider(BaseProvider[TTool, TToolCollection]):
     """
     Base class for all agentic providers. This class is not meant to be used
     directly but rather to be extended by concrete provider implementations.

@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 def test_openai_agents_provider_toolkits() -> None:
     """Verify OpenAI Agents provider returns list[FunctionTool] for toolkits query."""
     if TYPE_CHECKING:
-        composio: Composio[OpenAIAgentsProvider] = Composio(
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
             provider=OpenAIAgentsProvider()
         )
         tools = composio.tools.get(user_id="test", toolkits=["github"])
@@ -42,7 +42,7 @@ def test_openai_agents_provider_toolkits() -> None:
 def test_openai_agents_provider_slug() -> None:
     """Verify OpenAI Agents provider returns list[FunctionTool] for slug query."""
     if TYPE_CHECKING:
-        composio: Composio[OpenAIAgentsProvider] = Composio(
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
             provider=OpenAIAgentsProvider()
         )
         tools = composio.tools.get(user_id="test", slug="GITHUB_CREATE_REPO")
@@ -53,7 +53,7 @@ def test_openai_agents_provider_slug() -> None:
 def test_openai_agents_provider_tools_list() -> None:
     """Verify OpenAI Agents provider returns list[FunctionTool] for tools list query."""
     if TYPE_CHECKING:
-        composio: Composio[OpenAIAgentsProvider] = Composio(
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
             provider=OpenAIAgentsProvider()
         )
         tools = composio.tools.get(
@@ -67,7 +67,7 @@ def test_openai_agents_provider_tools_list() -> None:
 def test_openai_agents_provider_search() -> None:
     """Verify OpenAI Agents provider returns list[FunctionTool] for search query."""
     if TYPE_CHECKING:
-        composio: Composio[OpenAIAgentsProvider] = Composio(
+        composio: Composio[FunctionTool, list[FunctionTool]] = Composio(
             provider=OpenAIAgentsProvider()
         )
         tools = composio.tools.get(user_id="test", search="github repository")

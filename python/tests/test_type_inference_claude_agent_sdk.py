@@ -1,7 +1,7 @@
 """
 Type inference verification tests for Claude Agent SDK provider.
 
-This file verifies that type checkers correctly infer `list[Tool]`
+This file verifies that type checkers correctly infer `list[SdkMcpTool]`
 when using the Claude Agent SDK provider with Composio.
 
 **This file is NOT executed at runtime.** It is analyzed statically by type
@@ -12,7 +12,7 @@ Run: mypy tests/test_type_inference_claude_agent_sdk.py
 Requirements:
     - composio (core SDK)
     - composio-claude-agent-sdk
-    - mcp
+    - claude-agent-sdk
 """
 
 from typing import TYPE_CHECKING
@@ -22,27 +22,27 @@ from composio import Composio
 if TYPE_CHECKING:
     from typing_extensions import assert_type
 
-    from mcp.types import Tool as SdkMcpTool
+    from claude_agent_sdk import SdkMcpTool
 
     from composio_claude_agent_sdk import ClaudeAgentSDKProvider
 
 
 def test_claude_agent_sdk_provider_toolkits() -> None:
-    """Verify Claude Agent SDK provider returns list[Tool] for toolkits query."""
+    """Verify Claude Agent SDK provider returns list[SdkMcpTool] for toolkits query."""
     if TYPE_CHECKING:
-        composio: Composio[ClaudeAgentSDKProvider] = Composio(
+        composio: Composio[SdkMcpTool, list[SdkMcpTool]] = Composio(
             provider=ClaudeAgentSDKProvider()
         )
         tools = composio.tools.get(user_id="test", toolkits=["github"])
 
-        # Type checker should infer: list[Tool]
+        # Type checker should infer: list[SdkMcpTool]
         assert_type(tools, list[SdkMcpTool])
 
 
 def test_claude_agent_sdk_provider_slug() -> None:
-    """Verify Claude Agent SDK provider returns list[Tool] for slug query."""
+    """Verify Claude Agent SDK provider returns list[SdkMcpTool] for slug query."""
     if TYPE_CHECKING:
-        composio: Composio[ClaudeAgentSDKProvider] = Composio(
+        composio: Composio[SdkMcpTool, list[SdkMcpTool]] = Composio(
             provider=ClaudeAgentSDKProvider()
         )
         tools = composio.tools.get(user_id="test", slug="GITHUB_CREATE_REPO")
@@ -51,9 +51,9 @@ def test_claude_agent_sdk_provider_slug() -> None:
 
 
 def test_claude_agent_sdk_provider_tools_list() -> None:
-    """Verify Claude Agent SDK provider returns list[Tool] for tools list query."""
+    """Verify Claude Agent SDK provider returns list[SdkMcpTool] for tools list query."""
     if TYPE_CHECKING:
-        composio: Composio[ClaudeAgentSDKProvider] = Composio(
+        composio: Composio[SdkMcpTool, list[SdkMcpTool]] = Composio(
             provider=ClaudeAgentSDKProvider()
         )
         tools = composio.tools.get(
@@ -65,9 +65,9 @@ def test_claude_agent_sdk_provider_tools_list() -> None:
 
 
 def test_claude_agent_sdk_provider_search() -> None:
-    """Verify Claude Agent SDK provider returns list[Tool] for search query."""
+    """Verify Claude Agent SDK provider returns list[SdkMcpTool] for search query."""
     if TYPE_CHECKING:
-        composio: Composio[ClaudeAgentSDKProvider] = Composio(
+        composio: Composio[SdkMcpTool, list[SdkMcpTool]] = Composio(
             provider=ClaudeAgentSDKProvider()
         )
         tools = composio.tools.get(user_id="test", search="github repository")
@@ -81,5 +81,5 @@ def test_claude_agent_sdk_provider_inferred() -> None:
         composio = Composio(provider=ClaudeAgentSDKProvider())
         tools = composio.tools.get(user_id="test", toolkits=["github"])
 
-        # Should infer list[Tool] from provider type
+        # Should infer list[SdkMcpTool] from provider type
         assert_type(tools, list[SdkMcpTool])

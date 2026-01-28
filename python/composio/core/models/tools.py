@@ -16,18 +16,14 @@ from composio.client.types import (
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
 from composio.core.models.custom_tools import CustomTools
-from composio.core.provider import (
-    TProvider,
-)
+from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
-from composio.core.provider.none_agentic import (
-    NonAgenticProvider,
-)
+from composio.core.provider.base import BaseProvider, ExecuteToolFn
+from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
-from composio.core.provider.base import ExecuteToolFn
 
 from ._modifiers import (
     Modifiers,
@@ -38,65 +34,6 @@ from ._modifiers import (
     schema_modifier,
 )
 
-# =============================================================================
-# TYPE_CHECKING imports for provider-specific return type annotations
-# =============================================================================
-# These imports are only used for static type checking and do not affect runtime.
-# Each provider type is imported conditionally to avoid dependency issues when
-# provider packages are not installed.
-
-if t.TYPE_CHECKING:
-    # Core providers (always available)
-    from composio.core.provider._openai import OpenAIProvider
-    from composio.core.provider._openai_responses import OpenAIResponsesProvider
-    from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
-
-    # Alias for OpenAI Responses API tool type
-    ResponsesTool = t.Dict[str, t.Any]
-
-    # External provider types - these may not be installed
-    # Anthropic
-    from anthropic.types.tool_param import ToolParam as AnthropicToolParam
-    from composio_anthropic import AnthropicProvider
-
-    # LangChain
-    from langchain_core.tools import StructuredTool
-    from composio_langchain import LangchainProvider
-
-    # LangGraph
-    from composio_langgraph import LanggraphProvider
-
-    # LlamaIndex
-    from llama_index.core.tools import FunctionTool as LlamaIndexFunctionTool
-    from composio_llamaindex import LlamaIndexProvider
-
-    # OpenAI Agents
-    from agents import FunctionTool as OpenAIAgentsFunctionTool
-    from composio_openai_agents import OpenAIAgentsProvider
-
-    # CrewAI
-    from crewai.tools import BaseTool as CrewAIBaseTool
-    from composio_crewai import CrewAIProvider
-
-    # Autogen
-    from autogen_core.tools import FunctionTool as AutogenFunctionTool
-    from composio_autogen import AutogenProvider
-
-    # Gemini
-    from composio_gemini import GeminiProvider
-
-    # Google (Vertex AI)
-    from google.cloud.aiplatform_v1beta1.types import FunctionDeclaration
-    from composio_google import GoogleProvider
-
-    # Google ADK
-    from google.adk.tools import FunctionTool as GoogleAdkFunctionTool
-    from composio_google_adk import GoogleAdkProvider
-
-    # Claude Agent SDK
-    from mcp.types import Tool as SdkMcpTool
-    from composio_claude_agent_sdk import ClaudeAgentSDKProvider
-
 
 class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
@@ -104,20 +41,27 @@ class ToolExecutionResponse(te.TypedDict):
     successful: bool
 
 
-class Tools(Resource, t.Generic[TProvider]):
+class Tools(Resource, t.Generic[TTool, TToolCollection]):
     """
     Tools class definition
 
     This class is used to manage tools in the Composio SDK.
     It provides methods to list, get, and execute tools.
+
+    Generic Parameters:
+        TTool: The individual tool type returned by the provider (e.g., ChatCompletionToolParam for OpenAI).
+        TToolCollection: The collection type returned by get() (e.g., list[ChatCompletionToolParam]).
+
+    The return type of get() is automatically inferred from the provider's generic parameters.
+    This works for both built-in providers (OpenAI, Anthropic, etc.) and custom providers.
     """
 
-    provider: TProvider
+    provider: BaseProvider[TTool, TToolCollection]
 
     def __init__(
         self,
         client: HttpClient,
-        provider: TProvider,
+        provider: BaseProvider[TTool, TToolCollection],
         file_download_dir: t.Optional[str] = None,
         toolkit_versions: t.Optional[ToolkitVersionParam] = None,
         auto_upload_download_files: bool = True,
@@ -297,7 +241,7 @@ class Tools(Resource, t.Generic[TProvider]):
         scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
-    ):
+    ) -> TToolCollection:
         """Get a list of tools based on the provided filters."""
         tools_list = self.get_raw_composio_tools(
             tools=tools,
@@ -339,225 +283,24 @@ class Tools(Resource, t.Generic[TProvider]):
                 )
 
         if issubclass(type(self.provider), NonAgenticProvider):
-            return t.cast(NonAgenticProvider, self.provider).wrap_tools(
-                tools=tools_list
+            return t.cast(
+                TToolCollection,
+                t.cast(
+                    NonAgenticProvider[TTool, TToolCollection], self.provider
+                ).wrap_tools(tools=tools_list),
             )
 
-        return t.cast(AgenticProvider, self.provider).wrap_tools(
-            tools=tools_list,
-            execute_tool=self._wrap_execute_tool(
-                user_id=user_id,
-                modifiers=modifiers,
+        return t.cast(
+            TToolCollection,
+            t.cast(AgenticProvider[TTool, TToolCollection], self.provider).wrap_tools(
+                tools=tools_list,
+                execute_tool=self._wrap_execute_tool(
+                    user_id=user_id,
+                    modifiers=modifiers,
+                ),
             ),
         )
 
-    # =========================================================================
-    # Provider-specific @overload signatures for type inference
-    # =========================================================================
-    # These overloads enable type checkers (pyright, mypy) to infer the correct
-    # return type based on the provider type. For example:
-    #   composio = Composio(provider=AnthropicProvider())
-    #   tools = composio.tools.get(...)  # Inferred as list[ToolParam]
-    #
-    # The order matters: specific provider overloads come first, fallback last.
-
-    # --- OpenAI Provider (core) ---
-    @t.overload
-    def get(
-        self: "Tools[OpenAIProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[ChatCompletionToolParam]": ...
-
-    # --- OpenAI Responses Provider (core) ---
-    @t.overload
-    def get(
-        self: "Tools[OpenAIResponsesProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[ResponsesTool]": ...
-
-    # --- Anthropic Provider ---
-    @t.overload
-    def get(
-        self: "Tools[AnthropicProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[AnthropicToolParam]": ...
-
-    # --- LangChain Provider ---
-    @t.overload
-    def get(
-        self: "Tools[LangchainProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[StructuredTool]": ...
-
-    # --- LangGraph Provider ---
-    @t.overload
-    def get(
-        self: "Tools[LanggraphProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[StructuredTool]": ...
-
-    # --- LlamaIndex Provider ---
-    @t.overload
-    def get(
-        self: "Tools[LlamaIndexProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[LlamaIndexFunctionTool]": ...
-
-    # --- OpenAI Agents Provider ---
-    @t.overload
-    def get(
-        self: "Tools[OpenAIAgentsProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[OpenAIAgentsFunctionTool]": ...
-
-    # --- CrewAI Provider ---
-    @t.overload
-    def get(
-        self: "Tools[CrewAIProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[CrewAIBaseTool]": ...
-
-    # --- Autogen Provider ---
-    @t.overload
-    def get(
-        self: "Tools[AutogenProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[AutogenFunctionTool]": ...
-
-    # --- Gemini Provider ---
-    @t.overload
-    def get(
-        self: "Tools[GeminiProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[t.Any]": ...
-
-    # --- Google Provider ---
-    @t.overload
-    def get(
-        self: "Tools[GoogleProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[FunctionDeclaration]": ...
-
-    # --- Google ADK Provider ---
-    @t.overload
-    def get(
-        self: "Tools[GoogleAdkProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[GoogleAdkFunctionTool]": ...
-
-    # --- Claude Agent SDK Provider ---
-    @t.overload
-    def get(
-        self: "Tools[ClaudeAgentSDKProvider]",
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> "list[SdkMcpTool]": ...
-
-    # --- Fallback for unknown/custom providers ---
-    @t.overload
     def get(
         self,
         user_id: str,
@@ -569,25 +312,15 @@ class Tools(Resource, t.Generic[TProvider]):
         scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
-    ) -> t.Any: ...
-
-    def get(
-        self,
-        user_id: str,
-        *,
-        slug: t.Optional[str] = None,
-        tools: t.Optional[list[str]] = None,
-        search: t.Optional[str] = None,
-        toolkits: t.Optional[list[str]] = None,
-        scopes: t.Optional[t.List[str]] = None,
-        modifiers: t.Optional[Modifiers] = None,
-        limit: t.Optional[int] = None,
-    ) -> t.Any:
+    ) -> TToolCollection:
         """
         Get a tool or list of tools based on the provided arguments.
 
-        The return type is automatically inferred based on the provider type.
-        For example, when using AnthropicProvider, returns list[ToolParam].
+        The return type is automatically inferred based on the provider's generic parameters.
+        For example:
+        - OpenAIProvider -> list[ChatCompletionToolParam]
+        - AnthropicProvider -> list[ToolParam]
+        - CustomProvider[MyTool, list[MyTool]] -> list[MyTool]
 
         :param user_id: The user ID to get tools for.
         :param slug: Get a single tool by slug.
@@ -597,7 +330,7 @@ class Tools(Resource, t.Generic[TProvider]):
         :param scopes: Filter by scopes.
         :param modifiers: Optional modifiers to apply.
         :param limit: Limit the number of tools returned.
-        :return: Provider-specific tool collection (e.g., list[ToolParam] for Anthropic).
+        :return: Provider-specific tool collection (TToolCollection).
         """
         if slug is not None:
             return self._get(user_id=user_id, tools=[slug], modifiers=modifiers)

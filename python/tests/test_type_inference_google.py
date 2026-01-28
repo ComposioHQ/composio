@@ -22,7 +22,7 @@ from composio import Composio
 if TYPE_CHECKING:
     from typing_extensions import assert_type
 
-    from google.cloud.aiplatform_v1beta1.types import FunctionDeclaration
+    from vertexai.generative_models import FunctionDeclaration
 
     from composio_google import GoogleProvider
 
@@ -30,7 +30,9 @@ if TYPE_CHECKING:
 def test_google_provider_toolkits() -> None:
     """Verify Google provider returns list[FunctionDeclaration] for toolkits query."""
     if TYPE_CHECKING:
-        composio: Composio[GoogleProvider] = Composio(provider=GoogleProvider())
+        composio: Composio[FunctionDeclaration, list[FunctionDeclaration]] = Composio(
+            provider=GoogleProvider()
+        )
         tools = composio.tools.get(user_id="test", toolkits=["github"])
 
         # Type checker should infer: list[FunctionDeclaration]
@@ -40,7 +42,9 @@ def test_google_provider_toolkits() -> None:
 def test_google_provider_slug() -> None:
     """Verify Google provider returns list[FunctionDeclaration] for slug query."""
     if TYPE_CHECKING:
-        composio: Composio[GoogleProvider] = Composio(provider=GoogleProvider())
+        composio: Composio[FunctionDeclaration, list[FunctionDeclaration]] = Composio(
+            provider=GoogleProvider()
+        )
         tools = composio.tools.get(user_id="test", slug="GITHUB_CREATE_REPO")
 
         assert_type(tools, list[FunctionDeclaration])
@@ -49,7 +53,9 @@ def test_google_provider_slug() -> None:
 def test_google_provider_tools_list() -> None:
     """Verify Google provider returns list[FunctionDeclaration] for tools list query."""
     if TYPE_CHECKING:
-        composio: Composio[GoogleProvider] = Composio(provider=GoogleProvider())
+        composio: Composio[FunctionDeclaration, list[FunctionDeclaration]] = Composio(
+            provider=GoogleProvider()
+        )
         tools = composio.tools.get(
             user_id="test",
             tools=["GITHUB_CREATE_REPO", "GITHUB_GET_USER"],
@@ -61,7 +67,9 @@ def test_google_provider_tools_list() -> None:
 def test_google_provider_search() -> None:
     """Verify Google provider returns list[FunctionDeclaration] for search query."""
     if TYPE_CHECKING:
-        composio: Composio[GoogleProvider] = Composio(provider=GoogleProvider())
+        composio: Composio[FunctionDeclaration, list[FunctionDeclaration]] = Composio(
+            provider=GoogleProvider()
+        )
         tools = composio.tools.get(user_id="test", search="github repository")
 
         assert_type(tools, list[FunctionDeclaration])
