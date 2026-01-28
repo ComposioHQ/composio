@@ -10,7 +10,24 @@ export async function GET(
   { params }: { params: Promise<{ slug: string[] }> },
 ) {
   const { slug } = await params;
-  const page = referenceSource.getPage(slug.slice(0, -1));
+  const pageSlug = slug.slice(0, -1); // Remove 'image.png'
+
+  // Index page
+  if (pageSlug.length === 0) {
+    return new ImageResponse(
+      <DefaultImage
+        title="API Reference"
+        description="REST API and SDK reference for Composio"
+        site="Composio"
+      />,
+      {
+        width: 1200,
+        height: 630,
+      },
+    );
+  }
+
+  const page = referenceSource.getPage(pageSlug);
   if (!page) notFound();
 
   return new ImageResponse(
@@ -27,7 +44,13 @@ export async function GET(
 }
 
 export function generateStaticParams() {
-  return referenceSource.getPages().map((page) => ({
+  // Index page
+  const indexParam = { slug: ['image.png'] };
+
+  // All reference pages
+  const pageParams = referenceSource.getPages().map((page) => ({
     slug: [...page.slugs, 'image.png'],
   }));
+
+  return [indexParam, ...pageParams];
 }
