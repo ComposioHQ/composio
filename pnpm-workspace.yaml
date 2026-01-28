@@ -9,10 +9,11 @@ packages:
   - ts/packages/providers/*
   - ts/packages/ts-builders
   - ts/packages/wrappers/*
-  - fern
-  - fern/llms-txt-worker
-  - fern/pages/examples/*
-  - fern/snippets/*
+  # DEPRECATED: fern docs - now using /docs with Fumadocs
+  # - fern
+  # - fern/llms-txt-worker
+  # - fern/pages/examples/*
+  # - fern/snippets/*
 
 catalog:
   '@ai-sdk/openai': ^3.0.19

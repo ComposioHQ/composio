@@ -2,6 +2,7 @@
   "title": "Reference",
   "pages": [
     "index",
+    "errors",
     "api-reference",
     "sdk-reference"
   ]

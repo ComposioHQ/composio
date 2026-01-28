@@ -6,8 +6,7 @@
   "workspaces": [
     "ts/packages/core",
     "ts/packages/json-schema-to-zod",
-    "ts/packages/providers/*",
-    "fern"
+    "ts/packages/providers/*"
   ],
   "scripts": {
     "build": "turbo build",

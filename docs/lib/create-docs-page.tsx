@@ -8,6 +8,7 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
+import { getOgImageUrl } from '@/lib/source';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Source = any;
@@ -42,7 +43,7 @@ export function createGenerateStaticParams(source: Source) {
   };
 }
 
-export function createGenerateMetadata(source: Source) {
+export function createGenerateMetadata(source: Source, section: string = 'docs') {
   return async function generateMetadata({
     params,
   }: {
@@ -52,9 +53,19 @@ export function createGenerateMetadata(source: Source) {
     const page = source.getPage(slug);
     if (!page) notFound();
 
+    const ogImage = getOgImageUrl(section, page.slugs, page.data.title, page.data.description);
+
     return {
       title: page.data.title,
       description: page.data.description,
+      alternates: { canonical: page.url },
+      openGraph: {
+        images: [ogImage],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        images: [ogImage],
+      },
     };
   };
 }

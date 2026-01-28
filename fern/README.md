@@ -1,4 +1,10 @@
-# Composio Documentation
+# Composio Documentation (DEPRECATED)
+
+> **⚠️ DEPRECATED**: This Fern-based documentation system is deprecated. The new documentation is now located in the `/docs` directory and built with [Fumadocs](https://fumadocs.dev/). Please make all documentation changes there instead.
+>
+> This directory is kept for reference only and will be removed in a future release.
+
+---
 
 Welcome to the Composio documentation! This guide will help you contribute to our documentation with ease.
 
