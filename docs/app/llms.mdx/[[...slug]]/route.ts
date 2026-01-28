@@ -422,6 +422,62 @@ async function getToolkit(slug: string): Promise<Toolkit | null> {
   }
 }
 
+async function getAllToolkits(): Promise<Toolkit[]> {
+  try {
+    const filePath = join(process.cwd(), 'public/data/toolkits.json');
+    const data = await readFile(filePath, 'utf-8');
+    return JSON.parse(data) as Toolkit[];
+  } catch {
+    return [];
+  }
+}
+
+// Generate toolkits index page with links to individual toolkit pages
+function toolkitsIndexToMarkdown(toolkits: Toolkit[]): string {
+  // Group toolkits by category
+  const byCategory = new Map<string, Toolkit[]>();
+  for (const toolkit of toolkits) {
+    const category = toolkit.category || 'Other';
+    if (!byCategory.has(category)) {
+      byCategory.set(category, []);
+    }
+    byCategory.get(category)!.push(toolkit);
+  }
+
+  // Sort categories alphabetically, but put "Other" last
+  const sortedCategories = [...byCategory.keys()].sort((a, b) => {
+    if (a === 'Other') return 1;
+    if (b === 'Other') return -1;
+    return a.localeCompare(b);
+  });
+
+  const lines: string[] = [
+    '# Composio Toolkits',
+    '',
+    `Browse all ${toolkits.length} toolkits supported by Composio.`,
+    '',
+  ];
+
+  for (const category of sortedCategories) {
+    const categoryToolkits = byCategory.get(category)!;
+    lines.push(`## ${category}`, '');
+
+    // Sort toolkits alphabetically within category
+    categoryToolkits.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const toolkit of categoryToolkits) {
+      const toolCount = toolkit.toolCount || toolkit.tools?.length || 0;
+      const triggerCount = toolkit.triggerCount || toolkit.triggers?.length || 0;
+      lines.push(
+        `- [${toolkit.name.trim()}](https://docs.composio.dev/llms.mdx/toolkits/${toolkit.slug}.md): ${toolkit.description} (${toolCount} tools, ${triggerCount} triggers)`
+      );
+    }
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ slug?: string[] }> }
@@ -493,15 +549,28 @@ export async function GET(
       }
     }
 
-    // Special handling for JSON toolkit pages
-    if (prefix === 'toolkits' && rest.length === 1) {
-      const toolkit = await getToolkit(rest[0]);
-      if (toolkit) {
-        return new Response(toolkitToMarkdown(toolkit), {
+    // Special handling for toolkits
+    if (prefix === 'toolkits') {
+      // Toolkits index page - list all toolkits with links
+      if (rest.length === 0) {
+        const toolkits = await getAllToolkits();
+        return new Response(toolkitsIndexToMarkdown(toolkits), {
           headers: {
             'Content-Type': 'text/markdown; charset=utf-8',
           },
         });
+      }
+
+      // Individual toolkit page
+      if (rest.length === 1) {
+        const toolkit = await getToolkit(rest[0]);
+        if (toolkit) {
+          return new Response(toolkitToMarkdown(toolkit), {
+            headers: {
+              'Content-Type': 'text/markdown; charset=utf-8',
+            },
+          });
+        }
       }
     }
 
