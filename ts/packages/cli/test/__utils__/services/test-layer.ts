@@ -28,6 +28,7 @@ import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
+import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
@@ -149,6 +150,15 @@ export const TestLayer = (input?: TestLiveInput) =>
         filterToolkitsBySlugs: (toolkits, toolkitSlugs) => {
           const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
           return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
+        },
+        getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) => {
+          // Filter tools based on toolkit slugs from specs
+          const toolkitSlugs = specs.map(s => s.toolkitSlug.toUpperCase());
+          const prefixes = toolkitSlugs.map(s => `${s}_`);
+          const tools = toolkitsData.tools.filter(t =>
+            prefixes.some(p => t.slug.toUpperCase().startsWith(p))
+          );
+          return Effect.succeed(tools);
         },
       })
     );

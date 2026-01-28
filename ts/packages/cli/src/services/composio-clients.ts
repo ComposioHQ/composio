@@ -15,6 +15,7 @@ import {
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
 import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
+import { groupByVersion, type ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
@@ -510,22 +511,54 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
             ),
           /**
            * Retrieve a list of tools, automatically handling pagination.
-           * @param toolkitSlugs - Optional array of toolkit slugs to filter by
+           * It always fetches the latest version of tools for each toolkit.
+           * For more granular toolkit version control, use `listByVersionSpecs`.
+           * @param toolkitSlugs - Array of toolkit slugs to filter by
            */
-          list: (toolkitSlugs?: ReadonlyArray<string>) =>
+          list: (toolkitSlugs: ReadonlyArray<string>) =>
             withMetrics(
               callClientWithPagination(
                 clientSingleton,
                 (client, cursor, limit) =>
                   client.tools.list({
                     cursor,
-                    toolkit_slug: toolkitSlugs?.length ? toolkitSlugs.join(',') : undefined,
+                    toolkit_slug: toolkitSlugs.length > 0 ? toolkitSlugs.join(',') : undefined,
                     toolkit_versions: 'latest',
                     limit,
                   }),
                 ToolsResponse
               )
             ),
+          /**
+           * Retrieve tools for multiple toolkits, grouped by version.
+           * Makes separate API calls for each version group, then merges results.
+           * @param specs - Array of toolkit version specifications
+           */
+          listByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
+            Effect.gen(function* () {
+              const grouped = groupByVersion(specs);
+              const allTools: Tool[] = [];
+
+              for (const [version, slugs] of grouped) {
+                // Fetch all toolkits with same version in one call
+                const response = yield* withMetrics(
+                  callClientWithPagination(
+                    clientSingleton,
+                    (client, cursor, limit) =>
+                      client.tools.list({
+                        cursor,
+                        toolkit_slug: slugs.join(','),
+                        toolkit_versions: version,
+                        limit,
+                      }),
+                    ToolsResponse
+                  )
+                );
+                allTools.push(...response.items);
+              }
+
+              return { items: allTools };
+            }),
         },
         triggersTypes: {
           /**
@@ -655,7 +688,24 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
          * @param toolkitSlugs - Optional array of toolkit slugs to filter by
          */
         getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
-          client.tools.list(toolkitSlugs).pipe(
+          client.tools.list(toolkitSlugs ?? []).pipe(
+            Effect.map(response => response.items),
+            Effect.flatMap(
+              Effect.fn(function* (tools) {
+                // Sort apps by slug.
+                // TODO: make sure this happens on the server-side.
+                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
+                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
+              })
+            )
+          ),
+        /**
+         * Fetches tools with per-toolkit version support.
+         * Groups toolkits by version and makes separate API calls for each group.
+         * @param specs - Array of { toolkitSlug, toolkitVersion } specifications
+         */
+        getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
+          client.tools.listByVersionSpecs(specs).pipe(
             Effect.map(response => response.items),
             Effect.flatMap(
               Effect.fn(function* (tools) {

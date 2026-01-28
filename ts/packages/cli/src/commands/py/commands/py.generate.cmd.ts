@@ -9,6 +9,10 @@ import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { pyFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
 import { BANNER } from 'src/generation/constants';
 import { generatePythonSources } from 'src/generation/python/generate';
+import {
+  getToolkitVersionOverrides,
+  type ToolkitVersionOverrides,
+} from 'src/effects/toolkit-version-overrides';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -58,6 +62,17 @@ export function generatePythonTypeStubs({
     yield* Effect.log(`Writing type stubs to ${outputDir}...`);
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
+    // Read toolkit version overrides from environment variables
+    const versionOverrides = yield* getToolkitVersionOverrides;
+
+    // Log detected overrides for debugging
+    if (versionOverrides.size > 0) {
+      yield* Console.log('Detected toolkit version overrides:');
+      for (const [toolkit, version] of versionOverrides) {
+        yield* Console.log(`  - ${toolkit}: ${version}`);
+      }
+    }
+
     // Fetch data from Composio API
     yield* Console.log('Fetching latest data from Composio API. This may take a while...');
 
@@ -100,9 +115,18 @@ export function generatePythonTypeStubs({
       );
     }
 
+    // Build version map for toolkits being generated
+    const versionMap: ToolkitVersionOverrides = new Map();
+    for (const toolkit of toolkits) {
+      const version = versionOverrides.get(toolkit.slug.toLowerCase() as Lowercase<string>);
+      if (version && version !== 'latest') {
+        versionMap.set(toolkit.slug.toLowerCase() as Lowercase<string>, version);
+      }
+    }
+
     const typeableTools = { withTypes: false as const, tools };
 
-    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
+    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
     // Generate Python sources
     const sources = generatePythonSources({

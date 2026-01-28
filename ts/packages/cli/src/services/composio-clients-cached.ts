@@ -5,6 +5,7 @@ import { BunFileSystem } from '@effect/platform-bun';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
 import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
+import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { NodeOs } from './node-os';
 import { toolkitsFromJSON, toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import {
@@ -215,6 +216,14 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
           underlyingRepository.getTools(toolkitSlugs),
           cacheFilter
         );
+      },
+
+      // Version-specific tools bypass cache because:
+      // 1. Different versions = different cache keys needed
+      // 2. Version-specific data shouldn't pollute the main cache
+      // The cache is mainly useful for 'latest' during repeated dev iterations.
+      getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) => {
+        return underlyingRepository.getToolsByVersionSpecs(specs);
       },
 
       // These methods don't need caching as they operate on already fetched data
