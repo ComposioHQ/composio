@@ -1,4 +1,4 @@
-import { getPageImage, source } from '@/lib/source';
+import { getOgImageUrl, source } from '@/lib/source';
 import {
   DocsBody,
   DocsPage,
@@ -46,11 +46,13 @@ export async function generateMetadata(
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
+  const ogImage = getOgImageUrl('docs', page.slugs, page.data.title, page.data.description);
+
   return {
     title: page.data.title,
     description: page.data.description,
-    openGraph: {
-      images: getPageImage(page).url,
-    },
+    alternates: { canonical: page.url },
+    openGraph: { images: [ogImage] },
+    twitter: { card: 'summary_large_image', images: [ogImage] },
   };
 }

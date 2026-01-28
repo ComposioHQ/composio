@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { referenceSource } from '@/lib/source';
+import { referenceSource, getOgImageUrl } from '@/lib/source';
 import { APIPage } from '@/components/api-page';
 import {
   DocsBody,
@@ -75,8 +75,13 @@ export async function generateMetadata({
   const page = referenceSource.getPage(slug);
   if (!page) notFound();
 
+  const ogImage = getOgImageUrl('reference', page.slugs, page.data.title, page.data.description);
+
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: { canonical: page.url },
+    openGraph: { images: [ogImage] },
+    twitter: { card: 'summary_large_image', images: [ogImage] },
   };
 }

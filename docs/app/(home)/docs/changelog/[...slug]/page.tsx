@@ -1,4 +1,4 @@
-import { changelogEntries, formatDate, dateToSlug, slugToDate } from '@/lib/source';
+import { changelogEntries, formatDate, dateToSlug, slugToDate, getOgImageUrl } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
 import {
   DocsBody,
@@ -95,8 +95,14 @@ export async function generateMetadata({ params }: PageProps) {
     ? matchingEntries[0].title
     : `Changelog - ${formatDate(dateStr)}`;
 
+  const description = `Updates from ${formatDate(dateStr)}`;
+  const ogImage = getOgImageUrl('docs', ['changelog', ...slug], title, description);
+
   return {
     title: `${title} | Composio Changelog`,
-    description: `Updates from ${formatDate(dateStr)}`,
+    description,
+    alternates: { canonical: `/docs/changelog/${slug.join('/')}` },
+    openGraph: { images: [ogImage] },
+    twitter: { card: 'summary_large_image', images: [ogImage] },
   };
 }
