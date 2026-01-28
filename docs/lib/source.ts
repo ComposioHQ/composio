@@ -64,25 +64,12 @@ export const toolkitsSource = loader({
 
 export const changelogEntries = changelog;
 
-export function getPageImage(page: InferPageType<typeof source>) {
-  const segments = [...page.slugs, 'image.png'];
-
-  return {
-    segments,
-    url: `/og/docs/${segments.join('/')}`,
-  };
-}
-
 /**
  * Generate OG image URL for any page section
  */
-export function getOgImageUrl(section: string, slugs: string[], title?: string, description?: string): string {
-  const params = new URLSearchParams();
-  if (title) params.set('title', title);
-  if (description) params.set('description', description);
-  const query = params.toString() ? `?${params.toString()}` : '';
-  const slugPath = slugs.length > 0 ? `${slugs.join('/')}/` : '';
-  return `/og/${section}/${slugPath}image.png${query}`;
+export function getOgImageUrl(_section: string, _slugs: string[], title?: string, _description?: string): string {
+  const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
+  return `https://og.composio.dev/api/og?title=${encodedTitle}`;
 }
 
 /**
