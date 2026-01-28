@@ -162,10 +162,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
     const toolkit = toolkits.find((t) => t.slug === slug[0]);
     if (toolkit) {
       const title = `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`;
-      const ogImage = getOgImageUrl('toolkits', slug, title, toolkit.description);
+      const description = `Build an AI agent that connects to ${toolkit.name?.trim() || toolkit.slug} using Composio. ${toolkit.description}`;
+      const ogImage = getOgImageUrl('toolkits', slug, title, description);
       return {
         title,
-        description: toolkit.description,
+        description,
         alternates: { canonical: `/toolkits/${toolkit.slug}` },
         openGraph: { images: [ogImage] },
         twitter: { card: 'summary_large_image', images: [ogImage] },

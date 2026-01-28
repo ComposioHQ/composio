@@ -49,7 +49,7 @@ export async function GET(
       return new ImageResponse(
         <DefaultImage
           title={`${toolkit.name?.trim() || toolkit.slug}`}
-          description={toolkit.description || 'Composio Toolkit'}
+          description={`Build an AI agent that connects to ${toolkit.name?.trim() || toolkit.slug} using Composio. ${toolkit.description || ''}`}
           site="Composio"
         />,
         {
