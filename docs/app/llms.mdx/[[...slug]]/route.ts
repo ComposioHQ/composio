@@ -1,6 +1,6 @@
 import {
   source,
-  referenceSource,
+  getReferenceSource,
   examplesSource,
   toolkitsSource,
   getLLMText,
@@ -374,9 +374,9 @@ async function openapiPageToMarkdown(
 }
 
 // Map URL prefixes to their sources
+// Note: 'reference' is handled specially below with async getReferenceSource()
 const sources = [
   { prefix: 'docs', source },
-  { prefix: 'reference', source: referenceSource },
   { prefix: 'examples', source: examplesSource },
   { prefix: 'toolkits', source: toolkitsSource },
 ];
@@ -430,14 +430,28 @@ export async function GET(
     const { slug = [] } = await params;
     const [prefix, ...rest] = slug;
 
-    // Find the matching source
-    const match = sources.find((s) => s.prefix === prefix);
-    if (!match) notFound();
+    // Handle 'reference' specially - uses async getReferenceSource() for OpenAPI pages
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let pageSource: any;
+    if (prefix === 'reference') {
+      try {
+        pageSource = await getReferenceSource();
+      } catch (e) {
+        console.error('Error loading reference source:', e);
+        // Fall back to MDX-only reference source if OpenAPI loading fails
+        const { referenceSource } = await import('@/lib/source');
+        pageSource = referenceSource;
+      }
+    } else {
+      const match = sources.find((s) => s.prefix === prefix);
+      if (!match) notFound();
+      pageSource = match.source;
+    }
 
     // Get the page from that source (MDX pages)
     let page;
     try {
-      page = match.source.getPage(rest.length > 0 ? rest : undefined);
+      page = pageSource.getPage(rest.length > 0 ? rest : undefined);
     } catch (e) {
       console.error('Error in getPage:', e);
       page = null;
@@ -512,12 +526,10 @@ export async function GET(
       throw e;
     }
     console.error('Unexpected error in llms.mdx route:', e);
-    const errorMessage = e instanceof Error ? e.message : String(e);
-    const errorStack = e instanceof Error ? e.stack : '';
     return new Response(
-      `# Error\n\nAn error occurred while generating the markdown content.\n\n**Error:** ${errorMessage}\n\n**Stack:**\n\`\`\`\n${errorStack}\n\`\`\``,
+      `# Error\n\nAn error occurred while generating the markdown content.`,
       {
-        status: 200, // Return 200 so we can see the error
+        status: 500,
         headers: {
           'Content-Type': 'text/markdown; charset=utf-8',
         },
