@@ -232,6 +232,12 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       validateToolkits: toolkitSlugs => underlyingRepository.validateToolkits(toolkitSlugs),
       filterToolkitsBySlugs: (toolkits, toolkitSlugs) =>
         underlyingRepository.filterToolkitsBySlugs(toolkits, toolkitSlugs),
+      // Version validation should NOT be cached because:
+      // 1. available_versions can change frequently as new versions are released
+      // 2. Validation should always reflect the current API state
+      // 3. Caching validation results could cause false positives/negatives
+      validateToolkitVersions: (overrides, relevantToolkits) =>
+        underlyingRepository.validateToolkitVersions(overrides, relevantToolkits),
     });
   })
 ).pipe(

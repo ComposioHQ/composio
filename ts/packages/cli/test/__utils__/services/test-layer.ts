@@ -23,7 +23,10 @@ import {
   ComposioSessionRepository,
   ComposioToolkitsRepository,
   InvalidToolkitsError,
+  InvalidToolkitVersionsError,
+  type InvalidVersionDetail,
 } from 'src/services/composio-clients';
+import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
@@ -159,6 +162,55 @@ export const TestLayer = (input?: TestLiveInput) =>
             prefixes.some(p => t.slug.toUpperCase().startsWith(p))
           );
           return Effect.succeed(tools);
+        },
+        validateToolkitVersions: (
+          overrides: ToolkitVersionOverrides,
+          relevantToolkits?: ReadonlyArray<string>
+        ) => {
+          // Mock implementation that validates against test fixture
+          const invalidVersions: InvalidVersionDetail[] = [];
+          const warnings: string[] = [];
+
+          for (const [toolkit, version] of overrides) {
+            // Check if toolkit should be validated
+            if (relevantToolkits && !relevantToolkits.map(s => s.toLowerCase()).includes(toolkit)) {
+              warnings.push(`Version override for "${toolkit}" will be ignored`);
+              continue;
+            }
+
+            // Check if toolkit exists in the fixture
+            const toolkitExists = toolkitsData.toolkits.some(
+              t => String.toLowerCase(t.slug) === toolkit
+            );
+
+            if (!toolkitExists) {
+              return Effect.fail(
+                new InvalidToolkitsError({
+                  invalidToolkits: [toolkit],
+                  availableToolkits: toolkitsData.toolkits.map(t => t.slug),
+                })
+              );
+            }
+
+            // Mock: only accept 'latest' or versions matching pattern YYYYMMDD_NN
+            const validPattern = /^\d{8}_\d{2}$/;
+            if (version !== 'latest' && !validPattern.test(version)) {
+              invalidVersions.push({
+                toolkit,
+                requestedVersion: version,
+                availableVersions: ['20250901_00', '20250815_00', '20250710_00'],
+              });
+            }
+          }
+
+          if (invalidVersions.length > 0) {
+            return Effect.fail(new InvalidToolkitVersionsError({ invalidVersions }));
+          }
+
+          return Effect.succeed({
+            validatedOverrides: overrides,
+            warnings: warnings as ReadonlyArray<string>,
+          });
         },
       })
     );

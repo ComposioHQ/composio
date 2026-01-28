@@ -1,0 +1,73 @@
+---
+description: Rule for keeping composio-clients.ts and composio-clients-cached.ts in sync
+globs:
+  - "src/services/composio-clients.ts"
+  - "src/services/composio-clients-cached.ts"
+alwaysApply: true
+---
+
+# ComposioClients Service Sync Rule
+
+## Critical Requirement
+
+When modifying `src/services/composio-clients.ts`, you MUST also update `src/services/composio-clients-cached.ts`.
+
+## Why This Matters
+
+The `ComposioToolkitsRepositoryCached` in `composio-clients-cached.ts` is a Layer wrapper that provides file-based caching around `ComposioToolkitsRepository`. It must implement the EXACT SAME interface.
+
+If you add, remove, or modify methods in `ComposioToolkitsRepository`, the cached layer will:
+- **Fail at runtime** if a method is missing
+- **Behave incorrectly** if method signatures don't match
+- **Cause type errors** if the interface is out of sync
+
+## Checklist When Modifying composio-clients.ts
+
+1. [ ] **New method added?** → Add corresponding entry in `ComposioToolkitsRepositoryCached`
+   - Decide if it should be cached or passthrough
+   - Validation methods: usually passthrough (no caching)
+   - Data fetch methods: usually cached
+
+2. [ ] **Method signature changed?** → Update in both files
+
+3. [ ] **Method removed?** → Remove from both files
+
+4. [ ] **New error type added?** → Export from both files if needed
+
+## Example: Adding a New Method
+
+**In composio-clients.ts:**
+```typescript
+export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsRepository>()(...) {
+  // ...
+  newMethod: (arg: string) => Effect.Effect<Result, Error>,
+}
+```
+
+**In composio-clients-cached.ts:**
+```typescript
+return ComposioToolkitsRepository.make({
+  // ... existing methods ...
+
+  // For passthrough (no caching):
+  newMethod: arg => underlyingRepository.newMethod(arg),
+
+  // OR for cached:
+  newMethod: arg => createCachedEffect(
+    'new-method.json',
+    decoder,
+    encoder,
+    underlyingRepository.newMethod(arg)
+  ),
+});
+```
+
+## Testing
+
+After modifying either file, run:
+```bash
+pnpm build:packages
+pnpm test
+```
+
+Build errors or failing tests often indicate a sync issue between these files.

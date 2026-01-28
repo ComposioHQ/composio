@@ -33,6 +33,32 @@ export const TOOLKIT_VERSION_OVERRIDES_CONFIG = pipe(
 export type ToolkitVersionOverrides = Map<Lowercase<string>, string>;
 
 /**
+ * Regex pattern for valid version strings.
+ * Only allows: alphanumeric characters (a-z, A-Z, 0-9), hyphens, underscores, and dots.
+ */
+const VALID_VERSION_PATTERN = /^[a-zA-Z0-9._-]+$/;
+
+/**
+ * Sanitizes a version string by removing invalid characters.
+ * Only keeps: alphanumeric characters (a-z, A-Z, 0-9), hyphens, underscores, and dots.
+ *
+ * @param version - The version string to sanitize
+ * @returns The sanitized version string, or null if it becomes empty after sanitization
+ */
+export const sanitizeVersionString = (version: string): string | null => {
+  // If the version already matches the valid pattern, return as-is
+  if (VALID_VERSION_PATTERN.test(version)) {
+    return version;
+  }
+
+  // Remove invalid characters
+  const sanitized = version.replace(/[^a-zA-Z0-9._-]/g, '');
+
+  // Return null if the sanitized version is empty
+  return sanitized.length > 0 ? sanitized : null;
+};
+
+/**
  * Reads toolkit version overrides from environment variables.
  *
  * Uses Effect's Config system to read env vars matching the pattern
@@ -61,7 +87,11 @@ export const getToolkitVersionOverrides: Effect.Effect<
       for (const [key, value] of HashMap.toEntries(hashMap)) {
         // Normalize toolkit name to lowercase and skip 'latest' values
         if (value && value !== 'latest') {
-          result.set(String.toLowerCase(key), value);
+          // Sanitize version string to only allow valid characters
+          const sanitizedVersion = sanitizeVersionString(value);
+          if (sanitizedVersion) {
+            result.set(String.toLowerCase(key), sanitizedVersion);
+          }
         }
       }
       return result;
@@ -105,8 +135,32 @@ export const groupByVersion = (
 ): Map<string, Lowercase<string>[]> => {
   const grouped = new Map<string, Lowercase<string>[]>();
   for (const spec of specs) {
-    const existing = grouped.get(spec.toolkitVersion) ?? [];
-    grouped.set(spec.toolkitVersion, [...existing, spec.toolkitSlug]);
+    const existing = grouped.get(spec.toolkitVersion);
+    if (existing) {
+      existing.push(spec.toolkitSlug);
+    } else {
+      grouped.set(spec.toolkitVersion, [spec.toolkitSlug]);
+    }
   }
   return grouped;
+};
+
+/**
+ * Builds a ToolkitVersionOverrides map from version specs, excluding 'latest' versions.
+ * This is the single source of truth for building version maps from specs.
+ *
+ * @example
+ * // Given specs: [{ toolkitSlug: 'gmail', toolkitVersion: '20250901_00' }, { toolkitSlug: 'slack', toolkitVersion: 'latest' }]
+ * // Returns: Map { "gmail" => "20250901_00" }
+ */
+export const buildVersionMapFromSpecs = (
+  specs: ReadonlyArray<ToolkitVersionSpec>
+): ToolkitVersionOverrides => {
+  const versionMap = new Map<Lowercase<string>, string>();
+  for (const spec of specs) {
+    if (spec.toolkitVersion !== 'latest') {
+      versionMap.set(spec.toolkitSlug, spec.toolkitVersion);
+    }
+  }
+  return versionMap;
 };

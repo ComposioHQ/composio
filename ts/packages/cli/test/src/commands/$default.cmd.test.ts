@@ -72,11 +72,19 @@ describe('CLI: composio', () => {
 
             - py                                                                                                       Handle Python projects.
 
-            - py generate [(-o, --output-dir directory)] --toolkits text...                                            Generate Python type stubs for toolkits, tools, and triggers from the Composio API
+            - py generate [(-o, --output-dir directory)] --toolkits text...                                            Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
+
+          Environment Variables:
+            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
+                                                Use "latest" or unset to use the latest version.
 
             - ts                                                                                                       Handle TypeScript projects.
 
-            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...  Generate TypeScript types for toolkits, tools, and triggers from the Composio API
+            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...  Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
+
+          Environment Variables:
+            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
+                                                Use "latest" or unset to use the latest version.
           "
         `);
       })

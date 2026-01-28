@@ -4,6 +4,8 @@ import {
   getToolkitVersionOverrides,
   buildToolkitVersionSpecs,
   groupByVersion,
+  sanitizeVersionString,
+  buildVersionMapFromSpecs,
   type ToolkitVersionOverrides,
   type ToolkitVersionSpec,
 } from 'src/effects/toolkit-version-overrides';
@@ -201,5 +203,101 @@ describe('toolkit-version-overrides', () => {
 
       expect(grouped.get('latest')).toEqual(['gmail', 'slack', 'github', 'notion']);
     });
+  });
+
+  describe('sanitizeVersionString', () => {
+    it('should return valid version strings unchanged', () => {
+      expect(sanitizeVersionString('20250901_00')).toBe('20250901_00');
+      expect(sanitizeVersionString('v1.2.3')).toBe('v1.2.3');
+      expect(sanitizeVersionString('latest')).toBe('latest');
+      expect(sanitizeVersionString('1.0.0-beta.1')).toBe('1.0.0-beta.1');
+    });
+
+    it('should remove invalid characters', () => {
+      expect(sanitizeVersionString('20250901_00!')).toBe('20250901_00');
+      expect(sanitizeVersionString('version@123')).toBe('version123');
+      expect(sanitizeVersionString('v1.2.3#tag')).toBe('v1.2.3tag');
+    });
+
+    it('should handle unicode and special characters', () => {
+      expect(sanitizeVersionString('版本1.0')).toBe('1.0');
+      expect(sanitizeVersionString('v1.0\n\t')).toBe('v1.0');
+      expect(sanitizeVersionString('$version$')).toBe('version');
+    });
+
+    it('should return null for empty or all-invalid strings', () => {
+      expect(sanitizeVersionString('')).toBe(null);
+      expect(sanitizeVersionString('$$$')).toBe(null);
+      expect(sanitizeVersionString('   ')).toBe(null);
+    });
+
+    it('should allow alphanumeric, hyphens, underscores, and dots', () => {
+      expect(sanitizeVersionString('abc-123_456.789')).toBe('abc-123_456.789');
+      expect(sanitizeVersionString('ABC-XYZ_000.999')).toBe('ABC-XYZ_000.999');
+    });
+  });
+
+  describe('buildVersionMapFromSpecs', () => {
+    it('should build version map excluding latest versions', () => {
+      const specs: ToolkitVersionSpec[] = [
+        { toolkitSlug: 'gmail', toolkitVersion: '20250901_00' },
+        { toolkitSlug: 'slack', toolkitVersion: 'latest' },
+        { toolkitSlug: 'github', toolkitVersion: '20250815_00' },
+      ];
+      const versionMap = buildVersionMapFromSpecs(specs);
+
+      expect(versionMap.size).toBe(2);
+      expect(versionMap.get('gmail')).toBe('20250901_00');
+      expect(versionMap.get('github')).toBe('20250815_00');
+      expect(versionMap.has('slack')).toBe(false);
+    });
+
+    it('should return empty map when all versions are latest', () => {
+      const specs: ToolkitVersionSpec[] = [
+        { toolkitSlug: 'gmail', toolkitVersion: 'latest' },
+        { toolkitSlug: 'slack', toolkitVersion: 'latest' },
+      ];
+      const versionMap = buildVersionMapFromSpecs(specs);
+
+      expect(versionMap.size).toBe(0);
+    });
+
+    it('should return empty map for empty specs', () => {
+      const versionMap = buildVersionMapFromSpecs([]);
+      expect(versionMap.size).toBe(0);
+    });
+
+    it('should include all non-latest versions', () => {
+      const specs: ToolkitVersionSpec[] = [
+        { toolkitSlug: 'gmail', toolkitVersion: '20250901_00' },
+        { toolkitSlug: 'slack', toolkitVersion: '20250815_00' },
+        { toolkitSlug: 'github', toolkitVersion: '20250710_00' },
+      ];
+      const versionMap = buildVersionMapFromSpecs(specs);
+
+      expect(versionMap.size).toBe(3);
+      expect(versionMap.get('gmail')).toBe('20250901_00');
+      expect(versionMap.get('slack')).toBe('20250815_00');
+      expect(versionMap.get('github')).toBe('20250710_00');
+    });
+  });
+
+  describe('getToolkitVersionOverrides with sanitization', () => {
+    it.effect('should sanitize version strings with invalid characters', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00!@#');
+        const result = yield* getToolkitVersionOverrides;
+        expect(result.get('gmail')).toBe('20250901_00');
+        expect(result.size).toBe(1);
+      })
+    );
+
+    it.effect('should ignore version strings that become empty after sanitization', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '$$$');
+        const result = yield* getToolkitVersionOverrides;
+        expect(result.size).toBe(0);
+      })
+    );
   });
 });
