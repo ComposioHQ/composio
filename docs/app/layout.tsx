@@ -17,11 +17,13 @@ export const metadata: Metadata = {
     description: 'Build AI agents with 250+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
     siteName: 'Composio Docs',
     type: 'website',
+    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Composio Docs',
     description: 'Build AI agents with 250+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
   },
 };
 
