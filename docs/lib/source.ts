@@ -57,7 +57,8 @@ export function getOgImageUrl(section: string, slugs: string[], title?: string, 
   if (title) params.set('title', title);
   if (description) params.set('description', description);
   const query = params.toString() ? `?${params.toString()}` : '';
-  return `/og/${section}/${slugs.join('/')}/image.png${query}`;
+  const slugPath = slugs.length > 0 ? `${slugs.join('/')}/` : '';
+  return `/og/${section}/${slugPath}image.png${query}`;
 }
 
 /**
