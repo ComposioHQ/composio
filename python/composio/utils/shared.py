@@ -37,6 +37,86 @@ __all__ = [
 reserved_names = ["validate"]
 
 
+def _get_expected_types(json_schema: t.Dict[str, t.Any]) -> set:
+    """
+    Extract expected Python types from JSON schema.
+
+    Handles direct type definitions as well as anyOf/oneOf combiners.
+
+    :param json_schema: The JSON schema property definition.
+    :return: A set of Python types expected by the schema.
+    """
+    types: set = set()
+
+    # Handle direct type
+    if "type" in json_schema:
+        json_type = json_schema["type"]
+        if json_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
+            types.add(PYDANTIC_TYPE_TO_PYTHON_TYPE[json_type])
+
+    # Handle anyOf/oneOf combiners
+    for combiner in ("anyOf", "oneOf"):
+        if combiner in json_schema:
+            for option in json_schema[combiner]:
+                if isinstance(option, dict) and "type" in option:
+                    json_type = option["type"]
+                    if json_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
+                        types.add(PYDANTIC_TYPE_TO_PYTHON_TYPE[json_type])
+
+    return types
+
+
+def _coerce_default_value(
+    default: t.Any,
+    json_schema: t.Dict[str, t.Any],
+) -> t.Any:
+    """
+    Coerce a default value to match the expected type from JSON schema.
+
+    Handles common mismatches where string defaults should be boolean/int/float.
+    This fixes issues where API returns stringified defaults like "true" instead of true.
+
+    :param default: The default value from the JSON schema.
+    :param json_schema: The JSON schema property definition.
+    :return: The coerced default value, or original if no coercion possible.
+    """
+    if default is None:
+        return None
+
+    # Determine expected type(s) from schema
+    expected_types = _get_expected_types(json_schema)
+
+    # If default already matches expected type, return as-is
+    if type(default) in expected_types:
+        return default
+
+    # Try to coerce string defaults to appropriate types
+    if isinstance(default, str):
+        # Boolean coercion
+        if bool in expected_types:
+            if default.lower() in ("true", "yes", "1"):
+                return True
+            if default.lower() in ("false", "no", "0"):
+                return False
+
+        # Integer coercion
+        if int in expected_types:
+            try:
+                return int(default)
+            except ValueError:
+                pass
+
+        # Float coercion
+        if float in expected_types:
+            try:
+                return float(default)
+            except ValueError:
+                pass
+
+    # Return original if no coercion possible
+    return default
+
+
 def json_schema_to_pydantic_field(
     name: str,
     json_schema: t.Dict[str, t.Any],
@@ -60,6 +140,10 @@ def json_schema_to_pydantic_field(
 
     examples = json_schema.get("examples", [])
     default = json_schema.get("default")
+
+    # Coerce default value to match expected type from schema
+    if default is not None:
+        default = _coerce_default_value(default, json_schema)
 
     # Check if the field name is a reserved Pydantic name
     if name in reserved_names:
