@@ -46,10 +46,11 @@ export async function GET(
     const toolkits = await getToolkits();
     const toolkit = toolkits.find((t) => t.slug === pageSlug[0]);
     if (toolkit) {
+      const toolkitName = toolkit.name?.trim() || toolkit.slug;
       return new ImageResponse(
         <DefaultImage
-          title={`${toolkit.name?.trim() || toolkit.slug}`}
-          description={toolkit.description || 'Composio Toolkit'}
+          title={toolkitName}
+          description={`Build your agent with Composio and ${toolkitName} in under two mins`}
           site="Composio"
         />,
         {
