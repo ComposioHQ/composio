@@ -1298,6 +1298,142 @@ class TestBooleanDefaultCoercion:
         assert prop.get("default") == "true"
         assert isinstance(prop.get("default"), str)
 
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_allof_boolean_with_string_default_coerced(self):
+        """Test that allOf with boolean type coerces string default."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "allOf": [{"type": "boolean"}],
+                    "default": "true",
+                    "description": "Flag field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["flag"]
+
+        # Default should be coerced to boolean True
+        assert prop.get("default") is True
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_invalid_boolean_string_not_coerced(self):
+        """Test that invalid boolean strings are not coerced and return as-is."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                    "default": "invalid",  # Not a valid boolean string
+                    "description": "Flag field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["flag"]
+
+        # Default should remain as string "invalid" since it can't be coerced
+        assert prop.get("default") == "invalid"
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_empty_string_default_not_coerced(self):
+        """Test that empty string defaults are not coerced."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "value": {
+                    "anyOf": [{"type": "integer"}, {"type": "null"}],
+                    "default": "",  # Empty string
+                    "description": "Value field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["value"]
+
+        # Default should remain as empty string since it can't be coerced to int
+        assert prop.get("default") == ""
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_non_string_default_not_coerced(self):
+        """Test that non-string defaults (like int, list) are returned as-is."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer",
+                    "default": 42,  # Already an integer
+                    "description": "Count field",
+                },
+                "items": {
+                    "type": "array",
+                    "default": [1, 2, 3],  # Already a list
+                    "description": "Items field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+
+        count_prop = generated_schema["properties"]["count"]
+        assert count_prop.get("default") == 42
+        assert isinstance(count_prop.get("default"), int)
+
+        items_prop = generated_schema["properties"]["items"]
+        assert items_prop.get("default") == [1, 2, 3]
+        assert isinstance(items_prop.get("default"), list)
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_boolean_coercion_case_insensitive(self):
+        """Test that boolean coercion handles various case combinations."""
+        test_cases = [
+            ("TRUE", True),
+            ("True", True),
+            ("FALSE", False),
+            ("False", False),
+            ("YES", True),
+            ("Yes", True),
+            ("NO", False),
+            ("No", False),
+        ]
+
+        for string_value, expected_bool in test_cases:
+            json_schema = {
+                "title": "TestRequest",
+                "type": "object",
+                "properties": {
+                    "flag": {
+                        "type": "boolean",
+                        "default": string_value,
+                    },
+                },
+            }
+
+            model_class = json_schema_to_model(json_schema)
+            generated_schema = model_class.model_json_schema()
+            prop = generated_schema["properties"]["flag"]
+
+            assert prop.get("default") is expected_bool, (
+                f"Expected '{string_value}' to coerce to {expected_bool}"
+            )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

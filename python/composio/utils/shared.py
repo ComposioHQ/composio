@@ -37,35 +37,6 @@ __all__ = [
 reserved_names = ["validate"]
 
 
-def _get_expected_types(json_schema: t.Dict[str, t.Any]) -> set:
-    """
-    Extract expected Python types from JSON schema.
-
-    Handles direct type definitions as well as anyOf/oneOf combiners.
-
-    :param json_schema: The JSON schema property definition.
-    :return: A set of Python types expected by the schema.
-    """
-    types: set = set()
-
-    # Handle direct type
-    if "type" in json_schema:
-        json_type = json_schema["type"]
-        if json_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
-            types.add(PYDANTIC_TYPE_TO_PYTHON_TYPE[json_type])
-
-    # Handle anyOf/oneOf combiners
-    for combiner in ("anyOf", "oneOf"):
-        if combiner in json_schema:
-            for option in json_schema[combiner]:
-                if isinstance(option, dict) and "type" in option:
-                    json_type = option["type"]
-                    if json_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
-                        types.add(PYDANTIC_TYPE_TO_PYTHON_TYPE[json_type])
-
-    return types
-
-
 def _coerce_default_value(
     default: t.Any,
     json_schema: t.Dict[str, t.Any],
@@ -76,44 +47,57 @@ def _coerce_default_value(
     Handles common mismatches where string defaults should be boolean/int/float.
     This fixes issues where API returns stringified defaults like "true" instead of true.
 
+    Coercion precedence: boolean > integer > float. This means values like "1" and "0"
+    become booleans when both bool and int are expected types.
+
     :param default: The default value from the JSON schema.
     :param json_schema: The JSON schema property definition.
     :return: The coerced default value, or original if no coercion possible.
     """
-    if default is None:
-        return None
-
-    # Determine expected type(s) from schema
-    expected_types = _get_expected_types(json_schema)
-
-    # If default already matches expected type, return as-is
-    if type(default) in expected_types:
+    if default is None or not isinstance(default, str):
         return default
 
-    # Try to coerce string defaults to appropriate types
-    if isinstance(default, str):
-        # Boolean coercion
-        if bool in expected_types:
-            if default.lower() in ("true", "yes", "1"):
-                return True
-            if default.lower() in ("false", "no", "0"):
-                return False
+    # Collect expected types from schema
+    expected_types: t.Set[type] = set()
 
-        # Integer coercion
-        if int in expected_types:
-            try:
-                return int(default)
-            except ValueError:
-                pass
+    if "type" in json_schema:
+        py_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(json_schema["type"])
+        if py_type is not None:
+            expected_types.add(py_type)
 
-        # Float coercion
-        if float in expected_types:
-            try:
-                return float(default)
-            except ValueError:
-                pass
+    for combiner in ("anyOf", "oneOf", "allOf"):
+        for option in json_schema.get(combiner, []):
+            if isinstance(option, dict):
+                py_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(option.get("type"))
+                if py_type is not None:
+                    expected_types.add(py_type)
 
-    # Return original if no coercion possible
+    # If string is expected, no coercion needed
+    if str in expected_types:
+        return default
+
+    # Boolean coercion (takes precedence over int for "1"/"0")
+    if bool in expected_types:
+        lower_default = default.lower()
+        if lower_default in ("true", "yes", "1"):
+            return True
+        if lower_default in ("false", "no", "0"):
+            return False
+
+    # Integer coercion
+    if int in expected_types:
+        try:
+            return int(default)
+        except ValueError:
+            pass
+
+    # Float coercion
+    if float in expected_types:
+        try:
+            return float(default)
+        except ValueError:
+            pass
+
     return default
 
 
