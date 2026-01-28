@@ -58,7 +58,7 @@ def _coerce_default_value(
         return default
 
     # Collect expected types from schema
-    expected_types: t.Set[type] = set()
+    expected_types: t.Set[t.Any] = set()
 
     if "type" in json_schema:
         py_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(json_schema["type"])
@@ -68,9 +68,11 @@ def _coerce_default_value(
     for combiner in ("anyOf", "oneOf", "allOf"):
         for option in json_schema.get(combiner, []):
             if isinstance(option, dict):
-                py_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(option.get("type"))
-                if py_type is not None:
-                    expected_types.add(py_type)
+                option_type = option.get("type")
+                if isinstance(option_type, str):
+                    py_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(option_type)
+                    if py_type is not None:
+                        expected_types.add(py_type)
 
     # If string is expected, no coercion needed
     if str in expected_types:
