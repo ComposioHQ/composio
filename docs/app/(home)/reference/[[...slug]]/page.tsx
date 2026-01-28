@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { referenceSource, getOgImageUrl } from '@/lib/source';
+import { getReferenceSource, getOgImageUrl } from '@/lib/source';
 import { APIPage } from '@/components/api-page';
 import {
   DocsBody,
@@ -25,6 +25,7 @@ export default async function Page({
   params: Promise<{ slug?: string[] }>;
 }) {
   const { slug } = await params;
+  const referenceSource = await getReferenceSource();
   const page = referenceSource.getPage(slug);
   if (!page) notFound();
 
@@ -62,7 +63,8 @@ export default async function Page({
   );
 }
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const referenceSource = await getReferenceSource();
   return referenceSource.generateParams();
 }
 
@@ -85,6 +87,7 @@ export async function generateMetadata({
     };
   }
 
+  const referenceSource = await getReferenceSource();
   const page = referenceSource.getPage(slug);
   if (!page) notFound();
 
