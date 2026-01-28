@@ -48,6 +48,39 @@ export default function Layout({ children }: LayoutProps<'/'>) {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'WebSite',
+                  '@id': 'https://docs.composio.dev/#website',
+                  url: 'https://docs.composio.dev',
+                  name: 'Composio Docs',
+                  description: 'Build AI agents with 250+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+                  publisher: { '@id': 'https://composio.dev/#organization' },
+                },
+                {
+                  '@type': 'Organization',
+                  '@id': 'https://composio.dev/#organization',
+                  name: 'Composio',
+                  url: 'https://composio.dev',
+                  logo: {
+                    '@type': 'ImageObject',
+                    url: 'https://composio.dev/logo.png',
+                  },
+                  sameAs: [
+                    'https://github.com/composiohq',
+                    'https://twitter.com/composiohq',
+                    'https://discord.gg/composio',
+                  ],
+                },
+              ],
+            }),
+          }}
+        />
       </head>
       <body className="flex flex-col min-h-screen font-sans">
         <PostHogProvider>

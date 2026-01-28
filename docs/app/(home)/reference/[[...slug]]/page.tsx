@@ -72,6 +72,19 @@ export async function generateMetadata({
   params: Promise<{ slug?: string[] }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+
+  // Index page - show custom metadata
+  if (!slug || slug.length === 0) {
+    const ogImage = getOgImageUrl('reference', [], 'API Reference', 'REST API and SDK reference for Composio');
+    return {
+      title: 'API Reference',
+      description: 'REST API and SDK reference for Composio',
+      alternates: { canonical: '/reference' },
+      openGraph: { images: [ogImage] },
+      twitter: { card: 'summary_large_image', images: [ogImage] },
+    };
+  }
+
   const page = referenceSource.getPage(slug);
   if (!page) notFound();
 
