@@ -154,5 +154,5 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         self.use = self.tool_router.use
 
     @property
-    def client(self):
+    def client(self) -> HttpClient:
         return self._client
