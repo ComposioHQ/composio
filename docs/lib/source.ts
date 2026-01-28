@@ -51,13 +51,14 @@ export function getPageImage(page: InferPageType<typeof source>) {
 
 /**
  * Generate OG image URL for any page section
+ * Uses the Fern OG image service at og.composio.dev
  */
 export function getOgImageUrl(section: string, slugs: string[], title?: string, description?: string): string {
   const params = new URLSearchParams();
   if (title) params.set('title', title);
   if (description) params.set('description', description);
   const query = params.toString() ? `?${params.toString()}` : '';
-  return `/og/${section}/${slugs.join('/')}/image.png${query}`;
+  return `https://og.composio.dev/api/og${query}`;
 }
 
 /**
