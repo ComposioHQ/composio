@@ -50,6 +50,17 @@ export function getPageImage(page: InferPageType<typeof source>) {
 }
 
 /**
+ * Generate OG image URL for any page section
+ */
+export function getOgImageUrl(section: string, slugs: string[], title?: string, description?: string): string {
+  const params = new URLSearchParams();
+  if (title) params.set('title', title);
+  if (description) params.set('description', description);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return `/og/${section}/${slugs.join('/')}/image.png${query}`;
+}
+
+/**
  * Converts MDX content to clean markdown for AI agents.
  * Strips JSX components and converts them to plain text equivalents.
  */

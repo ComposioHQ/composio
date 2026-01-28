@@ -1,4 +1,4 @@
-import { toolkitsSource } from '@/lib/source';
+import { toolkitsSource, getOgImageUrl } from '@/lib/source';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
@@ -133,18 +133,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
 
   // Index page
   if (!slug || slug.length === 0) {
+    const ogImage = getOgImageUrl('toolkits', [], 'Toolkits', 'Browse all toolkits supported by Composio');
     return {
       title: 'Toolkits',
       description: 'Browse all toolkits supported by Composio',
+      alternates: { canonical: '/toolkits' },
+      openGraph: { images: [ogImage] },
+      twitter: { card: 'summary_large_image', images: [ogImage] },
     };
   }
 
   // Check MDX first
   const page = toolkitsSource.getPage(slug);
   if (page) {
+    const ogImage = getOgImageUrl('toolkits', slug, page.data.title, page.data.description);
     return {
       title: page.data.title,
       description: page.data.description,
+      alternates: { canonical: page.url },
+      openGraph: { images: [ogImage] },
+      twitter: { card: 'summary_large_image', images: [ogImage] },
     };
   }
 
@@ -153,9 +161,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
     const toolkits = await getToolkits();
     const toolkit = toolkits.find((t) => t.slug === slug[0]);
     if (toolkit) {
+      const title = `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`;
+      const ogImage = getOgImageUrl('toolkits', slug, title, toolkit.description);
       return {
-        title: `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`,
+        title,
         description: toolkit.description,
+        alternates: { canonical: `/toolkits/${toolkit.slug}` },
+        openGraph: { images: [ogImage] },
+        twitter: { card: 'summary_large_image', images: [ogImage] },
       };
     }
   }
