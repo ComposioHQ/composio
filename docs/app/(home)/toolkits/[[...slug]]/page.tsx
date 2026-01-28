@@ -9,6 +9,10 @@ import { join } from 'path';
 import type { Metadata } from 'next';
 import type { Toolkit, Tool } from '@/types/toolkit';
 
+// ISR: Revalidate toolkit pages every hour
+// Pages are generated on-demand on first request, then cached
+export const revalidate = 3600;
+
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
@@ -112,21 +116,22 @@ async function getToolkits(): Promise<Toolkit[]> {
   }
 }
 
+// Only pre-render index and MDX pages at build time
+// Individual toolkit pages are generated on-demand via ISR (much faster builds)
 export async function generateStaticParams() {
   // Index page
   const indexParam = { slug: [] };
 
-  // MDX pages
+  // MDX pages only (premium-tools, etc.)
   const mdxParams = toolkitsSource.generateParams();
 
-  // JSON toolkit pages
-  const toolkits = await getToolkits();
-  const jsonParams = toolkits.map((toolkit) => ({
-    slug: [toolkit.slug],
-  }));
-
-  return [indexParam, ...mdxParams, ...jsonParams];
+  // Skip JSON toolkit pages - they'll be generated on first request via ISR
+  // This avoids 800+ API calls during build (some responses are 3MB+)
+  return [indexParam, ...mdxParams];
 }
+
+// Allow dynamic params for toolkit pages not in generateStaticParams
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
   const { slug } = await params;
