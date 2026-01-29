@@ -1,6 +1,6 @@
 ---
-title: 'SDK 0.6.0 Major Update: Edge Runtime Support and Breaking Changes'
-description: 'Major release with edge runtime support, webhook verification updates, and Mastra v1 compatibility. Includes breaking changes for webhook APIs.'
+title: 'SDK 0.6.0 Major Update: Cloudflare Workers Support and Breaking Changes'
+description: 'Major release with Cloudflare Workers support, webhook verification updates, and Mastra v1 compatibility. Includes breaking changes for webhook APIs.'
 date: '2026-01-29'
 ---
 
@@ -18,7 +18,7 @@ date: '2026-01-29'
 
 ---
 
-This major release focuses on full edge runtime compatibility (Cloudflare Workers, Vercel Edge), platform-specific optimizations, and critical bug fixes. It includes **breaking changes** in both TypeScript and Python SDKs.
+This major release focuses on Cloudflare Workers compatibility, platform-specific optimizations, and critical bug fixes. It includes **breaking changes** in both TypeScript and Python SDKs.
 
 <Callout type="warn">
 **Breaking Changes**: This release includes breaking changes that require code modifications:
@@ -95,7 +95,7 @@ const result = await composio.triggers.verifyWebhook({
 
 **Why?**
 
-- Edge runtime compatibility (Cloudflare Workers, Vercel Edge) - uses Web Crypto API instead of `node:crypto`
+- Cloudflare Workers compatibility - uses Web Crypto API instead of `node:crypto`
 - Supports v1, v2, and v3 webhook formats with improved signature verification
 
 ---
@@ -221,7 +221,7 @@ Separate implementations for Node.js and Cloudflare Workers to optimize file han
 - **No code changes needed**: Works transparently
 
 <Callout type="info">
-**Related Change**: This platform-agnostic approach is why `composio.triggers.verifyWebhook()` became async in [Breaking Change #1](#1-webhook-verification-breaking-changes). Node.js `node:crypto` is mostly synchronous, but the standard `globalThis.crypto` (Web Crypto API) available in edge runtimes is async. To support both platforms with a single API, the method had to become async.
+**Related Change**: This platform-agnostic approach is why `composio.triggers.verifyWebhook()` became async in [Breaking Change #1](#1-webhook-verification-breaking-changes). Node.js `node:crypto` is mostly synchronous, but the standard `globalThis.crypto` (Web Crypto API) available in Cloudflare Workers is async. To support both platforms with a single API, the method had to become async.
 </Callout>
 
 ---
@@ -258,13 +258,13 @@ All `node:buffer` usage replaced with standard `Uint8Array` for universal compat
 
 **Impact:**
 
-- Works in **all JavaScript runtimes** (Node.js, Deno, Bun, Cloudflare Workers)
+- Works in **Node.js and Cloudflare Workers**
 - **ESLint rules** enforce this pattern going forward
 - **Better type safety** with standard types
 - **Fully backward compatible** - no code changes needed
 
 <Callout type="info">
-**Why This Matters**: Removing Node.js-specific APIs like `node:buffer` and `node:crypto` is part of our broader effort to make the SDK truly universal. Edge runtimes (Cloudflare Workers, Vercel Edge, Deno Deploy) don't have access to Node.js built-in modules, so we use Web Standard APIs (`Uint8Array`, `globalThis.crypto`) that work everywhere.
+**Why This Matters**: Removing Node.js-specific APIs like `node:buffer` and `node:crypto` enables Cloudflare Workers support. Cloudflare Workers don't have access to Node.js built-in modules, so we use Web Standard APIs (`Uint8Array`, `globalThis.crypto`) that work in both Node.js and Cloudflare Workers.
 </Callout>
 
 ---
@@ -685,23 +685,21 @@ The following features require code updates:
 
 ---
 
-## Edge Runtime Support
+## Cloudflare Workers Support
 
-This release unlocks full support for edge runtimes:
-
-### Cloudflare Workers
+This release adds support for Cloudflare Workers:
 
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const composio = new Composio({
       apiKey: env.COMPOSIO_API_KEY,
     });
 
-    // All features now work in Cloudflare Workers!
+    // SDK now works in Cloudflare Workers!
     const tools = await composio.tools.get('user_123', {
       toolkits: ['github'],
     });
@@ -718,50 +716,12 @@ export default {
 };
 ```
 
-### Vercel Edge Functions
-
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-import { NextRequest } from 'next/server';
-
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(req: NextRequest) {
-  const composio = new Composio({
-    apiKey: process.env.COMPOSIO_API_KEY,
-  });
-
-  // Full SDK support in Vercel Edge!
-  const tools = await composio.tools.get('user_123', {
-    toolkits: ['github'],
-  });
-
-  return new Response(JSON.stringify(tools));
-}
-```
-
-### Deno Deploy
-
-```typescript
-// @noErrors
-import { Composio } from 'npm:@composio/core';
-
-Deno.serve(async req => {
-  const composio = new Composio({
-    apiKey: Deno.env.get('COMPOSIO_API_KEY'),
-  });
-
-  // Works in Deno too!
-  const tools = await composio.tools.get('user_123', {
-    toolkits: ['github'],
-  });
-
-  return new Response(JSON.stringify(tools));
-});
-```
+**Key Features Working in Cloudflare Workers:**
+- ✅ Tool execution
+- ✅ Connected accounts
+- ✅ Webhook verification
+- ✅ File upload/download
+- ✅ Custom tools
 
 ---
 
