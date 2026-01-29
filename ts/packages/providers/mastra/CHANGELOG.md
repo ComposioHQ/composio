@@ -1,5 +1,20 @@
 # @composio/mastra
 
+## 0.6.0
+
+### Minor Changes
+
+- **BREAKING**: Updated to Mastra v1 API
+  - New initialization requires passing Mastra instance to provider
+  - Supports both Zod v3 and v4
+  - Requires Node.js v22.13.0 or higher
+  - Added E2E tests for Tool Router integration
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.6.0
+
 ## 0.5.5
 
 ### Patch Changes
@@ -183,7 +198,6 @@
 ### Minor Changes
 
 - 157bf7b: ### Added
-
   - **Version validation for manual tool execution**: Tools now require explicit toolkit version specification when executing manually to prevent unexpected behavior from `latest` version changes
   - **New `dangerously_skip_version_check` parameter** (Python) / `dangerouslySkipVersionCheck` (TypeScript): Optional flag to bypass version validation (use with caution)
   - **`ToolVersionRequiredError` exception** (Python): Raised when attempting to execute tools with `latest` version without skip flag, includes helpful error messages with 4 possible fixes
@@ -191,7 +205,6 @@
   - **Comprehensive test coverage**: Added 19 new test methods in Python covering all tool execution scenarios including version resolution, error handling, modifiers, and environment variables
 
   ### Changed
-
   - **Tool execution behavior**: Manual execution via `tools.execute()` now validates toolkit versions before API calls
   - **Agentic provider flows**: Automatically set `dangerously_skip_version_check=True` internally to maintain backward compatibility for framework integrations
   - **Instance-level version resolution**: Both `execute()` and `_execute_tool()` methods now consistently resolve versions from instance-level `toolkit_versions` configuration
@@ -199,7 +212,6 @@
   - **Test version format**: Updated all test files to use production date-based version format (`20251201_XX`) instead of semantic versioning
 
   ### Fixed
-
   - **Consistent version handling**: Removed `toolkit_versions` parameter from `_execute_tool()` in favor of instance-level configuration, ensuring consistent version resolution across the SDK
   - **Code formatting**: Applied ruff formatting to all modified Python files
   - **Array parsing to ZodSchema**: Fixes in json-schema-to-zod to parse array without properties and with properties
@@ -241,7 +253,6 @@
   ```
 
   ### Developer Notes
-
   - Agentic framework integrations (LangChain, CrewAI, etc.) are not affected as they automatically use the skip flag
   - The `latest` version can still be used with the skip flag, but specific versions are strongly recommended
   - Error messages include all available resolution options for better developer experience
