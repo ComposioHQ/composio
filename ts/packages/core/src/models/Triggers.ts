@@ -49,6 +49,20 @@ import { ComposioConfig } from '../composio';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import { hmacSha256Base64, timingSafeEqual } from '../utils/crypto';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
+
+/**
+ * Safely converts a value to a string, returning the default if the value is null, undefined, or empty.
+ * This prevents runtime crashes when calling string methods like `.toLowerCase()` on non-string values.
+ * @private
+ */
+const toStringOrDefault = (value: unknown, defaultValue: string): string => {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  const str = String(value);
+  return str.length > 0 ? str : defaultValue;
+};
+
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -452,44 +466,66 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   /**
    * Tries to parse data as V1, V2, or V3 webhook payload format.
    * Returns the parsed result with version info, or null if no format matches.
+   * Also returns any schema validation errors for debugging purposes.
    * @private
    */
   private tryParseVersionedPayload(data: unknown): {
-    version: WebhookVersion;
-    rawPayload: WebhookPayload;
-    normalizedPayload: IncomingTriggerPayload;
-  } | null {
+    result: {
+      version: WebhookVersion;
+      rawPayload: WebhookPayload;
+      normalizedPayload: IncomingTriggerPayload;
+    } | null;
+    errors: {
+      v1Error?: string;
+      v2Error?: string;
+      v3Error?: string;
+    };
+  } {
+    const errors: { v1Error?: string; v2Error?: string; v3Error?: string } = {};
+
     // Try V3 first (has 'composio.trigger.message' type)
     const v3Result = WebhookPayloadV3Schema.safeParse(data);
     if (v3Result.success) {
       return {
-        version: WebhookVersions.V3,
-        rawPayload: v3Result.data,
-        normalizedPayload: this.normalizeV3Payload(v3Result.data),
+        result: {
+          version: WebhookVersions.V3,
+          rawPayload: v3Result.data,
+          normalizedPayload: this.normalizeV3Payload(v3Result.data),
+        },
+        errors,
       };
     }
+    errors.v3Error = v3Result.error?.message;
 
     // Try V2 (has 'type', 'timestamp', 'log_id', and 'data')
     const v2Result = WebhookPayloadV2Schema.safeParse(data);
     if (v2Result.success) {
       return {
-        version: WebhookVersions.V2,
-        rawPayload: v2Result.data,
-        normalizedPayload: this.normalizeV2Payload(v2Result.data),
+        result: {
+          version: WebhookVersions.V2,
+          rawPayload: v2Result.data,
+          normalizedPayload: this.normalizeV2Payload(v2Result.data),
+        },
+        errors,
       };
     }
+    errors.v2Error = v2Result.error?.message;
 
     // Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload', 'log_id')
     const v1Result = WebhookPayloadV1Schema.safeParse(data);
     if (v1Result.success) {
       return {
-        version: WebhookVersions.V1,
-        rawPayload: v1Result.data,
-        normalizedPayload: this.normalizeV1Payload(v1Result.data),
+        result: {
+          version: WebhookVersions.V1,
+          rawPayload: v1Result.data,
+          normalizedPayload: this.normalizeV1Payload(v1Result.data),
+        },
+        errors,
       };
     }
+    errors.v1Error = v1Result.error?.message;
 
-    return null;
+    return { result: null, errors };
   }
 
   /**
@@ -498,7 +534,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   private parsePusherPayload(data: Record<string, unknown>): IncomingTriggerPayload {
     // Try V1/V2/V3 formats
-    const versionedResult = this.tryParseVersionedPayload(data);
+    const { result: versionedResult } = this.tryParseVersionedPayload(data);
     if (versionedResult) {
       logger.debug(`Parsed Pusher payload as ${versionedResult.version} format`);
       return versionedResult.normalizedPayload;
@@ -515,19 +551,33 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     logger.warn('Unknown Pusher payload format. Payload keys: ' + Object.keys(data).join(', '));
 
     // Return a minimal payload structure to avoid breaking the subscription
+    // Use toStringOrDefault to safely convert values and prevent crashes when
+    // non-string values are passed (e.g., numbers, objects) and .toLowerCase() is called later
+    const id = toStringOrDefault(data.id, toStringOrDefault(data.trigger_id, 'unknown'));
+    const uuid = toStringOrDefault(data.uuid, toStringOrDefault(data.id, 'unknown'));
+    const triggerSlug = toStringOrDefault(
+      data.triggerSlug,
+      toStringOrDefault(data.trigger_name, 'UNKNOWN')
+    );
+    const toolkitSlug = toStringOrDefault(
+      data.toolkitSlug,
+      toStringOrDefault(data.appName, 'UNKNOWN')
+    );
+    const userId = toStringOrDefault(data.userId, '');
+
     return {
-      id: (data.id as string) || (data.trigger_id as string) || 'unknown',
-      uuid: (data.uuid as string) || (data.id as string) || 'unknown',
-      triggerSlug: (data.triggerSlug as string) || (data.trigger_name as string) || 'UNKNOWN',
-      toolkitSlug: (data.toolkitSlug as string) || (data.appName as string) || 'UNKNOWN',
-      userId: (data.userId as string) || '',
+      id,
+      uuid,
+      triggerSlug,
+      toolkitSlug,
+      userId,
       payload: (data.payload as Record<string, unknown>) || data,
       originalPayload: (data.originalPayload as Record<string, unknown>) || data,
       metadata: {
-        id: (data.id as string) || 'unknown',
-        uuid: (data.uuid as string) || 'unknown',
-        toolkitSlug: (data.toolkitSlug as string) || 'UNKNOWN',
-        triggerSlug: (data.triggerSlug as string) || 'UNKNOWN',
+        id,
+        uuid,
+        toolkitSlug,
+        triggerSlug,
         triggerConfig: {},
         connectedAccount: {
           id: '',
@@ -683,15 +733,22 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     }
 
     // Try V1/V2/V3 formats using shared parsing logic
-    const result = this.tryParseVersionedPayload(jsonPayload);
+    const { result, errors } = this.tryParseVersionedPayload(jsonPayload);
     if (result) {
       return result;
     }
 
-    // None of the schemas matched
+    // None of the schemas matched - include detailed error information for debugging
     throw new ComposioWebhookPayloadError(
       'Webhook payload does not match any known version (V1, V2, or V3). ' +
-        'Please ensure you are using a supported webhook payload format.'
+        'Please ensure you are using a supported webhook payload format.',
+      {
+        cause: {
+          v1Error: errors.v1Error,
+          v2Error: errors.v2Error,
+          v3Error: errors.v3Error,
+        },
+      }
     );
   }
 

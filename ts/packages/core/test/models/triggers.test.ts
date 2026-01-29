@@ -1144,6 +1144,67 @@ describe('Triggers', () => {
       );
     });
 
+    it('should handle non-string values in fallback payload without crashing', async () => {
+      const malformedPayload = {
+        toolkitSlug: 123, // number instead of string
+        triggerSlug: { foo: 1 }, // object instead of string
+        id: null,
+        userId: undefined,
+        trigger_name: 456, // number instead of string for fallback field
+      };
+
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      // Should not throw, even with non-string values
+      expect(() => filterCallback(malformedPayload)).not.toThrow();
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+
+      // The callback should receive a payload with string values that are safe to use with string methods
+      const receivedPayload = mockCallback.mock.calls[0][0];
+      expect(typeof receivedPayload.toolkitSlug).toBe('string');
+      expect(typeof receivedPayload.triggerSlug).toBe('string');
+      expect(typeof receivedPayload.id).toBe('string');
+      expect(typeof receivedPayload.userId).toBe('string');
+
+      // Verify that calling toLowerCase() doesn't crash (this is what shouldSendTriggerAfterFilters does)
+      expect(() => receivedPayload.toolkitSlug.toLowerCase()).not.toThrow();
+      expect(() => receivedPayload.triggerSlug.toLowerCase()).not.toThrow();
+    });
+
+    it('should safely convert various non-string types in fallback payload', async () => {
+      const payloadWithVariousTypes = {
+        id: 12345, // number
+        uuid: true, // boolean
+        toolkitSlug: ['array'], // array
+        triggerSlug: { nested: 'object' }, // object
+        userId: Symbol('symbol'), // symbol - will convert to 'Symbol(symbol)'
+        appName: null, // null
+        trigger_name: undefined, // undefined
+      };
+
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      // Should not throw
+      expect(() => filterCallback(payloadWithVariousTypes)).not.toThrow();
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+
+      const receivedPayload = mockCallback.mock.calls[0][0];
+
+      // All values should be strings
+      expect(typeof receivedPayload.id).toBe('string');
+      expect(typeof receivedPayload.uuid).toBe('string');
+      expect(typeof receivedPayload.toolkitSlug).toBe('string');
+      expect(typeof receivedPayload.triggerSlug).toBe('string');
+      expect(typeof receivedPayload.userId).toBe('string');
+
+      // Numeric ID should be converted to string
+      expect(receivedPayload.id).toBe('12345');
+    });
+
     it('should filter V3 payloads correctly by triggerId', async () => {
       const filters = { triggerId: 'trigger-456' };
       await triggers.subscribe(mockCallback, filters);
