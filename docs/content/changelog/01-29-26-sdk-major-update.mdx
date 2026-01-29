@@ -25,7 +25,7 @@ This major release focuses on Cloudflare Workers compatibility, platform-specifi
 
 **TypeScript:**
 
-1. Webhook verification: Now async + signature changed (must add `await` + new required params: `webhookId`, `webhookTimestamp`)
+1. Webhook verification: Now async + signature changed (must add `await` + new required params: `id`, `timestamp`)
 2. Mastra provider updated to v1 API
 
 **Python:**
@@ -73,13 +73,13 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio();
 
-// New signature - async, requires webhookId and webhookTimestamp
+// New signature - async, requires id and timestamp
 const result = await composio.triggers.verifyWebhook({
+  id: req.headers['webhook-id'] as string, // NEW: required
   payload: req.body.toString(),
-  signature: req.headers['webhook-signature'] as string, // header name changed
-  webhookId: req.headers['webhook-id'] as string, // NEW: required
-  webhookTimestamp: req.headers['webhook-timestamp'] as string, // NEW: required
   secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+  signature: req.headers['webhook-signature'] as string, // header name changed
+  timestamp: req.headers['webhook-timestamp'] as string, // NEW: required
   tolerance: 300, // optional, default 300 seconds
 });
 // Returns: VerifyWebhookResult with version info
@@ -88,8 +88,8 @@ const result = await composio.triggers.verifyWebhook({
 **Key Changes:**
 
 - ⚠️ **Now async** - Must use `await`
-- ⚠️ New required parameter: `webhookId` (from `webhook-id` header)
-- ⚠️ New required parameter: `webhookTimestamp` (from `webhook-timestamp` header)
+- ⚠️ New required parameter: `id` (from `webhook-id` header)
+- ⚠️ New required parameter: `timestamp` (from `webhook-timestamp` header)
 - ⚠️ Header name changed: `x-composio-signature` → `webhook-signature`
 - ⚠️ Return type changed: `TriggerEvent` → `VerifyWebhookResult`
 
@@ -425,11 +425,11 @@ const payload = composio.triggers.verifyWebhook({
 
 // After - new signature with await and additional parameters
 const result = await composio.triggers.verifyWebhook({
+  id: req.headers['webhook-id'] as string, // NEW
   payload: req.body.toString(),
-  signature: req.headers['webhook-signature'] as string, // header name changed
-  webhookId: req.headers['webhook-id'] as string, // NEW
-  webhookTimestamp: req.headers['webhook-timestamp'] as string, // NEW
   secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+  signature: req.headers['webhook-signature'] as string, // header name changed
+  timestamp: req.headers['webhook-timestamp'] as string, // NEW
 });
 
 // Access the normalized payload and version info
@@ -452,11 +452,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
   try {
     // New signature with all required headers
     const result = await composio.triggers.verifyWebhook({
+      id: req.headers['webhook-id'] as string,
       payload: req.body.toString(),
-      signature: req.headers['webhook-signature'] as string,
-      webhookId: req.headers['webhook-id'] as string,
-      webhookTimestamp: req.headers['webhook-timestamp'] as string,
       secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+      signature: req.headers['webhook-signature'] as string,
+      timestamp: req.headers['webhook-timestamp'] as string,
     });
 
     // Access verified webhook data
@@ -486,11 +486,11 @@ export default {
 
       // Now works in Cloudflare Workers!
       const result = await composio.triggers.verifyWebhook({
+        id: request.headers.get('webhook-id') || '',
         payload: body,
-        signature: request.headers.get('webhook-signature') || '',
-        webhookId: request.headers.get('webhook-id') || '',
-        webhookTimestamp: request.headers.get('webhook-timestamp') || '',
         secret: env.COMPOSIO_WEBHOOK_SECRET,
+        signature: request.headers.get('webhook-signature') || '',
+        timestamp: request.headers.get('webhook-timestamp') || '',
       });
 
       // Process verified webhook
@@ -663,7 +663,7 @@ The following features work without any code changes:
 
 The following features require code updates:
 
-- ⚠️ **Webhook verification (TypeScript)** - Must add `await` AND add `webhookId` + `webhookTimestamp` parameters, update header names
+- ⚠️ **Webhook verification (TypeScript)** - Must add `await` AND add `id` + `timestamp` parameters, update header names
 - ⚠️ **Webhook verification (Python)** - Must add `id` + `timestamp` parameters, update header names (still synchronous)
 - ⚠️ **Mastra integration (TypeScript only)** - Must update to v1 API
 
