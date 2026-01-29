@@ -433,10 +433,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
     await this.pusherService.subscribe((_data: Record<string, unknown>) => {
       logger.debug('Received raw trigger data', JSON.stringify(_data, null, 2));
-      // @TODO: This is a temporary fix to get the trigger data
-      // ideally we should have a type for the trigger data
-      const data = _data as TriggerData;
-      const parsedData = transformIncomingTriggerPayload(data);
+
+      // Parse using unified method that handles V1/V2/V3 and legacy formats
+      const parsedData = this.parsePusherPayload(_data);
 
       if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData)) {
         try {
@@ -448,6 +447,70 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
     });
+  }
+
+  /**
+   * Parses incoming Pusher payload, supporting V1, V2, V3, and legacy TriggerData formats.
+   * This method reuses the same schemas and normalizers used for HTTP webhooks.
+   * @private
+   */
+  private parsePusherPayload(data: Record<string, unknown>): IncomingTriggerPayload {
+    // Try V3 format first (has 'composio.trigger.message' type)
+    const v3Result = WebhookPayloadV3Schema.safeParse(data);
+    if (v3Result.success) {
+      logger.debug('Parsed Pusher payload as V3 format');
+      return this.normalizeV3Payload(v3Result.data);
+    }
+
+    // Try V2 format (has 'type', 'timestamp', 'log_id', and 'data')
+    const v2Result = WebhookPayloadV2Schema.safeParse(data);
+    if (v2Result.success) {
+      logger.debug('Parsed Pusher payload as V2 format');
+      return this.normalizeV2Payload(v2Result.data);
+    }
+
+    // Try V1 format (has 'trigger_name', 'connection_id', 'trigger_id', 'payload', 'log_id')
+    const v1Result = WebhookPayloadV1Schema.safeParse(data);
+    if (v1Result.success) {
+      logger.debug('Parsed Pusher payload as V1 format');
+      return this.normalizeV1Payload(v1Result.data);
+    }
+
+    // Try legacy TriggerData format (for backwards compatibility)
+    const legacyData = data as TriggerData;
+    if (legacyData.metadata?.nanoId && legacyData.appName) {
+      logger.debug('Parsed Pusher payload as legacy TriggerData format');
+      return transformIncomingTriggerPayload(legacyData);
+    }
+
+    // Fallback: log warning and return a minimal payload with available data
+    logger.warn('Unknown Pusher payload format. Payload keys: ' + Object.keys(data).join(', '));
+
+    // Return a minimal payload structure to avoid breaking the subscription
+    return {
+      id: (data.id as string) || (data.trigger_id as string) || 'unknown',
+      uuid: (data.uuid as string) || (data.id as string) || 'unknown',
+      triggerSlug: (data.triggerSlug as string) || (data.trigger_name as string) || 'UNKNOWN',
+      toolkitSlug: (data.toolkitSlug as string) || (data.appName as string) || 'UNKNOWN',
+      userId: (data.userId as string) || '',
+      payload: (data.payload as Record<string, unknown>) || data,
+      originalPayload: (data.originalPayload as Record<string, unknown>) || data,
+      metadata: {
+        id: (data.id as string) || 'unknown',
+        uuid: (data.uuid as string) || 'unknown',
+        toolkitSlug: (data.toolkitSlug as string) || 'UNKNOWN',
+        triggerSlug: (data.triggerSlug as string) || 'UNKNOWN',
+        triggerConfig: {},
+        connectedAccount: {
+          id: '',
+          uuid: '',
+          authConfigId: '',
+          authConfigUUID: '',
+          userId: '',
+          status: 'ACTIVE',
+        },
+      },
+    };
   }
 
   /**
@@ -519,6 +582,28 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     // Validate input parameters
     const parsedParams = VerifyWebhookParamsSchema.safeParse(params);
     if (!parsedParams.success) {
+      // Extract missing required parameters for a more helpful error message
+      const missingParams = parsedParams.error.issues
+        .filter(issue => issue.code === 'invalid_type' && issue.received === 'undefined')
+        .map(issue => {
+          const paramName = issue.path[0] as string;
+          const headerMap: Record<string, string> = {
+            id: 'webhook-id',
+            timestamp: 'webhook-timestamp',
+            signature: 'webhook-signature',
+          };
+          const headerName = headerMap[paramName];
+          return headerName ? `'${paramName}' (from '${headerName}' header)` : `'${paramName}'`;
+        });
+
+      if (missingParams.length > 0) {
+        throw new ValidationError(
+          `Missing required parameters: ${missingParams.join(', ')}. ` +
+            `Extract these values from the HTTP request headers and body.`,
+          { cause: parsedParams.error }
+        );
+      }
+
       throw new ValidationError('Invalid parameters passed to verifyWebhook', {
         cause: parsedParams.error,
       });
