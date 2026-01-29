@@ -3,7 +3,7 @@
   "info": {
     "version": "3.0.0",
     "title": "Composio Platform API",
-    "description": "",
+    "description": "API for managing tools, toolkits, connected accounts, and authentication configurations in Composio.",
     "contact": {
       "name": "Composio Support",
       "url": "https://composio.dev/support",
@@ -47156,7 +47156,11 @@
                 "type": "string"
               },
               "description": "Filter toolkits by specific slugs (comma-separated). Overrides session toolkit configuration if provided.",
-              "example": "gmail,slack,github"
+              "example": [
+                "gmail",
+                "slack",
+                "github"
+              ]
             },
             "required": false,
             "description": "Optional comma-separated list of toolkit slugs to filter by. If provided, only these toolkits will be returned, overriding the session configuration.",

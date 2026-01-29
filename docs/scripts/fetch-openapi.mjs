@@ -149,6 +149,36 @@ async function fetchAndFilterSpec() {
     console.log(`Fixed ${nullableFixCount} schemas with nullable but no type`);
   }
 
+  // Fix empty info.description
+  if (spec.info && !spec.info.description) {
+    spec.info.description = 'API for managing tools, toolkits, connected accounts, and authentication configurations in Composio.';
+    console.log('Added missing info.description');
+  }
+
+  // Fix example type mismatches (string examples for array types)
+  let exampleFixCount = 0;
+  const fixExampleTypes = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+
+    // Fix array type with string example (comma-separated values)
+    if (obj.type === 'array' && typeof obj.example === 'string' && obj.example.includes(',')) {
+      obj.example = obj.example.split(',').map(s => s.trim());
+      exampleFixCount++;
+    }
+
+    for (const [key, val] of Object.entries(obj)) {
+      if (Array.isArray(val)) {
+        val.forEach((item) => fixExampleTypes(item));
+      } else if (typeof val === 'object') {
+        fixExampleTypes(val);
+      }
+    }
+  };
+  fixExampleTypes(spec);
+  if (exampleFixCount > 0) {
+    console.log(`Fixed ${exampleFixCount} example type mismatches`);
+  }
+
   // Write to public directory for fumadocs to fetch
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const outputPath = join(__dirname, '../public/openapi.json');
