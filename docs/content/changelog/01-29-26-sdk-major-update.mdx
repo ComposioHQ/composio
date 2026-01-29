@@ -232,21 +232,13 @@ Separate implementations for Node.js and Cloudflare Workers to optimize file han
 
 Different default configurations for different runtimes to optimize behavior.
 
+Changed the `autoUploadDownloadFiles` default configuration for the Cloudflare Workers runtime, to avoid triggering runtime errors on unsupported features.
+
 **Cloudflare Workers defaults:**
 
 ```typescript
-// @noErrors
 {
-  autoUploadDownloadFiles: true; // Automatically handle file uploads/downloads
-}
-```
-
-**Node.js defaults:**
-
-```typescript
-// @noErrors
-{
-  autoUploadDownloadFiles: false; // More control for server environments
+  autoUploadDownloadFiles: false; // We don't currently support file uploads/downloads in Cloudflare Workers
 }
 ```
 
