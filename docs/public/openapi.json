@@ -3,7 +3,7 @@
   "info": {
     "version": "3.0.0",
     "title": "Composio Platform API",
-    "description": "",
+    "description": "API for managing tools, toolkits, connected accounts, and authentication configurations in Composio.",
     "contact": {
       "name": "Composio Support",
       "url": "https://composio.dev/support",
@@ -891,6 +891,7 @@
     "/api/v3/auth_configs": {
       "post": {
         "summary": "Create new authentication configuration",
+        "description": "Creates a new auth config for a toolkit, allowing you to use your own OAuth credentials or API keys instead of Composio-managed authentication. This is required when you want to use custom OAuth apps (bring your own client ID/secret) or configure specific authentication parameters for a toolkit.",
         "tags": [
           "Auth Configs"
         ],
@@ -1240,6 +1241,7 @@
       },
       "get": {
         "summary": "List authentication configurations with optional filters",
+        "description": "Retrieves all auth configs for your project. Auth configs define how users authenticate with external services (OAuth, API keys, etc.). Use filters to find configs for specific toolkits or to distinguish between Composio-managed and custom configurations.",
         "tags": [
           "Auth Configs"
         ],
@@ -1464,7 +1466,8 @@
                           "expected_input_fields": {
                             "type": "array",
                             "items": {
-                              "nullable": true
+                              "nullable": true,
+                              "type": "object"
                             },
                             "description": "Fields expected during connection initialization"
                           },
@@ -1764,7 +1767,8 @@
                     "expected_input_fields": {
                       "type": "array",
                       "items": {
-                        "nullable": true
+                        "nullable": true,
+                        "type": "object"
                       },
                       "description": "Fields expected during connection initialization"
                     },
@@ -2342,6 +2346,7 @@
     "/api/v3/connected_accounts": {
       "get": {
         "summary": "List connected accounts with optional filters",
+        "description": "Retrieves all connected accounts for your project. Connected accounts represent authenticated user connections to external services (e.g., a user's Gmail account, Slack workspace). Filter by toolkit, status, user ID, or auth config to find specific connections.",
         "tags": [
           "Connected Accounts"
         ],
@@ -3486,7 +3491,8 @@
                                                 "type": "string"
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -3502,7 +3508,8 @@
                                                 }
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -3634,7 +3641,8 @@
                                                 "type": "string"
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -3650,7 +3658,8 @@
                                                 }
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -8628,7 +8637,8 @@
                                                 "type": "string"
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -8644,7 +8654,8 @@
                                                 }
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -8776,7 +8787,8 @@
                                                 "type": "string"
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -8792,7 +8804,8 @@
                                                 }
                                               },
                                               {
-                                                "nullable": true
+                                                "nullable": true,
+                                                "type": "object"
                                               }
                                             ]
                                           },
@@ -9145,6 +9158,7 @@
       },
       "post": {
         "summary": "Create a new connected account",
+        "description": "Initiates a new connection to an external service for a user. For OAuth-based toolkits, this returns a redirect URL to complete authentication. For API key-based toolkits, provide the credentials directly in the request body. Use the `user_id` field to associate the connection with a specific user in your system.",
         "tags": [
           "Connected Accounts"
         ],
@@ -10064,7 +10078,8 @@
                                             "type": "string"
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -10080,7 +10095,8 @@
                                             }
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -10212,7 +10228,8 @@
                                             "type": "string"
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -10228,7 +10245,8 @@
                                             }
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -15206,7 +15224,8 @@
                                             "type": "string"
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -15222,7 +15241,8 @@
                                             }
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -15354,7 +15374,8 @@
                                             "type": "string"
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -15370,7 +15391,8 @@
                                             }
                                           },
                                           {
-                                            "nullable": true
+                                            "nullable": true,
+                                            "type": "object"
                                           }
                                         ]
                                       },
@@ -16534,7 +16556,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -16550,7 +16573,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -16682,7 +16706,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -16698,7 +16723,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -21676,7 +21702,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -21692,7 +21719,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -21824,7 +21852,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -21840,7 +21869,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -23192,7 +23222,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -23208,7 +23239,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -23340,7 +23372,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -23356,7 +23389,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -28334,7 +28368,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -28350,7 +28385,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -28482,7 +28518,8 @@
                                           "type": "string"
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -28498,7 +28535,8 @@
                                           }
                                         },
                                         {
-                                          "nullable": true
+                                          "nullable": true,
+                                          "type": "object"
                                         }
                                       ]
                                     },
@@ -30055,7 +30093,8 @@
                                 "type": "string"
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -30071,7 +30110,8 @@
                                 }
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -30196,7 +30236,8 @@
                                 "type": "string"
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -30212,7 +30253,8 @@
                                 }
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -34522,7 +34564,8 @@
                                 "type": "string"
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -34538,7 +34581,8 @@
                                 }
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -34663,7 +34707,8 @@
                                 "type": "string"
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -34679,7 +34724,8 @@
                                 }
                               },
                               {
-                                "nullable": true
+                                "nullable": true,
+                                "type": "object"
                               }
                             ]
                           },
@@ -37335,8 +37381,7 @@
             "required": false,
             "description": "Optional version of the tool to retrieve",
             "name": "version",
-            "in": "query",
-            "deprecated": true
+            "in": "query"
           },
           {
             "schema": {
@@ -37948,7 +37993,8 @@
                                     "type": "string"
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -37964,7 +38010,8 @@
                                     }
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -38116,7 +38163,8 @@
                                     "type": "string"
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -38132,7 +38180,8 @@
                                     }
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -39037,7 +39086,8 @@
                       "example": {
                         "session_id": "session-12345",
                         "expires_at": "2023-01-01T13:00:00Z"
-                      }
+                      },
+                      "type": "object"
                     },
                     "log_id": {
                       "type": "string",
@@ -39378,7 +39428,8 @@
                     "example": {
                       "name": "New Resource",
                       "description": "This is a new resource"
-                    }
+                    },
+                    "type": "object"
                   },
                   "binary_body": {
                     "anyOf": [
@@ -39578,7 +39629,8 @@
                                     "type": "string"
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -39594,7 +39646,8 @@
                                     }
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -39746,7 +39799,8 @@
                                     "type": "string"
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -39762,7 +39816,8 @@
                                     }
                                   },
                                   {
-                                    "nullable": true
+                                    "nullable": true,
+                                    "type": "object"
                                   }
                                 ]
                               },
@@ -40620,7 +40675,8 @@
                         "id": "123",
                         "name": "Resource Name",
                         "created_at": "2023-01-01T00:00:00Z"
-                      }
+                      },
+                      "type": "object"
                     },
                     "binary_data": {
                       "type": "object",
@@ -40779,6 +40835,8 @@
     },
     "/api/v3/trigger_instances/{slug}/upsert": {
       "post": {
+        "summary": "Create or update a trigger",
+        "description": "Creates a new trigger instance or updates an existing one with the same configuration. Triggers listen for events from external services (webhooks or polling) and can invoke your workflows. If a matching trigger already exists and is disabled, it will be re-enabled. Requires a connected account ID to associate the trigger with a specific user connection.",
         "tags": [
           "Triggers"
         ],
@@ -40846,7 +40904,8 @@
                         }
                       },
                       {
-                        "nullable": true
+                        "nullable": true,
+                        "type": "object"
                       }
                     ],
                     "description": "Toolkit version specification. Supports \"latest\" string or a record mapping toolkit slugs to specific versions.",
@@ -41008,6 +41067,8 @@
     },
     "/api/v3/trigger_instances/active": {
       "get": {
+        "summary": "List active triggers",
+        "description": "Retrieves all active trigger instances for your project. Triggers listen for events from connected accounts (e.g., new emails, Slack messages, GitHub commits) and can invoke webhooks or workflows. Use filters to find triggers for specific users, connected accounts, or trigger types.",
         "tags": [
           "Triggers"
         ],
@@ -41404,6 +41465,8 @@
     },
     "/api/v3/trigger_instances/manage/{triggerId}": {
       "delete": {
+        "summary": "Delete a trigger",
+        "description": "Permanently deletes a trigger instance. This stops the trigger from listening for events and removes it from your project. Use the PATCH endpoint with status \"disable\" if you want to temporarily pause a trigger instead.",
         "tags": [
           "Triggers"
         ],
@@ -41510,6 +41573,8 @@
         }
       },
       "patch": {
+        "summary": "Enable or disable a trigger",
+        "description": "Updates the status of a trigger instance to enable or disable it. Disabling a trigger pauses event listening without deleting the trigger configuration. Re-enabling restores the trigger to its active state. Use this for temporary maintenance or to control trigger execution.",
         "tags": [
           "Triggers"
         ],
@@ -47091,7 +47156,11 @@
                 "type": "string"
               },
               "description": "Filter toolkits by specific slugs (comma-separated). Overrides session toolkit configuration if provided.",
-              "example": "gmail,slack,github"
+              "example": [
+                "gmail",
+                "slack",
+                "github"
+              ]
             },
             "required": false,
             "description": "Optional comma-separated list of toolkit slugs to filter by. If provided, only these toolkits will be returned, overriding the session configuration.",
