@@ -433,10 +433,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     logger.debug('🔄 Subscribing to triggers with filters: ', JSON.stringify(filters, null, 2));
     await this.pusherService.subscribe((_data: Record<string, unknown>) => {
       logger.debug('Received raw trigger data', JSON.stringify(_data, null, 2));
-      // @TODO: This is a temporary fix to get the trigger data
-      // ideally we should have a type for the trigger data
-      const data = _data as TriggerData;
-      const parsedData = transformIncomingTriggerPayload(data);
+
+      // Parse using unified method that handles V1/V2/V3 and legacy formats
+      const parsedData = this.parsePusherPayload(_data);
 
       if (this.shouldSendTriggerAfterFilters(parsedFilters.data, parsedData)) {
         try {
@@ -448,6 +447,98 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
         logger.debug('Trigger does not match filters', JSON.stringify(parsedFilters.data, null, 2));
       }
     });
+  }
+
+  /**
+   * Tries to parse data as V1, V2, or V3 webhook payload format.
+   * Returns the parsed result with version info, or null if no format matches.
+   * @private
+   */
+  private tryParseVersionedPayload(data: unknown): {
+    version: WebhookVersion;
+    rawPayload: WebhookPayload;
+    normalizedPayload: IncomingTriggerPayload;
+  } | null {
+    // Try V3 first (has 'composio.trigger.message' type)
+    const v3Result = WebhookPayloadV3Schema.safeParse(data);
+    if (v3Result.success) {
+      return {
+        version: WebhookVersions.V3,
+        rawPayload: v3Result.data,
+        normalizedPayload: this.normalizeV3Payload(v3Result.data),
+      };
+    }
+
+    // Try V2 (has 'type', 'timestamp', 'log_id', and 'data')
+    const v2Result = WebhookPayloadV2Schema.safeParse(data);
+    if (v2Result.success) {
+      return {
+        version: WebhookVersions.V2,
+        rawPayload: v2Result.data,
+        normalizedPayload: this.normalizeV2Payload(v2Result.data),
+      };
+    }
+
+    // Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload', 'log_id')
+    const v1Result = WebhookPayloadV1Schema.safeParse(data);
+    if (v1Result.success) {
+      return {
+        version: WebhookVersions.V1,
+        rawPayload: v1Result.data,
+        normalizedPayload: this.normalizeV1Payload(v1Result.data),
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Parses incoming Pusher payload, supporting V1, V2, V3, and legacy TriggerData formats.
+   * @private
+   */
+  private parsePusherPayload(data: Record<string, unknown>): IncomingTriggerPayload {
+    // Try V1/V2/V3 formats
+    const versionedResult = this.tryParseVersionedPayload(data);
+    if (versionedResult) {
+      logger.debug(`Parsed Pusher payload as ${versionedResult.version} format`);
+      return versionedResult.normalizedPayload;
+    }
+
+    // Try legacy TriggerData format (for backwards compatibility)
+    const legacyData = data as TriggerData;
+    if (legacyData.metadata?.nanoId && legacyData.appName) {
+      logger.debug('Parsed Pusher payload as legacy TriggerData format');
+      return transformIncomingTriggerPayload(legacyData);
+    }
+
+    // Fallback: log warning and return a minimal payload with available data
+    logger.warn('Unknown Pusher payload format. Payload keys: ' + Object.keys(data).join(', '));
+
+    // Return a minimal payload structure to avoid breaking the subscription
+    return {
+      id: (data.id as string) || (data.trigger_id as string) || 'unknown',
+      uuid: (data.uuid as string) || (data.id as string) || 'unknown',
+      triggerSlug: (data.triggerSlug as string) || (data.trigger_name as string) || 'UNKNOWN',
+      toolkitSlug: (data.toolkitSlug as string) || (data.appName as string) || 'UNKNOWN',
+      userId: (data.userId as string) || '',
+      payload: (data.payload as Record<string, unknown>) || data,
+      originalPayload: (data.originalPayload as Record<string, unknown>) || data,
+      metadata: {
+        id: (data.id as string) || 'unknown',
+        uuid: (data.uuid as string) || 'unknown',
+        toolkitSlug: (data.toolkitSlug as string) || 'UNKNOWN',
+        triggerSlug: (data.triggerSlug as string) || 'UNKNOWN',
+        triggerConfig: {},
+        connectedAccount: {
+          id: '',
+          uuid: '',
+          authConfigId: '',
+          authConfigUUID: '',
+          userId: '',
+          status: 'ACTIVE',
+        },
+      },
+    };
   }
 
   /**
@@ -519,6 +610,28 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     // Validate input parameters
     const parsedParams = VerifyWebhookParamsSchema.safeParse(params);
     if (!parsedParams.success) {
+      // Extract missing required parameters for a more helpful error message
+      const missingParams = parsedParams.error.issues
+        .filter(issue => issue.code === 'invalid_type' && issue.received === 'undefined')
+        .map(issue => {
+          const paramName = issue.path[0] as string;
+          const headerMap: Record<string, string> = {
+            id: 'webhook-id',
+            timestamp: 'webhook-timestamp',
+            signature: 'webhook-signature',
+          };
+          const headerName = headerMap[paramName];
+          return headerName ? `'${paramName}' (from '${headerName}' header)` : `'${paramName}'`;
+        });
+
+      if (missingParams.length > 0) {
+        throw new ValidationError(
+          `Missing required parameters: ${missingParams.join(', ')}. ` +
+            `Extract these values from the HTTP request headers and body.`,
+          { cause: parsedParams.error }
+        );
+      }
+
       throw new ValidationError('Invalid parameters passed to verifyWebhook', {
         cause: parsedParams.error,
       });
@@ -569,47 +682,16 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       });
     }
 
-    // Try V3 first (has 'composio.trigger.message' type)
-    const v3Result = WebhookPayloadV3Schema.safeParse(jsonPayload);
-    if (v3Result.success) {
-      return {
-        version: WebhookVersions.V3,
-        rawPayload: v3Result.data,
-        normalizedPayload: this.normalizeV3Payload(v3Result.data),
-      };
-    }
-
-    // Try V2 (has 'type', 'timestamp', 'log_id', and 'data' with specific fields)
-    const v2Result = WebhookPayloadV2Schema.safeParse(jsonPayload);
-    if (v2Result.success) {
-      return {
-        version: WebhookVersions.V2,
-        rawPayload: v2Result.data,
-        normalizedPayload: this.normalizeV2Payload(v2Result.data),
-      };
-    }
-
-    // Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload', 'log_id')
-    const v1Result = WebhookPayloadV1Schema.safeParse(jsonPayload);
-    if (v1Result.success) {
-      return {
-        version: WebhookVersions.V1,
-        rawPayload: v1Result.data,
-        normalizedPayload: this.normalizeV1Payload(v1Result.data),
-      };
+    // Try V1/V2/V3 formats using shared parsing logic
+    const result = this.tryParseVersionedPayload(jsonPayload);
+    if (result) {
+      return result;
     }
 
     // None of the schemas matched
     throw new ComposioWebhookPayloadError(
       'Webhook payload does not match any known version (V1, V2, or V3). ' +
-        'Please ensure you are using a supported webhook payload format.',
-      {
-        cause: {
-          v1Error: v1Result.error?.message,
-          v2Error: v2Result.error?.message,
-          v3Error: v3Result.error?.message,
-        },
-      }
+        'Please ensure you are using a supported webhook payload format.'
     );
   }
 

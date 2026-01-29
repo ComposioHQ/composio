@@ -268,21 +268,42 @@ export const VerifyWebhookParamsSchema = z.object({
    * The webhook message ID from the 'webhook-id' header.
    * Format: 'msg_xxx'
    */
-  id: z.string(),
+  id: z.string({
+    required_error: "Missing 'id' parameter. Pass the value of the 'webhook-id' HTTP header.",
+    invalid_type_error: "Invalid 'id' parameter. Expected string from 'webhook-id' HTTP header.",
+  }),
   /** The raw webhook payload as a string (request body) */
-  payload: z.string(),
+  payload: z.string({
+    required_error:
+      "Missing 'payload' parameter. Pass the raw request body as a string (do not parse it).",
+    invalid_type_error: "Invalid 'payload' parameter. Expected string (raw request body).",
+  }),
   /** The webhook secret used to sign the payload (from Composio dashboard) */
-  secret: z.string(),
+  secret: z.string({
+    required_error:
+      "Missing 'secret' parameter. Get your webhook secret from the Composio dashboard.",
+    invalid_type_error: "Invalid 'secret' parameter. Expected string.",
+  }),
   /**
    * The signature from the 'webhook-signature' header.
    * Format: 'v1,base64EncodedSignature'
    */
-  signature: z.string(),
+  signature: z.string({
+    required_error:
+      "Missing 'signature' parameter. Pass the value of the 'webhook-signature' HTTP header.",
+    invalid_type_error:
+      "Invalid 'signature' parameter. Expected string from 'webhook-signature' HTTP header.",
+  }),
   /**
    * The webhook timestamp from the 'webhook-timestamp' header.
    * This is the Unix timestamp in seconds when the webhook was sent.
    */
-  timestamp: z.string(),
+  timestamp: z.string({
+    required_error:
+      "Missing 'timestamp' parameter. Pass the value of the 'webhook-timestamp' HTTP header.",
+    invalid_type_error:
+      "Invalid 'timestamp' parameter. Expected string from 'webhook-timestamp' HTTP header.",
+  }),
   /**
    * Maximum allowed age of the webhook in seconds.
    * If the webhook timestamp is older than this, verification will fail.
