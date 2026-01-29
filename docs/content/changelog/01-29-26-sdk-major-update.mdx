@@ -21,11 +21,11 @@ This major release focuses on full edge runtime compatibility (Cloudflare Worker
 **Breaking Changes**: This release includes breaking changes that require code modifications:
 
 **TypeScript:**
-1. Webhook verification is now async (must add `await`)
+1. Webhook verification: Now async + signature changed (must add `await` + new required params: `webhookId`, `webhookTimestamp`)
 2. Mastra provider updated to v1 API
 
 **Python:**
-1. Webhook verification signature changed (new required parameters: `id`, `timestamp`)
+1. Webhook verification: Signature changed (new required parameters: `id`, `timestamp` - still synchronous)
 
 See the [Migration Guide](#migration-guide) for detailed upgrade instructions.
 </Callout>
@@ -38,9 +38,9 @@ See the [Migration Guide](#migration-guide) for detailed upgrade instructions.
 
 The webhook verification API has breaking changes in both SDKs to support multiple webhook versions (v1, v2, v3) and edge runtime compatibility.
 
-#### TypeScript: Now Async (Edge Runtime Support)
+#### TypeScript: Now Async + Signature Changed
 
-The `verifyWebhook()` method is now **async** to support edge runtimes that don't have `node:crypto`.
+The `verifyWebhook()` method has **two breaking changes**: it's now async AND requires additional parameters.
 
 **Before:**
 ```typescript
@@ -48,11 +48,13 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio();
 
-// Synchronous verification
-const isValid = composio.triggers.verifyWebhook(
-  request.body,
-  request.headers
-);
+// Old signature - synchronous, fewer parameters
+const payload = composio.triggers.verifyWebhook({
+  payload: req.body.toString(),
+  signature: req.headers['x-composio-signature'] as string,
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+});
+// Returns: TriggerEvent
 ```
 
 **After:**
@@ -61,14 +63,28 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio();
 
-// Now async - must use await
-const result = await composio.triggers.verifyWebhook(
-  request.body,
-  request.headers
-);
+// New signature - async, requires webhookId and webhookTimestamp
+const result = await composio.triggers.verifyWebhook({
+  payload: req.body.toString(),
+  signature: req.headers['webhook-signature'] as string,      // header name changed
+  webhookId: req.headers['webhook-id'] as string,             // NEW: required
+  webhookTimestamp: req.headers['webhook-timestamp'] as string, // NEW: required
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+  tolerance: 300,  // optional, default 300 seconds
+});
+// Returns: VerifyWebhookResult with version info
 ```
 
-**Why?** Edge runtimes (Cloudflare Workers, Vercel Edge) don't have `node:crypto`. Uses Web Crypto API instead.
+**Key Changes:**
+- ⚠️ **Now async** - Must use `await`
+- ⚠️ New required parameter: `webhookId` (from `webhook-id` header)
+- ⚠️ New required parameter: `webhookTimestamp` (from `webhook-timestamp` header)
+- ⚠️ Header name changed: `x-composio-signature` → `webhook-signature`
+- ⚠️ Return type changed: `TriggerEvent` → `VerifyWebhookResult`
+
+**Why?** 
+- Edge runtime compatibility (Cloudflare Workers, Vercel Edge) - uses Web Crypto API instead of `node:crypto`
+- Supports v1, v2, and v3 webhook formats with improved signature verification
 
 ---
 
@@ -383,14 +399,28 @@ uv pip install --upgrade composio
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 
-**Add `await` to all webhook verification calls:**
+**Update signature with new parameters and add `await`:**
 
 ```typescript
-// Before
-const result = composio.triggers.verifyWebhook(body, headers);
+// Before - old signature
+const payload = composio.triggers.verifyWebhook({
+  payload: req.body.toString(),
+  signature: req.headers['x-composio-signature'] as string,
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+});
 
-// After - add await
-const result = await composio.triggers.verifyWebhook(body, headers);
+// After - new signature with await and additional parameters
+const result = await composio.triggers.verifyWebhook({
+  payload: req.body.toString(),
+  signature: req.headers['webhook-signature'] as string,      // header name changed
+  webhookId: req.headers['webhook-id'] as string,             // NEW
+  webhookTimestamp: req.headers['webhook-timestamp'] as string, // NEW
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+});
+
+// Access the normalized payload and version info
+const event = result.payload;
+const version = result.version;  // 'V1', 'V2', or 'V3'
 ```
 
 **Express.js Example:**
@@ -402,19 +432,26 @@ const app = express();
 const composio = new Composio();
 
 // Make route handler async
-app.post('/webhook', async (req, res) => {
-  // Add await to verification
-  const result = await composio.triggers.verifyWebhook(
-    req.body,
-    req.headers
-  );
-  
-  if (!result) {
-    return res.status(401).json({ error: 'Invalid signature' });
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    // New signature with all required headers
+    const result = await composio.triggers.verifyWebhook({
+      payload: req.body.toString(),
+      signature: req.headers['webhook-signature'] as string,
+      webhookId: req.headers['webhook-id'] as string,
+      webhookTimestamp: req.headers['webhook-timestamp'] as string,
+      secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+    });
+    
+    // Access verified webhook data
+    console.log('Webhook version:', result.version);
+    console.log('Received trigger:', result.payload.triggerSlug);
+    
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Webhook verification failed:', error);
+    res.status(401).send('Unauthorized');
   }
-  
-  // Process webhook...
-  res.json({ success: true });
 });
 ```
 
@@ -423,22 +460,28 @@ app.post('/webhook', async (req, res) => {
 import { Composio } from '@composio/core';
 
 export default {
-  async fetch(request: Request): Promise<Response> {
-    const composio = new Composio();
-    const body = await request.json();
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
     
-    // Now works in Cloudflare Workers!
-    const result = await composio.triggers.verifyWebhook(
-      body,
-      Object.fromEntries(request.headers)
-    );
-    
-    if (!result) {
-      return new Response('Invalid', { status: 401 });
+    try {
+      const body = await request.text();
+      
+      // Now works in Cloudflare Workers!
+      const result = await composio.triggers.verifyWebhook({
+        payload: body,
+        signature: request.headers.get('webhook-signature') || '',
+        webhookId: request.headers.get('webhook-id') || '',
+        webhookTimestamp: request.headers.get('webhook-timestamp') || '',
+        secret: env.COMPOSIO_WEBHOOK_SECRET,
+      });
+      
+      // Process verified webhook
+      console.log('Trigger:', result.payload.triggerSlug);
+      
+      return new Response('OK', { status: 200 });
+    } catch (error) {
+      return new Response('Unauthorized', { status: 401 });
     }
-    
-    // Process webhook...
-    return new Response('OK');
   }
 };
 ```
@@ -607,9 +650,9 @@ The following features work without any code changes:
 
 The following features require code updates:
 
-- ⚠️ **Webhook verification (TypeScript)** - Must add `await`
-- ⚠️ **Webhook verification (Python)** - Must add `id` and `timestamp` parameters, update header names
-- ⚠️ **Mastra integration (TypeScript)** - Must update to v1 API
+- ⚠️ **Webhook verification (TypeScript)** - Must add `await` AND add `webhookId` + `webhookTimestamp` parameters, update header names
+- ⚠️ **Webhook verification (Python)** - Must add `id` + `timestamp` parameters, update header names (still synchronous)
+- ⚠️ **Mastra integration (TypeScript only)** - Must update to v1 API
 
 ---
 
@@ -617,8 +660,8 @@ The following features require code updates:
 
 | Change | TypeScript Breaking | Python Breaking | Migration Required | Effort |
 |--------|-------------------|----------------|-------------------|--------|
-| Webhook verification - TypeScript async | ✅ Yes | N/A | ✅ Required | Low - Add `await` |
-| Webhook verification - Python signature | N/A | ✅ Yes | ✅ Required | Low - Add parameters |
+| Webhook verification - TypeScript | ✅ Yes (async + signature) | N/A | ✅ Required | Medium - Add `await` + params |
+| Webhook verification - Python | N/A | ✅ Yes (signature only) | ✅ Required | Low - Add parameters |
 | Mastra v1 support | ✅ Yes | N/A | ✅ Required (if using) | Medium - Update API |
 | Platform-specific file modifier | ❌ No | ❌ No | ❌ Optional | None - Automatic |
 | Config defaults | ❌ No | ❌ No | ❌ Optional | None - Automatic |
