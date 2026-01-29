@@ -9,7 +9,7 @@ import ComposioClient from '@composio/client';
 
 const UNSUPPORTED_MESSAGE =
   'File operations (upload/download) are not supported in Cloudflare Workers or Edge runtimes. ' +
-  'These operations require Node.js-specific APIs (Buffer, crypto, file system) that are not available ' +
+  'These operations require Node.js-specific APIs (e.g., `node:crypto`, `node:fs`) that are not available ' +
   'in this environment. Please use a Node.js runtime for file operations.';
 
 /**

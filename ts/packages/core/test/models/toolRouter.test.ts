@@ -1149,6 +1149,149 @@ describe('ToolRouter', () => {
     //   });
     // });
 
+    describe('experimental configuration', () => {
+      it('should create a session with experimental assistivePrompt userTimezone', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          experimental: {
+            assistivePrompt: {
+              userTimezone: 'America/New_York',
+            },
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+          experimental: {
+            assistive_prompt_config: {
+              user_timezone: 'America/New_York',
+            },
+          },
+        });
+      });
+
+      it('should not include experimental in payload when assistivePrompt is not provided', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          experimental: {},
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+          experimental: undefined,
+        });
+      });
+
+      it('should not include experimental in payload when userTimezone is not provided', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          experimental: {
+            assistivePrompt: {},
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+          experimental: undefined,
+        });
+      });
+
+      it('should create a session with experimental config combined with other options', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          toolkits: ['gmail', 'slack'],
+          experimental: {
+            assistivePrompt: {
+              userTimezone: 'Europe/London',
+            },
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: {
+            enable: ['gmail', 'slack'],
+          },
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+          experimental: {
+            assistive_prompt_config: {
+              user_timezone: 'Europe/London',
+            },
+          },
+        });
+      });
+
+      it('should transform experimental assistive_prompt from API response to SDK format', async () => {
+        const responseWithExperimental = {
+          ...mockSessionCreateResponse,
+          experimental: {
+            assistive_prompt:
+              'You are a helpful assistant working in the America/New_York timezone.',
+          },
+        };
+
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(responseWithExperimental);
+
+        const session = await toolRouter.create(userId, {
+          experimental: {
+            assistivePrompt: {
+              userTimezone: 'America/New_York',
+            },
+          },
+        });
+
+        expect(session.experimental).toEqual({
+          assistivePrompt: 'You are a helpful assistant working in the America/New_York timezone.',
+        });
+      });
+
+      it('should handle API response without experimental field', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const session = await toolRouter.create(userId);
+
+        expect(session.experimental).toBeUndefined();
+      });
+    });
+
     describe('error handling', () => {
       it('should throw error if API call fails', async () => {
         const apiError = new Error('API error: Invalid session configuration');

@@ -24,7 +24,7 @@ respective auth configs. Learn how to create auth configs [here](/docs/authentic
 Once done, your auth configs will be available in the [Composio dashboard](https://app.composio.dev/integrations).
 
 
-  <img src="../../../../assets/images/examples/auth-configs.png" alt="Auth configs" />
+  <img src="/assets/images/examples/auth-configs.png" alt="Auth configs" />
 
 
 ### Save auth config IDs to environment variables
@@ -62,7 +62,7 @@ list the toolkits and their connection status, we create a Next.js API route to
 fetch the toolkits using Composio SDK.
 
 
-  <img src="../../../../assets/images/examples/toolkits.png" />
+  <img src="/assets/images/examples/toolkits.png" alt="Toolkits list with connection status" />
 
 
 ### 1. Listing connected accounts
@@ -131,7 +131,7 @@ Users need to connect and disconnect their accounts from the chatbot to enable t
 When a user wants to connect their account, we create a connection request that redirects them to the OAuth provider:
 
 
-  <img src="../../../../assets/images/examples/create-connection.png" />
+  <img src="/assets/images/examples/create-connection.png" alt="Create connection dialog" />
 
 
 ```typescript app/api/connections/initiate/route.ts
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
 After initiating a connection, we need to wait for the OAuth flow to complete. We check the connection status to know when it's ready to use:
 
 
-  <img src="../../../../assets/images/examples/connection-status.png" />
+  <img src="/assets/images/examples/connection-status.png" alt="Connection status indicator" />
 
 
 ```typescript app/api/connections/status/route.ts
@@ -269,7 +269,7 @@ export async function POST(request: Request) {
 By default, tool calls appear as raw JSON in the chat interface. To create a better user experience, we can build custom components that display tool calls with proper formatting and loading states.
 
 
-  <img src="../../../../assets/images/examples/custom-tool-component.png" />
+  <img src="/assets/images/examples/custom-tool-component.png" alt="Custom tool call component" />
 
 
 You can find the `ToolCall` component at `components/tool-call.tsx`. Here's how to integrate it into your message rendering:

@@ -1,12 +1,32 @@
-import { changelogEntries, formatDate, dateToChangelogUrl } from '@/lib/source';
+import { changelogEntries, formatDate, dateToChangelogUrl, getOgImageUrl } from '@/lib/source';
+import type { Metadata } from 'next';
+
+const description = 'Latest updates and announcements for Composio';
+
+export const metadata: Metadata = {
+  title: 'Changelog | Composio',
+  description,
+  alternates: { canonical: '/docs/changelog' },
+  openGraph: {
+    title: 'Changelog | Composio',
+    description,
+    images: [getOgImageUrl('docs', ['changelog'], 'Changelog', description)],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Changelog | Composio',
+    description,
+    images: [getOgImageUrl('docs', ['changelog'], 'Changelog', description)],
+  },
+};
 import { getMDXComponents } from '@/mdx-components';
 import {
   DocsBody,
-  DocsDescription,
   DocsPage,
   DocsTitle,
 } from 'fumadocs-ui/layouts/docs/page';
 import { CopyLink } from '@/components/copy-link';
+import { PageActions } from '@/components/page-actions';
 
 const mdxComponents = getMDXComponents();
 
@@ -18,7 +38,7 @@ export default function ChangelogPage() {
   return (
     <DocsPage toc={[]} footer={{ enabled: false }}>
       <DocsTitle>Changelog</DocsTitle>
-      <DocsDescription>Latest updates and announcements</DocsDescription>
+      <PageActions path="/docs/changelog" />
       <DocsBody>
         <div className="relative">
           {/* Timeline line */}

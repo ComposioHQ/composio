@@ -1,4 +1,8 @@
-name: Check Broken Links
+name: Check Broken Links (DEPRECATED - Fern)
+
+# DEPRECATED: This workflow checks broken links in the old Fern-based docs.
+# The new docs in /docs use docs-check-links.yml instead.
+# This workflow is disabled.
 
 on:
   pull_request:
@@ -11,6 +15,8 @@ on:
 
 jobs:
   check-broken-links:
+    # DEPRECATED: Disabled - using new docs system in /docs
+    if: false
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/composiohq/dev-base:latest

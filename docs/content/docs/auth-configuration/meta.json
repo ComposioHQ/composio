@@ -1,0 +1,10 @@
+{
+  "title": "Authentication",
+  "defaultOpen": false,
+  "pages": [
+    "custom-auth-configs",
+    "programmatic-auth-configs",
+    "custom-auth-params",
+    "connected-accounts"
+  ]
+}

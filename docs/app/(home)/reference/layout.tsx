@@ -1,4 +1,18 @@
-import { referenceSource } from '@/lib/source';
-import { createDocsLayout } from '@/lib/create-docs-layout';
+import { getReferenceSource } from '@/lib/source';
+import { DocsLayout } from 'fumadocs-ui/layouts/docs';
+import type { ReactNode } from 'react';
 
-export default createDocsLayout(referenceSource);
+export default async function Layout({ children }: { children: ReactNode }) {
+  const source = await getReferenceSource();
+  return (
+    <DocsLayout
+      tree={source.pageTree}
+      nav={{ enabled: true, title: null }}
+      searchToggle={{ enabled: false }}
+      sidebar={{ collapsible: false, footer: null, tabs: false }}
+      themeSwitch={{ enabled: false }}
+    >
+      {children}
+    </DocsLayout>
+  );
+}

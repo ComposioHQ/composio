@@ -40,11 +40,6 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
-        text: 'Tool Router',
-        url: '/tool-router',
-        active: 'nested-url',
-      },
-      {
         text: 'Toolkits',
         url: '/toolkits',
         active: 'nested-url',
@@ -53,6 +48,11 @@ export function baseOptions(): BaseLayoutProps {
         text: 'Reference',
         url: '/reference',
         active: 'nested-url',
+      },
+      {
+        text: 'Playground',
+        url: 'https://platform.composio.dev/auth?next_page=%2Ftool-router&utm_source=docs&utm_medium=navbar&utm_campaign=tool_router',
+        external: true,
       },
       {
         text: 'Examples',

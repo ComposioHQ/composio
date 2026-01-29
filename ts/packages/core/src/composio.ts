@@ -19,6 +19,7 @@ import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, ToolRouterSession } from './types/toolRouter.types';
+import { CONFIG_DEFAULTS } from './utils/config-defaults';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -249,8 +250,9 @@ export class Composio<
       baseURL: baseURLParsed,
       apiKey: apiKeyParsed,
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
-      allowTracking: config?.allowTracking ?? true,
-      autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
+      allowTracking: config?.allowTracking ?? CONFIG_DEFAULTS.allowTracking,
+      autoUploadDownloadFiles:
+        config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles,
       provider: config?.provider ?? this.provider,
     };
 
@@ -339,6 +341,8 @@ export class Composio<
    *
    * The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
    * but allows you to specify custom request options that will be used for all API calls made through this session.
+   *
+   * @deprecated DEPRECATED: This method will be removed in a future version of the SDK.
    *
    * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
    *                                          This follows the Fetch API RequestInit interface with additional options.

@@ -1,0 +1,10 @@
+# Composio Docs - https://docs.composio.dev
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://docs.composio.dev/sitemap.xml
+
+# Crawl-delay for politeness (optional, not all bots respect this)
+# Crawl-delay: 1

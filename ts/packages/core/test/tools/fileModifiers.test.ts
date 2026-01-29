@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FileToolModifier } from '../../src/utils/modifiers/FileToolModifier';
+import { FileToolModifier } from '#file_tool_modifier';
 import ComposioClient from '@composio/client';
 import { Tool } from '../../src/types/tool.types';
 import { ComposioFileUploadError } from '../../src/errors/FileModifierErrors';
-import * as fileUtils from '../../src/utils/fileUtils';
+import * as fileUtils from '../../src/utils/fileUtils.node';
 import { Tools } from '../../src/models/Tools';
 import { createTestContext, setupTest, mockToolExecution } from '../utils/toolExecuteUtils';
 import { mockClient } from '../utils/mocks/client.mock';
 
 // Mock the fileUtils module
-vi.mock('../../src/utils/fileUtils', () => ({
+vi.mock('../../src/utils/fileUtils.node', () => ({
   downloadFileFromS3: vi.fn(),
   getFileDataAfterUploadingToS3: vi.fn(),
 }));

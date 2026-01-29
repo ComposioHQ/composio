@@ -100,11 +100,9 @@ describe('@composio/core Cloudflare Workers compatibility', () => {
       message?: string;
       error?: string;
       data?: {
-        response_data: {
-          username: string;
-          karma: number;
-          about?: string;
-        };
+        username: string;
+        karma: number;
+        about?: string;
       };
     };
 
@@ -113,7 +111,7 @@ describe('@composio/core Cloudflare Workers compatibility', () => {
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.message).toContain('pg');
-    expect(body.data?.response_data?.username).toBe('pg');
-    expect(body.data?.response_data?.karma).toBeGreaterThan(0);
+    expect(body.data?.username).toBe('pg');
+    expect(body.data?.karma).toBeGreaterThan(0);
   });
 });

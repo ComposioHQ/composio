@@ -1,0 +1,290 @@
+---
+title: MCP
+description: MCP (Model Control Protocol) class Handles MCP server operations. When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
+---
+
+## Usage
+
+Access this class through the `composio.mcp` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.mcp.list();
+```
+
+## Properties
+
+| Name | Type |
+|------|------|
+| `client` | `Composio` |
+
+## Methods
+
+### create()
+
+Create a new MCP configuration.
+
+```typescript
+async create(name: string, mcpConfig: object): Promise<MCPConfigCreateResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `name` | `string` |
+| `mcpConfig` | `object` |
+
+**Returns**
+
+`Promise<MCPConfigCreateResponse>` — Created server details with instance getter
+
+**Example**
+
+```typescript
+const server = await composio.mcpConfig.create("personal-mcp-server", {
+  toolkits: ["github", "slack"],
+  allowedTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"],
+  manuallyManageConnections: false
+ }
+});
+
+const server = await composio.mcpConfig.create("personal-mcp-server", {
+  toolkits: [{ toolkit: "gmail", authConfigId: "ac_243434343" }],
+  allowedTools: ["GMAIL_FETCH_EMAILS"],
+  manuallyManageConnections: false
+ }
+});
+```
+
+---
+
+### delete()
+
+Delete an MCP server configuration permanently
+
+```typescript
+async delete(serverId: string): Promise<{ deleted: boolean; id: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `serverId` | `string` | The unique identifier of the MCP server to delete |
+
+**Returns**
+
+`Promise<...>` — Confirmation object with server ID and deletion status
+
+**Example**
+
+```typescript
+// Delete an MCP server by ID
+const result = await composio.experimental.mcp.delete("mcp_12345");
+
+if (result.deleted) {
+  console.log(`Server ${result.id} has been successfully deleted`);
+} else {
+  console.log(`Failed to delete server ${result.id}`);
+}
+
+// Example with error handling
+try {
+  const result = await composio.experimental.mcp.delete("mcp_12345");
+  console.log("Deletion successful:", result);
+} catch (error) {
+  console.error("Failed to delete MCP server:", error.message);
+}
+
+// Delete and verify from list
+await composio.experimental.mcp.delete("mcp_12345");
+const servers = await composio.experimental.mcp.list({});
+const serverExists = servers.items.some(server => server.id === "mcp_12345");
+console.log("Server still exists:", serverExists); // Should be false
+```
+
+---
+
+### generate()
+
+Get server URLs for an existing MCP server.
+The response is wrapped according to the provider's specifications.
+
+```typescript
+async generate(userId: string, mcpConfigId: string, options?: { manuallyManageConnections?: boolean }): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | \{string\} external user id from your database for whom you want the server for |
+| `mcpConfigId` | `string` | \{string\} config id of the MCPConfig for which you want to create a server for |
+| `options?` | `object` | \{object\} additional options |
+
+**Returns**
+
+`Promise<...>`
+
+**Example**
+
+```typescript
+import { Composio } from "@composio/code";
+
+const composio = new Composio();
+const mcp = await composio.experimental.mcp.generate("default", "<mcp_config_id>");
+```
+
+---
+
+### get()
+
+Retrieve detailed information about a specific MCP server by its ID
+
+```typescript
+async get(serverId: string): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `serverId` | `string` | The unique identifier of the MCP server to retrieve |
+
+**Returns**
+
+`Promise<...>` — Complete MCP server details including configuration, tools, and metadata
+
+**Example**
+
+```typescript
+// Get a specific MCP server by ID
+const server = await composio.experimental.mcp.get("mcp_12345");
+
+console.log(server.name); // "My Personal MCP Server"
+console.log(server.allowedTools); // ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
+console.log(server.toolkits); // ["github", "slack"]
+console.log(server.serverInstanceCount); // 3
+
+// Access setup commands for different clients
+console.log(server.commands.claude); // Claude setup command
+console.log(server.commands.cursor); // Cursor setup command
+console.log(server.commands.windsurf); // Windsurf setup command
+
+// Use the MCP URL for direct connections
+const mcpUrl = server.MCPUrl;
+```
+
+---
+
+### list()
+
+List the MCP servers with optional filtering and pagination
+
+```typescript
+async list(options: { authConfigs: string[]; limit: number; name?: string; page: number; toolkits: string[] }): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `options` | `object` | Filtering and pagination options |
+
+**Returns**
+
+`Promise<...>` — Paginated list of MCP servers with metadata
+
+**Example**
+
+```typescript
+// List all MCP servers
+const allServers = await composio.experimental.mcp.list({});
+
+// List with pagination
+const pagedServers = await composio.experimental.mcp.list({
+  page: 2,
+  limit: 5
+});
+
+// Filter by toolkit
+const githubServers = await composio.experimental.mcp.list({
+  toolkits: ['github', 'slack']
+});
+
+// Filter by name
+const namedServers = await composio.experimental.mcp.list({
+  name: 'personal'
+});
+```
+
+---
+
+### update()
+
+Update an existing MCP server configuration with new settings
+
+```typescript
+async update(serverId: string, config: object): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `serverId` | `string` | The unique identifier of the MCP server to update |
+| `config` | `object` | Update configuration parameters |
+
+**Returns**
+
+`Promise<...>` — Updated MCP server configuration with all details
+
+**Example**
+
+```typescript
+// Update server name only
+const updatedServer = await composio.experimental.mcp.update("mcp_12345", {
+  name: "My Updated MCP Server"
+});
+
+// Update toolkits and tools
+const serverWithNewTools = await composio.experimental.mcp.update("mcp_12345", {
+  toolkits: [
+    {
+      toolkit: "github",
+      authConfigId: "auth_abc123",
+      allowedTools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_REPOS"]
+    },
+    {
+      toolkit: "slack",
+      authConfigId: "auth_xyz789",
+      allowedTools: ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"]
+    }
+  ]
+});
+
+// Update connection management setting
+const serverWithManualAuth = await composio.experimental.mcp.update("mcp_12345", {
+  name: "Manual Auth Server",
+  manuallyManageConnections: true
+});
+
+// Complete update example
+const fullyUpdatedServer = await composio.experimental.mcp.update("mcp_12345", {
+  name: "Production MCP Server",
+  toolkits: [
+    {
+      toolkit: "gmail",
+      authConfigId: "auth_gmail_prod",
+    }
+  ],
+  allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
+  manuallyManageConnections: false
+});
+
+console.log("Updated server:", fullyUpdatedServer.name);
+console.log("New tools:", fullyUpdatedServer.allowedTools);
+```
+
+---

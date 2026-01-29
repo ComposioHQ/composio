@@ -7,7 +7,7 @@
  */
 import ComposioClient from '@composio/client';
 import { FileDownloadData, FileUploadData } from '../types/files.types';
-import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../utils/fileUtils';
+import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../utils/fileUtils.node';
 import { telemetry } from '../telemetry/Telemetry';
 
 export class Files {

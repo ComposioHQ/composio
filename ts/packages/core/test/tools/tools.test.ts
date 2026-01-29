@@ -368,6 +368,116 @@ describe('Tools', () => {
       expect(schemaModifier).toHaveBeenCalled();
       expect(result.description).toEqual('Modified description');
     });
+
+    it('should use version parameter when provided (explicit version string)', async () => {
+      const slug = 'GITHUB_CREATE_ISSUE';
+      const explicitVersion = '20250909_00';
+
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+      await context.tools.getRawComposioToolBySlug(slug, {
+        version: explicitVersion,
+      });
+
+      // Should use 'version' param, not 'toolkit_versions'
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
+        version: explicitVersion,
+      });
+    });
+
+    it('should use version parameter when provided (latest string)', async () => {
+      const slug = 'GITHUB_CREATE_ISSUE';
+
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+      await context.tools.getRawComposioToolBySlug(slug, {
+        version: 'latest',
+      });
+
+      // Should use 'version' param with 'latest'
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
+        version: 'latest',
+      });
+    });
+
+    it('should use version parameter when provided (version mapping object)', async () => {
+      const slug = 'GITHUB_CREATE_ISSUE';
+      const versionMapping = { github: '20250909_00', slack: 'latest' };
+
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+      // Create a Tools instance with SDK-level toolkitVersions as mapping object
+      const toolsWithVersions = new Tools(mockClient as any, {
+        provider: context.mockProvider,
+        toolkitVersions: versionMapping,
+      });
+
+      await toolsWithVersions.getRawComposioToolBySlug(slug);
+
+      // Should use 'toolkit_versions' param with mapping object (not 'version')
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
+        toolkit_versions: versionMapping,
+      });
+    });
+
+    it('should fallback to SDK toolkitVersions when version not provided', async () => {
+      const slug = 'GITHUB_CREATE_ISSUE';
+
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+      // Call without version option
+      await context.tools.getRawComposioToolBySlug(slug);
+
+      // Should use 'toolkit_versions' param with SDK-level config
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
+        toolkit_versions: 'latest',
+      });
+    });
+
+    it('should prioritize explicit version over SDK toolkitVersions', async () => {
+      const slug = 'GITHUB_CREATE_ISSUE';
+      const explicitVersion = '20250909_00';
+
+      // Create a Tools instance with SDK-level toolkitVersions
+      const toolsWithVersions = new Tools(mockClient as any, {
+        provider: context.mockProvider,
+        toolkitVersions: { github: explicitVersion },
+      });
+
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+      await toolsWithVersions.getRawComposioToolBySlug(slug, {
+        version: explicitVersion,
+      });
+
+      // Explicit version should take precedence, using 'version' param
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
+        version: explicitVersion,
+      });
+    });
+
+    it('should support combining version and modifySchema options', async () => {
+      const slug = 'GITHUB_CREATE_ISSUE';
+      const explicitVersion = '20250909_00';
+      const schemaModifier = createSchemaModifier({
+        description: 'Modified description',
+      });
+
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+
+      const result = await context.tools.getRawComposioToolBySlug(slug, {
+        version: explicitVersion,
+        modifySchema: schemaModifier,
+      });
+
+      // Should use version param
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
+        version: explicitVersion,
+      });
+      // Should also apply schema modifier
+      expect(schemaModifier).toHaveBeenCalled();
+      expect(result.description).toEqual('Modified description');
+    });
   });
 
   describe('get', () => {
@@ -499,6 +609,70 @@ describe('Tools', () => {
         text: undefined,
       });
       expect(result).toEqual(toolMocks.toolExecuteResponse);
+    });
+
+    it('should pass version parameter from execute() to getRawComposioToolBySlug()', async () => {
+      const slug = 'COMPOSIO_TOOL';
+      const explicitVersion = '20250909_00';
+      const body = {
+        userId: 'test-user',
+        version: explicitVersion,
+        arguments: { title: 'Test Issue' },
+      };
+
+      const { getRawComposioToolBySlugSpy } = await mockToolExecution(context.tools);
+
+      await context.tools.execute(slug, body);
+
+      // Verify getRawComposioToolBySlug was called with version
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
+        version: explicitVersion,
+      });
+
+      // Verify the API execute call received the version
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(
+        slug,
+        expect.objectContaining({
+          version: explicitVersion,
+        })
+      );
+    });
+
+    it('should pass version: latest from execute() to getRawComposioToolBySlug()', async () => {
+      const slug = 'COMPOSIO_TOOL';
+      const body = {
+        userId: 'test-user',
+        version: 'latest' as const,
+        dangerouslySkipVersionCheck: true,
+        arguments: { title: 'Test Issue' },
+      };
+
+      const { getRawComposioToolBySlugSpy } = await mockToolExecution(context.tools);
+
+      await context.tools.execute(slug, body);
+
+      // Verify getRawComposioToolBySlug was called with version: 'latest'
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
+        version: 'latest',
+      });
+    });
+
+    it('should not pass version to getRawComposioToolBySlug() when not provided in execute()', async () => {
+      const slug = 'COMPOSIO_TOOL';
+      const body = {
+        userId: 'test-user',
+        arguments: { title: 'Test Issue' },
+        dangerouslySkipVersionCheck: true,
+      };
+
+      const { getRawComposioToolBySlugSpy } = await mockToolExecution(context.tools);
+
+      await context.tools.execute(slug, body);
+
+      // Verify getRawComposioToolBySlug was called without version (should fallback to SDK config)
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
+        version: undefined,
+      });
     });
   });
 

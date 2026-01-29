@@ -28,7 +28,6 @@ const INTERNAL_CLASSES = new Set([
   'AuthScheme', // Utility class
   'ConnectionRequest', // Utility
   'Files', // Not yet stable API
-  'MCP', // Experimental
   'ToolRouter', // Experimental
 ]);
 
@@ -543,7 +542,11 @@ function generateClassMdx(classDoc: ClassDoc): string {
     lines.push(generateMethodMdx(classDoc.constructor));
   } else if (!USER_INSTANTIATED_CLASSES.has(classDoc.name)) {
     // Show usage hint for non-instantiated classes
-    const accessorName = classDoc.name.charAt(0).toLowerCase() + classDoc.name.slice(1);
+    // Handle acronyms (e.g., "MCP" -> "mcp") vs PascalCase (e.g., "AuthConfigs" -> "authConfigs")
+    const accessorName =
+      classDoc.name === classDoc.name.toUpperCase()
+        ? classDoc.name.toLowerCase()
+        : classDoc.name.charAt(0).toLowerCase() + classDoc.name.slice(1);
     lines.push('## Usage');
     lines.push('');
     lines.push(`Access this class through the \`composio.${accessorName}\` property:`);

@@ -200,7 +200,6 @@ pre, code, kbd, samp {
 }
 
 :not(pre) > code {
-  background: var(--color-fd-muted);
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
@@ -329,8 +328,12 @@ textarea:focus-visible {
   outline: none;
 }
 
-[data-card]:hover {
-  border-color: color-mix(in srgb, var(--composio-orange) 50%, transparent);
+[data-card="true"] {
+  background: var(--color-fd-muted);
+}
+
+[data-card="true"]:hover {
+  border-color: var(--composio-orange);
 }
 
 [data-fumadocs-tabs] [data-state="active"] {
@@ -471,7 +474,6 @@ nav a[href*="app.composio"]:focus-visible {
 #nd-toc {
   --color-fd-primary: var(--composio-orange);
 }
-
 
 @layer base {
   * {

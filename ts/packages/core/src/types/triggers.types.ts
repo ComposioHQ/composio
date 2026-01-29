@@ -22,7 +22,7 @@ export const TriggerInstanceListActiveParamsSchema = z.object({
   authConfigIds: z.array(z.string()).nullable().optional(),
   connectedAccountIds: z.array(z.string()).nullable().optional(),
   limit: z.number().optional(),
-  page: z.number().optional(),
+  cursor: z.string().optional(),
   showDisabled: z.boolean().nullable().optional(),
   triggerIds: z.array(z.string()).nullable().optional(),
   triggerNames: z.array(z.string()).nullable().optional(),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Copy, Check, Loader2, ExternalLink } from 'lucide-react';
 import { Feedback } from './feedback';
 
@@ -13,9 +13,10 @@ interface PageActionsProps {
  * Provides AI-friendly access to documentation content.
  */
 export function PageActions({ path }: PageActionsProps) {
-  const [copyState, setCopyState] = useState<'idle' | 'loading' | 'copied'>('idle');
+  const [copyState, setCopyState] = useState<'idle' | 'loading' | 'copied' | 'error'>('idle');
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
+    if (copyState === 'loading') return;
     setCopyState('loading');
 
     try {
@@ -28,46 +29,111 @@ export function PageActions({ path }: PageActionsProps) {
       setCopyState('copied');
       setTimeout(() => setCopyState('idle'), 2000);
     } catch {
-      setCopyState('idle');
+      setCopyState('error');
+      setTimeout(() => setCopyState('idle'), 2000);
+    }
+  }, [path, copyState]);
+
+  const getCopyIcon = () => {
+    switch (copyState) {
+      case 'loading':
+        return (
+          <Loader2
+            className="size-3.5 animate-spin motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+        );
+      case 'copied':
+        return (
+          <Check
+            className="size-3.5 text-emerald-500 dark:text-emerald-400"
+            aria-hidden="true"
+          />
+        );
+      case 'error':
+        return (
+          <Copy
+            className="size-3.5 text-red-500 dark:text-red-400"
+            aria-hidden="true"
+          />
+        );
+      default:
+        return <Copy className="size-3.5" aria-hidden="true" />;
     }
   };
 
-  const handleOpen = () => {
-    window.open(`${path}.md`, '_blank');
+  const getCopyLabel = () => {
+    switch (copyState) {
+      case 'loading':
+        return 'Copying…';
+      case 'copied':
+        return 'Copied!';
+      case 'error':
+        return 'Failed';
+      default:
+        return 'Copy page';
+    }
   };
 
   return (
-    <div className="flex items-center gap-4 mt-2 mb-6">
+    <div
+      className="flex flex-wrap items-center gap-1.5 sm:gap-1 mt-2 mb-6"
+      role="group"
+      aria-label="Page actions"
+    >
+      {/* Copy Button */}
       <button
+        type="button"
         onClick={handleCopy}
         disabled={copyState === 'loading'}
-        className="inline-flex items-center gap-1.5 text-sm text-fd-muted-foreground hover:text-fd-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-2.5 sm:py-1.5 text-xs font-medium
+          text-fd-muted-foreground hover:text-fd-foreground
+          bg-fd-secondary/50 hover:bg-fd-secondary
+          rounded-md
+          transition-all duration-150 ease-out
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-background
+          disabled:pointer-events-none
+          active:scale-[0.98]
+          touch-manipulation
+          motion-reduce:transition-none motion-reduce:active:scale-100"
         aria-label="Copy page as markdown"
+        aria-live="polite"
       >
-        {copyState === 'loading' ? (
-          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-        ) : copyState === 'copied' ? (
-          <Check className="w-4 h-4 text-green-500" aria-hidden="true" />
-        ) : (
-          <Copy className="w-4 h-4" aria-hidden="true" />
-        )}
-        {copyState === 'copied' ? 'Copied!' : 'Copy page'}
+        <span className="transition-transform duration-150 ease-out">
+          {getCopyIcon()}
+        </span>
+        <span>{getCopyLabel()}</span>
       </button>
 
-      <span className="text-fd-muted-foreground/50" aria-hidden="true">·</span>
-
+      {/* View Markdown Link */}
       <a
         href={`${path}.md`}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-sm text-fd-muted-foreground hover:text-fd-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
+        className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-2.5 sm:py-1.5 text-xs font-medium
+          text-fd-muted-foreground hover:text-fd-foreground
+          bg-fd-secondary/50 hover:bg-fd-secondary
+          rounded-md
+          transition-all duration-150 ease-out
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-background
+          active:scale-[0.98]
+          touch-manipulation
+          motion-reduce:transition-none motion-reduce:active:scale-100"
+        aria-label="View page as markdown (opens in new tab)"
       >
-        <ExternalLink className="w-4 h-4" aria-hidden="true" />
-        View as markdown
+        <ExternalLink className="size-3.5" aria-hidden="true" />
+        <span className="hidden xs:inline">View </span>
+        <span>Markdown</span>
       </a>
 
-      <span className="text-fd-muted-foreground/50" aria-hidden="true">·</span>
+      {/* Divider - hidden on mobile when wrapped */}
+      <span
+        className="hidden sm:block mx-1 h-4 w-px bg-fd-border/60"
+        role="separator"
+        aria-orientation="vertical"
+      />
 
+      {/* Feedback */}
       <Feedback page={path} />
     </div>
   );

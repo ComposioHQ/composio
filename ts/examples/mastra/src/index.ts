@@ -51,6 +51,7 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
  * Create the mastra agent
  */
 const hackernewsAgent = new Agent({
+  id: 'test-mastra',
   name: 'Weather Agent',
   instructions:
     'You are a helpful assistant that can use the Hackernews API to get user information.',

@@ -364,3 +364,27 @@ export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
 export type SchemaModifierOptions = {
   modifySchema: TransformToolSchemaModifier;
 };
+
+/**
+ * Options for retrieving tools from Composio API
+ */
+export type ToolRetrievalOptions = {
+  /**
+   * Optional function to transform the tool schema after retrieval
+   */
+  modifySchema?: TransformToolSchemaModifier;
+
+  /**
+   * Override the toolkit version for tool retrieval.
+   * Takes precedence over SDK-level toolkitVersions.
+   *
+   * @example Override with specific version
+   * ```typescript
+   * const tool = await tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE', {
+   *   version: '20250909_00'
+   * });
+   * ```
+   * ```
+   */
+  version?: ToolkitVersion;
+};

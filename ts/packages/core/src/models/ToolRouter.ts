@@ -26,6 +26,7 @@ import {
   ToolRouterToolkitsFn,
   ToolRouterCreateSessionConfig,
   ToolRouterSession,
+  ToolRouterSessionExperimental,
   ToolkitConnectionStateSchema,
   ToolRouterToolkitsOptions,
   ToolRouterToolkitsOptionsSchema,
@@ -264,9 +265,24 @@ export class ToolRouter<
         routerConfig.manageConnections
       ),
       workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
+      // Map SDK's experimental.assistivePrompt.userTimezone to API's experimental.assistive_prompt_config.user_timezone
+      experimental: routerConfig.experimental?.assistivePrompt?.userTimezone
+        ? {
+            assistive_prompt_config: {
+              user_timezone: routerConfig.experimental.assistivePrompt.userTimezone,
+            },
+          }
+        : undefined,
     };
 
     const session = await this.client.toolRouter.session.create(payload);
+
+    // Transform experimental response: API's assistive_prompt -> SDK's assistivePrompt
+    const experimental: ToolRouterSessionExperimental | undefined = session.experimental
+      ? {
+          assistivePrompt: session.experimental.assistive_prompt,
+        }
+      : undefined;
 
     return {
       sessionId: session.session_id,
@@ -274,6 +290,7 @@ export class ToolRouter<
       tools: this.createToolsFn(session.session_id),
       authorize: this.createAuthorizeFn(session.session_id),
       toolkits: this.createToolkitsFn(session.session_id),
+      experimental,
     };
   }
 
@@ -294,7 +311,9 @@ export class ToolRouter<
    * console.log(session.mcp.headers);
    * ```
    */
-  async use(id: string): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
+  async use(
+    id: string
+  ): Promise<Omit<ToolRouterSession<TToolCollection, TTool, TProvider>, 'experimental'>> {
     const session = await this.client.toolRouter.session.retrieve(id);
     return {
       sessionId: session.session_id,

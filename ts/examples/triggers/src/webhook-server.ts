@@ -61,7 +61,7 @@ const server = Bun.serve({
         console.log(`    webhook-signature: ${webhookSignature.substring(0, 30)}...`);
 
         // Verify the webhook
-        const result = composio.triggers.verifyWebhook({
+        const result = await composio.triggers.verifyWebhook({
           id: webhookId,
           timestamp: webhookTimestamp,
           signature: webhookSignature,

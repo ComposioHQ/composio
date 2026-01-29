@@ -102,9 +102,9 @@ const app = express();
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
 // Important: Use express.raw() to get the raw body as a string
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    const result = composio.triggers.verifyWebhook({
+    const result = await composio.triggers.verifyWebhook({
       payload: req.body.toString(),
       signature: req.headers['webhook-signature'] as string,
       id: req.headers['webhook-id'] as string,
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
   try {
     const payload = await request.text();
     
-    const result = composio.triggers.verifyWebhook({
+    const result = await composio.triggers.verifyWebhook({
       payload,
       signature: request.headers.get('webhook-signature')!,
       id: request.headers.get('webhook-id')!,
@@ -184,7 +184,7 @@ fastify.addContentTypeParser(
 
 fastify.post('/webhook', async (request, reply) => {
   try {
-    const result = composio.triggers.verifyWebhook({
+    const result = await composio.triggers.verifyWebhook({
       payload: request.body as string,
       signature: request.headers['webhook-signature'] as string,
       id: request.headers['webhook-id'] as string,
@@ -227,19 +227,19 @@ By default, webhooks older than 5 minutes are rejected to prevent replay attacks
 
 ```typescript
 // Strict: 1 minute tolerance
-const result = composio.triggers.verifyWebhook({
+const result = await composio.triggers.verifyWebhook({
   ...params,
   tolerance: 60,
 });
 
 // Lenient: 10 minute tolerance
-const result = composio.triggers.verifyWebhook({
+const result = await composio.triggers.verifyWebhook({
   ...params,
   tolerance: 600,
 });
 
 // Disable timestamp validation (not recommended for production)
-const result = composio.triggers.verifyWebhook({
+const result = await composio.triggers.verifyWebhook({
   ...params,
   tolerance: 0,
 });

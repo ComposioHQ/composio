@@ -4,6 +4,7 @@
     "composio",
     "auth-configs",
     "connected-accounts",
+    "mcp",
     "toolkits",
     "tools",
     "triggers"

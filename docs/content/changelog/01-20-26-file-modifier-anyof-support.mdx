@@ -1,5 +1,6 @@
 ---
-title: "[Critical] File Upload/Download Fixes for anyOf, oneOf, and allOf Schemas"
+title: "File Upload/Download Fixes for latest tool with anyOf, oneOf, and allOf Schemas"
+description: "File handling modifiers now properly handle nested anyOf, oneOf, and allOf JSON Schema declarations"
 date: "2026-01-20"
 ---
 
@@ -77,20 +78,20 @@ inputParameters: {
 
 | Scenario | Before | After |
 |----------|--------|-------|
-| `file_uploadable` in `anyOf` | Not detected | Works |
-| `file_uploadable` in `oneOf` | Not detected | Works |
-| `file_uploadable` in `allOf` | Not detected | Works |
-| `file_downloadable` in `anyOf` | Not detected | Works |
-| `file_downloadable` in `oneOf` | Not detected | Works |
-| `file_downloadable` in `allOf` | Not detected | Works |
-| Nested objects inside union types | Not detected | Works |
-| Array items with union types | Not detected | Works |
+| `file_uploadable` in `anyOf` | Not detected | ✅ Works |
+| `file_uploadable` in `oneOf` | Not detected | ✅ Works |
+| `file_uploadable` in `allOf` | Not detected | ✅ Works |
+| `file_downloadable` in `anyOf` | Not detected | ✅ Works |
+| `file_downloadable` in `oneOf` | Not detected | ✅ Works |
+| `file_downloadable` in `allOf` | Not detected | ✅ Works |
+| Nested objects inside union types | Not detected | ✅ Works |
+| Array items with union types | Not detected | ✅ Works |
 
 ## How to Update
 
 ### TypeScript/JavaScript
 
-<Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn']} persist>
+<Tabs items={['npm', 'pnpm', 'yarn']}>
 <Tab value="npm">
 ```bash
 npm update @composio/core@latest
@@ -110,7 +111,7 @@ yarn upgrade @composio/core@latest
 
 ### Python
 
-<Tabs groupId="python-package-manager" items={['pip', 'uv', 'poetry']} persist>
+<Tabs items={['pip', 'uv', 'poetry']}>
 <Tab value="pip">
 ```bash
 pip install --upgrade composio

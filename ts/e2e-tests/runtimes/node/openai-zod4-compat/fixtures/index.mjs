@@ -1,30 +1,28 @@
 /**
- * Simple test script to verify @composio/core works with openai@5 and zod@4
+ * Simple test script to verify @composio/core works with openai@6 and zod@4
+ *
+ * This test verifies that the packages can be imported and instantiated together
+ * without peer dependency conflicts. It doesn't make actual API calls.
+ *
+ * @see https://github.com/ComposioHQ/composio/issues/2336
  */
 import { z } from 'zod';
 import OpenAI from 'openai';
 import { Composio, OpenAIProvider } from '@composio/core';
 
-// Parse and validate environment variables
-const EnvSchema = z.object({
-  COMPOSIO_API_KEY: z.string().min(1, 'COMPOSIO_API_KEY is required'),
-});
-
-const env = EnvSchema.parse(process.env);
-
 // Verify zod@4 works
 const schema = z.object({ name: z.string() });
 console.log('✅ zod@4 works');
 
-// Verify openai@5 works
+// Verify openai@6 works (note: the package says openai@5 in comments but uses ^6.16.0)
 const openai = new OpenAI({ apiKey: 'test-key' });
 console.log('✅ openai@5 works');
 
-// Verify @composio/core works with API key from env
+// Verify @composio/core works
 const provider = new OpenAIProvider();
 const composio = new Composio({
   provider,
-  apiKey: env.COMPOSIO_API_KEY,
+  apiKey: process.env.COMPOSIO_API_KEY,
 });
 console.log('✅ @composio/core works');
 
@@ -37,3 +35,4 @@ const _tool = provider.wrapTool({
 console.log('✅ wrapTool works');
 
 console.log('\n🎉 All packages work together!');
+process.exit(0);

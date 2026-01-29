@@ -1,4 +1,8 @@
-name: Publish Docs
+name: Publish Docs (DEPRECATED - Fern)
+
+# DEPRECATED: This workflow publishes the old Fern-based docs.
+# The new docs are in /docs and deployed via Vercel.
+# This workflow is disabled - remove 'if: false' to re-enable if needed.
 
 on:
   push:
@@ -19,7 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/composiohq/dev-base:latest
-    if: ${{ (github.event_name == 'push' && contains(github.ref, 'refs/heads/next') && github.run_number > 1) || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
+    # DEPRECATED: Disabled - using new docs system in /docs
+    if: false
     permissions: write-all
     env:
       COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY }}

@@ -9,6 +9,14 @@ export default defineConfig({
     alias: {
       '#platform': path.resolve(__dirname, 'src/platform/node.ts'),
       '#files': path.resolve(__dirname, 'src/models/Files.node.ts'),
+      '#file_tool_modifier': path.resolve(
+        __dirname,
+        'src/utils/modifiers/FileToolModifier.node.ts'
+      ),
+      '#config_defaults': path.resolve(
+        __dirname,
+        'src/utils/config-defaults/ConfigDefaults.node.ts'
+      ),
     },
   },
   test: {

@@ -173,6 +173,29 @@ class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
     wait_for_connections: bool
 
 
+class ToolRouterAssistivePromptConfig(te.TypedDict, total=False):
+    """Configuration for assistive prompt generation.
+
+    Attributes:
+        user_timezone: IANA timezone identifier (e.g., "America/New_York", "Europe/London")
+                      for timezone-aware assistive prompts.
+    """
+
+    user_timezone: str
+
+
+class ToolRouterExperimentalConfig(te.TypedDict, total=False):
+    """Experimental configuration for tool router session.
+
+    Note: These features are experimental and may be modified or removed in future versions.
+
+    Attributes:
+        assistive_prompt: Configuration for assistive prompt generation.
+    """
+
+    assistive_prompt: ToolRouterAssistivePromptConfig
+
+
 @dataclass
 class ToolkitConnectionAuthConfig:
     """Auth config information for a toolkit connection.
@@ -273,6 +296,19 @@ class ToolRouterMCPServerConfig:
 
 
 @dataclass
+class ToolRouterSessionExperimental:
+    """Experimental features in session response.
+
+    Note: These features are experimental and may be modified or removed in future versions.
+
+    Attributes:
+        assistive_prompt: The generated assistive system prompt based on the experimental config.
+    """
+
+    assistive_prompt: t.Optional[str] = None
+
+
+@dataclass
 class ToolRouterSession(t.Generic[TProvider]):
     """
     Tool router session containing session information and helper functions.
@@ -283,6 +319,7 @@ class ToolRouterSession(t.Generic[TProvider]):
         tools: Function to get provider-wrapped tools
         authorize: Function to authorize a toolkit
         toolkits: Function to get toolkit connection states
+        experimental: Optional experimental features data from the session response
     """
 
     session_id: str
@@ -290,6 +327,7 @@ class ToolRouterSession(t.Generic[TProvider]):
     tools: ToolsFn
     authorize: AuthorizeFn
     toolkits: ToolkitsFn
+    experimental: t.Optional[ToolRouterSessionExperimental] = None
 
 
 class ToolRouter(Resource, t.Generic[TProvider]):
@@ -736,6 +774,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         auth_configs: t.Optional[t.Dict[str, str]] = None,
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
     ) -> ToolRouterSession[TProvider]:
         """
         Create a new tool router session for a user.
@@ -798,6 +837,13 @@ class ToolRouter(Resource, t.Generic[TProvider]):
                          - 'auto_offload_threshold' (int): Maximum execution payload size to
                            offload to workbench.
                          Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
+        :param experimental: Optional experimental configuration (ToolRouterExperimentalConfig).
+                            Note: These features are experimental and may change.
+                            Dict with:
+                            - 'assistive_prompt' (dict): Configuration for assistive prompt generation.
+                              - 'user_timezone' (str): IANA timezone identifier
+                                (e.g., "America/New_York", "Europe/London").
+                            Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
         :return: Tool router session object
 
         Example:
@@ -986,8 +1032,31 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             if execution_payload:
                 create_params["workbench"] = execution_payload
 
+        # Build experimental config
+        # Map SDK's experimental.assistive_prompt.user_timezone to API's
+        # experimental.assistive_prompt_config.user_timezone
+        if experimental is not None:
+            assistive_prompt_config = experimental.get("assistive_prompt")
+            if assistive_prompt_config is not None:
+                user_timezone = assistive_prompt_config.get("user_timezone")
+                # Only include if user_timezone is a non-empty string
+                if user_timezone:
+                    create_params["experimental"] = {
+                        "assistive_prompt_config": {
+                            "user_timezone": user_timezone,
+                        }
+                    }
+
         # Make API call to create session
         session = self._client.tool_router.session.create(**create_params)
+
+        # Transform experimental response:
+        # API's assistive_prompt -> SDK's assistive_prompt
+        experimental_response: t.Optional[ToolRouterSessionExperimental] = None
+        if session.experimental is not None:
+            experimental_response = ToolRouterSessionExperimental(
+                assistive_prompt=session.experimental.assistive_prompt,
+            )
 
         # Create and return the session
         return ToolRouterSession(
@@ -999,6 +1068,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             tools=self._create_tools_fn(session.session_id),
             authorize=self._create_authorize_fn(session.session_id),
             toolkits=self._create_toolkits_fn(session.session_id),
+            experimental=experimental_response,
         )
 
     def use(self, session_id: str) -> ToolRouterSession[TProvider]:
@@ -1043,6 +1113,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 __all__ = [
     "ToolRouter",
     "ToolRouterSession",
+    "ToolRouterSessionExperimental",
     "ToolRouterToolkitsEnableConfig",
     "ToolRouterToolkitsDisableConfig",
     "ToolRouterToolsEnableConfig",
@@ -1054,6 +1125,8 @@ __all__ = [
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
     "ToolRouterWorkbenchConfig",
+    "ToolRouterExperimentalConfig",
+    "ToolRouterAssistivePromptConfig",
     "ToolkitConnectionState",
     "ToolkitConnectionsDetails",
     "ToolRouterMCPServerConfig",

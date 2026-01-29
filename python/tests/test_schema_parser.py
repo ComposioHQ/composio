@@ -552,12 +552,103 @@ class TestJsonSchemaToPydanticType:
         result = json_schema_to_pydantic_type(json_schema)
         assert result is str
 
-    def test_unsupported_type_error(self):
-        """Test that unsupported types raise appropriate error."""
+    def test_unsupported_type_fallback(self):
+        """Test that unsupported types fall back to string (graceful degradation)."""
         json_schema = {"type": "unsupported_type"}
 
-        with pytest.raises(ValueError, match="Unsupported JSON schema type"):
-            json_schema_to_pydantic_type(json_schema)
+        # The library gracefully falls back to string instead of raising an error
+        result = json_schema_to_pydantic_type(json_schema)
+        assert result is str
+
+    def test_anyof_nullable_object(self):
+        """Test anyOf with object and null types (common for nullable fields)."""
+        json_schema = {
+            "anyOf": [{"type": "object", "additionalProperties": {}}, {"type": "null"}]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # Should return Optional[dict], not str (to allow both dict and None)
+        assert hasattr(result, "__origin__")
+        assert result.__origin__ is t.Union
+        # The library returns `dict` (the concrete type) instead of `typing.Dict`
+        assert dict in result.__args__ or t.Dict in result.__args__
+        assert type(None) in result.__args__
+
+    def test_anyof_nullable_object_with_properties(self):
+        """Test anyOf with object (with properties) and null types."""
+        json_schema = {
+            "anyOf": [
+                {
+                    "type": "object",
+                    "title": "CustomFields",
+                    "properties": {"field1": {"type": "string"}},
+                },
+                {"type": "null"},
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # Should return Optional[BaseModel subclass] (Union with None)
+        assert hasattr(result, "__origin__")
+        assert result.__origin__ is t.Union
+        # One of the args should be a BaseModel subclass
+        model_types = [
+            arg
+            for arg in result.__args__
+            if isinstance(arg, type) and issubclass(arg, BaseModel)
+        ]
+        assert len(model_types) == 1
+        # None should also be in the union
+        assert type(None) in result.__args__
+
+    def test_anyof_multiple_types(self):
+        """Test anyOf with multiple non-null types."""
+        json_schema = {
+            "anyOf": [{"type": "string"}, {"type": "integer"}, {"type": "object"}]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        assert hasattr(result, "__origin__")
+        assert result.__origin__ is t.Union
+
+    def test_anyof_single_type(self):
+        """Test anyOf with single type returns the type directly."""
+        json_schema = {"anyOf": [{"type": "string"}]}
+        result = json_schema_to_pydantic_type(json_schema)
+        assert result is str
+        assert not hasattr(result, "__origin__")
+
+    def test_allof_single_option(self):
+        """Test allOf with single option."""
+        json_schema = {
+            "allOf": [
+                {
+                    "type": "object",
+                    "properties": {"name": {"type": "string"}},
+                    "title": "Test",
+                }
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        assert isinstance(result, type)
+        assert issubclass(result, BaseModel)
+
+    def test_allof_multiple_options_with_type(self):
+        """Test allOf with multiple options where one has type."""
+        json_schema = {
+            "allOf": [{"description": "Some description"}, {"type": "string"}]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # The library creates an AllOfModel class that combines the schemas
+        # or returns str depending on the schema structure
+        assert result is not None
+        # Either it's str or a model class (both are valid)
+        assert result is str or (
+            isinstance(result, type) and issubclass(result, BaseModel)
+        )
+
+    def test_allof_empty_options(self):
+        """Test allOf with empty options falls back to string."""
+        json_schema = {"allOf": []}
+        result = json_schema_to_pydantic_type(json_schema)
+        assert result is str
 
 
 class TestJsonSchemaToFieldsDict:
@@ -753,6 +844,595 @@ class TestEdgeCases:
         except (RecursionError, ValueError):
             # Acceptable for now - circular references are complex
             pass
+
+
+class TestCrewAICustomFieldsBug:
+    """Regression tests for PLEN-1177 - CustomFields type error with CrewAI."""
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_custom_fields_object_type_preserved(self):
+        """
+        Test that CustomFields with anyOf [object, null] returns Dict, not str.
+
+        This is the exact bug scenario from PLEN-1177.
+        """
+        # Schema similar to what Salesforce tools return for CustomFields
+        json_schema = {
+            "title": "CreateLeadRequest",
+            "type": "object",
+            "properties": {
+                "Company": {"type": "string", "title": "Company"},
+                "LastName": {"type": "string", "title": "LastName"},
+                "CustomFields": {
+                    "anyOf": [
+                        {"type": "object", "additionalProperties": {}},
+                        {"type": "null"},
+                    ],
+                    "default": None,
+                    "description": "Dictionary of custom field API names and their values.",
+                    "title": "CustomFields",
+                },
+            },
+            "required": ["Company", "LastName"],
+        }
+
+        model_class = json_schema_to_model(json_schema)
+
+        # The model should accept a dict for CustomFields
+        instance = model_class(
+            Company="Test Corp",
+            LastName="Smith",
+            CustomFields={"Custom_Field__c": "Value"},
+        )
+        assert instance.CustomFields == {"Custom_Field__c": "Value"}
+
+        # The model should also accept None
+        instance_none = model_class(
+            Company="Test Corp",
+            LastName="Smith",
+            CustomFields=None,
+        )
+        assert instance_none.CustomFields is None
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_pydantic_model_json_schema_preserves_object_type(self):
+        """
+        Test that when Pydantic model is converted back to JSON schema,
+        the object type is preserved (not converted to string).
+        """
+        json_schema = {
+            "title": "TestModel",
+            "type": "object",
+            "properties": {
+                "custom_dict": {
+                    "anyOf": [{"type": "object"}, {"type": "null"}],
+                    "default": None,
+                }
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+
+        # The generated schema should have object type, not string
+        custom_dict_schema = generated_schema["properties"]["custom_dict"]
+
+        # It might be wrapped in anyOf or have direct type
+        if "anyOf" in custom_dict_schema:
+            types = [opt.get("type") for opt in custom_dict_schema["anyOf"]]
+            assert "object" in types
+            assert "string" not in types
+        else:
+            assert (
+                custom_dict_schema.get("type") == "object"
+                or custom_dict_schema.get("additionalProperties") is not None
+            )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_with_nested_custom_fields(self):
+        """
+        Test anyOf handling with more complex nested CustomFields scenario.
+        """
+        json_schema = {
+            "title": "SalesforceRequest",
+            "type": "object",
+            "properties": {
+                "leadData": {
+                    "type": "object",
+                    "title": "LeadData",
+                    "properties": {
+                        "Name": {"type": "string", "title": "Name"},
+                        "CustomFields": {
+                            "anyOf": [
+                                {"type": "object", "additionalProperties": {}},
+                                {"type": "null"},
+                            ],
+                            "default": None,
+                        },
+                    },
+                    "required": ["Name"],
+                }
+            },
+            "required": ["leadData"],
+        }
+
+        model_class = json_schema_to_model(json_schema)
+
+        # Test with CustomFields as dict
+        instance = model_class(
+            leadData={"Name": "John", "CustomFields": {"Industry__c": "Tech"}}
+        )
+        assert instance.leadData.CustomFields == {"Industry__c": "Tech"}
+
+        # Test with CustomFields as None
+        instance_none = model_class(leadData={"Name": "John", "CustomFields": None})
+        assert instance_none.leadData.CustomFields is None
+
+
+class TestBooleanSchemas:
+    """Test cases for JSON Schema boolean schema handling (draft-06+)."""
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_true_schema_in_anyof(self):
+        """Test that true boolean schema in anyOf doesn't crash."""
+        json_schema = {
+            "anyOf": [
+                {"type": "string"},
+                True,  # Boolean schema
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # Should handle gracefully, creating a union including Any
+        assert result is not None
+        # The result should include Any type from the true schema
+        assert hasattr(result, "__origin__")
+        assert result.__origin__ is t.Union
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_false_schema_in_anyof(self):
+        """Test that false boolean schema in anyOf doesn't crash."""
+        json_schema = {
+            "anyOf": [
+                {"type": "string"},
+                False,  # Boolean schema - should be filtered out
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # Should handle gracefully, false schema filtered out leaving just string
+        assert result is str
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_boolean_schema_in_allof_with_type(self):
+        """Test that boolean schemas in allOf don't crash when combined with typed schema."""
+        json_schema = {
+            "allOf": [
+                {"type": "string"},
+                True,
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # Should not crash - may return str or an AllOf model
+        assert result is not None
+        # Either it's str or a model class (library creates AllOfModel)
+        assert result is str or (
+            isinstance(result, type) and issubclass(result, BaseModel)
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_boolean_schema_in_allof_single(self):
+        """Test that single boolean schema in allOf returns appropriate type."""
+        json_schema = {"allOf": [True]}
+        result = json_schema_to_pydantic_type(json_schema)
+        # Single true schema filtered to {} - library may return Any or a model
+        assert result is not None
+        # Could be Any, or a generated model (both are valid)
+        assert result is t.Any or (
+            isinstance(result, type) and issubclass(result, BaseModel)
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_boolean_schema_in_oneof(self):
+        """Test that boolean schemas in oneOf don't crash."""
+        json_schema = {
+            "oneOf": [
+                {"type": "string"},
+                True,
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # Should handle gracefully
+        assert result is not None
+        assert hasattr(result, "__origin__")
+        assert result.__origin__ is t.Union
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_standalone_true_schema(self):
+        """Test that standalone true schema returns Any."""
+        result = json_schema_to_pydantic_type(True)
+        assert result is t.Any
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_standalone_false_schema(self):
+        """Test that standalone false schema returns None (to be filtered out)."""
+        result = json_schema_to_pydantic_type(False)
+        assert result is None
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_only_false_schemas_in_anyof(self):
+        """Test anyOf with only false schemas falls back to string."""
+        json_schema = {
+            "anyOf": [
+                False,
+                False,
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # All false schemas filtered out, should fall back to string
+        assert result is str
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_mixed_boolean_schemas_in_anyof(self):
+        """Test anyOf with mixed true and false schemas."""
+        json_schema = {
+            "anyOf": [
+                True,
+                False,
+                {"type": "integer"},
+            ]
+        }
+        result = json_schema_to_pydantic_type(json_schema)
+        # Should create union of Any and int (false filtered out)
+        assert result is not None
+        assert hasattr(result, "__origin__")
+        assert result.__origin__ is t.Union
+
+
+class TestBooleanDefaultCoercion:
+    """Regression tests for PLEN-1311 - Boolean default type mismatch in LangchainProvider."""
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_boolean_null_with_boolean_default(self):
+        """
+        Test that anyOf [boolean, null] with boolean default preserves types.
+
+        Regression test for PLEN-1311: GOOGLEDRIVE_FIND_FILE supportsAllDrives
+        field was incorrectly converted to string type with string default.
+        """
+        json_schema = {
+            "title": "FindFileRequest",
+            "type": "object",
+            "properties": {
+                "supportsAllDrives": {
+                    "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                    "default": True,
+                    "description": "Whether to search all drives.",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+
+        # Verify the model accepts boolean values
+        instance = model_class(supportsAllDrives=True)
+        assert instance.supportsAllDrives is True
+
+        instance_false = model_class(supportsAllDrives=False)
+        assert instance_false.supportsAllDrives is False
+
+        # Verify the generated JSON schema preserves boolean type
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["supportsAllDrives"]
+
+        # Should NOT be string type
+        assert prop.get("type") != "string"
+
+        # Default should be boolean True, not string "true"
+        assert prop.get("default") is True
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_boolean_null_with_string_default_coerced(self):
+        """
+        Test that string "true"/"false" defaults are coerced to boolean.
+
+        This handles cases where the API returns stringified boolean defaults.
+        """
+        json_schema = {
+            "title": "FindFileRequest",
+            "type": "object",
+            "properties": {
+                "supportsAllDrives": {
+                    "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                    "default": "true",  # String, should be coerced to True
+                    "description": "Whether to search all drives.",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+
+        # Verify the model accepts boolean values
+        instance = model_class(supportsAllDrives=True)
+        assert instance.supportsAllDrives is True
+
+        # Verify the generated JSON schema has coerced default
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["supportsAllDrives"]
+
+        # Should NOT have string type
+        assert prop.get("type") != "string"
+
+        # Default should be coerced to boolean True
+        assert prop.get("default") is True
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_boolean_null_with_string_false_default_coerced(self):
+        """
+        Test that string "false" default is coerced to boolean False.
+        """
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                    "default": "false",  # String, should be coerced to False
+                    "description": "Enable feature.",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["enabled"]
+
+        # Default should be coerced to boolean False
+        assert prop.get("default") is False
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_integer_with_string_default_coerced(self):
+        """Test that string integer defaults are coerced."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "default": "1",  # String, should be coerced to 1
+                    "description": "Page number",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["page"]
+
+        # Default should be integer 1, not string "1"
+        assert prop.get("default") == 1
+        assert isinstance(prop.get("default"), int)
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_float_with_string_default_coerced(self):
+        """Test that string float defaults are coerced."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "rate": {
+                    "type": "number",
+                    "default": "3.14",  # String, should be coerced to 3.14
+                    "description": "Rate value",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["rate"]
+
+        # Default should be float 3.14, not string "3.14"
+        assert prop.get("default") == 3.14
+        assert isinstance(prop.get("default"), float)
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_boolean_default_not_coerced_when_already_correct(self):
+        """Test that boolean defaults that are already correct are not modified."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": True,  # Already boolean
+                    "description": "Enable feature.",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["enabled"]
+
+        assert prop.get("default") is True
+        assert isinstance(prop.get("default"), bool)
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_string_default_not_coerced_for_string_type(self):
+        """Test that string defaults for string type fields are preserved."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "default": "true",  # String value, should stay as string
+                    "description": "Name field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["name"]
+
+        # Default should stay as string "true"
+        assert prop.get("default") == "true"
+        assert isinstance(prop.get("default"), str)
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_allof_boolean_with_string_default_coerced(self):
+        """Test that allOf with boolean type coerces string default."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "allOf": [{"type": "boolean"}],
+                    "default": "true",
+                    "description": "Flag field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["flag"]
+
+        # Default should be coerced to boolean True
+        assert prop.get("default") is True
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_invalid_boolean_string_not_coerced(self):
+        """Test that invalid boolean strings are not coerced and return as-is."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                    "default": "invalid",  # Not a valid boolean string
+                    "description": "Flag field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["flag"]
+
+        # Default should remain as string "invalid" since it can't be coerced
+        assert prop.get("default") == "invalid"
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_empty_string_default_not_coerced(self):
+        """Test that empty string defaults are not coerced."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "value": {
+                    "anyOf": [{"type": "integer"}, {"type": "null"}],
+                    "default": "",  # Empty string
+                    "description": "Value field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+        prop = generated_schema["properties"]["value"]
+
+        # Default should remain as empty string since it can't be coerced to int
+        assert prop.get("default") == ""
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_non_string_default_not_coerced(self):
+        """Test that non-string defaults (like int, list) are returned as-is."""
+        json_schema = {
+            "title": "TestRequest",
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer",
+                    "default": 42,  # Already an integer
+                    "description": "Count field",
+                },
+                "items": {
+                    "type": "array",
+                    "default": [1, 2, 3],  # Already a list
+                    "description": "Items field",
+                },
+            },
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        generated_schema = model_class.model_json_schema()
+
+        count_prop = generated_schema["properties"]["count"]
+        assert count_prop.get("default") == 42
+        assert isinstance(count_prop.get("default"), int)
+
+        items_prop = generated_schema["properties"]["items"]
+        assert items_prop.get("default") == [1, 2, 3]
+        assert isinstance(items_prop.get("default"), list)
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_boolean_coercion_case_insensitive(self):
+        """Test that boolean coercion handles various case combinations."""
+        test_cases = [
+            ("TRUE", True),
+            ("True", True),
+            ("FALSE", False),
+            ("False", False),
+            ("YES", True),
+            ("Yes", True),
+            ("NO", False),
+            ("No", False),
+        ]
+
+        for string_value, expected_bool in test_cases:
+            json_schema = {
+                "title": "TestRequest",
+                "type": "object",
+                "properties": {
+                    "flag": {
+                        "type": "boolean",
+                        "default": string_value,
+                    },
+                },
+            }
+
+            model_class = json_schema_to_model(json_schema)
+            generated_schema = model_class.model_json_schema()
+            prop = generated_schema["properties"]["flag"]
+
+            assert prop.get("default") is expected_bool, (
+                f"Expected '{string_value}' to coerce to {expected_bool}"
+            )
 
 
 if __name__ == "__main__":

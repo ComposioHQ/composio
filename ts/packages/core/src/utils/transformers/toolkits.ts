@@ -80,6 +80,7 @@ export const transformToolkitRetrieveResponse = (
       })),
       baseUrl: response.base_url,
       getCurrentUserEndpoint: response.get_current_user_endpoint,
+      getCurrentUserEndpointMethod: response.get_current_user_endpoint_method,
     }));
 };
 

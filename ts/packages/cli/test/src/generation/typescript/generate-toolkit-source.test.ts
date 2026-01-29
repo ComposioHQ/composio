@@ -251,26 +251,31 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Author
                  * @description The GitHub username of the commit author
+                 * @example octocat
                  */
                 author?: string;
                 /**
                  * Id
                  * @description The SHA of the commit
+                 * @example 7638417db6d59f3c431d3e1f261cc637155684cd
                  */
                 id?: string;
                 /**
                  * Message
                  * @description The commit message
+                 * @example Fix typo in README
                  */
                 message?: string;
                 /**
                  * Timestamp
                  * @description The timestamp of the commit
+                 * @example 2021-04-14T02:15:15Z
                  */
                 timestamp?: string;
                 /**
                  * Url
                  * @description The GitHub URL of the commit
+                 * @example https://github.com/octocat/Hello-World/commit/7638417db6d59f3c431d3e1f261cc637155684cd
                  */
                 url?: string;
               };
@@ -293,42 +298,50 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the issue
+                 * @example opened
                  */
                 action?: string;
                 /**
                  * Createdat
                  * @description The timestamp when the issue was created
+                 * @example 2021-04-14T02:15:15Z
                  */
                 createdAt?: string;
                 /**
                  * Createdby
                  * @description The GitHub username of the user who created the issue
+                 * @example octocat
                  */
                 createdBy?: string;
                 /**
                  * Description
                  * @description A detailed description of the issue
                  * @default
+                 * @example There is a bug in the code that needs to be fixed.
                  */
                 description: string;
                 /**
                  * Issue Id
                  * @description The unique ID assigned to the issue
+                 * @example 101
                  */
                 issue_id?: number;
                 /**
                  * Number
                  * @description The unique number assigned to the issue
+                 * @example 42
                  */
                 number?: number;
                 /**
                  * Title
                  * @description The title of the issue
+                 * @example Bug in code
                  */
                 title?: string;
                 /**
                  * Url
                  * @description The GitHub URL of the issue
+                 * @example https://github.com/octocat/Hello-World/issues/42
                  */
                 url?: string;
               };
@@ -340,36 +353,44 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the label
+                 * @example labeled
                  */
                 action?: string;
                 /**
                  * Label
                  * @description The name of the label that was added
+                 * @example bug
+                 * @example enhancement
                  */
                 label?: string;
                 /**
                  * Labeled At
                  * @description The timestamp when the label was added
+                 * @example 2021-04-14T02:15:15Z
                  */
                 labeled_at?: string;
                 /**
                  * Labeled By
                  * @description The GitHub username of the user who added the label
+                 * @example octocat
                  */
                 labeled_by?: string;
                 /**
                  * Pull Request Number
                  * @description The unique number assigned to the pull request
+                 * @example 42
                  */
                 pull_request_number?: number;
                 /**
                  * Pull Request Title
                  * @description The title of the pull request
+                 * @example Fix typo in README
                  */
                 pull_request_title?: string;
                 /**
                  * Pull Request Url
                  * @description The GitHub URL of the pull request
+                 * @example https://github.com/octocat/Hello-World/pull/42
                  */
                 pull_request_url?: string;
               };
@@ -381,37 +402,46 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the pull request
+                 * @example opened
+                 * @example closed
+                 * @example synchronize
                  */
                 action?: string;
                 /**
                  * Createdat
                  * @description The timestamp when the pull request was created
+                 * @example 2021-04-14T02:15:15Z
                  */
                 createdAt?: string;
                 /**
                  * Createdby
                  * @description The GitHub username of the user who created the pull request
+                 * @example octocat
                  */
                 createdBy?: string;
                 /**
                  * Description
                  * @description A detailed description of the pull request
                  * @default
+                 * @example This pull request fixes a typo found in the README file under the 'Installation' section.
                  */
                 description: string;
                 /**
                  * Number
                  * @description The unique number assigned to the pull request
+                 * @example 42
                  */
                 number?: number;
                 /**
                  * Title
                  * @description The title of the pull request
+                 * @example Fix typo in README
                  */
                 title?: string;
                 /**
                  * Url
                  * @description The GitHub URL of the pull request
+                 * @example https://github.com/octocat/Hello-World/pull/42
                  */
                 url?: string;
               };
@@ -423,31 +453,37 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the star
+                 * @example created
                  */
                 action?: string;
                 /**
                  * Repository Id
                  * @description The unique ID assigned to the repository
+                 * @example 101
                  */
                 repository_id?: number;
                 /**
                  * Repository Name
                  * @description The name of the repository
+                 * @example Hello-World
                  */
                 repository_name?: string;
                 /**
                  * Repository Url
                  * @description The GitHub URL of the repository
+                 * @example https://github.com/octocat/Hello-World
                  */
                 repository_url?: string;
                 /**
                  * Starred At
                  * @description The timestamp when the star was added
+                 * @example 2021-04-14T02:15:15Z
                  */
                 starred_at?: string;
                 /**
                  * Starred By
                  * @description The GitHub username of the user who added the star
+                 * @example octocat
                  */
                 starred_by?: string;
               };
@@ -779,6 +815,8 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Invitation Id
                  * @description Unique identifier of the repository invitation. Obtain by listing pending invitations for the authenticated user.
+                 * @example 12345
+                 * @example 67890
                  */
                 invitation_id?: number;
               };
@@ -815,6 +853,8 @@ describe('generateTypeScriptToolkitSources', () => {
                  * Direction
                  * @description Sort direction: 'asc' (ascending) or 'desc' (descending).
                  * @default desc
+                 * @example asc
+                 * @example desc
                  * @enum {string}
                  */
                 direction: "asc" | "desc";
@@ -822,18 +862,26 @@ describe('generateTypeScriptToolkitSources', () => {
                  * Page
                  * @description Page number of results (starts from 1).
                  * @default 1
+                 * @example 1
+                 * @example 2
+                 * @example 5
                  */
                 page: number;
                 /**
                  * Per Page
                  * @description Number of results per page (max 100).
                  * @default 1
+                 * @example 30
+                 * @example 50
+                 * @example 100
                  */
                 per_page: number;
                 /**
                  * Sort
                  * @description Sorts starred repositories by 'created' (date starred) or 'updated' (date last pushed).
                  * @default created
+                 * @example created
+                 * @example updated
                  * @enum {string}
                  */
                 sort: "created" | "updated";
@@ -867,23 +915,33 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Owner
                  * @description Username of the account owner (user or organization) of the repository; case-insensitive.
+                 * @example octocat
+                 * @example google
                  */
                 owner?: string;
                 /**
                  * Page
                  * @description Page number of the results to fetch.
                  * @default 1
+                 * @example 1
+                 * @example 2
+                 * @example 10
                  */
                 page: number;
                 /**
                  * Per Page
                  * @description Number of results to display per page (max 100).
                  * @default 30
+                 * @example 30
+                 * @example 50
+                 * @example 100
                  */
                 per_page: number;
                 /**
                  * Repo
                  * @description Name of the repository, without the \`.git\` extension; case-insensitive.
+                 * @example Spoon-Knife
+                 * @example mercury
                  */
                 repo?: string;
               };
@@ -940,26 +998,31 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Author
                  * @description The GitHub username of the commit author
+                 * @example octocat
                  */
                 author?: string;
                 /**
                  * Id
                  * @description The SHA of the commit
+                 * @example 7638417db6d59f3c431d3e1f261cc637155684cd
                  */
                 id?: string;
                 /**
                  * Message
                  * @description The commit message
+                 * @example Fix typo in README
                  */
                 message?: string;
                 /**
                  * Timestamp
                  * @description The timestamp of the commit
+                 * @example 2021-04-14T02:15:15Z
                  */
                 timestamp?: string;
                 /**
                  * Url
                  * @description The GitHub URL of the commit
+                 * @example https://github.com/octocat/Hello-World/commit/7638417db6d59f3c431d3e1f261cc637155684cd
                  */
                 url?: string;
               };
@@ -982,42 +1045,50 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the issue
+                 * @example opened
                  */
                 action?: string;
                 /**
                  * Createdat
                  * @description The timestamp when the issue was created
+                 * @example 2021-04-14T02:15:15Z
                  */
                 createdAt?: string;
                 /**
                  * Createdby
                  * @description The GitHub username of the user who created the issue
+                 * @example octocat
                  */
                 createdBy?: string;
                 /**
                  * Description
                  * @description A detailed description of the issue
                  * @default
+                 * @example There is a bug in the code that needs to be fixed.
                  */
                 description: string;
                 /**
                  * Issue Id
                  * @description The unique ID assigned to the issue
+                 * @example 101
                  */
                 issue_id?: number;
                 /**
                  * Number
                  * @description The unique number assigned to the issue
+                 * @example 42
                  */
                 number?: number;
                 /**
                  * Title
                  * @description The title of the issue
+                 * @example Bug in code
                  */
                 title?: string;
                 /**
                  * Url
                  * @description The GitHub URL of the issue
+                 * @example https://github.com/octocat/Hello-World/issues/42
                  */
                 url?: string;
               };
@@ -1029,36 +1100,44 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the label
+                 * @example labeled
                  */
                 action?: string;
                 /**
                  * Label
                  * @description The name of the label that was added
+                 * @example bug
+                 * @example enhancement
                  */
                 label?: string;
                 /**
                  * Labeled At
                  * @description The timestamp when the label was added
+                 * @example 2021-04-14T02:15:15Z
                  */
                 labeled_at?: string;
                 /**
                  * Labeled By
                  * @description The GitHub username of the user who added the label
+                 * @example octocat
                  */
                 labeled_by?: string;
                 /**
                  * Pull Request Number
                  * @description The unique number assigned to the pull request
+                 * @example 42
                  */
                 pull_request_number?: number;
                 /**
                  * Pull Request Title
                  * @description The title of the pull request
+                 * @example Fix typo in README
                  */
                 pull_request_title?: string;
                 /**
                  * Pull Request Url
                  * @description The GitHub URL of the pull request
+                 * @example https://github.com/octocat/Hello-World/pull/42
                  */
                 pull_request_url?: string;
               };
@@ -1070,37 +1149,46 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the pull request
+                 * @example opened
+                 * @example closed
+                 * @example synchronize
                  */
                 action?: string;
                 /**
                  * Createdat
                  * @description The timestamp when the pull request was created
+                 * @example 2021-04-14T02:15:15Z
                  */
                 createdAt?: string;
                 /**
                  * Createdby
                  * @description The GitHub username of the user who created the pull request
+                 * @example octocat
                  */
                 createdBy?: string;
                 /**
                  * Description
                  * @description A detailed description of the pull request
                  * @default
+                 * @example This pull request fixes a typo found in the README file under the 'Installation' section.
                  */
                 description: string;
                 /**
                  * Number
                  * @description The unique number assigned to the pull request
+                 * @example 42
                  */
                 number?: number;
                 /**
                  * Title
                  * @description The title of the pull request
+                 * @example Fix typo in README
                  */
                 title?: string;
                 /**
                  * Url
                  * @description The GitHub URL of the pull request
+                 * @example https://github.com/octocat/Hello-World/pull/42
                  */
                 url?: string;
               };
@@ -1112,31 +1200,37 @@ describe('generateTypeScriptToolkitSources', () => {
                 /**
                  * Action
                  * @description The action that was performed on the star
+                 * @example created
                  */
                 action?: string;
                 /**
                  * Repository Id
                  * @description The unique ID assigned to the repository
+                 * @example 101
                  */
                 repository_id?: number;
                 /**
                  * Repository Name
                  * @description The name of the repository
+                 * @example Hello-World
                  */
                 repository_name?: string;
                 /**
                  * Repository Url
                  * @description The GitHub URL of the repository
+                 * @example https://github.com/octocat/Hello-World
                  */
                 repository_url?: string;
                 /**
                  * Starred At
                  * @description The timestamp when the star was added
+                 * @example 2021-04-14T02:15:15Z
                  */
                 starred_at?: string;
                 /**
                  * Starred By
                  * @description The GitHub username of the user who added the star
+                 * @example octocat
                  */
                 starred_by?: string;
               };

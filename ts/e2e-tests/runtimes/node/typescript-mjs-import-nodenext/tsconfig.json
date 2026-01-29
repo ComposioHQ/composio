@@ -1,14 +1,14 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "target": "es2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./generated",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": true
   },
-  "include": ["generated"]
+  "include": [
+    "e2e.test.ts"
+  ]
 }

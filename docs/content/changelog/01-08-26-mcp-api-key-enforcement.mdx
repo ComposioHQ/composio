@@ -1,5 +1,6 @@
 ---
 title: "Optional API Key Enforcement for MCP Servers"
+description: "New project-level setting to require API key authentication for all MCP server requests"
 date: "2026-01-08"
 ---
 
@@ -58,6 +59,8 @@ curl -X POST "https://mcp.composio.dev/{your_mcp_server_url}" \
 3. Find the **"Require API Key for MCP"** toggle
 4. Enable the toggle
 
+![MCP API Key Toggle in Project Settings](/assets/images/mcp-api-key-toggle.png)
+
 ### Via API
 
 Update your project configuration using the API:
@@ -81,7 +84,9 @@ curl -X PATCH "https://backend.composio.dev/api/v3/org/project/config" \
 
 ### Via Code
 
-```python title="Python"
+<Tabs groupId="language" items={['Python', 'TypeScript']}>
+<Tab value="Python">
+```python
 import requests
 
 response = requests.patch(
@@ -95,8 +100,10 @@ response = requests.patch(
 
 print(response.json())
 ```
-
-```typescript title="TypeScript"
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
 const response = await fetch(
   "https://backend.composio.dev/api/v3/org/project/config",
   {
@@ -111,6 +118,8 @@ const response = await fetch(
 
 console.log(await response.json());
 ```
+</Tab>
+</Tabs>
 
 ## When to Use This
 

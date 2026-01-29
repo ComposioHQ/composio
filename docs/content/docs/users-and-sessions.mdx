@@ -1,0 +1,99 @@
+---
+title: Users & Sessions
+description: How Composio scopes tools and connections to your users
+keywords: [session, user id, concepts]
+---
+
+When building AI agents for multiple users, each user needs their own connections and context. This is represented through **users** and **sessions**.
+
+## Users
+
+A user is an identifier from your app. When someone connects their Gmail or GitHub, that connection is stored under their user ID, so tools always run with the right authentication. Every tool execution and authorization uses the user ID to identify the context. Connections are fully isolated between user IDs.
+
+<Accordions>
+<Accordion title="Best practices for User IDs">
+- **Recommended:** Database UUID or primary key (`user.id`)
+- **Acceptable:** Unique username (`user.username`)
+- **Avoid:** Email addresses (they can change)
+- **Never:** `default` in production (exposes other users' data)
+</Accordion>
+</Accordions>
+
+A user can have multiple connections to the same toolkit.
+Let's say you want to allow users to connect both their work and personal email. You can represent the user with the same user ID but differentiate between the two with the connected
+account ID.
+
+Here is a detailed guide on how to manage such connections:
+<Card icon={<BookOpen />} title="Managing Multiple Connections" href="/docs/managing-multiple-connected-accounts" description="Handle multiple accounts per toolkit for a single user" />
+
+
+## Sessions
+
+A session is an ephemeral configuration. You specify:
+
+- Which user's authorization and data the agent will access
+- What toolkits are enabled or disabled
+- What authentication method, scopes, and credentials to use
+
+### Creating a session
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123");
+```
+</Tab>
+</Tabs>
+
+### Session methods
+
+Once created, a session provides methods to get tools and manage connections:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Get tools for your AI framework
+tools = session.tools()
+
+# Get MCP server URL
+mcp_url = session.mcp.url
+
+# Authenticate a user to a toolkit
+connection_request = session.authorize("github")
+
+# List available toolkits and their connection status
+toolkits = session.toolkits()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+// Get tools for your AI framework
+const tools = await session.tools();
+
+// Get MCP server URL
+const mcpUrl = session.mcp.url;
+
+// Authenticate a user to a toolkit
+const connectionRequest = await session.authorize("github");
+
+// List available toolkits and their connection status
+const toolkits = await session.toolkits();
+```
+</Tab>
+</Tabs>
+
+For details on enabling toolkits, setting auth configs, and using session methods:
+
+<Card icon={<BookOpen />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Enable toolkits, set auth configs, and select connected accounts" />

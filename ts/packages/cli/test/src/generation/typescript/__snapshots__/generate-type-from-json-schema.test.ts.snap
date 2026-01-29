@@ -11,6 +11,7 @@ exports[`generateTypeFromJsonSchema > control group - simple schemas without dis
   /**
    * Page Id
    * @description The unique identifier (UUID) of the Notion page to be archived or unarchived. This must be a page ID, not a database ID. Database IDs cannot be used with this action - databases must be archived using the archive database action instead. Page IDs can be obtained using NOTION_SEARCH_NOTION_PAGE with filter_value='page' or from the 'id' field of page objects returned by other Notion actions.
+   * @example a1b2c3d4-e5f6-7890-1234-567890abcdef
    */
   page_id?: string;
 };"
@@ -21,12 +22,33 @@ exports[`generateTypeFromJsonSchema > control group - simple schemas without dis
   /**
    * Comment
    * @description Content of the comment as a NotionRichText object or a JSON string. Simplest form: {'content': 'Looks good!'} or {'text': 'Looks good!'} (both 'content' and 'text' are accepted as the field name). Can also be passed as a JSON string: '{"content": "Looks good!"}'. Optional styling fields: bold, italic, link, etc. Do NOT wrap this in a list or use Notion API block JSON.
+   * @example {
+   *       "content": "Looks good to me!"
+   *     }
+   * @example {
+   *       "text": "Great work!"
+   *     }
+   * @example {
+   *       "bold": true,
+   *       "content": "Fix typo"
+   *     }
    */
   comment?: {
       /**
        * Block Property
        * @description The block property of the block to be added. Possible properties are \`paragraph\`, \`heading_1\`, \`heading_2\`, \`heading_3\`, \`callout\`, \`to_do\`, \`toggle\`, \`quote\`, \`bulleted_list_item\`, \`numbered_list_item\`. Other properties possible are \`file\`, \`image\`, \`video\` (link required), and \`divider\` (creates a horizontal divider line, no content required).
        * @default paragraph
+       * @example paragraph
+       * @example heading_1
+       * @example heading_2
+       * @example heading_3
+       * @example bulleted_list_item
+       * @example numbered_list_item
+       * @example to_do
+       * @example callout
+       * @example toggle
+       * @example quote
+       * @example divider
        * @enum {string}
        */
       block_property: "paragraph" | "heading_1" | "heading_2" | "heading_3" | "callout" | "to_do" | "toggle" | "quote" | "bulleted_list_item" | "numbered_list_item" | "file" | "image" | "video" | "divider";
@@ -34,48 +56,68 @@ exports[`generateTypeFromJsonSchema > control group - simple schemas without dis
        * Bold
        * @description Indicates if the text is bold.
        * @default false
+       * @example true
+       * @example false
        */
       bold: boolean;
       /**
        * Code
        * @description Indicates if the text is formatted as code.
        * @default false
+       * @example true
+       * @example false
        */
       code: boolean;
       /**
        * Color
        * @description The color of the text background or text itself.
        * @default default
+       * @example blue_background
+       * @example yellow_background
+       * @example gray
+       * @example purple
        */
       color: string;
       /**
        * Content
        * @description The textual content of the rich text object. ENHANCED: Now automatically parses markdown formatting including bold (**text**), italic (*text*), strikethrough (~~text~~), inline code (\`code\`), and links ([text](url)). Required for paragraph, heading_1, heading_2, heading_3, callout, to_do, toggle, quote.
        * @default null
+       * @example Hello World
+       * @example This is **bold** and *italic* text
+       * @example Visit [our site](https://example.com)
+       * @example Use \`code\` snippets
+       * @example ~~Strikethrough~~ text
        */
       content: string | null;
       /**
        * Italic
        * @description Indicates if the text is italic.
        * @default false
+       * @example true
+       * @example false
        */
       italic: boolean;
       /**
        * Link
        * @description The URL of the rich text object or the file to be uploaded or image/video link
        * @default null
+       * @example https://www.google.com
        */
       link: string | null;
       /**
        * Strikethrough
        * @description Indicates if the text has strikethrough.
        * @default false
+       * @example true
+       * @example false
        */
       strikethrough: boolean;
       /**
        * Underline
        * @description Indicates if the text is underlined.
        * @default false
+       * @example true
+       * @example false
        */
       underline: boolean;
   };
@@ -83,12 +125,14 @@ exports[`generateTypeFromJsonSchema > control group - simple schemas without dis
    * Discussion Id
    * @description The ID of an existing discussion thread to which the comment will be added. This is required if \`parent_page_id\` is not provided.
    * @default null
+   * @example yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
    */
   discussion_id: string | null;
   /**
    * Parent Page Id
    * @description The ID of the Notion page where the comment will be added. This is required if \`discussion_id\` is not provided. Page IDs can be obtained using other Notion actions that fetch page details or list pages.
    * @default null
+   * @example xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
    */
   parent_page_id: string | null;
 };"
@@ -99,6 +143,7 @@ exports[`generateTypeFromJsonSchema > control group - simple schemas without dis
   /**
    * Block Id
    * @description Identifier of the block, page, or database to be deleted (archived). Must be a valid Notion block/page/database ID in UUID format (with or without hyphens). To find page IDs and their titles, consider using an action like \`NOTION_FETCH_DATA\`.
+   * @example 59833787-2cf9-4fdf-8782-e53db20768a5
    */
   block_id?: string;
 };"
@@ -110,11 +155,14 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
    * After
    * @description Optional UUID of an existing child block. New blocks will be inserted after this block.
    * @default null
+   * @example 9bc30ad4-9373-46a5-84ab-0a7845ee52e6
    */
   after: string | null;
   /**
    * Block Id
    * @description The UUID of the parent block or page to append children to.
+   * @example b55c9c91-384d-452b-81db-d1ef79372b75
+   * @example b55c9c91384d452b81dbd1ef79372b75
    */
   block_id?: string;
   /**
@@ -127,6 +175,38 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
    *
    *     ⚠️ Text content limited to 2000 characters per rich_text text.content field.
    *     Max 100 blocks per request.
+   * @example [
+   *       {
+   *         "heading_2": {
+   *           "rich_text": [
+   *             {
+   *               "text": {
+   *                 "content": "Section Title"
+   *               },
+   *               "type": "text"
+   *             }
+   *           ]
+   *         },
+   *         "object": "block",
+   *         "type": "heading_2"
+   *       }
+   *     ]
+   * @example [
+   *       {
+   *         "object": "block",
+   *         "paragraph": {
+   *           "rich_text": [
+   *             {
+   *               "text": {
+   *                 "content": "This is a paragraph."
+   *               },
+   *               "type": "text"
+   *             }
+   *           ]
+   *         },
+   *         "type": "paragraph"
+   *       }
+   *     ]
    */
   children?: ({
       /**
@@ -204,6 +284,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                   /**
                    * Content
                    * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   * @example Hello, World!
+                   * @example This is a paragraph of text.
                    */
                   content: string;
                   /**
@@ -214,6 +296,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                       /**
                        * Url
                        * @description The URL the text links to.
+                       * @example https://www.notion.so
+                       * @example https://example.com
                        */
                       url: string;
                   } | null;
@@ -309,6 +393,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                   /**
                    * Content
                    * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   * @example Hello, World!
+                   * @example This is a paragraph of text.
                    */
                   content: string;
                   /**
@@ -319,6 +405,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                       /**
                        * Url
                        * @description The URL the text links to.
+                       * @example https://www.notion.so
+                       * @example https://example.com
                        */
                       url: string;
                   } | null;
@@ -421,6 +509,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                   /**
                    * Content
                    * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   * @example Hello, World!
+                   * @example This is a paragraph of text.
                    */
                   content: string;
                   /**
@@ -431,6 +521,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                       /**
                        * Url
                        * @description The URL the text links to.
+                       * @example https://www.notion.so
+                       * @example https://example.com
                        */
                       url: string;
                   } | null;
@@ -533,6 +625,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                   /**
                    * Content
                    * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   * @example Hello, World!
+                   * @example This is a paragraph of text.
                    */
                   content: string;
                   /**
@@ -543,6 +637,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                       /**
                        * Url
                        * @description The URL the text links to.
+                       * @example https://www.notion.so
+                       * @example https://example.com
                        */
                       url: string;
                   } | null;
@@ -639,6 +735,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                   /**
                    * Content
                    * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   * @example Hello, World!
+                   * @example This is a paragraph of text.
                    */
                   content: string;
                   /**
@@ -649,6 +747,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                       /**
                        * Url
                        * @description The URL the text links to.
+                       * @example https://www.notion.so
+                       * @example https://example.com
                        */
                       url: string;
                   } | null;
@@ -745,6 +845,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                   /**
                    * Content
                    * @description The actual text content. CRITICAL: Maximum 2000 characters per text object.
+                   * @example Hello, World!
+                   * @example This is a paragraph of text.
                    */
                   content: string;
                   /**
@@ -755,6 +857,8 @@ exports[`generateTypeFromJsonSchema > problematic schema - discriminator with $d
                       /**
                        * Url
                        * @description The URL the text links to.
+                       * @example https://www.notion.so
+                       * @example https://example.com
                        */
                       url: string;
                   } | null;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MastraProvider } from '../src';
 import { Tool } from '@composio/core';
-import { createTool } from '@mastra/core';
+import { createTool } from '@mastra/core/tools';
 
 // Define an interface for our mocked Mastra tool
 interface MockedMastraTool {
@@ -13,8 +13,8 @@ interface MockedMastraTool {
   _isMockedMastraTool: boolean;
 }
 
-// Mock the @mastra/core module
-vi.mock('@mastra/core', () => {
+// Mock the @mastra/core/tools module
+vi.mock('@mastra/core/tools', () => {
   return {
     createTool: vi.fn().mockImplementation(toolConfig => {
       return {
@@ -29,12 +29,12 @@ vi.mock('@mastra/core', () => {
   };
 });
 
-// Mock the jsonSchemaToZodSchema function from @composio/core
-vi.mock('@composio/core', async () => {
-  const actual = await vi.importActual('@composio/core');
+// Mock the applyCompatLayer function from @mastra/schema-compat
+vi.mock('@mastra/schema-compat', async () => {
+  const actual = await vi.importActual('@mastra/schema-compat');
   return {
     ...(actual as object),
-    jsonSchemaToZodSchema: vi.fn().mockImplementation(schema => {
+    applyCompatLayer: vi.fn().mockImplementation(({ schema }) => {
       return { type: 'mock-zod-schema', originalSchema: schema };
     }),
   };
@@ -157,7 +157,7 @@ describe('MastraProvider', () => {
         id: toolWithoutOutputParams.slug,
         description: toolWithoutOutputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: undefined,
+        outputSchema: { type: 'mock-zod-schema', originalSchema: {} },
         execute: expect.any(Function),
       });
 
@@ -193,10 +193,10 @@ describe('MastraProvider', () => {
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
       // Test the execute function
-      const context = { input: 'test-value' };
-      const result = await executeFunction({ context });
+      const inputData = { input: 'test-value' };
+      const result = await executeFunction(inputData);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, context);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, inputData);
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,
@@ -212,10 +212,10 @@ describe('MastraProvider', () => {
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
       // Test that the version is passed correctly
-      const context = { input: 'version-test' };
-      await executeFunction({ context });
+      const inputData = { input: 'version-test' };
+      await executeFunction(inputData);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithVersion.slug, context);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithVersion.slug, inputData);
     });
 
     it('should handle tools without version information', async () => {
@@ -226,10 +226,10 @@ describe('MastraProvider', () => {
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
       // Test that undefined version is passed correctly
-      const context = { input: 'no-version-test' };
-      await executeFunction({ context });
+      const inputData = { input: 'no-version-test' };
+      await executeFunction(inputData);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithoutVersion.slug, context);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(toolWithoutVersion.slug, inputData);
     });
 
     it('should handle empty context parameter', async () => {
@@ -238,8 +238,8 @@ describe('MastraProvider', () => {
       // Extract the execute function from the call to createTool()
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
-      // Test the execute function with empty context
-      const result = await executeFunction({ context: {} });
+      // Test the execute function with empty input
+      const result = await executeFunction({});
 
       expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
       expect(result).toEqual({
@@ -255,8 +255,8 @@ describe('MastraProvider', () => {
       // Extract the execute function from the call to createTool()
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
-      // Test the execute function without context
-      const result = await executeFunction({});
+      // Test the execute function without any parameters
+      const result = await executeFunction(undefined);
 
       expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, undefined);
       expect(result).toEqual({
@@ -434,7 +434,7 @@ describe('MastraProvider', () => {
         id: 'minimal-tool',
         description: 'A minimal tool',
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: undefined,
+        outputSchema: { type: 'mock-zod-schema', originalSchema: {} },
         execute: expect.any(Function),
       });
 
@@ -452,9 +452,7 @@ describe('MastraProvider', () => {
       ) as unknown as MockedMastraTool;
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
-      await expect(executeFunction({ context: { input: 'test' } })).rejects.toThrow(
-        'Execution failed'
-      );
+      await expect(executeFunction({ input: 'test' })).rejects.toThrow('Execution failed');
     });
 
     it('should handle tools with malformed schemas', () => {

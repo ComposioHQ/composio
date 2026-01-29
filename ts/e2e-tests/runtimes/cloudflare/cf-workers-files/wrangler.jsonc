@@ -1,0 +1,6 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "composio-core-files-test",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-01-10"
+}

@@ -241,6 +241,28 @@ const session = await composio.create('user_123', {
 });
 ```
 
+### `experimental`
+
+Configure experimental features for the session. These features are not stable and may be modified or removed in future versions.
+
+```typescript
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
+  experimental: {
+    assistivePrompt: {
+      userTimezone: 'America/New_York' // IANA timezone identifier for timezone-aware assistive prompts
+    }
+  }
+});
+
+// Access the generated assistive prompt from the session response
+if (session.experimental?.assistivePrompt) {
+  console.log('Assistive prompt:', session.experimental.assistivePrompt);
+}
+```
+
+The `userTimezone` field accepts an IANA timezone identifier (e.g., 'America/New_York', 'Europe/London') which is used to generate a timezone-aware system prompt for optimal tool router usage.
+
 ## Session Properties
 
 A Tool Router session provides the following properties and methods:
@@ -753,6 +775,11 @@ interface ToolRouterCreateSessionConfig {
     enableProxyExecution?: boolean;
     autoOffloadThreshold?: number;
   };
+  experimental?: {
+    assistivePrompt?: {
+      userTimezone?: string; // IANA timezone identifier for timezone-aware assistive prompts
+    };
+  };
 }
 ```
 
@@ -773,6 +800,9 @@ interface ToolRouterSession {
     nextCursor?: string;   // Pagination cursor
     limit?: number;        // Number of items per page
   }) => Promise<ToolkitConnectionsDetails>;
+  experimental?: {
+    assistivePrompt?: string; // Generated system prompt for optimal tool router usage
+  };
 }
 ```
 

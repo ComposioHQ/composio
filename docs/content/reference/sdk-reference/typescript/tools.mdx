@@ -153,7 +153,7 @@ const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
 Executes a composio meta tool based on tool router session
 
 ```typescript
-async executeMetaTool(toolSlug: string, body: { arguments?: Record<string, unknown>; sessionId: string }, modifiers?: ExecuteToolModifiers): Promise<...>
+async executeMetaTool(toolSlug: string, body: { arguments?: Record<string, unknown>; sessionId: string }, modifiers?: SessionExecuteMetaModifiers): Promise<...>
 ```
 
 **Parameters**
@@ -162,7 +162,7 @@ async executeMetaTool(toolSlug: string, body: { arguments?: Record<string, unkno
 |------|------|-------------|
 | `toolSlug` | `string` | The slug of the tool to execute |
 | `body` | `object` | The execution parameters |
-| `modifiers?` | `ExecuteToolModifiers` | The modifiers to apply to the tool |
+| `modifiers?` | `SessionExecuteMetaModifiers` | The modifiers to apply to the tool |
 
 **Returns**
 
@@ -404,6 +404,36 @@ const searchResults = await composio.tools.getRawComposioTools({
 const authSpecificTools = await composio.tools.getRawComposioTools({
   authConfigIds: ['auth_config_123']
 });
+```
+
+---
+
+### getRawToolRouterMetaTools()
+
+Fetches the meta tools for a tool router session.
+This method fetches the meta tools from the Composio API and transforms them to the expected format.
+It provides access to the underlying meta tool data without provider-specific wrapping.
+
+```typescript
+async getRawToolRouterMetaTools(sessionId: string, options?: SchemaModifierOptions): Promise<ToolList>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `sessionId` | `string` | \{string\} The session id to get the meta tools for |
+| `options?` | `SchemaModifierOptions` | \{SchemaModifierOptions\} Optional configuration for tool retrieval |
+
+**Returns**
+
+`Promise<ToolList>` — The list of meta tools
+
+**Example**
+
+```typescript
+const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123');
+console.log(metaTools);
 ```
 
 ---

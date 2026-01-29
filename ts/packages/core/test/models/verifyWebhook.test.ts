@@ -118,12 +118,12 @@ describe('Triggers.verifyWebhook', () => {
   });
 
   describe('successful verification with V3 payload', () => {
-    it('should verify a valid V3 webhook payload and signature', () => {
+    it('should verify a valid V3 webhook payload and signature', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -138,12 +138,12 @@ describe('Triggers.verifyWebhook', () => {
       expect(result.rawPayload).toEqual(v3Payload);
     });
 
-    it('should correctly normalize V3 payload to IncomingTriggerPayload format', () => {
+    it('should correctly normalize V3 payload to IncomingTriggerPayload format', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -163,12 +163,12 @@ describe('Triggers.verifyWebhook', () => {
   });
 
   describe('successful verification with V2 payload', () => {
-    it('should verify a valid V2 webhook payload and signature', () => {
+    it('should verify a valid V2 webhook payload and signature', async () => {
       const v2Payload = createMockV2Payload();
       const payloadStr = JSON.stringify(v2Payload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -184,12 +184,12 @@ describe('Triggers.verifyWebhook', () => {
   });
 
   describe('successful verification with V1 payload', () => {
-    it('should verify a valid V1 webhook payload and signature', () => {
+    it('should verify a valid V1 webhook payload and signature', async () => {
       const v1Payload = createMockV1Payload();
       const payloadStr = JSON.stringify(v1Payload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -205,14 +205,14 @@ describe('Triggers.verifyWebhook', () => {
   });
 
   describe('tolerance settings', () => {
-    it('should verify webhook with tolerance set to 0 (skip timestamp validation)', () => {
+    it('should verify webhook with tolerance set to 0 (skip timestamp validation)', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       // Use an old timestamp
       const oldTimestamp = Math.floor((Date.now() - 60 * 60 * 1000) / 1000).toString();
       const signature = createSignature(testWebhookId, oldTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -225,12 +225,12 @@ describe('Triggers.verifyWebhook', () => {
       expect(result.version).toBe(WebhookVersions.V3);
     });
 
-    it('should verify webhook with custom tolerance', () => {
+    it('should verify webhook with custom tolerance', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -244,8 +244,8 @@ describe('Triggers.verifyWebhook', () => {
   });
 
   describe('signature verification errors', () => {
-    it('should throw error when payload is empty', () => {
-      expect(() =>
+    it('should throw error when payload is empty', async () => {
+      await expect(() =>
         triggers.verifyWebhook({
           payload: '',
           signature: 'v1,somesignature',
@@ -253,9 +253,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: '',
           signature: 'v1,somesignature',
@@ -263,13 +263,13 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow('No webhook payload was provided.');
+      ).rejects.toThrow('No webhook payload was provided.');
     });
 
-    it('should throw error when signature is empty', () => {
+    it('should throw error when signature is empty', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: '',
@@ -277,9 +277,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: '',
@@ -287,13 +287,13 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow('No signature header value was provided.');
+      ).rejects.toThrow('No signature header value was provided.');
     });
 
-    it('should throw error when secret is empty', () => {
+    it('should throw error when secret is empty', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,somesignature',
@@ -301,9 +301,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,somesignature',
@@ -311,13 +311,13 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow('No webhook secret was provided.');
+      ).rejects.toThrow('No webhook secret was provided.');
     });
 
-    it('should throw error when webhookId is empty', () => {
+    it('should throw error when webhookId is empty', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,somesignature',
@@ -325,9 +325,9 @@ describe('Triggers.verifyWebhook', () => {
           id: '',
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,somesignature',
@@ -335,14 +335,14 @@ describe('Triggers.verifyWebhook', () => {
           id: '',
           timestamp: testTimestamp,
         })
-      ).toThrow('No webhook ID was provided.');
+      ).rejects.toThrow('No webhook ID was provided.');
     });
 
-    it('should throw error when webhookTimestamp is empty', () => {
+    it('should throw error when webhookTimestamp is empty', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
 
       // Empty timestamp is treated as invalid timestamp format (parseInt('') = NaN)
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,somesignature',
@@ -350,9 +350,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: '',
         })
-      ).toThrow(ComposioWebhookPayloadError);
+      ).rejects.toThrow(ComposioWebhookPayloadError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,somesignature',
@@ -360,13 +360,13 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: '',
         })
-      ).toThrow('Invalid webhook timestamp');
+      ).rejects.toThrow('Invalid webhook timestamp');
     });
 
-    it('should throw error when signature format is invalid (no v1 prefix)', () => {
+    it('should throw error when signature format is invalid (no v1 prefix)', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'invalid-signature-no-prefix',
@@ -374,9 +374,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'invalid-signature-no-prefix',
@@ -384,13 +384,13 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow('No valid v1 signature found');
+      ).rejects.toThrow('No valid v1 signature found');
     });
 
-    it('should throw error when signature is invalid', () => {
+    it('should throw error when signature is invalid', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,invalidbase64signature==',
@@ -398,9 +398,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,invalidbase64signature==',
@@ -408,10 +408,10 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow('The signature provided is invalid.');
+      ).rejects.toThrow('The signature provided is invalid.');
     });
 
-    it('should throw error when signature was created with different secret', () => {
+    it('should throw error when signature was created with different secret', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
       const signatureWithDifferentSecret = createSignature(
         testWebhookId,
@@ -420,7 +420,7 @@ describe('Triggers.verifyWebhook', () => {
         'different-secret'
       );
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: signatureWithDifferentSecret,
@@ -428,10 +428,10 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
     });
 
-    it('should throw error when payload was modified after signing', () => {
+    it('should throw error when payload was modified after signing', async () => {
       const originalPayload = createMockV3Payload();
       const payloadStr = JSON.stringify(originalPayload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
@@ -441,7 +441,7 @@ describe('Triggers.verifyWebhook', () => {
         data: { modified: true },
       });
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: modifiedPayload,
           signature,
@@ -449,16 +449,16 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
     });
   });
 
   describe('payload parsing errors', () => {
-    it('should throw error when payload is not valid JSON', () => {
+    it('should throw error when payload is not valid JSON', async () => {
       const invalidJson = 'not-valid-json{';
       const signature = createSignature(testWebhookId, testTimestamp, invalidJson, testSecret);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: invalidJson,
           signature,
@@ -466,9 +466,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookPayloadError);
+      ).rejects.toThrow(ComposioWebhookPayloadError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: invalidJson,
           signature,
@@ -476,14 +476,14 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow('Failed to parse webhook payload as JSON');
+      ).rejects.toThrow('Failed to parse webhook payload as JSON');
     });
 
-    it('should throw error for unrecognized payload format', () => {
+    it('should throw error for unrecognized payload format', async () => {
       const unknownPayload = JSON.stringify({ unknown: 'format' });
       const signature = createSignature(testWebhookId, testTimestamp, unknownPayload, testSecret);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: unknownPayload,
           signature,
@@ -491,9 +491,9 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookPayloadError);
+      ).rejects.toThrow(ComposioWebhookPayloadError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: unknownPayload,
           signature,
@@ -501,18 +501,18 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow('does not match any known version');
+      ).rejects.toThrow('does not match any known version');
     });
   });
 
   describe('timestamp validation', () => {
-    it('should pass when webhook timestamp is within tolerance', () => {
+    it('should pass when webhook timestamp is within tolerance', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const recentTimestamp = Math.floor(Date.now() / 1000).toString();
       const signature = createSignature(testWebhookId, recentTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -524,14 +524,14 @@ describe('Triggers.verifyWebhook', () => {
       expect(result).toBeDefined();
     });
 
-    it('should throw error when webhook timestamp is outside tolerance', () => {
+    it('should throw error when webhook timestamp is outside tolerance', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       // 10 minutes ago
       const oldTimestamp = Math.floor((Date.now() - 10 * 60 * 1000) / 1000).toString();
       const signature = createSignature(testWebhookId, oldTimestamp, payloadStr, testSecret);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature,
@@ -540,9 +540,9 @@ describe('Triggers.verifyWebhook', () => {
           timestamp: oldTimestamp,
           tolerance: 300, // 5 minutes
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature,
@@ -551,16 +551,16 @@ describe('Triggers.verifyWebhook', () => {
           timestamp: oldTimestamp,
           tolerance: 300,
         })
-      ).toThrow('The webhook timestamp is outside the allowed tolerance');
+      ).rejects.toThrow('The webhook timestamp is outside the allowed tolerance');
     });
 
-    it('should throw error for invalid timestamp format', () => {
+    it('should throw error for invalid timestamp format', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const invalidTimestamp = 'not-a-timestamp';
       const signature = createSignature(testWebhookId, invalidTimestamp, payloadStr, testSecret);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature,
@@ -569,9 +569,9 @@ describe('Triggers.verifyWebhook', () => {
           timestamp: invalidTimestamp,
           tolerance: 300,
         })
-      ).toThrow(ComposioWebhookPayloadError);
+      ).rejects.toThrow(ComposioWebhookPayloadError);
 
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature,
@@ -580,68 +580,68 @@ describe('Triggers.verifyWebhook', () => {
           timestamp: invalidTimestamp,
           tolerance: 300,
         })
-      ).toThrow('Invalid webhook timestamp');
+      ).rejects.toThrow('Invalid webhook timestamp');
     });
   });
 
   describe('input validation', () => {
-    it('should throw ValidationError for missing payload parameter', () => {
-      expect(() =>
+    it('should throw ValidationError for missing payload parameter', async () => {
+      await expect(() =>
         triggers.verifyWebhook({
           signature: 'v1,sig',
           secret: testSecret,
           webhookId: testWebhookId,
           webhookTimestamp: testTimestamp,
         } as any)
-      ).toThrow(ValidationError);
+      ).rejects.toThrow(ValidationError);
     });
 
-    it('should throw ValidationError for missing signature parameter', () => {
-      expect(() =>
+    it('should throw ValidationError for missing signature parameter', async () => {
+      await expect(() =>
         triggers.verifyWebhook({
           payload: '{}',
           secret: testSecret,
           webhookId: testWebhookId,
           webhookTimestamp: testTimestamp,
         } as any)
-      ).toThrow(ValidationError);
+      ).rejects.toThrow(ValidationError);
     });
 
-    it('should throw ValidationError for missing secret parameter', () => {
-      expect(() =>
+    it('should throw ValidationError for missing secret parameter', async () => {
+      await expect(() =>
         triggers.verifyWebhook({
           payload: '{}',
           signature: 'v1,sig',
           webhookId: testWebhookId,
           webhookTimestamp: testTimestamp,
         } as any)
-      ).toThrow(ValidationError);
+      ).rejects.toThrow(ValidationError);
     });
 
-    it('should throw ValidationError for missing webhookId parameter', () => {
-      expect(() =>
+    it('should throw ValidationError for missing webhookId parameter', async () => {
+      await expect(() =>
         triggers.verifyWebhook({
           payload: '{}',
           signature: 'v1,sig',
           secret: testSecret,
           webhookTimestamp: testTimestamp,
         } as any)
-      ).toThrow(ValidationError);
+      ).rejects.toThrow(ValidationError);
     });
 
-    it('should throw ValidationError for missing webhookTimestamp parameter', () => {
-      expect(() =>
+    it('should throw ValidationError for missing webhookTimestamp parameter', async () => {
+      await expect(() =>
         triggers.verifyWebhook({
           payload: '{}',
           signature: 'v1,sig',
           secret: testSecret,
           webhookId: testWebhookId,
         } as any)
-      ).toThrow(ValidationError);
+      ).rejects.toThrow(ValidationError);
     });
 
-    it('should throw ValidationError for invalid tolerance type', () => {
-      expect(() =>
+    it('should throw ValidationError for invalid tolerance type', async () => {
+      await expect(() =>
         triggers.verifyWebhook({
           payload: '{}',
           signature: 'v1,sig',
@@ -650,18 +650,18 @@ describe('Triggers.verifyWebhook', () => {
           timestamp: testTimestamp,
           tolerance: 'invalid' as any,
         })
-      ).toThrow(ValidationError);
+      ).rejects.toThrow(ValidationError);
     });
   });
 
   describe('security considerations', () => {
-    it('should use timing-safe comparison for signatures', () => {
+    it('should use timing-safe comparison for signatures', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const validSignature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
 
       // Valid signature should work
-      expect(() =>
+      await expect(
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: validSignature,
@@ -669,11 +669,11 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).not.toThrow();
+      ).resolves.toBeDefined();
 
       // Invalid signature with same format should fail
       const invalidSignature = 'v1,' + 'a'.repeat(44); // base64 SHA256 is 44 chars
-      expect(() =>
+      await expect(() =>
         triggers.verifyWebhook({
           payload: payloadStr,
           signature: invalidSignature,
@@ -681,15 +681,15 @@ describe('Triggers.verifyWebhook', () => {
           id: testWebhookId,
           timestamp: testTimestamp,
         })
-      ).toThrow(ComposioWebhookSignatureVerificationError);
+      ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
     });
 
-    it('should handle unicode in payload correctly', () => {
+    it('should handle unicode in payload correctly', async () => {
       const v3Payload = createMockV3Payload({ data: { message: '你好世界 🌍 مرحبا' } });
       const payloadStr = JSON.stringify(v3Payload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: testSecret,
@@ -701,13 +701,13 @@ describe('Triggers.verifyWebhook', () => {
       expect(result.payload.payload).toEqual({ message: '你好世界 🌍 مرحبا' });
     });
 
-    it('should handle special characters in secret', () => {
+    it('should handle special characters in secret', async () => {
       const specialSecret = 'secret!@#$%^&*()_+-=[]{}|;:,.<>?';
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const signature = createSignature(testWebhookId, testTimestamp, payloadStr, specialSecret);
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature,
         secret: specialSecret,
@@ -718,14 +718,14 @@ describe('Triggers.verifyWebhook', () => {
       expect(result).toBeDefined();
     });
 
-    it('should support multiple signatures in header', () => {
+    it('should support multiple signatures in header', async () => {
       const v3Payload = createMockV3Payload();
       const payloadStr = JSON.stringify(v3Payload);
       const validSignature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
       // Multiple signatures space-separated
       const multipleSignatures = `v1,invalidsig== ${validSignature}`;
 
-      const result = triggers.verifyWebhook({
+      const result = await triggers.verifyWebhook({
         payload: payloadStr,
         signature: multipleSignatures,
         secret: testSecret,
@@ -738,11 +738,11 @@ describe('Triggers.verifyWebhook', () => {
   });
 
   describe('error properties', () => {
-    it('should include proper error class for signature verification error', () => {
+    it('should include proper error class for signature verification error', async () => {
       const payloadStr = JSON.stringify(createMockV3Payload());
 
       try {
-        triggers.verifyWebhook({
+        await triggers.verifyWebhook({
           payload: payloadStr,
           signature: 'v1,invalid',
           secret: testSecret,
@@ -758,12 +758,12 @@ describe('Triggers.verifyWebhook', () => {
       }
     });
 
-    it('should include proper error class for payload error', () => {
+    it('should include proper error class for payload error', async () => {
       const invalidPayload = 'not-json';
       const signature = createSignature(testWebhookId, testTimestamp, invalidPayload, testSecret);
 
       try {
-        triggers.verifyWebhook({
+        await triggers.verifyWebhook({
           payload: invalidPayload,
           signature,
           secret: testSecret,

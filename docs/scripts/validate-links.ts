@@ -7,7 +7,6 @@ import {
 import type { InferPageType } from 'fumadocs-core/source';
 import {
   source,
-  toolRouterSource,
   referenceSource,
   examplesSource,
   toolkitsSource,
@@ -15,7 +14,6 @@ import {
 
 type AnySource =
   | typeof source
-  | typeof toolRouterSource
   | typeof referenceSource
   | typeof examplesSource
   | typeof toolkitsSource;
@@ -26,10 +24,6 @@ async function checkLinks() {
     populate: {
       // Dynamic routes
       'docs/[[...slug]]': source.getPages().map((page) => ({
-        value: { slug: page.slugs },
-        hashes: getHeadings(page),
-      })),
-      'tool-router/[[...slug]]': toolRouterSource.getPages().map((page) => ({
         value: { slug: page.slugs },
         hashes: getHeadings(page),
       })),
@@ -80,7 +74,7 @@ function getHeadings({ data }: InferPageType<AnySource>): string[] {
 }
 
 async function getFiles(): Promise<FileObject[]> {
-  const sources = [source, toolRouterSource, referenceSource, examplesSource, toolkitsSource];
+  const sources = [source, referenceSource, examplesSource, toolkitsSource];
   const allFiles: FileObject[] = [];
 
   for (const src of sources) {

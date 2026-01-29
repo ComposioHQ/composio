@@ -54,6 +54,7 @@ EXPECTED_CLASSES = {
     "Triggers": "triggers",
     "ConnectedAccounts": "connected_accounts",
     "AuthConfigs": "auth_configs",
+    "MCP": "mcp",
 }
 
 # Modules to search for classes
@@ -63,6 +64,7 @@ CLASS_MODULES = [
     "core.models.triggers",
     "core.models.connected_accounts",
     "core.models.auth_configs",
+    "core.models.mcp",
 ]
 
 

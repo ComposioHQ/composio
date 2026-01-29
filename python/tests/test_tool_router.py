@@ -10,6 +10,8 @@ from composio.core.models.tool_router import (
     ToolRouterToolkitsEnableConfig,
     ToolRouterToolkitsDisableConfig,
     ToolRouterManageConnectionsConfig,
+    ToolRouterExperimentalConfig,
+    ToolRouterSessionExperimental,
     ToolkitConnectionState,
     ToolkitConnectionsDetails,
     ToolRouterMCPServerType,
@@ -35,6 +37,7 @@ def mock_client():
     ]
     mock_session_response.config = MagicMock()
     mock_session_response.config.user_id = "user_123"
+    mock_session_response.experimental = None  # Default to None
 
     client.tool_router.session.create.return_value = mock_session_response
     client.tool_router.session.retrieve.return_value = mock_session_response
@@ -541,6 +544,132 @@ class TestToolRouter:
         assert "connected_accounts" in kwargs
         assert "workbench" in kwargs
 
+    def test_create_session_with_experimental_config(self, tool_router, mock_client):
+        """Test creating a session with experimental configuration."""
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "America/New_York",
+                }
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify the API was called with experimental config transformed correctly
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" in kwargs
+        assert kwargs["experimental"] == {
+            "assistive_prompt_config": {
+                "user_timezone": "America/New_York",
+            }
+        }
+
+    def test_create_session_with_experimental_empty_config(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with empty experimental configuration."""
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={},
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify experimental is not included when empty
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
+
+    def test_create_session_with_experimental_no_timezone(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with experimental config but no timezone."""
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {},
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify experimental is not included when timezone is not set
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
+
+    def test_create_session_with_experimental_empty_string_timezone(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with empty string timezone is excluded.
+
+        This ensures consistency with TypeScript SDK which uses truthy check.
+        """
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "",  # Empty string should be excluded
+                },
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify experimental is not included when timezone is empty string
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
+
+    def test_create_session_experimental_response_transformation(
+        self, tool_router, mock_client
+    ):
+        """Test that experimental response is transformed correctly."""
+        # Setup mock response with experimental
+        mock_response_with_experimental = MagicMock()
+        mock_response_with_experimental.session_id = "session_exp"
+        mock_response_with_experimental.mcp = MagicMock()
+        mock_response_with_experimental.mcp.type = "http"
+        mock_response_with_experimental.mcp.url = "https://mcp.example.com/session_exp"
+        mock_response_with_experimental.tool_router_tools = ["TOOL_1"]
+        mock_response_with_experimental.experimental = MagicMock()
+        mock_response_with_experimental.experimental.assistive_prompt = (
+            "You are a helpful assistant working in the America/New_York timezone."
+        )
+
+        mock_client.tool_router.session.create.return_value = (
+            mock_response_with_experimental
+        )
+
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "America/New_York",
+                }
+            },
+        )
+
+        # Verify experimental response is transformed correctly
+        assert session.experimental is not None
+        assert isinstance(session.experimental, ToolRouterSessionExperimental)
+        assert (
+            session.experimental.assistive_prompt
+            == "You are a helpful assistant working in the America/New_York timezone."
+        )
+
+    def test_create_session_without_experimental_response(
+        self, tool_router, mock_client
+    ):
+        """Test that session without experimental response has None."""
+        session = tool_router.create(user_id="user_123")
+
+        # Verify experimental is None when not in response
+        assert session.experimental is None
+
     def test_create_session_raises_error_without_provider(self, mock_client):
         """Test that creating a session without provider raises an error when calling tools()."""
         tool_router = ToolRouter(client=mock_client, provider=None)
@@ -942,6 +1071,27 @@ class TestToolRouterTypes:
         }
         assert config["enable"] is True
         assert config["callback_url"] == "https://example.com/callback"
+
+    def test_experimental_config_type(self):
+        """Test ToolRouterExperimentalConfig type."""
+        config: ToolRouterExperimentalConfig = {
+            "assistive_prompt": {
+                "user_timezone": "America/New_York",
+            }
+        }
+        assert "assistive_prompt" in config
+        assert config["assistive_prompt"]["user_timezone"] == "America/New_York"
+
+    def test_session_experimental_dataclass(self):
+        """Test ToolRouterSessionExperimental dataclass."""
+        experimental = ToolRouterSessionExperimental(
+            assistive_prompt="You are a helpful assistant."
+        )
+        assert experimental.assistive_prompt == "You are a helpful assistant."
+
+        # Test with None
+        experimental_none = ToolRouterSessionExperimental()
+        assert experimental_none.assistive_prompt is None
 
     def test_mcp_server_config(self):
         """Test ToolRouterMCPServerConfig dataclass."""

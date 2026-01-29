@@ -1,4 +1,5 @@
 import ComposioClient from '@composio/client';
+import { FileToolModifier } from '#file_tool_modifier';
 import {
   Tool,
   ToolExecuteParams,
@@ -13,6 +14,7 @@ import {
   ToolExecuteParamsSchema,
   ToolkitVersionParam,
   SchemaModifierOptions,
+  ToolRetrievalOptions,
   ToolExecuteMetaParamsSchema,
 } from '../types/tool.types';
 import {
@@ -48,12 +50,12 @@ import {
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
-import { FileToolModifier } from '../utils/modifiers/FileToolModifier';
 import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
 import { ToolExecuteMetaParams } from '../types/tool.types';
 import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
+import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -80,8 +82,9 @@ export class Tools<
     this.client = client;
     this.customTools = new CustomTools(client);
     this.provider = config.provider;
-    this.autoUploadDownloadFiles = config?.autoUploadDownloadFiles ?? true;
-    this.toolkitVersions = config?.toolkitVersions ?? 'latest';
+    this.autoUploadDownloadFiles =
+      config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles;
+    this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider.
@@ -499,7 +502,7 @@ export class Tools<
    * });
    * ```
    */
-  async getRawComposioToolBySlug(slug: string, options?: SchemaModifierOptions): Promise<Tool> {
+  async getRawComposioToolBySlug(slug: string, options?: ToolRetrievalOptions): Promise<Tool> {
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     if (customTool) {
@@ -511,9 +514,12 @@ export class Tools<
     // if not, fetch the tool from the Composio API
     let tool: ToolRetrieveResponse;
     try {
-      tool = await this.client.tools.retrieve(slug, {
-        toolkit_versions: this.toolkitVersions,
-      });
+      // Build API call parameters based on version source
+      const retrieveParams = options?.version
+        ? { version: options.version } // Explicit version → use 'version' param
+        : { toolkit_versions: this.toolkitVersions }; // SDK config → use 'toolkit_versions' param
+
+      tool = await this.client.tools.retrieve(slug, retrieveParams);
     } catch (error) {
       throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
         cause: error,
@@ -890,7 +896,11 @@ export class Tools<
 
     // Determine if it's a custom tool or composio tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
-    const tool = customTool ?? (await this.getRawComposioToolBySlug(slug));
+    const tool =
+      customTool ??
+      (await this.getRawComposioToolBySlug(slug, {
+        version: body.version,
+      }));
     const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
 
     // Apply before execute modifiers

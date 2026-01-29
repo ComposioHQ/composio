@@ -1,15 +1,15 @@
 {
   "title": "Providers",
   "pages": [
-    "openai",
+    "openai-agents",
     "anthropic",
-    "google",
+    "vercel",
     "langchain",
+    "mastra",
+    "openai",
+    "google",
     "llamaindex",
     "crewai",
-    "vercel",
-    "openai-agents",
-    "mastra",
     "custom-providers"
   ]
 }

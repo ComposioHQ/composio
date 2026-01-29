@@ -1,4 +1,3 @@
-import * as crypto from 'node:crypto';
 import ComposioClient, { APIError } from '@composio/client';
 import { TriggersTypeRetrieveEnumResponse } from '@composio/client/resources/index';
 import {
@@ -45,9 +44,11 @@ import {
   transformTriggerTypeListResponse,
   transformTriggerTypeRetrieveResponse,
 } from '../utils/transformers/triggers';
-import { ToolkitVersion, ToolkitVersionParam } from '../types/tool.types';
+import { ToolkitVersionParam } from '../types/tool.types';
 import { ComposioConfig } from '../composio';
 import { BaseComposioProvider } from '../provider/BaseProvider';
+import { hmacSha256Base64, timingSafeEqual } from '../utils/crypto';
+import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -61,7 +62,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     this.client = client;
     this.pusherService = new PusherService(client);
-    this.toolkitVersions = config?.toolkitVersions ?? 'latest';
+    this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
     telemetry.instrument(this, 'Triggers');
   }
 
@@ -100,8 +101,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
         ? {
             auth_config_ids: parsedParams.data.authConfigIds,
             connected_account_ids: parsedParams.data.connectedAccountIds,
+            cursor: parsedParams.data.cursor,
             limit: parsedParams.data.limit,
-            page: parsedParams.data.page,
             show_disabled: parsedParams.data.showDisabled,
             trigger_ids: parsedParams.data.triggerIds,
             trigger_names: parsedParams.data.triggerNames,
@@ -493,9 +494,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @example
    * ```ts
    * // In an Express.js webhook handler
-   * app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+   * app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
    *   try {
-   *     const result = composio.triggers.verifyWebhook({
+   *     const result = await composio.triggers.verifyWebhook({
    *       payload: req.body.toString(),
    *       signature: req.headers['webhook-signature'] as string,
    *       webhookId: req.headers['webhook-id'] as string,
@@ -514,7 +515,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * });
    * ```
    */
-  verifyWebhook(params: VerifyWebhookParams): VerifyWebhookResult {
+  async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult> {
     // Validate input parameters
     const parsedParams = VerifyWebhookParamsSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -538,7 +539,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     }
 
     // Verify signature using the correct format: msgId.timestamp.payload
-    this.verifyWebhookSignature(webhookId, webhookTimestamp, payload, signature, secret);
+    await this.verifyWebhookSignature(webhookId, webhookTimestamp, payload, signature, secret);
 
     // Parse the payload and detect version
     const { version, rawPayload, normalizedPayload } = this.parseWebhookPayload(payload);
@@ -732,13 +733,13 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * The signing input is: `${msgId}.${timestamp}.${payload}`
    * @private
    */
-  private verifyWebhookSignature(
+  private async verifyWebhookSignature(
     webhookId: string,
     webhookTimestamp: string,
     payload: string,
     signature: string,
     secret: string
-  ): void {
+  ): Promise<void> {
     if (payload.length === 0) {
       throw new ComposioWebhookSignatureVerificationError('No webhook payload was provided.');
     }
@@ -787,21 +788,12 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
     // Compute expected signature: HMAC-SHA256(msgId.timestamp.payload, secret) -> base64
     const toSign = `${webhookId}.${webhookTimestamp}.${payload}`;
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(toSign, 'utf8')
-      .digest('base64');
+    const expectedSignature = await hmacSha256Base64(secret, toSign);
 
     // Check if any of the provided signatures match
     let isValid = false;
     for (const providedSignature of v1Signatures) {
-      const signatureBuffer = Buffer.from(providedSignature);
-      const expectedBuffer = Buffer.from(expectedSignature);
-
-      if (
-        signatureBuffer.length === expectedBuffer.length &&
-        crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
-      ) {
+      if (timingSafeEqual(providedSignature, expectedSignature)) {
         isValid = true;
         break;
       }

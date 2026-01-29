@@ -96,6 +96,7 @@ export const ToolkitRetrieveResponseSchema = z.object({
   authConfigDetails: z.array(ToolkitAuthConfigDetailsSchema).optional(),
   baseUrl: z.string().optional(),
   getCurrentUserEndpoint: z.string().optional(),
+  getCurrentUserEndpointMethod: z.string().optional(),
 });
 
 export type ToolkitAuthField = z.infer<typeof ToolkitAuthFieldSchema>;
