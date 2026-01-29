@@ -1,15 +1,18 @@
 ---
-title: "SDK 0.6.0 Major Update: Edge Runtime Support and Breaking Changes"
-date: "2026-01-29"
+title: 'SDK 0.6.0 Major Update: Edge Runtime Support and Breaking Changes'
+description: 'Major release with edge runtime support, webhook verification updates, and Mastra v1 compatibility. Includes breaking changes for webhook APIs.'
+date: '2026-01-29'
 ---
 
 ## Version Information
 
 ### TypeScript/JavaScript
+
 - Package: `@composio/core` and all provider packages
 - Version: `0.6.0`+
 
 ### Python
+
 - Package: `composio` and all provider packages
 - Version: `0.10.11`+
 
@@ -21,13 +24,16 @@ This major release focuses on full edge runtime compatibility (Cloudflare Worker
 **Breaking Changes**: This release includes breaking changes that require code modifications:
 
 **TypeScript:**
+
 1. Webhook verification: Now async + signature changed (must add `await` + new required params: `webhookId`, `webhookTimestamp`)
 2. Mastra provider updated to v1 API
 
 **Python:**
+
 1. Webhook verification: Signature changed (new required parameters: `id`, `timestamp` - still synchronous)
 
 See the [Migration Guide](#migration-guide) for detailed upgrade instructions.
+
 </Callout>
 
 ## Breaking Changes
@@ -43,6 +49,7 @@ The webhook verification API has breaking changes in both SDKs to support multip
 The `verifyWebhook()` method has **two breaking changes**: it's now async AND requires additional parameters.
 
 **Before:**
+
 ```typescript
 import { Composio } from '@composio/core';
 
@@ -58,6 +65,7 @@ const payload = composio.triggers.verifyWebhook({
 ```
 
 **After:**
+
 ```typescript
 import { Composio } from '@composio/core';
 
@@ -66,23 +74,25 @@ const composio = new Composio();
 // New signature - async, requires webhookId and webhookTimestamp
 const result = await composio.triggers.verifyWebhook({
   payload: req.body.toString(),
-  signature: req.headers['webhook-signature'] as string,      // header name changed
-  webhookId: req.headers['webhook-id'] as string,             // NEW: required
+  signature: req.headers['webhook-signature'] as string, // header name changed
+  webhookId: req.headers['webhook-id'] as string, // NEW: required
   webhookTimestamp: req.headers['webhook-timestamp'] as string, // NEW: required
   secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
-  tolerance: 300,  // optional, default 300 seconds
+  tolerance: 300, // optional, default 300 seconds
 });
 // Returns: VerifyWebhookResult with version info
 ```
 
 **Key Changes:**
+
 - ⚠️ **Now async** - Must use `await`
 - ⚠️ New required parameter: `webhookId` (from `webhook-id` header)
 - ⚠️ New required parameter: `webhookTimestamp` (from `webhook-timestamp` header)
 - ⚠️ Header name changed: `x-composio-signature` → `webhook-signature`
 - ⚠️ Return type changed: `TriggerEvent` → `VerifyWebhookResult`
 
-**Why?** 
+**Why?**
+
 - Edge runtime compatibility (Cloudflare Workers, Vercel Edge) - uses Web Crypto API instead of `node:crypto`
 - Supports v1, v2, and v3 webhook formats with improved signature verification
 
@@ -93,6 +103,7 @@ const result = await composio.triggers.verifyWebhook({
 The method signature changed to support new webhook versions and requires additional headers.
 
 **Before:**
+
 ```python
 from composio import Composio
 
@@ -108,6 +119,7 @@ event = composio.triggers.verify_webhook(
 ```
 
 **After:**
+
 ```python
 from composio import Composio
 
@@ -126,6 +138,7 @@ result = composio.triggers.verify_webhook(
 ```
 
 **Key Changes:**
+
 - ✅ **Still synchronous** (no `await` needed)
 - ⚠️ New required parameter: `id` (webhook-id header)
 - ⚠️ New required parameter: `timestamp` (webhook-timestamp header)
@@ -149,7 +162,9 @@ The `@composio/mastra` provider has been updated to support Mastra v1, which has
 import { MastraProvider } from '@composio/mastra';
 import { Mastra } from '@mastra/core';
 
-const mastra = new Mastra({ /* v0 config */ });
+const mastra = new Mastra({
+  /* v0 config */
+});
 const provider = new MastraProvider();
 
 // v0 API usage
@@ -162,7 +177,9 @@ const tools = await provider.wrapTools(composioTools);
 import { MastraProvider } from '@composio/mastra';
 import { Mastra } from '@mastra/core';
 
-const mastra = new Mastra({ /* v1 config */ });
+const mastra = new Mastra({
+  /* v1 config */
+});
 const provider = new MastraProvider({ mastra });
 
 // v1 API - different tool format
@@ -177,7 +194,8 @@ const tools = await provider.wrapTools(composioTools);
 4. **Check Zod version**: Mastra v1 supports both Zod v3 and v4
 
 <Callout type="info">
-We've added comprehensive E2E tests for both Zod v3 and v4 compatibility with Mastra v1 and Tool Router integration.
+  We've added comprehensive E2E tests for both Zod v3 and v4 compatibility with Mastra v1 and Tool
+  Router integration.
 </Callout>
 
 ---
@@ -191,6 +209,7 @@ We've added comprehensive E2E tests for both Zod v3 and v4 compatibility with Ma
 Separate implementations for Node.js and Cloudflare Workers to optimize file handling for each runtime.
 
 **Key Improvements:**
+
 - **Node.js**: Uses native file system APIs for better performance
 - **Cloudflare Workers**: Uses platform-specific APIs, avoids Node.js-only code
 - **Automatic selection**: SDK automatically picks the right implementation
@@ -205,20 +224,23 @@ Separate implementations for Node.js and Cloudflare Workers to optimize file han
 Different default configurations for different runtimes to optimize behavior.
 
 **Cloudflare Workers defaults:**
+
 ```typescript
 {
-  autoUploadDownloadFiles: true  // Automatically handle file uploads/downloads
+  autoUploadDownloadFiles: true; // Automatically handle file uploads/downloads
 }
 ```
 
 **Node.js defaults:**
+
 ```typescript
 {
-  autoUploadDownloadFiles: false  // More control for server environments
+  autoUploadDownloadFiles: false; // More control for server environments
 }
 ```
 
 **Benefits:**
+
 - **Zero config** for common use cases
 - **Optimized** for each platform's strengths
 - **Override** defaults when needed
@@ -232,6 +254,7 @@ Different default configurations for different runtimes to optimize behavior.
 All `node:buffer` usage replaced with standard `Uint8Array` for universal compatibility.
 
 **Impact:**
+
 - Works in **all JavaScript runtimes** (Node.js, Deno, Bun, Cloudflare Workers)
 - **ESLint rules** enforce this pattern going forward
 - **Better type safety** with standard types
@@ -253,8 +276,10 @@ Fixed issues when executing tools with version constraints.
 // This would fail or fetch wrong version
 await composio.tools.execute('GITHUB_CREATE_ISSUE', {
   userId: 'user_123',
-  version: '1.2.0',  // Version constraint ignored
-  arguments: { /* ... */ }
+  version: '1.2.0', // Version constraint ignored
+  arguments: {
+    /* ... */
+  },
 });
 ```
 
@@ -264,8 +289,10 @@ await composio.tools.execute('GITHUB_CREATE_ISSUE', {
 // Now correctly respects version constraint
 await composio.tools.execute('GITHUB_CREATE_ISSUE', {
   userId: 'user_123',
-  version: '1.2.0',  // Version constraint honored
-  arguments: { /* ... */ }
+  version: '1.2.0', // Version constraint honored
+  arguments: {
+    /* ... */
+  },
 });
 ```
 
@@ -350,46 +377,23 @@ composio.tools.execute('SALESFORCE_CREATE_LEAD', {
 ### Step 1: Update Dependencies
 
 <Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn', 'pip', 'uv']} persist>
-<Tab value="npm">
-```bash
-npm update @composio/core@latest
-# Update provider packages if using them
-npm update @composio/openai@latest
-npm update @composio/anthropic@latest
-npm update @composio/vercel@latest
-# etc.
-```
-</Tab>
-<Tab value="pnpm">
-```bash
-pnpm update @composio/core@latest
-# Update provider packages if using them
-pnpm update @composio/openai@latest
-pnpm update @composio/anthropic@latest
-pnpm update @composio/vercel@latest
-# etc.
-```
-</Tab>
-<Tab value="yarn">
-```bash
-yarn upgrade @composio/core@latest
-# Update provider packages if using them
-yarn upgrade @composio/openai@latest
-yarn upgrade @composio/anthropic@latest
-yarn upgrade @composio/vercel@latest
-# etc.
-```
-</Tab>
-<Tab value="pip">
-```bash
-pip install --upgrade composio
-```
-</Tab>
-<Tab value="uv">
-```bash
-uv pip install --upgrade composio
-```
-</Tab>
+  <Tab value="npm">
+    ```bash npm update @composio/core@latest # Update provider packages if using them npm update
+    @composio/openai@latest npm update @composio/anthropic@latest npm update @composio/vercel@latest
+    # etc. ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash pnpm update @composio/core@latest # Update provider packages if using them pnpm update
+    @composio/openai@latest pnpm update @composio/anthropic@latest pnpm update
+    @composio/vercel@latest # etc. ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash yarn upgrade @composio/core@latest # Update provider packages if using them yarn upgrade
+    @composio/openai@latest yarn upgrade @composio/anthropic@latest yarn upgrade
+    @composio/vercel@latest # etc. ```
+  </Tab>
+  <Tab value="pip">```bash pip install --upgrade composio ```</Tab>
+  <Tab value="uv">```bash uv pip install --upgrade composio ```</Tab>
 </Tabs>
 
 ---
@@ -412,18 +416,19 @@ const payload = composio.triggers.verifyWebhook({
 // After - new signature with await and additional parameters
 const result = await composio.triggers.verifyWebhook({
   payload: req.body.toString(),
-  signature: req.headers['webhook-signature'] as string,      // header name changed
-  webhookId: req.headers['webhook-id'] as string,             // NEW
+  signature: req.headers['webhook-signature'] as string, // header name changed
+  webhookId: req.headers['webhook-id'] as string, // NEW
   webhookTimestamp: req.headers['webhook-timestamp'] as string, // NEW
   secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
 });
 
 // Access the normalized payload and version info
 const event = result.payload;
-const version = result.version;  // 'V1', 'V2', or 'V3'
+const version = result.version; // 'V1', 'V2', or 'V3'
 ```
 
 **Express.js Example:**
+
 ```typescript
 import express from 'express';
 import { Composio } from '@composio/core';
@@ -442,11 +447,11 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
       webhookTimestamp: req.headers['webhook-timestamp'] as string,
       secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
     });
-    
+
     // Access verified webhook data
     console.log('Webhook version:', result.version);
     console.log('Received trigger:', result.payload.triggerSlug);
-    
+
     res.status(200).send('OK');
   } catch (error) {
     console.error('Webhook verification failed:', error);
@@ -456,16 +461,17 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 ```
 
 **Cloudflare Workers Example:**
+
 ```typescript
 import { Composio } from '@composio/core';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
-    
+
     try {
       const body = await request.text();
-      
+
       // Now works in Cloudflare Workers!
       const result = await composio.triggers.verifyWebhook({
         payload: body,
@@ -474,17 +480,18 @@ export default {
         webhookTimestamp: request.headers.get('webhook-timestamp') || '',
         secret: env.COMPOSIO_WEBHOOK_SECRET,
       });
-      
+
       // Process verified webhook
       console.log('Trigger:', result.payload.triggerSlug);
-      
+
       return new Response('OK', { status: 200 });
     } catch (error) {
       return new Response('Unauthorized', { status: 401 });
     }
-  }
+  },
 };
 ```
+
 </Tab>
 <Tab value="Python">
 
@@ -514,6 +521,7 @@ version = result['version']  # 'V1', 'V2', or 'V3'
 ```
 
 **FastAPI Example:**
+
 ```python
 from fastapi import FastAPI, Request, HTTPException
 from composio import Composio
@@ -533,17 +541,18 @@ def webhook(request: Request):  # Still synchronous!
             signature=request.headers.get('webhook-signature', ''),
             timestamp=request.headers.get('webhook-timestamp', ''),
         )
-        
+
         # Access normalized payload and version info
         print(f"Webhook version: {result['version']}")
         print(f"Trigger: {result['payload']['trigger_slug']}")
-        
+
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
 ```
 
 **Flask Example:**
+
 ```python
 from flask import Flask, request
 from composio import Composio
@@ -562,13 +571,14 @@ def webhook():  # Still synchronous!
             signature=request.headers.get('webhook-signature', ''),
             timestamp=request.headers.get('webhook-timestamp', ''),
         )
-        
+
         # Process verified webhook
         event = result['payload']
         return 'OK', 200
     except Exception as e:
         return 'Unauthorized', 401
 ```
+
 </Tab>
 </Tabs>
 
@@ -579,22 +589,11 @@ def webhook():  # Still synchronous!
 **Only required if you use `@composio/mastra` provider**
 
 <Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn']} persist>
-<Tab value="npm">
-```bash
-# Update to Mastra v1
-npm install @mastra/core@latest @composio/mastra@latest
-```
-</Tab>
-<Tab value="pnpm">
-```bash
-pnpm update @mastra/core@latest @composio/mastra@latest
-```
-</Tab>
-<Tab value="yarn">
-```bash
-yarn upgrade @mastra/core@latest @composio/mastra@latest
-```
-</Tab>
+  <Tab value="npm">
+    ```bash # Update to Mastra v1 npm install @mastra/core@latest @composio/mastra@latest ```
+  </Tab>
+  <Tab value="pnpm">```bash pnpm update @mastra/core@latest @composio/mastra@latest ```</Tab>
+  <Tab value="yarn">```bash yarn upgrade @mastra/core@latest @composio/mastra@latest ```</Tab>
 </Tabs>
 
 **Update your code:**
@@ -617,7 +616,8 @@ const provider = new MastraProvider({ mastra });
 ```
 
 <Callout type="info">
-**Zod Compatibility**: Mastra v1 works with both Zod v3 and v4. We test both versions in CI to ensure compatibility.
+  **Zod Compatibility**: Mastra v1 works with both Zod v3 and v4. We test both versions in CI to
+  ensure compatibility.
 </Callout>
 
 ---
@@ -658,17 +658,17 @@ The following features require code updates:
 
 ## Impact Summary
 
-| Change | TypeScript Breaking | Python Breaking | Migration Required | Effort |
-|--------|-------------------|----------------|-------------------|--------|
-| Webhook verification - TypeScript | ✅ Yes (async + signature) | N/A | ✅ Required | Medium - Add `await` + params |
-| Webhook verification - Python | N/A | ✅ Yes (signature only) | ✅ Required | Low - Add parameters |
-| Mastra v1 support | ✅ Yes | N/A | ✅ Required (if using) | Medium - Update API |
-| Platform-specific file modifier | ❌ No | ❌ No | ❌ Optional | None - Automatic |
-| Config defaults | ❌ No | ❌ No | ❌ Optional | None - Automatic |
-| Buffer → Uint8Array | ❌ No | N/A | ❌ Optional | None - Automatic |
-| Tool version fix | ❌ No | ❌ No | ❌ Optional | None - Automatic |
-| JSON schema coercion | ❌ No | ❌ No | ❌ Optional | None - Automatic |
-| Salesforce type fix | ❌ No | ❌ No | ❌ Optional | None - Automatic |
+| Change                            | TypeScript Breaking        | Python Breaking         | Migration Required     | Effort                        |
+| --------------------------------- | -------------------------- | ----------------------- | ---------------------- | ----------------------------- |
+| Webhook verification - TypeScript | ✅ Yes (async + signature) | N/A                     | ✅ Required            | Medium - Add `await` + params |
+| Webhook verification - Python     | N/A                        | ✅ Yes (signature only) | ✅ Required            | Low - Add parameters          |
+| Mastra v1 support                 | ✅ Yes                     | N/A                     | ✅ Required (if using) | Medium - Update API           |
+| Platform-specific file modifier   | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| Config defaults                   | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| Buffer → Uint8Array               | ❌ No                      | N/A                     | ❌ Optional            | None - Automatic              |
+| Tool version fix                  | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| JSON schema coercion              | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| Salesforce type fix               | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
 
 ---
 
@@ -684,21 +684,23 @@ import { Composio } from '@composio/core';
 export default {
   async fetch(request: Request): Promise<Response> {
     const composio = new Composio({
-      apiKey: env.COMPOSIO_API_KEY
+      apiKey: env.COMPOSIO_API_KEY,
     });
-    
+
     // All features now work in Cloudflare Workers!
     const tools = await composio.tools.get('user_123', {
-      toolkits: ['github']
+      toolkits: ['github'],
     });
-    
+
     const result = await composio.tools.execute('GITHUB_CREATE_ISSUE', {
       userId: 'user_123',
-      arguments: { /* ... */ }
+      arguments: {
+        /* ... */
+      },
     });
-    
+
     return new Response(JSON.stringify(result));
-  }
+  },
 };
 ```
 
@@ -714,14 +716,14 @@ export const config = {
 
 export default async function handler(req: NextRequest) {
   const composio = new Composio({
-    apiKey: process.env.COMPOSIO_API_KEY
+    apiKey: process.env.COMPOSIO_API_KEY,
   });
-  
+
   // Full SDK support in Vercel Edge!
   const tools = await composio.tools.get('user_123', {
-    toolkits: ['github']
+    toolkits: ['github'],
   });
-  
+
   return new Response(JSON.stringify(tools));
 }
 ```
@@ -729,18 +731,18 @@ export default async function handler(req: NextRequest) {
 ### Deno Deploy
 
 ```typescript
-import { Composio } from "npm:@composio/core";
+import { Composio } from 'npm:@composio/core';
 
-Deno.serve(async (req) => {
+Deno.serve(async req => {
   const composio = new Composio({
-    apiKey: Deno.env.get("COMPOSIO_API_KEY")
+    apiKey: Deno.env.get('COMPOSIO_API_KEY'),
   });
-  
+
   // Works in Deno too!
-  const tools = await composio.tools.get("user_123", {
-    toolkits: ["github"]
+  const tools = await composio.tools.get('user_123', {
+    toolkits: ['github'],
   });
-  
+
   return new Response(JSON.stringify(tools));
 });
 ```
