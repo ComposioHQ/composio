@@ -82,6 +82,29 @@ async function fetchAndFilterSpec() {
   console.log(`Removed ${removedCount} endpoints/operations`);
   console.log(`Final spec has ${Object.keys(filteredPaths).length} paths`);
 
+  // Fix invalid OpenAPI: "nullable" without "type" is not valid in OpenAPI 3.0
+  // Transform these to have an empty object (allows any type) or add a sensible type
+  let nullableFixCount = 0;
+  const fixNullableWithoutType = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+
+    // If this object has nullable: true but no type, $ref, oneOf, anyOf, or allOf
+    if (obj.nullable === true && !obj.type && !obj.$ref && !obj.oneOf && !obj.anyOf && !obj.allOf) {
+      // Add type: object as a sensible default for nullable fields without type
+      obj.type = 'object';
+      nullableFixCount++;
+    }
+
+    // Recurse into all values
+    for (const val of Object.values(obj)) {
+      fixNullableWithoutType(val);
+    }
+  };
+  fixNullableWithoutType(spec);
+  if (nullableFixCount > 0) {
+    console.log(`Fixed ${nullableFixCount} schemas with nullable but no type`);
+  }
+
   // Write to public directory for fumadocs to fetch
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const outputPath = join(__dirname, '../public/openapi.json');
