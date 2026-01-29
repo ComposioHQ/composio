@@ -216,6 +216,10 @@ Separate implementations for Node.js and Cloudflare Workers to optimize file han
 - **Automatic selection**: SDK automatically picks the right implementation
 - **No code changes needed**: Works transparently
 
+<Callout type="info">
+**Related Change**: This platform-agnostic approach is why `composio.triggers.verifyWebhook()` became async in [Breaking Change #1](#1-webhook-verification-breaking-changes). Node.js `node:crypto` is mostly synchronous, but the standard `globalThis.crypto` (Web Crypto API) available in edge runtimes is async. To support both platforms with a single API, the method had to become async.
+</Callout>
+
 ---
 
 ### 4. Platform-Specific Config Defaults
@@ -260,6 +264,10 @@ All `node:buffer` usage replaced with standard `Uint8Array` for universal compat
 - **ESLint rules** enforce this pattern going forward
 - **Better type safety** with standard types
 - **Fully backward compatible** - no code changes needed
+
+<Callout type="info">
+**Why This Matters**: Removing Node.js-specific APIs like `node:buffer` and `node:crypto` is part of our broader effort to make the SDK truly universal. Edge runtimes (Cloudflare Workers, Vercel Edge, Deno Deploy) don't have access to Node.js built-in modules, so we use Web Standard APIs (`Uint8Array`, `globalThis.crypto`) that work everywhere.
+</Callout>
 
 ---
 
