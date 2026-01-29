@@ -1,5 +1,5 @@
 {
-  "name": "@test-e2e/cf-workers-files",
+  "name": "@e2e-tests/cf-workers-files",
   "version": "0.0.0",
   "private": true,
   "type": "module",

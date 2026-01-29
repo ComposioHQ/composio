@@ -1,5 +1,5 @@
 {
-  "name": "@test-e2e/cf-workers-tool-router-ai",
+  "name": "@e2e-tests/cf-workers-tool-router-ai",
   "version": "0.0.0",
   "private": true,
   "type": "module",

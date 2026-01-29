@@ -9,6 +9,11 @@ import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { pyFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
 import { BANNER } from 'src/generation/constants';
 import { generatePythonSources } from 'src/generation/python/generate';
+import {
+  getToolkitVersionOverrides,
+  type ToolkitVersionOverrides,
+} from 'src/effects/toolkit-version-overrides';
+import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -28,7 +33,10 @@ export const toolkitsOpt = Options.text('toolkits').pipe(
 
 const _pyCmd$Generate = Command.make('generate', { outputOpt, toolkitsOpt }).pipe(
   Command.withDescription(
-    'Generate Python type stubs for toolkits, tools, and triggers from the Composio API'
+    'Generate Python type stubs for toolkits, tools, and triggers from the Composio API.\n\n' +
+      'Environment Variables:\n' +
+      '  COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)\n' +
+      '                                      Use "latest" or unset to use the latest version.'
   )
 );
 
@@ -58,11 +66,25 @@ export function generatePythonTypeStubs({
     yield* Effect.log(`Writing type stubs to ${outputDir}...`);
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
-    // Fetch data from Composio API
-    yield* Console.log('Fetching latest data from Composio API. This may take a while...');
+    // Read toolkit version overrides from environment variables
+    const versionOverrides = yield* getToolkitVersionOverrides;
 
     // Validate toolkit slugs if specified
     const hasToolkitsFilter = Array.isNonEmptyArray(toolkitsOpt);
+    const toolkitSlugsFilter = hasToolkitsFilter ? toolkitsOpt.map(s => s.toLowerCase()) : null;
+
+    // Validate toolkit version overrides before fetching data
+    // This will log detected overrides, validate them against API, and warn about unused ones
+    const { validatedOverrides } = yield* validateToolkitVersionOverrides({
+      versionOverrides,
+      toolkitSlugsFilter,
+      client,
+    });
+
+    // Fetch data from Composio API
+    yield* Console.log('Fetching latest data from Composio API. This may take a while...');
+
+    // Validate toolkit slugs if specified (separate from version validation)
     const validatedToolkitSlugs = hasToolkitsFilter
       ? yield* client
           .validateToolkits(toolkitsOpt)
@@ -100,9 +122,18 @@ export function generatePythonTypeStubs({
       );
     }
 
+    // Build version map for toolkits being generated (using validated overrides)
+    const versionMap: ToolkitVersionOverrides = new Map();
+    for (const toolkit of toolkits) {
+      const version = validatedOverrides.get(toolkit.slug.toLowerCase() as Lowercase<string>);
+      if (version && version !== 'latest') {
+        versionMap.set(toolkit.slug.toLowerCase() as Lowercase<string>, version);
+      }
+    }
+
     const typeableTools = { withTypes: false as const, tools };
 
-    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
+    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
     // Generate Python sources
     const sources = generatePythonSources({

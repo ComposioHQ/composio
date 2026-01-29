@@ -154,8 +154,11 @@ function generatePythonToolkitSource(banner: string) {
       return `${spacePad}pass`;
     };
 
-    const filesource = `# ${banner}.
+    // Build version comment if version override was used
+    const versionComment = toolkit.version ? `# @toolkit-version: ${toolkit.version}\n` : '';
 
+    const filesource = `# ${banner}.
+${versionComment}
 class ${toolkitName}:
     """Map of Composio's ${toolkitName} toolkit."""
 

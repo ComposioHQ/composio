@@ -168,7 +168,7 @@ async listEnum(): Promise<TriggersTypeRetrieveEnumResponse>
 List all the trigger types
 
 ```typescript
-async listTypes(query?: { cursor?: string; limit?: null | number; toolkits?: null | string[] }): Promise<...>
+async listTypes(query?: { cursor?: string; limit?: number | null; toolkits?: string[] | null }): Promise<...>
 ```
 
 **Parameters**

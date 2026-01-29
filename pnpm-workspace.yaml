@@ -1,24 +1,27 @@
 packages:
+  - ts/e2e-tests/_utils
   - ts/e2e-tests/runtimes/node/*
   - ts/e2e-tests/runtimes/cloudflare/*
   - ts/examples/*
   - ts/packages/cli
   - ts/packages/core
   - ts/packages/json-schema-to-zod
-  - ts/packages/json-schema-to-zod/test/e2e/*
   - ts/packages/providers/*
   - ts/packages/ts-builders
   - ts/packages/wrappers/*
-  - fern
-  - fern/llms-txt-worker
-  - fern/pages/examples/*
-  - fern/snippets/*
+  # DEPRECATED: fern docs - now using /docs with Fumadocs
+  # - fern
+  # - fern/llms-txt-worker
+  # - fern/pages/examples/*
+  # - fern/snippets/*
 
 catalog:
+  '@ai-sdk/openai': ^3.0.19
   '@arethetypeswrong/cli': ^0.18.2
   '@cloudflare/vitest-pool-workers': ^0.9.2
   '@cloudflare/workers-types': ^4.20250917.0
   '@composio/client': 0.1.0-alpha.56
+  '@mastra/core': ^1.0.4
   '@modelcontextprotocol/sdk': ^1.25.2
   ai: ^6.0.27
   hono: ^4.11.4

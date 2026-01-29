@@ -12,22 +12,21 @@ on:
 
 jobs:
   # Node.js E2E tests, running in Docker to isolate environment
+  # Each test suite defines its own nodeVersions in e2e.test.ts
+  # Tests that don't support the matrix version are automatically skipped
   test-e2e-node-docker:
-    name: E2E Test Node.js (Node ${{ matrix.node-version }})
+    name: E2E Test Node.js ${{ matrix.node-version }}
     runs-on: ubuntu-24.04
     permissions: read-all
     strategy:
       fail-fast: false
       matrix:
-        node-version: [
-          # may throw ERR_REQUIRE_ESM
-          "20.18.0",
-          # supports ESM by default
-          "20.19.0",
-          "22.12.0"
-        ]
+        node-version: ['20.18.0', '20.19.0', '22.12.0']
     env:
+      CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
@@ -49,11 +48,16 @@ jobs:
             exit 1
           fi
           echo "✅ COMPOSIO_API_KEY is configured"
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::OPENAI_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ OPENAI_API_KEY is configured"
 
       - name: Run Node.js E2E Tests
         run: pnpm run test:e2e:node
         env:
-          COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   # Cloudflare Workerd E2E tests
   test-e2e-cloudflare:

@@ -15,6 +15,11 @@ import {
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
 import { Toolkit, Toolkits } from 'src/models/toolkits';
 import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
+import {
+  groupByVersion,
+  type ToolkitVersionSpec,
+  type ToolkitVersionOverrides,
+} from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
@@ -42,6 +47,24 @@ export class InvalidToolkitsError extends Data.TaggedError('services/InvalidTool
 }> {}
 
 /**
+ * Details about a single invalid version override.
+ */
+export interface InvalidVersionDetail {
+  readonly toolkit: string;
+  readonly requestedVersion: string;
+  readonly availableVersions: ReadonlyArray<string>;
+}
+
+/**
+ * Error thrown when one or more toolkit version overrides are invalid.
+ */
+export class InvalidToolkitVersionsError extends Data.TaggedError(
+  'services/InvalidToolkitVersionsError'
+)<{
+  readonly invalidVersions: ReadonlyArray<InvalidVersionDetail>;
+}> {}
+
+/**
  * Error thrown when a HTTP response doesn't match the expected response schema.
  */
 export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingError')<{
@@ -49,6 +72,131 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
 }> {}
 
 export type HttpError = HttpServerError | HttpDecodingError;
+
+const validateToolkitVersionsImpl = (
+  client: {
+    toolkits: {
+      retrieve: (slug: string) => Effect.Effect<Toolkit, HttpError | NoSuchElementException, never>;
+    };
+  },
+  overrides: ToolkitVersionOverrides,
+  relevantToolkits?: ReadonlyArray<string>
+): Effect.Effect<
+  {
+    validatedOverrides: ToolkitVersionOverrides;
+    warnings: ReadonlyArray<string>;
+  },
+  InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementException
+> =>
+  Effect.gen(function* () {
+    const determineOverridesToValidate = (
+      overrides: ToolkitVersionOverrides,
+      relevantToolkits?: ReadonlyArray<string>
+    ): {
+      overridesToValidate: Array<[toolkit: string, requestedVersion: string]>;
+      warnings: Array<string>;
+    } => {
+      const warnings: string[] = [];
+      const overridesToValidate: Array<[toolkit: string, requestedVersion: string]> = [];
+
+      if (relevantToolkits) {
+        const relevantSet = new Set(relevantToolkits.map(s => String.toLowerCase(s)));
+
+        for (const [toolkit, version] of overrides) {
+          if (relevantSet.has(toolkit)) {
+            overridesToValidate.push([toolkit, version]);
+          } else {
+            warnings.push(
+              `Version override for "${toolkit}" will be ignored (toolkit not in --toolkits filter)`
+            );
+          }
+        }
+      } else {
+        overridesToValidate.push(...overrides.entries());
+      }
+
+      return { overridesToValidate, warnings };
+    };
+
+    const fetchToolkitVersionValidationResults = (
+      overridesToValidate: ReadonlyArray<[toolkit: string, requestedVersion: string]>
+    ): Effect.Effect<
+      ReadonlyArray<{
+        toolkit: string;
+        requestedVersion: string;
+        availableVersions: ReadonlyArray<string>;
+        isValid: boolean;
+      }>,
+      InvalidToolkitsError | HttpError | NoSuchElementException
+    > =>
+      Effect.all(
+        overridesToValidate.map(([toolkit, requestedVersion]) =>
+          client.toolkits.retrieve(toolkit).pipe(
+            Effect.map(toolkitData => ({
+              toolkit,
+              requestedVersion,
+              availableVersions: toolkitData.meta.available_versions,
+              isValid: toolkitData.meta.available_versions.includes(requestedVersion),
+            })),
+            Effect.catchTag('services/HttpServerError', e =>
+              Effect.if(e.status === 404, {
+                onTrue: () =>
+                  Effect.fail(
+                    new InvalidToolkitsError({
+                      invalidToolkits: [toolkit],
+                      availableToolkits: [],
+                    })
+                  ),
+                onFalse: () => Effect.fail(e),
+              })
+            )
+          )
+        ),
+        { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
+      );
+
+    const collectInvalidVersions = (
+      validationResults: ReadonlyArray<{
+        toolkit: string;
+        requestedVersion: string;
+        availableVersions: ReadonlyArray<string>;
+        isValid: boolean;
+      }>
+    ): ReadonlyArray<InvalidVersionDetail> =>
+      validationResults
+        .filter(result => !result.isValid)
+        .map(result => ({
+          toolkit: result.toolkit,
+          requestedVersion: result.requestedVersion,
+          availableVersions: result.availableVersions,
+        }));
+
+    if (overrides.size === 0) {
+      return { validatedOverrides: overrides, warnings: [] as ReadonlyArray<string> };
+    }
+
+    const { overridesToValidate, warnings } = determineOverridesToValidate(
+      overrides,
+      relevantToolkits
+    );
+
+    if (overridesToValidate.length === 0) {
+      return {
+        validatedOverrides: new Map() as ToolkitVersionOverrides,
+        warnings: warnings as ReadonlyArray<string>,
+      };
+    }
+
+    const validationResults = yield* fetchToolkitVersionValidationResults(overridesToValidate);
+    const invalidVersions = collectInvalidVersions(validationResults);
+
+    if (invalidVersions.length > 0) {
+      return yield* Effect.fail(new InvalidToolkitVersionsError({ invalidVersions }));
+    }
+
+    const validatedOverrides = new Map(overridesToValidate) as ToolkitVersionOverrides;
+    return { validatedOverrides, warnings: warnings as ReadonlyArray<string> };
+  });
 
 /**
  * Response schemas
@@ -81,6 +229,7 @@ export const ToolkitRetrieveResponse = Schema.Struct({
     categories: Schema.optionalWith(Schema.Array(Schema.Unknown), { default: () => [] }),
     created_at: Schema.DateTimeUtc,
     updated_at: Schema.DateTimeUtc,
+    available_versions: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
   }),
 }).annotations({ identifier: 'ToolkitRetrieveResponse' });
 export type ToolkitRetrieveResponse = Schema.Schema.Type<typeof ToolkitRetrieveResponse>;
@@ -510,22 +659,58 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
             ),
           /**
            * Retrieve a list of tools, automatically handling pagination.
-           * @param toolkitSlugs - Optional array of toolkit slugs to filter by
+           * It always fetches the latest version of tools for each toolkit.
+           * For more granular toolkit version control, use `listByVersionSpecs`.
+           * @param toolkitSlugs - Array of toolkit slugs to filter by
            */
-          list: (toolkitSlugs?: ReadonlyArray<string>) =>
+          list: (toolkitSlugs: ReadonlyArray<string>) =>
             withMetrics(
               callClientWithPagination(
                 clientSingleton,
                 (client, cursor, limit) =>
                   client.tools.list({
                     cursor,
-                    toolkit_slug: toolkitSlugs?.length ? toolkitSlugs.join(',') : undefined,
+                    toolkit_slug: toolkitSlugs.length > 0 ? toolkitSlugs.join(',') : undefined,
                     toolkit_versions: 'latest',
                     limit,
                   }),
                 ToolsResponse
               )
             ),
+          /**
+           * Retrieve tools for multiple toolkits, grouped by version.
+           * Makes parallel API calls for each version group, then merges results.
+           * @param specs - Array of toolkit version specifications
+           */
+          listByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
+            Effect.gen(function* () {
+              const grouped = groupByVersion(specs);
+              const versionGroups = [...grouped.entries()];
+
+              // Fetch all version groups in parallel with bounded concurrency
+              const responses = yield* Effect.all(
+                versionGroups.map(([version, slugs]) =>
+                  withMetrics(
+                    callClientWithPagination(
+                      clientSingleton,
+                      (client, cursor, limit) =>
+                        client.tools.list({
+                          cursor,
+                          toolkit_slug: slugs.join(','),
+                          toolkit_versions: version,
+                          limit,
+                        }),
+                      ToolsResponse
+                    )
+                  )
+                ),
+                { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
+              );
+
+              // Merge all tools from all version groups
+              const allTools = responses.flatMap(response => response.items);
+              return { items: allTools };
+            }),
         },
         triggersTypes: {
           /**
@@ -655,7 +840,24 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
          * @param toolkitSlugs - Optional array of toolkit slugs to filter by
          */
         getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
-          client.tools.list(toolkitSlugs).pipe(
+          client.tools.list(toolkitSlugs ?? []).pipe(
+            Effect.map(response => response.items),
+            Effect.flatMap(
+              Effect.fn(function* (tools) {
+                // Sort apps by slug.
+                // TODO: make sure this happens on the server-side.
+                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
+                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
+              })
+            )
+          ),
+        /**
+         * Fetches tools with per-toolkit version support.
+         * Groups toolkits by version and makes separate API calls for each group.
+         * @param specs - Array of { toolkitSlug, toolkitVersion } specifications
+         */
+        getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
+          client.tools.listByVersionSpecs(specs).pipe(
             Effect.map(response => response.items),
             Effect.flatMap(
               Effect.fn(function* (tools) {
@@ -731,6 +933,24 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
           const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
           return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
         },
+        /**
+         * Validates that the requested toolkit versions exist in the API's available_versions.
+         * Makes parallel API calls to fetch toolkit metadata for validation.
+         *
+         * @param overrides - Map of toolkit slug to requested version
+         * @param relevantToolkits - Optional array of toolkit slugs to validate (if --toolkits filter is used)
+         * @returns Effect that succeeds with the validated overrides and warnings, or fails with InvalidToolkitVersionsError
+         */
+        validateToolkitVersions: (
+          overrides: ToolkitVersionOverrides,
+          relevantToolkits?: ReadonlyArray<string>
+        ): Effect.Effect<
+          {
+            validatedOverrides: ToolkitVersionOverrides;
+            warnings: ReadonlyArray<string>;
+          },
+          InvalidToolkitVersionsError | InvalidToolkitsError | HttpError | NoSuchElementException
+        > => validateToolkitVersionsImpl(client, overrides, relevantToolkits),
       };
     }),
     dependencies: [ComposioClientLive.Default],

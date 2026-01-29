@@ -33,7 +33,7 @@ Each toolkit supports different authentication methods such as **OAuth**, **API 
 ### Configure scopes
 
 Depending on your authentication method, you may need to configure scopes:
-- **OAuth2**: Configure scopes for what data and actions your integration can access.
+- **OAuth2**: Configure scopes for what data and actions your app can access.
 - **API Key/Bearer Token**: Permissions are typically fixed based on the key's access level.
 </Step>
 
@@ -86,7 +86,7 @@ You should create multiple auth configs for the same toolkit when you need:
 
 With an auth config created, you're ready to authenticate your users!
 
-You can either use [**Connect Link**](#hosted-authentication-connect-link) for a hosted authentication flow, or use [**Direct SDK Integration**](#direct-sdk-integration).
+You can either use [**Connect Link**](#hosted-authentication-connect-link) for a hosted authentication flow, or use [**Direct SDK Setup**](#direct-sdk-setup).
 
 <Callout>
 User authentication requires a User ID - a unique identifier that groups connected accounts together. Learn more about [User Management](/docs/user-management) to understand how to structure User IDs for your application.
@@ -162,7 +162,7 @@ These settings will apply to all authentication flows using Connect Link, provid
 For complete white-labeling including OAuth consent screens (removing Composio's domain), see [Custom Auth Configs - White-labeling](/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen).
 </Callout>
 
-### Direct SDK Integration
+### Direct SDK Setup
 
 **Choose the section below that matches your toolkit's authentication method:**
 

@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+> **⚠️ DEPRECATED**: This Fern-based documentation system is deprecated. The new documentation is in `/docs` (built with Fumadocs). See `/docs/CLAUDE.md` for current documentation guidelines.
+
+---
+
 You are reviewing technical documentation for the Composio SDK and API.
 
 Your task is to:

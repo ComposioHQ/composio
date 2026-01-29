@@ -1,4 +1,4 @@
-import { toolkitsSource } from '@/lib/source';
+import { toolkitsSource, getOgImageUrl } from '@/lib/source';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
@@ -7,7 +7,7 @@ import { PageActions } from '@/components/page-actions';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { Metadata } from 'next';
-import type { Toolkit, Tool } from '@/types/toolkit';
+import type { Toolkit, Tool, Trigger } from '@/types/toolkit';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
@@ -84,6 +84,77 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
   }
 }
 
+// Fetch detailed trigger info from Composio API (server-side only)
+// Returns null on failure, empty array if toolkit has no triggers
+async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | null> {
+  if (!API_KEY) {
+    console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed trigger fetch');
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/triggers_types?toolkit_slugs=${toolkitSlug.toUpperCase()}&limit=1000`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+        },
+        next: { revalidate: 3600 }, // Cache for 1 hour
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`[Toolkits] Failed to fetch triggers for ${toolkitSlug}: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const rawItems = data.items || data;
+    const items = Array.isArray(rawItems) ? rawItems : [];
+
+    return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => {
+      // Extract config and payload schemas
+      const configSchema = trigger.config;
+      const payloadSchema = trigger.payload;
+
+      // Get properties and required array from JSON Schema
+      const configProps = configSchema?.properties || configSchema;
+      const configRequired = configSchema?.required || [];
+      const payloadProps = payloadSchema?.properties || payloadSchema;
+      const payloadRequired = payloadSchema?.required || [];
+
+      // Add required flag to each property based on the required array
+      const processParams = (props: any, requiredList: string[]) => {
+        if (!props || typeof props !== 'object') return undefined;
+        const result: Record<string, any> = {};
+        for (const [key, value] of Object.entries(props)) {
+          if (typeof value === 'object' && value !== null) {
+            result[key] = {
+              ...(value as object),
+              required: requiredList.includes(key),
+            };
+          }
+        }
+        return Object.keys(result).length > 0 ? result : undefined;
+      };
+
+      return {
+        slug: trigger.slug || '',
+        name: trigger.name || trigger.display_name || trigger.slug || '',
+        description: trigger.description || '',
+        type: trigger.type || undefined,
+        config: processParams(configProps, configRequired),
+        payload: processParams(payloadProps, payloadRequired),
+        instructions: trigger.instructions || undefined,
+      };
+    });
+  } catch (error) {
+    console.error(`[Toolkits] Error fetching detailed triggers for ${toolkitSlug}:`, error);
+    return null;
+  }
+}
+
 async function getToolkits(): Promise<Toolkit[]> {
   const filePath = join(process.cwd(), 'public/data/toolkits.json');
 
@@ -133,18 +204,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
 
   // Index page
   if (!slug || slug.length === 0) {
+    const ogImage = getOgImageUrl('toolkits', [], 'Toolkits', 'Browse all toolkits supported by Composio');
     return {
       title: 'Toolkits',
       description: 'Browse all toolkits supported by Composio',
+      alternates: { canonical: '/toolkits' },
+      openGraph: { images: [ogImage] },
+      twitter: { card: 'summary_large_image', images: [ogImage] },
     };
   }
 
   // Check MDX first
   const page = toolkitsSource.getPage(slug);
   if (page) {
+    const ogImage = getOgImageUrl('toolkits', slug, page.data.title, page.data.description);
     return {
       title: page.data.title,
       description: page.data.description,
+      alternates: { canonical: page.url },
+      openGraph: { images: [ogImage] },
+      twitter: { card: 'summary_large_image', images: [ogImage] },
     };
   }
 
@@ -153,9 +232,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
     const toolkits = await getToolkits();
     const toolkit = toolkits.find((t) => t.slug === slug[0]);
     if (toolkit) {
+      const title = `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`;
+      const description = `Build an AI agent that connects to ${toolkit.name?.trim() || toolkit.slug} using Composio. ${toolkit.description}`;
+      const ogImage = getOgImageUrl('toolkits', slug, title, description);
       return {
-        title: `${toolkit.name?.trim() || toolkit.slug} - Composio Toolkit`,
-        description: toolkit.description,
+        title,
+        description,
+        alternates: { canonical: `/toolkits/${toolkit.slug}` },
+        openGraph: { images: [ogImage] },
+        twitter: { card: 'summary_large_image', images: [ogImage] },
       };
     }
   }
@@ -190,17 +275,21 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     const toolkit = toolkits.find((t) => t.slug === toolkitSlug);
 
     if (toolkit) {
-      // Fetch detailed tool info from API (includes input/output params)
-      const detailedTools = await fetchDetailedTools(toolkitSlug);
+      // Fetch detailed tool and trigger info from API (includes input/output params)
+      const [detailedTools, detailedTriggers] = await Promise.all([
+        fetchDetailedTools(toolkitSlug),
+        fetchDetailedTriggers(toolkitSlug),
+      ]);
 
-      // Use detailed tools if fetch succeeded, otherwise fall back to static data
+      // Use detailed data if fetch succeeded, otherwise fall back to static data
       const tools = detailedTools !== null ? detailedTools : toolkit.tools;
+      const triggers = detailedTriggers !== null ? detailedTriggers : toolkit.triggers;
 
       return (
         <ToolkitDetail
           toolkit={toolkit}
           tools={tools}
-          triggers={toolkit.triggers}
+          triggers={triggers}
           path={`/toolkits/${toolkit.slug}`}
         />
       );

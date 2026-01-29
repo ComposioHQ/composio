@@ -1,6 +1,6 @@
 {
   "name": "@composio/mastra",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "description": "Agentic Provider for mastra in Composio SDK",
   "main": "src/index.ts",
   "publishConfig": {
@@ -31,7 +31,8 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "build": "bun run --bun tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit --skipLibCheck"
   },
   "keywords": [
     "composio",
@@ -42,15 +43,19 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
-    "@composio/core": "0.5.5",
-    "@mastra/core": "^0.21.1",
-    "@mastra/mcp": "^0.12.0"
+    "@composio/core": "0.6.0",
+    "@mastra/core": "^1.0.4",
+    "zod": "^3.25 || ^4"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
+    "@mastra/core": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "^3.1.4",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "@mastra/schema-compat": "^1.0.0"
   }
 }

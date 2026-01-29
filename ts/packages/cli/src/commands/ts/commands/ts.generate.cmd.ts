@@ -32,6 +32,13 @@ import { BANNER } from 'src/generation/constants';
 import type { Toolkit } from 'src/models/toolkits';
 import type { TriggerType } from 'src/models/trigger-types';
 import type { Tool, ToolsAsEnums } from 'src/models/tools';
+import {
+  getToolkitVersionOverrides,
+  buildToolkitVersionSpecs,
+  buildVersionMapFromSpecs,
+  type ToolkitVersionOverrides,
+} from 'src/effects/toolkit-version-overrides';
+import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -74,7 +81,10 @@ const _tsCmd$Generate = Command.make('generate', {
   toolkitsOpt,
 }).pipe(
   Command.withDescription(
-    'Generate TypeScript types for toolkits, tools, and triggers from the Composio API'
+    'Generate TypeScript types for toolkits, tools, and triggers from the Composio API.\n\n' +
+      'Environment Variables:\n' +
+      '  COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)\n' +
+      '                                      Use "latest" or unset to use the latest version.'
   )
 );
 
@@ -87,6 +97,8 @@ type FetchResult = {
   typeableTools:
     | { withTypes: true; tools: ReadonlyArray<Tool> }
     | { withTypes: false; tools: ToolsAsEnums };
+  /** Map of lowercase toolkit slug to version (only includes non-'latest' versions) */
+  versionMap: ToolkitVersionOverrides;
 };
 
 /**
@@ -96,10 +108,17 @@ type FetchResult = {
 function fetchFilteredData(
   client: ComposioToolkitsRepository,
   slugs: ReadonlyArray<string>,
-  typeTools: boolean
+  typeTools: boolean,
+  versionOverrides: ToolkitVersionOverrides
 ): Effect.Effect<FetchResult, Error, never> {
   return Effect.gen(function* () {
     yield* Console.log(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
+
+    // Build version specs for each requested toolkit
+    const versionSpecs = buildToolkitVersionSpecs(slugs, versionOverrides);
+
+    // Build the version map (only includes non-'latest' versions from the filtered toolkits)
+    const versionMap = buildVersionMapFromSpecs(versionSpecs);
 
     const [filteredToolkits, filteredTriggerTypes, filteredTypeableTools] = yield* Effect.all(
       [
@@ -123,16 +142,17 @@ function fetchFilteredData(
         Effect.logDebug(`Fetching trigger types for ${slugs.length} toolkit(s)...`).pipe(
           Effect.flatMap(() => client.getTriggerTypes(slugs))
         ),
-        // Fetch tools for the specified toolkits
+        // Fetch tools for the specified toolkits (with version support when using --type-tools)
         Match.value(typeTools).pipe(
           Match.when(true, withTypes =>
             Effect.logDebug(`Fetching tools with schemas for ${slugs.length} toolkit(s)...`).pipe(
-              Effect.flatMap(() => client.getTools(slugs)),
+              Effect.flatMap(() => client.getToolsByVersionSpecs(versionSpecs)),
               Effect.map(tools => ({ withTypes, tools }))
             )
           ),
           Match.when(false, withTypes =>
             // Use filtered getTools() and extract slugs - more efficient than fetching ALL enums
+            // Note: When not using --type-tools, version overrides don't affect the output
             Effect.logDebug(`Fetching tool names for ${slugs.length} toolkit(s)...`).pipe(
               Effect.flatMap(() => client.getTools(slugs)),
               Effect.map(tools => ({
@@ -155,21 +175,20 @@ function fetchFilteredData(
       toolkits: filteredToolkits,
       triggerTypes: filteredTriggerTypes,
       typeableTools: filteredTypeableTools,
+      versionMap,
     };
   });
 }
 
 /**
- * Fetches all toolkit data when no --toolkits filter is provided.
- * Fetches everything from the API.
+ * Fast path for fetching all toolkit data when no version overrides are specified.
+ * Fetches everything in parallel without version-specific handling.
  */
-function fetchAllData(
+function fetchAllDataFastPath(
   client: ComposioToolkitsRepository,
   typeTools: boolean
 ): Effect.Effect<FetchResult, Error, never> {
   return Effect.gen(function* () {
-    yield* Console.log('Fetching all toolkits, tools, and triggers from Composio API...');
-
     // Fetch all data in parallel
     // Note: getToolsAsEnums is only called when typeTools === false
     const [allToolkits, allTriggerTypes, allTypeableTools] = yield* Effect.all(
@@ -205,7 +224,87 @@ function fetchAllData(
       toolkits: allToolkits,
       triggerTypes: allTriggerTypes,
       typeableTools: allTypeableTools,
+      versionMap: new Map() as ToolkitVersionOverrides,
     };
+  });
+}
+
+/**
+ * Fetches all toolkit data with version overrides applied.
+ * First fetches toolkit metadata, then fetches tools with version-specific handling.
+ */
+function fetchAllDataWithOverrides(
+  client: ComposioToolkitsRepository,
+  typeTools: boolean,
+  versionOverrides: ToolkitVersionOverrides
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    // 1. First fetch all toolkit metadata to know what's available
+    const allToolkits = yield* Effect.logDebug('Fetching all toolkits...').pipe(
+      Effect.flatMap(() => client.getToolkits())
+    );
+    const allSlugs = allToolkits.map(t => t.slug);
+
+    // 2. Build version specs (overridden toolkits get specific version, rest get 'latest')
+    const versionSpecs = buildToolkitVersionSpecs(allSlugs, versionOverrides);
+
+    // Build the version map (only includes non-'latest' versions)
+    const versionMap = buildVersionMapFromSpecs(versionSpecs);
+
+    // 3. Fetch trigger types and tools in parallel
+    const [allTriggerTypes, allTypeableTools] = yield* Effect.all(
+      [
+        Effect.logDebug('Fetching all trigger types...').pipe(
+          Effect.flatMap(() => client.getTriggerTypes())
+        ),
+        Match.value(typeTools).pipe(
+          Match.when(true, withTypes =>
+            Effect.logDebug('Fetching all tools with schemas (with version overrides)...').pipe(
+              Effect.flatMap(() => client.getToolsByVersionSpecs(versionSpecs)),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.when(false, withTypes =>
+            // When not using --type-tools, version overrides don't affect the output
+            Effect.logDebug('Fetching all tool names...').pipe(
+              Effect.flatMap(() => client.getToolsAsEnums()),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.exhaustive
+        ),
+      ],
+      { concurrency: 'unbounded' }
+    );
+
+    yield* Console.log(`Found ${allToolkits.length} toolkit(s)`);
+
+    return {
+      toolkits: allToolkits,
+      triggerTypes: allTriggerTypes,
+      typeableTools: allTypeableTools,
+      versionMap,
+    };
+  });
+}
+
+/**
+ * Fetches all toolkit data when no --toolkits filter is provided.
+ * Delegates to fast path or override-aware path based on version overrides.
+ */
+function fetchAllData(
+  client: ComposioToolkitsRepository,
+  typeTools: boolean,
+  versionOverrides: ToolkitVersionOverrides
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    yield* Console.log('Fetching all toolkits, tools, and triggers from Composio API...');
+
+    if (versionOverrides.size === 0) {
+      return yield* fetchAllDataFastPath(client, typeTools);
+    }
+
+    return yield* fetchAllDataWithOverrides(client, typeTools, versionOverrides);
   });
 }
 
@@ -270,18 +369,29 @@ export function generateTypescriptTypeStubs({
     yield* Effect.log(`Writing type stubs to ${outputDir}...`);
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
+    // Read toolkit version overrides from environment variables
+    const versionOverrides = yield* getToolkitVersionOverrides;
+
     // Normalize toolkit slugs if specified (lowercase for API filtering)
     const toolkitSlugsFilter = Array.isNonEmptyArray(toolkitsOpt)
       ? toolkitsOpt.map(s => s.toLowerCase())
       : null;
 
+    // Validate toolkit version overrides before fetching data
+    // This will log detected overrides, validate them against API, and warn about unused ones
+    const { validatedOverrides } = yield* validateToolkitVersionOverrides({
+      versionOverrides,
+      toolkitSlugsFilter,
+      client,
+    });
+
     // Fetch data using two distinct strategies based on whether --toolkits filter is provided
-    const { toolkits, triggerTypes, typeableTools } = yield* toolkitSlugsFilter !== null
-      ? fetchFilteredData(client, toolkitSlugsFilter, typeTools)
-      : fetchAllData(client, typeTools);
+    const { toolkits, triggerTypes, typeableTools, versionMap } = yield* toolkitSlugsFilter !== null
+      ? fetchFilteredData(client, toolkitSlugsFilter, typeTools, validatedOverrides)
+      : fetchAllData(client, typeTools, validatedOverrides);
 
     yield* Console.log('Writing TypeScript type stubs to disk...');
-    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
+    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
     // Generate TypeScript sources
     const sources = yield* generateTypeScriptSources({

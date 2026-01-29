@@ -34,6 +34,66 @@ import {
   GenerateTypeFromJsonSchemaError,
 } from './generate-type-from-json-schema';
 
+function addToolkitToolInputsTypeMap(
+  file: ReturnType<typeof ts.file>,
+  toolkitName: ToolkitName,
+  typeableToolsValue: Record<string, unknown>
+) {
+  const toolInputTypeEntries = pipe(
+    typeableToolsValue,
+    Record.map((_, toolName) =>
+      ts.property(toolName, ts.namedType(`${toolkitName}_${toolName}_INPUT`))
+    ),
+    Record.toEntries,
+    Arr.map(([_, value]) => value)
+  );
+
+  const doc = ts.docComment(
+    `Type map of all available tool input types for toolkit "${toolkitName}".`
+  );
+
+  file.add(
+    ts
+      .moduleExport(
+        ts.typeDeclaration(
+          `${toolkitName}_TOOL_INPUTS`,
+          ts.objectType().addMultiple(toolInputTypeEntries)
+        )
+      )
+      .setDocComment(doc)
+  );
+}
+
+function addToolkitToolOutputsTypeMap(
+  file: ReturnType<typeof ts.file>,
+  toolkitName: ToolkitName,
+  typeableToolsValue: Record<string, unknown>
+) {
+  const toolOutputTypeEntries = pipe(
+    typeableToolsValue,
+    Record.map((_, toolName) =>
+      ts.property(toolName, ts.namedType(`${toolkitName}_${toolName}_OUTPUT`))
+    ),
+    Record.toEntries,
+    Arr.map(([_, value]) => value)
+  );
+
+  const doc = ts.docComment(
+    `Type map of all available tool input types for toolkit "${toolkitName}".`
+  );
+
+  file.add(
+    ts
+      .moduleExport(
+        ts.typeDeclaration(
+          `${toolkitName}_TOOL_OUTPUTS`,
+          ts.objectType().addMultiple(toolOutputTypeEntries)
+        )
+      )
+      .setDocComment(doc)
+  );
+}
+
 function jsValueToTsValue(value: unknown): ts.ValueBuilder {
   if (value === null) {
     return ts.namedValue('null');
@@ -78,7 +138,7 @@ function jsValueToTsValue(value: unknown): ts.ValueBuilder {
 /**
  * Generates a TypeScript object literal for a trigger type
  */
-function generateTriggerTypeObjectValue(triggerType: TriggerType): ts.ValueBuilder {
+function _generateTriggerTypeObjectValue(triggerType: TriggerType): ts.ValueBuilder {
   return ts
     .objectValue()
     .add(ts.propertyValue('slug', ts.stringLiteral(triggerType.slug).asValue()))
@@ -116,11 +176,16 @@ export function generateTypeScriptToolkitSources(banner: string) {
 function generateTypeScriptToolkitSource(_banner: string) {
   return (
     toolkitName: ToolkitName,
-    { slug, typeableTools, triggerTypes }: ToolkitIndexData
+    { slug, version, typeableTools, triggerTypes }: ToolkitIndexData
   ): Effect.Effect<SourceFile, GenerateTypeFromJsonSchemaError, never> => {
     return Effect.gen(function* () {
       const filename = `${slug}.ts`;
       const file = ts.file();
+
+      // Add toolkit version comment if a version override was used
+      if (version) {
+        file.add(ts.docSectionComment(`/* @toolkit-version: ${version} */`));
+      }
 
       // add `import { type TriggerEvent } from "@composio/core"`, if there are trigger types
       if (Object.keys(triggerTypes).length > 0) {
@@ -156,69 +221,29 @@ function generateTypeScriptToolkitSource(_banner: string) {
           file.add(
             ts
               .typeDeclaration(tool.slug, toolInputType)
-              .setDocComment(ts.docComment(`Type of ${toolkitName}'s ${tool.slug} tool input.`))
+              .setDocComment(
+                ts.docComment(
+                  `Type of ${toolkitName}'s ${tool.slug} tool input.${version ? `\n@toolkit-version: ${version}` : ''}`
+                )
+              )
           );
 
           file.add(
             ts
               .typeDeclaration(tool.slug, toolOutputType)
-              .setDocComment(ts.docComment(`Type of ${toolkitName}'s ${tool.slug} tool output.`))
+              .setDocComment(
+                ts.docComment(
+                  `Type of ${toolkitName}'s ${tool.slug} tool output.${version ? `\n@toolkit-version: ${version}` : ''}`
+                )
+              )
           );
         }
 
         // write the map of input tool types
-        {
-          const toolInputTypeEntries = pipe(
-            typeableTools.value,
-            Record.map((_, toolName) =>
-              ts.property(toolName, ts.namedType(`${toolkitName}_${toolName}_INPUT`))
-            ),
-            Record.toEntries,
-            Arr.map(([_, value]) => value)
-          );
-
-          const doc = ts.docComment(
-            `Type map of all available tool input types for toolkit "${toolkitName}".`
-          );
-
-          file.add(
-            ts
-              .moduleExport(
-                ts.typeDeclaration(
-                  `${toolkitName}_TOOL_INPUTS`,
-                  ts.objectType().addMultiple(toolInputTypeEntries)
-                )
-              )
-              .setDocComment(doc)
-          );
-        }
+        addToolkitToolInputsTypeMap(file, toolkitName, typeableTools.value);
 
         // write the map of output tool types
-        {
-          const toolOutputTypeEntries = pipe(
-            typeableTools.value,
-            Record.map((_, toolName) =>
-              ts.property(toolName, ts.namedType(`${toolkitName}_${toolName}_OUTPUT`))
-            ),
-            Record.toEntries,
-            Arr.map(([_, value]) => value)
-          );
-
-          const doc = ts.docComment(
-            `Type map of all available tool input types for toolkit "${toolkitName}".`
-          );
-
-          file.add(
-            ts
-              .moduleExport(
-                ts.typeDeclaration(
-                  `${toolkitName}_TOOL_OUTPUTS`,
-                  ts.objectType().addMultiple(toolOutputTypeEntries)
-                )
-              )
-              .setDocComment(doc)
-          );
-        }
+        addToolkitToolOutputsTypeMap(file, toolkitName, typeableTools.value);
       }
 
       file.add(
@@ -288,7 +313,11 @@ function generateTypeScriptToolkitSource(_banner: string) {
               .constDeclaration(toolValueDeclaration.name as string)
               .setValue(toolValueDeclaration.value)
           )
-          .setDocComment(ts.docComment(`Map of Composio's ${toolValueDeclaration.name} toolkit.`))
+          .setDocComment(
+            ts.docComment(
+              `Map of Composio's ${toolValueDeclaration.name} toolkit.${version ? `\n@toolkit-version: ${version}` : ''}`
+            )
+          )
       );
 
       // write the map of trigger payload types

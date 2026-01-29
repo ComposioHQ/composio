@@ -24,6 +24,11 @@ export interface Trigger {
   slug: string;
   name: string;
   description: string;
+  // Detailed fields fetched on-demand
+  type?: 'webhook' | 'poll';
+  config?: Record<string, ParameterSchema>;
+  payload?: Record<string, ParameterSchema>;
+  instructions?: string;
 }
 
 // Auth config field definition

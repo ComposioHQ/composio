@@ -390,5 +390,133 @@ describe('CLI: composio py generate', () => {
         })
       );
     });
+
+    describe('[Given] COMPOSIO_TOOLKIT_VERSION_* env vars', () => {
+      it.scoped(
+        '[Given] COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it adds version comment to generated file',
+        () =>
+          Effect.gen(function* () {
+            const { vi } = yield* Effect.promise(() => import('vitest'));
+            vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const fs = yield* FileSystem.FileSystem;
+            const outputDir = path.join(cwd, '.generated', 'composio-py-version');
+
+            const args = ['py', 'generate', '--output-dir', outputDir];
+            yield* cli(args);
+
+            // Check that gmail.py contains the version comment
+            const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
+            expect(gmailSourceCode).toContain('# @toolkit-version: 20250901_00');
+
+            // Check that slack.py does NOT contain a version comment
+            const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.py'));
+            expect(slackSourceCode).not.toContain('@toolkit-version');
+
+            vi.unstubAllEnvs();
+          })
+      );
+
+      it.scoped(
+        '[Given] multiple COMPOSIO_TOOLKIT_VERSION_* env vars [Then] it adds version comments to both generated files',
+        () =>
+          Effect.gen(function* () {
+            const { vi } = yield* Effect.promise(() => import('vitest'));
+            vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+            vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', '20250815_00');
+
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const fs = yield* FileSystem.FileSystem;
+            const outputDir = path.join(cwd, '.generated', 'composio-py-multi-version');
+
+            const args = ['py', 'generate', '--output-dir', outputDir];
+            yield* cli(args);
+
+            const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
+            expect(gmailSourceCode).toContain('# @toolkit-version: 20250901_00');
+
+            const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.py'));
+            expect(slackSourceCode).toContain('# @toolkit-version: 20250815_00');
+
+            vi.unstubAllEnvs();
+          })
+      );
+
+      it.scoped(
+        '[Given] COMPOSIO_TOOLKIT_VERSION_GMAIL=latest [Then] it treats same as no override (no version comment)',
+        () =>
+          Effect.gen(function* () {
+            const { vi } = yield* Effect.promise(() => import('vitest'));
+            vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', 'latest');
+
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const fs = yield* FileSystem.FileSystem;
+            const outputDir = path.join(cwd, '.generated', 'composio-py-latest');
+
+            const args = ['py', 'generate', '--output-dir', outputDir];
+            yield* cli(args);
+
+            const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
+            expect(gmailSourceCode).not.toContain('@toolkit-version');
+
+            vi.unstubAllEnvs();
+          })
+      );
+
+      it.scoped(
+        '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_SLACK env var [Then] it ignores env var for non-requested toolkit',
+        () =>
+          Effect.gen(function* () {
+            const { vi } = yield* Effect.promise(() => import('vitest'));
+            vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', '20250815_00');
+
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const fs = yield* FileSystem.FileSystem;
+            const outputDir = path.join(cwd, '.generated', 'composio-py-filtered-env');
+
+            const args = ['py', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+            yield* cli(args);
+
+            // Only gmail.py should exist
+            const files = yield* fs.readDirectory(outputDir);
+            const fileNames = files.map(file => path.basename(file));
+            expect(fileNames).toContain('gmail.py');
+            expect(fileNames).not.toContain('slack.py');
+
+            // gmail.py should NOT have version comment
+            const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
+            expect(gmailSourceCode).not.toContain('@toolkit-version');
+
+            vi.unstubAllEnvs();
+          })
+      );
+
+      it.scoped(
+        '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it applies version override to filtered toolkit',
+        () =>
+          Effect.gen(function* () {
+            const { vi } = yield* Effect.promise(() => import('vitest'));
+            vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const fs = yield* FileSystem.FileSystem;
+            const outputDir = path.join(cwd, '.generated', 'composio-py-filtered-version');
+
+            const args = ['py', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+            yield* cli(args);
+
+            const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
+            expect(gmailSourceCode).toContain('# @toolkit-version: 20250901_00');
+
+            vi.unstubAllEnvs();
+          })
+      );
+    });
   });
 });

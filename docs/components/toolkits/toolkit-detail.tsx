@@ -36,6 +36,19 @@ function formatDefault(value: unknown): string | undefined {
   return String(value);
 }
 
+// Format type with enum values if available
+function formatType(param: ParameterSchema): string {
+  let typeStr = param.type || 'string';
+
+  // Include enum values in type display
+  if (param.enum && param.enum.length > 0) {
+    const enumValues = param.enum.map(v => `"${v}"`).join(' | ');
+    typeStr = `${typeStr} (${enumValues})`;
+  }
+
+  return typeStr;
+}
+
 // Convert parameter schema to TypeTable format
 function paramsToTypeTable(params: Record<string, ParameterSchema>): Record<string, {
   type: string;
@@ -52,7 +65,7 @@ function paramsToTypeTable(params: Record<string, ParameterSchema>): Record<stri
 
   for (const [name, param] of Object.entries(params)) {
     result[name] = {
-      type: param.type || 'string',
+      type: formatType(param),
       description: param.description || undefined,
       default: formatDefault(param.default),
       required: param.required,
@@ -67,6 +80,11 @@ function isTool(item: Tool | Trigger): item is Tool {
   return 'input_parameters' in item || 'output_parameters' in item;
 }
 
+// Check if item is a Trigger with config/payload
+function isTrigger(item: Tool | Trigger): item is Trigger {
+  return 'config' in item || 'payload' in item || 'type' in item;
+}
+
 function ToolItem({ item }: { item: Tool | Trigger }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -79,8 +97,12 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
   };
 
   const tool = isTool(item) ? item : null;
+  const trigger = isTrigger(item) ? item : null;
+
   const hasInputParams = tool?.input_parameters && Object.keys(tool.input_parameters).length > 0;
   const hasOutputParams = tool?.output_parameters && Object.keys(tool.output_parameters).length > 0;
+  const hasConfig = trigger?.config && Object.keys(trigger.config).length > 0;
+  const hasPayload = trigger?.payload && Object.keys(trigger.payload).length > 0;
 
   return (
     <div className="border-b border-fd-border/50 last:border-0">
@@ -92,7 +114,18 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-          <span className="truncate text-sm font-medium text-fd-foreground">{item.name}</span>
+          <span className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium text-fd-foreground">{item.name}</span>
+            {trigger?.type && (
+              <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
+                trigger.type === 'webhook'
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+              }`}>
+                {trigger.type}
+              </span>
+            )}
+          </span>
           <span
             role="button"
             onClick={copySlug}
@@ -107,6 +140,7 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
         <div className="space-y-4 bg-fd-muted/20 px-4 py-3 pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
 
+          {/* Tool parameters */}
           {hasInputParams && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Input Parameters</h4>
@@ -118,6 +152,21 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Output</h4>
               <TypeTable type={paramsToTypeTable(tool.output_parameters!)} />
+            </div>
+          )}
+
+          {/* Trigger config/payload */}
+          {hasConfig && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Configuration</h4>
+              <TypeTable type={paramsToTypeTable(trigger.config!)} />
+            </div>
+          )}
+
+          {hasPayload && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Payload</h4>
+              <TypeTable type={paramsToTypeTable(trigger.payload!)} />
             </div>
           )}
         </div>

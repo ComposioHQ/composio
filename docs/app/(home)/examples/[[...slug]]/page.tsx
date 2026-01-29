@@ -3,4 +3,4 @@ import { createDocsPage, createGenerateStaticParams, createGenerateMetadata } fr
 
 export default createDocsPage(examplesSource);
 export const generateStaticParams = createGenerateStaticParams(examplesSource);
-export const generateMetadata = createGenerateMetadata(examplesSource);
+export const generateMetadata = createGenerateMetadata(examplesSource, 'examples');

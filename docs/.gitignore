@@ -25,3 +25,6 @@ yarn-error.log*
 .vercel
 next-env.d.ts
 next-env.d.ts.cache
+
+# Claude local settings (permissions are user-specific)
+.claude/settings.local.json

@@ -2,6 +2,40 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SLACK_WEBHOOK_URL = process.env.SLACK_FEEDBACK_WEBHOOK_URL;
 
+function parseUserAgent(ua: string | undefined): string {
+  if (!ua) return 'Unknown';
+
+  // Detect browser
+  let browser = 'Unknown';
+  if (ua.includes('Firefox/')) {
+    const match = ua.match(/Firefox\/(\d+)/);
+    browser = `Firefox ${match?.[1] || ''}`;
+  } else if (ua.includes('Edg/')) {
+    const match = ua.match(/Edg\/(\d+)/);
+    browser = `Edge ${match?.[1] || ''}`;
+  } else if (ua.includes('Chrome/')) {
+    const match = ua.match(/Chrome\/(\d+)/);
+    browser = `Chrome ${match?.[1] || ''}`;
+  } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+    const match = ua.match(/Version\/(\d+)/);
+    browser = `Safari ${match?.[1] || ''}`;
+  }
+
+  // Detect OS
+  let os = '';
+  if (ua.includes('Windows')) os = 'Windows';
+  else if (ua.includes('Mac OS')) os = 'macOS';
+  else if (ua.includes('Linux')) os = 'Linux';
+  else if (ua.includes('Android')) os = 'Android';
+  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+
+  // Detect mobile
+  const isMobile = /Mobile|Android|iPhone|iPad/.test(ua);
+  const device = isMobile ? '📱' : '💻';
+
+  return `${device} ${browser}${os ? ` on ${os}` : ''}`;
+}
+
 const sentimentEmoji: Record<string, string> = {
   positive: '😊',
   neutral: '😐',
@@ -15,13 +49,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { page, sentiment, message, email } = await request.json();
+    const { page, pageTitle, sentiment, message, email, userAgent, referrer, viewport, timestamp } = await request.json();
 
     if (!message?.trim()) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
     const emoji = sentiment ? sentimentEmoji[sentiment] || '' : '';
+
+    // Parse user agent for a cleaner display
+    const browserInfo = parseUserAgent(userAgent);
 
     const slackMessage = {
       blocks: [
@@ -38,7 +75,7 @@ export async function POST(request: NextRequest) {
           fields: [
             {
               type: 'mrkdwn',
-              text: `*Page:*\n<https://composio.dev${page}|${page}>`,
+              text: `*Page:*\n<https://docs.composio.dev${page}|${pageTitle || page}>`,
             },
             {
               type: 'mrkdwn',
@@ -64,6 +101,15 @@ export async function POST(request: NextRequest) {
               },
             ]
           : []),
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `🖥️ ${browserInfo} • 📐 ${viewport || 'Unknown'}${referrer ? ` • 🔗 From: ${referrer}` : ''} • 🕐 ${timestamp ? new Date(timestamp).toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'short', timeStyle: 'short' }) + ' UTC' : 'Unknown'}`,
+            },
+          ],
+        },
       ],
     };
 

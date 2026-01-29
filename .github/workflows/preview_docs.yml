@@ -1,4 +1,8 @@
-name: Preview Docs
+name: Preview Docs (DEPRECATED - Fern)
+
+# DEPRECATED: This workflow previews the old Fern-based docs.
+# The new docs are in /docs and previewed via Vercel.
+# This workflow is disabled.
 
 on:
   pull_request:
@@ -7,6 +11,8 @@ on:
 
 jobs:
   run:
+    # DEPRECATED: Disabled - using new docs system in /docs
+    if: false
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/composiohq/dev-base:latest

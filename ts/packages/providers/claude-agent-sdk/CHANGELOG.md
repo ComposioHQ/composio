@@ -1,5 +1,16 @@
 # @composio/claude-code-agents
 
+## 0.6.0
+
+### Minor Changes
+
+- Breaking: Fixes for cloudflare support, webhook verification and other fixes
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.6.0
+
 ## 0.5.5
 
 ### Patch Changes

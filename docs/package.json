@@ -15,6 +15,7 @@
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.13",
     "@shikijs/twoslash": "^3.21.0",
+    "@vercel/analytics": "^1.6.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fumadocs-core": "^16.4.2",

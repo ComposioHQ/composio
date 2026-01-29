@@ -1057,6 +1057,194 @@ describe('CLI: composio ts generate', () => {
       });
     });
 
+    describe('[Given] COMPOSIO_TOOLKIT_VERSION_* env vars', () => {
+      layer(
+        TestLive({
+          fixture: 'typescript-project-with-composio-core',
+          toolkitsData: appClientData,
+        })
+      )(it => {
+        it.scoped(
+          '[Given] --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it adds version comment to generated file',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-version-override');
+
+              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check that gmail.ts contains the version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              // Check that slack.ts does NOT contain a version comment (no override for it)
+              const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.ts'));
+              expect(slackSourceCode).not.toContain('@toolkit-version');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --type-tools and multiple COMPOSIO_TOOLKIT_VERSION_* env vars [Then] it adds version comments to both generated files',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', '20250815_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-multi-version-override');
+
+              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check that gmail.ts contains the version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              // Check that slack.ts contains the version comment
+              const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.ts'));
+              expect(slackSourceCode).toContain('@toolkit-version: 20250815_00');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL=latest [Then] it treats same as no override (no version comment)',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', 'latest');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-latest-version');
+
+              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check that gmail.ts does NOT contain a version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).not.toContain('@toolkit-version');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_SLACK env var [Then] it ignores env var for non-requested toolkit',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              // Set env var for SLACK, but only request GMAIL toolkit
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', '20250815_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-filtered-env-ignored');
+
+              const args = [
+                'ts',
+                'generate',
+                '--type-tools',
+                '--toolkits',
+                'gmail',
+                '--output-dir',
+                outputDir,
+              ];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).toContain('index.ts');
+              expect(fileNames).not.toContain('slack.ts');
+
+              // gmail.ts should NOT have version comment (no GMAIL override set)
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).not.toContain('@toolkit-version');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it applies version override to filtered toolkit',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-filtered-with-version');
+
+              const args = [
+                'ts',
+                'generate',
+                '--type-tools',
+                '--toolkits',
+                'gmail',
+                '--output-dir',
+                outputDir,
+              ];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).not.toContain('slack.ts');
+
+              // gmail.ts should have version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] no --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it still adds version comment for documentation purposes',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-no-type-tools');
+
+              // Note: no --type-tools flag
+              const args = ['ts', 'generate', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Version comment is still added for documentation purposes,
+              // even though the version override only affects tool schema fetching with --type-tools
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              vi.unstubAllEnvs();
+            })
+        );
+      });
+    });
+
     describe('[Given] `@composio/core` not installed', () => {
       layer(
         TestLive({

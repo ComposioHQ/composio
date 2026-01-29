@@ -37,6 +37,9 @@ export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
     mdxOptions: applyMdxPreset({
       rehypeCodeOptions: {
         themes: {
@@ -56,6 +59,9 @@ export const examples = defineDocs({
   dir: 'content/examples',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -66,6 +72,9 @@ export const toolkits = defineDocs({
   dir: 'content/toolkits',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -89,7 +98,7 @@ export default defineConfig({
         light: 'github-light',
         dark: 'github-dark',
       },
-      // Twoslash disabled in dev (heap memory issues), enabled in build/CI
+      // Twoslash for type checking only - no hover UI
       transformers:
         process.env.NODE_ENV === 'production'
           ? [
@@ -98,6 +107,13 @@ export default defineConfig({
                 typesCache: createFileSystemTypesCache({
                   dir: '.next/cache/twoslash',
                 }),
+                renderer: {
+                  // Empty renderer - type checks but renders nothing
+                  nodeStaticInfo: () => ({}),
+                  nodeError: () => ({}),
+                  nodeQuery: () => ({}),
+                  nodeCompletion: () => ({}),
+                },
               }),
             ]
           : [],

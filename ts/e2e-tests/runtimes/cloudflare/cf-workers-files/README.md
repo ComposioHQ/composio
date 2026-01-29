@@ -29,7 +29,7 @@ Verifies that:
 pnpm test:e2e
 
 # Or from the monorepo root
-pnpm --filter @test-e2e/cf-workers-files test:e2e:cloudflare
+pnpm --filter @e2e-tests/cf-workers-files test:e2e:cloudflare
 ```
 
 ## Environment Variables

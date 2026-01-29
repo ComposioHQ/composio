@@ -12,6 +12,7 @@ import { FrameworkSelector, QuickstartFlow, FrameworkOption } from '@/components
 import { IntegrationTabs, IntegrationContent } from '@/components/quickstart/integration-tabs';
 import { ToolTypeFlow, ToolTypeOption } from '@/components/tool-type-selector';
 import { Figure } from '@/components/figure';
+import { StepTitle } from '@/components/step-title';
 import { Video } from '@/components/video';
 import { CapabilityCard, CapabilityList } from '@/components/capability-card';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
@@ -62,6 +63,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     CapabilityCard,
     CapabilityList,
     ToolkitsLanding,
+    StepTitle,
     // Lucide icons - available globally in MDX without imports
     ShieldCheck,
     RouteIcon,

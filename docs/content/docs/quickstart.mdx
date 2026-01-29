@@ -15,7 +15,7 @@ Build your first AI agent with Composio Tools.
 
 <Steps>
 <Step>
-### Install
+<StepTitle>Install</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -32,7 +32,7 @@ npm install @composio/core @composio/openai-agents @openai/agents
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
 Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
@@ -45,7 +45,7 @@ OPENAI_API_KEY=your_openai_api_key
 </Step>
 
 <Step>
-### Create session and run agent
+<StepTitle>Create session and run agent</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -69,7 +69,7 @@ tools = session.tools()
 agent = Agent(
     name="Personal Assistant",
     instructions="You are a helpful personal assistant. Use Composio tools to take action.",
-    model="gpt-4.1",
+    model="gpt-5",
     tools=tools,
 )
 
@@ -117,7 +117,7 @@ const tools = await session.tools();
 const agent = new Agent({
   name: "Personal Assistant",
   instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: "gpt-4.1",
+  model: "gpt-5",
   tools,
 });
 
@@ -161,7 +161,7 @@ readline.close();
 
 <Steps>
 <Step>
-### Install
+<StepTitle>Install</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -178,7 +178,7 @@ npm install dotenv @composio/core @openai/agents zod@3
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
 Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
@@ -191,7 +191,7 @@ OPENAI_API_KEY=your_openai_api_key
 </Step>
 
 <Step>
-### Create session and run agent
+<StepTitle>Create session and run agent</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -213,7 +213,7 @@ session = composio.create(user_id=user_id)
 agent = Agent(
     name="Personal Assistant",
     instructions="You are a helpful personal assistant. Use Composio tools to take action.",
-    model="gpt-4.1",
+    model="gpt-5",
     tools=[
         HostedMCPTool(
             tool_config={
@@ -269,7 +269,7 @@ const session = await composio.create(userId);
 const agent = new Agent({
   name: "Personal Assistant",
   instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: "gpt-4.1",
+  model: "gpt-5",
   tools: [
     hostedMcpTool({
       serverLabel: "composio",
@@ -325,7 +325,7 @@ readline.close();
 
 <Steps>
 <Step>
-### Install
+<StepTitle>Install</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -342,7 +342,7 @@ npm install dotenv @composio/core @composio/claude-agent-sdk @anthropic-ai/claud
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
 Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
@@ -355,7 +355,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 </Step>
 
 <Step>
-### Create session and run agent
+<StepTitle>Create session and run agent</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -364,7 +364,7 @@ import asyncio
 from dotenv import load_dotenv
 from composio import Composio
 from composio_claude_agent_sdk import ClaudeAgentSDKProvider
-from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server, AssistantMessage, TextBlock
 
 load_dotenv()
 
@@ -395,8 +395,11 @@ async def main():
 
             await client.query(user_input)
             print("Claude: ", end="")
-            async for msg in client.receive_response():
-                print(msg, end="", flush=True)
+            async for message in client.receive_response():
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            print(block.text, end="", flush=True)
             print()
 
 asyncio.run(main())
@@ -426,8 +429,14 @@ const customServer = createSdkMcpServer({
 
 const readline = createInterface({ input: process.stdin, output: process.stdout });
 
-console.log("Assistant ready! Type 'exit' to quit.");
-
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+    - 'Summarize my emails from today'
+    - 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+`);
 let isFirstQuery = true;
 const options = {
   mcpServers: { composio: customServer },
@@ -466,7 +475,7 @@ readline.close();
 
 <Steps>
 <Step>
-### Install
+<StepTitle>Install</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -483,7 +492,7 @@ npm install dotenv @composio/core @anthropic-ai/claude-agent-sdk
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
 Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
@@ -496,7 +505,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 </Step>
 
 <Step>
-### Create session and run agent
+<StepTitle>Create session and run agent</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -664,7 +673,7 @@ readline.close();
 
 <Steps>
 <Step>
-### Install
+<StepTitle>Install</StepTitle>
 
 ```bash
 npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
@@ -672,7 +681,7 @@ npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
 Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
@@ -685,7 +694,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 </Step>
 
 <Step>
-### Create session and run agent
+<StepTitle>Create session and run agent</StepTitle>
 
 ```typescript
 // @noErrors
@@ -763,7 +772,7 @@ readline.close();
 
 <Steps>
 <Step>
-### Install
+<StepTitle>Install</StepTitle>
 
 ```bash
 npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
@@ -771,7 +780,7 @@ npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
 Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
@@ -784,7 +793,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 </Step>
 
 <Step>
-### Create session and run agent
+<StepTitle>Create session and run agent</StepTitle>
 
 ```typescript
 // @noErrors
@@ -873,16 +882,3 @@ readline.close();
 
 </QuickstartFlow>
 
-## Next steps
-
-<Cards>
-  <Card title="Session management" href="/docs/users-and-sessions">
-    Learn about users, sessions, and how they work.
-  </Card>
-  <Card title="Tools and toolkits" href="/docs/tools-and-toolkits">
-    Learn about tools, toolkits, and how to configure them.
-  </Card>
-  <Card title="Manual authentication" href="/docs/authenticating-users/manually-authenticating">
-    Customise the authentication flow for your users.
-  </Card>
-</Cards>
