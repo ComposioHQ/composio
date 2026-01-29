@@ -51,6 +51,7 @@ The `verifyWebhook()` method has **two breaking changes**: it's now async AND re
 **Before:**
 
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
@@ -67,6 +68,7 @@ const payload = composio.triggers.verifyWebhook({
 **After:**
 
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
@@ -159,6 +161,7 @@ The `@composio/mastra` provider has been updated to support Mastra v1, which has
 #### Before (Mastra v0.x)
 
 ```typescript
+// @noErrors
 import { MastraProvider } from '@composio/mastra';
 import { Mastra } from '@mastra/core';
 
@@ -174,6 +177,7 @@ const tools = await provider.wrapTools(composioTools);
 #### After (Mastra v1)
 
 ```typescript
+// @noErrors
 import { MastraProvider } from '@composio/mastra';
 import { Mastra } from '@mastra/core';
 
@@ -231,6 +235,7 @@ Different default configurations for different runtimes to optimize behavior.
 **Cloudflare Workers defaults:**
 
 ```typescript
+// @noErrors
 {
   autoUploadDownloadFiles: true; // Automatically handle file uploads/downloads
 }
@@ -239,6 +244,7 @@ Different default configurations for different runtimes to optimize behavior.
 **Node.js defaults:**
 
 ```typescript
+// @noErrors
 {
   autoUploadDownloadFiles: false; // More control for server environments
 }
@@ -282,6 +288,7 @@ Fixed issues when executing tools with version constraints.
 #### Before (Bug)
 
 ```typescript
+// @noErrors
 // This would fail or fetch wrong version
 await composio.tools.execute('GITHUB_CREATE_ISSUE', {
   userId: 'user_123',
@@ -295,6 +302,7 @@ await composio.tools.execute('GITHUB_CREATE_ISSUE', {
 #### After (Fixed)
 
 ```typescript
+// @noErrors
 // Now correctly respects version constraint
 await composio.tools.execute('GITHUB_CREATE_ISSUE', {
   userId: 'user_123',
@@ -415,6 +423,7 @@ composio.tools.execute('SALESFORCE_CREATE_LEAD', {
 **Update signature with new parameters and add `await`:**
 
 ```typescript
+// @noErrors
 // Before - old signature
 const payload = composio.triggers.verifyWebhook({
   payload: req.body.toString(),
@@ -439,6 +448,7 @@ const version = result.version; // 'V1', 'V2', or 'V3'
 **Express.js Example:**
 
 ```typescript
+// @noErrors
 import express from 'express';
 import { Composio } from '@composio/core';
 
@@ -472,6 +482,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 **Cloudflare Workers Example:**
 
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 export default {
@@ -608,6 +619,7 @@ def webhook():  # Still synchronous!
 **Update your code:**
 
 ```typescript
+// @noErrors
 // Before
 import { MastraProvider } from '@composio/mastra';
 
@@ -688,6 +700,7 @@ This release unlocks full support for edge runtimes:
 ### Cloudflare Workers
 
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 export default {
@@ -716,6 +729,7 @@ export default {
 ### Vercel Edge Functions
 
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 import { NextRequest } from 'next/server';
 
@@ -740,6 +754,7 @@ export default async function handler(req: NextRequest) {
 ### Deno Deploy
 
 ```typescript
+// @noErrors
 import { Composio } from 'npm:@composio/core';
 
 Deno.serve(async req => {
