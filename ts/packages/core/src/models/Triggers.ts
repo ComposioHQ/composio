@@ -450,30 +450,58 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   }
 
   /**
+   * Tries to parse data as V1, V2, or V3 webhook payload format.
+   * Returns the parsed result with version info, or null if no format matches.
+   * @private
+   */
+  private tryParseVersionedPayload(data: unknown): {
+    version: WebhookVersion;
+    rawPayload: WebhookPayload;
+    normalizedPayload: IncomingTriggerPayload;
+  } | null {
+    // Try V3 first (has 'composio.trigger.message' type)
+    const v3Result = WebhookPayloadV3Schema.safeParse(data);
+    if (v3Result.success) {
+      return {
+        version: WebhookVersions.V3,
+        rawPayload: v3Result.data,
+        normalizedPayload: this.normalizeV3Payload(v3Result.data),
+      };
+    }
+
+    // Try V2 (has 'type', 'timestamp', 'log_id', and 'data')
+    const v2Result = WebhookPayloadV2Schema.safeParse(data);
+    if (v2Result.success) {
+      return {
+        version: WebhookVersions.V2,
+        rawPayload: v2Result.data,
+        normalizedPayload: this.normalizeV2Payload(v2Result.data),
+      };
+    }
+
+    // Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload', 'log_id')
+    const v1Result = WebhookPayloadV1Schema.safeParse(data);
+    if (v1Result.success) {
+      return {
+        version: WebhookVersions.V1,
+        rawPayload: v1Result.data,
+        normalizedPayload: this.normalizeV1Payload(v1Result.data),
+      };
+    }
+
+    return null;
+  }
+
+  /**
    * Parses incoming Pusher payload, supporting V1, V2, V3, and legacy TriggerData formats.
-   * This method reuses the same schemas and normalizers used for HTTP webhooks.
    * @private
    */
   private parsePusherPayload(data: Record<string, unknown>): IncomingTriggerPayload {
-    // Try V3 format first (has 'composio.trigger.message' type)
-    const v3Result = WebhookPayloadV3Schema.safeParse(data);
-    if (v3Result.success) {
-      logger.debug('Parsed Pusher payload as V3 format');
-      return this.normalizeV3Payload(v3Result.data);
-    }
-
-    // Try V2 format (has 'type', 'timestamp', 'log_id', and 'data')
-    const v2Result = WebhookPayloadV2Schema.safeParse(data);
-    if (v2Result.success) {
-      logger.debug('Parsed Pusher payload as V2 format');
-      return this.normalizeV2Payload(v2Result.data);
-    }
-
-    // Try V1 format (has 'trigger_name', 'connection_id', 'trigger_id', 'payload', 'log_id')
-    const v1Result = WebhookPayloadV1Schema.safeParse(data);
-    if (v1Result.success) {
-      logger.debug('Parsed Pusher payload as V1 format');
-      return this.normalizeV1Payload(v1Result.data);
+    // Try V1/V2/V3 formats
+    const versionedResult = this.tryParseVersionedPayload(data);
+    if (versionedResult) {
+      logger.debug(`Parsed Pusher payload as ${versionedResult.version} format`);
+      return versionedResult.normalizedPayload;
     }
 
     // Try legacy TriggerData format (for backwards compatibility)
@@ -654,47 +682,16 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       });
     }
 
-    // Try V3 first (has 'composio.trigger.message' type)
-    const v3Result = WebhookPayloadV3Schema.safeParse(jsonPayload);
-    if (v3Result.success) {
-      return {
-        version: WebhookVersions.V3,
-        rawPayload: v3Result.data,
-        normalizedPayload: this.normalizeV3Payload(v3Result.data),
-      };
-    }
-
-    // Try V2 (has 'type', 'timestamp', 'log_id', and 'data' with specific fields)
-    const v2Result = WebhookPayloadV2Schema.safeParse(jsonPayload);
-    if (v2Result.success) {
-      return {
-        version: WebhookVersions.V2,
-        rawPayload: v2Result.data,
-        normalizedPayload: this.normalizeV2Payload(v2Result.data),
-      };
-    }
-
-    // Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload', 'log_id')
-    const v1Result = WebhookPayloadV1Schema.safeParse(jsonPayload);
-    if (v1Result.success) {
-      return {
-        version: WebhookVersions.V1,
-        rawPayload: v1Result.data,
-        normalizedPayload: this.normalizeV1Payload(v1Result.data),
-      };
+    // Try V1/V2/V3 formats using shared parsing logic
+    const result = this.tryParseVersionedPayload(jsonPayload);
+    if (result) {
+      return result;
     }
 
     // None of the schemas matched
     throw new ComposioWebhookPayloadError(
       'Webhook payload does not match any known version (V1, V2, or V3). ' +
-        'Please ensure you are using a supported webhook payload format.',
-      {
-        cause: {
-          v1Error: v1Result.error?.message,
-          v2Error: v2Result.error?.message,
-          v3Error: v3Result.error?.message,
-        },
-      }
+        'Please ensure you are using a supported webhook payload format.'
     );
   }
 
