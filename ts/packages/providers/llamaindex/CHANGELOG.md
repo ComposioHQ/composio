@@ -1,5 +1,11 @@
 # @composio/llamaindex
 
+## 0.6.2
+
+### Patch Changes
+
+- @composio/core@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes

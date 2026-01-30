@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.1.20
+
+### Patch Changes
+
+- eec8fd9: Bump SDK version for latest changes
+
 ## 0.1.19
 
 ### Patch Changes
