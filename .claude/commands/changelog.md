@@ -1,68 +1,103 @@
-Check the changes between the current branch and next branch, and create a changelog file inside `/fern/pages/src/changelog` in the file format of `MM-DD-YY-<title>.md`.
+Check the changes between the current branch and next branch, and create a changelog file inside `/docs/content/changelog` in the file format of `MM-DD-YY-<title>.mdx`.
 
-## Changelog File Structure
+## File Naming
 
-### Required Sections
-
-1. **Title** (H1): A clear, descriptive title of the change
-2. **Version Information**: Include SDK versions for both TypeScript and Python
-3. **Description**: Brief explanation of what changed and why
-
-### Version Information Format
-
-```markdown
-## Version Information
-
-### TypeScript/JavaScript
-- Package: `@composio/core` (and provider packages if applicable)
-- Version: `X.Y.Z`+
-
-### Python
-- Package: `composio` (and provider packages if applicable)
-- Version: `X.Y.Z`+
+```
+MM-DD-YY.mdx              # e.g., 12-29-25.mdx
+MM-DD-YY-suffix.mdx       # Multiple same day: 12-10-25-masking.mdx
 ```
 
-Use `+` suffix to indicate "this version and later".
+## Template
 
-### Optional Sections (include as needed)
+```mdx
+---
+title: "Your Title Here"
+description: "Brief description of the change"
+date: "YYYY-MM-DD"
+---
 
-- **What Changed**: Before/after comparison with code examples
-- **Why This Change?**: Explanation of the motivation
-- **New Features/Capabilities**: For feature additions
-- **Migration Guide**: For breaking changes
-- **Backward Compatibility**: Compatibility notes
-- **Impact Summary**: Table showing breaking changes and migration requirements
-- **How to Update**: Package manager commands for updating
+Brief intro paragraph explaining what changed.
 
-### Alerts
+### SDK Versions
 
-Use these MDX components for important notices:
-- `<Warning>` for breaking changes
-- `<Note>` for important information
+| SDK | Version |
+|-----|---------|
+| Python | vX.Y.Z+ |
+| TypeScript | vX.Y.Z+ |
 
-### Code Examples
+### What Changed (if applicable)
 
-Use `<CodeBlocks>` for side-by-side Python/TypeScript examples:
-
-```markdown
-<CodeBlocks>
-```python title="Python SDK"
-# Python code
+**Before:**
+```python
+old_code()
 ```
 
-```typescript title="TypeScript SDK"
-// TypeScript code
+**After:**
+```python
+new_code()
 ```
-</CodeBlocks>
+
+### Breaking Changes (if applicable)
+
+<Callout type="warn">
+**Breaking Change**
+
+What breaks and why.
+</Callout>
+
+### What's New / Improvements / Bug Fixes
+
+- Change 1
+- Change 2
+
+### Backward Compatibility
+
+Notes about backward compatibility.
+```
+
+## Rules
+
+1. **Frontmatter required** - `title`, `description`, and `date` (YYYY-MM-DD format)
+2. **No `#` heading** - Title renders automatically from frontmatter
+3. **Use `###` for sections** - Content headings start at h3
+4. **No emojis** - No checkmarks, warning symbols, etc. in prose (okay in code comments)
+5. **TypeScript code blocks** - Add `// @noErrors` on first line to skip type checking
+
+## Change Types
+
+| Type | How to Format |
+|------|---------------|
+| Breaking Change | `<Callout type="warn">` + before/after code + migration guide |
+| New Feature | `### What's New` |
+| Improvement | `### Improvements` |
+| Bug Fix | `### Bug Fixes` or inline description |
+| Deprecation | `<Callout>` with timeline |
+
+## Code Examples
+
+For TypeScript code that shouldn't be type-checked:
+
+```typescript
+// @noErrors
+const result = await composio.tools.get(userId);
+```
+
+For before/after comparisons, use labeled sections:
+
+**Before:**
+```python
+old_code()
+```
+
+**After:**
+```python
+new_code()
 ```
 
 ## Examples
 
-- Bug fix: `01-21-26-initiate-active-status-filter.md`
-- Breaking change: `01-14-26-auth-config-patch-semantics.md`
-- New feature: `01-12-26-tool-router-improvements.md`
-- Simple change: `01-09-26.md`
-
-## Instructions
-- Avoid using emojies in top level, it's okay within code samples only when necessary
-
+Reference these existing changelogs for style:
+- Bug fix: `01-21-26-initiate-active-status-filter.mdx`
+- Breaking change: `01-14-26-auth-config-patch-semantics.mdx`
+- New feature: `01-12-26-tool-router-improvements.mdx`
+- Simple change: `01-30-26-simplified-optional-schemas.mdx`
