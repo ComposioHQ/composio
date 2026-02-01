@@ -14,10 +14,10 @@ This skill helps validate SDK functionality by creating temporary test projects 
 
 ### 1. Create Ephemeral Test Project
 
-Always use the scratchpad directory for tests:
+Always use the .agent_cache directory for tests:
 ```bash
-# Create test directory in scratchpad
-TEST_DIR="/private/tmp/claude-501/-Users-haxzie-composio-composio-sdk-ts-packages-core/2d58a6e2-93ee-4f13-a697-b79ae8eb8be6/scratchpad/sdk-test-$(date +%s)"
+# Create test directory in .agent_cache (gitignored)
+TEST_DIR=".agent_cache/sdk-test-$(date +%s)"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 
@@ -182,7 +182,7 @@ When you find bugs or quality issues:
 
 ## Best Practices
 
-- **Always use scratchpad**: Never create tests in the main repository
+- **Always use .agent_cache**: Never create tests in the main repository
 - **Use non-auth apps**: HackerNews, Public APIs for quick testing
 - **Test incrementally**: Start with simple tools, then complex workflows
 - **Clean up**: Always delete test directory after testing
@@ -201,7 +201,7 @@ ANTHROPIC_API_KEY   # Anthropic API key
 
 ```bash
 # One-liner to create and test
-TEST_DIR="/private/tmp/claude-501/-Users-haxzie-composio-composio-sdk-ts-packages-core/2d58a6e2-93ee-4f13-a697-b79ae8eb8be6/scratchpad/sdk-test-$(date +%s)" && \
+TEST_DIR=".agent_cache/sdk-test-$(date +%s)" && \
 mkdir -p "$TEST_DIR" && cd "$TEST_DIR" && \
 npm init -y && npm install @composio/core openai && \
 echo "console.log('SDK Test Ready')" > test.ts && \
