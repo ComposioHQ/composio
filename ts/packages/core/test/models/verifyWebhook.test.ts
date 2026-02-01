@@ -503,6 +503,30 @@ describe('Triggers.verifyWebhook', () => {
         })
       ).rejects.toThrow('does not match any known version');
     });
+
+    it('should include detailed schema errors when payload does not match any version', async () => {
+      const invalidPayload = JSON.stringify({ invalid: 'data' });
+      const signature = createSignature(testWebhookId, testTimestamp, invalidPayload, testSecret);
+
+      try {
+        await triggers.verifyWebhook({
+          payload: invalidPayload,
+          signature,
+          secret: testSecret,
+          id: testWebhookId,
+          timestamp: testTimestamp,
+        });
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ComposioWebhookPayloadError);
+        const webhookError = error as ComposioWebhookPayloadError;
+        expect(webhookError.cause).toBeDefined();
+        // The cause should contain v1Error, v2Error, and v3Error with schema validation messages
+        expect((webhookError.cause as any).v1Error).toBeDefined();
+        expect((webhookError.cause as any).v2Error).toBeDefined();
+        expect((webhookError.cause as any).v3Error).toBeDefined();
+      }
+    });
   });
 
   describe('timestamp validation', () => {

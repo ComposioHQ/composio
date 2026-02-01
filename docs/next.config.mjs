@@ -181,6 +181,14 @@ const config = {
         destination: '/reference',
         permanent: true,
       },
+      // Old Fern API endpoint URLs with kebab-case operationIds
+      // e.g. /api-reference/tools/post-tools-execute-by-tool-slug
+      // proxy.ts handles kebab-to-camelCase conversion
+      {
+        source: '/api-reference/:tag/:operationId',
+        destination: '/reference/api-reference/:tag/:operationId',
+        permanent: true,
+      },
       {
         source: '/api-reference/:path*',
         destination: '/reference/:path*',

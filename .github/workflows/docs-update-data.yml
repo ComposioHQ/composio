@@ -44,17 +44,20 @@ jobs:
       - name: Fetch OpenAPI spec
         run: bun run scripts/fetch-openapi.mjs
 
+      - name: Generate API index pages
+        run: bun run generate:api-index
+
       - name: Check for changes
         id: changes
         run: |
           cd ..
-          if git diff --quiet docs/public/data/ docs/public/openapi.json 2>/dev/null; then
+          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ 2>/dev/null; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "No changes detected"
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "Changes detected:"
-            git diff --stat docs/public/data/ docs/public/openapi.json 2>/dev/null || true
+            git diff --stat docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ 2>/dev/null || true
           fi
 
       - name: Create Pull Request
@@ -70,6 +73,7 @@ jobs:
             - `docs/public/data/toolkits.json` - Full toolkit data
             - `docs/public/data/toolkits-list.json` - Light toolkit list
             - `docs/public/openapi.json` - OpenAPI specification
+            - `docs/content/reference/api-reference/*.mdx` - API index pages
 
             ${{ github.event_name == 'repository_dispatch' && format('Hermes commit: {0}', github.event.client_payload.hermes_commit) || '' }}
           branch: docs/auto-update-data
@@ -77,3 +81,4 @@ jobs:
           add-paths: |
             docs/public/data/
             docs/public/openapi.json
+            docs/content/reference/api-reference/

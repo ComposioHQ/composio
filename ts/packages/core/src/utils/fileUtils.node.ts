@@ -178,11 +178,10 @@ const uploadFileToS3 = async (
   // Create a new ArrayBuffer to ensure compatibility with fetch API
   const uploadBuffer = new Uint8Array(contentBytes.byteLength);
   uploadBuffer.set(contentBytes);
-  const bufferBase64 = uint8ArrayToBase64(uploadBuffer);
 
   const uploadResponse = await fetch(signedURL, {
     method: 'PUT',
-    body: bufferBase64,
+    body: uploadBuffer,
     headers: {
       'Content-Type': mimeType,
       'Content-Length': contentBytes.length.toString(),
