@@ -1153,7 +1153,7 @@ describe('Tools', () => {
 
         context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
 
-        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+        const result = context.tools.wrapToolsForToolRouter({ sessionId, metaTools: tools });
 
         expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(tools, expect.any(Function));
         expect(result).toBe('wrapped-tools');
@@ -1169,7 +1169,7 @@ describe('Tools', () => {
           return 'wrapped-tools';
         });
 
-        context.tools.wrapToolsForToolRouter(sessionId, tools);
+        context.tools.wrapToolsForToolRouter({ sessionId, metaTools: tools });
 
         // Setup mocks for execution
         const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
@@ -1214,7 +1214,7 @@ describe('Tools', () => {
           return 'wrapped-tools';
         });
 
-        context.tools.wrapToolsForToolRouter(sessionId, tools, modifiers);
+        context.tools.wrapToolsForToolRouter({ sessionId, metaTools: tools, modifiers });
 
         // Setup mocks for execution
         const getRawComposioToolBySlugSpy = vi.spyOn(context.tools, 'getRawComposioToolBySlug');
@@ -1246,7 +1246,7 @@ describe('Tools', () => {
 
         context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools');
 
-        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+        const result = context.tools.wrapToolsForToolRouter({ sessionId, metaTools: tools });
 
         expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(tools, expect.any(Function));
         expect(result).toBe('wrapped-tools');
@@ -1257,7 +1257,7 @@ describe('Tools', () => {
 
         context.mockProvider.wrapTools.mockReturnValueOnce([]);
 
-        const result = context.tools.wrapToolsForToolRouter(sessionId, tools);
+        const result = context.tools.wrapToolsForToolRouter({ sessionId, metaTools: tools });
 
         expect(context.mockProvider.wrapTools).toHaveBeenCalledWith([], expect.any(Function));
         expect(result).toEqual([]);
