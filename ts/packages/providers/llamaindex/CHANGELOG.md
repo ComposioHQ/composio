@@ -1,5 +1,12 @@
 # @composio/llamaindex
 
+## 0.6.3-alpha.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.6.3-alpha.0
+
 ## 0.6.2
 
 ### Patch Changes

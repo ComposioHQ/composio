@@ -1,0 +1,21 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@composio/core": "0.6.2",
+    "@composio/json-schema-to-zod": "0.1.20",
+    "@composio/anthropic": "0.6.2",
+    "@composio/claude-agent-sdk": "0.6.2",
+    "@composio/cloudflare": "0.6.2",
+    "@composio/google": "0.6.2",
+    "@composio/langchain": "0.6.2",
+    "@composio/llamaindex": "0.6.2",
+    "@composio/mastra": "0.6.2",
+    "@composio/openai": "0.6.2",
+    "@composio/openai-agents": "0.6.2",
+    "@composio/vercel": "0.6.2"
+  },
+  "changesets": [
+    "plenty-stars-film"
+  ]
+}

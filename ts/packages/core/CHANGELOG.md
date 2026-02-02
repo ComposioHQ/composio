@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.6.3-alpha.0
+
+### Patch Changes
+
+- Add experimental prefetch
+
 ## 0.6.2
 
 ### Patch Changes
