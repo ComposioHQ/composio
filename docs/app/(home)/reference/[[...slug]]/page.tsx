@@ -33,7 +33,7 @@ export default async function Page({
   if ('getAPIPageProps' in page.data) {
     const pageData = page.data as OpenAPIPageData;
     return (
-      <DocsPage full tableOfContentPopover={{ enabled: false }}>
+      <DocsPage full footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
         <h1 className="text-2xl font-semibold mb-4">{pageData.title}</h1>
         <PageActions path={page.url} />
         <DocsBody>

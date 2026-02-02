@@ -1,0 +1,20 @@
+---
+title: Tool Router
+description: "(Labs) Tool router endpoints"
+---
+
+{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+
+(Labs) Tool router endpoints
+
+## Endpoints
+
+| Endpoint | Quick Link |
+|----------|------------|
+| `POST /api/v3/tool_router/session` | [Create a new tool router session](/reference/api-reference/tool-router/postToolRouterSession) |
+| `POST /api/v3/tool_router/session/{session_id}/execute` | [Execute a tool within a tool router session](/reference/api-reference/tool-router/postToolRouterSessionBySessionIdExecute) |
+| `POST /api/v3/tool_router/session/{session_id}/execute_meta` | [Execute a meta tool within a tool router session](/reference/api-reference/tool-router/postToolRouterSessionBySessionIdExecuteMeta) |
+| `GET /api/v3/tool_router/session/{session_id}` | [Get a tool router session by ID](/reference/api-reference/tool-router/getToolRouterSessionBySessionId) |
+| `POST /api/v3/tool_router/session/{session_id}/link` | [Create a link session for a toolkit in a tool router session](/reference/api-reference/tool-router/postToolRouterSessionBySessionIdLink) |
+| `GET /api/v3/tool_router/session/{session_id}/toolkits` | [Get toolkits for a tool router session](/reference/api-reference/tool-router/getToolRouterSessionBySessionIdToolkits) |
+| `GET /api/v3/tool_router/session/{session_id}/tools` | [List meta tools with schemas for a tool router session](/reference/api-reference/tool-router/getToolRouterSessionBySessionIdTools) |

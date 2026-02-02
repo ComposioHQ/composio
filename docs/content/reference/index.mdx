@@ -1,32 +1,35 @@
 ---
 title: Overview
-description: Authentication and getting started with Composio APIs
+description: Composio REST API and SDK reference for AI agent tool execution, authentication, and integrations
+keywords: [Composio API, REST API, SDK reference, AI agent tools, tool execution, API documentation]
 ---
 
-## Authentication
+Composio powers tool discovery, execution, authentication, and context management for your AI agents with 800+ toolkits. This reference covers our REST APIs and SDKs.
 
-All Composio API endpoints require authentication via API key.
+## Quick Reference
 
-### API Key Authentication
+- **Base URL**: `https://backend.composio.dev/api/v3`
+- **[Authentication](/reference/authentication)**: `x-api-key` (project) or `x-org-api-key` (organization) header
+- **[Rate Limits](/reference/rate-limits)**: 20K-100K requests per 10 minutes (plan-dependent)
 
-Include your API key in the `x-api-key` header.
+## REST API
 
-#### Getting Your API Key
+| API | Description |
+|-----|-------------|
+| [Tool Router](/reference/api-reference/tool-router) | Session-based API for AI agents to discover and execute tools |
+| [Tools](/reference/api-reference/tools) | List, search, and execute individual actions |
+| [Connected Accounts](/reference/api-reference/connected-accounts) | Manage user OAuth connections to apps |
+| [Auth Configs](/reference/api-reference/auth-configs) | Configure how users authenticate to toolkits |
+| [Triggers](/reference/api-reference/triggers) | Subscribe to webhooks from connected apps |
+| [Toolkits](/reference/api-reference/toolkits) | Browse available apps and their tools |
 
-1. Sign in to [composio.dev](https://composio.dev)
-2. Navigate to **Settings**
-3. In **Project Settings**, copy the key from the **API Keys** section
+## SDK Reference
 
-<Video src="/videos/fetch-project-key.mp4" autoPlay />
-
-### Organization API Key
-
-For organization-level access, use the `x-org-api-key` header.
-
-#### Getting Your Organization API Key
-
-1. Sign in to [composio.dev](https://composio.dev)
-2. Navigate to **Organization Settings** → **General Settings**
-3. Copy the token under **Organization Access Tokens**
-
-<Video src="/videos/fetch-org-key.mp4" autoPlay />
+<Cards>
+  <Card icon={<img src="/images/providers/typescript-logo.svg" alt="TypeScript" width={20} height={20} />} title="TypeScript SDK" href="/reference/sdk-reference/typescript">
+    TypeScript SDK reference
+  </Card>
+  <Card icon={<img src="/images/providers/python-logo.svg" alt="Python" width={20} height={20} />} title="Python SDK" href="/reference/sdk-reference/python">
+    Python SDK reference
+  </Card>
+</Cards>

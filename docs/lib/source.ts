@@ -4,6 +4,20 @@ import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 
+/**
+ * Transformer to set defaultOpen: true for specific folders in the reference sidebar.
+ * This is needed because openapiSource doesn't support meta.json files.
+ */
+const defaultOpenTransformer = {
+  folder(node: { name: string; defaultOpen?: boolean }, folderPath: string) {
+    // Set defaultOpen for API Reference and SDK Reference folders
+    if (folderPath === 'api-reference' || folderPath === 'sdk-reference') {
+      return { ...node, defaultOpen: true };
+    }
+    return node;
+  },
+};
+
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({
   baseUrl: '/docs',
@@ -38,6 +52,10 @@ export async function getReferenceSource() {
         openapi: openapiPages,
       }),
       plugins: [lucideIconsPlugin(), openapiPlugin()],
+      pageTree: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        transformers: [defaultOpenTransformer as any],
+      },
     });
   }
   return _referenceSource;

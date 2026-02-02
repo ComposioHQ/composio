@@ -108,6 +108,103 @@ async function fetchAndFilterSpec() {
   console.log(`Removed ${removedCount} endpoints/operations`);
   console.log(`Final spec has ${Object.keys(filteredPaths).length} paths`);
 
+  // Normalize overly complex anyOf/oneOf schemas (e.g., connection_data with 68 object variants)
+  // Merges similar object schemas into a single object with all properties
+  let unionNormalizedCount = 0;
+
+  // Helper to merge two property schemas, combining enums if present
+  const mergePropertySchemas = (existing, incoming) => {
+    if (!existing) return JSON.parse(JSON.stringify(incoming));
+
+    const merged = JSON.parse(JSON.stringify(existing));
+
+    // Merge enum values if both have enums
+    if (existing.enum && incoming.enum) {
+      const enumSet = new Set([...existing.enum, ...incoming.enum]);
+      merged.enum = [...enumSet];
+    }
+
+    // Recursively merge nested properties for objects
+    if (existing.properties && incoming.properties) {
+      merged.properties = { ...existing.properties };
+      for (const [key, val] of Object.entries(incoming.properties)) {
+        merged.properties[key] = mergePropertySchemas(merged.properties[key], val);
+      }
+    }
+
+    return merged;
+  };
+
+  const normalizeUnionSchemas = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+
+    // Check for anyOf or oneOf with many similar object schemas
+    for (const unionKey of ['anyOf', 'oneOf']) {
+      if (obj[unionKey] && Array.isArray(obj[unionKey]) && obj[unionKey].length > 5) {
+        const objectSchemas = obj[unionKey].filter(
+          (schema) => schema.type === 'object' && schema.properties
+        );
+
+        // If most variants are objects, merge them
+        if (objectSchemas.length > 5 && objectSchemas.length >= obj[unionKey].length * 0.8) {
+          const mergedProperties = {};
+          const allRequired = new Set();
+
+          // Collect all properties from all variants, merging enums
+          for (const schema of objectSchemas) {
+            for (const [propName, propSchema] of Object.entries(schema.properties || {})) {
+              mergedProperties[propName] = mergePropertySchemas(mergedProperties[propName], propSchema);
+            }
+            // Track required fields (only if required in ALL variants)
+            if (schema.required) {
+              for (const req of schema.required) {
+                allRequired.add(req);
+              }
+            }
+          }
+
+          // Check which fields are required in ALL object schemas
+          const universallyRequired = [];
+          for (const req of allRequired) {
+            const requiredInAll = objectSchemas.every(
+              (schema) => schema.required && schema.required.includes(req)
+            );
+            if (requiredInAll) {
+              universallyRequired.push(req);
+            }
+          }
+
+          // Replace union with merged object schema
+          delete obj[unionKey];
+          obj.type = 'object';
+          obj.properties = mergedProperties;
+          if (universallyRequired.length > 0) {
+            obj.required = universallyRequired;
+          }
+          obj.additionalProperties = true;
+
+          unionNormalizedCount++;
+          console.log(
+            `  Merged ${unionKey} with ${objectSchemas.length} object variants into single object with ${Object.keys(mergedProperties).length} properties`
+          );
+        }
+      }
+    }
+
+    // Recurse into all properties
+    for (const val of Object.values(obj)) {
+      if (Array.isArray(val)) {
+        val.forEach((item) => normalizeUnionSchemas(item));
+      } else {
+        normalizeUnionSchemas(val);
+      }
+    }
+  };
+  normalizeUnionSchemas(spec);
+  if (unionNormalizedCount > 0) {
+    console.log(`Normalized ${unionNormalizedCount} complex union schemas`);
+  }
+
   // Fix invalid OpenAPI 3.0: "nullable: true" without "type" is invalid
   // See: https://swagger.io/docs/specification/data-models/data-types/#null
   let nullableFixCount = 0;

@@ -10,7 +10,8 @@
     "postinstall": "fumadocs-mdx",
     "lint": "eslint",
     "lint:links": "bun scripts/validate-links.ts",
-    "generate:toolkits": "bun scripts/generate-toolkits.ts"
+    "generate:toolkits": "bun scripts/generate-toolkits.ts",
+    "generate:api-index": "bun scripts/generate-api-index.ts"
   },
   "dependencies": {
     "@radix-ui/react-tabs": "^1.1.13",

@@ -1,0 +1,20 @@
+---
+title: Triggers
+description: "Trigger management and execution"
+---
+
+{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+
+Trigger management and execution
+
+## Endpoints
+
+| Endpoint | Quick Link |
+|----------|------------|
+| `POST /api/v3/trigger_instances/{slug}/upsert` | [Create or update a trigger](/reference/api-reference/triggers/postTriggerInstancesBySlugUpsert) |
+| `GET /api/v3/trigger_instances/active` | [List active triggers](/reference/api-reference/triggers/getTriggerInstancesActive) |
+| `DELETE /api/v3/trigger_instances/manage/{triggerId}` | [Delete a trigger](/reference/api-reference/triggers/deleteTriggerInstancesManageByTriggerId) |
+| `PATCH /api/v3/trigger_instances/manage/{triggerId}` | [Enable or disable a trigger](/reference/api-reference/triggers/patchTriggerInstancesManageByTriggerId) |
+| `GET /api/v3/triggers_types/list/enum` | [List trigger type enums](/reference/api-reference/triggers/getTriggersTypesListEnum) |
+| `GET /api/v3/triggers_types/{slug}` | [Get trigger type by slug](/reference/api-reference/triggers/getTriggersTypesBySlug) |
+| `GET /api/v3/triggers_types` | [List trigger types](/reference/api-reference/triggers/getTriggersTypes) |
