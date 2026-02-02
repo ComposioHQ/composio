@@ -9,6 +9,12 @@ export const WELL_KNOWN_ENV_VARS = ['COMPOSIO_API_KEY', 'OPENAI_API_KEY'] as con
  */
 export const WELL_KNOWN_NODE_VERSIONS = ['20.18.0', '20.19.0', '22.12.0', 'current'] as const;
 
+/**
+ * Deno versions that are well-known to the CI matrix strategy.
+ * `current` refers to the Deno version specified in `.dvmrc`.
+ */
+export const WELL_KNOWN_DENO_VERSIONS = ['2.6.7', 'current'] as const;
+
 export const TIMEOUTS = {
   DEFAULT: 5_000,
   LLM_SHORT: 15_000,

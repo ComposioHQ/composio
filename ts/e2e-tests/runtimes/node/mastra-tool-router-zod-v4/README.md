@@ -13,9 +13,31 @@ Issue [#2109](https://github.com/ComposioHQ/composio/issues/2109) tracks Mastra 
 
 ## What It Tests
 
-| Test                 | Description                                              |
-| -------------------- | -------------------------------------------------------- |
+| Test                 | Description                                                  |
+| -------------------- | ------------------------------------------------------------ |
 | Tool Router workflow | Creates session, connects MCP, runs agent with Zod v4 schema |
+
+## Test Setup
+
+This test runs **directly in Bun** (no Docker fixtures). It imports packages from the monorepo workspace and makes real API calls:
+
+```typescript
+import { Composio } from '@composio/core';
+import { MastraProvider } from '@composio/mastra';
+import { MCPClient } from '@mastra/mcp';
+import { Agent } from '@mastra/core/agent';
+import { createOpenAI } from '@ai-sdk/openai';
+import { z } from 'zod';
+```
+
+**Required environment variables:**
+
+- `COMPOSIO_API_KEY` - Composio API key for Tool Router
+- `OPENAI_API_KEY` - OpenAI API key for agent LLM calls
+
+## Isolation Tool
+
+**Docker** with Node.js versions: 22.12.0.
 
 ## Running
 

@@ -1,34 +1,30 @@
 /**
- * ESM compatibility e2e test
+ * ESM compatibility e2e test for Deno
  *
- * Verifies that @composio/core can be imported using ESM import syntax in Node.js.
+ * Verifies that @composio/core can be imported using npm: specifier in Deno.
  */
 
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
-  nodeVersions: [
-    // may throw ERR_REQUIRE_ESM
-    '20.18.0',
-    // supports ESM by default
-    '20.19.0',
-    '22.12.0',
-  ],
+  versions: {
+    deno: ['2.6.7'],
+  },
   usesFixtures: true,
   defineTests: ({ runFixture }) => {
     let result: E2ETestResult;
 
     beforeAll(async () => {
-      result = await runFixture({ filename: 'test.mjs' });
+      result = await runFixture({ filename: 'test.ts' });
     });
 
-    describe('ESM compatibility', () => {
+    describe('ESM compatibility (Deno)', () => {
       it('exits successfully', () => {
         expect(result.exitCode).toBe(0);
       });
 
-      it('import() succeeds', () => {
+      it('import npm:@composio/core succeeds', () => {
         expect(result.stdout).toContain('Test 1 passed: import() succeeded');
       });
 
@@ -62,10 +58,6 @@ e2e(import.meta.url, {
 
       it('exports logger', () => {
         expect(result.stdout).toContain('Test 9 passed: logger is exported');
-      });
-
-      it('supports static import syntax', () => {
-        expect(result.stdout).toContain('Test 10 passed: Static import syntax works');
       });
 
       it('completes all tests', () => {

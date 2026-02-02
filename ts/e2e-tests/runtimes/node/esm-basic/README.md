@@ -25,11 +25,24 @@ ESM is the modern JavaScript module standard. This suite ensures:
 | logger                | Logger instance is exported              |
 | Named imports         | Destructuring imports work correctly     |
 
+## Fixture
+
+```
+fixtures/
+└── test.mjs    # ESM test script using import()
+```
+
+The fixture is a standalone `.mjs` file that:
+
+- Uses `import('@composio/core')` to dynamically import the package
+- Verifies each export exists and has the correct type
+- Tests destructured named imports (`{ Composio, OpenAIProvider }`)
+- Attempts to instantiate `OpenAIProvider` to catch runtime errors
+- Outputs test results to stdout with pass/fail markers
+
 ## Isolation Tool
 
-**Docker** with Node.js versions: 20.18.0, 20.19.0, 22.12.0
-
-This ensures tests run against exact Node.js versions independent of the developer's local setup, catching version-specific ESM resolution issues.
+**Docker** with Node.js versions: 20.18.0, 20.19.0, 22.12.0.
 
 ## Running
 

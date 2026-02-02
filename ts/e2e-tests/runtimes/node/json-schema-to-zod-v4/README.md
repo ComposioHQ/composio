@@ -25,6 +25,20 @@ The `@composio/json-schema-to-zod` package must support both Zod v3 and v4. This
 | Complex nested arrays  | Arrays of objects with nested arrays                       |
 | Union with constraints | anyOf with minLength, minimum, and required fields         |
 
+## Test Setup
+
+This test runs **directly in Bun** (no Docker fixtures). The test file imports `@composio/json-schema-to-zod` from the monorepo workspace:
+
+```typescript
+import { jsonSchemaToZod, type JsonSchema } from '@composio/json-schema-to-zod';
+```
+
+Tests use `bun:test` assertions to verify schema conversion and parsing behavior.
+
+## Isolation Tool
+
+**Docker** with Node.js versions: current (as specified in `.nvmrc`).
+
 ## Running
 
 ```bash

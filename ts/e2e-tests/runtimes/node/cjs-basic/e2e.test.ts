@@ -15,11 +15,12 @@ e2e(import.meta.url, {
     '20.19.0',
     '22.12.0',
   ],
+  usesFixtures: true,
   defineTests: ({ runFixture }) => {
     let result: E2ETestResult;
 
     beforeAll(async () => {
-      result = await runFixture('fixtures/test.cjs');
+      result = await runFixture({ filename: 'test.cjs' });
     });
 
     describe('CommonJS compatibility', () => {

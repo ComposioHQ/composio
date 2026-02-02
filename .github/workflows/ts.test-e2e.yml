@@ -41,23 +41,46 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
-      - name: Verify API Key
-        run: |
-          if [ -z "$COMPOSIO_API_KEY" ]; then
-            echo "::error::COMPOSIO_API_KEY is not set"
-            exit 1
-          fi
-          echo "✅ COMPOSIO_API_KEY is configured"
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "::error::OPENAI_API_KEY is not set"
-            exit 1
-          fi
-          echo "✅ OPENAI_API_KEY is configured"
-
       - name: Run Node.js E2E Tests
         run: pnpm run test:e2e:node
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+  # Deno E2E tests, running in Docker to isolate environment
+  # Each test suite defines its own versions.deno in e2e.test.ts
+  # Tests that don't support the matrix version are automatically skipped
+  test-e2e-deno-docker:
+    name: E2E Test Deno ${{ matrix.deno-version }}
+    runs-on: ubuntu-24.04
+    permissions: read-all
+    strategy:
+      fail-fast: false
+      matrix:
+        deno-version: ['2.6.7']
+    env:
+      CI: 1
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_E2E_DENO_VERSION: ${{ matrix.deno-version }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ matrix.deno-version }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build:packages
+
+      - name: Run Deno E2E Tests
+        run: pnpm run test:e2e:deno
 
   # Cloudflare Workerd E2E tests
   test-e2e-cloudflare:
