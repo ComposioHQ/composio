@@ -319,6 +319,110 @@ Tool Router sessions now support enhanced modifier types (introduced in v0.4.0) 
 
 These modifiers provide better context for session-based tool execution, allowing you to track which session is executing which tools.
 
+#### Prefetching Regular Tools (Experimental)
+
+The `prefetchTools` experimental feature allows you to fetch and use regular Composio tools alongside meta tools in a tool router session. The regular tools will execute via `session.execute()` instead of the normal execution path.
+
+**Basic Usage:**
+
+```typescript
+// Create a tool router session
+const session = await composio.create('user_123', {
+  toolkits: ['github'],
+  manageConnections: true,
+});
+
+// Get tools with prefetchTools
+const tools = await session.tools({
+  experimental: {
+    // Specify which regular tools you want to prefetch
+    prefetchTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE', 'GMAIL_SEND_EMAIL'],
+  },
+});
+
+// The returned tools will include:
+// 1. All meta tools (COMPOSIO_* tools) from the session
+// 2. The specified prefetchTools
+//
+// ALL tools will execute via the session context using:
+// - Meta tools: client.toolRouter.session.executeMeta()
+// - Prefetch tools: client.toolRouter.session.execute()
+```
+
+**With Modifiers:**
+
+You can combine prefetchTools with schema and execution modifiers:
+
+```typescript
+const tools = await session.tools({
+  modifySchema: ({ schema, toolSlug }) => {
+    return {
+      ...schema,
+      description: `[Session Tool] ${schema.description}`,
+    };
+  },
+  beforeExecute: async ({ toolSlug, sessionId, params }) => {
+    console.log(`Executing ${toolSlug} in session ${sessionId}`);
+    return params;
+  },
+  afterExecute: async ({ toolSlug, sessionId, result }) => {
+    console.log(`Completed ${toolSlug}`);
+    return result;
+  },
+  experimental: {
+    prefetchTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
+  },
+});
+```
+
+**Use Case:**
+
+This is useful when you want to use specific tools from different toolkits without enabling entire toolkits in the session:
+
+```typescript
+// Create session with only github toolkit
+const session = await composio.create('user_123', {
+  toolkits: ['github'],
+});
+
+// But also want to use a specific Slack tool
+const tools = await session.tools({
+  experimental: {
+    prefetchTools: ['SLACK_SEND_MESSAGE'], // Pull in specific Slack tool
+  },
+});
+
+// Now you have:
+// - All GitHub meta tools from the session
+// - COMPOSIO_* meta tools
+// - SLACK_SEND_MESSAGE (even though slack toolkit is not in session)
+```
+
+**Key Differences:**
+
+Normal tool execution:
+```typescript
+// Regular tools execute via:
+client.tools.execute(toolSlug, {
+  userId: 'user_123',
+  arguments: { ... },
+});
+```
+
+Tool Router prefetchTools execution:
+```typescript
+// Prefetch tools execute via:
+client.toolRouter.session.execute(sessionId, {
+  tool_slug: toolSlug,
+  arguments: { ... },
+});
+```
+
+This means prefetch tools benefit from:
+- Session-scoped authentication and connections
+- Tool router policies and constraints
+- Unified execution context with meta tools
+
 ### Meta Tools
 
 Tool Router provides meta tools for managing connections and session state. You can access these directly using the `getRawToolRouterMetaTools` method (introduced in v0.4.0):

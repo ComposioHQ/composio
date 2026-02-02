@@ -593,8 +593,33 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  *   }
  * });
  * ```
+ *
+ * @example
+ * ```typescript
+ * // Prefetch regular tools alongside meta tools
+ * const sessionTools = await session.tools({
+ *   experimental: {
+ *     prefetchTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE']
+ *   }
+ * });
+ * // Returns both meta tools and the specified regular tools
+ * // Regular tools will execute via session.execute() instead of normal execution
+ * ```
  */
-export type SessionMetaToolOptions = ToolOptions & SessionExecuteMetaModifiers;
+export type SessionMetaToolOptions = ToolOptions &
+  SessionExecuteMetaModifiers & {
+    /**
+     * Experimental options for session tools
+     */
+    experimental?: {
+      /**
+       * List of tool slugs to prefetch alongside meta tools.
+       * These tools will be fetched from the normal tools endpoint and wrapped
+       * with session-specific execution that uses toolRouter.session.execute().
+       */
+      prefetchTools?: string[];
+    };
+  };
 
 /**
  * Provider-specific options determined by the type of provider being used.

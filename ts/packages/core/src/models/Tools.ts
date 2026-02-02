@@ -691,20 +691,107 @@ export class Tools<
 
   /**
    * @internal
-   * Utility to wrap a given set of tools in the format expected by the tool router
+   * Utility to wrap tools for tool router session
+   * Handles both meta-only and meta+regular tools scenarios
    *
-   * @param {string} sessionId - The session id to execute the tool for
-   * @param {Tool[]} tools - The tools to wrap
-   * @param {SessionExecuteMetaModifiers} modifiers - The modifiers to apply to the tool
-   * @returns {Tool[]} The wrapped tools
+   * @param params - The parameters for wrapping tools
+   * @param params.sessionId - The session id to execute the tool for
+   * @param params.metaTools - The meta tools (COMPOSIO_*)
+   * @param params.regularTools - Optional regular prefetch tools
+   * @param params.modifiers - The modifiers to apply to the tools
+   * @returns {Tool[]} The wrapped tools in provider format
    */
-  wrapToolsForToolRouter(
-    sessionId: string,
-    tools: Tool[],
-    modifiers?: SessionExecuteMetaModifiers
-  ): Tool[] {
-    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, modifiers);
-    return this.provider.wrapTools(tools, executeToolFn) as Tool[];
+  wrapToolsForToolRouter({
+    sessionId,
+    metaTools,
+    regularTools,
+    modifiers,
+  }: {
+    sessionId: string;
+    metaTools: Tool[];
+    regularTools?: Tool[];
+    modifiers?: SessionExecuteMetaModifiers;
+  }): Tool[] {
+    // If no regular tools, use simple meta tool wrapping
+    if (!regularTools || regularTools.length === 0) {
+      const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, modifiers);
+      return this.provider.wrapTools(metaTools, executeToolFn) as Tool[];
+    }
+
+    // Handle both meta and regular tools
+    // Create a Set of meta tool slugs for quick lookup
+    const metaToolSlugs = new Set(metaTools.map(t => t.slug));
+
+    // Create a Map of regular tool slugs to their toolkit slugs
+    const regularToolkitSlugs = new Map(
+      regularTools.map(t => [t.slug, t.toolkit?.slug ?? 'unknown'])
+    );
+
+    // Combine all tools
+    const allTools = [...metaTools, ...regularTools];
+
+    // Create a unified execute function that dispatches based on tool type
+    const unifiedExecuteFn = async (
+      toolSlug: string,
+      input: Record<string, unknown>
+    ): Promise<ToolExecuteResponse> => {
+      // Check if this is a meta tool
+      if (metaToolSlugs.has(toolSlug)) {
+        // Execute as meta tool
+        return await this.executeMetaTool(
+          toolSlug,
+          {
+            sessionId,
+            arguments: input,
+          },
+          modifiers
+        );
+      } else {
+        // Execute as regular tool via session.execute
+        // Get the toolkit slug for this tool
+        const toolkitSlug = regularToolkitSlugs.get(toolSlug) ?? 'unknown';
+
+        // Apply beforeExecute modifier if provided
+        let modifiedParams = input;
+        if (modifiers?.beforeExecute) {
+          modifiedParams = await modifiers.beforeExecute({
+            toolSlug,
+            toolkitSlug,
+            sessionId,
+            params: modifiedParams,
+          });
+        }
+
+        // Execute the regular tool via tool router session
+        const response = await this.client.toolRouter.session.execute(sessionId, {
+          tool_slug: toolSlug,
+          arguments: modifiedParams,
+        });
+
+        // Prepare the result
+        let result: ToolExecuteResponse = {
+          data: response.data,
+          error: response.error,
+          successful: !response.error,
+          logId: response.log_id,
+        };
+
+        // Apply afterExecute modifier if provided
+        if (modifiers?.afterExecute) {
+          result = await modifiers.afterExecute({
+            toolSlug,
+            toolkitSlug,
+            sessionId,
+            result,
+          });
+        }
+
+        return result;
+      }
+    };
+
+    // Wrap all tools together with the unified execute function
+    return this.provider.wrapTools(allTools, unifiedExecuteFn) as Tool[];
   }
 
   /**
@@ -758,6 +845,70 @@ export class Tools<
         },
         modifiers
       );
+    };
+    return executeToolFn;
+  }
+
+  /**
+   * @internal
+   * Creates a function that executes regular (non-meta) tools via tool router session
+   *
+   * @param {string} sessionId - The session id to execute the tool for
+   * @param {Tool[]} tools - The tools to extract toolkit info from
+   * @param {SessionExecuteMetaModifiers} modifiers - The modifiers to apply to the tool
+   * @returns {ExecuteToolFn} The execute tool function
+   */
+  private createExecuteRegularToolFnForToolRouter(
+    sessionId: string,
+    tools: Tool[],
+    modifiers?: SessionExecuteMetaModifiers
+  ): ExecuteToolFn {
+    // Create a Map of tool slugs to their toolkit slugs
+    const toolkitSlugs = new Map(tools.map(t => [t.slug, t.toolkit?.slug ?? 'unknown']));
+
+    const executeToolFn = async (
+      toolSlug: string,
+      input: Record<string, unknown>
+    ): Promise<ToolExecuteResponse> => {
+      // Get the toolkit slug for this tool
+      const toolkitSlug = toolkitSlugs.get(toolSlug) ?? 'unknown';
+
+      // Apply beforeExecute modifier if provided
+      let modifiedParams = input;
+      if (modifiers?.beforeExecute) {
+        modifiedParams = await modifiers.beforeExecute({
+          toolSlug,
+          toolkitSlug,
+          sessionId,
+          params: modifiedParams,
+        });
+      }
+
+      // Execute the regular tool via tool router session
+      const response = await this.client.toolRouter.session.execute(sessionId, {
+        tool_slug: toolSlug,
+        arguments: modifiedParams,
+      });
+
+      // Prepare the result
+      let result: ToolExecuteResponse = {
+        data: response.data,
+        error: response.error,
+        successful: !response.error,
+        logId: response.log_id,
+      };
+
+      // Apply afterExecute modifier if provided
+      if (modifiers?.afterExecute) {
+        result = await modifiers.afterExecute({
+          toolSlug,
+          toolkitSlug,
+          sessionId,
+          result,
+        });
+      }
+
+      return result;
     };
     return executeToolFn;
   }

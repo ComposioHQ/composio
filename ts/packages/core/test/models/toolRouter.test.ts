@@ -19,7 +19,7 @@ vi.mock('../../src/models/Tools', () => {
     Tools: vi.fn().mockImplementation(() => ({
       getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
       getRawToolRouterMetaTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-      wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+      wrapToolsForToolRouter: vi.fn().mockReturnValue(['mocked-wrapped-tools']),
     })),
   };
 });
@@ -35,6 +35,7 @@ const createMockClient = () => ({
       link: vi.fn(),
       toolkits: vi.fn(),
       executeMeta: vi.fn(),
+      execute: vi.fn(),
     },
   },
   tools: {
@@ -1784,7 +1785,7 @@ describe('ToolRouter', () => {
       (Tools as any).mockImplementation(() => ({
         getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
         getRawToolRouterMetaTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue(['mocked-wrapped-tools']),
       }));
     });
 
@@ -1801,13 +1802,13 @@ describe('ToolRouter', () => {
 
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
-      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        undefined
-      );
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        modifiers: undefined,
+      });
 
-      expect(tools).toBe('mocked-wrapped-tools');
+      expect(tools).toEqual(['mocked-wrapped-tools']);
     });
 
     it('should fetch and wrap tools with modifiers', async () => {
@@ -1828,13 +1829,13 @@ describe('ToolRouter', () => {
       expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
         modifySchema: modifiers.modifySchema,
       });
-      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        modifiers
-      );
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        modifiers,
+      });
 
-      expect(tools).toBe('mocked-wrapped-tools');
+      expect(tools).toEqual(['mocked-wrapped-tools']);
     });
 
     it('should handle tools fetching errors', async () => {
@@ -1843,7 +1844,7 @@ describe('ToolRouter', () => {
       (Tools as any).mockImplementation(() => ({
         getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
         getRawToolRouterMetaTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue(['mocked-wrapped-tools']),
       }));
 
       const session = await toolRouter.create(userId);
@@ -1870,21 +1871,21 @@ describe('ToolRouter', () => {
       expect(firstToolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
         modifySchema: modifier1.modifySchema,
       });
-      expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+      expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        modifier1
-      );
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        modifiers: modifier1,
+      });
 
       const secondToolsInstance = (Tools as any).mock.results[1].value;
       expect(secondToolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
         modifySchema: modifier2.modifySchema,
       });
-      expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+      expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        modifier2
-      );
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        modifiers: modifier2,
+      });
     });
 
     it('should use tool slugs from session response', async () => {
@@ -1908,11 +1909,11 @@ describe('ToolRouter', () => {
         'custom_session_123',
         undefined
       );
-      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
-        'custom_session_123',
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        undefined
-      );
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
+        sessionId: 'custom_session_123',
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        modifiers: undefined,
+      });
     });
 
     it('should handle empty tool router tools array', async () => {
@@ -1936,11 +1937,126 @@ describe('ToolRouter', () => {
         'empty_session_123',
         undefined
       );
-      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
-        'empty_session_123',
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
+        sessionId: 'empty_session_123',
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        modifiers: undefined,
+      });
+    });
+
+    it('should fetch and wrap prefetchTools alongside meta tools', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+      const session = await toolRouter.create(userId);
+      const tools = await session.tools({
+        experimental: {
+          prefetchTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
+        },
+      });
+
+      const toolsInstance = (Tools as any).mock.results[0].value;
+
+      // Should fetch meta tools
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
+
+      // Should fetch regular tools with prefetchTools
+      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
+        { tools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'] },
         undefined
       );
+
+      // Should wrap all tools together using the new method
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
+        sessionId,
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        regularTools: [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        modifiers: expect.objectContaining({
+          experimental: {
+            prefetchTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
+          },
+        }),
+      });
+
+      // Should return combined tools
+      expect(tools).toEqual(['mocked-wrapped-tools']);
+    });
+
+    it('should fetch and wrap prefetchTools with schema modifiers', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+      const modifiers = {
+        modifySchema: vi.fn(({ schema }) => ({
+          ...schema,
+          description: 'Modified description',
+        })),
+        experimental: {
+          prefetchTools: ['GITHUB_CREATE_ISSUE'],
+        },
+      };
+
+      const session = await toolRouter.create(userId);
+      const tools = await session.tools(modifiers);
+
+      const toolsInstance = (Tools as any).mock.results[0].value;
+
+      // Should fetch meta tools with schema modifier
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
+        modifySchema: modifiers.modifySchema,
+      });
+
+      // Should fetch regular tools with schema modifier
+      expect(toolsInstance.getRawComposioTools).toHaveBeenCalledWith(
+        { tools: ['GITHUB_CREATE_ISSUE'] },
+        { modifySchema: modifiers.modifySchema }
+      );
+
+      // Should wrap all tools together using the new method
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
+        sessionId,
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        regularTools: [{ slug: 'GMAIL_FETCH_EMAILS' }],
+        modifiers,
+      });
+
+      // Should return combined tools
+      expect(tools).toEqual(['mocked-wrapped-tools']);
+    });
+
+    it('should not fetch prefetchTools when experimental.prefetchTools is empty', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+      const session = await toolRouter.create(userId);
+      const tools = await session.tools({
+        experimental: {
+          prefetchTools: [],
+        },
+      });
+
+      const toolsInstance = (Tools as any).mock.results[0].value;
+
+      // Should fetch meta tools
+      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
+
+      // Should NOT fetch regular tools
+      expect(toolsInstance.getRawComposioTools).not.toHaveBeenCalled();
+
+      // Should return only meta tools
+      expect(tools).toEqual(['mocked-wrapped-tools']);
+    });
+
+    it('should not fetch prefetchTools when experimental is not provided', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+      const session = await toolRouter.create(userId);
+      const tools = await session.tools();
+
+      const toolsInstance = (Tools as any).mock.results[0].value;
+
+      // Should NOT fetch regular tools
+      expect(toolsInstance.getRawComposioTools).not.toHaveBeenCalled();
+
+      // Should return only meta tools
+      expect(tools).toEqual(['mocked-wrapped-tools']);
     });
   });
 
@@ -1971,7 +2087,7 @@ describe('ToolRouter', () => {
 
       // Use tools function
       const tools = await session.tools();
-      expect(tools).toBe('mocked-wrapped-tools');
+      expect(tools).toEqual(['mocked-wrapped-tools']);
 
       // Verify all API calls were made
       expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
@@ -2087,16 +2203,16 @@ describe('ToolRouter', () => {
 
       const tools = await session.tools();
 
-      expect(tools).toBe('mocked-wrapped-tools');
+      expect(tools).toEqual(['mocked-wrapped-tools']);
       expect(Tools).toHaveBeenCalled();
 
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
-      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith({
         sessionId,
-        [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
-        undefined
-      );
+        metaTools: [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
+        modifiers: undefined,
+      });
     });
 
     it('should return a session with working authorize function', async () => {

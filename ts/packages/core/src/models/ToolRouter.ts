@@ -178,7 +178,9 @@ export class ToolRouter<
   ): ((modifiers?: SessionMetaToolOptions) => Promise<ReturnType<TProvider['wrapTools']>>) => {
     return async (modifiers?: SessionMetaToolOptions) => {
       const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-      const tools = await ToolsModel.getRawToolRouterMetaTools(
+
+      // Fetch meta tools
+      const metaTools = await ToolsModel.getRawToolRouterMetaTools(
         sessionId,
         modifiers?.modifySchema
           ? {
@@ -186,8 +188,39 @@ export class ToolRouter<
             }
           : undefined
       );
-      const wrappedTools = ToolsModel.wrapToolsForToolRouter(sessionId, tools, modifiers);
-      return wrappedTools as ReturnType<TProvider['wrapTools']>;
+
+      // Check if prefetchTools is provided
+      if (
+        modifiers?.experimental?.prefetchTools &&
+        modifiers.experimental.prefetchTools.length > 0
+      ) {
+        // Fetch regular tools from normal tools endpoint
+        const regularTools = await ToolsModel.getRawComposioTools(
+          { tools: modifiers.experimental.prefetchTools },
+          modifiers?.modifySchema
+            ? {
+                modifySchema: modifiers.modifySchema,
+              }
+            : undefined
+        );
+
+        // Wrap both meta and regular tools together
+        const wrappedTools = ToolsModel.wrapToolsForToolRouter({
+          sessionId,
+          metaTools,
+          regularTools,
+          modifiers,
+        });
+        return wrappedTools as ReturnType<TProvider['wrapTools']>;
+      }
+
+      // Wrap meta tools only
+      const wrappedMetaTools = ToolsModel.wrapToolsForToolRouter({
+        sessionId,
+        metaTools,
+        modifiers,
+      });
+      return wrappedMetaTools as ReturnType<TProvider['wrapTools']>;
     };
   };
 
