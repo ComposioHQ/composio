@@ -242,6 +242,15 @@ importers:
         specifier: 'catalog:'
         version: 4.60.0(@cloudflare/workers-types@4.20260124.0)
 
+  ts/e2e-tests/runtimes/deno/esm-basic:
+    devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
   ts/e2e-tests/runtimes/node/cjs-basic:
     devDependencies:
       '@composio/core':
@@ -252,6 +261,15 @@ importers:
         version: link:../../../_utils
 
   ts/e2e-tests/runtimes/node/esm-basic:
+    devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
+  ts/e2e-tests/runtimes/node/file-roundtrip:
     devDependencies:
       '@composio/core':
         specifier: workspace:*

@@ -30,7 +30,7 @@ const tools = await composio.tools.get(userId, {
   </Tab>
 </Tabs>
 
-Returns top 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User management](/docs/user-management) and [Authentication](/docs/authenticating-tools).
+Returns top 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User management](/docs/users-and-sessions) and [Authentication](/docs/tools-direct/authenticating-tools).
 
 ## Tool schemas
 
@@ -234,5 +234,5 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
 </Tabs>
 
 <Callout type="info">
-Use specific toolkit versions in production to prevent breaking changes. See [toolkit versioning](/docs/toolkit-versioning).
+Use specific toolkit versions in production to prevent breaking changes. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Callout>

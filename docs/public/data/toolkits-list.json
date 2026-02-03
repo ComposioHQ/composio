@@ -10,7 +10,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 2,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -102,7 +102,7 @@
     ],
     "toolCount": 823,
     "triggerCount": 6,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -165,7 +165,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 7,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -229,7 +229,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 5,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -450,7 +450,7 @@
     ],
     "toolCount": 79,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -553,7 +553,7 @@
     ],
     "toolCount": 43,
     "triggerCount": 5,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -654,7 +654,7 @@
     ],
     "toolCount": 72,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -796,7 +796,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 4,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -1042,7 +1042,7 @@
     ],
     "toolCount": 17,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -1316,7 +1316,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -1400,7 +1400,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 4,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -2602,7 +2602,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -2650,7 +2650,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -3037,7 +3037,7 @@
     ],
     "toolCount": 164,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -3116,7 +3116,7 @@
     ],
     "toolCount": 97,
     "triggerCount": 7,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -3196,7 +3196,7 @@
     ],
     "toolCount": 42,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -3330,7 +3330,7 @@
     ],
     "toolCount": 31,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -3646,7 +3646,7 @@
     ],
     "toolCount": 19,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -3733,7 +3733,7 @@
     ],
     "toolCount": 33,
     "triggerCount": 7,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -3820,7 +3820,7 @@
     ],
     "toolCount": 231,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -4016,7 +4016,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -4179,7 +4179,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -4297,7 +4297,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -5139,7 +5139,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20251210_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -5185,7 +5185,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -5579,7 +5579,7 @@
     ],
     "toolCount": 19,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -5754,7 +5754,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 2,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -5889,7 +5889,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -6069,7 +6069,7 @@
     ],
     "toolCount": 223,
     "triggerCount": 20,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -6184,7 +6184,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -6214,15 +6214,15 @@
   {
     "slug": "linkup",
     "name": "Linkup",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/linkup.jpeg",
-    "description": "Search the Web for Relevant Results (RAG Use Case)",
-    "category": "other / miscellaneous",
+    "logo": "https://logos.composio.dev/api/linkup",
+    "description": "Linkup is a search engine that allows you to search the web for relevant results.",
+    "category": "search & discovery",
     "authSchemes": [
       "API_KEY"
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -6345,7 +6345,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -6421,7 +6421,7 @@
     ],
     "toolCount": 17,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -6732,7 +6732,7 @@
     ],
     "toolCount": 353,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -7136,7 +7136,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -7623,7 +7623,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -7817,7 +7817,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -7927,7 +7927,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -8030,7 +8030,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -8080,9 +8080,9 @@
                 "name": "suffix.one",
                 "displayName": "Domain Extension",
                 "type": "string",
-                "description": "The Zoho domain extension (com, eu, in, etc.)",
+                "description": "The Zoho domain extension (com, eu, in, com.au, jp, ca, com.cn, sa).",
                 "required": true,
-                "default": null
+                "default": "com"
               }
             ],
             "optional": []
@@ -8604,7 +8604,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -9076,7 +9076,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -9534,7 +9534,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -9957,7 +9957,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -10465,7 +10465,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -10997,7 +10997,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -11290,7 +11290,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -11585,7 +11585,7 @@
     ],
     "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -12270,7 +12270,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -12830,7 +12830,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -12931,7 +12931,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -12981,9 +12981,9 @@
                 "name": "suffix.one",
                 "displayName": "Domain Extension",
                 "type": "string",
-                "description": "The Zoho domain extension (com, eu, in, com.au, jp, ca, com.cn, sa)",
+                "description": "The Zoho domain extension (com, eu, in, com.au, jp, ca, com.cn, sa).",
                 "required": true,
-                "default": null
+                "default": "com"
               }
             ],
             "optional": []
@@ -13339,7 +13339,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -13537,7 +13537,7 @@
     ],
     "toolCount": 162,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -13567,15 +13567,15 @@
   {
     "slug": "addresszen",
     "name": "Addresszen",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/addresszen-logo.png",
+    "logo": "https://logos.composio.dev/api/addresszen",
     "description": "AddressZen provides address autocomplete and verification services, offering real-time address suggestions and validation to ensure accurate and deliverable addresses.",
-    "category": "address verification",
+    "category": "data validation",
     "authSchemes": [
       "API_KEY"
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -13773,7 +13773,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 1,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -13849,7 +13849,7 @@
     ],
     "toolCount": 40,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -13925,7 +13925,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -14262,7 +14262,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -14329,8 +14329,8 @@
   },
   {
     "slug": "ambient_weather",
-    "name": "Ambient weather",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/ambient_weather_round3_20250722.png",
+    "name": "Ambient Weather",
+    "logo": "https://logos.composio.dev/api/ambient_weather",
     "description": "Ambient Weather provides personal weather stations and an API for accessing real-time and historical weather data.",
     "category": "weather",
     "authSchemes": [
@@ -14338,7 +14338,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -14414,7 +14414,7 @@
   {
     "slug": "anonyflow",
     "name": "Anonyflow",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/anonyflow-logo.png",
+    "logo": "https://logos.composio.dev/api/anonyflow",
     "description": "AnonyFlow offers a simple and powerful service for encryption-based data anonymization and community sharing, enabling GDPR, CCPA, and HIPAA data privacy protection compliance.",
     "category": "security & identity tools",
     "authSchemes": [
@@ -14422,7 +14422,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -14460,7 +14460,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -14498,7 +14498,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -14984,7 +14984,7 @@
   {
     "slug": "ascora",
     "name": "Ascora",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/ascora.png",
+    "logo": "https://logos.composio.dev/api/ascora",
     "description": "Ascora is a cloud-based field service management software designed to streamline operations for service-based businesses, offering features such as job scheduling, invoicing, customer management, and mobile access.",
     "category": "field service management",
     "authSchemes": [
@@ -14992,7 +14992,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -15304,7 +15304,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -15452,7 +15452,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -15528,7 +15528,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -15671,7 +15671,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -15823,7 +15823,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -16122,7 +16122,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -16282,7 +16282,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -16404,7 +16404,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -16556,7 +16556,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -17084,7 +17084,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -17475,7 +17475,7 @@
     ],
     "toolCount": 20,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -17580,8 +17580,8 @@
   },
   {
     "slug": "cdr_platform",
-    "name": "Cdr platform",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/cdr_platform.png",
+    "name": "Cdr Platform",
+    "logo": "https://logos.composio.dev/api/cdr_platform",
     "description": "CDR Platform provides an API for purchasing carbon dioxide removal services.",
     "category": "environmental services",
     "authSchemes": [
@@ -17589,7 +17589,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -17665,7 +17665,7 @@
     ],
     "toolCount": 43,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -17909,7 +17909,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -18069,7 +18069,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "BASIC",
@@ -18694,7 +18694,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -18884,7 +18884,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -19183,7 +19183,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -19259,7 +19259,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -19692,7 +19692,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -19730,7 +19730,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -20101,7 +20101,7 @@
     ],
     "toolCount": 447,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -20280,7 +20280,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -20495,7 +20495,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -20609,7 +20609,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -20686,7 +20686,7 @@
     ],
     "toolCount": 47,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -21450,7 +21450,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -21534,7 +21534,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -21732,7 +21732,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -21896,7 +21896,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "BASIC",
@@ -22179,7 +22179,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -22217,7 +22217,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -22369,7 +22369,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -22583,7 +22583,7 @@
   {
     "slug": "eventee",
     "name": "Eventee",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/eventee-logo.png",
+    "logo": "https://logos.composio.dev/api/eventee",
     "description": "Eventee is an intuitive mobile and web app that enhances attendee experience and engagement at in-person, virtual, or hybrid events.",
     "category": "event management",
     "authSchemes": [
@@ -22591,7 +22591,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -22705,7 +22705,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -22868,7 +22868,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -22906,7 +22906,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23077,7 +23077,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23199,7 +23199,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23405,7 +23405,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23443,7 +23443,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23481,7 +23481,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23565,7 +23565,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23687,7 +23687,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23725,7 +23725,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23763,7 +23763,7 @@
     ],
     "toolCount": 20,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -23825,7 +23825,7 @@
     ],
     "toolCount": 31,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -24077,7 +24077,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -24153,7 +24153,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -24266,7 +24266,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -24304,7 +24304,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -24608,7 +24608,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -24847,7 +24847,7 @@
     ],
     "toolCount": 29,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -25007,7 +25007,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -25045,7 +25045,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -25209,7 +25209,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -25247,7 +25247,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -25861,7 +25861,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -25899,7 +25899,7 @@
     ],
     "toolCount": 36,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -25945,7 +25945,7 @@
     ],
     "toolCount": 29,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -26105,7 +26105,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -26219,7 +26219,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -26248,7 +26248,7 @@
   },
   {
     "slug": "html_to_image",
-    "name": "Html to image",
+    "name": "HTML to Image",
     "logo": "https://html2img.com/logo.png",
     "description": "HTML to Image is a service that converts HTML and CSS into images or captures screenshots of web pages.",
     "category": "web development",
@@ -26257,7 +26257,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -26371,7 +26371,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -26835,7 +26835,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -26997,7 +26997,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -27136,7 +27136,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -27600,7 +27600,7 @@
     ],
     "toolCount": 20,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -27739,7 +27739,7 @@
     ],
     "toolCount": 49,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "BASIC",
@@ -27863,7 +27863,7 @@
     ],
     "toolCount": 29,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -28704,7 +28704,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -29140,7 +29140,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -29376,7 +29376,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -30149,7 +30149,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -30263,7 +30263,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -30301,7 +30301,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -30415,7 +30415,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -30705,7 +30705,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -30789,7 +30789,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -30914,7 +30914,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -31028,7 +31028,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -31332,16 +31332,16 @@
   },
   {
     "slug": "page_x",
-    "name": "Page x",
-    "logo": "https://pipedream.com/apps/page-x/logo.png",
-    "description": "PAGE X is a CRM solution that enables businesses to drive sales, track leads, automate tasks, and enhance service efficiency.",
+    "name": "Page X",
+    "logo": "https://logos.composio.dev/api/page_x",
+    "description": "PageX is an all-in-one platform combining CRM, page builder, and online course builder to help businesses manage leads, build websites, and create courses.",
     "category": "crm",
     "authSchemes": [
       "API_KEY"
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260107_00",
+    "version": "20260129_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -31355,9 +31355,9 @@
             "required": [
               {
                 "name": "generic_api_key",
-                "displayName": "Page X API Key",
+                "displayName": "API Key",
                 "type": "string",
-                "description": "The API key associated with your Pipedream user account.",
+                "description": "Your PageXCRM API key. Get it from https://pagexcrm.com/plugins/api.",
                 "required": true,
                 "default": null
               }
@@ -31884,7 +31884,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -32948,7 +32948,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -33070,7 +33070,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -33903,7 +33903,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -34139,7 +34139,7 @@
     ],
     "toolCount": 38,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -34763,7 +34763,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -34801,7 +34801,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -36747,7 +36747,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -36833,7 +36833,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -37224,7 +37224,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -37363,7 +37363,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -37675,7 +37675,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -38294,7 +38294,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -38443,7 +38443,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -38818,7 +38818,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -38970,7 +38970,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -39008,7 +39008,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -40115,7 +40115,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",
@@ -40153,7 +40153,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "authConfigDetails": [
       {
         "mode": "API_KEY",

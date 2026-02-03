@@ -11,7 +11,7 @@ Each event is delivered as a structured payload to your webhook endpoint (via we
 <Figure src="/images/triggers.png" alt="Triggers Overview" caption="Triggers through Composio" />
 
 <Callout type="info" title="Prerequisites">
-Before proceeding, ensure you've created an [auth config](/docs/authenticating-tools#creating-an-auth-config) and [established a connection](/docs/authenticating-tools#hosted-authentication-connect-link) to an app (e.g., Slack, GitHub). Triggers are scoped to specific users - learn about [User Management](/docs/user-management) for guidance on structuring User IDs.
+Before proceeding, ensure you've created an [auth config](/docs/tools-direct/authenticating-tools#creating-an-auth-config) and [established a connection](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) to an app (e.g., Slack, GitHub). Triggers are scoped to specific users - learn about [User Management](/docs/users-and-sessions) for guidance on structuring User IDs.
 </Callout>
 
 ## Creating a trigger
@@ -92,7 +92,7 @@ console.log(`Trigger created: ${trigger.triggerId}`);
 </Tabs>
 
 <Callout>
-To use a specific toolkit version when creating triggers, configure `toolkitVersions` during initialization. See [Toolkit Versioning](/docs/toolkit-versioning) for more details.
+To use a specific toolkit version when creating triggers, configure `toolkitVersions` during initialization. See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more details.
 </Callout>
 
 ## Subscribing to triggers

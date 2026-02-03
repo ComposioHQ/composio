@@ -23,6 +23,21 @@ The `@composio/json-schema-to-zod` package must support both Zod v3 and v4. This
 | anyOf schemas         | Union type conversion                                            |
 | Round-trip conversion | JSON Schema -> Zod -> JSON Schema preserves `additionalProperties` |
 
+## Test Setup
+
+This test runs **directly in Bun** (no Docker fixtures). The test file imports `@composio/json-schema-to-zod` and `zod-to-json-schema` from the monorepo workspace:
+
+```typescript
+import { jsonSchemaToZod, type JsonSchema } from '@composio/json-schema-to-zod';
+import zodToJsonSchema from 'zod-to-json-schema';
+```
+
+Tests use `bun:test` assertions to verify schema conversion and round-trip behavior.
+
+## Isolation Tool
+
+**Docker** with Node.js versions: current (as specified in `.nvmrc`).
+
 ## Running
 
 ```bash

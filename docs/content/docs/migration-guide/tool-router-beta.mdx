@@ -64,7 +64,7 @@ const session = await composio.create('user_123');
 If you have existing users on tool router and you don't want them to authenticate again:
 - Tool Router will auto-detect auth configs and connected accounts it created (from the beta version).
 - If you have custom auth configs (not created by Tool Router):
-    - Search for the Auth config for that connected account. See [Connected Accounts](/docs/connected-accounts) to fetch existing accounts programmatically.
+    - Search for the Auth config for that connected account. See [Connected Accounts](/docs/auth-configuration/connected-accounts) to fetch existing accounts programmatically.
     - While creating a session configure to use this Auth config.
     - You need to repeat this for each toolkit you want to enable for that session.
 
@@ -105,9 +105,9 @@ Check out these new features available in the stable version:
 
 - **[Native tools](/docs/providers/openai-agents)**: Use Tool Router with any AI framework
 - **Better [session](/docs/users-and-sessions) and [auth](/docs/authentication) config**
-- **[Multi-account support](/docs/guides/managing-multiple-connected-accounts)**: Manage multiple accounts per user seamlessly
+- **[Multi-account support](/docs/managing-multiple-connected-accounts)**: Manage multiple accounts per user seamlessly
 - **[Manual authentication](/docs/authenticating-users/manually-authenticating)**: Control when and how users authenticate
-- **[Custom auth](/docs/guides/using-custom-auth-configuration)**: Support for toolkits that don't have composio managed auth
-- **[White labeling](/docs/guides/white-labeling-authentication)**: Customize authentication screens with your branding
+- **[Custom auth](/docs/using-custom-auth-configuration)**: Support for toolkits that don't have composio managed auth
+- **[White labeling](/docs/white-labeling-authentication)**: Customize authentication screens with your branding
 </Step>
 </Steps>

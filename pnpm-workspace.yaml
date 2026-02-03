@@ -1,6 +1,7 @@
 packages:
   - ts/e2e-tests/_utils
   - ts/e2e-tests/runtimes/node/*
+  - ts/e2e-tests/runtimes/deno/*
   - ts/e2e-tests/runtimes/cloudflare/*
   - ts/examples/*
   - ts/packages/cli

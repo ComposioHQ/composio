@@ -196,17 +196,23 @@ pnpm test:ui
 E2E tests for `@composio/core` are located in `ts/e2e-tests/` and test runtime compatibility across different JavaScript environments.
 
 ```bash
-# Run all e2e tests (Node.js + Cloudflare)
+# Run all e2e tests (Node.js + Deno + Cloudflare)
 pnpm test:e2e
 
 # Run only Node.js e2e tests (CJS/ESM compatibility, runs in Docker)
 pnpm test:e2e:node
+
+# Run only Deno e2e tests (npm: specifier compatibility, runs in Docker)
+pnpm test:e2e:deno
 
 # Run only Cloudflare Workers e2e tests
 pnpm test:e2e:cloudflare
 
 # Run Node.js tests with a specific Node version
 COMPOSIO_E2E_NODE_VERSION=22.12.0 pnpm test:e2e:node
+
+# Run Deno tests with a specific Deno version
+COMPOSIO_E2E_DENO_VERSION=2.6.7 pnpm test:e2e:deno
 ```
 
 **E2E Test Structure:**
@@ -217,6 +223,8 @@ ts/e2e-tests/
 │   ├── node/                  # Node.js runtime tests
 │   │   ├── cjs-basic/         # CommonJS compatibility
 │   │   └── esm-basic/         # ESM compatibility
+│   ├── deno/                  # Deno runtime tests
+│   │   └── esm-basic/         # npm: specifier compatibility
 │   └── cloudflare/            # Cloudflare runtime tests
 │       └── cf-workers-basic/  # Cloudflare Workers tests
 └── README.md                  # E2E test documentation

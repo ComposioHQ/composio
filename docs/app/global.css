@@ -462,6 +462,42 @@ nav a[href*="app.composio"]:focus-visible {
 }
 
 /* ==========================================================================
+   OpenAPI Reference - Field Indicators
+
+   Replaces fumadocs-openapi's default ? and * indicators with explicit
+   (optional) and (required) labels after the type.
+
+   Targets: span (simple types), button (expandable objects/arrays), a (links)
+
+   Note: This depends on fumadocs-openapi's internal class structure.
+   If the library updates its classes, this CSS may need adjustment.
+   ========================================================================== */
+
+/* Hide original indicators (* and ?) after property name */
+span.font-mono.text-fd-primary > span.text-red-400:last-child,
+span.font-mono.text-fd-primary > span.text-fd-muted-foreground:last-child {
+  display: none;
+}
+
+/* Add (required) after type for required fields */
+div.flex.items-center:has(> span.font-mono.text-fd-primary > span.text-red-400) > :is(span, button, a).text-sm.font-mono::after {
+  content: "(required)";
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-left: 0.25rem;
+  color: #f87171;
+}
+
+/* Add (optional) after type for optional fields */
+div.flex.items-center:has(> span.font-mono.text-fd-primary > span.text-fd-muted-foreground:last-child):not(:has(> span.font-mono.text-fd-primary > span.text-red-400)) > :is(span, button, a).text-sm.font-mono::after {
+  content: "(optional)";
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-left: 0.25rem;
+  color: var(--color-fd-muted-foreground);
+}
+
+/* ==========================================================================
    Table of Contents (Right Sidebar)
    ========================================================================== */
 

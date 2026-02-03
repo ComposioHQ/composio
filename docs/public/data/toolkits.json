@@ -10,7 +10,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 2,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GMAIL_ADD_LABEL_TO_EMAIL",
@@ -384,7 +384,7 @@
     ],
     "toolCount": 823,
     "triggerCount": 6,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GITHUB_ACCEPT_A_REPOSITORY_INVITATION",
@@ -4596,7 +4596,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 7,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GOOGLECALENDAR_CALENDAR_LIST_INSERT",
@@ -4839,7 +4839,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 5,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
@@ -6137,7 +6137,7 @@
     ],
     "toolCount": 79,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SUPABASE_ALPHA_CREATES_A_NEW_API_KEY_FOR_THE_PROJECT",
@@ -6638,7 +6638,7 @@
     ],
     "toolCount": 43,
     "triggerCount": 5,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "OUTLOOK_ADD_MAIL_ATTACHMENT",
@@ -6991,7 +6991,7 @@
     ],
     "toolCount": 72,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "TWITTER_ADD_A_LIST_MEMBER",
@@ -7790,7 +7790,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 4,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GOOGLEDOCS_COPY_DOCUMENT",
@@ -9878,7 +9878,7 @@
     ],
     "toolCount": 17,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "AIRTABLE_CREATE_BASE",
@@ -10635,7 +10635,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FIRECRAWL_CANCEL_A_CRAWL_JOB",
@@ -10765,7 +10765,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 4,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "YOUTUBE_GET_CHANNEL_ACTIVITIES",
@@ -16661,7 +16661,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "PEOPLEDATALABS_AUTOCOMPLETE_FIELD_SUGGESTIONS",
@@ -16787,7 +16787,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SHOPIFY_ADD_PRODUCT_TO_COLLECTION",
@@ -19315,7 +19315,7 @@
     ],
     "toolCount": 164,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DISCORDBOT_ADD_GROUP_DM_USER",
@@ -20217,7 +20217,7 @@
     ],
     "toolCount": 97,
     "triggerCount": 7,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SALESFORCE_ACCOUNT_CREATION_WITH_CONTENT_TYPE_OPTION",
@@ -20821,7 +20821,7 @@
     ],
     "toolCount": 42,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CALENDLY_CANCEL_EVENT",
@@ -22922,7 +22922,7 @@
     ],
     "toolCount": 31,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "APOLLO_ADD_CONTACTS_TO_SEQUENCE",
@@ -26669,7 +26669,7 @@
     ],
     "toolCount": 19,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BREVO_CREATE_A_COMPANY",
@@ -26854,7 +26854,7 @@
     ],
     "toolCount": 33,
     "triggerCount": 7,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "STRIPE_CANCEL_SUBSCRIPTION",
@@ -27145,7 +27145,7 @@
     ],
     "toolCount": 231,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "KLAVIYO_ADD_PROFILE_TO_LIST",
@@ -29931,7 +29931,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ATTIO_CREATE_NOTE",
@@ -30208,7 +30208,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ZOHO_CONVERT_ZOHO_LEAD",
@@ -30418,7 +30418,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DROPBOX_CREATE_FILE_REQUEST",
@@ -34786,7 +34786,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20251210_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "COINBASE_LIST_WALLETS",
@@ -34840,7 +34840,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "MONDAY_ADD_USERS_TO_BOARD",
@@ -39518,7 +39518,7 @@
     ],
     "toolCount": 19,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "WHATSAPP_CREATE_MESSAGE_TEMPLATE",
@@ -39874,7 +39874,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 2,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ZENDESK_COUNT_ZENDESK_ORGANIZATIONS",
@@ -40151,7 +40151,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "LMNT_CREATE_VOICE",
@@ -40535,7 +40535,7 @@
     ],
     "toolCount": 223,
     "triggerCount": 20,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ADD_ENRICHMENT",
@@ -41962,7 +41962,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "tools": [
       {
         "slug": "YOUSEARCH_YOU_SEARCH",
@@ -42000,15 +42000,15 @@
   {
     "slug": "linkup",
     "name": "Linkup",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/linkup.jpeg",
-    "description": "Search the Web for Relevant Results (RAG Use Case)",
-    "category": "other / miscellaneous",
+    "logo": "https://logos.composio.dev/api/linkup",
+    "description": "Linkup is a search engine that allows you to search the web for relevant results.",
+    "category": "search & discovery",
     "authSchemes": [
       "API_KEY"
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "LINKUP_GET_ANSWER",
@@ -42305,7 +42305,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BOLNA_DELETE_AGENT_BY_ID",
@@ -42627,7 +42627,7 @@
     ],
     "toolCount": 17,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ZOOM_ADD_A_MEETING_REGISTRANT",
@@ -43161,7 +43161,7 @@
     ],
     "toolCount": 353,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "PAGERDUTY_ADD_SERVICE_TO_INCIDENT_WORKFLOW_TRIGGER",
@@ -45514,7 +45514,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SHARE_POINT_SHAREPOINT_CREATE_FOLDER",
@@ -46332,7 +46332,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ABLY_BATCH_PRESENCE",
@@ -46596,7 +46596,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "RECALLAI_CREATE_BOT",
@@ -46897,7 +46897,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SURVEY_MONKEY_CREATE_SURVEY",
@@ -47043,7 +47043,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -47095,9 +47095,9 @@
                 "name": "suffix.one",
                 "displayName": "Domain Extension",
                 "type": "string",
-                "description": "The Zoho domain extension (com, eu, in, etc.)",
+                "description": "The Zoho domain extension (com, eu, in, com.au, jp, ca, com.cn, sa).",
                 "required": true,
-                "default": null
+                "default": "com"
               }
             ],
             "optional": []
@@ -48309,7 +48309,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DAILYBOT_FIND_USER",
@@ -50255,7 +50255,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -51023,7 +51023,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CHATWORK_CHATWORK_DELETE_MESSAGE",
@@ -53400,7 +53400,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "tools": [
       {
         "slug": "ZOHO_BIGIN_ADD_RECORDS",
@@ -54464,7 +54464,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -56140,7 +56140,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BROWSEAI_BULK_RUN_TASKS",
@@ -56559,7 +56559,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ALCHEMY_GET_CONTRACT_METADATA",
@@ -57182,7 +57182,7 @@
     ],
     "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GONG_ADD_CALL_MEDIA_V2_CALLS_ID_MEDIA",
@@ -58879,7 +58879,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -59955,7 +59955,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "EXIST_EXIST_GET_USER_PROFILE",
@@ -60152,7 +60152,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260129_00",
     "tools": [
       {
         "slug": "ZOHO_INVOICE_GET_ITEM",
@@ -60235,9 +60235,9 @@
                 "name": "suffix.one",
                 "displayName": "Domain Extension",
                 "type": "string",
-                "description": "The Zoho domain extension (com, eu, in, com.au, jp, ca, com.cn, sa)",
+                "description": "The Zoho domain extension (com, eu, in, com.au, jp, ca, com.cn, sa).",
                 "required": true,
-                "default": null
+                "default": "com"
               }
             ],
             "optional": []
@@ -60909,7 +60909,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "_2CHAT_CREATE_CONTACT",
@@ -61282,7 +61282,7 @@
     ],
     "toolCount": 162,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ACTIVE_TRAIL_ADD_GROUP_MEMBER",
@@ -62125,15 +62125,15 @@
   {
     "slug": "addresszen",
     "name": "Addresszen",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/addresszen-logo.png",
+    "logo": "https://logos.composio.dev/api/addresszen",
     "description": "AddressZen provides address autocomplete and verification services, offering real-time address suggestions and validation to ensure accurate and deliverable addresses.",
-    "category": "address verification",
+    "category": "data validation",
     "authSchemes": [
       "API_KEY"
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ADDRESSZEN_KEY_AVAILABILITY",
@@ -62586,7 +62586,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 1,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "AGENT_MAIL_GET_MESSAGE",
@@ -62704,7 +62704,7 @@
     ],
     "toolCount": 40,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "AGENTY_AGENTS_CLONE_BY_ID",
@@ -63076,7 +63076,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "AGILITY_CMS_GET_AUTHORS",
@@ -63801,7 +63801,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "AMARA_ADD_SUBTITLE_NOTE",
@@ -64029,8 +64029,8 @@
   },
   {
     "slug": "ambient_weather",
-    "name": "Ambient weather",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/ambient_weather_round3_20250722.png",
+    "name": "Ambient Weather",
+    "logo": "https://logos.composio.dev/api/ambient_weather",
     "description": "Ambient Weather provides personal weather stations and an API for accessing real-time and historical weather data.",
     "category": "weather",
     "authSchemes": [
@@ -64038,7 +64038,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "AMBIENT_WEATHER_GET_DEVICES",
@@ -64215,7 +64215,7 @@
   {
     "slug": "anonyflow",
     "name": "Anonyflow",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/anonyflow-logo.png",
+    "logo": "https://logos.composio.dev/api/anonyflow",
     "description": "AnonyFlow offers a simple and powerful service for encryption-based data anonymization and community sharing, enabling GDPR, CCPA, and HIPAA data privacy protection compliance.",
     "category": "security & identity tools",
     "authSchemes": [
@@ -64223,7 +64223,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ANONYFLOW_ANONYMIZE_VALUE",
@@ -64284,7 +64284,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ANTHROPIC_ADMINISTRATOR_CREATE_MESSAGE",
@@ -64345,7 +64345,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "API_LABZ_IBAN_VALIDATOR",
@@ -65539,7 +65539,7 @@
   {
     "slug": "ascora",
     "name": "Ascora",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/ascora.png",
+    "logo": "https://logos.composio.dev/api/ascora",
     "description": "Ascora is a cloud-based field service management software designed to streamline operations for service-based businesses, offering features such as job scheduling, invoicing, customer management, and mobile access.",
     "category": "field service management",
     "authSchemes": [
@@ -65547,7 +65547,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ASCORA_ASCORA_DELETE_CUSTOMER",
@@ -66137,7 +66137,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BART_BART_GET_API_VERSION",
@@ -66403,7 +66403,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BASIN_CREATE_FORM",
@@ -66585,7 +66585,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BEACONSTAC_CREATE_PLACE",
@@ -67085,7 +67085,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BENZINGA_GET_CALENDAR_EARNINGS_STREAM",
@@ -67574,7 +67574,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BIDSKETCH_CREATE_CLIENT",
@@ -68404,7 +68404,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BLOCKNATIVE_CONFIGURE_FILTERS",
@@ -68686,7 +68686,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BOOKINGMOOD_BOOKINGMOOD_CREATE_WIDGET",
@@ -68957,7 +68957,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BOTSONIC_BULK_UPLOAD_URLS",
@@ -69260,7 +69260,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "BREEZE_ADD_PROJECT_PEOPLE",
@@ -70677,7 +70677,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CALENDARHERO_ADD_CALENDAR_CONNECTION",
@@ -71700,7 +71700,7 @@
     ],
     "toolCount": 20,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CARDLY_CREATE_CONTACT_LIST",
@@ -71959,8 +71959,8 @@
   },
   {
     "slug": "cdr_platform",
-    "name": "Cdr platform",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/cdr_platform.png",
+    "name": "Cdr Platform",
+    "logo": "https://logos.composio.dev/api/cdr_platform",
     "description": "CDR Platform provides an API for purchasing carbon dioxide removal services.",
     "category": "environmental services",
     "authSchemes": [
@@ -71968,7 +71968,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CDR_PLATFORM_GET_CDR_PRICE",
@@ -72110,7 +72110,7 @@
     ],
     "toolCount": 43,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CENTRALSTATIONCRM_CHECK_CONNECTION",
@@ -72742,7 +72742,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CIRCLECI_GET_JOB_ARTIFACTS",
@@ -73299,7 +73299,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CLICKHOUSE_EXECUTE_QUERY",
@@ -75993,7 +75993,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CODACY_CREATE_API_TOKEN",
@@ -76613,7 +76613,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "COINRANKING_GET_COIN_HISTORY",
@@ -77578,7 +77578,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CONVERTAPI_ASYNC_CONVERT",
@@ -77805,7 +77805,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CONVOLO_AI_CREATE_CHARACTER",
@@ -78664,7 +78664,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CURRENTS_API_ACTIVITIES_LIST",
@@ -78730,7 +78730,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "CUSTOMERIO_CUSTOMER_IO_SUPPRESS_PERSON",
@@ -79735,7 +79735,7 @@
     ],
     "toolCount": 447,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DATABRICKS_ADD_MEMBER_TO_SECURITY_GROUP",
@@ -82202,7 +82202,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DEEPGRAM_GET_MODELS",
@@ -82892,7 +82892,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DESKTIME_CREATE_PROJECT_WITH_TASK",
@@ -83245,7 +83245,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DICTIONARY_API_GET_WORD_DEFINITION_V2",
@@ -83403,7 +83403,7 @@
     ],
     "toolCount": 47,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DIGITAL_OCEAN_CREATE_CUSTOM_IMAGE",
@@ -85526,7 +85526,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DOTSIMPLE_CREATE_TAG",
@@ -85761,7 +85761,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DPD2_GET_STOREFRONT",
@@ -86094,7 +86094,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "DROPCONTACT_ENRICH_CONTACTS",
@@ -86407,7 +86407,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ELASTICSEARCH_GET_INDEX_SCHEMA",
@@ -86963,7 +86963,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ENCODIAN_BASE64_DECODE",
@@ -87074,7 +87074,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ENDORSAL_CREATE_TESTIMONIAL",
@@ -87373,7 +87373,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ESIGNATURES_IO_CREATE_CONTRACT",
@@ -87872,7 +87872,7 @@
   {
     "slug": "eventee",
     "name": "Eventee",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/eventee-logo.png",
+    "logo": "https://logos.composio.dev/api/eventee",
     "description": "Eventee is an intuitive mobile and web app that enhances attendee experience and engagement at in-person, virtual, or hybrid events.",
     "category": "event management",
     "authSchemes": [
@@ -87880,7 +87880,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "EVENTEE_ADD_SPEAKER",
@@ -88158,7 +88158,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "EVERSIGN_AUDIT_LOG",
@@ -88645,7 +88645,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "EXTRACTA_AI_CREATE_EXTRACTION",
@@ -88701,7 +88701,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FACEUP_FACEUP_GRAPHQL_STATISTICS_QUERY",
@@ -88980,7 +88980,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FELT_CREATE_OR_UPDATE_ELEMENTS",
@@ -89416,7 +89416,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FILES_COM_DELETE_API_KEY",
@@ -89842,7 +89842,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FINMEI_CREATE_INVOICE",
@@ -89953,7 +89953,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FIREBERRY_CREATE_RECORD",
@@ -90009,7 +90009,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FIRMAO_CREATE_INVOICE",
@@ -90189,7 +90189,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FIXER_IO_CONVERT_CURRENCY",
@@ -90425,7 +90425,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FLUXGUARD_ACKNOWLEDGE_ALERT",
@@ -90581,7 +90581,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FOLK_CREATE_COMPANY",
@@ -90682,7 +90682,7 @@
     ],
     "toolCount": 20,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FORCEMANAGER_DELETE_ACTIVITY",
@@ -90847,7 +90847,7 @@
     ],
     "toolCount": 31,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "FORMBRICKS_CREATE_ACTION_CLASS",
@@ -91556,7 +91556,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GAMMA_GENERATE_GAMMA",
@@ -91693,7 +91693,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GATHERUP_DELETE_BUSINESS",
@@ -91920,7 +91920,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GENDERAPI_IO_GENDERAPI_GET_STATS",
@@ -91991,7 +91991,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GENDERIZE_PREDICT_GENDER",
@@ -92814,7 +92814,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GIST_CHECK_GIST_STAR",
@@ -93623,7 +93623,7 @@
     ],
     "toolCount": 29,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GLEAP_ARCHIVE_A_TICKET",
@@ -94005,7 +94005,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GOODY_CALCULATE_PRICE_FOR_ORDER_BATCH",
@@ -94091,7 +94091,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GOOGLE_ADDRESS_VALIDATION_PROVIDE_VALIDATION_FEEDBACK",
@@ -94499,7 +94499,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GOOGLE_CLOUD_VISION_CREATE_PRODUCT",
@@ -94655,7 +94655,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "GOOGLE_SEARCH_CONSOLE_GET_SITEMAP",
@@ -96536,7 +96536,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "HELPDESK_LIST_AGENTS",
@@ -96652,7 +96652,7 @@
     ],
     "toolCount": 36,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "HELPWISE_CREATE_ATTACHMENT",
@@ -96881,7 +96881,7 @@
     ],
     "toolCount": 29,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "HERE_AUTOSUGGEST",
@@ -97498,7 +97498,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "HONEYBADGER_REPORT_CHECK_IN",
@@ -97966,7 +97966,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "HOTSPOTSYSTEM_CUSTOMERS_LIST",
@@ -98078,7 +98078,7 @@
   },
   {
     "slug": "html_to_image",
-    "name": "Html to image",
+    "name": "HTML to Image",
     "logo": "https://html2img.com/logo.png",
     "description": "HTML to Image is a service that converts HTML and CSS into images or captures screenshots of web pages.",
     "category": "web development",
@@ -98087,7 +98087,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "HTML_TO_IMAGE_GET_IMAGE",
@@ -98345,7 +98345,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20251208_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "HYPEAUDITOR_GET_ACCOUNT_MEDIA",
@@ -99700,7 +99700,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "INFLUXDB_CLOUD_ADD_DASHBOARD_CELL",
@@ -99981,7 +99981,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "INSTAGRAM_CREATE_CAROUSEL_CONTAINER",
@@ -100494,7 +100494,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "IP2LOCATION_BULK_IP_GEOLOCATION",
@@ -101619,7 +101619,7 @@
     ],
     "toolCount": 20,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "KAGGLE_COMPETITION_DOWNLOAD_FILES",
@@ -101982,7 +101982,7 @@
     ],
     "toolCount": 49,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "KIBANA_DELETE_ACTION",
@@ -102362,7 +102362,7 @@
     ],
     "toolCount": 29,
     "triggerCount": 0,
-    "version": "20260127_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "KIT_ADD_SUBSCRIBER_TO_FORM",
@@ -104066,7 +104066,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "LODGIFY_GET_COUNTRIES",
@@ -105127,7 +105127,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "MAILERSEND_CREATE_DOMAIN",
@@ -105616,7 +105616,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "MELO_GET_CITIES",
@@ -108556,7 +108556,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "MX_TOOLBOX_LOOKUP_BIMI_RECORD",
@@ -108834,7 +108834,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "NASA_GET_CMR_COLLECTIONS",
@@ -108935,7 +108935,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "NASDAQ_GET_ALL_SYMBOLS",
@@ -109118,7 +109118,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "NEUTRINO_BAD_WORD_FILTER",
@@ -109908,7 +109908,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -110017,7 +110017,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "OCRSPACE_OCR_PARSE_IMAGE_POST",
@@ -110203,7 +110203,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "ONEDESK_CREATE_WORKLOG",
@@ -110541,7 +110541,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "OPENAI_CREATE_ASSISTANT",
@@ -111169,16 +111169,16 @@
   },
   {
     "slug": "page_x",
-    "name": "Page x",
-    "logo": "https://pipedream.com/apps/page-x/logo.png",
-    "description": "PAGE X is a CRM solution that enables businesses to drive sales, track leads, automate tasks, and enhance service efficiency.",
+    "name": "Page X",
+    "logo": "https://logos.composio.dev/api/page_x",
+    "description": "PageX is an all-in-one platform combining CRM, page builder, and online course builder to help businesses manage leads, build websites, and create courses.",
     "category": "crm",
     "authSchemes": [
       "API_KEY"
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260107_00",
+    "version": "20260129_00",
     "tools": [
       {
         "slug": "PAGE_X_DELETE_INCIDENT",
@@ -111220,9 +111220,9 @@
             "required": [
               {
                 "name": "generic_api_key",
-                "displayName": "Page X API Key",
+                "displayName": "API Key",
                 "type": "string",
-                "description": "The API key associated with your Pipedream user account.",
+                "description": "Your PageXCRM API key. Get it from https://pagexcrm.com/plugins/api.",
                 "required": true,
                 "default": null
               }
@@ -112114,7 +112114,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "PDFLESS_LIST_DOCUMENT_TEMPLATES",
@@ -115083,7 +115083,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "PRISMIC_CONTENT_API_GET_DOCUMENTS_WITH_FULLTEXT_SEARCH",
@@ -115374,7 +115374,7 @@
     ],
     "toolCount": 3,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "PROJECT_BUBBLE_DATA_API_GET_DATA_TYPE_FIELDS",
@@ -117096,7 +117096,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "REFINER_DELETE_CONTACT",
@@ -117448,7 +117448,7 @@
     ],
     "toolCount": 38,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "REPAIRSHOPR_DELETE_APPOINTMENT",
@@ -119085,7 +119085,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SAFETYCULTURE_CREATE_GROUP",
@@ -119156,7 +119156,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -122783,7 +122783,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SPLITWISE_ADD_FRIEND",
@@ -122912,7 +122912,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "SPOKI_CREATE_CUSTOM_FIELD",
@@ -124276,7 +124276,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "STOREROCKET_GET_USER_INFO",
@@ -124453,7 +124453,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "STREAMTIME_LIST_ROLES",
@@ -125374,7 +125374,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "TAGGUN_EXPORT_KNOWN_MERCHANTS",
@@ -126928,7 +126928,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "TICKETMASTER_GET_ATTRACTION_DETAILS",
@@ -127208,7 +127208,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "TIKTOK_FETCH_PUBLISH_STATUS",
@@ -128071,7 +128071,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -128319,7 +128319,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "TWELVE_DATA_COMMODITIES_LIST",
@@ -128470,7 +128470,7 @@
     ],
     "toolCount": 1,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [
       {
         "slug": "TWOCAPTCHA_CREATE_TASK",
@@ -130786,7 +130786,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [
@@ -130826,7 +130826,7 @@
     ],
     "toolCount": 0,
     "triggerCount": 0,
-    "version": "20260128_00",
+    "version": "20260130_00",
     "tools": [],
     "triggers": [],
     "authConfigDetails": [

@@ -5,7 +5,7 @@
  * specifically testing the fix for https://github.com/ComposioHQ/composio/issues/2336
  */
 
-import { e2e, type E2ETestResult } from '@e2e-tests/utils';
+import { e2e, type E2ETestResultWithSetup } from '@e2e-tests/utils';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 declare module 'bun' {
@@ -16,21 +16,24 @@ declare module 'bun' {
 
 e2e(import.meta.url, {
   nodeVersions: ['20.19.0', '22.12.0'],
+  usesFixtures: true,
   env: {
     COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
   },
-  defineTests: ({ runCmd }) => {
-    let result: E2ETestResult;
+  defineTests: ({ runFixture }) => {
+    let result: E2ETestResultWithSetup;
 
     beforeAll(async () => {
-      result = await runCmd(
-        'npm --prefix fixtures install --legacy-peer-deps && node fixtures/index.mjs'
-      );
+      result = await runFixture({
+        filename: 'index.mjs',
+        setup: 'npm install --legacy-peer-deps',
+      });
     });
 
     describe('setup', () => {
       it('npm install completes successfully', () => {
-        expect(result.stdout).toMatch(/added \d+ packages/);
+        expect(result.setup.stdout).toMatch(/added \d+ packages/);
+        expect(result.setup.exitCode).toBe(0);
       });
     });
 
@@ -58,6 +61,6 @@ e2e(import.meta.url, {
       it('all packages work together', () => {
         expect(result.stdout).toContain('All packages work together!');
       });
-    },);
+    });
   },
 });

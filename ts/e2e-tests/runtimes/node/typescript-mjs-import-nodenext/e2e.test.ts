@@ -25,7 +25,7 @@ e2e(import.meta.url, {
     let result: E2ETestResult;
 
     beforeAll(async () => {
-      result = await runFixture('fixtures/index.mjs');
+      result = await runFixture({ filename: 'fixtures/index.mjs' });
     }, 300_000);
 
     describe('TypeScript .mjs import resolution', () => {

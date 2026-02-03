@@ -4,7 +4,7 @@ description: Manage and monitor user connections to toolkits
 keywords: [list accounts, refresh token, disable, delete account]
 ---
 
-Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/authenticating-tools)), you can manage these accounts throughout their lifecycle.
+Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/tools-direct/authenticating-tools)), you can manage these accounts throughout their lifecycle.
 
 Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, enabling, disabling, and deleting accounts.
 
@@ -225,7 +225,7 @@ Deletion is permanent. Users must re-authenticate to reconnect.
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
 
 <Callout type="info">
-Use `link()` for creating accounts, as it provides hosted authentication and allows multiple accounts by default. See [Connect Link authentication](/docs/authenticating-tools#hosted-authentication-connect-link).
+Use `link()` for creating accounts, as it provides hosted authentication and allows multiple accounts by default. See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link).
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>

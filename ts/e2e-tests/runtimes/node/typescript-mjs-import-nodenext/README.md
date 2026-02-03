@@ -22,11 +22,40 @@ This causes `TS2307: Cannot find module './foo.mjs'` errors.
 | File existence         | Verifies generated .ts files exist                             |
 | TypeScript compilation | Runs `tsc --noEmit` to check import resolution                 |
 
+## Fixture
+
+```
+fixtures/
+├── index.mjs       # Test runner script that generates and compiles TypeScript
+└── tsconfig.json   # TypeScript config with moduleResolution: "nodenext"
+```
+
+The fixture script:
+
+1. Cleans up any previous generated files
+2. Runs `composio ts generate --toolkits entelligence --output-dir ./generated`
+3. Verifies generated `.ts` files exist
+4. Runs `npx tsc --noEmit` to check TypeScript compilation
+5. Fails if TS2307 errors occur (indicating `.mjs` import bug)
+
+**tsconfig.json:**
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noEmit": true
+  },
+  "include": ["generated/**/*.ts"]
+}
+```
+
 ## Isolation Tool
 
-**Docker** with Node.js version: current runtime
-
-This test uses the current Node.js runtime version for simplicity.
+**Docker** with Node.js versions: current (as specified in `.nvmrc`).
 
 ## Running
 
