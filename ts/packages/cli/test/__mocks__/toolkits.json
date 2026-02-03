@@ -8106,6 +8106,20 @@
     "no_auth": false
   },
   {
+    "name": "Valyu",
+    "slug": "valyu",
+    "auth_schemes": ["API_KEY"],
+    "composio_managed_auth_schemes": [],
+    "is_local_toolkit": false,
+    "meta": {
+      "description": "Valyu provides AI-powered search and research APIs, offering real-time search across web, academic, medical, and financial sources, content extraction, AI-generated answers with citations, and comprehensive deep research reports",
+      "categories": [{ "id": "analytics-&-data", "name": "analytics & data" }],
+      "created_at": "2026-02-03T00:00:00.000Z",
+      "updated_at": "2026-02-03T00:00:00.000Z"
+    },
+    "no_auth": false
+  },
+  {
     "name": "Venly",
     "slug": "venly",
     "auth_schemes": ["API_KEY"],

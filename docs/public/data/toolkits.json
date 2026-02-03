@@ -10755,6 +10755,67 @@
     ]
   },
   {
+    "slug": "valyu",
+    "name": "Valyu",
+    "logo": "https://logos.composio.dev/api/valyu",
+    "description": "Valyu provides AI-powered search and research APIs, offering real-time search across web, academic, medical, and financial sources, content extraction, AI-generated answers with citations, and comprehensive deep research reports",
+    "category": "analytics & data",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 4,
+    "triggerCount": 0,
+    "version": "20260127_00",
+    "tools": [
+      {
+        "slug": "VALYU_SEARCH",
+        "name": "Valyu Search",
+        "description": "Perform real-time search across web, academic, medical, transportation, and financial sources using the Valyu API."
+      },
+      {
+        "slug": "VALYU_ANSWER",
+        "name": "Valyu Answer",
+        "description": "Get AI-powered answers with citations from Valyu's knowledge base and search results."
+      },
+      {
+        "slug": "VALYU_CONTENTS",
+        "name": "Valyu Contents",
+        "description": "Extract and retrieve content from URLs using Valyu's content extraction API."
+      },
+      {
+        "slug": "VALYU_DEEP_RESEARCH",
+        "name": "Valyu Deep Research",
+        "description": "Generate comprehensive deep research reports on any topic using Valyu's async research API."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "valyu_scheme",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "API key for accessing Valyu's services",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "youtube",
     "name": "YouTube",
     "logo": "https://logos.composio.dev/api/youtube",
