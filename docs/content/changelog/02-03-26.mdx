@@ -18,6 +18,43 @@ If you're using the `latest` version and your code depends on the old `response_
 - Improved developer experience: Better autocomplete and field validation across all toolkits
 - Agent-friendly schemas: Cleaner output shapes reduce parsing errors and improve AI tool usage
 
+### Response Schema Changes
+
+<Callout type="info">
+**Important Schema Update**
+
+Due to improvements in our response wrapper implementation, some toolkits may now have a nested `data` structure (i.e., `data.data`) in their responses. This change ensures consistent response formatting across all toolkits.
+</Callout>
+
+<Accordions>
+<Accordion title="Toolkits Affected by Response Schema Changes (250+ apps)">
+
+The following toolkits have been updated with the new response wrapper structure:
+
+**A-B**
+abuselpdb, acculynx, active_campaign, active_trail, adyntel, affinda, affinity, agencyzoom, agentql, agenty, agiled, ahrefs, alpha_vantage, ambee, amcards, amplitude, anchor_browser, anthropic_administrator, apaleo, api_bible, api_labz, apify, apipie_ai, apiverve, appcircle, asana, attio, bamboohr, beaconchain, beaconstac, benchmark_email, benzinga, better_proposals, better_stack, bigmailer, bigpicture_io, bitbucket, bitquery, blackbaud, blackboard, bolna, boloforms, borneo, box, brightdata, browseai, browserless, byteforms
+
+**C-D**
+cal, calendarhero, calendly, callerapi, callingly, callpage, canvas, carbone, cardly, census_bureau, centralstationcrm, certifier, chaser, claid_ai, classmarker, clearout, clickhouse, clicksend, clickup, close, cloudcart, cloudconvert, cloudinary, cloudlayer, coda, codemagic, cody, coinbase, coinmarketcal, coinmarketcap, coinranking, connecteam, contentful_graphql, corrently, coupa, crowdin, crustdata, cults, customerio, customgpt, dailybot, databricks, datadog, datagma, datarobot, deepimage, deepseek, demio, dialmycalls, dialpad, diffbot, discord, discordbot, dnsfilter, dock_certs, docsumo, documenso, documint, docupilot, docupost, docuseal, docusign, dotsimple, dovetail, dripcel, dromo, dropcontact
+
+**E-G**
+elevenlabs, emailoctopus, emelia, endorsal, enigma, entelligence, esignatures_io, esputnik, etermin, eversign, exa, facebook, faceup, fibery, figma, files_com, finage, findymail, fireberry, firecrawl, fireflies, firmao, flutterwave, fluxguard, folk, forcemanager, formbricks, formdesk, foursquare, foursquare_v1, foursquare_v2, freshdesk, gagelist, gamma, gan_ai, getform, giphy, github, givebutter, gleap, gong, goody, googlesheets, gosquared, groqcloud, gtmetrix
+
+**H-L**
+habitica, headout, helpwise, heygen, hookdeck, hotspotsystem, html_to_image, hubspot, hunter, hyperbrowser, icypeas, imgbb, imgix, insighto_ai, instagram, instantly, intelliprint, intercom, ip2location, iqair_airvisual, jira, jobnimbus, junglescout, kadoa, kaggle, kibana, klaviyo, klipfolio, ko_fi, l2s, laposta, leadfeeder, leiga, lemlist, lemon_squeezy, lever, linear, listclean, listennotes, lodgify, loops_so
+
+**M-P**
+mailchimp, mailcoach, mailerlite, mailersend, mails_so, mapulus, melo, memberspot, memberstack, metaads, metabase, minerstat, miro, mistral_ai, mixpanel, monday, moneybird, mopinion, msg91, multionai, mx_toolbox, nango, needle, neon, nextdns, okta, omnisend, onepage, open_sea, openai, openrouter, optimoroute, pagerduty, paradym, parsera, passcreator, pdfless, peopledatalabs, perigon, persistiq, phantombuster, piggy, pilvio, pinecone, pipedrive, placid, plain, plisio, polygon, postgrid, postgrid_verify, posthog, postman, prisma, productboard, promptmate_io, proofly, proxiedmail, pushbullet
+
+**R-S**
+rafflys, raisely, ramp, reddit, refiner, remarkety, remote_retrieval, remove_bg, reply, reply_io, resend, respond_io, retailed, retellai, retently, rocket_reach, rocketlane, rootly, salesforce, satismeter, scrapfly, segment, semanticscholar, semrush, sendbird, sendfox, sendgrid, sendlane, sendloop, sendspark, sentry, servicenow, shopify, shortcut, shotstack, signaturely, simple_analytics, skyfire, slack, smtp2go, snowflake, snowflake_basic, soundcloud, sourcegraph, spotify, spotlightr, stannp, statuscake, stormglass_io, strava, stripe, supabase, survey_monkey, svix, sympla
+
+**T-Z**
+taskade, telnyx, teltel, textcortex, textrazor, thanks_io, tiktok, timelinesai, toggl, token_metrics, tomba, trello, tripadvisor, tripadvisor_content_api, truvera, twelve_data, twitter, v0, vercel, verifiedemail, virustotal, wakatime, whatsapp, workday, wrike, writer, yelp, ynab, zenrows, zoho, zoho_bigin, zoho_inventory, zoho_mail
+
+</Accordion>
+</Accordions>
+
 <Accordions>
 <Accordion title="Newly Typed Toolkits & Enhanced Coverage">
 
