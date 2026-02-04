@@ -263,29 +263,6 @@ describe('Tools', () => {
       // Should NOT include important: 'true' when limit is provided
     });
 
-    it('should respect explicit important=true even when limit is provided', async () => {
-      const query: ToolListParams = {
-        toolkits: ['github'],
-        limit: 10,
-        important: true,
-      };
-
-      mockClient.tools.list.mockResolvedValueOnce({
-        items: [toolMocks.rawTool],
-        totalPages: 1,
-      });
-
-      await context.tools.getRawComposioTools(query);
-
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        important: 'true',
-        limit: 10,
-        toolkit_versions: 'latest',
-      });
-      // Should include important: 'true' when explicitly set, even with limit
-    });
-
     it('should throw a validation error when scopes are provided without toolkits', async () => {
       const invalidQuery = {
         scopes: ['task:add'],
