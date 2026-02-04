@@ -76,7 +76,6 @@ describe('Tools', () => {
       const userId = 'test-user';
       const query = {
         toolkits: ['github'],
-        limit: 10,
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -89,7 +88,6 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         toolkit_slug: 'github',
         important: 'true',
-        limit: 10,
         toolkit_versions: 'latest',
       });
     });
@@ -144,7 +142,6 @@ describe('Tools', () => {
       const query: ToolListParams = {
         toolkits: ['todoist'],
         scopes: ['task:add', 'task:read'],
-        limit: 10,
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -157,7 +154,6 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         toolkit_slug: 'todoist',
         important: 'true',
-        limit: 10,
         scopes: ['task:add', 'task:read'],
         toolkit_versions: 'latest',
       });
@@ -209,6 +205,141 @@ describe('Tools', () => {
         limit: 10,
         toolkit_versions: 'latest',
       });
+    });
+
+    it('should NOT auto-apply important when tags are passed with values', async () => {
+      const userId = 'test-user';
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        tags: ['important', 'custom'],
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        tags: ['important', 'custom'],
+        limit: 10,
+        toolkit_versions: 'latest',
+      });
+      // Should NOT include important: 'true' when tags are provided
+    });
+
+    it('should auto-apply important when tags are NOT passed', async () => {
+      const userId = 'test-user';
+      const query: ToolListParams = {
+        toolkits: ['github'],
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        important: 'true',
+        toolkit_versions: 'latest',
+      });
+      // Should include important: 'true' when no tags, tools, search, or limit provided
+    });
+
+    it('should NOT auto-apply important when tags are passed as empty array', async () => {
+      const userId = 'test-user';
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        tags: [],
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        tags: [],
+        toolkit_versions: 'latest',
+      });
+      // Should NOT include important: 'true' when tags array is present (even if empty)
+    });
+
+    it('should NOT auto-apply important when limit is provided', async () => {
+      const userId = 'test-user';
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        limit: 10,
+        toolkit_versions: 'latest',
+      });
+      // Should NOT include important: 'true' when limit is provided
+    });
+
+    it('should respect explicit important=true even when limit is provided', async () => {
+      const userId = 'test-user';
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        limit: 10,
+        important: true,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        important: 'true',
+        limit: 10,
+        toolkit_versions: 'latest',
+      });
+      // Should include important: 'true' when explicitly set, even with limit
+    });
+
+    it('should handle toolkit query with limit correctly (no auto-apply important)', async () => {
+      const userId = 'test-user';
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        limit: 50,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        limit: 50,
+        toolkit_versions: 'latest',
+      });
+      // Should NOT auto-apply important when limit is present
     });
 
     it('should throw a validation error when scopes are provided without toolkits', async () => {
