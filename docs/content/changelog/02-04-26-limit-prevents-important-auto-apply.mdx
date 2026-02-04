@@ -1,7 +1,18 @@
 ---
-title: "Limit Parameter Now Prevents Important Flag Auto-Apply"
-description: "When fetching tools with a limit parameter, the important flag is no longer automatically applied, ensuring users get the exact number of tools requested"
-date: "2026-02-04"
+title: 'Limit Parameter Now Prevents Important Flag Auto-Apply'
+description: 'When fetching tools with a limit parameter, the important flag is no longer automatically applied, ensuring users get the exact number of tools requested'
+date: '2026-02-04'
+---
+
+## Version Information
+
+### TypeScript/JavaScript
+
+- Package: `@composio/core` and all provider packages
+- Version: `0.6.3`+
+- PR: [#2570](https://github.com/ComposioHQ/composio/pull/2570)
+- Tests: 6 new test cases covering all scenarios
+
 ---
 
 The `important` flag auto-apply logic has been updated to respect the `limit` parameter. When you provide a `limit`, the SDK no longer automatically applies `important: true`, ensuring you get the exact number of tools you requested.
@@ -132,9 +143,3 @@ const tools = await composio.tools.get('default', {
 ## Documentation
 
 Full documentation with more examples is available in the [Tools API Reference](/reference/sdk-reference/typescript/tools).
-
-## Related
-
-- **PR**: [#2570](https://github.com/ComposioHQ/composio/pull/2570)
-- **Package**: `@composio/core@0.6.2`+
-- **Tests**: 6 new test cases covering all scenarios
