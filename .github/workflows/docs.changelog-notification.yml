@@ -19,8 +19,8 @@ jobs:
       - name: Get Changed Changelog Files
         id: changed-files
         run: |
-          # Get the list of changed changelog files in this push
-          CHANGED_FILES=$(git diff --name-only HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          # Get the list of added/modified changelog files in this push (exclude deleted files)
+          CHANGED_FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || echo "")
           
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changelog files changed"
@@ -56,11 +56,24 @@ jobs:
           AUTHOR=$(git log -1 --format='%an' -- "$CHANGELOG_FILE")
           AUTHOR_EMAIL=$(git log -1 --format='%ae' -- "$CHANGELOG_FILE")
           
+          # Build properly escaped JSON payload using jq
+          SLACK_PAYLOAD=$(jq -n \
+            --arg title "$TITLE" \
+            --arg date "$DATE" \
+            --arg url "$CHANGELOG_URL" \
+            --arg author "$AUTHOR" \
+            '{text: "*New Changelog Published*\n\n*\($title)*\n\nDate: \($date)\n<\($url)|View Changelog>\nAuthor: \($author)"}')
+          
           echo "title=$TITLE" >> $GITHUB_OUTPUT
           echo "date=$DATE" >> $GITHUB_OUTPUT
           echo "url=$CHANGELOG_URL" >> $GITHUB_OUTPUT
           echo "author=$AUTHOR" >> $GITHUB_OUTPUT
           echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
+          
+          # Save the JSON payload for the next step
+          echo "slack_payload<<EOF" >> $GITHUB_OUTPUT
+          echo "$SLACK_PAYLOAD" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
           
           echo "📝 Changelog Title: $TITLE"
           echo "📅 Date: $DATE"
@@ -71,9 +84,6 @@ jobs:
         if: steps.changed-files.outputs.has_changelog == 'true'
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
-          payload: |
-            {
-              "text": "*New Changelog Published*\n\n*${{ steps.extract-metadata.outputs.title }}*\n\nDate: ${{ steps.extract-metadata.outputs.date }}\n<${{ steps.extract-metadata.outputs.url }}|View Changelog>\nAuthor: ${{ steps.extract-metadata.outputs.author }}"
-            }
+          payload: ${{ steps.extract-metadata.outputs.slack_payload }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CUSTOMER_COMMS_WEBHOOK_URL }}
