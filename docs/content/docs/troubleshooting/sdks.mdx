@@ -5,7 +5,7 @@ description: Troubleshooting SDK issues
 
 ## Debug network issues
 
-Enable debug logging to see API calls and identify if issues are SDK or API related. Look for the `x-request-id` in logs to share with support.
+Enable debug logging to see API calls and identify if issues are SDK or API related. When contacting support, share the full debug logs **along with** the `x-request-id`.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -21,6 +21,8 @@ COMPOSIO_LOG_LEVEL=debug
 ```
   </Tab>
 </Tabs>
+
+Look for `x-request-id` in the debug output to share with support.
 
 ## Check SDK version
 

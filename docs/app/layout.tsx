@@ -92,7 +92,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
             theme={{
               defaultTheme: 'light',
               attribute: 'class',
-              enableSystem: false,
+              enableSystem: true,
             }}
             search={{
               options: {

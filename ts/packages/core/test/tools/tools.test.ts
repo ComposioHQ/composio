@@ -37,8 +37,6 @@ describe('Tools', () => {
 
   describe('getRawComposioTools', () => {
     it('should fetch tools from the API', async () => {
-      const userId = 'test-user';
-
       mockClient.tools.list.mockResolvedValueOnce({
         items: [toolMocks.rawTool],
         totalPages: 1,
@@ -53,7 +51,6 @@ describe('Tools', () => {
     });
 
     it('should handle query parameters correctly', async () => {
-      const userId = 'test-user';
       const query = {
         tools: ['TOOL1', 'TOOL2'],
       };
@@ -73,10 +70,8 @@ describe('Tools', () => {
     });
 
     it('should handle toolkit query parameters correctly', async () => {
-      const userId = 'test-user';
       const query = {
         toolkits: ['github'],
-        limit: 10,
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -89,13 +84,11 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         toolkit_slug: 'github',
         important: 'true',
-        limit: 10,
         toolkit_versions: 'latest',
       });
     });
 
     it('should respect explicit important=false to opt-out', async () => {
-      const userId = 'test-user';
       const query = {
         toolkits: ['github'],
         important: false,
@@ -117,7 +110,6 @@ describe('Tools', () => {
     });
 
     it('should handle toolkit search parameters correctly', async () => {
-      const userId = 'test-user';
       const query = {
         toolkits: ['github'],
         search: 'test',
@@ -140,11 +132,9 @@ describe('Tools', () => {
     });
 
     it('should handle toolkit scopes parameters correctly', async () => {
-      const userId = 'test-user';
       const query: ToolListParams = {
         toolkits: ['todoist'],
         scopes: ['task:add', 'task:read'],
-        limit: 10,
       };
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -157,14 +147,12 @@ describe('Tools', () => {
       expect(mockClient.tools.list).toHaveBeenCalledWith({
         toolkit_slug: 'todoist',
         important: 'true',
-        limit: 10,
         scopes: ['task:add', 'task:read'],
         toolkit_versions: 'latest',
       });
     });
 
     it('should handle toolkit scopes with search parameters correctly', async () => {
-      const userId = 'test-user';
       const query: ToolListParams = {
         toolkits: ['todoist'],
         scopes: ['task:add'],
@@ -189,7 +177,6 @@ describe('Tools', () => {
     });
 
     it('should respect explicit important=true', async () => {
-      const userId = 'test-user';
       const query: ToolListParams = {
         toolkits: ['github'],
         important: true,
@@ -211,8 +198,72 @@ describe('Tools', () => {
       });
     });
 
+    it('should NOT auto-apply important when tags are passed with values', async () => {
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        tags: ['important', 'custom'],
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        tags: ['important', 'custom'],
+        limit: 10,
+        toolkit_versions: 'latest',
+      });
+      // Should NOT include important: 'true' when tags are provided
+    });
+
+    it('should NOT auto-apply important when tags are passed as empty array', async () => {
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        tags: [],
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        tags: [],
+        toolkit_versions: 'latest',
+      });
+      // Should NOT include important: 'true' when tags array is present (even if empty)
+    });
+
+    it('should NOT auto-apply important when limit is provided', async () => {
+      const query: ToolListParams = {
+        toolkits: ['github'],
+        limit: 10,
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.rawTool],
+        totalPages: 1,
+      });
+
+      await context.tools.getRawComposioTools(query);
+
+      expect(mockClient.tools.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        limit: 10,
+        toolkit_versions: 'latest',
+      });
+      // Should NOT include important: 'true' when limit is provided
+    });
+
     it('should throw a validation error when scopes are provided without toolkits', async () => {
-      const userId = 'test-user';
       const invalidQuery = {
         scopes: ['task:add'],
       } as any;
@@ -223,8 +274,6 @@ describe('Tools', () => {
     });
 
     it('should transform tool case correctly', async () => {
-      const userId = 'test-user';
-
       mockClient.tools.list.mockResolvedValueOnce({
         items: [toolMocks.rawTool],
         totalPages: 1,
@@ -237,8 +286,6 @@ describe('Tools', () => {
     });
 
     it('should include custom tools in the results', async () => {
-      const userId = 'test-user';
-
       mockClient.tools.list.mockResolvedValueOnce({
         items: [toolMocks.rawTool],
         totalPages: 1,
@@ -254,7 +301,6 @@ describe('Tools', () => {
     });
 
     it('should apply schema modifiers when provided', async () => {
-      const userId = 'test-user';
       const schemaModifier = createSchemaModifier({
         description: 'Modified description',
       });
@@ -274,7 +320,6 @@ describe('Tools', () => {
     });
 
     it('should throw an error if schema modifier is not a function', async () => {
-      const userId = 'test-user';
       const invalidModifier = 'not a function' as any;
 
       mockClient.tools.list.mockResolvedValueOnce({
@@ -293,7 +338,6 @@ describe('Tools', () => {
     });
 
     it('should throw a validation error when both tools and toolkits are provided', async () => {
-      const userId = 'test-user';
       const invalidQuery = {
         tools: ['TOOL1'],
         toolkits: ['github'],
@@ -305,7 +349,6 @@ describe('Tools', () => {
     });
 
     it('should throw a validation error when no required parameters are provided', async () => {
-      const userId = 'test-user';
       const emptyQuery = {} as any;
 
       await expect(context.tools.getRawComposioTools(emptyQuery)).rejects.toThrow(ValidationError);
@@ -314,7 +357,6 @@ describe('Tools', () => {
 
   describe('getRawComposioToolBySlug', () => {
     it('should fetch a tool by slug from the API', async () => {
-      const userId = 'test-user';
       const slug = 'TOOL_SLUG';
 
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
@@ -326,7 +368,6 @@ describe('Tools', () => {
     });
 
     it('should check for custom tools first', async () => {
-      const userId = 'test-user';
       const slug = 'CUSTOM_TOOL';
 
       const getCustomToolBySlugSpy = vi.spyOn(context.tools['customTools'], 'getCustomToolBySlug');
@@ -340,7 +381,6 @@ describe('Tools', () => {
     });
 
     it('should throw an error if tool is not found', async () => {
-      const userId = 'test-user';
       const slug = 'NONEXISTENT_TOOL';
 
       const getCustomToolBySlugSpy = vi.spyOn(context.tools['customTools'], 'getCustomToolBySlug');
@@ -353,7 +393,6 @@ describe('Tools', () => {
     });
 
     it('should apply schema modifiers when provided', async () => {
-      const userId = 'test-user';
       const slug = 'TOOL_SLUG';
       const schemaModifier = createSchemaModifier({
         description: 'Modified description',

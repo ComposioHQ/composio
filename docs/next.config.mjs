@@ -491,6 +491,44 @@ const config = {
         destination: '/docs/providers/custom-providers/typescript',
         permanent: true,
       },
+      // Old Fern v-3 paths (different hyphenation)
+      {
+        source: '/reference/v-3/:path*',
+        destination: '/reference',
+        permanent: true,
+      },
+      // Old Fern SDK reference URLs (no content exists at these paths)
+      {
+        source: '/type-script/:path*',
+        destination: '/reference',
+        permanent: true,
+      },
+      {
+        source: '/sdk-reference/:path*',
+        destination: '/reference',
+        permanent: true,
+      },
+      {
+        source: '/sdk/:path*',
+        destination: '/reference',
+        permanent: true,
+      },
+      {
+        source: '/js-sdk/:path*',
+        destination: '/reference',
+        permanent: true,
+      },
+      {
+        source: '/js/:path*',
+        destination: '/reference',
+        permanent: true,
+      },
+      // Old Fern example URLs
+      {
+        source: '/examples/combined/:path*',
+        destination: '/examples',
+        permanent: true,
+      },
     ];
   },
 };

@@ -75,7 +75,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         type: 'button',
         text: 'Dashboard',
-        url: 'https://app.composio.dev',
+        url: 'https://platform.composio.dev',
         external: true,
         secondary: true,
       },

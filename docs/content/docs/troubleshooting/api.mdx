@@ -13,7 +13,27 @@ When reporting API issues to support, provide the following:
 
 - **cURL command**: Include the exact cURL to reproduce the issue
 - **Request ID**: Add `x-request-id: <uuid>` header to your request and share the UUID (generate at [uuidgenerator.net](https://www.uuidgenerator.net/))
-- **Error details**: Share the complete error message
+
+  ```bash
+  curl 'https://backend.composio.dev/api/v3/tools' \
+    -H 'x-api-key: YOUR_API_KEY' \
+    -H 'x-request-id: YOUR_UUID_HERE'
+  ```
+
+- **Error details**: Share the complete error message. For example:
+
+  ```json
+  {
+    "error": {
+      "message": "Validation error while processing request",
+      "error_code": 10400,
+      "suggested_fix": "Please check the payload.",
+      "errors": [
+        "Error in payload.text.arguments: Only one of 'text' or 'arguments' must be provided"
+      ]
+    }
+  }
+  ```
 - **Reproduction steps**: Include any steps needed to reproduce the issue
 
 ## Getting help

@@ -40,88 +40,14 @@ jobs:
         # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
         # model: "claude-opus-4-20250514"
 
-        # Direct prompt for automated review (no @claude mention needed)
+        # Review instructions in docs/.claude/agents/docs-reviewer.md
         prompt: |
-          REPO: ${{ github.repository }}
-          PR NUMBER: ${{ github.event.pull_request.number }}
+          Review this PR using the guidelines in docs/.claude/agents/docs-reviewer.md
 
-          You are reviewing documentation for Composio, built with Fumadocs (https://fumadocs.dev/).
-          Read `docs/CLAUDE.md` and `docs/.claude/` for complete style guidelines.
-
-          ## Documentation Structure
-
-          - Content: `docs/content/**/*.mdx`
-          - Components: `docs/components/**/*.tsx`
-          - App routes: `docs/app/**/*.tsx`
-          - Design tokens: `docs/app/global.css` (use `--composio-orange`, `--composio-sidebar`)
-          - MDX components available globally: `Tabs`, `Callout`, `Steps`, `Cards`, `Accordion`, etc.
-
-          ## Critical Technical Rules
-
-          1. **TypeScript code blocks are type-checked at build time**
-             - All TS/TSX code must compile. Invalid code fails the build.
-             - Use `// ---cut---` to hide setup code (imports, declarations) from output
-             - Use `// @noErrors` only when necessary for partial snippets
-             - Prefer SDK-exported types over inline type annotations
-
-          2. **CSS variables must use full names**
-             - ✓ `var(--composio-orange)`
-             - ✗ `var(--orange)`
-
-          3. **Changelog frontmatter**
-             - Date format: `YYYY-MM-DD` (e.g., `2025-01-28`)
-             - Required fields: `title`, `date`
-
-          4. **MDX components**
-             - Breaking changes: `<Callout type="warn">` with before/after code
-             - Code examples: Use `<Tabs>` for multi-language snippets
-             - No emojis in changelog entries
-
-          ## Component Review (for .tsx files)
-
-          When reviewing component files, verify:
-          - Component renders correctly (no runtime errors)
-          - Props are properly typed
-          - Accessibility: proper aria labels, semantic HTML, keyboard navigation
-          - Responsive design: works on mobile and desktop
-          - No hardcoded strings that should be props
-          - Consistent with existing component patterns in `docs/components/`
-
-          ## MDX Rendering Quality
-
-          - Frontmatter is valid YAML with required fields (`title`, `description`)
-          - MDX components are properly closed and nested
-          - Code blocks have correct language identifiers
-          - Links are valid (no broken internal links)
-          - Images have alt text
-          - Tables render correctly (proper markdown table syntax)
-
-          ## SEO Requirements
-
-          Every MDX page MUST have proper SEO:
-          - **title**: Concise, descriptive (50-60 chars ideal)
-          - **description**: Compelling summary for search results (150-160 chars ideal)
-          - **Headings**: One H1 only (from title), logical H2/H3 hierarchy
-          - **Internal links**: Link to related docs where relevant
-          - **URL structure**: Clean, descriptive slugs (from file path)
-
-          For toolkit/integration pages:
-          - Include the toolkit name in title and description
-          - Describe what users can do with the integration
-          - Link to authentication and usage sections
-
-          ## Review Focus
-
-          - **Code validity**: Will TypeScript examples compile?
-          - **Component quality**: Are components accessible and responsive?
-          - **MDX rendering**: Will the markdown render correctly?
-          - **SEO**: Does the page have good title, description, and heading structure?
-          - **Clarity**: Is the content clear and scannable?
-          - **Accuracy**: Are technical details correct?
-          - **Consistency**: Does tone match existing docs?
-          - **Mobile**: Avoid CSS that assumes horizontal nav layout
-
-          Be constructive. Suggest specific improvements, not vague feedback.
+          1. Read docs/.claude/agents/docs-reviewer.md for full review criteria
+          2. Run `git diff origin/${{ github.event.pull_request.base.ref }}...HEAD` to see changes
+          3. Apply the review checklist to changed files
+          4. If issues: Comment with specific fixes. If none: Approve with "Looks good"
         # Optional: Customize review based on file types
         # direct_prompt: |
         #   Review this PR focusing on:

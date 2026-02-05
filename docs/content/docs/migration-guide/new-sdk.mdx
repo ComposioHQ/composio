@@ -463,7 +463,7 @@ console.log(JSON.stringify(tools, null, 2));
 
 #### Before Modifiers
 
-The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/modify-tool-behavior/before-execution-modifiers):
+The following example shows creating and using a before modifier for a Chat Completion provider. For agentic frameworks, view the [complete before modifier documentation](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers):
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
@@ -507,7 +507,7 @@ const result_1 = await composio.tools.execute(
 
 #### After Modifiers
 
-The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/modify-tool-behavior/after-execution-modifiers):
+The following example shows creating and using an after modifier for a Chat Completion provider. For agentic frameworks, view the [complete after modifier documentation](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers):
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
@@ -557,7 +557,7 @@ const result_2 = await composio.tools.execute(
 
 ### Custom Tools
 
-The SDK continues to support custom tools. [Creating tools from your methods](/docs/custom-tools#creating-a-custom-tool) remains possible. We recommend reviewing the [detailed custom tools documentation](/docs/custom-tools#creating-a-custom-tool) for more information.
+The SDK continues to support custom tools. [Creating tools from your methods](/docs/tools-direct/custom-tools#creating-a-custom-tool) remains possible. We recommend reviewing the [detailed custom tools documentation](/docs/tools-direct/custom-tools#creating-a-custom-tool) for more information.
 
 Due to changes in the SDK architecture, creating custom tools that use Composio's managed authentication has been modified. In the previous SDK, you could create a custom tool as follows:
 
@@ -705,7 +705,7 @@ const tool = await composio.tools.createCustomTool({
   </Tab>
 </Tabs>
 
-For more information, including executing custom tools and defining custom headers and query parameters, refer to the [Custom Tools](/docs/custom-tools) documentation.
+For more information, including executing custom tools and defining custom headers and query parameters, refer to the [Custom Tools](/docs/tools-direct/custom-tools) documentation.
 
 ### Auth configs (formerly integrations)
 
@@ -721,7 +721,7 @@ Auth configs now use nano IDs instead of UUIDs:
 
 We recommend storing auth config nano IDs in your database for connecting users to the appropriate auth configuration.
 
-For most use cases, you will create auth configs through the dashboard, and this process remains unchanged. Read more about [creating auth configs](/docs/authenticating-tools#creating-an-auth-config) and [customizing auth configs](/docs/custom-auth-configs).
+For most use cases, you will create auth configs through the dashboard, and this process remains unchanged. Read more about [creating auth configs](/docs/tools-direct/authenticating-tools#creating-an-auth-config) and [customizing auth configs](/docs/auth-configuration/custom-auth-configs).
 
 Creating auth configs programmatically in the previous SDK:
 
@@ -820,7 +820,7 @@ console.log(authConfig);
   </Tab>
 </Tabs>
 
-For using custom authentication credentials, refer to the [Programmatic Auth Configs](/docs/programmatic-auth-configs) documentation.
+For using custom authentication credentials, refer to the [Programmatic Auth Configs](/docs/auth-configuration/programmatic-auth-configs) documentation.
 
 <Callout type="info">
 The callback URL for creating custom OAuth configs is now `https://backend.composio.dev/api/v3/toolkits/auth/callback`. The previous URL was `https://backend.composio.dev/api/v1/auth-apps/add`.

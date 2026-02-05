@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.6.3
+
+### Patch Changes
+
+- 087385d: Remove important tag auto apply when limit is set
+
 ## 0.6.2
 
 ### Patch Changes

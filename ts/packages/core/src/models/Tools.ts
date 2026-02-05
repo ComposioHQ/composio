@@ -331,6 +331,8 @@ export class Tools<
       !('tools' in queryParams.data) &&
       !('tags' in queryParams.data) &&
       !('search' in queryParams.data) &&
+      // if the user provides a limit, do not apply the important flag
+      !('limit' in queryParams.data) &&
       queryParams.data.important !== false;
 
     const effectiveImportant =

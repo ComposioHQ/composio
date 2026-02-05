@@ -49,7 +49,7 @@ Depending on your authentication method, you may need to configure scopes:
 You must provide your own credentials regardless of environment.
 
 <Callout type="info">
-Want to remove Composio branding from OAuth screens? See [Custom Auth Configs](/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen) for white-labeling options.
+Want to remove Composio branding from OAuth screens? See [Custom Auth Configs](/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen) for white-labeling options.
 </Callout>
 </Step>
 
@@ -74,10 +74,10 @@ You should create multiple auth configs for the same toolkit when you need:
 - **Different permission levels** - Limiting actions for specific use cases
 
 <Cards>
-  <Card title="Programmatic creation" href="/docs/programmatic-auth-configs">
+  <Card title="Programmatic creation" href="/docs/auth-configuration/programmatic-auth-configs">
     For managing auth configs across multiple projects, you can create them programmatically via the API
   </Card>
-  <Card title="Production white-labeling" href="/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen">
+  <Card title="Production white-labeling" href="/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen">
     Remove Composio branding from OAuth screens for a fully white-labeled authentication experience
   </Card>
 </Cards>
@@ -89,7 +89,7 @@ With an auth config created, you're ready to authenticate your users!
 You can either use [**Connect Link**](#hosted-authentication-connect-link) for a hosted authentication flow, or use [**Direct SDK Setup**](#direct-sdk-setup).
 
 <Callout>
-User authentication requires a User ID - a unique identifier that groups connected accounts together. Learn more about [User Management](/docs/user-management) to understand how to structure User IDs for your application.
+User authentication requires a User ID - a unique identifier that groups connected accounts together. Learn more about [User Management](/docs/users-and-sessions) to understand how to structure User IDs for your application.
 </Callout>
 
 **Choose the section below that matches your toolkit's authentication method:**
@@ -159,7 +159,7 @@ By default, users will see a Composio-branded authentication experience when con
 These settings will apply to all authentication flows using Connect Link, providing a white-labeled experience that maintains your brand identity throughout the authentication process.
 
 <Callout>
-For complete white-labeling including OAuth consent screens (removing Composio's domain), see [Custom Auth Configs - White-labeling](/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen).
+For complete white-labeling including OAuth consent screens (removing Composio's domain), see [Custom Auth Configs - White-labeling](/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen).
 </Callout>
 
 ### Direct SDK Setup
@@ -381,7 +381,7 @@ Composio also supports a wide range of other auth schemas:
 For any of these methods, [fetch the config parameter](#fetching-the-required-config-parameters-for-an-auth-config) to determine the exact fields required. Every toolkit has its own requirements, and understanding these is essential for successfully creating connections.
 </Callout>
 
-Learn how to [Manage connected accounts](/docs/connected-accounts) after users authenticate.
+Learn how to [Manage connected accounts](/docs/auth-configuration/connected-accounts) after users authenticate.
 
 ## Connection Statuses
 
@@ -493,4 +493,4 @@ Only connections with **ACTIVE** status can be used to execute tools. If a conne
 
 ## Next Step
 
-With authentication set up, you can now fetch and execute tools. See [Executing Tools](/docs/executing-tools) to get started.
+With authentication set up, you can now fetch and execute tools. See [Executing Tools](/docs/tools-direct/executing-tools) to get started.

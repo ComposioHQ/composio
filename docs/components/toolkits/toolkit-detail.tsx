@@ -267,6 +267,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
                 <Link
                   href={`https://platform.composio.dev/auth?next_page=${encodeURIComponent(`/tool-router?toolkits=${toolkit.slug}`)}`}
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
                 >
                   Try {(toolkit.name?.trim() || toolkit.slug)}

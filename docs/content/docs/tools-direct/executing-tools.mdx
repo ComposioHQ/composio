@@ -9,7 +9,7 @@ LLMs on their own can only do generation. Tool calling changes that by letting t
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like Gmail, Slack, or GitHub, and Composio handles authentication and user scoping.
 
 <Callout type="info">
-**User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Learn how to structure User IDs in [User Management](/docs/user-management). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](/docs/authenticating-tools).
+**User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Learn how to structure User IDs in [User Management](/docs/users-and-sessions). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](/docs/tools-direct/authenticating-tools).
 </Callout>
 
 ## Using Chat Completions
@@ -238,7 +238,7 @@ console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
 </Tabs>
 
 <Callout>
-The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/toolkit-versioning) for all configuration options.
+The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for all configuration options.
 </Callout>
 
 ### Proxy Execute
@@ -292,7 +292,7 @@ console.log(data);
 </Tabs>
 
 <Callout type="info">
-Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn how to [create custom tools](/docs/custom-tools).
+Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn how to [create custom tools](/docs/tools-direct/custom-tools).
 </Callout>
 
 ## Automatic File Handling
