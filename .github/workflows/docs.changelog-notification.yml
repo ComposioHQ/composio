@@ -14,22 +14,40 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2 # Need previous commit to detect changes
+          fetch-depth: 0 # Fetch full history to detect changes across all commits in push
 
       - name: Get Changed Changelog Files
         id: changed-files
         run: |
-          # Get the list of added/modified changelog files in this push (exclude deleted files)
-          CHANGED_FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          # Get the commit range for this push
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          
+          echo "Push event details:"
+          echo "  Before: $BEFORE"
+          echo "  After: $AFTER"
+          echo "  Commits in push: $(git rev-list --count "$BEFORE".."$AFTER" 2>/dev/null || echo "N/A")"
+          
+          # Handle first push to branch (before SHA is all zeros)
+          if [[ "$BEFORE" =~ ^0+$ ]]; then
+            echo "First push to branch detected, checking only the latest commit"
+            CHANGED_FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          else
+            echo "Checking all commits in push range: $BEFORE..$AFTER"
+            # Get the list of added/modified changelog files across all commits in this push
+            CHANGED_FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          fi
           
           if [ -z "$CHANGED_FILES" ]; then
-            echo "No changelog files changed"
+            echo "No changelog files changed in this push"
             echo "has_changelog=false" >> $GITHUB_OUTPUT
           else
-            echo "Changed changelog files:"
+            echo "Changelog files found:"
             echo "$CHANGED_FILES"
             # Get the first changelog file (in case multiple were added)
             CHANGELOG_FILE=$(echo "$CHANGED_FILES" | head -n 1)
+            echo ""
+            echo "Processing changelog: $CHANGELOG_FILE"
             echo "changelog_file=$CHANGELOG_FILE" >> $GITHUB_OUTPUT
             echo "has_changelog=true" >> $GITHUB_OUTPUT
           fi
