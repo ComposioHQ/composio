@@ -57,7 +57,7 @@ curl -X POST "https://backend.composio.dev/api/v3/webhook_subscriptions" \
   "webhook_url": "https://your-server.com/webhooks/composio",
   "version": "V3",
   "enabled_events": ["composio.trigger.message"],
-  "secret": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "secret": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
   "created_at": "2026-02-06T12:00:00.000Z",
   "updated_at": "2026-02-06T12:00:00.000Z"
 }
@@ -162,8 +162,9 @@ The `data` object matches the response from `GET /api/v3/connected_accounts/{id}
 
 All webhooks include an HMAC-SHA256 signature in the `x-composio-signature` header. Always verify signatures to ensure webhooks are authentic.
 
-<CodeBlocks>
-```python title="Python"
+**Python:**
+
+```python
 import hmac
 import hashlib
 
@@ -179,11 +180,13 @@ def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
 is_valid = verify_webhook(
     payload=request.body,
     signature=request.headers.get("x-composio-signature"),
-    secret="your_webhook_secret"
+    secret="a1b2c3d4e5f67890..."  # Your webhook secret
 )
 ```
 
-```typescript title="TypeScript"
+**TypeScript:**
+
+```typescript
 import { createHmac, timingSafeEqual } from "crypto";
 
 function verifyWebhook(payload: Buffer, signature: string, secret: string): boolean {
@@ -195,10 +198,9 @@ function verifyWebhook(payload: Buffer, signature: string, secret: string): bool
 const isValid = verifyWebhook(
   Buffer.from(JSON.stringify(req.body)),
   req.headers["x-composio-signature"] as string,
-  "your_webhook_secret"
+  "a1b2c3d4e5f67890..."  // Your webhook secret
 );
 ```
-</CodeBlocks>
 
 For detailed verification examples in more languages, see the [Webhook Verification Guide](/docs/using-triggers).
 
