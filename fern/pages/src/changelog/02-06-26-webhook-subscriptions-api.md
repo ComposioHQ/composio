@@ -67,7 +67,7 @@ curl -X POST "https://backend.composio.dev/api/v3/webhook_subscriptions" \
 The `secret` is only returned once at creation time or when rotated. Store it securely for signature verification.
 </Warning>
 
-### Current Limitations
+### Good to Know
 
 - **1 subscription per project**: Currently limited to one webhook subscription per project. This will be expanded in future releases.
 - **HTTPS required**: Webhook URLs must use HTTPS in production environments.
