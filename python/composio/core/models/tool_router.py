@@ -622,7 +622,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
     def _create_tools_fn(
         self,
         session_id: str,
-    ) -> ToolsFn:
+    ) -> ToolsFn[TToolCollection]:
         """
         Create a tools function that wraps tools for the provider.
 
@@ -645,7 +645,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             auto_upload_download_files=self._auto_upload_download_files,
         )
 
-        def tools_fn(modifiers: t.Optional[Modifiers] = None) -> t.Any:
+        def tools_fn(modifiers: t.Optional[Modifiers] = None) -> TToolCollection:
             """
             Get provider-wrapped tools for execution with your AI framework.
 
