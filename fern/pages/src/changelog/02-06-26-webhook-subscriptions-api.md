@@ -202,7 +202,7 @@ const isValid = verifyWebhook(
 );
 ```
 
-For detailed verification examples in more languages, see the [Webhook Verification Guide](/docs/using-triggers).
+For detailed verification examples in more languages, see the [Triggers documentation](https://docs.composio.dev/docs/triggers).
 
 ---
 
@@ -242,11 +242,7 @@ The following legacy endpoints are deprecated and will be removed in a future re
 | `webhook_url` | Deprecated | Use Webhook Subscriptions API |
 | `webhook_secret` | Deprecated | Use Webhook Subscriptions API |
 | `event_webhook_url` | Deprecated | Never implemented |
-| `is_new_webhook` | Deprecated | Use `webhook_version` |
-
-<Note>
-**`webhook_version` is NOT deprecated.** It controls the payload format for Pusher real-time events, which is separate from webhook delivery.
-</Note>
+| `is_new_webhook` | Deprecated | Use Webhook Subscriptions API |
 
 ---
 
@@ -282,28 +278,19 @@ While not required, we recommend migrating to benefit from:
 
 ## Migration Guide
 
-### Step 1: Create a Webhook Subscription
+Your existing webhook configuration has been automatically migrated. No action is required for your webhooks to continue working.
+
+### Using the New API
+
+Start using the new endpoints instead of the legacy ones:
 
 ```bash
-curl -X POST "https://backend.composio.dev/api/v3/webhook_subscriptions" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "webhook_url": "https://your-existing-webhook-url.com/webhook",
-    "enabled_events": ["composio.trigger.message"],
-    "version": "V3"
-  }'
+# List your webhook subscriptions
+curl "https://backend.composio.dev/api/v3/webhook_subscriptions" \
+  -H "x-api-key: YOUR_API_KEY"
 ```
 
-### Step 2: Update Signature Verification
-
-Update your webhook handler to verify signatures using the new secret returned from the create response.
-
-### Step 3: Test
-
-Verify your endpoint receives events correctly with the new subscription.
-
-### Step 4: (Optional) Enable New Events
+### (Optional) Enable New Events
 
 Add `composio.connected_account.expired` to receive connection expiry notifications:
 
@@ -319,10 +306,6 @@ curl -X PATCH "https://backend.composio.dev/api/v3/webhook_subscriptions/{id}" \
   }'
 ```
 
-<Note>
-When you create a webhook subscription, the legacy `project.webhookURL` is automatically cleared to prevent duplicate deliveries.
-</Note>
-
 ---
 
 ## Payload Version Comparison
@@ -333,12 +316,5 @@ When you create a webhook subscription, the legacy `project.webhookURL` is autom
 | V2 | Nested with metadata | For existing integrations |
 | **V3** | Modern envelope format | **Recommended for all new integrations** |
 
-V3 follows industry standards (similar to Stripe, Svix) with a consistent envelope containing `id`, `timestamp`, `type`, `metadata`, and `data`.
+V3 follows industry standards with a consistent envelope containing `id`, `timestamp`, `type`, `metadata`, and `data`.
 
----
-
-## Resources
-
-- [Webhook Verification Guide](/docs/using-triggers)
-- [Triggers Overview](/docs/using-triggers)
-- [Connected Accounts API](/api-reference/connected-accounts)
