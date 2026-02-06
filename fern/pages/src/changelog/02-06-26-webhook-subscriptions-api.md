@@ -160,7 +160,7 @@ The `data` object matches the response from [`GET /api/v3/connected_accounts/{id
 
 ## Verifying Webhook Signatures
 
-All webhooks include an HMAC-SHA256 signature in the `x-composio-signature` header. Use the SDK's built-in verification functions or see the [Triggers documentation](https://docs.composio.dev/docs/triggers) for implementation details.
+All webhooks include an HMAC signature in the `webhook-signature` header. Use the SDK's built-in verification functions or see the [Triggers documentation](https://docs.composio.dev/docs/triggers) for implementation details.
 
 ---
 
