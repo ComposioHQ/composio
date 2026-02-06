@@ -126,7 +126,7 @@ class WebhookPayloadV3(te.TypedDict):
 
     id: str
     timestamp: str
-    type: t.Literal["composio.trigger.message"]
+    type: str  # Any composio.* event type (e.g., 'composio.trigger.message', 'composio.connected_account.expired')
     metadata: WebhookPayloadV3Metadata
     data: t.Dict[str, t.Any]
 
@@ -1074,7 +1074,7 @@ class Triggers(Resource):
                 f"Failed to parse webhook payload as JSON: {e}"
             ) from e
 
-        # Try V3 first (has 'type' === 'composio.trigger.message' and 'metadata')
+        # Try V3 first (has 'type' starting with 'composio.' and 'metadata')
         # Validate metadata is a dict with all required fields (matching TypeScript's zod schema)
         v3_metadata = data.get("metadata") if isinstance(data, dict) else None
         v3_metadata_valid = (
@@ -1086,9 +1086,11 @@ class Triggers(Resource):
             and "auth_config_id" in v3_metadata
             and "user_id" in v3_metadata
         )
+        v3_type = data.get("type", "") if isinstance(data, dict) else ""
         if (
             isinstance(data, dict)
-            and data.get("type") == "composio.trigger.message"
+            and isinstance(v3_type, str)
+            and v3_type.startswith("composio.")
             and v3_metadata_valid
             and "id" in data
             and "data" in data

@@ -172,6 +172,12 @@ class ErrorDownloadingFile(FileError):
     pass
 
 
+class ResponseTooLargeError(FileError):
+    """Raised when a response exceeds the maximum allowed size."""
+
+    pass
+
+
 class TriggerError(ToolkitError):
     pass
 

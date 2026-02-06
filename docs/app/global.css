@@ -473,7 +473,7 @@ nav a[href*="app.composio"]:focus-visible {
    OpenAPI Reference - Field Indicators
 
    Replaces fumadocs-openapi's default ? and * indicators with explicit
-   (optional) and (required) labels after the type.
+   "Required" label after the type for required fields.
 
    Targets: span (simple types), button (expandable objects/arrays), a (links)
 
@@ -487,23 +487,25 @@ span.font-mono.text-fd-primary > span.text-fd-muted-foreground:last-child {
   display: none;
 }
 
-/* Add (required) after type for required fields */
+/* Add "Required" after type for required fields */
 div.flex.items-center:has(> span.font-mono.text-fd-primary > span.text-red-400) > :is(span, button, a).text-sm.font-mono::after {
-  content: "(required)";
+  content: "Required";
   font-size: 0.75rem;
   font-weight: 400;
   margin-left: 0.25rem;
   color: #f87171;
 }
 
-/* Add (optional) after type for optional fields */
-div.flex.items-center:has(> span.font-mono.text-fd-primary > span.text-fd-muted-foreground:last-child):not(:has(> span.font-mono.text-fd-primary > span.text-red-400)) > :is(span, button, a).text-sm.font-mono::after {
-  content: "(optional)";
-  font-size: 0.75rem;
-  font-weight: 400;
-  margin-left: 0.25rem;
-  color: var(--color-fd-muted-foreground);
+/* Hide empty schema wrapper divs (e.g. when Error schema is skipped) */
+div.border.rounded-lg:not(:has(*)) {
+  display: none;
 }
+
+/* Hide redundant "application/json" content type labels */
+p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
+  display: none;
+}
+
 
 /* ==========================================================================
    Table of Contents (Right Sidebar)

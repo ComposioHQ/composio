@@ -1,5 +1,6 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import Image from 'next/image';
+import { Play } from 'lucide-react';
 
 // Composio Logo Component with light/dark mode switching
 function ComposioLogo() {
@@ -50,11 +51,6 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
-        text: 'Playground',
-        url: 'https://platform.composio.dev/auth?next_page=%2Ftool-router&utm_source=docs&utm_medium=navbar&utm_campaign=tool_router',
-        external: true,
-      },
-      {
         text: 'Examples',
         url: '/examples',
         active: 'nested-url',
@@ -74,8 +70,13 @@ export function baseOptions(): BaseLayoutProps {
       },
       {
         type: 'button',
-        text: 'Dashboard',
-        url: 'https://platform.composio.dev',
+        text: (
+          <span className="inline-flex items-center gap-1.5">
+            <Play className="size-4" style={{ color: 'var(--composio-orange)' }} />
+            Playground
+          </span>
+        ),
+        url: 'https://platform.composio.dev/auth?next_page=%2Ftool-router&utm_source=docs&utm_medium=navbar&utm_campaign=tool_router',
         external: true,
         secondary: true,
       },

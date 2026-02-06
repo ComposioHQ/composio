@@ -35,6 +35,7 @@ Detailed documentation for Claude is organized in `.claude/`:
 - [fumadocs.md](.claude/context/fumadocs.md) - Framework patterns, design tokens, MDX components
 - [twoslash.md](.claude/context/twoslash.md) - TypeScript code block type checking
 - [sdk-reference.md](.claude/context/sdk-reference.md) - SDK doc generation
+- [api-reference.md](.claude/context/api-reference.md) - API reference customizations (schema rendering, CSS overrides, upgrade notes)
 
 ### Guides (How-To)
 - [changelog.md](.claude/guides/changelog.md) - Writing changelog entries

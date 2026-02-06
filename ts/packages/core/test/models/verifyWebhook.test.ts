@@ -160,6 +160,38 @@ describe('Triggers.verifyWebhook', () => {
         status: 'ACTIVE',
       });
     });
+
+    it('should detect V3 payload with non-trigger event type (e.g., connected_account.expired)', async () => {
+      // This test verifies the fix for PLEN-1397: V3 payloads with event types other than
+      // 'composio.trigger.message' should still be detected as V3, not fall back to V2
+      const payload = {
+        id: 'msg_abc123',
+        timestamp: new Date().toISOString(),
+        type: 'composio.connected_account.expired', // Not 'composio.trigger.message'
+        metadata: {
+          log_id: 'log-123',
+          trigger_slug: '',
+          trigger_id: '',
+          connected_account_id: 'conn-123',
+          auth_config_id: 'auth-123',
+          user_id: 'user-456',
+        },
+        data: { reason: 'token_expired' },
+      };
+      const payloadStr = JSON.stringify(payload);
+      const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
+
+      const result = await triggers.verifyWebhook({
+        payload: payloadStr,
+        signature,
+        secret: testSecret,
+        id: testWebhookId,
+        timestamp: testTimestamp,
+      });
+
+      expect(result.version).toBe(WebhookVersions.V3); // Should be V3, not V2
+      expect(result.rawPayload).toEqual(payload);
+    });
   });
 
   describe('successful verification with V2 payload', () => {

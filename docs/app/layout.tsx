@@ -1,10 +1,10 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Analytics } from '@vercel/analytics/next';
 import './global.css';
 import { IBM_Plex_Mono } from 'next/font/google';
 import { PostHogProvider } from '@/components/posthog-provider';
+import { DecimalWidget } from '@/components/decimal-widget';
 
 export const metadata: Metadata = {
   title: {
@@ -103,12 +103,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
             {children}
           </RootProvider>
         </PostHogProvider>
-        <Script
-          src="https://app.getdecimal.ai/widget/v1/widget.js"
-          data-widget-id="wgt_Ze0kCx97w7YXIydXpEAbAVWfu7FO6HG1"
-          data-public-config="eyJhbGciOiJIUzI1NiJ9.eyJ3aWQiOiJ3Z3RfWmUwa0N4OTd3N1lYSXlkWHBFQWJBVldmdTdGTzZIRzEiLCJkb21haW5zIjpbImNvbXBvc2lvLmRldiIsImNvbXBvc2lvLWRlY2ltYWwudmVyY2VsLmFwcCIsImxvY2FsaG9zdDozMDAwIiwiZG9jcy5jb21wb3Npby5kZXYiLCJmdW1hZG9jcy1wc2kudmVyY2VsLmFwcCJdLCJpYXQiOjE3Njk1MDE3NTZ9.j7odPAOmoKSkdkFHQCs7FDpAxHfJuzUOEMb_OuHi81I"
-          strategy="afterInteractive"
-        />
+        <DecimalWidget />
       </body>
     </html>
   );

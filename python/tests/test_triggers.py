@@ -575,6 +575,46 @@ class TestVerifyWebhook:
             result["payload"]["metadata"]["connected_account"]["user_id"] == "user-456"
         )
 
+    def test_verify_webhook_v3_non_trigger_event_type(
+        self, triggers, test_secret, test_webhook_id, test_timestamp
+    ):
+        """Test V3 payload with non-trigger event type is detected as V3, not V2.
+
+        This is a regression test for PLEN-1397: V3 payloads with event types
+        other than 'composio.trigger.message' should still be detected as V3.
+        """
+        # V3 payload with a different event type
+        payload_dict = {
+            "id": "msg_abc123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "type": "composio.connected_account.expired",  # Not 'composio.trigger.message'
+            "metadata": {
+                "log_id": "log-123",
+                "trigger_slug": "",
+                "trigger_id": "",
+                "connected_account_id": "conn-123",
+                "auth_config_id": "auth-123",
+                "user_id": "user-456",
+            },
+            "data": {"reason": "token_expired"},
+        }
+        payload = json.dumps(payload_dict)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
+
+        result = triggers.verify_webhook(
+            id=test_webhook_id,
+            payload=payload,
+            signature=signature,
+            timestamp=test_timestamp,
+            secret=test_secret,
+        )
+
+        # Should be detected as V3, not fall back to V2
+        assert result["version"] == WebhookVersion.V3
+        assert result["raw_payload"] == payload_dict
+
     # Successful verification with V2 payload
 
     def test_verify_webhook_v2_payload(

@@ -231,15 +231,19 @@ export type WebhookPayloadV2 = z.infer<typeof WebhookPayloadV2Schema>;
 export const WebhookPayloadV3Schema = z.object({
   id: z.string(),
   timestamp: z.string(),
-  type: z.literal('composio.trigger.message'),
-  metadata: z.object({
-    log_id: z.string(),
-    trigger_slug: z.string(),
-    trigger_id: z.string(),
-    connected_account_id: z.string(),
-    auth_config_id: z.string(),
-    user_id: z.string(),
+  type: z.string().refine(val => val.startsWith('composio.'), {
+    message: "V3 event type must start with 'composio.'",
   }),
+  metadata: z
+    .object({
+      log_id: z.string(),
+      trigger_slug: z.string(),
+      trigger_id: z.string(),
+      connected_account_id: z.string(),
+      auth_config_id: z.string(),
+      user_id: z.string(),
+    })
+    .passthrough(),
   data: z.record(z.unknown()),
 });
 export type WebhookPayloadV3 = z.infer<typeof WebhookPayloadV3Schema>;
