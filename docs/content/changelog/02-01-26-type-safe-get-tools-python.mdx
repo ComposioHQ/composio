@@ -21,7 +21,7 @@ The Python SDK's `Composio` class is now generic over the provider type. When yo
 **Before (untyped):**
 ```python
 from composio import Composio
-from composio.core.provider._anthropic import AnthropicProvider
+from composio_anthropic import AnthropicProvider
 
 composio = Composio(provider=AnthropicProvider())
 tools = composio.tools.get(user_id="user_123", toolkits=["github"])
@@ -31,7 +31,7 @@ tools = composio.tools.get(user_id="user_123", toolkits=["github"])
 **After (type-safe):**
 ```python
 from composio import Composio
-from composio.core.provider._anthropic import AnthropicProvider
+from composio_anthropic import AnthropicProvider
 
 composio = Composio(provider=AnthropicProvider())
 tools = composio.tools.get(user_id="user_123", toolkits=["github"])
@@ -44,8 +44,8 @@ The `Composio` class now uses Python generics to provide type-safe return values
 
 ```python
 from composio import Composio
-from composio.core.provider._openai import OpenAIProvider
-from composio.core.provider._anthropic import AnthropicProvider
+from composio_openai import OpenAIProvider
+from composio_anthropic import AnthropicProvider
 
 # OpenAI provider -> list[ChatCompletionToolParam]
 composio_openai = Composio(provider=OpenAIProvider())
@@ -70,7 +70,7 @@ from typing import Sequence
 
 from composio import Composio
 from composio.client.types import Tool
-from composio.core.provider.none_agentic import NonAgenticProvider
+from composionone_agentic import NonAgenticProvider
 
 
 class MyCustomTool(t.TypedDict):
