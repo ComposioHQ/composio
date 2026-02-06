@@ -722,15 +722,23 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
             # Wrap tools with provider
             if issubclass(type(self._provider), NonAgenticProvider):
-                return t.cast(NonAgenticProvider, self._provider).wrap_tools(
-                    tools=router_tools
+                return t.cast(
+                    TToolCollection,
+                    t.cast(
+                        NonAgenticProvider[TTool, TToolCollection], self._provider
+                    ).wrap_tools(tools=router_tools),
                 )
 
-            return t.cast(AgenticProvider, self._provider).wrap_tools(
-                tools=router_tools,
-                execute_tool=tools_model._wrap_execute_tool_for_tool_router(
-                    session_id=session_id,
-                    modifiers=modifiers,
+            return t.cast(
+                TToolCollection,
+                t.cast(
+                    AgenticProvider[TTool, TToolCollection], self._provider
+                ).wrap_tools(
+                    tools=router_tools,
+                    execute_tool=tools_model._wrap_execute_tool_for_tool_router(
+                        session_id=session_id,
+                        modifiers=modifiers,
+                    ),
                 ),
             )
 
