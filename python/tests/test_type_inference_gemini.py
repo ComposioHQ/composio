@@ -14,7 +14,7 @@ Requirements:
     - composio-gemini
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from composio import Composio
 
@@ -25,43 +25,51 @@ if TYPE_CHECKING:
 
 
 def test_gemini_provider_toolkits() -> None:
-    """Verify Gemini provider returns list[Any] for toolkits query."""
+    """Verify Gemini provider returns list[Callable[..., Any]] for toolkits query."""
     if TYPE_CHECKING:
-        composio: Composio[Any, list[Any]] = Composio(provider=GeminiProvider())
+        composio: Composio[Callable[..., Any], list[Callable[..., Any]]] = Composio(
+            provider=GeminiProvider()
+        )
         tools = composio.tools.get(user_id="test", toolkits=["github"])
 
-        # Type checker should infer: list[Any]
-        assert_type(tools, list[Any])
+        # Type checker should infer: list[Callable[..., Any]]
+        assert_type(tools, list[Callable[..., Any]])
 
 
 def test_gemini_provider_slug() -> None:
-    """Verify Gemini provider returns list[Any] for slug query."""
+    """Verify Gemini provider returns list[Callable[..., Any]] for slug query."""
     if TYPE_CHECKING:
-        composio: Composio[Any, list[Any]] = Composio(provider=GeminiProvider())
+        composio: Composio[Callable[..., Any], list[Callable[..., Any]]] = Composio(
+            provider=GeminiProvider()
+        )
         tools = composio.tools.get(user_id="test", slug="GITHUB_CREATE_REPO")
 
-        assert_type(tools, list[Any])
+        assert_type(tools, list[Callable[..., Any]])
 
 
 def test_gemini_provider_tools_list() -> None:
-    """Verify Gemini provider returns list[Any] for tools list query."""
+    """Verify Gemini provider returns list[Callable[..., Any]] for tools list query."""
     if TYPE_CHECKING:
-        composio: Composio[Any, list[Any]] = Composio(provider=GeminiProvider())
+        composio: Composio[Callable[..., Any], list[Callable[..., Any]]] = Composio(
+            provider=GeminiProvider()
+        )
         tools = composio.tools.get(
             user_id="test",
             tools=["GITHUB_CREATE_REPO", "GITHUB_GET_USER"],
         )
 
-        assert_type(tools, list[Any])
+        assert_type(tools, list[Callable[..., Any]])
 
 
 def test_gemini_provider_search() -> None:
-    """Verify Gemini provider returns list[Any] for search query."""
+    """Verify Gemini provider returns list[Callable[..., Any]] for search query."""
     if TYPE_CHECKING:
-        composio: Composio[Any, list[Any]] = Composio(provider=GeminiProvider())
+        composio: Composio[Callable[..., Any], list[Callable[..., Any]]] = Composio(
+            provider=GeminiProvider()
+        )
         tools = composio.tools.get(user_id="test", search="github repository")
 
-        assert_type(tools, list[Any])
+        assert_type(tools, list[Callable[..., Any]])
 
 
 def test_gemini_provider_inferred() -> None:
@@ -70,5 +78,5 @@ def test_gemini_provider_inferred() -> None:
         composio = Composio(provider=GeminiProvider())
         tools = composio.tools.get(user_id="test", toolkits=["github"])
 
-        # Should infer list[Any] from provider type
-        assert_type(tools, list[Any])
+        # Should infer list[Callable[..., Any]] from provider type
+        assert_type(tools, list[Callable[..., Any]])
