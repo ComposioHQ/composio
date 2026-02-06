@@ -139,7 +139,7 @@ The `composio.connected_account.expired` event follows the V3 envelope format:
 ```
 
 <Note>
-The `data` object matches the response from `GET /api/v3/connected_accounts/{id}`, making it easy to process with existing code and SDK types.
+The `data` object matches the response from [`GET /api/v3/connected_accounts/{id}`](https://docs.composio.dev/api-reference/connected-accounts/get-a-specific-connected-account), making it easy to process with existing code and SDK types.
 </Note>
 
 ### Key Fields
@@ -160,49 +160,7 @@ The `data` object matches the response from `GET /api/v3/connected_accounts/{id}
 
 ## Verifying Webhook Signatures
 
-All webhooks include an HMAC-SHA256 signature in the `x-composio-signature` header. Always verify signatures to ensure webhooks are authentic.
-
-**Python:**
-
-```python
-import hmac
-import hashlib
-
-def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
-    expected = hmac.new(
-        secret.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(f"sha256={expected}", signature)
-
-# Usage
-is_valid = verify_webhook(
-    payload=request.body,
-    signature=request.headers.get("x-composio-signature"),
-    secret="a1b2c3d4e5f67890..."  # Your webhook secret
-)
-```
-
-**TypeScript:**
-
-```typescript
-import { createHmac, timingSafeEqual } from "crypto";
-
-function verifyWebhook(payload: Buffer, signature: string, secret: string): boolean {
-  const expected = `sha256=${createHmac("sha256", secret).update(payload).digest("hex")}`;
-  return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-}
-
-// Usage
-const isValid = verifyWebhook(
-  Buffer.from(JSON.stringify(req.body)),
-  req.headers["x-composio-signature"] as string,
-  "a1b2c3d4e5f67890..."  // Your webhook secret
-);
-```
-
-For detailed verification examples in more languages, see the [Triggers documentation](https://docs.composio.dev/docs/triggers).
+All webhooks include an HMAC-SHA256 signature in the `x-composio-signature` header. Use the SDK's built-in verification functions or see the [Triggers documentation](https://docs.composio.dev/docs/triggers) for implementation details.
 
 ---
 
