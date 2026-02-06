@@ -12,7 +12,7 @@ Learn more: https://noryx402.com
 """
 
 import os
-from typing import Literal, Optional
+from typing import Optional
 
 import requests
 from pydantic import BaseModel, Field
@@ -20,18 +20,6 @@ from pydantic import BaseModel, Field
 from composio import Composio
 
 NORY_API_BASE = "https://noryx402.com"
-
-NoryNetwork = Literal[
-    "solana-mainnet",
-    "solana-devnet",
-    "base-mainnet",
-    "polygon-mainnet",
-    "arbitrum-mainnet",
-    "optimism-mainnet",
-    "avalanche-mainnet",
-    "sei-mainnet",
-    "iotex-mainnet",
-]
 
 # Initialize Composio
 composio = Composio()
@@ -71,7 +59,7 @@ class GetPaymentRequirementsInput(BaseModel):
     )
 
 
-@composio.tools.custom_tool(toolkit="nory_x402")
+@composio.tools.custom_tool()
 def nory_get_payment_requirements(request: GetPaymentRequirementsInput) -> dict:
     """Get x402 payment requirements for accessing a paid resource.
 
@@ -103,7 +91,7 @@ class VerifyPaymentInput(BaseModel):
     )
 
 
-@composio.tools.custom_tool(toolkit="nory_x402")
+@composio.tools.custom_tool()
 def nory_verify_payment(request: VerifyPaymentInput) -> dict:
     """Verify a signed payment transaction before settlement.
 
@@ -131,7 +119,7 @@ class SettlePaymentInput(BaseModel):
     )
 
 
-@composio.tools.custom_tool(toolkit="nory_x402")
+@composio.tools.custom_tool()
 def nory_settle_payment(request: SettlePaymentInput) -> dict:
     """Settle a payment on-chain with ~400ms settlement time.
 
@@ -163,7 +151,7 @@ class LookupTransactionInput(BaseModel):
     )
 
 
-@composio.tools.custom_tool(toolkit="nory_x402")
+@composio.tools.custom_tool()
 def nory_lookup_transaction(request: LookupTransactionInput) -> dict:
     """Look up the status of a previously submitted payment transaction.
 
@@ -186,7 +174,7 @@ class HealthCheckInput(BaseModel):
     pass
 
 
-@composio.tools.custom_tool(toolkit="nory_x402")
+@composio.tools.custom_tool()
 def nory_health_check(request: HealthCheckInput) -> dict:
     """Check Nory service health and see supported networks.
 
