@@ -576,19 +576,14 @@ function createDenoDockerExecutors(
 // ============================================================================
 
 /**
- * Normalize config to support both old (nodeVersions) and new (versions) formats.
+ * Normalize config to RuntimeVersions format.
  */
 function normalizeVersionConfig(config: E2EConfig): RuntimeVersions {
-  // New format takes precedence
   if (config.versions) {
     return config.versions;
   }
-  // Legacy format
-  if (config.nodeVersions) {
-    return { node: config.nodeVersions };
-  }
-  // Default: use current Node.js version
-  return { node: ['current'] };
+  // Default: use current version for Node.js and Deno
+  return { node: ['current'], deno: ['current'] };
 }
 
 /**

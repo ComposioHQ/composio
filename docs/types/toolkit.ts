@@ -6,6 +6,12 @@ export interface ParameterSchema {
   default?: unknown;
   example?: unknown;
   enum?: string[];
+  // Nested object properties (JSON Schema)
+  properties?: Record<string, ParameterSchema>;
+  // Required fields within this object
+  requiredFields?: string[];
+  // Array item schema
+  items?: ParameterSchema;
 }
 
 export interface Tool {

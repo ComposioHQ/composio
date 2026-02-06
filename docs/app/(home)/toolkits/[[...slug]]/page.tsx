@@ -8,13 +8,14 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { Metadata } from 'next';
 import type { Toolkit, Tool, Trigger } from '@/types/toolkit';
+import { processSchema, toolFromApi } from '@/lib/toolkit-schema';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 // Fetch detailed tool info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no tools
-async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
+async function fetchDetailedTools(toolkitSlug: string, version?: string | null): Promise<Tool[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed tool fetch');
     return null;
@@ -22,13 +23,13 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
 
   try {
     const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&limit=1000`,
+      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&limit=10000${version ? `&version=${encodeURIComponent(version)}` : ''}`,
       {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': API_KEY,
         },
-        next: { revalidate: 3600 }, // Cache for 1 hour
+        next: { revalidate: 3600 },
       }
     );
 
@@ -41,43 +42,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
     const rawItems = data.items || data;
     const items = Array.isArray(rawItems) ? rawItems : [];
 
-    return items.filter((tool: any) => tool && typeof tool === 'object').map((tool: any) => {
-      // Extract parameters from JSON Schema format
-      const inputSchema = tool.input_parameters || tool.parameters;
-      const outputSchema = tool.output_parameters || tool.response;
-
-      // Get properties and required array from JSON Schema
-      const inputProps = inputSchema?.properties || inputSchema;
-      const inputRequired = inputSchema?.required || [];
-      const outputProps = outputSchema?.properties || outputSchema;
-      const outputRequired = outputSchema?.required || [];
-
-      // Add required flag to each property based on the required array
-      const processParams = (props: any, requiredList: string[]) => {
-        if (!props || typeof props !== 'object') return undefined;
-        const result: Record<string, any> = {};
-        for (const [key, value] of Object.entries(props)) {
-          if (typeof value === 'object' && value !== null) {
-            result[key] = {
-              ...(value as object),
-              required: requiredList.includes(key),
-            };
-          }
-        }
-        return Object.keys(result).length > 0 ? result : undefined;
-      };
-
-      return {
-        slug: tool.slug || '',
-        name: tool.name || tool.display_name || tool.slug || '',
-        description: tool.description || '',
-        input_parameters: processParams(inputProps, inputRequired),
-        output_parameters: processParams(outputProps, outputRequired),
-        scopes: tool.scopes || undefined,
-        tags: tool.tags || undefined,
-        is_deprecated: tool.is_deprecated || false,
-      };
-    });
+    return items.filter((tool: any) => tool && typeof tool === 'object').map(toolFromApi);
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed tools for ${toolkitSlug}:`, error);
     return null;
@@ -86,7 +51,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
 
 // Fetch detailed trigger info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no triggers
-async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | null> {
+async function fetchDetailedTriggers(toolkitSlug: string, version?: string | null): Promise<Trigger[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed trigger fetch');
     return null;
@@ -94,7 +59,7 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
 
   try {
     const response = await fetch(
-      `${API_BASE}/triggers_types?toolkit_slugs=${toolkitSlug.toUpperCase()}&limit=1000`,
+      `${API_BASE}/triggers_types?toolkit_slugs=${toolkitSlug.toUpperCase()}&limit=10000${version ? `&version=${encodeURIComponent(version)}` : ''}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -114,38 +79,13 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
     const items = Array.isArray(rawItems) ? rawItems : [];
 
     return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => {
-      // Extract config and payload schemas
-      const configSchema = trigger.config;
-      const payloadSchema = trigger.payload;
-
-      // Get properties and required array from JSON Schema
-      const configProps = configSchema?.properties || configSchema;
-      const configRequired = configSchema?.required || [];
-      const payloadProps = payloadSchema?.properties || payloadSchema;
-      const payloadRequired = payloadSchema?.required || [];
-
-      // Add required flag to each property based on the required array
-      const processParams = (props: any, requiredList: string[]) => {
-        if (!props || typeof props !== 'object') return undefined;
-        const result: Record<string, any> = {};
-        for (const [key, value] of Object.entries(props)) {
-          if (typeof value === 'object' && value !== null) {
-            result[key] = {
-              ...(value as object),
-              required: requiredList.includes(key),
-            };
-          }
-        }
-        return Object.keys(result).length > 0 ? result : undefined;
-      };
-
       return {
         slug: trigger.slug || '',
         name: trigger.name || trigger.display_name || trigger.slug || '',
         description: trigger.description || '',
         type: trigger.type || undefined,
-        config: processParams(configProps, configRequired),
-        payload: processParams(payloadProps, payloadRequired),
+        config: processSchema(trigger.config),
+        payload: processSchema(trigger.payload),
         instructions: trigger.instructions || undefined,
       };
     });
@@ -277,8 +217,8 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     if (toolkit) {
       // Fetch detailed tool and trigger info from API (includes input/output params)
       const [detailedTools, detailedTriggers] = await Promise.all([
-        fetchDetailedTools(toolkitSlug),
-        fetchDetailedTriggers(toolkitSlug),
+        fetchDetailedTools(toolkitSlug, toolkit.version),
+        fetchDetailedTriggers(toolkitSlug, toolkit.version),
       ]);
 
       // Use detailed data if fetch succeeded, otherwise fall back to static data

@@ -134,18 +134,8 @@ export interface DefineTestsContext {
  */
 export interface E2EConfig {
   /**
-   * Node.js versions to test against.
-   * Each version creates a separate describe block.
-   * If not provided, defaults to the current Node runtime version.
-   *
-   * @deprecated Use `versions.node` instead. This property will be removed in a future version.
-   */
-  nodeVersions?: readonly NodeVersionFromUser[];
-
-  /**
    * Runtime versions to test against.
    * Supports Node.js and Deno runtimes.
-   * Takes precedence over the deprecated `nodeVersions` property.
    *
    * @example
    * ```typescript

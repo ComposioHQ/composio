@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
+import { processSchema } from '@/lib/toolkit-schema';
 import { PageActions } from '@/components/page-actions';
 import { AuthDetailsSection } from '@/components/toolkits/auth-details-section';
 
@@ -40,6 +41,12 @@ function formatDefault(value: unknown): string | undefined {
 function formatType(param: ParameterSchema): string {
   let typeStr = param.type || 'string';
 
+  // Show array item type
+  if (typeStr === 'array' && param.items) {
+    const itemType = param.items.type || 'unknown';
+    typeStr = `array<${itemType}>`;
+  }
+
   // Include enum values in type display
   if (param.enum && param.enum.length > 0) {
     const enumValues = param.enum.map(v => `"${v}"`).join(' | ');
@@ -49,31 +56,60 @@ function formatType(param: ParameterSchema): string {
   return typeStr;
 }
 
-// Convert parameter schema to TypeTable format
+// Get children from a param (object properties or array item properties)
+function getChildren(param: ParameterSchema): Record<string, ParameterSchema> | null {
+  const props = param.properties || param.items?.properties;
+  if (!props || typeof props !== 'object') return null;
+
+  const requiredList: string[] = param.requiredFields || param.items?.requiredFields || [];
+  const result: Record<string, ParameterSchema> = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (typeof value === 'object' && value !== null) {
+      const raw = value as ParameterSchema & { required?: string[] | boolean };
+      result[key] = {
+        ...raw,
+        required: Array.isArray(requiredList) ? requiredList.includes(key) : false,
+        // Map the child's own JSON Schema required array to requiredFields
+        // so that deeper nesting levels preserve required info
+        ...(Array.isArray(raw.required) ? { requiredFields: raw.required } : {}),
+      };
+    }
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+// Build a ReactNode description that includes text + nested TypeTable for children
+function buildDescription(param: ParameterSchema): ReactNode {
+  const children = getChildren(param);
+  if (!children) return param.description || undefined;
+
+  return (
+    <div className="space-y-2">
+      {param.description && <p>{param.description}</p>}
+      <TypeTable type={paramsToTypeTable(children)} />
+    </div>
+  );
+}
+
+// Convert parameter schema to TypeTable format, recursively nesting child TypeTables in descriptions
 function paramsToTypeTable(params: Record<string, ParameterSchema>): Record<string, {
   type: string;
-  description?: string;
+  description?: ReactNode;
   default?: string;
   required?: boolean;
 }> {
-  const result: Record<string, {
-    type: string;
-    description?: string;
-    default?: string;
-    required?: boolean;
-  }> = {};
-
+  const result: Record<string, { type: string; description?: ReactNode; default?: string; required?: boolean }> = {};
   for (const [name, param] of Object.entries(params)) {
     result[name] = {
       type: formatType(param),
-      description: param.description || undefined,
+      description: buildDescription(param),
       default: formatDefault(param.default),
       required: param.required,
     };
   }
-
   return result;
 }
+
 
 // Check if item is a Tool with parameters
 function isTool(item: Tool | Trigger): item is Tool {
@@ -85,9 +121,14 @@ function isTrigger(item: Tool | Trigger): item is Trigger {
   return 'config' in item || 'payload' in item || 'type' in item;
 }
 
-function ToolItem({ item }: { item: Tool | Trigger }) {
+function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersion?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [detailedParams, setDetailedParams] = useState<{
+    input?: Record<string, ParameterSchema>;
+    output?: Record<string, ParameterSchema>;
+  } | null>(null);
+  const [fetched, setFetched] = useState(false);
 
   const copySlug = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -99,8 +140,31 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
   const tool = isTool(item) ? item : null;
   const trigger = isTrigger(item) ? item : null;
 
-  const hasInputParams = tool?.input_parameters && Object.keys(tool.input_parameters).length > 0;
-  const hasOutputParams = tool?.output_parameters && Object.keys(tool.output_parameters).length > 0;
+  // Fetch detailed schema once when a tool is first expanded
+  useEffect(() => {
+    if (!expanded || !tool || fetched) return;
+    setFetched(true);
+    const versionParam = toolkitVersion ? `?version=${encodeURIComponent(toolkitVersion)}` : '';
+    fetch(`/api/tools/${item.slug}${versionParam}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setDetailedParams({
+            input: processSchema(data.input_parameters),
+            output: processSchema(data.output_parameters),
+          });
+        }
+      })
+      .catch(() => {
+        // silently fall back to basic params
+      });
+  }, [expanded, tool, fetched, item.slug, toolkitVersion]);
+
+  const inputParams = detailedParams?.input || tool?.input_parameters;
+  const outputParams = detailedParams?.output || tool?.output_parameters;
+
+  const hasInputParams = inputParams && Object.keys(inputParams).length > 0;
+  const hasOutputParams = outputParams && Object.keys(outputParams).length > 0;
   const hasConfig = trigger?.config && Object.keys(trigger.config).length > 0;
   const hasPayload = trigger?.payload && Object.keys(trigger.payload).length > 0;
 
@@ -144,14 +208,14 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
           {hasInputParams && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Input Parameters</h4>
-              <TypeTable type={paramsToTypeTable(tool.input_parameters!)} />
+              <TypeTable type={paramsToTypeTable(inputParams!)} />
             </div>
           )}
 
           {hasOutputParams && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Output</h4>
-              <TypeTable type={paramsToTypeTable(tool.output_parameters!)} />
+              <TypeTable type={paramsToTypeTable(outputParams!)} />
             </div>
           )}
 
@@ -341,7 +405,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
             {activeTab === 'tools' && (
               filteredTools.length > 0 ? (
                 filteredTools.map((tool) => (
-                  <ToolItem key={tool.slug} item={tool} />
+                  <ToolItem key={tool.slug} item={tool} toolkitVersion={toolkit.version} />
                 ))
               ) : (
                 <p className="px-4 py-8 text-center text-sm text-fd-muted-foreground">
@@ -352,7 +416,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
             {activeTab === 'triggers' && (
               filteredTriggers.length > 0 ? (
                 filteredTriggers.map((trigger) => (
-                  <ToolItem key={trigger.slug} item={trigger} />
+                  <ToolItem key={trigger.slug} item={trigger} toolkitVersion={toolkit.version} />
                 ))
               ) : (
                 <p className="px-4 py-8 text-center text-sm text-fd-muted-foreground">

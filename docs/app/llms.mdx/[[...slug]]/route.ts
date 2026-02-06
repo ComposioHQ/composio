@@ -14,35 +14,13 @@ import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
+import { processSchema, toolFromApi } from '@/lib/toolkit-schema';
 
 export const revalidate = false;
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 const API_FETCH_LIMIT = 1000; // Note: Toolkits with more items will be truncated
-
-/**
- * Process raw parameter properties into typed ParameterSchema records.
- * Adds required flag based on the requiredList from JSON Schema.
- */
-function processParams(
-  props: unknown,
-  requiredList: string[]
-): Record<string, ParameterSchema> | undefined {
-  if (!props || typeof props !== 'object') return undefined;
-
-  const result: Record<string, ParameterSchema> = {};
-  for (const [key, value] of Object.entries(props)) {
-    if (typeof value === 'object' && value !== null) {
-      result[key] = {
-        ...(value as ParameterSchema),
-        // Explicitly set required based on JSON Schema required array
-        required: requiredList.includes(key),
-      };
-    }
-  }
-  return Object.keys(result).length > 0 ? result : undefined;
-}
 
 // Fetch detailed tool info from Composio API
 async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
@@ -81,26 +59,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return items.filter((tool: any) => tool && typeof tool === 'object').map((tool: any) => {
-      const inputSchema = tool.input_parameters || tool.parameters;
-      const outputSchema = tool.output_parameters || tool.response;
-
-      const inputProps = inputSchema?.properties || inputSchema;
-      const inputRequired = inputSchema?.required || [];
-      const outputProps = outputSchema?.properties || outputSchema;
-      const outputRequired = outputSchema?.required || [];
-
-      return {
-        slug: tool.slug || '',
-        name: tool.name || tool.display_name || tool.slug || '',
-        description: tool.description || '',
-        input_parameters: processParams(inputProps, inputRequired),
-        output_parameters: processParams(outputProps, outputRequired),
-        scopes: tool.scopes,
-        tags: tool.tags,
-        is_deprecated: tool.is_deprecated || false,
-      };
-    });
+    return items.filter((tool: any) => tool && typeof tool === 'object').map(toolFromApi);
   } catch {
     return null;
   }
@@ -143,25 +102,15 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => {
-      const configSchema = trigger.config;
-      const payloadSchema = trigger.payload;
-
-      const configProps = configSchema?.properties || configSchema;
-      const configRequired = configSchema?.required || [];
-      const payloadProps = payloadSchema?.properties || payloadSchema;
-      const payloadRequired = payloadSchema?.required || [];
-
-      return {
-        slug: trigger.slug || '',
-        name: trigger.name || trigger.display_name || trigger.slug || '',
-        description: trigger.description || '',
-        type: trigger.type,
-        config: processParams(configProps, configRequired),
-        payload: processParams(payloadProps, payloadRequired),
-        instructions: trigger.instructions,
-      };
-    });
+    return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => ({
+      slug: trigger.slug || '',
+      name: trigger.name || trigger.display_name || trigger.slug || '',
+      description: trigger.description || '',
+      type: trigger.type,
+      config: processSchema(trigger.config),
+      payload: processSchema(trigger.payload),
+      instructions: trigger.instructions,
+    }));
   } catch {
     return null;
   }

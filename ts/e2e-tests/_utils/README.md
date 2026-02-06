@@ -50,7 +50,6 @@ Configuration object passed to `e2e()`:
 | Property       | Type                                  | Description                                                      |
 | -------------- | ------------------------------------- | ---------------------------------------------------------------- |
 | `versions`     | `RuntimeVersions`                     | Runtime versions to test. See RuntimeVersions below              |
-| `nodeVersions` | `readonly NodeVersionFromUser[]`      | **Deprecated.** Use `versions.node` instead                      |
 | `env`          | `Record<string, string \| undefined>` | Environment variables for Docker. Validated at startup           |
 | `usesFixtures` | `boolean`                             | When true, sets cwd to `{testDir}/fixtures`. Default: `false`    |
 | `defineTests`  | `(ctx: DefineTestsContext) => void`   | Callback to define tests using bun:test primitives               |
@@ -162,7 +161,7 @@ it('calls LLM', async () => {
 Node.js versions to test are resolved in this order:
 
 1. **`COMPOSIO_E2E_NODE_VERSION` env var** (highest priority): Use `[env_value]`
-2. **`config.versions.node`** or **`config.nodeVersions`**: Use the provided array
+2. **`config.versions.node`**: Use the provided array
 3. **Default**: Use version from `.nvmrc` file
 
 ### Well-Known Node Versions

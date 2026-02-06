@@ -15,7 +15,7 @@ declare module 'bun' {
 }
 
 e2e(import.meta.url, {
-  nodeVersions: ['20.19.0', '22.12.0'],
+  versions: { node: ['20.19.0', '22.12.0'] },
   usesFixtures: true,
   env: {
     COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
