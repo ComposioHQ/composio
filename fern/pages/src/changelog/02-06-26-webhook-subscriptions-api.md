@@ -57,7 +57,7 @@ curl -X POST "https://backend.composio.dev/api/v3/webhook_subscriptions" \
   "webhook_url": "https://your-server.com/webhooks/composio",
   "version": "V3",
   "enabled_events": ["composio.trigger.message"],
-  "secret": "whsec_a1b2c3d4e5f6...",
+  "secret": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "created_at": "2026-02-06T12:00:00.000Z",
   "updated_at": "2026-02-06T12:00:00.000Z"
 }
@@ -179,7 +179,7 @@ def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
 is_valid = verify_webhook(
     payload=request.body,
     signature=request.headers.get("x-composio-signature"),
-    secret="whsec_your_secret"
+    secret="your_webhook_secret"
 )
 ```
 
@@ -195,7 +195,7 @@ function verifyWebhook(payload: Buffer, signature: string, secret: string): bool
 const isValid = verifyWebhook(
   Buffer.from(JSON.stringify(req.body)),
   req.headers["x-composio-signature"] as string,
-  "whsec_your_secret"
+  "your_webhook_secret"
 );
 ```
 </CodeBlocks>
