@@ -59,7 +59,7 @@ const app = workflow.compile();
 const finalState = await app.invoke({
   messages: [new HumanMessage('Find the details of the user `pg` on HackerNews')],
 });
-console.log(`✅ Message recieved from the model`);
+console.log(`✅ Message received from the model`);
 console.log(finalState.messages[finalState.messages.length - 1].content);
 
 const nextState = await app.invoke({
@@ -67,5 +67,5 @@ const nextState = await app.invoke({
   // This way it knows we're asking about the weather in NY
   messages: [...finalState.messages, new HumanMessage('what about haxzie')],
 });
-console.log(`✅ Message recieved from the model`);
+console.log(`✅ Message received from the model`);
 console.log(nextState.messages[nextState.messages.length - 1].content);

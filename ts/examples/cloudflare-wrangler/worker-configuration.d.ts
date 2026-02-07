@@ -6541,7 +6541,7 @@ declare module "cloudflare:pipelines" {
         protected ctx: ExecutionContext;
         constructor(ctx: ExecutionContext, env: Env);
         /**
-         * run recieves an array of PipelineRecord which can be
+         * run receives an array of PipelineRecord which can be
          * transformed and returned to the pipeline
          * @param records Incoming records from the pipeline to be transformed
          * @param metadata Information about the specific pipeline calling the transformation entrypoint
