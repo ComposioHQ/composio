@@ -20,11 +20,14 @@ Two breaking changes ship in this release:
 
 Previously, actions whose response schema already contained a `data` field at the root level would surface all fields (including `data`) alongside `successful` and `error` at the top level. Now, all action responses are uniformly wrapped: the full response object is nested inside a `data` field, with `successful` and `error` at the top level.
 
+#### Affected: Toolkits with `data` in their response model (e.g., Pipedrive `PIPEDRIVE_LIST_UPDATES_ABOUT_A_DEAL`)
+
+These actions had a `data` field in their original response schema. Previously, those fields were spread at the root level alongside `successful` and `error`. Now, they are nested under a top-level `data` field.
+
 **Before:**
 ```json
 {
-  "data": { "id": 1, "name": "example" },
-  "other_field": "value",
+  "data": { "deal_id": 1, "field_key": "stage_id", "old_value": "1", "new_value": "2" },
   "successful": true,
   "error": null
 }
@@ -34,15 +37,35 @@ Previously, actions whose response schema already contained a `data` field at th
 ```json
 {
   "data": {
-    "data": { "id": 1, "name": "example" },
-    "other_field": "value"
+    "data": { "deal_id": 1, "field_key": "stage_id", "old_value": "1", "new_value": "2" }
   },
   "successful": true,
   "error": null
 }
 ```
 
-If your code accesses fields directly at the root level (e.g., `result["other_field"]`), update it to access them under `result["data"]` instead (e.g., `result["data"]["other_field"]`).
+If your code accesses fields directly at the root level (e.g., `result["data"]`), update it to access them under `result["data"]["data"]` instead.
+
+#### Not affected: Toolkits without `data` in their response model (e.g., GitHub `GITHUB_GET_THE_LATEST_RELEASE`)
+
+These actions never had a `data` field in their original response schema, so their wrapping behavior is unchanged. The response fields are nested under `data` as before.
+
+```json
+{
+  "data": {
+    "url": "https://api.github.com/repos/octocat/Hello-World/releases/1",
+    "tag_name": "v1.0.0",
+    "name": "v1.0.0",
+    "draft": false,
+    "prerelease": false,
+    "author": { "login": "octocat", "id": 1 }
+  },
+  "successful": true,
+  "error": null
+}
+```
+
+No migration needed for these toolkits.
 
 <Accordions>
 <Accordion title="Affected Toolkits (280+)">
