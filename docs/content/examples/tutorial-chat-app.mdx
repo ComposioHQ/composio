@@ -1,0 +1,415 @@
+---
+title: Build a Chat App
+description: Build an AI chat app with access to 800+ tools in about 30 lines of backend code
+---
+
+Composio gives your AI agent access to 800+ app integrations — Gmail, GitHub, Slack, Notion, and more. Today, in about **30 lines of backend code**, we'll build a chat app where your agent can discover tools, authenticate users, and take actions across any app.
+
+After that we'll see how authentication works and how to show tool calls in the UI.
+
+## Create the project
+
+<Callout>
+Before you begin: you'll need Node.js 18+ and API keys for [Composio](https://platform.composio.dev/settings) and [OpenAI](https://platform.openai.com/api-keys).
+</Callout>
+
+Create a new Next.js app and install the dependencies:
+
+```bash
+pnpm create next-app composio-chat --yes
+cd composio-chat
+pnpm install @composio/core @composio/vercel @ai-sdk/openai ai @ai-sdk/react
+```
+
+Add your API keys to a `.env.local` file in the project root:
+
+```bash title=".env.local"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+Start the dev server and keep it running throughout this tutorial:
+
+```bash
+pnpm dev
+```
+
+Open [localhost:3000](http://localhost:3000) — you'll see the default Next.js page. We'll replace it with a chat interface shortly.
+
+## How Composio works
+
+Instead of loading 1000+ tools into your agent's context (which would overwhelm any LLM), Composio gives your agent **5 meta tools** that handle everything at runtime:
+
+| Meta tool | What it does |
+|-----------|-------------|
+| `COMPOSIO_SEARCH_TOOLS` | Discover relevant tools across 800+ apps |
+| `COMPOSIO_MANAGE_CONNECTIONS` | Handle OAuth and API key authentication |
+| `COMPOSIO_MULTI_EXECUTE_TOOL` | Execute up to 20 tools in parallel |
+| `COMPOSIO_REMOTE_WORKBENCH` | Run Python code in a persistent sandbox |
+| `COMPOSIO_REMOTE_BASH_TOOL` | Execute bash commands for data processing |
+
+Here's the flow:
+
+```
+User: "Star the composio repo on GitHub"
+    ↓
+1. Agent calls COMPOSIO_SEARCH_TOOLS
+   → Returns GITHUB_STAR_REPO with input schema
+   → Returns connection status (not connected)
+    ↓
+2. Agent calls COMPOSIO_MANAGE_CONNECTIONS
+   → Returns an auth link for GitHub
+   → User clicks link and authorizes
+    ↓
+3. Agent calls COMPOSIO_MULTI_EXECUTE_TOOL
+   → Executes GITHUB_STAR_REPO
+   → Returns success
+    ↓
+Done. The repo is starred. ⭐
+```
+
+When you create a **session**, your agent gets these 5 tools. From there, the agent handles discovery, authentication, and execution on its own.
+
+Now let's write the code.
+
+## Your first session
+
+A **session** is the core Composio primitive. It scopes tools and connections to a specific user. One line of code gives your agent access to everything.
+
+Create a new file at `app/api/chat/route.ts`:
+
+```typescript title="app/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import {
+  streamText,
+  convertToModelMessages,
+  generateId,
+  stepCountIs,
+  type UIMessage,
+} from "ai";
+
+const composio = new Composio({ provider: new VercelProvider() });
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  // Create a session for the user
+  const session = await composio.create("user_123");
+  const tools = await session.tools();
+
+  // Stream the AI response with tool access
+  const result = streamText({
+    model: openai("gpt-4o"),
+    system: "You are a helpful assistant. Use Composio tools to help the user.",
+    messages: await convertToModelMessages(messages),
+    tools,
+    stopWhen: stepCountIs(10),
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    generateMessageId: () => generateId(),
+  });
+}
+```
+
+Let's break this down:
+
+1. **`new Composio({ provider: new VercelProvider() })`** initializes Composio with the Vercel AI SDK provider, so tools are returned in the right format.
+2. **`composio.create("user_123")`** creates a session for this user. All tool connections and data are scoped to this ID. In production, you'd use a real user ID from your auth system.
+3. **`session.tools()`** returns the 5 meta tools, formatted for the Vercel AI SDK.
+4. **`streamText`** sends the conversation to GPT-4o along with the tools. The model can now search for tools, authenticate users, and execute actions — all through those meta tools.
+5. **`stopWhen: stepCountIs(10)`** limits the agent to 10 steps per request. Each tool call counts as a step.
+
+That's the entire backend. Now let's build the chat UI.
+
+## The chat UI
+
+Replace your `app/page.tsx` with a simple chat interface:
+
+```tsx title="app/page.tsx"
+import React from "react";
+// ---cut---
+"use client";
+
+import { useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+
+export default function Chat() {
+  const [input, setInput] = useState("");
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  });
+
+  const isLoading = status === "streaming" || status === "submitted";
+
+  return (
+    <main className="max-w-2xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Composio Chat</h1>
+
+      <div className="space-y-4 mb-6 min-h-[200px]">
+        {messages.length === 0 && (
+          <p className="text-gray-400 text-center py-12">
+            Try: &quot;Star the composio repo on GitHub&quot;
+          </p>
+        )}
+        {messages.map((m) => (
+          <div key={m.id} className="flex gap-2">
+            <span className="font-semibold shrink-0">
+              {m.role === "user" ? "You:" : "Agent:"}
+            </span>
+            <div>
+              {m.parts.map((part, i) =>
+                part.type === "text" ? <span key={i}>{String(part.text)}</span> : null
+              )}
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <p className="text-gray-400 text-sm">Thinking...</p>
+        )}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!input.trim()) return;
+          sendMessage({ text: input });
+          setInput("");
+        }}
+      >
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask me anything..."
+          disabled={isLoading}
+          className="w-full p-3 border border-gray-300 rounded-lg"
+        />
+      </form>
+    </main>
+  );
+}
+```
+
+The `useChat` hook manages everything: message history, streaming, and state. It sends messages to your `/api/chat` route and streams the response back automatically.
+
+Go to [localhost:3000](http://localhost:3000). You should see the chat interface. Try sending a message like "Hello" — the agent will respond.
+
+## Your first tool call
+
+Now try asking the agent to do something real:
+
+```
+Star the composio repo on GitHub
+```
+
+Here's what happens behind the scenes:
+
+1. The agent calls **`COMPOSIO_SEARCH_TOOLS`** with your request. Composio returns the `GITHUB_STAR_REPO` tool along with its input schema and the user's connection status.
+
+2. Since you haven't connected GitHub yet, the agent calls **`COMPOSIO_MANAGE_CONNECTIONS`**. Composio returns an authentication link.
+
+3. The agent shows you the link in the chat. **Click it**, authorize with GitHub, and come back to the chat.
+
+4. Tell the agent you're done (e.g., "Done" or "I've connected"). It retries — this time calling **`COMPOSIO_MULTI_EXECUTE_TOOL`** to run `GITHUB_STAR_REPO`.
+
+5. The repo is starred.
+
+The agent handled **discovery**, **authentication**, and **execution** — all through the meta tools you gave it with `composio.create()`. You didn't write a single line of tool-specific code.
+
+<Callout>
+This in-chat authentication flow works out of the box. For production apps, you can also [authenticate users ahead of time](/docs/authenticating-users/manually-authenticating) during onboarding.
+</Callout>
+
+## Showing tool calls
+
+Right now tool calls happen invisibly. Let's add a component that shows them — the tool name, input, and output — so you can see what your agent is doing in real time.
+
+Create `components/ToolCallDisplay.tsx`:
+
+```tsx title="components/ToolCallDisplay.tsx"
+import React from "react";
+// ---cut---
+"use client";
+
+import { useState } from "react";
+
+export function ToolCallDisplay({
+  toolName,
+  input,
+  output,
+  isLoading,
+}: {
+  toolName: string;
+  input: unknown;
+  output?: unknown;
+  isLoading: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div
+      className={`my-2 rounded-lg border p-2 text-sm ${
+        isLoading
+          ? "border-blue-200 bg-blue-50"
+          : "border-green-200 bg-green-50"
+      }`}
+    >
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 w-full text-left"
+      >
+        <span>{isLoading ? "⏳" : "✅"}</span>
+        <code className="font-mono text-xs">{toolName}</code>
+        {isLoading && <span className="text-xs text-gray-500">Running...</span>}
+        <span className="ml-auto text-xs">{expanded ? "▲" : "▼"}</span>
+      </button>
+
+      {expanded && (
+        <div className="mt-2 space-y-2">
+          <pre className="text-xs bg-white/50 p-2 rounded overflow-auto max-h-32">
+            {String(JSON.stringify(input, null, 2))}
+          </pre>
+          {output != null && (
+            <pre className="text-xs bg-white/50 p-2 rounded overflow-auto max-h-32">
+              {String(JSON.stringify(output, null, 2))}
+            </pre>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+Now update `app/page.tsx` to render tool calls:
+
+```tsx title="app/page.tsx"
+import React from "react";
+declare function ToolCallDisplay(props: { toolName: string; input: unknown; output?: unknown; isLoading: boolean }): React.ReactElement;
+// ---cut---
+"use client";
+
+import { useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, getToolName, isToolUIPart } from "ai";
+// @ts-ignore
+import { ToolCallDisplay } from "../components/ToolCallDisplay";
+
+export default function Chat() {
+  const [input, setInput] = useState("");
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  });
+
+  const isLoading = status === "streaming" || status === "submitted";
+
+  return (
+    <main className="max-w-2xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">Composio Chat</h1>
+
+      <div className="space-y-4 mb-6 min-h-[200px]">
+        {messages.length === 0 && (
+          <p className="text-gray-400 text-center py-12">
+            Try: &quot;Star the composio repo on GitHub&quot;
+          </p>
+        )}
+        {messages.map((m) => (
+          <div key={m.id} className="flex gap-2">
+            <span className="font-semibold shrink-0">
+              {m.role === "user" ? "You:" : "Agent:"}
+            </span>
+            <div className="flex-1">
+              {m.parts.map((part, i) => {
+                if (part.type === "text") {
+                  return <span key={i}>{String(part.text)}</span>;
+                }
+                if (isToolUIPart(part)) {
+                  return (
+                    <ToolCallDisplay
+                      key={part.toolCallId}
+                      toolName={getToolName(part)}
+                      input={part.input}
+                      output={
+                        part.state === "output-available"
+                          ? part.output
+                          : undefined
+                      }
+                      isLoading={part.state !== "output-available"}
+                    />
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <p className="text-gray-400 text-sm">Thinking...</p>
+        )}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!input.trim()) return;
+          sendMessage({ text: input });
+          setInput("");
+        }}
+      >
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask me anything..."
+          disabled={isLoading}
+          className="w-full p-3 border border-gray-300 rounded-lg"
+        />
+      </form>
+    </main>
+  );
+}
+```
+
+Now when the agent uses tools, you'll see expandable cards showing what's happening — the tool name while it's running, and the full input/output when you click to expand.
+
+Try sending a few more requests:
+
+- "Summarize my emails from today"
+- "What's on my calendar this week?"
+- "Create a GitHub issue in my repo"
+
+Each one will trigger a different set of tools, and you'll see the full flow: search → authenticate → execute.
+
+## What you built
+
+With about 30 lines of backend code and a simple React frontend, you've built a chat app that:
+
+1. Creates a **session** that gives the agent 5 meta tools
+2. Uses **`COMPOSIO_SEARCH_TOOLS`** to discover the right tools across 800+ apps
+3. Uses **`COMPOSIO_MANAGE_CONNECTIONS`** to handle OAuth inline
+4. Uses **`COMPOSIO_MULTI_EXECUTE_TOOL`** to take actions on the user's behalf
+5. Streams responses and shows tool calls in real time
+
+The key concept is the **session** — one line (`composio.create("user_123")`) gives your agent access to every integration Composio supports.
+
+## Next up
+
+We just touched on the basics. Here are some good next steps:
+
+<Cards>
+  <Card title="Configuring sessions" href="/docs/configuring-sessions">
+    Restrict toolkits, set auth configs, and customize session behavior
+  </Card>
+  <Card title="Manual authentication" href="/docs/authenticating-users/manually-authenticating">
+    Authenticate users during onboarding instead of in-chat
+  </Card>
+  <Card title="Users & Sessions" href="/docs/users-and-sessions">
+    Understand the user model for multi-user production apps
+  </Card>
+  <Card title="Full Stack Chat App" href="/examples/vercel-chat">
+    A production chat app with connection management UI
+  </Card>
+</Cards>
