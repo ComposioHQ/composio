@@ -232,9 +232,18 @@ class FileHelper(WithLogger):
                 ).model_dump()
                 continue
 
-            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+            param_schema = params[_param]
+            param_type = param_schema.get("type")
+            # Handle anyOf schemas (e.g. anyOf: [{type: object, ...}, {type: null}])
+            if param_type is None and "anyOf" in param_schema:
+                for variant in param_schema["anyOf"]:
+                    if isinstance(variant, dict) and variant.get("type") == "object":
+                        param_type = "object"
+                        param_schema = variant
+                        break
+            if isinstance(request[_param], dict) and param_type == "object":
                 request[_param] = self._substitute_file_uploads_recursively(
-                    schema=params[_param],
+                    schema=param_schema,
                     request=request[_param],
                     tool=tool,
                 )
