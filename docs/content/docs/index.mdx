@@ -6,6 +6,13 @@ keywords: [getting started, introduction]
 
 Composio powers 800+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
 
+Create a session and your agent can discover and use any toolkit at runtime:
+
+```python
+session = composio.create(user_id="user_123")
+tools = session.tools()  # 5 meta tools that access 800+ toolkits
+```
+
 <Cards>
   <Card
     icon={<Rocket />}
