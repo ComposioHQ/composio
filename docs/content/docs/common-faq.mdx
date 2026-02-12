@@ -96,6 +96,41 @@ Pass a `callbackUrl` when calling `link()`, `initiate()`, or `session.authorize(
 You can include your own query parameters in the callback URL (e.g., `?user_id=user_123&source=onboarding`) to carry context through the flow. Composio preserves them. See [sessions](/docs/authenticating-users/manually-authenticating#redirecting-users-after-authentication) or [direct tool setup](/docs/tools-direct/authenticating-tools#redirecting-users-after-authentication).
 </Accordion>
 
+<Accordion title="How do I use my own API key for a toolkit instead of asking each user for theirs?">
+For toolkits that require API keys (like Tavily, Perplexity, or ImgBB), you can create connections on behalf of your users by passing your own API key through `connectedAccounts.initiate()`. This way, your users get access to the service without needing to provide their own credentials.
+
+Create an auth config for the toolkit, then call `initiate()` with your API key and each user's ID:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+connection = composio.connected_accounts.initiate(
+  user_id="user_123",
+  auth_config_id="your_auth_config_id",
+  config={
+    "auth_scheme": "API_KEY", "val": {"api_key": "your_own_api_key"}
+  }
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio, AuthScheme } from '@composio/core';
+
+declare const composio: Composio;
+// ---cut---
+const connection = await composio.connectedAccounts.initiate('user_123', 'your_auth_config_id', {
+  config: AuthScheme.APIKey({
+    api_key: 'your_own_api_key',
+  }),
+});
+```
+  </Tab>
+</Tabs>
+
+Each user gets their own connected account scoped to their `user_id`, but they all share your API key under the hood. See [API key connections](/docs/tools-direct/authenticating-tools#api-key-connections) for the full setup.
+</Accordion>
+
 <Accordion title="Can Composio be self-hosted?">
 Yes, Composio supports self-hosting on the Enterprise plan. See [pricing](https://composio.dev/pricing) for details or [talk to us](https://calendly.com/composiohq/enterprise).
 </Accordion>

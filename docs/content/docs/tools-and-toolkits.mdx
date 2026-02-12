@@ -15,7 +15,7 @@ When you create a session, your agent gets these 5 meta tools:
 | `COMPOSIO_SEARCH_TOOLS` | Discover relevant tools across 800+ apps |
 | `COMPOSIO_MANAGE_CONNECTIONS` | Handle OAuth and API key authentication |
 | `COMPOSIO_MULTI_EXECUTE_TOOL` | Execute up to 20 tools in parallel |
-| `COMPOSIO_REMOTE_WORKBENCH` | Run Python code in a persistent sandbox |
+| `COMPOSIO_REMOTE_WORKBENCH` | Run Python code in a [persistent sandbox](/docs/workbench) |
 | `COMPOSIO_REMOTE_BASH_TOOL` | Execute bash commands for file and data processing |
 
 Meta tool calls in a session are correlated using a `session_id`, allowing them to share context. The tools can also store useful information (like IDs and relationships discovered during execution) in memory for subsequent calls.
@@ -54,7 +54,7 @@ Done. (For large results, agent can use REMOTE_WORKBENCH to process)
 
 For most tasks, `COMPOSIO_MULTI_EXECUTE_TOOL` returns results directly. But when dealing with large responses or bulk operations, your agent uses the workbench tools:
 
-- **`COMPOSIO_REMOTE_WORKBENCH`** - Run Python code in a persistent sandbox. Use for bulk operations (e.g., labeling 100 emails), complex data transformations, or when results need further analysis with helper functions like `invoke_llm`.
+- **`COMPOSIO_REMOTE_WORKBENCH`** - Run Python code in a [persistent sandbox](/docs/workbench). Use for bulk operations (e.g., labeling 100 emails), complex data transformations, or when results need further analysis with helper functions like `invoke_llm`.
 
 - **`COMPOSIO_REMOTE_BASH_TOOL`** - Execute bash commands for simpler file operations and data extraction using tools like `jq`, `awk`, `sed`, and `grep`.
 

@@ -410,7 +410,7 @@ After creating a connection, it will have one of the following statuses that ind
 |--------|---------------|------------|
 | **ACTIVE** | Connection is working. Tools can be executed. | Nothing — you're good. |
 | **INITIATED** | OAuth flow started but the user hasn't completed authentication yet. Auto-expires after 10 minutes. | Redirect the user to the Connect Link to finish authentication. |
-| **EXPIRED** | Credentials are no longer valid and Composio cannot refresh them automatically. See [common causes](#why-connections-expire) below. | [Subscribe to expiry events](/docs/subscribing-to-connection-expiry-events) to detect this proactively. |
+| **EXPIRED** | Credentials are no longer valid and Composio cannot refresh them automatically. See [common causes](#why-connections-expire) below. | [Subscribe to expiry events](/docs/subscribing-to-connection-expiry-events) to detect this proactively, and [re-authenticate the user](/docs/subscribing-to-connection-expiry-events#re-authenticate-the-user) to refresh the connection. |
 | **FAILED** | The authentication attempt did not succeed. Common causes: user denied consent during OAuth, invalid authorization code, or misconfigured auth config. | Check the `status_reason` field for details and retry the connection. |
 | **INACTIVE** | Manually disabled via the API. The connection is preserved but cannot be used to execute tools. | Re-enable it via the API or dashboard to restore access. |
 
