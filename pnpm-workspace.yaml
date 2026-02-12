@@ -19,7 +19,7 @@ catalog:
   '@composio/client': 0.1.0-alpha.56
   '@mastra/core': ^1.0.4
   '@modelcontextprotocol/sdk': ^1.25.2
-  ai: ^6.0.27
+  ai: ^6.0.82
   hono: ^4.11.4
   openai: ^6.16.0
   pnpm: ^10.28.0
