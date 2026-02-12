@@ -22,14 +22,14 @@ catalog:
   ai: ^6.0.27
   hono: ^4.11.4
   openai: ^6.16.0
-  pnpm: ^10.28.0
+  pnpm: ^10.28.2
   publint: ^0.3.16
   tsdown: ^0.18.4
   tsx: ^4.20.5
   typescript: ^5.9.2
   uuid: ^13.0.0
   vitest: ^3.2.4
-  wrangler: ^4.37.0
+  wrangler: ^4.59.1
   zod: ^4.1.0
   zod-to-json-schema: ^3.25.1
 
