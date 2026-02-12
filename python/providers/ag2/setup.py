@@ -23,8 +23,6 @@ setup(
     python_requires=">=3.10,<3.14",
     install_requires=[
         "ag2>=0.11.0",
-        "autogen_core>=0.4.0",
-        "autogen_agentchat>=0.4.0",
         "composio",
     ],
     include_package_data=True,

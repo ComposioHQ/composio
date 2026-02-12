@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 os.environ.setdefault("COMPOSIO_CACHE_DIR", tempfile.mkdtemp(prefix="composio-test-"))
 
-from autogen_core.tools import FunctionTool
+from autogen.tools.tool import Tool as FunctionTool
 from composio_ag2 import AG2Provider
 
 

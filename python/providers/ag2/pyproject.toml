@@ -14,8 +14,6 @@ classifiers = [
 ]
 dependencies = [
     "ag2>=0.11.0",
-    "autogen_core>=0.4.0",
-    "autogen_agentchat>=0.4.0",
     "composio",
 ]
 

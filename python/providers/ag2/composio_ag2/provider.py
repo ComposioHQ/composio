@@ -5,7 +5,7 @@ from inspect import Signature
 
 import autogen
 from autogen.agentchat.conversable_agent import ConversableAgent
-from autogen_core.tools import FunctionTool
+from autogen.tools.tool import Tool as FunctionTool
 
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
@@ -51,20 +51,15 @@ class AG2Provider(
         :param tools: List of tools to register.
         """
         for tool in tools:
-            autogen.agentchat.register_function(
-                f=tool._func,
-                caller=caller,
-                executor=executor,
-                name=tool.name,
-                description=tool.description,
-            )
+            tool.register_for_llm(caller)
+            tool.register_for_execution(executor)
 
     def wrap_tool(
         self,
         tool: Tool,
         execute_tool: AgenticProviderExecuteFn,
     ) -> FunctionTool:
-        """Wraps a composio tool as an AG2 FunctionTool."""
+        """Wraps a composio tool as an AG2 Tool."""
 
         def execute_action(**kwargs: t.Any) -> t.Dict:
             """Placeholder function for executing action."""
@@ -90,9 +85,10 @@ class AG2Provider(
             {p.name: p.annotation for p in params} | {"return": t.Dict[str, t.Any]},
         )
         return FunctionTool(
-            func=function,
-            description=tool.description,
             name=self._process_function_name_for_registration(input_string=tool.slug),
+            description=tool.description,
+            func_or_tool=function,
+            parameters_json_schema=tool.input_parameters,
         )
 
     def wrap_tools(
@@ -100,5 +96,5 @@ class AG2Provider(
         tools: t.Sequence[Tool],
         execute_tool: AgenticProviderExecuteFn,
     ) -> list[FunctionTool]:
-        """Wraps array of composio tools as an AG2 FunctionTool."""
+        """Wraps array of composio tools as AG2 Tools."""
         return [self.wrap_tool(tool=tool, execute_tool=execute_tool) for tool in tools]
