@@ -51,8 +51,8 @@ class AG2Provider(
         :param tools: List of tools to register.
         """
         for tool in tools:
-            tool.register_for_llm(caller)
-            tool.register_for_execution(executor)
+            caller.register_for_llm()(tool)
+            executor.register_for_execution()(tool)
 
     def wrap_tool(
         self,

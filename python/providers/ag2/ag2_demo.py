@@ -43,7 +43,8 @@ def main() -> None:
     assistant = AssistantAgent(
         "assistant",
         system_message=(
-            "Reply TERMINATE when the task is done or when user's content is empty"
+            "You have access to tools. Use the tools to complete the task. "
+            "Reply TERMINATE when the task is done or when user's content is empty."
         ),
         llm_config=llm_config,
     )
@@ -71,10 +72,7 @@ def main() -> None:
     task = "Star a repo composiohq/composio on GitHub"
 
     # Execute task.
-    response = user_proxy.run(assistant, message=task)
-
-    # Print response
-    response.process()
+    user_proxy.initiate_chat(assistant, message=task, max_turns=3)
 
 
 if __name__ == "__main__":
