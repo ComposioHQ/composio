@@ -19,6 +19,7 @@ import { Video } from '@/components/video';
 import { CapabilityCard, CapabilityList } from '@/components/capability-card';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { Mermaid } from '@/components/mermaid';
+import { HeroCode } from '@/components/hero-code';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -81,6 +82,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     CapabilityList,
     ToolkitsLanding,
     Mermaid,
+    HeroCode,
     StepTitle,
     // Lucide icons
     ShieldCheck,

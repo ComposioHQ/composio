@@ -18,10 +18,6 @@ When you create a session, your agent gets these 5 meta tools:
 | `COMPOSIO_REMOTE_WORKBENCH` | Run Python code in a [persistent sandbox](/docs/workbench) |
 | `COMPOSIO_REMOTE_BASH_TOOL` | Execute bash commands for file and data processing |
 
-```python
-tools = session.tools()  # Returns the 5 meta tools above
-```
-
 Meta tool calls in a session are correlated using a `session_id`, allowing them to share context. The tools can also store useful information (like IDs and relationships discovered during execution) in memory for subsequent calls.
 
 ### How it works
