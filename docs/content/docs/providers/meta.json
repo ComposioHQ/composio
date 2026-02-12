@@ -9,6 +9,7 @@
     "openai",
     "google",
     "llamaindex",
+    "ag2",
     "crewai",
     "custom-providers"
   ]

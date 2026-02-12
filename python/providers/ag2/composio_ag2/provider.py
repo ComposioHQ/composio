@@ -1,9 +1,7 @@
-import hashlib
 import types
 import typing as t
 from inspect import Signature
 
-import autogen
 from autogen.agentchat.conversable_agent import ConversableAgent
 from autogen.tools.tool import Tool as FunctionTool
 
@@ -20,22 +18,6 @@ class AG2Provider(
     """
     Composio toolset for AG2 framework.
     """
-
-    def _process_function_name_for_registration(
-        self,
-        input_string: str,
-        max_allowed_length: int = 64,
-        num_hash_char: int = 10,
-    ):
-        """
-        Process function name for proxy registration under given character length limitation.
-        """
-        hash_hex = hashlib.sha256(input_string.encode(encoding="utf-8")).hexdigest()
-        hash_chars_to_attach = hash_hex[:10]
-        num_input_str_char = max_allowed_length - (num_hash_char + 1)
-        input_str_to_attach = input_string[-num_input_str_char:]
-        processed_name = input_str_to_attach + "_" + hash_chars_to_attach
-        return processed_name
 
     def register_tools(
         self,
@@ -70,7 +52,7 @@ class AG2Provider(
             code=execute_action.__code__,
             globals=globals(),
             closure=execute_action.__closure__,
-            name=self._process_function_name_for_registration(input_string=tool.slug),
+            name=tool.slug,
         )
 
         # Set signature and annotations
@@ -85,7 +67,7 @@ class AG2Provider(
             {p.name: p.annotation for p in params} | {"return": t.Dict[str, t.Any]},
         )
         return FunctionTool(
-            name=self._process_function_name_for_registration(input_string=tool.slug),
+            name=tool.slug,
             description=tool.description,
             func_or_tool=function,
             parameters_json_schema=tool.input_parameters,

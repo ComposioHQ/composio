@@ -1,0 +1,81 @@
+---
+title: AG2
+description: Build an agent with AG2 and enable it to use Composio tools.
+keywords: [ag2, autogen]
+---
+
+The AG2 Provider formats the Composio tools into an object compatible with AG2's tool calling capabilities. Agents and LLM workflows built with this can call and execute the Composio tools.
+
+## Setup
+
+The AG2 provider is available for only the Python SDK.
+
+```bash
+pip install composio-ag2 "ag2[openai]"
+```
+
+## Usage
+
+```python
+import os
+
+import dotenv
+from autogen import AssistantAgent, LLMConfig, UserProxyAgent
+from composio_ag2 import AG2Provider
+
+from composio import Composio
+
+dotenv.load_dotenv()
+
+
+def is_termination_msg(content: dict) -> bool:
+    return "TERMINATE" in (content.get("content", "") or "")
+
+
+config_value = os.environ.get("OAI_CONFIG_LIST", "").strip()
+if config_value:
+    if os.path.exists(config_value):
+        llm_config = LLMConfig.from_json(path=config_value)
+    elif config_value.startswith("[") or config_value.startswith("{"):
+        llm_config = LLMConfig.from_json(env="OAI_CONFIG_LIST")
+    else:
+        raise ValueError("OAI_CONFIG_LIST must be JSON or a path to a JSON file.")
+else:
+    if "OPENAI_API_KEY" not in os.environ:
+        raise ValueError("Set OPENAI_API_KEY or provide OAI_CONFIG_LIST.")
+    llm_config = LLMConfig(
+        {
+            "model": "gpt-5",
+            "api_key": os.environ["OPENAI_API_KEY"],
+            "api_type": "openai",
+        }
+    )
+
+assistant = AssistantAgent(
+    "assistant",
+    system_message=(
+        "You have access to tools. Use the tools to complete the task. "
+        "Reply TERMINATE when the task is done or when user's content is empty."
+    ),
+    llm_config=llm_config,
+)
+
+user_proxy = UserProxyAgent(
+    "user_proxy",
+    is_termination_msg=is_termination_msg,
+    human_input_mode="NEVER",
+    code_execution_config={"use_docker": False},
+)
+
+composio = Composio(provider=AG2Provider())
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+composio.provider.register_tools(
+    caller=assistant,
+    executor=user_proxy,
+    tools=tools,
+)
+
+task = "Star a repo composiohq/composio on GitHub"
+user_proxy.initiate_chat(assistant, message=task, max_turns=3)
+```
