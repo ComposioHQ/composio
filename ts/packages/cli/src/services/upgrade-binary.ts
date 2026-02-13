@@ -40,24 +40,18 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     const githubConfig = yield* Config.all(GITHUB_CONFIG);
 
     /**
-     * Fetch latest release from GitHub
+     * Check if a tag matches the CLI release channel (cli-v* or v*)
      */
-    const fetchLatestRelease = (): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
-      Effect.gen(function* () {
-        const urlSuffix = yield* githubConfig.TAG.pipe(
-          Option.match({
-            onNone: Effect.fn(function* () {
-              yield* Effect.logDebug('No tag specified, using latest release');
-              return 'latest';
-            }),
-            onSome: Effect.fn(function* (tag) {
-              yield* Effect.logDebug(`Using tag: ${tag}`);
-              return `tags/${tag}`;
-            }),
-          })
-        );
+    const isCliReleaseTag = (tag: string): boolean => tag.startsWith('cli-v') || /^v\d+/.test(tag);
 
-        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/${urlSuffix}`;
+    /**
+     * Fetch a specific release by tag from GitHub
+     */
+    const fetchReleaseByTag = (
+      tag: string
+    ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+      Effect.gen(function* () {
+        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${tag}`;
         yield* Effect.logDebug(`GET ${url}`);
 
         const response = yield* Effect.gen(function* () {
@@ -66,7 +60,6 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             const json = yield* resp.json;
             const keyValues = Object.entries(json as object);
             const pretty = renderPrettyError(keyValues);
-
             return yield* Effect.fail(
               new UpgradeBinaryError({
                 cause: `HTTP ${resp.status}\n${pretty}`,
@@ -79,7 +72,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             Effect.fail(
               new UpgradeBinaryError({
                 cause: error,
-                message: `Failed to fetch ${urlSuffix} release from GitHub`,
+                message: `Failed to fetch release ${tag} from GitHub`,
               })
             )
           )
@@ -99,6 +92,84 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         );
 
         return release as GitHubRelease;
+      });
+
+    /**
+     * Fetch the latest CLI release from GitHub.
+     *
+     * When no explicit tag is set, queries recent releases and finds the first
+     * cli-v* or v* release that has binary assets for the current platform.
+     */
+    const fetchLatestRelease = (
+      platformArch: PlatformArch
+    ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+      Effect.gen(function* () {
+        // If an explicit tag is provided, use it directly
+        if (Option.isSome(githubConfig.TAG)) {
+          const tag = githubConfig.TAG.value;
+          yield* Effect.logDebug(`Using explicit tag: ${tag}`);
+          return yield* fetchReleaseByTag(tag);
+        }
+
+        yield* Effect.logDebug('Searching recent releases for CLI binaries...');
+        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=20`;
+        yield* Effect.logDebug(`GET ${url}`);
+
+        const response = yield* Effect.gen(function* () {
+          const resp = yield* httpClient.get(url);
+          if (resp.status < 200 || resp.status >= 300) {
+            return yield* Effect.fail(
+              new UpgradeBinaryError({
+                message: `Failed to fetch releases from GitHub (HTTP ${resp.status})`,
+              })
+            );
+          }
+          return resp;
+        }).pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: 'Failed to fetch releases from GitHub',
+              })
+            )
+          )
+        );
+
+        const releases = yield* Effect.gen(function* () {
+          return yield* response.json;
+        }).pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: 'Failed to parse GitHub releases JSON response',
+              })
+            )
+          )
+        );
+
+        const allReleases = releases as GitHubRelease[];
+        const binaryName = `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
+
+        // Find the first CLI release that has the matching platform asset
+        for (const release of allReleases) {
+          if (!isCliReleaseTag(release.tag_name)) continue;
+          const hasAsset = release.assets.some(asset => asset.name === binaryName);
+          if (hasAsset) {
+            yield* Effect.logDebug(`Found CLI release ${release.tag_name} with ${binaryName}`);
+            return release;
+          }
+          yield* Effect.logDebug(
+            `Release ${release.tag_name} missing ${binaryName}, trying previous...`
+          );
+        }
+
+        return yield* Effect.fail(
+          new UpgradeBinaryError({
+            message: `No CLI release found with ${binaryName} in the last 20 releases`,
+          })
+        );
       });
 
     /**
@@ -325,7 +396,8 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
         yield* Console.log('Checking for updates...');
 
-        const release = yield* fetchLatestRelease();
+        const platformArch = yield* detectPlatform;
+        const release = yield* fetchLatestRelease(platformArch);
         const updateAvailable = yield* isUpdateAvailable(release);
         if (!updateAvailable) {
           yield* Console.log('✅ You are already running the latest version!');
@@ -336,7 +408,6 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           `📦 New version available: ${release.tag_name} (current: ${APP_VERSION})`
         );
 
-        const platformArch = yield* detectPlatform;
         const { name, data } = yield* downloadBinary(release, platformArch);
 
         // The temporary directory is automatically cleaned up

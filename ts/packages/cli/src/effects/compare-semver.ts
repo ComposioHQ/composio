@@ -14,9 +14,9 @@ export const semverComparator = (
   version2: string
 ): Effect.Effect<number, CompareSemverError, never> =>
   Effect.gen(function* () {
-    // Remove 'v' or `cli@` prefix if present
-    const v1 = version1.replace(/^(v|cli@)/, '');
-    const v2 = version2.replace(/^(v|cli@)/, '');
+    // Remove version prefix (v, cli@, cli-v) if present
+    const v1 = version1.replace(/^(cli-v|cli@|v)/, '');
+    const v2 = version2.replace(/^(cli-v|cli@|v)/, '');
 
     /**
      * Comparison result of `semver.compare(clean1, clean2)`.
