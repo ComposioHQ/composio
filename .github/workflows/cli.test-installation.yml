@@ -3,11 +3,11 @@ name: Test Installation
 on:
   push:
     tags:
-      - 'v*'
+      - 'cli-v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to test (e.g., v1.0.0)'
+        description: 'Version to test (e.g., cli-v0.1.25)'
         required: false
         default: 'latest'
   workflow_call:
