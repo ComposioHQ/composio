@@ -11,15 +11,16 @@ curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh
 
 ### Install specific version
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- v0.1.24
+curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- cli-v0.1.25
 ```
 
 ### What the install script does:
 - Detects your platform and architecture automatically
-- Downloads the appropriate binary from GitHub releases
-- Installs to `~/.composio/bin/composio`
+- Queries GitHub Releases API for the latest CLI release with matching binary assets
+- Downloads the appropriate binary (falls back to previous releases if latest is incomplete)
+- Installs to `~/.composio/composio`
 - Updates your shell configuration (.bashrc, .zshrc, or .config/fish/config.fish)
-- Adds the binary to your PATH
+- Adds the install directory to your PATH
 
 ## Manual Installation
 
@@ -110,7 +111,7 @@ composio --help
 ### Permission Denied
 If you get permission errors:
 ```bash
-chmod +x ~/.composio/bin/composio
+chmod +x ~/.composio/composio
 ```
 
 ### Command Not Found
@@ -135,12 +136,12 @@ If `composio` is not found after installation:
 
 3. **Check if the binary exists:**
    ```bash
-   ls -la ~/.composio/bin/composio
+   ls -la ~/.composio/composio
    ```
 
 4. **Manually add to PATH:**
    ```bash
-   export PATH="$HOME/.composio/bin:$PATH"
+   export PATH="$HOME/.composio:$PATH"
    ```
 
 ### Download Failures
@@ -175,22 +176,29 @@ rm -rf ~/.composio
 # Remove from shell configuration
 # Edit ~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish
 # and remove the lines that were added by the installer:
-# export COMPOSIO_INSTALL="$HOME/.composio"
-# export PATH="$COMPOSIO_INSTALL/bin:$PATH"
+# export COMPOSIO_INSTALL_DIR="$HOME/.composio"
+# export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
 ```
 
 ## Environment Variables
 
 The installer respects these environment variables:
 
-- `COMPOSIO_INSTALL` - Installation directory (default: `~/.composio`)
-- `GITHUB` - GitHub base URL (default: `https://github.com`)
+- `COMPOSIO_INSTALL_DIR` - Installation directory (default: `~/.composio`)
+- `COMPOSIO_GITHUB_URL` - GitHub base URL (default: `https://github.com`)
+- `COMPOSIO_GITHUB_OWNER` - Repository owner (default: `ComposioHQ`)
+- `COMPOSIO_GITHUB_REPO` - Repository name (default: `composio`)
+- `COMPOSIO_GITHUB_API` - GitHub API base URL (default: `https://api.github.com`)
 
 Example:
 ```bash
-export COMPOSIO_INSTALL="/usr/local"
+export COMPOSIO_INSTALL_DIR="/usr/local"
 curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash
 ```
+
+## Release Channels
+
+CLI binary releases use `cli-v*` tags (e.g., `cli-v0.1.25`), separate from SDK package releases which use `v*` tags. The installer automatically selects the latest CLI release with matching platform assets. See [CLI Release Policy](docs/cli-release-policy.md) for details.
 
 ## Development
 
