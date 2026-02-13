@@ -75,6 +75,16 @@ console.log(JSON.stringify(result.finalOutput, null, 2));
 // will return the response from the agent with data from HACKERNEWS API.
 ```
 
+### CLI Binary Installation
+
+Install the standalone CLI binary (no Node.js required):
+
+```bash
+curl -fsSL https://composio.dev/install | bash
+```
+
+See [CLI Release Policy](docs/cli-release-policy.md) for details on release channels and supported platforms.
+
 ### Python SDK Installation
 
 ```bash
