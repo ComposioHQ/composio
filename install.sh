@@ -63,7 +63,7 @@ command -v curl >/dev/null ||
     error 'curl is required to install Composio CLI'
 
 if [[ $# -gt 1 ]]; then
-    error 'Too many arguments, only 1 is allowed. You can specify a specific version to install. (e.g. "v0.1.24")'
+    error 'Too many arguments, only 1 is allowed. You can specify a version to install. (e.g. "cli-v0.1.25" or "v0.1.25")'
 fi
 
 # Determine platform and architecture
@@ -108,40 +108,56 @@ github_repo="$COMPOSIO_GITHUB_URL/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO"
 
 exe_name=composio
 
+COMPOSIO_GITHUB_API=${COMPOSIO_GITHUB_API-"https://api.github.com"}
+releases_api="$COMPOSIO_GITHUB_API/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO/releases"
+asset_name="composio-$target.zip"
+
+# Check if a release asset exists via HTTP HEAD
+check_asset() {
+    local tag="$1"
+    local uri="$github_repo/releases/download/$tag/$asset_name"
+    local status
+    status=$(curl -sL -o /dev/null -w "%{http_code}" --head "$uri" 2>/dev/null) || true
+    [[ "$status" = "200" || "$status" = "302" ]]
+}
+
 # Determine version to install
 if [[ $# = 0 ]]; then
-    info "Finding latest CLI release..."
-    
-    # Get the latest version tag using OS-specific grep patterns
-    case $platform in
-    'Darwin'*)
-        # BSD/MacOS: Use extended regex with -E
-        version=$(git ls-remote --tags "$github_repo" \
-            | awk -F'/' '{print $3}' \
-            | grep -E "^v\d+\.\d+\.\d+.*" \
-            | sort -V \
-            | tail -n1)
-        ;;
-    *)
-        # Unix/Linux: Use Perl-compatible regex with -P
-        version=$(git ls-remote --tags "$github_repo" \
-            | awk -F'/' '{print $3}' \
-            | grep -P "^v\d+\.\d+\.\d+.*" \
-            | sort -V \
-            | tail -n1)
-        ;;
-    esac
-    
-    if [[ -z "$version" ]]; then
-        error "Failed to determine the latest version. Please specify a version manually."
+    info "Finding latest CLI release with $asset_name..."
+
+    # Query GitHub Releases API for recent releases
+    # Try cli-v* releases first, then fall back to v* for backwards compatibility
+    release_tags=$(curl -sL "$releases_api?per_page=20" \
+        | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p') || true
+
+    if [[ -z "$release_tags" ]]; then
+        error "Failed to query GitHub Releases API. Please specify a version manually."
     fi
-    
+
+    version=""
+    for tag in $release_tags; do
+        # Prefer cli-v* tags, but also accept v* during migration
+        case "$tag" in
+            cli-v* | v[0-9]*)
+                if check_asset "$tag"; then
+                    version="$tag"
+                    break
+                fi
+                info "Release $tag missing $asset_name, trying previous..."
+                ;;
+        esac
+    done
+
+    if [[ -z "$version" ]]; then
+        error "No release found with $asset_name in the last 20 releases. Please specify a version manually or install via npm: npm install -g @composio/cli"
+    fi
+
     info "Found latest version: $version"
-    
-    composio_uri="$github_repo/releases/download/$version/composio-$target.zip"
+    composio_uri="$github_repo/releases/download/$version/$asset_name"
 else
     version=$1
-    composio_uri="$github_repo/releases/download/$version/composio-$target.zip"
+    # Accept both vX.Y.Z and cli-vX.Y.Z formats
+    composio_uri="$github_repo/releases/download/$version/$asset_name"
 fi
 
 info "Installing Composio CLI $version for $target"
@@ -156,7 +172,7 @@ fi
 
 # Download
 info "Downloading Composio CLI..."
-curl --fail --location --progress-bar --output "$exe.zip" "$composio_uri" ||
+curl --proto '=https' --tlsv1.2 --fail --location --progress-bar --output "$exe.zip" "$composio_uri" ||
     error "Failed to download Composio CLI from \"$composio_uri\""
 
 # Extract
