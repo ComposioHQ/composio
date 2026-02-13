@@ -3,11 +3,11 @@ name: Build CLI Binaries
 on:
   push:
     tags:
-      - 'v*'
+      - 'cli-v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g., v1.0.0)'
+        description: 'Version to build (e.g., cli-v0.1.25)'
         required: false
         default: 'dev'
 
@@ -93,25 +93,78 @@ jobs:
             ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
           retention-days: 7
 
-      - name: Create Release
+      - name: Upload to draft release
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI {0} (Manual Build)', inputs.version) || github.ref_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI {0} (Manual Build)', inputs.version) || format('CLI {0}', github.ref_name) }}
           files: |
             ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
-          draft: false
-          prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          draft: true
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
           generate_release_notes: true
-          make_latest: ${{ github.event_name != 'workflow_dispatch' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  validate-and-publish:
+    name: Validate Assets & Publish Release
+    needs: build-binaries
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+
+    steps:
+      - name: Validate all platform assets are present
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking release assets for $TAG..."
+
+          EXPECTED_ASSETS=(
+            "composio-linux-x64.zip"
+            "composio-linux-aarch64.zip"
+            "composio-darwin-x64.zip"
+            "composio-darwin-aarch64.zip"
+          )
+
+          ACTUAL_ASSETS=$(gh release view "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets[].name')
+
+          MISSING=0
+          for expected in "${EXPECTED_ASSETS[@]}"; do
+            if echo "$ACTUAL_ASSETS" | grep -qF "$expected"; then
+              echo "OK: $expected"
+            else
+              echo "MISSING: $expected"
+              MISSING=1
+            fi
+          done
+
+          if [ "$MISSING" -eq 1 ]; then
+            echo "::error::Release $TAG is incomplete. Not publishing."
+            exit 1
+          fi
+
+          echo "All expected assets present."
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft=false \
+            --latest
+          echo "Release $TAG published successfully"
+
   test-installation:
     name: Test Installation
-    needs: build-binaries
-    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    needs: validate-and-publish
+    if: always() && !cancelled() && needs.validate-and-publish.result == 'success'
     uses: ./.github/workflows/cli.test-installation.yml
     with:
       version: ${{ inputs.version || github.ref_name }}
@@ -169,7 +222,7 @@ jobs:
           ## Supported Platforms
 
           - Linux x64
-          - Linux ARM64  
+          - Linux ARM64
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
