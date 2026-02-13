@@ -111,8 +111,6 @@ check_remote() {
 }
 
 for u in "${USES[@]}"; do
-  # Ignore reusable workflows here: they also use `uses:` but are `./.github/workflows/x.yml` or `owner/repo/.github/workflows/x.yml@ref`
-  # If you want to validate those too, add logic similar to check_local/check_remote for workflow files.
   if [[ "$u" == docker://* ]]; then
     echo "SKIP (docker image): $u"
     continue
@@ -131,5 +129,30 @@ for u in "${USES[@]}"; do
 
   echo "WARN: unrecognized uses format: $u"
 done
+
+# Validate reusable workflow references (job-level `uses:`)
+mapfile -t WORKFLOW_REFS < <(
+  yq -r '
+    .jobs[]? |
+    select(has("uses")) |
+    .uses
+  ' .github/workflows/*.yml .github/workflows/*.yaml 2>/dev/null \
+  | sed '/^null$/d' \
+  | sort -u
+)
+
+if [[ ${#WORKFLOW_REFS[@]} -gt 0 ]]; then
+  echo ""
+  echo "Found ${#WORKFLOW_REFS[@]} unique reusable workflow references"
+
+  for ref in "${WORKFLOW_REFS[@]}"; do
+    if [[ "$ref" == ./.github/workflows/* ]]; then
+      if [[ ! -f "$ref" ]]; then
+        echo "ERROR: reusable workflow file does not exist: $ref"
+        fail=1
+      fi
+    fi
+  done
+fi
 
 exit $fail
