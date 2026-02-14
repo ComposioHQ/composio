@@ -24,10 +24,10 @@ jobs:
           - runner: ubuntu-latest
             platform: linux-x64
             artifact: composio-linux-x64
-          - runner: depot-ubuntu-24.04-arm
+          - runner: ubuntu-24.04-arm
             platform: linux-aarch64
             artifact: composio-linux-aarch64
-          - runner: macos-13 # Intel Mac
+          - runner: macos-15-intel # Intel Mac
             platform: darwin-x64
             artifact: composio-darwin-x64
           - runner: macos-latest # Apple Silicon Mac

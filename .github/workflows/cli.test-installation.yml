@@ -37,22 +37,22 @@ jobs:
             name: 'Ubuntu Latest x64'
             shell: bash
 
-          # Ubuntu ARM64 versions (using Depot)
-          - os: depot-ubuntu-24.04-arm
+          # Ubuntu ARM64 versions
+          - os: ubuntu-24.04-arm
             name: 'Ubuntu 24.04 ARM64'
             shell: bash
-          - os: depot-ubuntu-22.04-arm
+          - os: ubuntu-22.04-arm
             name: 'Ubuntu 22.04 ARM64'
             shell: bash
-          - os: depot-ubuntu-22.04-arm
+          - os: ubuntu-22.04-arm
             name: 'Ubuntu 22.04 ARM64 (zsh)'
             shell: zsh
 
           # macOS versions
-          - os: macos-13
+          - os: macos-15-intel
             name: 'macOS 13 (Ventura)'
             shell: bash
-          - os: macos-13
+          - os: macos-15-intel
             name: 'macOS 13 (zsh)'
             shell: zsh
           - os: macos-14
@@ -348,10 +348,10 @@ jobs:
           - os: ubuntu-latest
             arch: x64
             expected: 'Linux x64'
-          - os: depot-ubuntu-24.04-arm
+          - os: ubuntu-24.04-arm
             arch: arm64
             expected: 'Linux ARM64'
-          - os: macos-13
+          - os: macos-15-intel
             arch: x64
             expected: 'macOS x64'
           - os: macos-latest

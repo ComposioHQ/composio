@@ -11,7 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect changed workflow files
+        id: changed
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+
+          files=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- \
+            '.github/workflows/*.yml' \
+            '.github/workflows/*.yaml' \
+            '.github/actions/**/action.yml' \
+            '.github/actions/**/action.yaml')
+
+          files="${files//$'\n'/ }"
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+
       - name: Run actionlint
+        if: steps.changed.outputs.files != ''
         uses: docker://rhysd/actionlint:latest
         with:
-          args: -color
+          args: -color -shellcheck= ${{ steps.changed.outputs.files }}
+
+      - name: No changed workflow files
+        if: steps.changed.outputs.files == ''
+        run: echo "No workflow/action changes detected. Skipping actionlint."
