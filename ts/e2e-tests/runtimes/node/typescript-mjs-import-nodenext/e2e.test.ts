@@ -8,6 +8,7 @@
  */
 
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 declare module 'bun' {
@@ -26,7 +27,7 @@ e2e(import.meta.url, {
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'fixtures/index.mjs' });
-    }, 300_000);
+    }, TIMEOUTS.RUN_FIXTURE);
 
     describe('TypeScript .mjs import resolution', () => {
       it('exits successfully', () => {

@@ -117,25 +117,6 @@ function labelsToArgs(labels: Record<string, string> = {}): string[] {
   return args;
 }
 
-/**
- * Returns true when a Docker build failed only because another parallel process
- * already created the same image tag.
- */
-function isImageAlreadyExistsError(output: string): boolean {
-  return /already exists/i.test(output);
-}
-
-/**
- * Handles parallel Docker build races by re-checking image existence.
- */
-async function resolveImageBuildRace(imageTag: string, repoRoot: string, output: string): Promise<boolean> {
-  if (!isImageAlreadyExistsError(output)) {
-    return false;
-  }
-
-  const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
-  return inspect.exitCode === 0;
-}
 
 /**
  * Executes a command and captures stdout/stderr using Bun shell.
@@ -222,10 +203,6 @@ export async function ensureNodeImage(
 
   const built = await exec('docker', buildArgs, { cwd: repoRoot });
   if (built.exitCode !== 0) {
-    const combinedOutput = `${built.stderr}\n${built.stdout}`;
-    if (await resolveImageBuildRace(imageTag, repoRoot, combinedOutput)) {
-      return imageTag;
-    }
 
     const err = new Error(`Failed to build Docker image ${imageTag}`);
     (err as Error & { cause: Error }).cause = new Error(built.stderr || built.stdout);
@@ -391,10 +368,6 @@ export async function ensureDenoImage(
 
   const built = await exec('docker', buildArgs, { cwd: repoRoot });
   if (built.exitCode !== 0) {
-    const combinedOutput = `${built.stderr}\n${built.stdout}`;
-    if (await resolveImageBuildRace(imageTag, repoRoot, combinedOutput)) {
-      return imageTag;
-    }
 
     const err = new Error(`Failed to build Docker image ${imageTag}`);
     (err as Error & { cause: Error }).cause = new Error(built.stderr || built.stdout);

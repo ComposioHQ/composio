@@ -15,7 +15,7 @@ import type {
 } from './types';
 import { getRepoRoot, resolveNodeVersionMetaList, resolveDenoVersionMetaList } from './config';
 import { ensureNodeImage, runNodeContainer, ensureDenoImage, runDenoContainer } from './image-lifecycle';
-import { WELL_KNOWN_ENV_VARS } from './const';
+import { WELL_KNOWN_ENV_VARS, TIMEOUTS } from './const';
 import { createVolume, generateVolumeName, initializeVolumeOwnership, removeVolume } from './volume';
 
 // ============================================================================
@@ -688,7 +688,7 @@ export function runE2E(config: RunE2EInternalConfig): void {
         beforeAll(async () => {
           const imageTag = await ensureNodeImage(nodeVersionMeta.value, { repoRoot });
           executors = createNodeDockerExecutors(config, nodeVersionMeta.value, imageTag, repoRoot, logManager);
-        }, 600_000);
+        }, TIMEOUTS.DOCKER);
 
         defineTests({
           runtime: 'node',
@@ -732,7 +732,7 @@ export function runE2E(config: RunE2EInternalConfig): void {
         beforeAll(async () => {
           const imageTag = await ensureDenoImage(denoVersionMeta.value, { repoRoot });
           executors = createDenoDockerExecutors(config, denoVersionMeta.value, imageTag, repoRoot, logManager);
-        }, 600_000);
+        }, TIMEOUTS.DOCKER);
 
         defineTests({
           runtime: 'deno',

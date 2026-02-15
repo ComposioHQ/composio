@@ -6,6 +6,7 @@
  */
 
 import { e2e, type E2ETestResultWithSetup } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 declare module 'bun' {
@@ -28,7 +29,7 @@ e2e(import.meta.url, {
         filename: 'index.mjs',
         setup: 'npm install --legacy-peer-deps',
       });
-    });
+    }, TIMEOUTS.RUN_FIXTURE);
 
     describe('setup', () => {
       it('npm install completes successfully', () => {

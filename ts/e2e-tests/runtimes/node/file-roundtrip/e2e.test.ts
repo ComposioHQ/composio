@@ -1,4 +1,5 @@
 import { e2e, type E2ETestResult, type DefineTestsContext } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 declare module 'bun' {
@@ -18,7 +19,7 @@ e2e(import.meta.url, {
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'test.mjs' })
-    }, 300_000);
+    }, TIMEOUTS.RUN_FIXTURE);
 
     describe('file round-trip', () => {
       it('exits successfully', () => {

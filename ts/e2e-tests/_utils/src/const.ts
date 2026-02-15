@@ -17,6 +17,10 @@ export const WELL_KNOWN_DENO_VERSIONS = ['2.6.7', 'current'] as const;
 
 export const TIMEOUTS = {
   DEFAULT: 5_000,
-  LLM_SHORT: 15_000,
+  /** Timeout for Docker image build operations (ensureNodeImage, ensureDenoImage). */
+  DOCKER: 600_000,
+  /** Timeout for running a fixture inside a Docker container (runFixture, runCmd). */
+  RUN_FIXTURE: 15_000,
+  LLM_SHORT: 30_000,
   LLM_LONG: 60_000,
 } as const;
