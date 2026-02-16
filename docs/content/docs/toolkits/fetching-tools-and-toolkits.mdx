@@ -145,6 +145,74 @@ const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
 </Tab>
 </Tabs>
 
+### Fetching all toolkits
+
+`composio.toolkits.get()` returns the first page of results. To paginate through all toolkits, use cursor-based pagination:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+all_toolkits = []
+cursor = None
+
+while True:
+    result = composio.toolkits.list(limit=20, cursor=cursor)
+    all_toolkits.extend(result.items)
+    cursor = result.next_cursor
+    if not cursor:
+        break
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const allToolkits: Awaited<ReturnType<typeof composio.toolkits.get>>["items"] = [];
+let cursor: string | undefined;
+
+do {
+  const result = await composio.toolkits.get({ limit: 20, cursor });
+  allToolkits.push(...result.items);
+  cursor = result.nextCursor ?? undefined;
+} while (cursor);
+```
+</Tab>
+</Tabs>
+
+### Fetching all tools in a toolkit
+
+By default, `composio.tools.get()` returns a curated subset of popular tools per toolkit. To fetch **all** tools, pass a `limit`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Default — returns popular tools only
+tools = composio.tools.get("user_123", toolkits=["github"])
+
+# All tools in the toolkit
+all_tools = composio.tools.get("user_123", toolkits=["github"], limit=500)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
+// Default — returns popular tools only
+const tools = await composio.tools.get(userId, { toolkits: ['github'] });
+
+// All tools in the toolkit
+const allTools = await composio.tools.get(userId, { toolkits: ['github'], limit: 500 });
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Most toolkits have fewer than 200 tools, so a `limit` of 500 is usually sufficient to fetch everything.
+</Callout>
+
 ### Get a tool's schema
 
 To inspect a tool's input parameters and types without needing a user context, use `getRawComposioToolBySlug`:

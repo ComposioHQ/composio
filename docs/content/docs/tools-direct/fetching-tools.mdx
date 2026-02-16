@@ -30,7 +30,7 @@ const tools = await composio.tools.get(userId, {
   </Tab>
 </Tabs>
 
-Returns top 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User management](/docs/users-and-sessions) and [Authentication](/docs/tools-direct/authenticating-tools).
+Returns a curated subset of popular tools by default. Pass a `limit` to [fetch all tools](#fetching-all-tools). Tools require a `user_id` because they're scoped to authenticated accounts. See [User management](/docs/users-and-sessions) and [Authentication](/docs/tools-direct/authenticating-tools).
 
 ## Tool schemas
 
@@ -232,6 +232,39 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
 ```
   </Tab>
 </Tabs>
+
+## Fetching all tools
+
+By default, `composio.tools.get()` returns a curated subset of popular tools per toolkit. To fetch **every** tool in a toolkit, pass a `limit`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Default — popular tools only
+tools = composio.tools.get(user_id, toolkits=["GITHUB"])
+
+# All tools in the toolkit
+all_tools = composio.tools.get(user_id, toolkits=["GITHUB"], limit=500)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user-123';
+// ---cut---
+// Default — popular tools only
+const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
+
+// All tools in the toolkit
+const allTools = await composio.tools.get(userId, { toolkits: ["GITHUB"], limit: 500 });
+```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+Most toolkits have fewer than 200 tools, so a `limit` of 500 is usually sufficient to fetch everything.
+</Callout>
 
 <Callout type="info">
 Use specific toolkit versions in production to prevent breaking changes. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
