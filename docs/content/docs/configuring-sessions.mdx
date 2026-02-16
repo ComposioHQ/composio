@@ -161,6 +161,39 @@ When executing a tool, the connected account is selected in this order:
 
 If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
 
+## Connection polling
+
+By default, during [in-chat authentication](/docs/authenticating-users/in-chat-authentication), the agent waits for the user to confirm they've connected. You can enable automatic polling instead — the agent gets a `COMPOSIO_WAIT_FOR_CONNECTIONS` tool that checks the connection status every 5 seconds for up to 3 minutes:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    manage_connections={
+        "enable_wait_for_connections": True
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  manageConnections: {
+    enableWaitForConnections: true,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+This may not work reliably with GPT models since the tool call blocks while polling.
+</Callout>
+
 ## Session methods
 
 ### mcp

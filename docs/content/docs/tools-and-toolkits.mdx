@@ -4,19 +4,22 @@ description: Understand how tools and toolkits work in Composio
 keywords: [tools, toolkits, meta tools, context management]
 ---
 
-Composio offers 800+ toolkits, but loading all the tools into context would overwhelm your agent. Instead, your agent has access to 5 meta tools that discover, authenticate, and execute the right tools at runtime.
+Composio offers 800+ toolkits, but loading all the tools into context would overwhelm your agent. Instead, your agent has access to meta tools that discover, authenticate, and execute the right tools at runtime.
 
 ## Meta tools
 
-When you create a session, your agent gets these 5 meta tools:
+When you create a session, your agent gets these meta tools:
 
 | Meta tool | What it does |
 |-----------|--------------|
 | `COMPOSIO_SEARCH_TOOLS` | Discover relevant tools across 800+ apps |
+| `COMPOSIO_GET_TOOL_SCHEMAS` | Fetch full input schemas for specific tools |
 | `COMPOSIO_MANAGE_CONNECTIONS` | Handle OAuth and API key authentication |
 | `COMPOSIO_MULTI_EXECUTE_TOOL` | Execute up to 20 tools in parallel |
 | `COMPOSIO_REMOTE_WORKBENCH` | Run Python code in a [persistent sandbox](/docs/workbench) |
 | `COMPOSIO_REMOTE_BASH_TOOL` | Execute bash commands for file and data processing |
+
+You can also enable `COMPOSIO_WAIT_FOR_CONNECTIONS` per session — it lets the agent poll until the user finishes authenticating instead of waiting for them to say "I've connected." See [configuring sessions](/docs/configuring-sessions) for details.
 
 Meta tool calls in a session are correlated using a `session_id`, allowing them to share context. The tools can also store useful information (like IDs and relationships discovered during execution) in memory for subsequent calls.
 
@@ -49,6 +52,8 @@ Done. (For large results, agent can use REMOTE_WORKBENCH to process)
 - **Connection status** - Whether the user has already authenticated with each toolkit
 - **Execution plan** - Recommended steps and common pitfalls for the task
 - **Related tools** - Prerequisites, alternatives, and follow-up tools
+
+Sometimes `SEARCH_TOOLS` returns a `schemaRef` instead of the full input schema for a tool — this keeps the response compact when many tools match. When the agent needs the complete parameter definitions, it calls `COMPOSIO_GET_TOOL_SCHEMAS` with the tool slugs to get the full schemas before executing.
 
 ### Processing large results
 

@@ -32,6 +32,39 @@ const session = await composio.create("user_123");
 </Tab>
 </Tabs>
 
+### Automatic connection polling
+
+By default, after the agent shows an auth link, it waits for the user to say something like "Done" before continuing. If you'd rather the agent detect the connection automatically, enable `enable_wait_for_connections`. This gives the agent a `COMPOSIO_WAIT_FOR_CONNECTIONS` tool that polls every 5 seconds (up to 3 minutes) until the user finishes authenticating:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    manage_connections={
+        "enable_wait_for_connections": True
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  manageConnections: {
+    enableWaitForConnections: true,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+This may not work reliably with GPT models since the tool call blocks while polling.
+</Callout>
+
 ### Custom callback URL
 
 Redirect users back to your chat page after they complete authentication:
