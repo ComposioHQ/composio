@@ -16,6 +16,17 @@ from composio.utils.shared import (
 )
 
 
+def _serialize_value(value: t.Any) -> t.Any:
+    """Recursively convert pydantic models to dicts for JSON serialization."""
+    if isinstance(value, pydantic.BaseModel):
+        return value.model_dump()
+    if isinstance(value, dict):
+        return {k: _serialize_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_serialize_value(item) for item in value]
+    return value
+
+
 class StructuredTool(BaseStructuredTool):  # type: ignore[misc]
     def run(self, *args, **kwargs):
         try:
@@ -41,7 +52,7 @@ class LanggraphProvider(
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
-            return execute_tool(tool, kwargs)
+            return execute_tool(tool, _serialize_value(kwargs))
 
         action_func = types.FunctionType(
             function.__code__,

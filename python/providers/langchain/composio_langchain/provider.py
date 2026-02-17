@@ -19,6 +19,17 @@ _python_reserved = {"for", "async"}
 _obj_marker = "-_object_-"
 
 
+def _serialize_value(value: t.Any) -> t.Any:
+    """Recursively convert pydantic models to dicts for JSON serialization."""
+    if isinstance(value, pydantic.BaseModel):
+        return value.model_dump()
+    if isinstance(value, dict):
+        return {k: _serialize_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_serialize_value(item) for item in value]
+    return value
+
+
 def _clean_reserved_keyword(keyword: str):
     return f"{keyword}_rs"
 
@@ -98,7 +109,7 @@ class LangchainProvider(
                 request=kwargs,
                 keywords=keywords,
             )
-            return execute_tool(tool.slug, kwargs)
+            return execute_tool(tool.slug, _serialize_value(kwargs))
 
         action_func = types.FunctionType(
             function.__code__,
