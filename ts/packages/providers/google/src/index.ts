@@ -19,6 +19,46 @@ import {
 import { FunctionDeclaration, Schema } from '@google/genai';
 
 /**
+ * Recursively strips unsupported fields (like "examples") from a JSON Schema.
+ * The Gemini API rejects function declarations containing these fields.
+ *
+ * Only removes "examples" when it appears as a schema annotation keyword,
+ * not when it appears as a property name inside a "properties" mapping.
+ */
+function cleanSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === 'examples') continue;
+    cleaned[key] = value;
+  }
+
+  if (cleaned.properties && typeof cleaned.properties === 'object' && !Array.isArray(cleaned.properties)) {
+    const props = cleaned.properties as Record<string, Record<string, unknown>>;
+    const cleanedProps: Record<string, unknown> = {};
+    for (const [name, propSchema] of Object.entries(props)) {
+      cleanedProps[name] = cleanSchema(propSchema);
+    }
+    cleaned.properties = cleanedProps;
+  }
+
+  if (cleaned.items && typeof cleaned.items === 'object' && !Array.isArray(cleaned.items)) {
+    cleaned.items = cleanSchema(cleaned.items as Record<string, unknown>);
+  }
+
+  for (const keyword of ['anyOf', 'oneOf', 'allOf'] as const) {
+    if (Array.isArray(cleaned[keyword])) {
+      cleaned[keyword] = (cleaned[keyword] as Record<string, unknown>[]).map(s => cleanSchema(s));
+    }
+  }
+
+  if (cleaned.additionalProperties && typeof cleaned.additionalProperties === 'object' && !Array.isArray(cleaned.additionalProperties)) {
+    cleaned.additionalProperties = cleanSchema(cleaned.additionalProperties as Record<string, unknown>);
+  }
+
+  return cleaned;
+}
+
+/**
  * Interface for Google GenAI function declaration
  * Based on the FunctionDeclaration type from @google/genai
  */
@@ -126,13 +166,18 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    * ```
    */
   wrapTool(tool: Tool): GoogleTool {
+    const properties = tool.inputParameters?.properties || {};
+    const cleanedProperties: Record<string, unknown> = {};
+    for (const [name, schema] of Object.entries(properties)) {
+      cleanedProperties[name] = cleanSchema(schema as Record<string, unknown>);
+    }
     return {
       name: tool.slug,
       description: tool.description || '',
       parameters: {
         type: 'object',
         description: tool.description || '',
-        properties: tool.inputParameters?.properties || {},
+        properties: cleanedProperties as Record<string, Schema>,
         required: tool.inputParameters?.required || [],
       } as unknown as Schema,
     };

@@ -24,6 +24,40 @@ def _convert_map_composite(obj):
     return obj
 
 
+def _clean_schema(schema):
+    """Recursively strip fields unsupported by the Gemini API (e.g. 'examples') from a JSON Schema.
+
+    Only removes 'examples' when it appears as a schema annotation keyword,
+    not when it appears as a property name inside a 'properties' mapping.
+    """
+    if not isinstance(schema, dict):
+        return schema
+
+    cleaned = {k: v for k, v in schema.items() if k != "examples"}
+
+    if "properties" in cleaned and isinstance(cleaned["properties"], dict):
+        cleaned["properties"] = {
+            name: _clean_schema(prop_schema)
+            for name, prop_schema in cleaned["properties"].items()
+        }
+
+    if "items" in cleaned and isinstance(cleaned["items"], dict):
+        cleaned["items"] = _clean_schema(cleaned["items"])
+
+    for keyword in ("anyOf", "oneOf", "allOf"):
+        if keyword in cleaned and isinstance(cleaned[keyword], list):
+            cleaned[keyword] = [_clean_schema(s) for s in cleaned[keyword]]
+
+    if "additionalProperties" in cleaned and isinstance(
+        cleaned["additionalProperties"], dict
+    ):
+        cleaned["additionalProperties"] = _clean_schema(
+            cleaned["additionalProperties"]
+        )
+
+    return cleaned
+
+
 class GoogleProvider(
     NonAgenticProvider[FunctionDeclaration, list[FunctionDeclaration]],
     name="google",
@@ -34,13 +68,9 @@ class GoogleProvider(
 
     def wrap_tool(self, tool: Tool) -> FunctionDeclaration:
         """Wraps composio tool as Google AI Python Gemini FunctionDeclaration object."""
-        # Clean up properties by removing 'examples' field
-        properties = t.cast(
-            dict[str, dict],
-            tool.input_parameters.get("properties", {}),
-        )
+        properties = tool.input_parameters.get("properties", {})
         cleaned_properties = {
-            prop_name: {k: v for k, v in prop_schema.items() if k != "examples"}
+            prop_name: _clean_schema(prop_schema)
             for prop_name, prop_schema in properties.items()
         }
         return FunctionDeclaration(
