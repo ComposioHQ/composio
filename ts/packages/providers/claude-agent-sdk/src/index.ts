@@ -114,7 +114,18 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
       inputZodShape,
       async args => {
         try {
-          const result = await executeTool(composioTool.slug, args);
+          let input = args;
+          if (typeof input === 'string') {
+            try {
+              input = JSON.parse(input);
+            } catch {
+              input = {};
+            }
+          }
+          if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+            input = {};
+          }
+          const result = await executeTool(composioTool.slug, input as Record<string, unknown>);
           return {
             content: [
               {

@@ -38,7 +38,18 @@ export class LlamaindexProvider extends BaseAgenticProvider<
       name: tool.slug,
       description: tool.description ?? tool.name ?? '',
       parameters: inputParametersSchema,
-      execute: async input => {
+      execute: async rawInput => {
+        let input = rawInput;
+        if (typeof input === 'string') {
+          try {
+            input = JSON.parse(input);
+          } catch {
+            input = {};
+          }
+        }
+        if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+          input = {};
+        }
         const result = await executeTool(tool.slug, input as Record<string, unknown>);
         return JSON.stringify(result);
       },

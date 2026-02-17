@@ -57,6 +57,31 @@ import { ToolExecuteMetaParams } from '../types/tool.types';
 import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 /**
+ * Coerce a value to a plain object. Some LLM providers and the MCP protocol
+ * occasionally emit tool-call arguments as a JSON string instead of an object.
+ * This utility normalises the input so downstream code always receives a
+ * `Record<string, unknown>`.
+ */
+function coerceToObject(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined) return {};
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          return parsed as Record<string, unknown>;
+        }
+      } catch {
+        // Not valid JSON — fall through to empty object
+      }
+    }
+  }
+  return {};
+}
+
+/**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
  */
@@ -725,7 +750,7 @@ export class Tools<
         toolSlug,
         {
           userId,
-          arguments: input,
+          arguments: coerceToObject(input),
           // dangerously skip version check for agentic tool execution via providers
           // this can be safe because most agentic flows users fetch latest version and then execute the tool
           dangerouslySkipVersionCheck: true,
@@ -756,7 +781,7 @@ export class Tools<
         toolSlug,
         {
           sessionId,
-          arguments: input,
+          arguments: coerceToObject(input),
         },
         modifiers
       );
@@ -957,8 +982,8 @@ export class Tools<
       });
     }
 
-    // Apply beforeExecute modifier if provided
-    let modifiedParams = body.arguments ?? {};
+    // Coerce arguments to object (LLMs/MCP may emit as string)
+    let modifiedParams = coerceToObject(body.arguments ?? {});
     if (modifiers?.beforeExecute) {
       modifiedParams = await modifiers.beforeExecute({
         toolSlug,
