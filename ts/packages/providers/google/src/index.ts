@@ -241,8 +241,19 @@ export class GoogleProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    let toolArgs = tool.args;
+    if (typeof toolArgs === 'string') {
+      try {
+        toolArgs = JSON.parse(toolArgs);
+      } catch {
+        toolArgs = {};
+      }
+    }
+    if (typeof toolArgs !== 'object' || toolArgs === null || Array.isArray(toolArgs)) {
+      toolArgs = {};
+    }
     const payload: ToolExecuteParams = {
-      arguments: tool.args,
+      arguments: toolArgs as Record<string, unknown>,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,

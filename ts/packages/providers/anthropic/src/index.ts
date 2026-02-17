@@ -210,8 +210,19 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    let toolInput = toolUse.input;
+    if (typeof toolInput === 'string') {
+      try {
+        toolInput = JSON.parse(toolInput);
+      } catch {
+        toolInput = {};
+      }
+    }
+    if (typeof toolInput !== 'object' || toolInput === null || Array.isArray(toolInput)) {
+      toolInput = {};
+    }
     const payload: ToolExecuteParams = {
-      arguments: toolUse.input,
+      arguments: toolInput as Record<string, unknown>,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,

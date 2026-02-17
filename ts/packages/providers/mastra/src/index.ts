@@ -110,7 +110,18 @@ export class MastraProvider extends BaseAgenticProvider<
       // @ts-ignore
       outputSchema,
       execute: async (inputData, _context) => {
-        const result = await executeTool(tool.slug, inputData as Record<string, unknown>);
+        let input = inputData;
+        if (typeof input === 'string') {
+          try {
+            input = JSON.parse(input);
+          } catch {
+            input = {};
+          }
+        }
+        if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+          input = {};
+        }
+        const result = await executeTool(tool.slug, input as Record<string, unknown>);
         return result;
       },
     });

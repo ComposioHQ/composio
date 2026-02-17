@@ -129,6 +129,22 @@ describe('VercelProvider', () => {
 
       expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
     });
+
+    it('should gracefully handle malformed string input by falling back to empty object', async () => {
+      provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedVercelTool;
+      const executeFunction = (tool as any).mock.calls[0][0].execute;
+
+      await executeFunction('not-valid-json');
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
+    });
+
+    it('should handle null/undefined input by falling back to empty object', async () => {
+      provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedVercelTool;
+      const executeFunction = (tool as any).mock.calls[0][0].execute;
+
+      await executeFunction(null);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
+    });
   });
 
   describe('wrapTools', () => {
