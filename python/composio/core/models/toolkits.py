@@ -42,7 +42,6 @@ class Toolkits(Resource):
         *,
         category: t.Optional[str] = None,
         cursor: t.Optional[str] = None,
-        is_local: t.Optional[bool] = None,
         limit: t.Optional[float] = None,
         sort_by: t.Optional[t.Literal["usage", "alphabetically"]] = None,
         managed_by: t.Optional[t.Literal["composio", "all", "project"]] = None,
@@ -51,7 +50,6 @@ class Toolkits(Resource):
         return self._client.toolkits.list(
             category=none_to_omit(category),
             cursor=none_to_omit(cursor),
-            is_local=none_to_omit(is_local),
             limit=none_to_omit(limit),
             managed_by=none_to_omit(managed_by),
             sort_by=none_to_omit(sort_by),

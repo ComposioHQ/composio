@@ -1,0 +1,62 @@
+{
+  "name": "@composio/claude-agent-sdk",
+  "version": "0.6.3",
+  "description": "Composio provider for Claude Agent SDK",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build": "bun run --bun tsdown",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "composio",
+    "claude",
+    "claude-code",
+    "agent-sdk",
+    "anthropic",
+    "mcp"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "@composio/core": "0.6.3",
+    "@anthropic-ai/claude-agent-sdk": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*",
+    "@anthropic-ai/claude-agent-sdk": "^0.1.9",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "zod": "^3.25.76"
+  }
+}

@@ -113,6 +113,15 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.initiate(userId, authConfigId, options);
 
+      // Verify list is called with ACTIVE status filter
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_ids: [userId],
+          auth_config_ids: [authConfigId],
+          statuses: [ConnectedAccountStatuses.ACTIVE],
+        })
+      );
+
       expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
         auth_config: {
           id: authConfigId,
@@ -223,6 +232,43 @@ describe('ConnectedAccounts', () => {
 
       await expect(connectedAccounts.initiate(userId, authConfigId)).rejects.toThrow(
         ComposioMultipleConnectedAccountsError
+      );
+    });
+
+    it('should filter by ACTIVE status when checking for existing accounts', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      // Mock list response to return empty list (no ACTIVE accounts)
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_123',
+        connectionData: {
+          val: {
+            authScheme: AuthSchemeTypes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      await connectedAccounts.initiate(userId, authConfigId);
+
+      // Verify that list is called with statuses filter set to ACTIVE only
+      // This ensures expired/inactive accounts don't block new connection creation
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_ids: [userId],
+          auth_config_ids: [authConfigId],
+          statuses: [ConnectedAccountStatuses.ACTIVE],
+        })
       );
     });
 
@@ -441,7 +487,7 @@ describe('ConnectedAccounts', () => {
   });
 
   describe('refresh', () => {
-    it('should refresh a connected account by nanoid', async () => {
+    it('should refresh a connected account by nanoid without options', async () => {
       const nanoid = 'conn_123';
       const mockResponse = { id: nanoid, refreshed: true };
 
@@ -449,7 +495,83 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid);
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, undefined);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should refresh a connected account with redirectUrl option', async () => {
+      const nanoid = 'conn_123';
+      const redirectUrl = 'https://example.com/oauth/callback';
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, { redirectUrl });
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: redirectUrl,
+        validate_credentials: undefined,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should refresh a connected account with validateCredentials option', async () => {
+      const nanoid = 'conn_123';
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, { validateCredentials: true });
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: undefined,
+        validate_credentials: true,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should refresh a connected account with both options', async () => {
+      const nanoid = 'conn_123';
+      const options = {
+        redirectUrl: 'https://example.com/callback',
+        validateCredentials: false,
+      };
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, options);
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: options.redirectUrl,
+        validate_credentials: options.validateCredentials,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should throw ValidationError for invalid options', async () => {
+      const nanoid = 'conn_123';
+      const invalidOptions = { redirectUrl: 123 };
+
+      await expect(connectedAccounts.refresh(nanoid, invalidOptions as any)).rejects.toThrow(
+        'Failed to parse connected account refresh options'
+      );
+
+      expect(extendedMockClient.connectedAccounts.refresh).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty options object gracefully', async () => {
+      const nanoid = 'conn_123';
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, {});
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: undefined,
+        validate_credentials: undefined,
+      });
       expect(result).toEqual(mockResponse);
     });
   });

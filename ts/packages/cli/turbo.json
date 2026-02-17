@@ -3,11 +3,17 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "dist/**/*.d.ts"]
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
+      "outputs": ["dist/bin.mjs", "dist/bin.d.mts"]
     },
     "build:bin": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "dist/**/*.d.ts"]
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
+      "outputs": ["dist/composio"]
+    },
+    "install:bin": {
+      "dependsOn": ["build:bin"],
+      "cache": false
     }
   }
 }

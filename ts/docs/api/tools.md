@@ -11,21 +11,25 @@ Retrieves and wraps tools based on the provided filters. Tool versions are contr
 #### Overload 1: Get multiple tools with filters
 
 ```typescript
-// Get tools from a specific toolkit
+// Get important tools from a toolkit (auto-applies important filter)
+const importantGithubTools = await composio.tools.get('default', {
+  toolkits: ['github']
+});
+
+// Get a limited number of tools (does NOT auto-apply important filter)
 const githubTools = await composio.tools.get('default', {
   toolkits: ['github'],
   limit: 10
 });
 
-// Get tools with search
+// Get tools with search (does NOT auto-apply important filter)
 const searchTools = await composio.tools.get('default', {
   search: 'user'
 });
 
 // Get tools with schema modifications
 const customizedTools = await composio.tools.get('default', {
-  toolkits: ['github'],
-  limit: 5
+  toolkits: ['github']
 }, {
   modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
     return { ...schema, description: 'Custom description' };
@@ -63,7 +67,7 @@ const customTool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
 
 Executes a given tool with the provided parameters manually.
 
-> **Important:** When manually executing tools (especially in workflows), a specific version is **required**. The method will throw an error if `'latest'` is used as the version. This ensures there are no mismatches in tool arguments when new versions are released. You can bypass this requirement using `dangerouslySkipVersionCheck: true`, but this is **not recommended for production**.
+> **Important:** When manually executing tools (especially in workflows), a specific version is **required**. The method will throw an error if toolkitVersion is not provided or `latest` is used as the version. This ensures there are no mismatches in tool arguments when new versions are released. You can bypass this requirement using `dangerouslySkipVersionCheck: true`, but this is **not recommended for production**.
 
 ```typescript
 // Execute with a pinned version (REQUIRED for workflows and manual execution)
@@ -216,8 +220,13 @@ const customTool = await composio.tools.createCustomTool({
 Lists all tools available in the Composio SDK including custom tools. This method provides direct access to tool data without provider-specific wrapping.
 
 ```typescript
-// Get tools from specific toolkits
-const githubTools = await composio.tools.getRawComposioTools({
+// Get important tools from a toolkit (auto-applies important filter)
+const importantGithubTools = await composio.tools.getRawComposioTools({
+  toolkits: ['github']
+});
+
+// Get a limited number of tools (does NOT auto-apply important)
+const limitedTools = await composio.tools.getRawComposioTools({
   toolkits: ['github'],
   limit: 10
 });
@@ -225,12 +234,6 @@ const githubTools = await composio.tools.getRawComposioTools({
 // Get specific tools by slug
 const specificTools = await composio.tools.getRawComposioTools({
   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
-});
-
-// Get tools from specific toolkits
-const githubTools = await composio.tools.getRawComposioTools({
-  toolkits: ['github'],
-  limit: 10
 });
 
 // Get tools with schema transformation
@@ -312,7 +315,7 @@ console.log({
 ```typescript
 // You must provide one of the following parameter combinations:
 // 1. tools array only
-// 2. toolkits with optional important flag
+// 2. toolkits (optionally filter to important tools)
 // 3. toolkits with search functionality
 
 type ToolsOnlyParams = {
@@ -326,9 +329,21 @@ type ToolsOnlyParams = {
 type ToolkitsOnlyParams = {
   tools?: never; // Cannot be used with toolkits
   toolkits: string[]; // List of toolkit slugs to filter by
-  limit?: number; // Limit the number of results
-  search?: never; // Cannot be used with important flag
-  scopes?: string[]; // Optional list of required OAuth scopes
+  limit?: number; // Limit the number of results (prevents auto-applying important)
+  search?: string; // Optional search term (prevents auto-applying important)
+  tags?: string[]; // Optional tags filter (prevents auto-applying important)
+  important?: boolean; // Filter to only important/featured tools (auto-applied when no limit/tags/search)
+  scopes?: never; 
+};
+
+type ToolkitScopeOnlyParams = {
+  tools?: never;
+  toolkits: [string];
+  scopes: string[];
+  limit?: number; // Prevents auto-applying important
+  search?: string; // Prevents auto-applying important
+  tags?: string[]; // Prevents auto-applying important
+  important?: boolean; // Filter to only important/featured tools (auto-applied when no limit/tags/search)
 };
 
 type ToolkitSearchOnlyParams = {
@@ -336,11 +351,73 @@ type ToolkitSearchOnlyParams = {
   toolkits?: string[]; // Optional list of toolkit slugs to filter by
   limit?: number; // Limit the number of results
   search: string; // Search term
-  scopes?: string[]; // Optional list of required OAuth scopes
+  scopes?: never;
 };
 
-type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitSearchOnlyParams;
+type ToolListParams = ToolsOnlyParams | ToolkitsOnlyParams | ToolkitScopeOnlyParams | ToolkitSearchOnlyParams;
 ```
+
+#### Auto-applying the `important` Filter
+
+When querying by `toolkits` only (without `tools`, `tags`, `search`, or `limit`), the SDK automatically applies `important: true` to prioritize the most useful tools from that toolkit. This helps reduce the number of tools returned and focuses on the most commonly used ones.
+
+**Auto-apply conditions:**
+- ✅ `toolkits` is provided
+- ✅ `tools` is NOT provided
+- ✅ `tags` is NOT provided
+- ✅ `search` is NOT provided
+- ✅ `limit` is NOT provided
+- ✅ `important` is NOT explicitly set to `false`
+
+**Examples:**
+
+```typescript
+// Auto-applies important: true
+const tools = await composio.tools.getRawComposioTools({
+  toolkits: ['github']
+});
+// Result: Only important GitHub tools
+
+// Does NOT auto-apply important (limit provided)
+const tools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  limit: 50
+});
+// Result: First 50 GitHub tools (including non-important)
+
+// Does NOT auto-apply important (tags provided)
+const tools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  tags: ['important']
+});
+// Result: GitHub tools with 'important' tag
+
+// Does NOT auto-apply important (search provided)
+const tools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  search: 'repository'
+});
+// Result: GitHub tools matching 'repository' search
+
+// Explicitly disable auto-apply
+const tools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  important: false
+});
+// Result: All GitHub tools (including non-important)
+
+// Explicitly enable important even with limit
+const tools = await composio.tools.getRawComposioTools({
+  toolkits: ['github'],
+  limit: 20,
+  important: true
+});
+// Result: First 20 important GitHub tools
+```
+
+**Why does `limit` prevent auto-applying `important`?**
+
+When you provide a `limit`, you're indicating that you want a specific number of tools. Auto-applying the `important` filter could result in fewer tools than your limit if the toolkit has limited important tools. By not auto-applying, you get the exact number of tools you requested.
 
 Note: The parameters are organized into three mutually exclusive combinations:
 

@@ -142,30 +142,40 @@ export type ToolListResponse = z.infer<typeof ToolListResponseSchema>;
  */
 export type ToolList = Array<Tool>;
 
+export const ToolkitLatestVersionSchema = z.literal('latest');
 /**
  * latest toolkit version param
  */
-export type ToolkitLatestVersion = 'latest';
+export type ToolkitLatestVersion = z.infer<typeof ToolkitLatestVersionSchema>;
+
+export const ToolkitVersionSchema = z.union([ToolkitLatestVersionSchema, z.string()]);
 /**
  * Versioning a tool based on it's toolkit version, either 'latest' or actual tool version as string '20250902_00'
  * @example
  * 'latest'
  * '20250902_00'
  */
-export type ToolkitVersion = ToolkitLatestVersion | string;
+export type ToolkitVersion = z.infer<typeof ToolkitVersionSchema>;
+
+export const ToolkitVersionsSchema = z.record(z.string(), ToolkitVersionSchema);
 /**
  * Versioning multiple toolkits
  *  @example
  * { 'github': 'latest', 'slack': '20250902_00' }
  */
 export type ToolkitVersions = Record<string, ToolkitVersion>;
+
+export const ToolkitVersionParamSchema = z
+  .union([ToolkitVersionsSchema, ToolkitLatestVersionSchema, z.undefined()])
+  .describe('The versioning of the toolkits. eg: { "github": "latest", "slack": "20250902_00" }');
 /**
- * Versioning a toolkit based on it's tool versions, either 'latest' or actual tool version as string '20250902_00'
+ * Versioning a tool based on it's toolkit version
  * @example
- * 'latest'
+ * ```json
  * { 'github': 'latest', 'slack': '20250902_00' }
+ * ```
  */
-export type ToolkitVersionParam = ToolkitLatestVersion | ToolkitVersions | undefined;
+export type ToolkitVersionParam = z.infer<typeof ToolkitVersionParamSchema>;
 
 export const ToolListParamsSchema = z.object({
   tools: z.array(z.string()).optional(),
@@ -175,6 +185,7 @@ export const ToolListParamsSchema = z.object({
   limit: z.number().optional(),
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
+  important: z.boolean().optional(),
 });
 
 type BaseParams = {
@@ -197,6 +208,7 @@ type ToolkitsOnlyParams = {
   toolkits: string[];
   tools?: never;
   scopes?: never;
+  important?: boolean;
 } & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 
 // toolkit + scopes (single toolkit only)
@@ -204,6 +216,7 @@ type ToolkitScopeOnlyParams = {
   toolkits: [string];
   tools?: never;
   scopes: string[];
+  important?: boolean;
 } & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 
 // tags only
@@ -307,6 +320,12 @@ export const ToolExecuteParamsSchema = z.object({
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
 
+export const ToolExecuteMetaParamsSchema = z.object({
+  sessionId: z.string(),
+  arguments: z.record(z.string(), z.unknown()).optional(),
+});
+export type ToolExecuteMetaParams = z.infer<typeof ToolExecuteMetaParamsSchema>;
+
 /**
  * ToolResponse Schema
  */
@@ -333,10 +352,39 @@ export const ToolProxyParamsSchema = z.object({
     )
     .optional(),
   connectedAccountId: z.string().optional(),
-  customConnectionData: CustomConnectionDataSchema.optional(),
+  /**
+   * @deprecated
+   */
+  customConnectionData: CustomConnectionDataSchema.describe(
+    'DEPRECATED: This field is deprecated and will be removed in the future.'
+  ).optional(),
 });
 export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
 
 export type SchemaModifierOptions = {
   modifySchema: TransformToolSchemaModifier;
+};
+
+/**
+ * Options for retrieving tools from Composio API
+ */
+export type ToolRetrievalOptions = {
+  /**
+   * Optional function to transform the tool schema after retrieval
+   */
+  modifySchema?: TransformToolSchemaModifier;
+
+  /**
+   * Override the toolkit version for tool retrieval.
+   * Takes precedence over SDK-level toolkitVersions.
+   *
+   * @example Override with specific version
+   * ```typescript
+   * const tool = await tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE', {
+   *   version: '20250909_00'
+   * });
+   * ```
+   * ```
+   */
+  version?: ToolkitVersion;
 };

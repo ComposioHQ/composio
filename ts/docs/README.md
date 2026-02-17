@@ -90,7 +90,7 @@ The complete API reference documentation is available here:
 - [Providers](./api/providers.md)
 - [Custom Tools](./api/custom-tools.md)
 - [MCP](./api/mcp.md)
-- [ToolRouter (experimental)](./api/tool-router.experimental.md)
+- [ToolRouter](./api/tool-router.md)
 
 ## Providers
 
@@ -127,6 +127,7 @@ Check out our [examples directory](../examples) for complete code samples:
 - [Custom Providers](./advanced/custom-providers.md)
 - [Modifiers](./advanced/modifiers.md)
 - [Session Management](./advanced/session-management.md)
+- [Webhook Verification](./advanced/webhook-verification.md)
 
 ## Internal Documentation
 

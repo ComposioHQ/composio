@@ -1,0 +1,62 @@
+name: Generate SDK Docs
+
+on:
+  push:
+    branches: [next]
+    paths:
+      - 'ts/packages/core/src/**'
+      - 'python/composio/**'
+  workflow_dispatch:
+
+jobs:
+  generate-ts-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @composio/core generate:docs
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725 # v8.0.0
+        with:
+          commit-message: 'docs: auto-generate TypeScript SDK reference'
+          title: 'docs: Update TypeScript SDK reference'
+          body: Auto-generated TypeScript SDK docs.
+          branch: docs/auto-update-ts-sdk-reference
+          base: next
+          add-paths: docs/content/reference/sdk-reference/typescript/
+
+  generate-python-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
+
+      - run: cd python && uv run --with griffe python scripts/generate-docs.py
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725 # v8.0.0
+        with:
+          commit-message: 'docs: auto-generate Python SDK reference'
+          title: 'docs: Update Python SDK reference'
+          body: Auto-generated Python SDK docs.
+          branch: docs/auto-update-python-sdk-reference
+          base: next
+          add-paths: docs/content/reference/sdk-reference/python/

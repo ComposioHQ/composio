@@ -3,9 +3,12 @@ name: Claude Docs Review
 on:
   pull_request:
     types: [ opened, synchronize ]
-    # Optional: Only run on specific file changes
+    # Run on docs changes (content, components, styles)
     paths:
-    - "fern/pages/**/*.mdx"
+    - "docs/content/**/*.mdx"
+    - "docs/components/**/*.tsx"
+    - "docs/app/**/*.tsx"
+    - "docs/app/**/*.css"
 jobs:
   claude-review:
     # Optional: Filter by PR author
@@ -23,29 +26,28 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 1
 
     - name: Run Claude Code Review
       id: claude-review
-      uses: anthropics/claude-code-action@beta
+      uses: anthropics/claude-code-action@v1
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        track_progress: true # Forces tag mode with tracking comments
 
         # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
         # model: "claude-opus-4-20250514"
 
-        # Direct prompt for automated review (no @claude mention needed)
-        direct_prompt: |
-          
-          Please review this pull request for documentation changes and provide feedback on:
-          - Grammar and spelling
-          - Clarity and readability
-          - Consistency and tone
-          - Proper adherence to the documentation style guide in `fern/CLAUDE.md`
+        # Review instructions in docs/.claude/agents/docs-reviewer.md
+        prompt: |
+          Review this PR using the guidelines in docs/.claude/agents/docs-reviewer.md
 
-          Be constructive and helpful in your feedback.
+          1. Read docs/.claude/agents/docs-reviewer.md for full review criteria
+          2. Run `git diff origin/${{ github.event.pull_request.base.ref }}...HEAD` to see changes
+          3. Apply the review checklist to changed files
+          4. If issues: Comment with specific fixes. If none: Approve with "Looks good"
         # Optional: Customize review based on file types
         # direct_prompt: |
         #   Review this PR focusing on:
@@ -60,8 +62,10 @@ jobs:
         #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
         #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
 
-        # Optional: Add specific tools for running tests or linting
-        allowed_tools: "Bash(*)"
+        # https://code.claude.com/docs/en/cli-reference#cli-flags
+        # -- model: "claude-opus-4-20250514"
+        claude_args: |
+          --allowedTools "Bash(*)"
 
         # Optional: Skip review for certain conditions
         # if: |

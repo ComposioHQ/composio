@@ -15,6 +15,7 @@
     "../ts/packages/core/src/models/Toolkits.ts",
     "../ts/packages/core/src/models/Tools.ts",
     "../ts/packages/core/src/models/Triggers.ts",
+    "../ts/packages/core/src/models/ToolRouter.ts",
     "../ts/packages/core/src/provider/BaseProvider.ts",
     "../ts/packages/core/src/provider/ComposioProvider.ts",
     "../ts/packages/core/src/provider/OpenAIProvider.ts"

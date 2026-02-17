@@ -1,0 +1,12 @@
+{
+  "title": "TypeScript SDK",
+  "pages": [
+    "composio",
+    "auth-configs",
+    "connected-accounts",
+    "mcp",
+    "toolkits",
+    "tools",
+    "triggers"
+  ]
+}

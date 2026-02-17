@@ -1,0 +1,438 @@
+---
+title: Basic Hono Server
+description: Build a simple Gmail agent with Composio and Hono.js
+---
+
+With Composio's managed authentication and tool calling, it's easy to build
+AI agents that interact with the real world while reducing boilerplate for
+setup and authentication management. This cookbook will guide you through
+building and serving agents using `Composio`, `OpenAI`, and `Hono.js`.
+
+## Prerequisites
+
+* Node.js 18.x or higher
+* npm or yarn package manager  
+* Composio API key
+* OpenAI API key
+* Basic knowledge of OAuth
+* Understanding of building HTTP services (preferably using Hono.js)
+
+## Building an AI agent that can interact with `gmail` service
+
+First, let's start with building a simple AI agent embedded with tools from
+Composio that lets the agent interact with the `gmail` service.
+
+```typescript
+import { OpenAI } from 'openai';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+
+export async function runGmailAgent(
+    composioClient: Composio<OpenAIProvider>,
+    openaiClient: OpenAI,
+    userId: string,  // Composio uses the User ID to store and access user-level authentication tokens.
+    prompt: string,
+): Promise<any[]> {
+    // Step 1: Fetch the necessary Gmail tools list with Composio
+    const tools = await composioClient.tools.get(
+        userId,
+        {
+            tools: [
+                "GMAIL_FETCH_EMAILS",
+                "GMAIL_SEND_EMAIL", 
+                "GMAIL_CREATE_EMAIL_DRAFT"
+            ]
+        }
+    );
+
+    // Step 2: Use OpenAI to generate a response based on the prompt and available tools
+    const response = await openaiClient.chat.completions.create({
+        model: "gpt-4.1",
+        tools,
+        messages: [{ role: "user", content: prompt }],
+    });
+
+    // Step 3: Handle tool calls with Composio and return the result
+    const result = await composioClient.provider.handleToolCalls(
+        userId,
+        response
+    );
+    return result;
+}
+```
+
+<Callout>
+  This is a simple agent without state management and agentic loop implementation,
+  so the agent can't perform complicated tasks. If you want to understand how
+  composio can be used with agentic loops, check other cookbooks with more
+  agentic frameworks.
+</Callout>
+
+To invoke this agent, authenticate your users with Composio's managed authentication service.
+
+## Authenticating users
+
+To authenticate your users with Composio you need an authentication config for the given app. In this case you need one for gmail.
+
+To create an authentication config for `gmail` you need `client_id` and `client_secret` from your [Google OAuth Console](https://developers.google.com/identity/protocols/oauth2). Once you have the credentials, use the following piece of code to set up authentication for `gmail`.
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+
+export async function createAuthConfig(composioClient: Composio<OpenAIProvider>) {
+    /**
+     * Create a auth config for the gmail toolkit.
+     */
+    const clientId = process.env.GMAIL_CLIENT_ID;
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+        throw new Error("GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET must be set");
+    }
+
+    return composioClient.authConfigs.create(
+        "GMAIL",
+        {
+            "name": "default_gmail_auth_config",
+            "type": "use_custom_auth",
+            "authScheme": "OAUTH2",
+            "credentials": {
+                "clientId": clientId,
+                "clientSecret": clientSecret,
+            },
+        },
+    );
+}
+```
+
+This will create a Gmail authentication config to authenticate your app's users. Ideally, create one authentication object per project, so check for an existing auth config before creating a new one.
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+// ---cut---
+export async function fetchAuthConfig(composioClient: Composio<OpenAIProvider>) {
+    /**
+     * Fetch the auth config for a given user id.
+     */
+    const authConfigs = await composioClient.authConfigs.list();
+    for (const authConfig of authConfigs.items) {
+        if (authConfig.toolkit.slug === "gmail") {
+            return authConfig;
+        }
+    }
+
+    return null;
+}
+```
+
+<Callout>
+  Composio platform provides composio managed authentication for some apps to
+  fast-track your development, `gmail` being one of them. You can use these
+  default auth configs for development, but for production, always use your
+  own oauth app configuration.
+</Callout>
+
+Once you have authentication management in place, we can start with connecting your users to your `gmail` app. Let's implement a function to connect users to your `gmail` app via composio.
+
+```typescript
+import { Hono } from 'hono';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+
+declare function fetchAuthConfig(client: Composio<OpenAIProvider>): Promise<{ id: string } | null>;
+declare function createAuthConfig(client: Composio<OpenAIProvider>): Promise<{ id: string }>;
+declare const composioClient: Composio<OpenAIProvider>;
+// ---cut---
+// Function to initiate a connected account
+export async function createConnection(composioClient: Composio<OpenAIProvider>, userId: string) {
+    /**
+     * Create a connection for a given user id and auth config id.
+     */
+    // Fetch or create the auth config for the gmail toolkit
+    let authConfig = await fetchAuthConfig(composioClient);
+    if (!authConfig) {
+        authConfig = await createAuthConfig(composioClient);
+    }
+
+    // Create a connection for the user
+    return composioClient.connectedAccounts.initiate(
+        userId,
+        authConfig.id,
+    );
+}
+
+// Setup Hono
+const app = new Hono();
+
+// Connection initiation endpoint
+app.post("/connection/create", async (c) => {
+    /**
+     * Create a connection for a given user id.
+     */
+    // For demonstration, using a default user_id. Replace with real user logic in production.
+    const userId = "default";
+
+    // Create a new connection for the user
+    const connectionRequest = await createConnection(composioClient, userId);
+    return c.json({
+        "connection_id": connectionRequest.id,
+        "redirect_url": connectionRequest.redirectUrl,
+    });
+});
+```
+
+Now, you can make a request to this endpoint on your client app, and your user will get a URL which they can use to authenticate.
+
+## Set Up Hono service
+
+We will use [`Hono.js`](https://hono.dev/) to build an HTTP service that authenticates your users and lets them interact with your agent. This guide will provide best practices for using composio client in production environments.
+
+### Setup dependencies
+
+Hono allows dependency injection patterns to simplify the usage of SDK clients that must be singletons. We recommend using composio SDK client as singleton.
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+import { OpenAI } from 'openai';
+
+let _composioClient: Composio<OpenAIProvider> | null = null;
+
+export function provideComposioClient(): Composio<OpenAIProvider> {
+    /**
+     * Provide a Composio client.
+     */
+    if (_composioClient === null) {
+        _composioClient = new Composio({ 
+            provider: new OpenAIProvider() 
+        });
+    }
+    return _composioClient;
+}
+
+// A Composio client dependency.
+export type ComposioClient = Composio<OpenAIProvider>;
+```
+
+Check [config/composio.ts](./src/config/composio.ts) module for more details.
+
+### Invoke agent via Hono
+
+When invoking an agent, make sure you validate the `user_id`.
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+import { OpenAI } from 'openai';
+import { Hono } from 'hono';
+
+const app = new Hono();
+declare const composioClient: Composio<OpenAIProvider>;
+declare const openaiClient: OpenAI;
+declare function runGmailAgent(c: Composio<OpenAIProvider>, o: OpenAI, u: string, p: string): Promise<any[]>;
+// ---cut---
+export function checkConnectedAccountExists(
+    composioClient: Composio<OpenAIProvider>,
+    userId: string,
+): Promise<boolean> {
+    /**
+     * Check if a connected account exists for a given user id.
+     */
+    // Fetch all connected accounts for the user
+    return composioClient.connectedAccounts.list({ userIds: [userId], toolkitSlugs: ["GMAIL"] }).then(connectedAccounts => {
+
+        // Check if there's an active connected account
+        for (const account of connectedAccounts.items) {
+            if (account.status === "ACTIVE") {
+                return true;
+            }
+
+            // Ideally you should not have inactive accounts, but if you do, delete them.
+            console.log(`[warning] inactive account ${account.id} found for user id: ${userId}`);
+        }
+        return false;
+    });
+}
+
+export async function validateUserId(userId: string, composioClient: Composio<OpenAIProvider>): Promise<string> {
+    /**
+     * Validate the user id, if no connected account is found, create a new connection.
+     */
+    if (await checkConnectedAccountExists(composioClient, userId)) {
+        return userId;
+    }
+
+    throw new Error("No connected account found for the user id");
+}
+
+// Endpoint: Run the Gmail agent for a given user id and prompt
+app.post("/agent", async (c) => {
+    /**
+     * Run the Gmail agent for a given user id and prompt.
+     */
+    const request = await c.req.json();
+    
+    // For demonstration, using a default user_id. Replace with real user logic in production.
+    const userId = "default";
+
+    // Validate the user id before proceeding
+    await validateUserId(userId, composioClient);
+
+    // Run the Gmail agent using Composio and OpenAI
+    const result = await runGmailAgent(
+        composioClient,
+        openaiClient,
+        userId,
+        request.prompt,
+    );
+    return c.json(result);
+});
+```
+
+<Callout>
+  Check [src/api.ts](./src/api.ts) module for service implementation
+</Callout>
+
+## Putting everything together
+
+So far, we have created an agent with ability to interact with `gmail` using the `composio` SDK, functions to manage connected accounts for users and a Hono service. Now let's run the service.
+
+<Callout>
+  Before proceeding, check the [code](./src/api.ts) for utility endpoints not discussed in the cookbook
+</Callout>
+
+1. Clone the repository
+   ```bash
+   git clone git@github.com:composiohq/composio-hono
+   cd composio-hono/
+   ```
+2. Setup environment
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Fill the api keys
+
+   ```dotenv
+   COMPOSIO_API_KEY=
+   OPENAI_API_KEY=
+   ```
+
+   Install dependencies
+
+   ```bash
+   npm install
+   ```
+3. Run the HTTP server
+   ```bash
+   npm run dev
+   ```
+
+## Testing the API with curl
+
+Assuming the server is running locally on `http://localhost:8000`.
+
+### Check if a connection exists
+
+```bash
+curl -X POST http://localhost:8000/connection/exists
+```
+
+### Create a connection
+
+Note: The body fields are required by the API schema, but are ignored internally in this example service.
+
+```bash
+curl -X POST http://localhost:8000/connection/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "default",
+    "auth_config_id": "AUTH_CONFIG_ID_FOR_GMAIL_FROM_THE_COMPOSIO_DASHBOARD"
+  }'
+```
+
+Response includes `connection_id` and `redirect_url`. Complete the OAuth flow at the `redirect_url`.
+
+### Check connection status
+
+Use the `connection_id` returned from the create step.
+
+```bash
+curl -X POST http://localhost:8000/connection/status \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "default",
+    "connection_id": "CONNECTION_ID_FROM_CREATE_RESPONSE"
+  }'
+```
+
+### Run the Gmail agent
+
+Requires an active connected account for the `default` user.
+
+```bash
+curl -X POST http://localhost:8000/agent \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "default",
+    "prompt": "Summarize my latest unread emails from the last 24 hours."
+  }'
+```
+
+### Fetch emails (direct action)
+
+```bash
+curl -X POST http://localhost:8000/actions/fetch_emails \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "default",
+    "limit": 5
+  }'
+```
+
+These examples are intended solely for testing purposes.
+
+## Using Composio for managed auth and tools
+
+Composio reduces boilerplate for building AI agents that access and use various apps. In this cookbook, to build Gmail integration without Composio, you would have to write code to
+
+* manage Gmail OAuth app
+* manage user connections
+* tools for your agents to interact with Gmail
+
+Using Composio simplifies all of the above to a few lines of code as shown in the cookbook.
+
+## Best practices
+
+**🎯 Effective Prompts**:
+
+* Be specific: "Send email to [john@company.com](mailto:john@company.com) about tomorrow's 2pm meeting" works better than "send email"
+* Include context: "Reply to Sarah's email about the budget with our approval"
+* Use natural language: The agent understands conversational requests
+
+**🔑 User Management**:
+
+* Use unique, consistent `user_id` values for each person
+* Each user maintains their own Gmail connection
+* User IDs can be email addresses, usernames, or any unique identifier
+
+## Troubleshooting
+
+**Connection Issues**:
+
+* Ensure your `.env` file has valid `COMPOSIO_API_KEY` and `OPENAI_API_KEY`
+* Check if the user has completed Gmail authorization.
+* Verify the user\_id matches exactly between requests
+
+**API Errors**:
+
+* Check the server logs for detailed error messages
+* Ensure request payloads match the expected format
+* Visit `/docs` endpoint for API schema validation
+
+**Gmail API Limits**:
+
+* Gmail has rate limits; the agent will handle these gracefully
+* For high-volume usage, consider implementing request queuing

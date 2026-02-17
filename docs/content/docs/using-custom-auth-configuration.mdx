@@ -1,0 +1,65 @@
+---
+title: Using custom auth configuration
+description: Set up auth configs for toolkits without Composio managed authentication
+keywords: [custom credentials, no managed auth]
+---
+
+Some toolkits don't have Composio managed authentication and require you to provide your own credentials. When sessions try to use these toolkits, an error will be thrown asking you to create an auth config.
+
+<Steps>
+<Step>
+<StepTitle>Check if a toolkit needs custom credentials</StepTitle>
+
+In the [Composio platform](https://platform.composio.dev), go to "All Toolkits" and select the toolkit. If it shows no Composio managed auth schemes, you'll need to create an auth config.
+</Step>
+
+<Step>
+<StepTitle>Create an auth config</StepTitle>
+
+1. Go to **Authentication management** in the [dashboard](https://platform.composio.dev)
+2. Click **Create Auth Config**
+3. Select the toolkit
+4. Choose the auth scheme (OAuth2, API Key, etc.)
+5. Enter your credentials (client ID, client secret, API key, etc.)
+6. Click **Create**
+
+Copy the auth config ID (e.g., `ac_1234abcd`).
+
+<Callout type="info">
+For detailed instructions on getting credentials for specific toolkits, see [Custom auth configs](/docs/auth-configuration/custom-auth-configs).
+</Callout>
+</Step>
+
+<Step>
+<StepTitle>Use in your session</StepTitle>
+
+Pass your auth config ID when creating a session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "posthog": "ac_your_posthog_config"
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  authConfigs: {
+    posthog: "ac_your_posthog_config",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+Your session will now use this auth config when users connect to this toolkit.
+</Step>
+</Steps>

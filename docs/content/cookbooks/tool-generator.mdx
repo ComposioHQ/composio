@@ -1,0 +1,273 @@
+---
+title: Tool Type Generator
+description: Build your own platform using raw tool definitions
+---
+
+This is a bit of a checky tutorial as it is dogfooding the `docs` tool generation process.
+
+To motivate this example clearly, in our tools section — we have details about let's say [`Github`](/toolkits/github) tool, that shows its auth scheme, actions and their params.
+
+Now why would anyone outside of Composio want to do this? Well if you are building a platform on top of Composio, perchance a Workflow builder like langflow. You would want to show some or all of this information to your users.
+
+This is a non standard use case, that we support and love users building on top of us but if this is uninteresting to you, you can skip this tutorial.
+
+## How does one build a tool type generator?
+
+In composio, we have two internal states for tools
+
+1. Raw tool definition
+2. Provider tool definition
+
+The raw tool definition is an generic input output schema definition that we internally for tools, we expose it for customers if they want to build on top of it but it is not the primary way tools are normally used.
+
+The provider tool definition, translates this raw tool definition to the specific schema of a provider (by default `openai`). 
+
+For building something like this, we need to use the raw tool definition.
+
+
+## Getting the raw tool definition
+
+Of course, you need to initiate the `Composio` sdk first and use a `COMPOSIO_API_KEY` environment variable.
+
+
+```python Python {2} title="tool_doc_generator/main.py" maxLines=40 wordWrap
+
+    def __init__(self, include_local: bool = False):
+        """
+```
+
+
+Let us see an example output for a raw `GMAIL` toolkit, with all of its tools.
+
+this is just a taste but you can see the full output [here](https://github.com/composio-dev/composio/blob/next/fern/pages/src/examples/tool-generator/output.json).
+
+```json JSON title="output.json" maxLines=40 
+[
+    {
+        "deprecated": {
+            "available_versions": [
+                "0_1",
+                "latest",
+                "latest:base"
+            ],
+            "display_name": "Modify email labels",
+            "is_deprecated": false,
+            "toolkit": {
+                "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/gmail.svg"
+            },
+            "version": "0_1",
+            "displayName": "Modify email labels"
+        },
+        "description": "Adds and/or removes specified gmail labels for a message; ensure `message id` and all `label ids` are valid (use 'listlabels' for custom label ids).",
+        "input_parameters": {
+            "properties": {
+                "add_label_ids": {
+                    "default": [],
+                    "description": "Label IDs to add. For custom labels, obtain IDs via 'listLabels'. System labels (e.g., 'INBOX', 'SPAM') can also be used.",
+                    "examples": [
+                        "STARRED",
+                        "IMPORTANT",
+                        "Label_123"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Add Label Ids",
+                    "type": "array"
+                },
+                "message_id": {
+                    "description": "Immutable ID of the message to modify (e.g., from 'fetchEmails' or 'fetchMessagesByThreadId').",
+                    "examples": [
+                        "17f1b2b9c1b2a3d4"
+                    ],
+                    "title": "Message Id",
+                    "type": "string"
+                },
+                "remove_label_ids": {
+                    "default": [],
+                    "description": "Label IDs to remove. For custom labels, obtain IDs via 'listLabels'. System labels can also be used.",
+                    "examples": [
+                        "UNREAD",
+                        "Label_456"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Remove Label Ids",
+                    "type": "array"
+                },
+                "user_id": {
+                    "default": "me",
+                    "description": "User's email address or 'me' for the authenticated user.",
+                    "examples": [
+                        "me",
+                        "user@example.com"
+                    ],
+                    "title": "User Id",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "message_id"
+            ],
+            "title": "AddLabelToEmailRequest",
+            "type": "object"
+        },
+        "name": "Modify email labels",
+        "no_auth": false,
+        "output_parameters": {
+            "properties": {
+                "data": {
+                    "description": "Data from the action execution",
+                    "properties": {
+                        "response_data": {
+                            "description": "Full `Message` resource with updated labels.",
+                            "title": "Response Data",
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "response_data"
+                    ],
+                    "title": "Data",
+                    "type": "object"
+                },
+                "error": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+```
+
+```sh
+jq '.[0] | keys' pages/src/examples/tool-generator/output.json
+[
+  "available_versions",
+  "deprecated",
+  "description",
+  "input_parameters",
+  "name",
+  "no_auth",
+  "output_parameters",
+  "scopes",
+  "slug",
+  "tags",
+  "toolkit",
+  "version"
+]
+```
+
+There is a bunch of useful information here, around the `input_parameters` and `output_parameters` for this example but `scopes` is very valuable to know what permissions are required for this tool.
+
+Now from these `input_parameters` and `output_parameters` you can showcase the tool definitions.
+
+
+```python Python title="tool_doc_generator/main.py" maxLines=40 
+        fields = []
+        _, field_config = field
+
+        for field_list, required in [
+            (getattr(field_config, "required", []), True),
+            (getattr(field_config, "optional", []), False),
+        ]:
+            for f in field_list:
+                if hasattr(f, "name"):
+                    fields.append(self._create_param_from_field(f, required))
+```
+
+There is a bunch of other processing things happening here that are super generally relevant, so not going to call them out here that said there is another thing i want to showcase
+
+## Toolkit Information
+
+Toolkis are what we call apps or integrations, for us they are a collection of tools. `GMAIL` has `GMAIL_SEND_EMAIL` as a tool.
+
+Now for building something out like this, you might also want information about the toolkit itself.
+
+A toolkit has information like `categories` or `auth_schemes`
+
+```python Python title="tool_doc_generator/main.py" maxLines=40 
+        """
+        Initialize the tool documentation generator.
+
+        Args:
+```
+
+`auth_schemes` here are `OAUTH2`, `API_KEY` or `BASIC_AUTH`, etc — essentially the types of how one could authenticate with the toolkit.
+
+```python Python title="tool_doc_generator/main.py" maxLines=40 
+        # Initialize composio client
+        self.composio = Composio()
+        self.include_local = include_local
+
+        # For tracking generated tools
+        self.generated_tools = []
+        self.problematic_actions = []
+
+    def generate_docs(
+        self, output_path: Path, max_workers: int | None = None, limit: int | None = None
+```
+
+Here is a way to parse the `auth_scheme` data
+
+
+these are `tuple` objects as they have different schema for specific conditions like `auth_config_creation` or `connected_account_initiation`
+
+they also have `required` and `optional` fields.
+
+the context here is there are some fields you need while creating an auth config and some you need while connecting an account. this separation is done by the `tuple` here
+
+```python Python title="tool_doc_generator/main.py" maxLines=40 
+        auth_schemes: t.Optional[t.List[toolkit_retrieve_response.AuthConfigDetail]] = None,
+    ) -> None:
+        schemes = ", ".join(
+            self._get_auth_type(s) for s in (auth_schemes or []) if self._extract_auth_fields(s)
+        )
+        self._blocks.extend(
+            [
+                f"""## Connecting to {app_name}
+### Create an auth config
+Use the dashboard to create an auth config for the {app_name} toolkit. This allows you to connect multiple {app_name} accounts to Composio for agents to use.
+
+<Steps>
+  <Step title="Select App">
+    Navigate to **[{app_name}](https://platform.composio.dev?next_page=/marketplace/{app_name})**.
+  </Step>
+  <Step title="Configure Auth Config Settings">
+    Select among the supported auth schemes of and configure them here.
+  </Step>
+  <Step title="Create and Get auth config ID">
+    Click **"Create {app_name} Auth Config"**. After creation, **copy the displayed ID starting with `ac_`**. This is your auth config ID. This is _not_ a sensitive ID -- you can save it in environment variables or a database.
+    **This ID will be used to create connections to the toolkit for a given user.**
+  </Step>
+</Steps>
+"""
+            ],
+        )
+
+        # Add auth code snippets
+        self._add_auth_section(app_name, app_slug, auth_schemes)
+
+    def _add_auth_section(
+        self,
+        app_name: str,
+        app_slug: str,
+        auth_schemes: t.List[toolkit_retrieve_response.AuthConfigDetail] = None,
+    ) -> None:
+        """Add code snippets for each auth scheme using direct template processing"""
+        if not auth_schemes:
+            return
+        
+        self._blocks.append("### Connect Your Account")
+        
+        # Group auth schemes by type to avoid duplicates
+        seen_auth_types = set()
+        
+```
+
+
+This is a fairly minimal explanation for the amount of code, as most of it is not super related to composio but it will be a good example on seeing behind the scenes of how composio is working and how to leverage the platform further.

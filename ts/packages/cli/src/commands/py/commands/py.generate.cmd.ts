@@ -1,13 +1,19 @@
 import { Command, Options } from '@effect/cli';
-import { pipe, Console, Effect, Option } from 'effect';
+import { pipe, Console, Effect, Option, Array } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { pyFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
 import { BANNER } from 'src/generation/constants';
 import { generatePythonSources } from 'src/generation/python/generate';
+import {
+  getToolkitVersionOverrides,
+  type ToolkitVersionOverrides,
+} from 'src/effects/toolkit-version-overrides';
+import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -18,13 +24,28 @@ export const outputOpt = Options.optional(
   Options.withDescription('Output directory for the generated Python type stubs')
 );
 
-const _pyCmd$Generate = Command.make('generate', { outputOpt }).pipe(
-  Command.withDescription('Updates the local type stubs with the latest app data.')
+export const toolkitsOpt = Options.text('toolkits').pipe(
+  Options.repeated,
+  Options.withDescription(
+    'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
+  )
+);
+
+const _pyCmd$Generate = Command.make('generate', { outputOpt, toolkitsOpt }).pipe(
+  Command.withDescription(
+    'Generate Python type stubs for toolkits, tools, and triggers from the Composio API.\n\n' +
+      'Environment Variables:\n' +
+      '  COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)\n' +
+      '                                      Use "latest" or unset to use the latest version.'
+  )
 );
 
 export const pyCmd$Generate = _pyCmd$Generate.pipe(Command.withHandler(generatePythonTypeStubs));
 
-export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCmd$Generate>) {
+export function generatePythonTypeStubs({
+  outputOpt,
+  toolkitsOpt,
+}: GetCmdParams<typeof _pyCmd$Generate>) {
   return Effect.gen(function* () {
     const process = yield* NodeProcess;
     const cwd = process.cwd;
@@ -45,27 +66,74 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
     yield* Effect.log(`Writing type stubs to ${outputDir}...`);
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
+    // Read toolkit version overrides from environment variables
+    const versionOverrides = yield* getToolkitVersionOverrides;
+
+    // Validate toolkit slugs if specified
+    const hasToolkitsFilter = Array.isNonEmptyArray(toolkitsOpt);
+    const toolkitSlugsFilter = hasToolkitsFilter ? toolkitsOpt.map(s => s.toLowerCase()) : null;
+
+    // Validate toolkit version overrides before fetching data
+    // This will log detected overrides, validate them against API, and warn about unused ones
+    const { validatedOverrides } = yield* validateToolkitVersionOverrides({
+      versionOverrides,
+      toolkitSlugsFilter,
+      client,
+    });
+
     // Fetch data from Composio API
     yield* Console.log('Fetching latest data from Composio API. This may take a while...');
 
-    const triggerTypesAsEnums = yield* Effect.logDebug('Fetching trigger types...').pipe(
-      Effect.flatMap(() => client.getTriggerTypesAsEnums())
-    );
+    // Validate toolkit slugs if specified (separate from version validation)
+    const validatedToolkitSlugs = hasToolkitsFilter
+      ? yield* client
+          .validateToolkits(toolkitsOpt)
+          .pipe(
+            Effect.catchTag('services/InvalidToolkitsError', error =>
+              Effect.fail(
+                new Error(
+                  `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. ` +
+                    `Available toolkits: ${error.availableToolkits.slice(0, 10).join(', ')}${error.availableToolkits.length > 10 ? '...' : ''}`
+                )
+              )
+            )
+          )
+      : [];
 
-    const [toolkits, tools, triggerTypes] = yield* Effect.all(
+    const [allToolkits, tools, triggerTypes] = yield* Effect.all(
       [
         Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
         Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
-        Effect.logDebug('Fetching trigger types payloads...').pipe(
-          Effect.flatMap(() => client.getTriggerTypes(triggerTypesAsEnums.length))
+        Effect.logDebug('Fetching trigger types...').pipe(
+          Effect.flatMap(() => client.getTriggerTypes())
         ),
       ],
       { concurrency: 'unbounded' }
     );
 
+    // Filter toolkits if --toolkits was specified
+    const toolkits = hasToolkitsFilter
+      ? client.filterToolkitsBySlugs(allToolkits, validatedToolkitSlugs)
+      : allToolkits;
+
+    if (hasToolkitsFilter) {
+      yield* Console.log(
+        `Filtering to ${toolkits.length} toolkit(s): ${toolkits.map(t => t.slug).join(', ')}`
+      );
+    }
+
+    // Build version map for toolkits being generated (using validated overrides)
+    const versionMap: ToolkitVersionOverrides = new Map();
+    for (const toolkit of toolkits) {
+      const version = validatedOverrides.get(toolkit.slug.toLowerCase() as Lowercase<string>);
+      if (version && version !== 'latest') {
+        versionMap.set(toolkit.slug.toLowerCase() as Lowercase<string>, version);
+      }
+    }
+
     const typeableTools = { withTypes: false as const, tools };
 
-    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
+    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
     // Generate Python sources
     const sources = generatePythonSources({
@@ -95,6 +163,10 @@ export function generatePythonTypeStubs({ outputOpt }: GetCmdParams<typeof _pyCm
           `✅ Type stubs generated successfully.\n` +
             `Generated files are available at: ${outputDir}`
         );
+
+    // Log API metrics
+    const metrics = yield* client.getMetrics();
+    yield* logMetrics(metrics);
 
     return outputDir;
   });

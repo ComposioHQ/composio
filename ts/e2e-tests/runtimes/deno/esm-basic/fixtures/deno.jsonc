@@ -1,0 +1,6 @@
+{
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  // Use the existing node_modules from pnpm workspace
+  // This resolves npm:@composio/core to the local workspace package
+  "nodeModulesDir": "auto"
+}

@@ -1,0 +1,70 @@
+---
+title: Authentication
+image: "https://og.composio.dev/api/og?title=Authentication"
+description: "Understand how Tool Router handles user authentication to toolkits"
+keywords: "authentication, tool router, oauth, api key, connected accounts"
+hide-nav-links: false
+---
+
+Tool Router handles authentication through [Connect Links](/docs/authenticating-tools#hosted-authentication-connect-link), hosted pages where users complete OAuth or enter credentials.
+
+## In-chat authentication
+
+By default, when a tool requires authentication, the agent prompts the user with a Connect Link. The user authenticates and confirms in chat. The agent handles OAuth flows, token refresh, and credential management automatically.
+
+Here's what this looks like in a conversation:
+
+```
+You: Star the composio repo on GitHub
+
+Agent: I need you to connect your GitHub account first.
+       Please click here to authorize: https://connect.composio.dev/link/ln_abc123
+
+You: Done
+
+Agent: Done! I've starred ComposioHQ/composio.
+```
+
+This flow works well for chat applications where users interact directly with the agent. See [Using in-chat authentication](/tool-router/using-in-chat-authentication).
+
+## Manual authentication
+
+For apps that manage auth outside of chat, use `session.authorize()` to generate Connect Links programmatically:
+
+<CodeGroup>
+```python
+connection_request = session.authorize("github")
+print(connection_request.redirect_url)
+# https://connect.composio.dev/link/ln_abc123
+```
+```typescript
+const connectionRequest = await session.authorize("github");
+console.log(connectionRequest.redirectUrl);
+// https://connect.composio.dev/link/ln_abc123
+```
+</CodeGroup>
+
+Use this when you want users to connect accounts during onboarding, or when building a custom connections page. See [Manually authenticating users](/tool-router/manually-authenticating-users) for a detailed guide.
+
+## How Tool Router manages auth configs
+
+When executing a tool, Tool Router needs an auth config to find or create a connected account. It handles this automatically:
+
+1. Uses your `authConfigs` override if provided
+2. Otherwise, reuses an auth config it previously created for this toolkit
+3. If none exists, creates one using Composio managed auth
+
+You don't need to create auth configs manually for most toolkits.
+
+## Supported auth methods
+
+Tool Router supports **Composio managed OAuth** (GitHub, Gmail, Slack, and most toolkits) and **API key auth** (users enter their own keys via Connect Link).
+
+<Note>
+Toolkits without Composio managed auth require a custom auth config. See [Using custom auth configs](/tool-router/using-custom-auth-configs).
+</Note>
+
+## White-labeling
+
+Show your own branding on OAuth consent screens by creating your own OAuth app. See [White-labeling authentication](/tool-router/white-labeling-authentication).
+

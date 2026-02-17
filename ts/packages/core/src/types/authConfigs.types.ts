@@ -18,6 +18,8 @@ export const AuthSchemeTypes = {
   BASIC_WITH_JWT: 'BASIC_WITH_JWT',
   CALCOM_AUTH: 'CALCOM_AUTH',
   SERVICE_ACCOUNT: 'SERVICE_ACCOUNT',
+  SAML: 'SAML',
+  DCR_OAUTH: 'DCR_OAUTH',
 } as const;
 export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTypes];
 
@@ -42,6 +44,8 @@ export const AuthSchemeEnum = z.enum([
   'BASIC_WITH_JWT',
   'CALCOM_AUTH',
   'SERVICE_ACCOUNT',
+  'SAML',
+  'DCR_OAUTH',
 ]);
 export const CreateCustomAuthConfigParamsSchema = z.object({
   type: z.literal('use_custom_auth'),
@@ -55,13 +59,21 @@ export const CreateCustomAuthConfigParamsSchema = z.object({
     })
     .optional(),
   toolAccessConfig: AuthConfigCreationToolAccessConfigSchema.optional(),
+  isEnabledForToolRouter: z.boolean().optional(),
 });
 
 export const CreateComposioManagedAuthConfigParamsSchema = z.object({
   type: z.literal('use_composio_managed_auth'),
   name: z.string().optional(),
-  credentials: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+  credentials: z
+    .object({
+      scopes: z.union([z.string(), z.array(z.string())]).optional(),
+      user_scopes: z.union([z.string(), z.array(z.string())]).optional(),
+    })
+    .passthrough()
+    .optional(),
   toolAccessConfig: AuthConfigCreationToolAccessConfigSchema.optional(),
+  isEnabledForToolRouter: z.boolean().optional(),
 });
 
 /**
@@ -95,6 +107,7 @@ export const AuthConfigRetrieveResponseSchema = z.object({
   authScheme: AuthSchemeEnum.optional(),
   credentials: z.record(z.string(), z.unknown()).optional(),
   expectedInputFields: z.array(z.unknown()).optional(),
+  isEnabledForToolRouter: z.boolean().optional(),
   /**
    * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
    */
@@ -123,8 +136,15 @@ export const AuthConfigListResponseSchema = z.object({
 export type AuthConfigListResponse = z.infer<typeof AuthConfigListResponseSchema>;
 
 export const AuthCustomConfigUpdateParamsSchema = z.object({
-  credentials: z.record(z.string(), z.union([z.string(), z.unknown()])),
   type: z.literal('custom'),
+  credentials: z
+    .object({
+      scopes: z.union([z.string(), z.array(z.string())]).optional(),
+      user_scopes: z.union([z.string(), z.array(z.string())]).optional(),
+    })
+    .passthrough()
+    .optional(),
+  isEnabledForToolRouter: z.boolean().optional(),
   /**
    * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
    */
@@ -133,8 +153,9 @@ export const AuthCustomConfigUpdateParamsSchema = z.object({
 });
 
 export const AuthDefaultConfigUpdateParamsSchema = z.object({
-  scopes: z.string().optional(),
   type: z.literal('default'),
+  scopes: z.string().optional(),
+  isEnabledForToolRouter: z.boolean().optional(),
   /**
    * @deprecated - use tool access config to determine the tools that the user can perform on the auth config.
    */

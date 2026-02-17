@@ -14,7 +14,7 @@ export class ComposioNoAPIKeyError extends ComposioError {
 
     super(message, {
       ...options,
-      code: 'NO_API_KEY',
+      code: SDKErrorCodes.NO_API_KEY_PROVIDED,
       cause: options.cause || defaultCause,
       possibleFixes: options.possibleFixes || [
         'Ensure you have an API key passed in the params, or in environment variable (COMPOSIO_API_KEY) or in the user config file',

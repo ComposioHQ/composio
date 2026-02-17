@@ -1,0 +1,99 @@
+---
+title: ConnectedAccounts
+description: Manage connected accounts.  This class is used to manage connected accounts in the Composio SDK. These are used to authenticate with third-party se...
+---
+
+## Methods
+
+### initiate()
+
+Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the `wait_for_connection` method.
+
+```python
+def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ...) -> ConnectionRequest
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `auth_config_id` | `str` |
+| `callback_url?` | `str \| None` |
+| `allow_multiple?` | `bool` |
+| `config?` | `connected_account_create_params.ConnectionState \| None` |
+
+**Returns**
+
+`ConnectionRequest` — The connection request.
+
+---
+
+### link()
+
+Create a Composio Connect Link for a user to connect their account to a given auth config.  This method will return an external link which you can use for the user to connect their account.
+
+```python
+def link(user_id: str, auth_config_id: str, callback_url: str | None = ...) -> ConnectionRequest
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `auth_config_id` | `str` |
+| `callback_url?` | `str \| None` |
+
+**Returns**
+
+`ConnectionRequest` — Connection request object.
+
+**Example**
+
+```python
+# Create a connection request and redirect the user to the redirect url
+    connection_request = composio.connected_accounts.link('user_123', 'auth_config_123')
+    redirect_url = connection_request.redirect_url
+    print(f"Visit: {redirect_url} to authenticate your account")
+
+    # Wait for the connection to be established
+    connected_account = connection_request.wait_for_connection()
+
+    # Create a connection request with callback URL
+    connection_request = composio.connected_accounts.link(
+        'user_123',
+        'auth_config_123',
+        callback_url='https://your-app.com/callback'
+    )
+    redirect_url = connection_request.redirect_url
+    print(f"Visit: {redirect_url} to authenticate your account")
+
+    # Wait for the connection to be established
+    connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
+```
+
+---
+
+### wait_for_connection()
+
+Wait for connected account with given ID to be active
+
+```python
+def wait_for_connection(id: str, timeout: float | None = ...) -> connected_account_retrieve_response.ConnectedAccountRetri...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+| `timeout?` | `float \| None` |
+
+**Returns**
+
+`connected_account_retrieve_response.ConnectedAccountRetri...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/connected_accounts.py#L300)

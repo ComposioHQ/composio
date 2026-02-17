@@ -1,19 +1,27 @@
 {
   "name": "@composio/langchain",
-  "version": "0.2.5",
+  "version": "0.6.3",
   "description": "",
   "main": "dist/index.js",
-  "type": "module",
   "publishConfig": {
     "access": "public",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts"
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
@@ -22,20 +30,21 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "bun run --bun tsdown",
     "test": "vitest run"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
-    "@composio/core": "0.2.5",
-    "@langchain/core": "^0.3.63"
+    "@composio/core": "0.6.3",
+    "@langchain/core": "^1.1.4"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "tsup": "catalog:",
+    "@langchain/core": "^1.1.4",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"

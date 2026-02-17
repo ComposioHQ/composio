@@ -5,27 +5,25 @@ on:
       - master
     paths:
       - "python/**/*.py"
-      - ".github/workflows/py.checks.yaml"
+      - ".github/workflows/py.check.yaml"
   pull_request:
     types: [opened, synchronize]
     paths:
       - "python/**/*.py"
-      - ".github/workflows/py.checks.yaml"
+      - ".github/workflows/py.check.yaml"
 
 jobs:
   common-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 50
 
-      - name: Set up Python
+      - name: Setup Python with UV
         id: setup-python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+        uses: ./.github/actions/setup-python-uv
 
       - name: nox cache
         id: nox-cache
@@ -50,14 +48,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: python/.ruff_cache
-          key: mypy-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
+          key: ruff-${{ hashFiles('pyproject.toml') }}-py${{ steps.setup-python.outputs.python-version }}
           restore-keys: |
             ruff-
 
       - name: Install deps
         run: |
           cd python/
-          pip install uv
           make env
 
       - name: Lint and type checks
@@ -65,3 +62,11 @@ jobs:
         run: |
           cd python/
           uv run nox -s chk
+
+      - name: Type inference tests
+        shell: bash
+        run: |
+          cd python/
+          uv run nox -s type_inference
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}

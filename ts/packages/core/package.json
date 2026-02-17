@@ -1,61 +1,152 @@
 {
   "name": "@composio/core",
-  "version": "0.2.5",
+  "type": "module",
+  "version": "0.6.3",
   "description": "",
   "main": "src/index.ts",
-  "type": "module",
   "publishConfig": {
     "access": "public",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts"
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
+  },
+  "imports": {
+    "#platform": {
+      "workerd": "./dist/platform/workerd.mjs",
+      "edge-light": "./dist/platform/workerd.mjs",
+      "node": {
+        "import": "./dist/platform/node.mjs",
+        "require": "./dist/platform/node.cjs"
+      },
+      "default": {
+        "import": "./dist/platform/node.mjs",
+        "require": "./dist/platform/node.cjs"
+      }
+    },
+    "#files": {
+      "workerd": "./dist/models/Files.workerd.mjs",
+      "edge-light": "./dist/models/Files.workerd.mjs",
+      "node": {
+        "import": "./dist/models/Files.node.mjs",
+        "require": "./dist/models/Files.node.cjs"
+      },
+      "default": {
+        "import": "./dist/models/Files.node.mjs",
+        "require": "./dist/models/Files.node.cjs"
+      }
+    },
+    "#file_tool_modifier": {
+      "workerd": "./dist/utils/modifiers/FileToolModifier.workerd.mjs",
+      "edge-light": "./dist/utils/modifiers/FileToolModifier.workerd.mjs",
+      "node": {
+        "import": "./dist/utils/modifiers/FileToolModifier.node.mjs",
+        "require": "./dist/utils/modifiers/FileToolModifier.node.cjs"
+      },
+      "default": {
+        "import": "./dist/utils/modifiers/FileToolModifier.node.mjs",
+        "require": "./dist/utils/modifiers/FileToolModifier.node.cjs"
+      }
+    },
+    "#config_defaults": {
+      "workerd": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
+      "edge-light": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
+      "node": {
+        "import": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
+        "require": "./dist/utils/config-defaults/ConfigDefaults.node.cjs"
+      },
+      "default": {
+        "import": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
+        "require": "./dist/utils/config-defaults/ConfigDefaults.node.cjs"
+      }
+    }
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./platform": {
+      "workerd": {
+        "types": "./dist/platform/workerd.d.mts",
+        "default": "./dist/platform/workerd.mjs"
+      },
+      "edge-light": {
+        "types": "./dist/platform/workerd.d.mts",
+        "default": "./dist/platform/workerd.mjs"
+      },
+      "node": {
+        "import": {
+          "types": "./dist/platform/node.d.mts",
+          "default": "./dist/platform/node.mjs"
+        },
+        "require": {
+          "types": "./dist/platform/node.d.cts",
+          "default": "./dist/platform/node.cjs"
+        }
+      },
+      "default": {
+        "import": {
+          "types": "./dist/platform/node.d.mts",
+          "default": "./dist/platform/node.mjs"
+        },
+        "require": {
+          "types": "./dist/platform/node.d.cts",
+          "default": "./dist/platform/node.cjs"
+        }
+      }
     },
     "./generated": {
-      "import": "./generated/index.js",
-      "types": "./generated/index.d.ts"
+      "types": "./generated/index.d.ts",
+      "default": "./generated/index.js"
     }
   },
   "files": [
     "README.md",
     "dist",
-    "generated"
+    "generated",
+    "src/platform"
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "tsup",
+    "build": "bun run --bun tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json"
+    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
     "@types/semver": "^7.7.0",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "tsx": "catalog:",
+    "typedoc": "^0.28.5",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": ">=3.25.76 <5"
+    "zod": "^3.25 || ^4"
   },
   "dependencies": {
     "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
     "chalk": "^4.1.2",
-    "openai": "^5.16.0",
+    "openai": "catalog:",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
-    "uuid": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"

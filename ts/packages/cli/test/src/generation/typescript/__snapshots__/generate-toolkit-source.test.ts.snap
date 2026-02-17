@@ -1,0 +1,237 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generateTypeScriptToolkitSources > with a single emitted file > with banner > [Given] versionMap with toolkit version overrides > with type tools > [Given] multiple toolkits with different version overrides [Then] each file includes its version comment 1`] = `
+"/* @toolkit-version: 20250901_00 */
+
+
+// --------------- //
+//    Tool types   //
+// --------------- //
+
+
+
+/**
+ * Type map of all available tool input types for toolkit "GMAIL".
+ */
+export type GMAIL_TOOL_INPUTS = {}
+
+/**
+ * Type map of all available tool input types for toolkit "GMAIL".
+ */
+export type GMAIL_TOOL_OUTPUTS = {}
+
+// ------------------- //
+//    Trigger types    //
+// ------------------- //
+
+
+
+/**
+ * Map of Composio's GMAIL toolkit.
+ * @toolkit-version: 20250901_00
+ */
+export const GMAIL = {
+  slug: "gmail",
+  tools: {},
+  triggerTypes: {},
+}
+
+/**
+ * Type map of all available trigger payloads for toolkit "GMAIL".
+ */
+export type GMAIL_TRIGGER_PAYLOADS = {}
+
+/**
+ * Type map of all available trigger events for toolkit "GMAIL".
+ */
+export type GMAIL_TRIGGER_EVENTS = {}
+"
+`;
+
+exports[`generateTypeScriptToolkitSources > with a single emitted file > with banner > [Given] versionMap with toolkit version overrides > with type tools > [Given] multiple toolkits with different version overrides [Then] each file includes its version comment 2`] = `
+"/* @toolkit-version: 20250815_00 */
+
+
+// --------------- //
+//    Tool types   //
+// --------------- //
+
+
+
+/**
+ * Type of GITHUB's GITHUB_ACCEPT_A_REPOSITORY_INVITATION tool input.
+ * @toolkit-version: 20250815_00
+ */
+type GITHUB_ACCEPT_A_REPOSITORY_INVITATION_INPUT = {
+  /**
+   * Invitation Id
+   * @description Unique identifier of the repository invitation. Obtain by listing pending invitations for the authenticated user.
+   * @example 12345
+   * @example 67890
+   */
+  invitation_id?: number;
+};
+
+/**
+ * Type of GITHUB's GITHUB_ACCEPT_A_REPOSITORY_INVITATION tool output.
+ * @toolkit-version: 20250815_00
+ */
+type GITHUB_ACCEPT_A_REPOSITORY_INVITATION_OUTPUT = {
+  /**
+   * Data
+   * @description GitHub API response. Usually empty for a successful acceptance (HTTP 204 No Content status).
+   */
+  data?: {
+      [key: string]: unknown;
+  };
+  /**
+   * Error
+   * @description Error if any occurred during the execution of the action
+   * @default null
+   */
+  error: string | null;
+  /**
+   * Successful
+   * @description Whether or not the action execution was successful or not
+   */
+  successful?: boolean;
+};
+
+/**
+ * Type map of all available tool input types for toolkit "GITHUB".
+ */
+export type GITHUB_TOOL_INPUTS = {
+  ACCEPT_A_REPOSITORY_INVITATION: GITHUB_ACCEPT_A_REPOSITORY_INVITATION_INPUT
+}
+
+/**
+ * Type map of all available tool input types for toolkit "GITHUB".
+ */
+export type GITHUB_TOOL_OUTPUTS = {
+  ACCEPT_A_REPOSITORY_INVITATION: GITHUB_ACCEPT_A_REPOSITORY_INVITATION_OUTPUT
+}
+
+// ------------------- //
+//    Trigger types    //
+// ------------------- //
+
+
+
+/**
+ * Map of Composio's GITHUB toolkit.
+ * @toolkit-version: 20250815_00
+ */
+export const GITHUB = {
+  slug: "github",
+  tools: {
+    /**
+     * Accepts a pending repository invitation that has been issued to the authenticated user.
+     */
+    ACCEPT_A_REPOSITORY_INVITATION: "GITHUB_ACCEPT_A_REPOSITORY_INVITATION",
+  },
+  triggerTypes: {},
+}
+
+/**
+ * Type map of all available trigger payloads for toolkit "GITHUB".
+ */
+export type GITHUB_TRIGGER_PAYLOADS = {}
+
+/**
+ * Type map of all available trigger events for toolkit "GITHUB".
+ */
+export type GITHUB_TRIGGER_EVENTS = {}
+"
+`;
+
+exports[`generateTypeScriptToolkitSources > with a single emitted file > with banner > [Given] versionMap with toolkit version overrides > without type tools > [Given] multiple toolkits with different version overrides [Then] each file includes its version comment 1`] = `
+"/* @toolkit-version: 20250901_00 */
+
+
+// ------------------- //
+//    Trigger types    //
+// ------------------- //
+
+
+
+/**
+ * Map of Composio's GMAIL toolkit.
+ * @toolkit-version: 20250901_00
+ */
+export const GMAIL = {
+  slug: "gmail",
+  tools: {},
+  triggerTypes: {},
+}
+
+/**
+ * Type map of all available trigger payloads for toolkit "GMAIL".
+ */
+export type GMAIL_TRIGGER_PAYLOADS = {}
+
+/**
+ * Type map of all available trigger events for toolkit "GMAIL".
+ */
+export type GMAIL_TRIGGER_EVENTS = {}
+"
+`;
+
+exports[`generateTypeScriptToolkitSources > with a single emitted file > with banner > [Given] versionMap with toolkit version overrides > without type tools > [Given] multiple toolkits with different version overrides [Then] each file includes its version comment 2`] = `
+"/* @toolkit-version: 20250815_00 */
+
+
+// ------------------- //
+//    Trigger types    //
+// ------------------- //
+
+
+
+/**
+ * Map of Composio's SLACK toolkit.
+ * @toolkit-version: 20250815_00
+ */
+export const SLACK = {
+  slug: "slack",
+  tools: {},
+  triggerTypes: {},
+}
+
+/**
+ * Type map of all available trigger payloads for toolkit "SLACK".
+ */
+export type SLACK_TRIGGER_PAYLOADS = {}
+
+/**
+ * Type map of all available trigger events for toolkit "SLACK".
+ */
+export type SLACK_TRIGGER_EVENTS = {}
+"
+`;
+
+exports[`generateTypeScriptToolkitSources > with a single emitted file > with banner > [Given] versionMap with toolkit version overrides > without type tools > [Given] only some toolkits with version override [Then] only those files include version comment 1`] = `
+"// ------------------- //
+//    Trigger types    //
+// ------------------- //
+
+
+
+/**
+ * Map of Composio's SLACK toolkit.
+ */
+export const SLACK = {
+  slug: "slack",
+  tools: {},
+  triggerTypes: {},
+}
+
+/**
+ * Type map of all available trigger payloads for toolkit "SLACK".
+ */
+export type SLACK_TRIGGER_PAYLOADS = {}
+
+/**
+ * Type map of all available trigger events for toolkit "SLACK".
+ */
+export type SLACK_TRIGGER_EVENTS = {}
+"
+`;

@@ -38,19 +38,16 @@ def get_toolkit_versions(
     Gets toolkit versions configuration by merging environment variables, user-provided defaults, and fallbacks.
 
     Priority order:
-    1. If default_versions is a string, use it as global version for all toolkits (e.g., "latest", "20250906_01")
+    1. If default_versions is a string, use it as a global version for all toolkits
     2. User-provided toolkit version mappings (default_versions dict)
     3. Environment variables (COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_NAME>)
     4. Fallback to 'latest' if no versions are configured
 
-    :param default_versions: Optional default versions configuration (string for global version
-                           or dict mapping toolkit names to versions). String can be any version
-                           like "latest", "20250906_01", etc.
-    :return: Toolkit versions configuration - either a global version string,
-            toolkit-specific version mapping, or 'latest'
+    :param default_versions: Optional default versions configuration (string for global version or dict mapping toolkit names to versions)
+    :return: Toolkit versions configuration - either a string for global version or dict mapping toolkit names to versions
     """
-    # If already set by user as a string (e.g., 'latest', '20250906_01'), use it as global version for all toolkits
-    if default_versions and isinstance(default_versions, str):
+    # If already set by user as a string, use it as global version for all toolkits
+    if isinstance(default_versions, str):
         return default_versions
 
     # Check if there are envs similar to COMPOSIO_TOOLKIT_VERSION_GITHUB then extract the toolkit name

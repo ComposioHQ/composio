@@ -136,7 +136,7 @@ class TestToolkitVersion:
         with pytest.MonkeyPatch().context() as m:
             # Test 1: String global version overrides everything
             m.setenv("COMPOSIO_TOOLKIT_VERSION_GITHUB", "env_version")
-            result = get_toolkit_versions("global_version")
+            result = get_toolkit_version("github", "global_version")
             assert result == "global_version"
 
             # Test 2: User dict overrides env vars

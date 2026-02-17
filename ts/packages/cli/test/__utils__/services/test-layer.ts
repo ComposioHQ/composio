@@ -1,7 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import { CliApp, CliConfig } from '@effect/cli';
-import { FetchHttpClient, FileSystem } from '@effect/platform';
+import { Command, FetchHttpClient, FileSystem } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
 import {
   ConfigProvider,
@@ -12,6 +12,7 @@ import {
   Logger,
   LogLevel,
   Schedule,
+  String,
 } from 'effect';
 import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
@@ -21,11 +22,16 @@ import { NodeProcess } from 'src/services/node-process';
 import {
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  InvalidToolkitsError,
+  InvalidToolkitVersionsError,
+  type InvalidVersionDetail,
 } from 'src/services/composio-clients';
+import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
+import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
@@ -90,13 +96,124 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository,
       new ComposioToolkitsRepository({
         getToolkits: () => Effect.succeed(toolkitsData.toolkits),
+        getToolkitsBySlugs: (slugs: ReadonlyArray<string>) => {
+          const normalizedSlugs = new Set(slugs.map(s => String.toLowerCase(s)));
+          const found = toolkitsData.toolkits.filter(t =>
+            normalizedSlugs.has(String.toLowerCase(t.slug))
+          );
+          if (found.length !== slugs.length) {
+            const foundSlugs = new Set(found.map(t => String.toLowerCase(t.slug)));
+            const notFound = slugs.filter(s => !foundSlugs.has(String.toLowerCase(s)));
+            return Effect.fail(
+              new InvalidToolkitsError({
+                invalidToolkits: [...notFound],
+                availableToolkits: toolkitsData.toolkits.map(t => t.slug),
+              })
+            );
+          }
+          return Effect.succeed(found);
+        },
+        getMetrics: () => Effect.succeed({ byteSize: 0, requests: 0 }),
         getToolsAsEnums: () => Effect.succeed(toolkitsData.tools.map(tool => tool.slug)),
         getTriggerTypesAsEnums: () => Effect.succeed(toolkitsData.triggerTypesAsEnums),
-        getTriggerTypes: limit => Effect.succeed(toolkitsData.triggerTypes.slice(0, limit)),
-        getTools: limit => Effect.succeed(toolkitsData.tools.slice(0, limit)),
+        getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
+          let triggers = toolkitsData.triggerTypes;
+          if (toolkitSlugs && toolkitSlugs.length > 0) {
+            const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+            triggers = triggers.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
+          }
+          return Effect.succeed(triggers);
+        },
+        getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
+          let tools = toolkitsData.tools;
+          if (toolkitSlugs && toolkitSlugs.length > 0) {
+            const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+            tools = tools.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)));
+          }
+          return Effect.succeed(tools);
+        },
+        validateToolkits: (toolkitSlugs: ReadonlyArray<string>) => {
+          const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
+          const availableSlugs = toolkitsData.toolkits.map(toolkit =>
+            String.toLowerCase(toolkit.slug)
+          );
+          const invalidSlugs = normalizedInputSlugs.filter(slug => !availableSlugs.includes(slug));
+
+          if (invalidSlugs.length > 0) {
+            return Effect.fail(
+              new InvalidToolkitsError({
+                invalidToolkits: invalidSlugs,
+                availableToolkits: availableSlugs,
+              })
+            );
+          }
+
+          return Effect.succeed(normalizedInputSlugs);
+        },
+        filterToolkitsBySlugs: (toolkits, toolkitSlugs) => {
+          const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
+          return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
+        },
+        getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) => {
+          // Filter tools based on toolkit slugs from specs
+          const toolkitSlugs = specs.map(s => s.toolkitSlug.toUpperCase());
+          const prefixes = toolkitSlugs.map(s => `${s}_`);
+          const tools = toolkitsData.tools.filter(t =>
+            prefixes.some(p => t.slug.toUpperCase().startsWith(p))
+          );
+          return Effect.succeed(tools);
+        },
+        validateToolkitVersions: (
+          overrides: ToolkitVersionOverrides,
+          relevantToolkits?: ReadonlyArray<string>
+        ) => {
+          // Mock implementation that validates against test fixture
+          const invalidVersions: InvalidVersionDetail[] = [];
+          const warnings: string[] = [];
+
+          for (const [toolkit, version] of overrides) {
+            // Check if toolkit should be validated
+            if (relevantToolkits && !relevantToolkits.map(s => s.toLowerCase()).includes(toolkit)) {
+              warnings.push(`Version override for "${toolkit}" will be ignored`);
+              continue;
+            }
+
+            // Check if toolkit exists in the fixture
+            const toolkitExists = toolkitsData.toolkits.some(
+              t => String.toLowerCase(t.slug) === toolkit
+            );
+
+            if (!toolkitExists) {
+              return Effect.fail(
+                new InvalidToolkitsError({
+                  invalidToolkits: [toolkit],
+                  availableToolkits: toolkitsData.toolkits.map(t => t.slug),
+                })
+              );
+            }
+
+            // Mock: only accept 'latest' or versions matching pattern YYYYMMDD_NN
+            const validPattern = /^\d{8}_\d{2}$/;
+            if (version !== 'latest' && !validPattern.test(version)) {
+              invalidVersions.push({
+                toolkit,
+                requestedVersion: version,
+                availableVersions: ['20250901_00', '20250815_00', '20250710_00'],
+              });
+            }
+          }
+
+          if (invalidVersions.length > 0) {
+            return Effect.fail(new InvalidToolkitVersionsError({ invalidVersions }));
+          }
+
+          return Effect.succeed({
+            validatedOverrides: overrides,
+            warnings: warnings as ReadonlyArray<string>,
+          });
+        },
       })
     );
-
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
 
     // Mock `node:os`
@@ -201,8 +318,113 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
 
     yield* Effect.logDebug(`Copied fixture to: ${tmpFixturesPath}`);
 
+    // Break symlinks in node_modules to isolate test from real packages
+    const nodeModulesPath = path.join(tmpFixturesPath, 'node_modules');
+    yield* breakSymlinksInNodeModules(fs, nodeModulesPath);
+
     return tmpFixturesPath;
   }).pipe(Effect.provide(BunFileSystem.layer));
+}
+
+/**
+ * Breaks symlinks in node_modules to ensure test isolation.
+ * - On Unix: Uses `find -type l` for O(1) shell call to detect all symlinks
+ * - On Windows: Uses O(n) readLink approach for compatibility
+ */
+function breakSymlinksInNodeModules(
+  fs: FileSystem.FileSystem,
+  nodeModulesPath: string
+): Effect.Effect<void, never, never> {
+  // Helper: break a symlink by replacing it with a copy of its target
+  const breakSymlink = (symlinkPath: string) =>
+    Effect.gen(function* () {
+      const realPath = yield* fs.realPath(symlinkPath);
+      yield* Effect.logDebug(`Breaking symlink: ${symlinkPath} -> ${realPath}`);
+      yield* fs.remove(symlinkPath, { recursive: true });
+      yield* fs.copy(realPath, symlinkPath);
+    });
+
+  // Unix: Use `find` command for fast symlink detection
+  const breakSymlinksUnix = Effect.gen(function* () {
+    const findCmd = Command.make(
+      'find',
+      nodeModulesPath,
+      '-maxdepth',
+      '2',
+      '-type',
+      'l',
+      '-not',
+      '-path',
+      '*/.*'
+    );
+    const output = yield* findCmd.pipe(Command.string, Effect.provide(BunContext.layer));
+    const symlinks = output.trim().split('\n').filter(Boolean);
+
+    if (symlinks.length === 0) {
+      return;
+    }
+
+    yield* Effect.logDebug(`Found ${symlinks.length} symlinks to break`);
+    yield* Effect.all(symlinks.map(breakSymlink), { concurrency: 'unbounded' });
+  });
+
+  // Windows: Use readLink to detect symlinks (O(n) but compatible)
+  const breakSymlinksWindows = Effect.gen(function* () {
+    const isSymlink = (p: string) =>
+      fs.readLink(p).pipe(
+        Effect.map(() => true),
+        Effect.catchAll(() => Effect.succeed(false))
+      );
+
+    const entries = yield* fs.readDirectory(nodeModulesPath);
+
+    yield* Effect.all(
+      entries.map(entry => {
+        if (entry.startsWith('.')) {
+          return Effect.void;
+        }
+
+        const entryPath = path.join(nodeModulesPath, entry);
+        return Effect.gen(function* () {
+          const isLink = yield* isSymlink(entryPath);
+
+          if (isLink) {
+            yield* breakSymlink(entryPath);
+          } else if (entry.startsWith('@')) {
+            const scopedEntries = yield* fs.readDirectory(entryPath);
+            yield* Effect.all(
+              scopedEntries.map(scopedEntry => {
+                const scopedPath = path.join(entryPath, scopedEntry);
+                return Effect.gen(function* () {
+                  const isScopedLink = yield* isSymlink(scopedPath);
+                  if (isScopedLink) {
+                    yield* breakSymlink(scopedPath);
+                  }
+                });
+              }),
+              { concurrency: 'unbounded' }
+            );
+          }
+        });
+      }),
+      { concurrency: 'unbounded' }
+    );
+  });
+
+  return Effect.gen(function* () {
+    const exists = yield* fs.exists(nodeModulesPath);
+    if (!exists) {
+      return;
+    }
+
+    const isWindows = process.platform === 'win32';
+
+    if (isWindows) {
+      yield* breakSymlinksWindows;
+    } else {
+      yield* breakSymlinksUnix;
+    }
+  }).pipe(Effect.catchAll(() => Effect.void));
 }
 
 function setupComposioSessionRepository() {

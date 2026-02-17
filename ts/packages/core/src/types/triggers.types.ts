@@ -22,7 +22,7 @@ export const TriggerInstanceListActiveParamsSchema = z.object({
   authConfigIds: z.array(z.string()).nullable().optional(),
   connectedAccountIds: z.array(z.string()).nullable().optional(),
   limit: z.number().optional(),
-  page: z.number().optional(),
+  cursor: z.string().optional(),
   showDisabled: z.boolean().nullable().optional(),
   triggerIds: z.array(z.string()).nullable().optional(),
   triggerNames: z.array(z.string()).nullable().optional(),
@@ -193,4 +193,151 @@ export type TriggerEventData<TPayload = unknown> = TPayload & {
   connection_nano_id: string;
   trigger_nano_id: string;
   user_id: string;
+};
+
+/**
+ * Webhook payload schemas for V1, V2, V3 versions
+ * These schemas represent the raw payload structure sent by Composio's webhook system
+ */
+
+/** V1 webhook payload - legacy format */
+export const WebhookPayloadV1Schema = z.object({
+  trigger_name: z.string(),
+  connection_id: z.string(),
+  trigger_id: z.string(),
+  payload: z.record(z.unknown()),
+  log_id: z.string(),
+});
+export type WebhookPayloadV1 = z.infer<typeof WebhookPayloadV1Schema>;
+
+/** V2 webhook payload - includes timestamp and nested data */
+export const WebhookPayloadV2Schema = z.object({
+  type: z.string(),
+  timestamp: z.string(),
+  log_id: z.string(),
+  data: z
+    .object({
+      connection_id: z.string(),
+      connection_nano_id: z.string(),
+      trigger_nano_id: z.string(),
+      trigger_id: z.string(),
+      user_id: z.string(),
+    })
+    .passthrough(),
+});
+export type WebhookPayloadV2 = z.infer<typeof WebhookPayloadV2Schema>;
+
+/** V3 webhook payload - generic envelope for all composio.* events */
+export const WebhookPayloadV3Schema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  type: z.string().refine(val => val.startsWith('composio.'), {
+    message: "V3 event type must start with 'composio.'",
+  }),
+  metadata: z.record(z.unknown()),
+  data: z.record(z.unknown()),
+});
+export type WebhookPayloadV3 = z.infer<typeof WebhookPayloadV3Schema>;
+
+/** V3 trigger-specific payload - has trigger metadata fields */
+export const WebhookTriggerPayloadV3Schema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  type: z.string(),
+  metadata: z
+    .object({
+      log_id: z.string(),
+      trigger_slug: z.string(),
+      trigger_id: z.string(),
+      connected_account_id: z.string(),
+      auth_config_id: z.string(),
+      user_id: z.string(),
+    })
+    .passthrough(),
+  data: z.record(z.unknown()),
+});
+export type WebhookTriggerPayloadV3 = z.infer<typeof WebhookTriggerPayloadV3Schema>;
+
+/** Union of all webhook payload versions */
+export const WebhookPayloadSchema = z.union([
+  WebhookPayloadV3Schema,
+  WebhookPayloadV2Schema,
+  WebhookPayloadV1Schema,
+]);
+export type WebhookPayload = z.infer<typeof WebhookPayloadSchema>;
+
+/** Webhook version enum */
+export const WebhookVersions = {
+  V1: 'V1',
+  V2: 'V2',
+  V3: 'V3',
+} as const;
+export type WebhookVersion = (typeof WebhookVersions)[keyof typeof WebhookVersions];
+
+/**
+ * Parameters for verifying a webhook signature
+ */
+export const VerifyWebhookParamsSchema = z.object({
+  /**
+   * The webhook message ID from the 'webhook-id' header.
+   * Format: 'msg_xxx'
+   */
+  id: z.string({
+    required_error: "Missing 'id' parameter. Pass the value of the 'webhook-id' HTTP header.",
+    invalid_type_error: "Invalid 'id' parameter. Expected string from 'webhook-id' HTTP header.",
+  }),
+  /** The raw webhook payload as a string (request body) */
+  payload: z.string({
+    required_error:
+      "Missing 'payload' parameter. Pass the raw request body as a string (do not parse it).",
+    invalid_type_error: "Invalid 'payload' parameter. Expected string (raw request body).",
+  }),
+  /** The webhook secret used to sign the payload (from Composio dashboard) */
+  secret: z.string({
+    required_error:
+      "Missing 'secret' parameter. Get your webhook secret from the Composio dashboard.",
+    invalid_type_error: "Invalid 'secret' parameter. Expected string.",
+  }),
+  /**
+   * The signature from the 'webhook-signature' header.
+   * Format: 'v1,base64EncodedSignature'
+   */
+  signature: z.string({
+    required_error:
+      "Missing 'signature' parameter. Pass the value of the 'webhook-signature' HTTP header.",
+    invalid_type_error:
+      "Invalid 'signature' parameter. Expected string from 'webhook-signature' HTTP header.",
+  }),
+  /**
+   * The webhook timestamp from the 'webhook-timestamp' header.
+   * This is the Unix timestamp in seconds when the webhook was sent.
+   */
+  timestamp: z.string({
+    required_error:
+      "Missing 'timestamp' parameter. Pass the value of the 'webhook-timestamp' HTTP header.",
+    invalid_type_error:
+      "Invalid 'timestamp' parameter. Expected string from 'webhook-timestamp' HTTP header.",
+  }),
+  /**
+   * Maximum allowed age of the webhook in seconds.
+   * If the webhook timestamp is older than this, verification will fail.
+   * Set to 0 to disable timestamp validation.
+   * @default 300 (5 minutes)
+   */
+  tolerance: z.number().optional().default(300),
+});
+
+export type VerifyWebhookParams = z.input<typeof VerifyWebhookParamsSchema>;
+
+/**
+ * Result of a successful webhook verification.
+ * Contains the parsed payload along with version information.
+ */
+export type VerifyWebhookResult = {
+  /** The webhook version (V1, V2, or V3), from 'x-composio-webhook-version' */
+  version: WebhookVersion;
+  /** The parsed and normalized webhook payload */
+  payload: IncomingTriggerPayload;
+  /** The raw parsed payload before normalization */
+  rawPayload: WebhookPayload;
 };

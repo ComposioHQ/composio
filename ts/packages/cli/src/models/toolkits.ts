@@ -12,6 +12,7 @@ export const Toolkit = Schema.Struct({
     categories: Schema.Array(Schema.Unknown),
     created_at: Schema.DateTimeUtc, // "2024-05-03T11:44:32.061Z"
     updated_at: Schema.DateTimeUtc, // "2024-05-03T11:44:32.061Z"
+    available_versions: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
   }),
   no_auth: Schema.Boolean,
 }).annotations({ identifier: 'Toolkit' });

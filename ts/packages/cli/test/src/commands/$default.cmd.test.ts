@@ -58,25 +58,33 @@ describe('CLI: composio', () => {
 
           [0;1mCOMMANDS[0m
 
-            - version                                                                               Display your account information.
+            - version                                                                                                  Display your account information.
 
-            - upgrade                                                                               Upgrade your Composio CLI to the latest available version.
+            - upgrade                                                                                                  Upgrade your Composio CLI to the latest available version.
 
-            - whoami                                                                                Display your account information.
+            - whoami                                                                                                   Display your account information.
 
-            - login [--no-browser]                                                                  Log in to the Composio SDK.
+            - login [--no-browser]                                                                                     Log in to the Composio SDK.
 
-            - logout                                                                                Log out from the Composio SDK.
+            - logout                                                                                                   Log out from the Composio SDK.
 
-            - generate [(-o, --output-dir directory)] [--type-tools]                                Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).
+            - generate [(-o, --output-dir directory)] [--type-tools] --toolkits text...                                Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
 
-            - py                                                                                    Handle Python projects.
+            - py                                                                                                       Handle Python projects.
 
-            - py generate [(-o, --output-dir directory)]                                            Updates the local type stubs with the latest app data.
+            - py generate [(-o, --output-dir directory)] --toolkits text...                                            Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
 
-            - ts                                                                                    Handle TypeScript projects.
+          Environment Variables:
+            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
+                                                Use "latest" or unset to use the latest version.
 
-            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools]  Updates the local type stubs with the latest app data.
+            - ts                                                                                                       Handle TypeScript projects.
+
+            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...  Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
+
+          Environment Variables:
+            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
+                                                Use "latest" or unset to use the latest version.
           "
         `);
       })

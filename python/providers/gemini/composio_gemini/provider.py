@@ -1,12 +1,21 @@
-"""Gemini provider for Composio SDK."""
+"""Gemini provider for Composio SDK.
 
+Returns Python callables compatible with google-genai's Automatic Function
+Calling (AFC). The SDK can introspect the callable's signature to derive
+FunctionDeclaration schemas and auto-execute tool calls in the chat loop.
+"""
+
+import copy
+import types as pytypes
 import typing as t
+from inspect import Parameter, Signature
 
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
+from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
-# Try to import Google GenAI types
+# google-genai is only needed for handle_response (backward compat)
 try:
     from google.genai import types as genai_types
 
@@ -15,219 +24,188 @@ except ImportError:
     genai_types = None  # type: ignore
     HAS_GENAI = False
 
+_python_reserved = {"for", "async"}
 
-class GeminiTool:
+
+def _clean_reserved_keyword(keyword: str) -> str:
+    return f"{keyword}_rs"
+
+
+def _substitute_reserved_python_keywords(schema: t.Dict) -> t.Tuple[dict, dict]:
+    if "properties" not in schema:
+        return schema, {}
+
+    schema = copy.deepcopy(schema)
+
+    keywords: t.Dict[str, str] = {}
+    for p_name in list(schema["properties"]):
+        if p_name not in _python_reserved:
+            continue
+
+        p_val = schema["properties"].pop(p_name)
+        p_name_clean = _clean_reserved_keyword(keyword=p_name)
+        schema["properties"][p_name_clean] = p_val
+        keywords[p_name_clean] = p_name
+
+    if keywords and "required" in schema:
+        reverse_map = {v: k for k, v in keywords.items()}
+        schema["required"] = [
+            reverse_map.get(name, name) for name in schema["required"]
+        ]
+
+    return schema, keywords
+
+
+def _reinstate_reserved_python_keywords(request: dict, keywords: dict) -> dict:
+    for clean_key, original_key in keywords.items():
+        if clean_key not in request:
+            continue
+        request[original_key] = request.pop(clean_key)
+    return request
+
+
+def _to_serializable(value: t.Any) -> t.Any:
+    """Recursively convert Pydantic models (and other non-JSON types) to plain dicts/lists.
+
+    The google-genai SDK's AFC pipeline calls ``convert_if_exist_pydantic_model``
+    on function arguments, turning nested dicts into dynamically-generated
+    Pydantic ``GeneratedModel`` instances.  These are not JSON-serializable, so
+    the Composio ``execute_tool`` call fails.  This helper normalises them back
+    to plain Python primitives before handing off to the API.
     """
-    Enhanced Gemini Tool wrapper that handles automatic function execution.
-    Acts as a drop-in replacement for genai_types.Tool with execution support.
-    """
-
-    def __init__(
-        self,
-        tool: Tool,
-        execute_tool: AgenticProviderExecuteFn,
-        function_declaration: t.Optional[t.Any] = None,
-    ):
-        self.tool = tool
-        self.execute_tool = execute_tool
-        self.function_declaration = function_declaration
-
-        # Create the actual Gemini Tool if we have genai support
-        self._genai_tool = None
-        if HAS_GENAI and function_declaration:
-            self._genai_tool = genai_types.Tool(
-                function_declarations=[function_declaration]
-            )
-
-        # Store executor for easy access
-        self._executors = {tool.slug: self}
-
-        # Copy function attributes for compatibility
-        self.__name__ = tool.slug
-        self.__module__ = "composio_gemini"
-        self.__doc__ = tool.description
-
-    def __call__(self, **kwargs: t.Any) -> t.Dict:
-        """Execute the tool when called."""
-        result = self.execute_tool(slug=self.tool.slug, arguments=kwargs)
-
-        # Process the result for Gemini
-        if not isinstance(result, dict):
-            return {"result": result}
-
-        # Extract data field if present and successful
-        if result.get("successful", True) and "data" in result:
-            data = result["data"]
-            return data if isinstance(data, dict) else {"result": data}
-
-        # Return error info if failed
-        if not result.get("successful", True):
-            return {
-                "error": result.get("error", "Tool execution failed"),
-                "details": result,
-            }
-
-        return result
-
-    @property
-    def function_declarations(self):
-        """Pass through to the underlying Gemini tool."""
-        return self._genai_tool.function_declarations if self._genai_tool else []
-
-    def to_dict(self):
-        """Convert to dict for Gemini API."""
-        return self._genai_tool.to_dict() if self._genai_tool else {}
+    # Pydantic v2 BaseModel
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    # Pydantic v1 BaseModel
+    if hasattr(value, "dict") and hasattr(value, "__fields__"):
+        return value.dict()
+    if isinstance(value, dict):
+        return {k: _to_serializable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_serializable(v) for v in value]
+    return value
 
 
-class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
-    """
-    Composio toolset for Google AI Python Gemini framework.
-    Supports automatic function calling with native Gemini tools.
+def _process_execution_result(result: t.Any) -> t.Dict:
+    """Process a tool execution result into a dict suitable for Gemini function responses."""
+    if not isinstance(result, dict):
+        return {"result": result}
+
+    if result.get("successful", True) and "data" in result:
+        data = result["data"]
+        return data if isinstance(data, dict) else {"result": data}
+
+    if not result.get("successful", True):
+        return {
+            "error": result.get("error", "Tool execution failed"),
+            "details": result,
+        }
+
+    return result
+
+
+class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini"):
+    """Composio toolset for Google AI Python Gemini framework.
+
+    Returns Python callables compatible with google-genai's Automatic Function
+    Calling (AFC). Pass the result of ``wrap_tools()`` directly to
+    ``GenerateContentConfig(tools=...)`` and the SDK will auto-execute tool
+    calls in the ``chat.send_message()`` loop.
     """
 
     __schema_skip_defaults__ = True
 
-    def _json_to_genai_schema(self, json_schema: dict) -> t.Optional[t.Any]:
-        """Convert JSON Schema to GenAI Schema format, handling composite types."""
-        if not HAS_GENAI:
-            return None
-
-        # Handle composite types (patterns from openapi.py)
-        if "oneOf" in json_schema:
-            # Gemini doesn't support unions directly, use first valid schema
-            # This is a limitation but better than failing
-            return self._json_to_genai_schema(json_schema["oneOf"][0])
-
-        if "anyOf" in json_schema:
-            # Similar to oneOf
-            return self._json_to_genai_schema(json_schema["anyOf"][0])
-
-        if "allOf" in json_schema:
-            # Merge all schemas (pattern from openapi.py's _all_of_to_parameter)
-            merged = {}
-            for subschema in json_schema["allOf"]:
-                merged.update(subschema)
-            return self._json_to_genai_schema(merged)
-
-        # Handle enum independently (can appear with or without type)
-        if "enum" in json_schema:
-            return self._handle_enum_schema(json_schema)
-
-        schema_type = json_schema.get("type", "string")
-
-        # Map type handlers
-        type_handlers = {
-            "array": self._handle_array_schema,
-            "object": self._handle_object_schema,
-            "string": self._handle_string_schema,
-            "number": lambda _: genai_types.Schema(type=genai_types.Type.NUMBER),
-            "integer": lambda _: genai_types.Schema(type=genai_types.Type.INTEGER),
-            "boolean": lambda _: genai_types.Schema(type=genai_types.Type.BOOLEAN),
-            "null": lambda _: genai_types.Schema(
-                type=genai_types.Type.STRING
-            ),  # Gemini doesn't have null type
-        }
-
-        handler = type_handlers.get(
-            schema_type, lambda _: genai_types.Schema(type=genai_types.Type.STRING)
-        )
-        return handler(json_schema)
-
-    def _handle_array_schema(self, json_schema: dict) -> t.Any:
-        """Handle array type schema conversion."""
-        items = json_schema.get("items", {})
-        return genai_types.Schema(
-            type=genai_types.Type.ARRAY,
-            items=self._json_to_genai_schema(items)
-            if items
-            else genai_types.Schema(type=genai_types.Type.STRING),
-        )
-
-    def _handle_object_schema(self, json_schema: dict) -> t.Any:
-        """Handle object type schema conversion."""
-        properties = {
-            name: schema_obj
-            for name, schema in json_schema.get("properties", {}).items()
-            if (schema_obj := self._json_to_genai_schema(schema)) is not None
-        }
-        return genai_types.Schema(
-            type=genai_types.Type.OBJECT,
-            properties=properties,
-            required=json_schema.get("required", []),
-        )
-
-    def _handle_string_schema(self, json_schema: dict) -> t.Any:
-        """Handle string type schema conversion."""
-        if enum_values := json_schema.get("enum"):
-            return genai_types.Schema(type=genai_types.Type.STRING, enum=enum_values)
-        return genai_types.Schema(type=genai_types.Type.STRING)
-
-    def _handle_enum_schema(self, json_schema: dict) -> t.Any:
-        """Handle enum schema conversion (pattern from openapi.py)."""
-        # Enum can be of any type, default to string if no type specified
-        base_type = json_schema.get("type", "string")
-        type_map = {
-            "string": genai_types.Type.STRING,
-            "integer": genai_types.Type.INTEGER,
-            "number": genai_types.Type.NUMBER,
-        }
-        schema_type = type_map.get(base_type, genai_types.Type.STRING)
-        return genai_types.Schema(type=schema_type, enum=json_schema["enum"])
-
-    def _create_function_declaration(self, tool: Tool) -> t.Optional[t.Any]:
-        """Create a native Gemini FunctionDeclaration if possible."""
-        if not HAS_GENAI:
-            return None
-
-        try:
-            genai_schema = self._json_to_genai_schema(tool.input_parameters)
-            return genai_types.FunctionDeclaration(
-                name=tool.slug,
-                description=tool.description or f"Execute {tool.slug}",
-                parameters=genai_schema,
-            )
-        except Exception as e:
-            print(f"Warning: Could not create FunctionDeclaration for {tool.slug}: {e}")
-            return None
+    def __init__(self, **kwargs: t.Any):
+        super().__init__(**kwargs)
+        self._executors: t.Dict[str, AgenticProviderExecuteFn] = {}
 
     def wrap_tool(
         self,
         tool: Tool,
         execute_tool: AgenticProviderExecuteFn,
-    ) -> GeminiTool:
-        """Wrap a Composio tool for Gemini compatibility."""
-        # Create native FunctionDeclaration
-        function_declaration = self._create_function_declaration(tool)
+    ) -> t.Callable:
+        """Wrap a Composio tool as a Python callable for google-genai AFC.
 
-        # Return the GeminiTool wrapper
-        return GeminiTool(
-            tool=tool,
-            execute_tool=execute_tool,
-            function_declaration=function_declaration,
+        The returned function has ``__name__``, ``__doc__``, ``__signature__``
+        and ``__annotations__`` set so the google-genai SDK can:
+
+        1. Derive a ``FunctionDeclaration`` schema via ``from_callable()``
+        2. Store it in the AFC ``function_map`` for automatic execution
+        """
+        self._executors[tool.slug] = execute_tool
+
+        # Handle reserved Python keywords in parameter names
+        schema_params, keywords = _substitute_reserved_python_keywords(
+            schema=tool.input_parameters
         )
+
+        def function(**kwargs: t.Any) -> t.Dict:
+            """Composio tool execution wrapper."""
+            kwargs = _to_serializable(kwargs)
+            kwargs = _reinstate_reserved_python_keywords(
+                request=kwargs, keywords=keywords
+            )
+            result = execute_tool(tool.slug, kwargs)
+            return _process_execution_result(result)
+
+        # Create a real function object (passes inspect.isfunction)
+        action_func = pytypes.FunctionType(
+            function.__code__,
+            globals=globals(),
+            name=tool.slug,
+            closure=function.__closure__,
+        )
+
+        # Build typed signature from JSON schema.
+        # Uses get_pydantic_signature_format_from_schema_params (not
+        # get_signature_format_from_schema_params) because the pydantic variant
+        # goes through json_schema_to_pydantic_type() which produces
+        # parameterized generics (e.g. List[str] instead of bare List).
+        # The google-genai SDK requires parameterized array types — bare List
+        # generates {"type": "ARRAY"} without "items", which the API rejects.
+        sig_params = get_pydantic_signature_format_from_schema_params(
+            schema_params=schema_params,
+            skip_default=True,
+        )
+        action_func.__signature__ = Signature(parameters=sig_params)  # type: ignore
+        action_func.__doc__ = tool.description or f"Execute {tool.slug}"
+
+        # Build __annotations__ for typing.get_type_hints() compatibility
+        annotations: t.Dict[str, t.Any] = {}
+        for param in sig_params:
+            if param.annotation is not Parameter.empty:
+                annotations[param.name] = param.annotation
+        annotations["return"] = dict
+        action_func.__annotations__ = annotations
+
+        return action_func
 
     def wrap_tools(
         self,
         tools: t.Sequence[Tool],
         execute_tool: AgenticProviderExecuteFn,
-    ) -> list[GeminiTool]:
-        """Wrap multiple tools for Gemini compatibility."""
+    ) -> list[t.Callable]:
+        """Wrap multiple Composio tools as Python callables for google-genai AFC."""
         return [self.wrap_tool(tool, execute_tool) for tool in tools]
 
-    @staticmethod
-    def handle_response(response, tools: list[GeminiTool]) -> tuple[list, bool]:
-        """
-        Automatically handle function calls in a Gemini response.
+    # --- Backward compatibility: manual function calling ---
 
-        Args:
-            response: The response from Gemini chat
-            tools: The list of GeminiTool objects passed to the chat
+    def handle_response(self, response: t.Any) -> tuple[list, bool]:
+        """Manually handle function calls in a Gemini response.
+
+        Provided for backward compatibility with code that uses manual function
+        calling instead of AFC. For new code, pass the callables from
+        ``wrap_tools()`` to ``GenerateContentConfig(tools=...)`` and AFC will
+        handle execution automatically.
 
         Returns:
-            tuple: (function_responses, executed) where function_responses are ready
-                   to send back and executed is True if functions were executed
+            tuple: ``(function_responses, executed)`` where *function_responses*
+            are ``genai_types.Part`` objects ready to send back, and *executed*
+            is ``True`` if any functions were executed.
         """
-        # Check if we have a valid response with candidates
+        if not HAS_GENAI:
+            return [], False
+
         if not (hasattr(response, "candidates") and response.candidates):
             return [], False
 
@@ -235,14 +213,7 @@ class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
         if not (hasattr(candidate, "content") and candidate.content.parts):
             return [], False
 
-        # Build executor map from tools
-        executors = {}
-        for tool in tools:
-            if isinstance(tool, GeminiTool):
-                executors.update(tool._executors)
-
-        # Process function calls
-        function_responses = []
+        function_responses: list = []
         executed = False
 
         for part in candidate.content.parts:
@@ -250,22 +221,19 @@ class GeminiProvider(AgenticProvider[t.Any, list[t.Any]], name="gemini"):
                 continue
 
             fc = part.function_call
-            if fc.name not in executors:
+            if fc.name not in self._executors:
                 continue
 
-            # Execute the function
-            executor = executors[fc.name]
-            result = executor(**fc.args)
+            result = self._executors[fc.name](slug=fc.name, arguments=dict(fc.args))
+            processed = _process_execution_result(result)
 
-            # Create function response
-            if HAS_GENAI:
-                function_responses.append(
-                    genai_types.Part(
-                        function_response=genai_types.FunctionResponse(
-                            name=fc.name, response=result
-                        )
+            function_responses.append(
+                genai_types.Part(
+                    function_response=genai_types.FunctionResponse(
+                        name=fc.name, response=processed
                     )
                 )
+            )
             executed = True
 
         return function_responses, executed

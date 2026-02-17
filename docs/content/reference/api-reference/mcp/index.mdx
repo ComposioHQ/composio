@@ -1,0 +1,24 @@
+---
+title: MCP
+description: "MCP server management"
+---
+
+{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+
+MCP server management
+
+## Endpoints
+
+| Endpoint | Quick Link |
+|----------|------------|
+| `GET /api/v3/mcp/servers` | [List MCP servers with optional filters and pagination](/reference/api-reference/mcp/getMcpServers) |
+| `POST /api/v3/mcp/servers` | [Create a new MCP server](/reference/api-reference/mcp/postMcpServers) |
+| `POST /api/v3/mcp/servers/custom` | [Create a new custom MCP server with multiple apps](/reference/api-reference/mcp/postMcpServersCustom) |
+| `POST /api/v3/mcp/servers/generate` | [Generate MCP URL with custom parameters](/reference/api-reference/mcp/postMcpServersGenerate) |
+| `GET /api/v3/mcp/{id}` | [Get MCP server details by ID](/reference/api-reference/mcp/getMcpById) |
+| `PATCH /api/v3/mcp/{id}` | [Update MCP server configuration](/reference/api-reference/mcp/patchMcpById) |
+| `DELETE /api/v3/mcp/{id}` | [Delete an MCP server](/reference/api-reference/mcp/deleteMcpById) |
+| `GET /api/v3/mcp/app/{appKey}` | [List MCP servers for a specific app](/reference/api-reference/mcp/getMcpAppByAppKey) |
+| `GET /api/v3/mcp/servers/{serverId}/instances` | [List all instances for an MCP server](/reference/api-reference/mcp/getMcpServersByServerIdInstances) |
+| `POST /api/v3/mcp/servers/{serverId}/instances` | [Create a new MCP server instance](/reference/api-reference/mcp/postMcpServersByServerIdInstances) |
+| `DELETE /api/v3/mcp/servers/{serverId}/instances/{instanceId}` | [Delete an MCP server instance and associated connected accounts](/reference/api-reference/mcp/deleteMcpServersByServerIdInstancesByInstanceId) |

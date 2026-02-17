@@ -4,6 +4,7 @@ import functools
 import typing as t
 
 import typing_extensions as te
+from pydantic import BaseModel as PydanticBaseModel
 from composio_client import omit
 
 from composio.client import HttpClient
@@ -16,14 +17,11 @@ from composio.client.types import (
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
 from composio.core.models.custom_tools import CustomTools
-from composio.core.provider import (
-    TProvider,
-)
+from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
-from composio.core.provider.none_agentic import (
-    NonAgenticProvider,
-    NoneAgenticProviderExecuteFn,
-)
+from composio.core.provider.base import ExecuteToolFn
+from composio.core.provider.base import BaseProvider
+from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
@@ -39,28 +37,70 @@ from ._modifiers import (
 )
 
 
+def _needs_serialization(obj: t.Any) -> bool:
+    """Check if an object contains any Pydantic model instances."""
+    if isinstance(obj, PydanticBaseModel):
+        return True
+    if isinstance(obj, dict):
+        return any(_needs_serialization(v) for v in obj.values())
+    if isinstance(obj, list):
+        return any(_needs_serialization(item) for item in obj)
+    return False
+
+
+def _serialize_value(obj: t.Any) -> t.Any:
+    """Recursively convert Pydantic models to JSON-safe primitives."""
+    if isinstance(obj, PydanticBaseModel):
+        return obj.model_dump(mode="json")
+    if isinstance(obj, dict):
+        return {k: _serialize_value(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_serialize_value(item) for item in obj]
+    return obj
+
+
+def _serialize_arguments(arguments: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+    """Serialize any Pydantic model instances in tool arguments to JSON-safe dicts.
+
+    Prevents JSON serialization errors when arguments contain complex types
+    (e.g., RootModel from discriminated union schemas). Returns the original
+    dict unchanged when no Pydantic models are present.
+    """
+    if not _needs_serialization(arguments):
+        return arguments
+    return {k: _serialize_value(v) for k, v in arguments.items()}
+
+
 class ToolExecutionResponse(te.TypedDict):
     data: t.Dict
     error: t.Optional[str]
     successful: bool
 
 
-class Tools(Resource, t.Generic[TProvider]):
+class Tools(Resource, t.Generic[TTool, TToolCollection]):
     """
     Tools class definition
 
     This class is used to manage tools in the Composio SDK.
     It provides methods to list, get, and execute tools.
+
+    Generic Parameters:
+        TTool: The individual tool type returned by the provider (e.g., ChatCompletionToolParam for OpenAI).
+        TToolCollection: The collection type returned by get() (e.g., list[ChatCompletionToolParam]).
+
+    The return type of get() is automatically inferred from the provider's generic parameters.
+    This works for both built-in providers (OpenAI, Anthropic, etc.) and custom providers.
     """
 
-    provider: TProvider
+    provider: BaseProvider[TTool, TToolCollection]
 
     def __init__(
         self,
         client: HttpClient,
-        provider: TProvider,
+        provider: BaseProvider[TTool, TToolCollection],
         file_download_dir: t.Optional[str] = None,
         toolkit_versions: t.Optional[ToolkitVersionParam] = None,
+        auto_upload_download_files: bool = True,
     ):
         """
         Initialize the tools resource.
@@ -69,15 +109,28 @@ class Tools(Resource, t.Generic[TProvider]):
         :param provider: The provider to use for the tools resource.
         :param file_download_dir: Output directory for downloadable files
         :param toolkit_versions: The versions of the toolkits to use. Defaults to 'latest' if not provided.
+        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
         """
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
         self._file_helper = FileHelper(client=self._client, outdir=file_download_dir)
         self._toolkit_versions = toolkit_versions
+        self._auto_upload_download_files = auto_upload_download_files
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
+
+        self.provider.set_execute_tool_fn(
+            t.cast(
+                ExecuteToolFn,
+                functools.partial(
+                    self.execute,
+                    # Dangerously skip version check for provider controlled tool execution
+                    dangerously_skip_version_check=True,
+                ),
+            ),
+        )
 
     def _filter_custom_tools(
         self, tools: t.List[str]
@@ -148,6 +201,73 @@ class Tools(Resource, t.Generic[TProvider]):
             )
         return tools_list
 
+    def get_raw_tool_router_meta_tools(
+        self,
+        session_id: str,
+        modifiers: t.Optional["Modifiers"] = None,
+    ) -> list[Tool]:
+        """
+        Fetches the meta tools for a tool router session.
+
+        This method fetches the meta tools from the Composio API and transforms them to
+        the expected format. It provides access to the underlying meta tool data without
+        provider-specific wrapping.
+
+        :param session_id: The session ID to get the meta tools for
+        :param modifiers: Optional modifiers to apply to the tool schemas
+        :return: The list of meta tools
+
+        Example:
+            ```python
+            from composio import Composio
+
+            composio = Composio()
+            tools_model = composio.tools
+
+            # Get meta tools for a session
+            meta_tools = tools_model.get_raw_tool_router_meta_tools("session_123")
+            print(meta_tools)
+
+            # Get meta tools with schema modifiers
+            from composio.core.models import schema_modifier
+
+            @schema_modifier
+            def modify_schema(tool: str, toolkit: str, schema):
+                # Customize the schema
+                schema.description = f"Modified: {schema.description}"
+                return schema
+
+            meta_tools = tools_model.get_raw_tool_router_meta_tools(
+                "session_123",
+                modifiers=[modify_schema]
+            )
+            ```
+        """
+        # Fetch meta tools from the API
+        tools_response = self._client.tool_router.session.tools(session_id=session_id)
+        # Cast to Tool type - session.tools returns compatible Item type from different response schema
+        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
+
+        # Apply schema modifiers if provided
+        if modifiers is not None:
+            from composio.core.models._modifiers import apply_modifier_by_type
+
+            tools_list = [
+                t.cast(
+                    Tool,
+                    apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit=tool.toolkit.slug,
+                        tool=tool.slug,
+                        type="schema",
+                        schema=tool,
+                    ),
+                )
+                for tool in tools_list
+            ]
+
+        return tools_list
+
     def _get(
         self,
         user_id: str,
@@ -157,7 +277,7 @@ class Tools(Resource, t.Generic[TProvider]):
         scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
-    ):
+    ) -> TToolCollection:
         """Get a list of tools based on the provided filters."""
         tools_list = self.get_raw_composio_tools(
             tools=tools,
@@ -181,90 +301,41 @@ class Tools(Resource, t.Generic[TProvider]):
         self._tool_schemas.update(
             {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
         )
+
+        # Always enhance schema descriptions (type hints and required notes)
+        # regardless of auto_upload_download_files setting
         for tool in tools_list:
-            tool.input_parameters = self._file_helper.process_schema_recursively(
+            tool.input_parameters = self._file_helper.enhance_schema_descriptions(
                 schema=tool.input_parameters,
             )
 
+        # Only process file_uploadable schemas when auto_upload_download_files is True
+        if self._auto_upload_download_files:
+            for tool in tools_list:
+                tool.input_parameters = (
+                    self._file_helper.process_file_uploadable_schema(
+                        schema=tool.input_parameters,
+                    )
+                )
+
         if issubclass(type(self.provider), NonAgenticProvider):
-            t.cast(NonAgenticProvider, self.provider).set_execute_tool_fn(
+            return t.cast(
+                TToolCollection,
                 t.cast(
-                    NoneAgenticProviderExecuteFn,
-                    functools.partial(
-                        self.execute,
-                        # Dangerously skip version check for non-agentic tool execution
-                        # via providers (e.g. OpenAI tool calling). This mirrors the
-                        # behavior used for agentic providers in `_wrap_execute_tool`
-                        # and keeps manual `tools.execute(...)` calls strict by default.
-                        dangerously_skip_version_check=True,
-                    ),
-                ),
-            )
-            return t.cast(NonAgenticProvider, self.provider).wrap_tools(
-                tools=tools_list
+                    NonAgenticProvider[TTool, TToolCollection], self.provider
+                ).wrap_tools(tools=tools_list),
             )
 
-        return t.cast(AgenticProvider, self.provider).wrap_tools(
-            tools=tools_list,
-            execute_tool=self._wrap_execute_tool(
-                user_id=user_id,
-                modifiers=modifiers,
+        return t.cast(
+            TToolCollection,
+            t.cast(AgenticProvider[TTool, TToolCollection], self.provider).wrap_tools(
+                tools=tools_list,
+                execute_tool=self._wrap_execute_tool(
+                    user_id=user_id,
+                    modifiers=modifiers,
+                ),
             ),
         )
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        slug: str,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tool by slug"""
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        tools: list[str],
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tools by tool slugs"""
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        toolkits: list[str],
-        scopes: t.Optional[t.List[str]] = None,
-        limit: t.Optional[int] = None,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tools by toolkit slugs (Only important tools are returned)"""
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        search: str,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Search tool by search term"""
-
-    @t.overload
-    def get(
-        self,
-        user_id: str,
-        *,
-        toolkits: list[str],
-        search: t.Optional[str] = None,
-        limit: t.Optional[int] = None,
-        modifiers: t.Optional[Modifiers] = None,
-    ):
-        """Get tool by search term and/or toolkit slugs and search term"""
 
     def get(
         self,
@@ -277,8 +348,26 @@ class Tools(Resource, t.Generic[TProvider]):
         scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
-    ):
-        """Get a tool or list of tools based on the provided arguments."""
+    ) -> TToolCollection:
+        """
+        Get a tool or list of tools based on the provided arguments.
+
+        The return type is automatically inferred based on the provider's generic parameters.
+        For example:
+        - OpenAIProvider -> list[ChatCompletionToolParam]
+        - AnthropicProvider -> list[ToolParam]
+        - CustomProvider[MyTool, list[MyTool]] -> list[MyTool]
+
+        :param user_id: The user ID to get tools for.
+        :param slug: Get a single tool by slug.
+        :param tools: Get tools by a list of tool slugs.
+        :param search: Search tools by search term.
+        :param toolkits: Get tools from specific toolkits.
+        :param scopes: Filter by scopes.
+        :param modifiers: Optional modifiers to apply.
+        :param limit: Limit the number of tools returned.
+        :return: Provider-specific tool collection (TToolCollection).
+        """
         if slug is not None:
             return self._get(user_id=user_id, tools=[slug], modifiers=modifiers)
         return self._get(
@@ -303,11 +392,92 @@ class Tools(Resource, t.Generic[TProvider]):
                 self.execute,
                 modifiers=modifiers,
                 user_id=user_id,
-                # Dangerously skip version check for agentic and non-agentic tool execution via providers
+                # Dangerously skip version check for agentic tool execution via providers
                 # This can be safe because most agentic flows users fetch latest version and then execute the tool
                 dangerously_skip_version_check=True,
             ),
         )
+
+    def _wrap_execute_tool_for_tool_router(
+        self,
+        session_id: str,
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> AgenticProviderExecuteFn:
+        """
+        Create an execute function for tool router that uses the session's execute_meta endpoint.
+
+        This method creates a function that executes tools within a tool router session context.
+        It uses the session's execute_meta endpoint which handles authentication and connection
+        management automatically.
+
+        :param session_id: The session ID
+        :param modifiers: Optional modifiers to apply before and after execution
+        :return: Execute function for tool router
+        """
+
+        def execute_tool_fn(slug: str, arguments: t.Dict) -> t.Dict:
+            """
+            Execute a tool in the tool router session.
+
+            This function is used by agentic providers to execute tools within
+            a tool router session context. It uses the session's execute_meta
+            endpoint which handles authentication and connection management
+            automatically.
+
+            :param slug: The tool slug to execute
+            :param arguments: The tool arguments
+            :return: Tool execution response
+            """
+            # Apply before_execute modifiers
+            # Meta tools are always from the 'composio' toolkit
+            processed_arguments = arguments
+            if modifiers is not None:
+                params: ToolExecuteParams = {
+                    "arguments": arguments,
+                }
+                type_before: t.Literal["before_execute"] = "before_execute"
+                modified_params = apply_modifier_by_type(
+                    modifiers=modifiers,
+                    toolkit="composio",
+                    tool=slug,
+                    type=type_before,
+                    request=params,
+                )
+                processed_arguments = modified_params.get("arguments", arguments)
+
+            # Serialize any Pydantic model instances before sending to the API
+            processed_arguments = _serialize_arguments(processed_arguments)
+
+            # Execute the tool via the session's execute_meta endpoint
+            # Note: execute_meta accepts regular tool slugs at runtime, not just meta tool slugs
+            # The type signature expects Literal meta tool slugs, but runtime accepts any str
+            response = self._client.tool_router.session.execute_meta(
+                session_id=session_id,
+                slug=slug,  # type: ignore[arg-type]
+                arguments=processed_arguments,
+            )
+
+            # Convert response to standard format
+            result: ToolExecutionResponse = {
+                "data": response.data if hasattr(response, "data") else {},
+                "error": response.error if hasattr(response, "error") else None,
+                "successful": not (hasattr(response, "error") and response.error),
+            }
+
+            # Apply after_execute modifiers
+            if modifiers is not None:
+                type_after: t.Literal["after_execute"] = "after_execute"
+                result = apply_modifier_by_type(
+                    modifiers=modifiers,
+                    toolkit="composio",
+                    tool=slug,
+                    type=type_after,
+                    response=result,
+                )
+
+            return t.cast(t.Dict, result)
+
+        return t.cast(AgenticProviderExecuteFn, execute_tool_fn)
 
     def _execute_custom_tool(
         self,
@@ -349,6 +519,10 @@ class Tools(Resource, t.Generic[TProvider]):
         dangerously_skip_version_check: t.Optional[bool] = None,
     ) -> ToolExecutionResponse:
         """Execute a tool"""
+        # Serialize any Pydantic model instances in arguments to plain dicts
+        # before sending to the API (fixes PLEN-1514: RootModel not JSON serializable)
+        arguments = _serialize_arguments(arguments)
+
         # Get the tool to determine its toolkit
         tool = self.get_raw_composio_tool_by_slug(slug)
 
@@ -420,9 +594,11 @@ class Tools(Resource, t.Generic[TProvider]):
         """
 
         tool = self._tool_schemas.get(slug)
-        if tool is None and self._custom_tools.get(slug=slug) is not None:
-            tool = self._custom_tools[slug].info
-            self._tool_schemas[slug] = tool
+        if tool is None:
+            custom_tool = self._custom_tools.get(slug=slug)
+            if custom_tool is not None:
+                tool = custom_tool.info
+                self._tool_schemas[slug] = tool
 
         if tool is None:
             tool = t.cast(
@@ -435,37 +611,55 @@ class Tools(Resource, t.Generic[TProvider]):
             self._tool_schemas[slug] = tool
 
         if modifiers is not None:
+            type_before_exec: t.Literal["before_execute"] = "before_execute"
+            request_params: ToolExecuteParams = {
+                "arguments": arguments,
+            }
+            if connected_account_id is not None:
+                request_params["connected_account_id"] = connected_account_id
+            if custom_auth_params is not None:
+                request_params["custom_auth_params"] = custom_auth_params
+            if custom_connection_data is not None:
+                request_params["custom_connection_data"] = custom_connection_data
+            if version is not None:
+                request_params["version"] = version
+            if text is not None:
+                request_params["text"] = text
+            if user_id is not None:
+                request_params["user_id"] = user_id
+            if dangerously_skip_version_check is not None:
+                request_params["dangerously_skip_version_check"] = (
+                    dangerously_skip_version_check
+                )
             processed_params = apply_modifier_by_type(
                 modifiers=modifiers,
                 toolkit=tool.toolkit.slug,
                 tool=slug,
-                type="before_execute",
-                request={
-                    "connected_account_id": connected_account_id,
-                    "custom_auth_params": custom_auth_params,
-                    "custom_connection_data": custom_connection_data,
-                    "version": version,
-                    "text": text,
-                    "user_id": user_id,
-                    "arguments": arguments,
-                    "dangerously_skip_version_check": dangerously_skip_version_check,
-                },
+                type=type_before_exec,
+                request=request_params,
             )
-            connected_account_id = processed_params["connected_account_id"]
-            custom_auth_params = processed_params["custom_auth_params"]
-            custom_connection_data = processed_params["custom_connection_data"]
-            text = processed_params["text"]
-            version = processed_params["version"]
-            user_id = processed_params["user_id"]
+            connected_account_id = processed_params.get(
+                "connected_account_id", connected_account_id
+            )
+            custom_auth_params = processed_params.get(
+                "custom_auth_params", custom_auth_params
+            )
+            custom_connection_data = processed_params.get(
+                "custom_connection_data", custom_connection_data
+            )
+            text = processed_params.get("text", text)
+            version = processed_params.get("version", version)
+            user_id = processed_params.get("user_id", user_id)
             arguments = processed_params["arguments"]
             dangerously_skip_version_check = processed_params.get(
-                "dangerously_skip_version_check"
+                "dangerously_skip_version_check", dangerously_skip_version_check
             )
 
-        arguments = self._file_helper.substitute_file_uploads(
-            tool=tool,
-            request=arguments,
-        )
+        if self._auto_upload_download_files:
+            arguments = self._file_helper.substitute_file_uploads(
+                tool=tool,
+                request=arguments,
+            )
         response = (
             self._execute_custom_tool(
                 slug=slug,
@@ -485,10 +679,11 @@ class Tools(Resource, t.Generic[TProvider]):
                 dangerously_skip_version_check=dangerously_skip_version_check,
             )
         )
-        response = self._file_helper.substitute_file_downloads(
-            tool=tool,
-            response=response,
-        )
+        if self._auto_upload_download_files:
+            response = self._file_helper.substitute_file_downloads(
+                tool=tool,
+                response=response,
+            )
         if modifiers is not None:
             response = apply_modifier_by_type(
                 modifiers=modifiers,
@@ -529,7 +724,6 @@ __all__ = [
     "Tools",
     "ToolExecuteParams",
     "ToolExecutionResponse",
-    "Modifiers",
     "Modifiers",
     "after_execute",
     "before_execute",

@@ -19,10 +19,10 @@ import {
   removeNonRequiredProperties,
   jsonSchemaToZodSchema,
 } from '@composio/core';
-import type { Tool as VercelTool } from 'ai';
+import type { ToolSet as VercelToolSet, Tool as VercelTool } from 'ai';
 import { tool } from 'ai';
 
-export type VercelToolCollection = Record<string, VercelTool>;
+export type VercelToolCollection = VercelToolSet;
 export class VercelProvider extends BaseAgenticProvider<
   VercelToolCollection,
   VercelTool,

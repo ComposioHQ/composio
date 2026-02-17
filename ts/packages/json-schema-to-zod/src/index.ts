@@ -1,2 +1,2 @@
 export type * from './types';
-export { jsonSchemaToZod } from './json-schema-to-zod';
+export { jsonSchemaToZod, jsonSchemaToZodShape } from './json-schema-to-zod';

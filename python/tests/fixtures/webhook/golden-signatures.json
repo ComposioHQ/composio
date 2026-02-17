@@ -1,0 +1,47 @@
+{
+  "description": "Golden signature test cases - DO NOT MODIFY unless algorithm changes",
+  "algorithm": "HMAC-SHA256",
+  "format": "v1,base64(HMAC-SHA256(id.timestamp.payload, secret))",
+  "testCases": [
+    {
+      "name": "simple payload",
+      "id": "msg_test_001",
+      "timestamp": "1700000000",
+      "payload": "{\"test\":\"data\"}",
+      "secret": "test-secret",
+      "expectedSignature": "v1,4Fay6rvxXDEbH+4oA1fYP2BR/Bwzn3/7ONj40iJQagY="
+    },
+    {
+      "name": "unicode payload",
+      "id": "msg_test_002",
+      "timestamp": "1700000001",
+      "payload": "{\"message\":\"Hello World\"}",
+      "secret": "unicode-secret-key",
+      "expectedSignature": "v1,ICmAFUlesRqIFA44bU6Wlce5GszoHjG+w7nurcu5EWc="
+    },
+    {
+      "name": "complex nested payload",
+      "id": "msg_test_003",
+      "timestamp": "1700000002",
+      "payload": "{\"nested\":{\"array\":[1,2,3],\"object\":{\"key\":\"value\"}}}",
+      "secret": "complex-secret",
+      "expectedSignature": "v1,Vx/pw0yOiRRoxdfifaZ3zBKt4B3KkRKFVr6gLQNJs9Q="
+    },
+    {
+      "name": "empty data object",
+      "id": "msg_test_004",
+      "timestamp": "1700000003",
+      "payload": "{\"data\":{}}",
+      "secret": "empty-data-secret",
+      "expectedSignature": "v1,IbLtu+G65OH8Gw7ZFqy38ru+Jrg96yWfueYMMdaFYs0="
+    },
+    {
+      "name": "special characters in secret",
+      "id": "msg_test_005",
+      "timestamp": "1700000004",
+      "payload": "{\"test\":true}",
+      "secret": "secret!@#$%^&*()",
+      "expectedSignature": "v1,kUvMXJ0rouLoROxY70WIzV+zLQGpSRuCXv8evLTPjXg="
+    }
+  ]
+}

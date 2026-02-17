@@ -1,0 +1,123 @@
+---
+title: Managing triggers
+description: List, enable, disable, and delete trigger instances
+keywords: [manage triggers, enable, disable, delete, discover]
+---
+
+## Listing active triggers
+
+List trigger instances that have been created. Results are cursor-paginated.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+active = composio.triggers.list_active(
+    connected_account_ids=["ca_def456"],
+)
+
+for trigger in active.items:
+    print(f"{trigger.id} ({trigger.trigger_name}) - disabled_at={trigger.disabled_at}")
+
+# Paginate with cursor
+if active.next_cursor:
+    next_page = composio.triggers.list_active(cursor=active.next_cursor)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const active = await composio.triggers.listActive({
+  connectedAccountIds: ['ca_def456'],
+});
+
+for (const trigger of active.items) {
+  console.log(`${trigger.id} (${trigger.triggerName}) - disabled: ${trigger.disabledAt !== null}`);
+}
+
+// Paginate with cursor
+if (active.nextCursor) {
+  const nextPage = await composio.triggers.listActive({ cursor: active.nextCursor });
+}
+```
+  </Tab>
+</Tabs>
+
+| Filter | Description |
+|--------|-------------|
+| `connected_account_ids` / `connectedAccountIds` | Array of connected account IDs |
+| `trigger_ids` / `triggerIds` | Array of trigger instance IDs |
+| `trigger_names` / `triggerNames` | Array of trigger type slugs |
+| `auth_config_ids` / `authConfigIds` | Array of auth config IDs |
+| `show_disabled` / `showDisabled` | Include disabled triggers (default: `false`) |
+
+## Enable / Disable triggers
+
+Pause a trigger temporarily without deleting it:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Disable a trigger
+composio.triggers.disable(trigger_id="ti_abcd123")
+
+# Re-enable when needed
+composio.triggers.enable(trigger_id="ti_abcd123")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+// Disable a trigger
+await composio.triggers.disable('ti_abcd123');
+
+// Re-enable when needed
+await composio.triggers.enable('ti_abcd123');
+```
+  </Tab>
+</Tabs>
+
+You can also toggle triggers from the dashboard:
+
+1. Go to [Auth Configs](https://platform.composio.dev?next_page=/auth-configs) and select your auth config
+2. Navigate to **Active Triggers**
+3. Toggle the trigger on or off
+
+<Figure
+  src="/images/trigger-enable-disable.png"
+  alt="Enable/disable triggers from the dashboard"
+  caption="Enable/disable triggers from the dashboard"
+  size="lg"
+/>
+
+## Deleting triggers
+
+Permanently remove a trigger instance:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+composio.triggers.delete(trigger_id="ti_abcd123")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+// ---cut---
+await composio.triggers.delete('ti_abcd123');
+```
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+Deleting a trigger is permanent. Use `disable()` instead to temporarily stop receiving events.
+</Callout>

@@ -1,5 +1,162 @@
 # @composio/core
 
+## 0.6.3
+
+### Patch Changes
+
+- 087385d: Remove important tag auto apply when limit is set
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [eec8fd9]
+  - @composio/json-schema-to-zod@0.1.20
+
+## 0.6.1
+
+### Patch Changes
+
+- e746383: Fix issues with file upload corruption
+
+## 0.6.0
+
+### Minor Changes
+
+- **BREAKING**: Webhook verification now async with new signature
+  - `composio.triggers.verifyWebhook()` now requires `await`
+  - New required parameters: `id` (webhook-id header) and `timestamp` (webhook-timestamp header)
+  - Uses Web Crypto API for Cloudflare Workers compatibility
+  - Supports v1, v2, and v3 webhook formats
+- **BREAKING**: Mastra provider updated to v1 API
+  - Requires Mastra v1 and Node.js v22.13.0+
+  - New initialization pattern with Mastra instance
+  - E2E tests for Zod v3 and v4 compatibility
+
+- Platform-specific optimizations
+  - Separate file tool modifiers for Node.js and Cloudflare Workers
+  - Platform-specific config defaults (autoUploadDownloadFiles)
+  - Removed node:buffer usage, replaced with Uint8Array
+  - Removed node:crypto from triggers for edge runtime support
+
+- Bug fixes
+  - Fixed tool fetching with specific version constraints
+  - Improved type safety across the SDK
+
+## 0.5.5
+
+### Patch Changes
+
+- b132aad: Update client dependencies and introduce experimentatl tool router features
+
+## 0.5.4
+
+### Patch Changes
+
+- b3f5875: Fix multi connected account flag to check only active accounts
+
+## 0.5.3
+
+### Patch Changes
+
+- 498505d: Fix file upload and download in tools with anyOf schemas
+
+## 0.5.2
+
+### Patch Changes
+
+- 277f02b: Fix bundling issues with external providers
+
+## 0.5.1
+
+### Patch Changes
+
+- 3055048: Update client dependencies and auth config update params to be optional
+
+## 0.5.0
+
+### Minor Changes
+
+- ded64be: Add Cloudflare Workers compatibility for `@composio/core`, tested end-to-end.
+
+## 0.4.0
+
+### Minor Changes
+
+- c7e1217: Add support for dedicated tools for tool router
+
+## 0.3.4
+
+### Patch Changes
+
+- 019f54f: Fix method binding for top level tool router methods
+
+## 0.3.3
+
+### Patch Changes
+
+- a76b002: Add support for enable/disable tags and search toolkits in tool router
+
+## 0.3.2
+
+### Patch Changes
+
+- 69cfede: Update client version and add openWorldHintSupport in toolrouter tag filters. Removes isLocal param in toolkit fetching
+
+## 0.3.1
+
+### Patch Changes
+
+- 73db5f5: Fix callback url not working in toolrouter's session.authorize()
+
+## 0.3.0
+
+### Minor Changes
+
+- 07551cd: Add support for native tool execution in tool router
+- 9e002c5: Minor fixes
+- f0e67c4: Update API client and tool router types
+- 31521bd: Update typedocs and examples for toolkit versions
+- 9e002c5: Alpha release of tool router
+
+## 0.2.7-alpha.4
+
+### Patch Changes
+
+- 07551cd: Add support for native tool execution in tool router
+
+## 0.2.7-alpha.3
+
+### Patch Changes
+
+- f0e67c4: Update API client and tool router types
+
+## 0.2.7-alpha.2
+
+### Patch Changes
+
+- 31521bd: Update typedocs and examples for toolkit versions
+
+## 0.2.7-alpha.1
+
+### Patch Changes
+
+- Minor fixes
+
+## 0.2.7-alpha.0
+
+### Patch Changes
+
+- Alpha release of tool router
+
+## 0.2.6
+
+### Patch Changes
+
+- b5cc23f: Fix dangerously skip version check in non agentic providers, Throw error instead of process.exit when api key doesn't exist, bump zod-to-json-schema to 3.25.0, which supports "zod/3"
+- Updated dependencies [b5cc23f]
+  - @composio/json-schema-to-zod@0.1.19
+
 ## 0.2.5
 
 ### Patch Changes
@@ -35,14 +192,12 @@
   This PR adds support for toolkit versions in the TypeScript SDK and introduces new fields for tracking tool deprecation status and no-auth capabilities.
 
   ### Core Features
-
   - **Toolkit Versions Support**:
     - Added `toolkit_versions` parameter to the `Triggers` class, defaulting to `"latest"`
     - Made `Triggers` class generic to accept provider configuration
     - Pass `toolkit_versions` when listing trigger types
 
   ### New Fields
-
   - **Tool Types**:
     - Added `isDeprecated` field to track deprecated tools
     - Added `isNoAuth` field to identify tools that support no-auth mode
@@ -52,20 +207,17 @@
     - Added `availableVersions` array to track all available versions
 
   ### Code Changes
-
   - Updated `Composio` class to pass config to `Triggers` constructor
   - Updated `Tools.get()` to include new `isDeprecated` and `isNoAuth` fields
   - Updated transformers for toolkits and triggers to handle new fields
   - Added TypeScript types for all new fields
 
   ### Tests
-
   - Updated trigger tests to account for `toolkit_versions` and `cursor` parameters
   - Fixed generic type usage in `Triggers` test declarations
   - All 376 tests passing ✅
 
   ### Dependencies
-
   - Updated `@composio/client` to version `0.1.0-alpha.38`
   - Updated `pnpm-lock.yaml` with dependency resolution changes
 
@@ -90,7 +242,6 @@
 ### Minor Changes
 
 - 157bf7b: ### Added
-
   - **Version validation for manual tool execution**: Tools now require explicit toolkit version specification when executing manually to prevent unexpected behavior from `latest` version changes
   - **New `dangerously_skip_version_check` parameter** (Python) / `dangerouslySkipVersionCheck` (TypeScript): Optional flag to bypass version validation (use with caution)
   - **`ToolVersionRequiredError` exception** (Python): Raised when attempting to execute tools with `latest` version without skip flag, includes helpful error messages with 4 possible fixes
@@ -98,7 +249,6 @@
   - **Comprehensive test coverage**: Added 19 new test methods in Python covering all tool execution scenarios including version resolution, error handling, modifiers, and environment variables
 
   ### Changed
-
   - **Tool execution behavior**: Manual execution via `tools.execute()` now validates toolkit versions before API calls
   - **Agentic provider flows**: Automatically set `dangerously_skip_version_check=True` internally to maintain backward compatibility for framework integrations
   - **Instance-level version resolution**: Both `execute()` and `_execute_tool()` methods now consistently resolve versions from instance-level `toolkit_versions` configuration
@@ -106,7 +256,6 @@
   - **Test version format**: Updated all test files to use production date-based version format (`20251201_XX`) instead of semantic versioning
 
   ### Fixed
-
   - **Consistent version handling**: Removed `toolkit_versions` parameter from `_execute_tool()` in favor of instance-level configuration, ensuring consistent version resolution across the SDK
   - **Code formatting**: Applied ruff formatting to all modified Python files
   - **Array parsing to ZodSchema**: Fixes in json-schema-to-zod to parse array without properties and with properties
@@ -148,7 +297,6 @@
   ```
 
   ### Developer Notes
-
   - Agentic framework integrations (LangChain, CrewAI, etc.) are not affected as they automatically use the skip flag
   - The `latest` version can still be used with the skip flag, but specific versions are strongly recommended
   - Error messages include all available resolution options for better developer experience
