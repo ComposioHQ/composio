@@ -2,6 +2,9 @@ import { $ } from 'bun';
 import { resolve } from 'node:path';
 import { getRepoRoot } from './config';
 
+const DOCKER_IMAGE_BUILD_MAX_ATTEMPTS = 3;
+const DOCKER_IMAGE_BUILD_RETRY_DELAYS_MS = [3_000, 8_000] as const;
+
 /**
  * Result of executing a command.
  */
@@ -145,6 +148,43 @@ async function exec(cmd: string, args: string[], options: ExecOptions = {}): Pro
   };
 }
 
+async function sleep(ms: number): Promise<void> {
+  await new Promise<void>(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
+
+interface BuildDockerImageOptions {
+  readonly repoRoot: string;
+  readonly imageTag: string;
+  readonly buildArgs: ReadonlyArray<string>;
+}
+
+async function buildDockerImageWithRetry(options: BuildDockerImageOptions): Promise<void> {
+  const { repoRoot, imageTag, buildArgs } = options;
+  let lastOutput = '';
+
+  for (let attempt = 1; attempt <= DOCKER_IMAGE_BUILD_MAX_ATTEMPTS; attempt += 1) {
+    const built = await exec('docker', [...buildArgs], { cwd: repoRoot });
+    if (built.exitCode === 0) {
+      return;
+    }
+
+    lastOutput = built.stderr || built.stdout;
+
+    if (attempt < DOCKER_IMAGE_BUILD_MAX_ATTEMPTS) {
+      const retryDelayMs =
+        DOCKER_IMAGE_BUILD_RETRY_DELAYS_MS[attempt - 1] ??
+        DOCKER_IMAGE_BUILD_RETRY_DELAYS_MS[DOCKER_IMAGE_BUILD_RETRY_DELAYS_MS.length - 1];
+      await sleep(retryDelayMs);
+    }
+  }
+
+  const err = new Error(`Failed to build Docker image ${imageTag}`);
+  (err as Error & { cause: Error }).cause = new Error(lastOutput);
+  throw err;
+}
+
 /**
  * Checks if Docker is available.
  */
@@ -200,12 +240,11 @@ export async function ensureNodeImage(
     repoRoot,
   ];
 
-  const built = await exec('docker', buildArgs, { cwd: repoRoot });
-  if (built.exitCode !== 0) {
-    const err = new Error(`Failed to build Docker image ${imageTag}`);
-    (err as Error & { cause: Error }).cause = new Error(built.stderr || built.stdout);
-    throw err;
-  }
+  await buildDockerImageWithRetry({
+    repoRoot,
+    imageTag,
+    buildArgs,
+  });
 
   return imageTag;
 }
@@ -364,12 +403,11 @@ export async function ensureDenoImage(
     repoRoot,
   ];
 
-  const built = await exec('docker', buildArgs, { cwd: repoRoot });
-  if (built.exitCode !== 0) {
-    const err = new Error(`Failed to build Docker image ${imageTag}`);
-    (err as Error & { cause: Error }).cause = new Error(built.stderr || built.stdout);
-    throw err;
-  }
+  await buildDockerImageWithRetry({
+    repoRoot,
+    imageTag,
+    buildArgs,
+  });
 
   return imageTag;
 }

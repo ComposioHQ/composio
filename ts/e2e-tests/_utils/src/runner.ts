@@ -1,4 +1,4 @@
-import { describe, beforeAll, afterAll, it } from 'bun:test';
+import { describe, beforeAll, afterAll, it, setDefaultTimeout } from 'bun:test';
 import { appendFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type {
@@ -15,7 +15,7 @@ import type {
 } from './types';
 import { getRepoRoot, resolveNodeVersionMetaList, resolveDenoVersionMetaList } from './config';
 import { ensureNodeImage, runNodeContainer, ensureDenoImage, runDenoContainer } from './image-lifecycle';
-import { WELL_KNOWN_ENV_VARS } from './const';
+import { TIMEOUTS, WELL_KNOWN_ENV_VARS } from './const';
 import { createVolume, generateVolumeName, initializeVolumeOwnership, removeVolume } from './volume';
 
 // ============================================================================
@@ -627,6 +627,13 @@ function renderDenoVersionMeta({ kind, value }: DenoVersionMeta): string {
  */
 export function runE2E(config: RunE2EInternalConfig): void {
   const { cwd, suiteName, defineTests, env } = config;
+
+  /**
+   * E2E fixtures are executed inside Docker containers and may include image pull/build
+   * + dependency install work during hooks. Bun's default 5s timeout is too aggressive
+   * for CI cold-start paths and causes flaky hook timeouts.
+   */
+  setDefaultTimeout(Math.max(TIMEOUTS.DEFAULT, 180_000));
 
   // Validate env vars early, before any Docker operations
   validateRequiredEnvVars(env, suiteName);
