@@ -60,6 +60,48 @@ export class ComposioEntitiesError extends Data.TaggedError('services/ComposioEn
   readonly cause?: unknown;
 }> {}
 
+type ApiCall = <A>(f: (client: RawComposioClient) => Promise<A>) => Effect.Effect<A, Error>;
+
+function createToolRouterEntityMethods(call: ApiCall) {
+  return {
+    toolRouterSessionCreate: (body: {
+      readonly user_id: string;
+      readonly toolkits?: {
+        readonly enable?: ReadonlyArray<string>;
+        readonly disable?: ReadonlyArray<string>;
+      };
+      readonly tools?: Record<
+        string,
+        {
+          readonly enable?: ReadonlyArray<string>;
+          readonly disable?: ReadonlyArray<string>;
+        }
+      >;
+      readonly manage_connections?: {
+        readonly enable?: boolean;
+        readonly callback_url?: string;
+        readonly enable_wait_for_connections?: boolean;
+      };
+      readonly auth_configs?: Record<string, string>;
+      readonly connected_accounts?: Record<string, string>;
+    }) =>
+      call(client => client.toolRouter.session.create(body as never)).pipe(
+        Effect.map(payload => asRecord(payload) ?? {})
+      ),
+
+    toolRouterSessionLink: (
+      sessionId: string,
+      body: {
+        readonly toolkit: string;
+        readonly callback_url?: string;
+      }
+    ) =>
+      call(client => client.toolRouter.session.link(sessionId, body as never)).pipe(
+        Effect.map(payload => asRecord(payload) ?? {})
+      ),
+  } as const;
+}
+
 export class ComposioEntitiesRepository extends Effect.Service<ComposioEntitiesRepository>()(
   'services/ComposioEntitiesRepository',
   {
@@ -301,6 +343,8 @@ export class ComposioEntitiesRepository extends Effect.Service<ComposioEntitiesR
 
         triggerInstancesPatchStatus: (triggerId: string, status: 'enable' | 'disable') =>
           call(client => client.triggerInstances.manage.update(triggerId, { status })),
+
+        ...createToolRouterEntityMethods(call),
       } as const;
     }),
     dependencies: [ComposioUserContextLive],

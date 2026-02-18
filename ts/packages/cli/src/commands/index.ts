@@ -16,6 +16,8 @@ import { toolkitsCmd } from './toolkits.cmd';
 import { authConfigsCmd } from './auth-configs.cmd';
 import { connectedAccountsCmd } from './connected-accounts.cmd';
 import { triggersCmd } from './triggers.cmd';
+import { createCmd } from './create.cmd';
+import { sessionCmd } from './session.cmd';
 
 const $cmd = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -30,6 +32,8 @@ const $cmd = $defaultCmd.pipe(
     authConfigsCmd,
     connectedAccountsCmd,
     triggersCmd,
+    createCmd,
+    sessionCmd,
     pyCmd,
     tsCmd,
   ])

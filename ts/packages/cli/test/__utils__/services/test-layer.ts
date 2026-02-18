@@ -646,6 +646,22 @@ export const TestLayer = (input?: TestLiveInput) =>
           Effect.succeed({
             status: 'success',
           }),
+        toolRouterSessionCreate: body =>
+          Effect.succeed({
+            session_id: 'trs_test_1',
+            mcp: {
+              type: 'http',
+              url: `https://mcp.composio.dev/tool_router/${body.user_id}/trs_test_1`,
+            },
+            tool_router_tools: ['COMPOSIO_MANAGE_CONNECTIONS'],
+            config: body,
+          }),
+        toolRouterSessionLink: (sessionId, body) =>
+          Effect.succeed({
+            connected_account_id: `ca_${body.toolkit}`,
+            link_token: `lt_${sessionId}_${body.toolkit}`,
+            redirect_url: `https://app.composio.dev/link/${sessionId}/${body.toolkit}`,
+          }),
       })
     );
 
