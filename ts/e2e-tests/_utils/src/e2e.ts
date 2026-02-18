@@ -58,8 +58,8 @@ function inferCwd(importMetaUrl: string, repoRoot: string): string {
  *     let result: E2ETestResult;
  *
  *     beforeAll(async () => {
- *       result = await runFixture('fixtures/test.mjs');
- *     }, 300_000);
+ *       result = await runFixture({ filename: 'fixtures/test.mjs' });
+ *     }, TIMEOUTS.FIXTURE);
  *
  *     describe('output', () => {
  *       it('exits successfully', () => {

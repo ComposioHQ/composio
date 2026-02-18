@@ -19,6 +19,7 @@ The main entry point for e2e tests. Automatically infers the working directory a
 
 ```typescript
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
@@ -32,7 +33,7 @@ e2e(import.meta.url, {
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'fixtures/test.mjs' });
-    });
+    }, TIMEOUTS.FIXTURE);
 
     describe('output', () => {
       it('exits successfully', () => {
@@ -148,11 +149,12 @@ it('calls LLM', async () => {
 }, { timeout: TIMEOUTS.LLM_SHORT });
 ```
 
-| Constant    | Value     | Use Case                           |
-| ----------- | --------- | ---------------------------------- |
-| `DEFAULT`   | `5_000`   | Standard test operations           |
-| `LLM_SHORT` | `15_000`  | Quick LLM calls                    |
-| `LLM_LONG`  | `60_000`  | Complex LLM operations             |
+| Constant    | Value     | Use Case                                   |
+| ----------- | --------- | ------------------------------------------ |
+| `DEFAULT`   | `5_000`   | Standard test operations                   |
+| `FIXTURE`   | `120_000` | `beforeAll` hooks that call `runFixture()` |
+| `LLM_SHORT` | `30_000`  | Quick LLM calls                            |
+| `LLM_LONG`  | `60_000`  | Complex LLM operations                     |
 
 ## Version Resolution
 
@@ -210,6 +212,8 @@ When `usesFixtures: true` is set:
 Use this for tests that have their own `package.json` and need to run `npm install`:
 
 ```typescript
+import { TIMEOUTS } from '@e2e-tests/utils/const';
+
 e2e(import.meta.url, {
   usesFixtures: true,
   defineTests: ({ runFixture }) => {
@@ -219,7 +223,7 @@ e2e(import.meta.url, {
         filename: 'index.mjs',           // Resolves to fixtures/index.mjs
         setup: 'npm install',             // Runs in fixtures/
       });
-    });
+    }, TIMEOUTS.FIXTURE);
   },
 });
 ```

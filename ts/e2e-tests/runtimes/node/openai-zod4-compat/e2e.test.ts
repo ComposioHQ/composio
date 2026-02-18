@@ -23,12 +23,13 @@ e2e(import.meta.url, {
   defineTests: ({ runFixture }) => {
     let result: E2ETestResultWithSetup;
 
+    // npm install inside Docker needs more time than the default TIMEOUTS.FIXTURE (120s)
     beforeAll(async () => {
       result = await runFixture({
         filename: 'index.mjs',
         setup: 'npm install --legacy-peer-deps',
       });
-    });
+    }, 300_000);
 
     describe('setup', () => {
       it('npm install completes successfully', () => {

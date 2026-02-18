@@ -41,6 +41,16 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
+      - name: Pre-build Docker image for e2e tests
+        run: |
+          docker build -f ts/e2e-tests/_utils/Dockerfile.node \
+            --build-arg NODE_VERSION=${{ matrix.node-version }} \
+            --label composio.e2e=true \
+            --label composio.runtime=node \
+            --label "composio.node_version=${{ matrix.node-version }}" \
+            -t "composio-e2e-node:${{ matrix.node-version }}" \
+            .
+
       - name: Run Node.js E2E Tests
         run: pnpm run test:e2e:node
 

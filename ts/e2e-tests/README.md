@@ -94,6 +94,7 @@ pnpm test:e2e:cloudflare
 
 ```typescript
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
@@ -106,7 +107,7 @@ e2e(import.meta.url, {
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'fixtures/test.mjs' });
-    });
+    }, TIMEOUTS.FIXTURE);
 
     describe('output', () => {
       it('exits successfully', () => {
@@ -132,6 +133,7 @@ e2e(import.meta.url, {
 
 ```typescript
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
@@ -144,7 +146,7 @@ e2e(import.meta.url, {
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'test.ts' });
-    });
+    }, TIMEOUTS.FIXTURE);
 
     describe('output', () => {
       it('exits successfully', () => {
@@ -167,6 +169,7 @@ For tests that need to install npm packages at runtime, use `usesFixtures: true`
 
 ```typescript
 import { e2e, type E2ETestResultWithSetup } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
@@ -181,7 +184,7 @@ e2e(import.meta.url, {
         filename: 'index.mjs',
         setup: 'npm install --legacy-peer-deps',  // Runs before fixture
       });
-    });
+    }, TIMEOUTS.FIXTURE);
 
     describe('setup', () => {
       it('npm install completes successfully', () => {

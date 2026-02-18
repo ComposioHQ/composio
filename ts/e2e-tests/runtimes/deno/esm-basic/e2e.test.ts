@@ -5,6 +5,7 @@
  */
 
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
@@ -17,7 +18,7 @@ e2e(import.meta.url, {
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'test.ts' });
-    });
+    }, TIMEOUTS.FIXTURE);
 
     describe('ESM compatibility (Deno)', () => {
       it('exits successfully', () => {

@@ -17,6 +17,7 @@ export const WELL_KNOWN_DENO_VERSIONS = ['2.6.7', 'current'] as const;
 
 export const TIMEOUTS = {
   DEFAULT: 5_000,
-  LLM_SHORT: 15_000,
+  FIXTURE: 120_000,
+  LLM_SHORT: 30_000,
   LLM_LONG: 60_000,
 } as const;

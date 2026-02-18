@@ -174,7 +174,7 @@ export interface E2EConfig {
    *
    *   beforeAll(async () => {
    *     result = await runFixture({ filename: 'fixtures/test.mjs' });
-   *   }, 300_000);
+   *   }, TIMEOUTS.FIXTURE);
    *
    *   describe('output', () => {
    *     it('exits successfully', () => {

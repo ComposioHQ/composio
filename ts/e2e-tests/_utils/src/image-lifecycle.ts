@@ -202,8 +202,18 @@ export async function ensureNodeImage(
 
   const built = await exec('docker', buildArgs, { cwd: repoRoot });
   if (built.exitCode !== 0) {
+    // Handle race condition: concurrent builds may fail because another build
+    // already tagged the image. If the image now exists, treat it as success.
+    const output = built.stderr || built.stdout;
+    if (output.includes('already exists')) {
+      const recheck = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
+      if (recheck.exitCode === 0) {
+        return imageTag;
+      }
+    }
+
     const err = new Error(`Failed to build Docker image ${imageTag}`);
-    (err as Error & { cause: Error }).cause = new Error(built.stderr || built.stdout);
+    (err as Error & { cause: Error }).cause = new Error(output);
     throw err;
   }
 
@@ -366,8 +376,18 @@ export async function ensureDenoImage(
 
   const built = await exec('docker', buildArgs, { cwd: repoRoot });
   if (built.exitCode !== 0) {
+    // Handle race condition: concurrent builds may fail because another build
+    // already tagged the image. If the image now exists, treat it as success.
+    const output = built.stderr || built.stdout;
+    if (output.includes('already exists')) {
+      const recheck = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
+      if (recheck.exitCode === 0) {
+        return imageTag;
+      }
+    }
+
     const err = new Error(`Failed to build Docker image ${imageTag}`);
-    (err as Error & { cause: Error }).cause = new Error(built.stderr || built.stdout);
+    (err as Error & { cause: Error }).cause = new Error(output);
     throw err;
   }
 
