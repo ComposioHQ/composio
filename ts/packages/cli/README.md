@@ -37,6 +37,8 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 | `composio auth_configs <subcommand>`                                                                                   | Manage auth configuration resources (`list`, `info`, `create`, `delete`).                                                         |
 | `composio connected_accounts <subcommand>`                                                                             | Manage linked user accounts (`list`, `info`, `whoami`, `link`, `delete`).                                                         |
 | `composio triggers <subcommand>`                                                                                       | Manage trigger types and active trigger instances (`list`, `info`, `create`, `status`, `inspect`, `enable`, `disable`, `delete`). |
+| `composio create [options]`                                                                                            | Create a Tool Router session and print session id + MCP URL.                                                                      |
+| `composio session link --session_id <id> --toolkit <slug> [--callback_url <url>]`                                      | Create a toolkit auth link for an existing Tool Router session.                                                                   |
 | `composio py`                                                                                                          | Python project-specific commands.                                                                                                 |
 | `composio py generate [-o, --output-dir <directory>] [--toolkits <toolkit>]`                                           | Generate Python type stubs for toolkits, tools, and triggers from the Composio API.                                               |
 | `composio ts`                                                                                                          | TypeScript project-specific commands.                                                                                             |
@@ -55,6 +57,57 @@ Example:
 
 ```bash
 COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00 composio tools list --toolkits gmail
+```
+
+### Tool Router Session Commands
+
+#### Create a Tool Router session
+
+```bash
+composio create \
+  --user_id "user_123" \
+  --toolkits "gmail,slack" \
+  --tools "GMAIL_SEND_EMAIL,SLACK_SEND_MESSAGE"
+```
+
+Expected output:
+
+- `Session created successfully`
+- `id: <session_id>`
+- `MCP: <mcp_url>`
+- API key usage reminder (`x-api-key` header)
+
+Option details:
+
+- `--user_id`: User id that owns the session. If omitted, CLI falls back to `COMPOSIO_TEST_USER_ID`.
+- `--toolkits`: Comma-separated toolkit slug allowlist (example: `gmail,slack`).
+- `--tools`: Comma-separated tool slug allowlist (example: `GMAIL_SEND_EMAIL,SLACK_SEND_MESSAGE`).
+- `--manage_connections`: Connection-management toggle. Accepted values: `true`, `false`, `1`, `0`.
+- `--auth_configs`: Toolkit map in `toolkit<>auth_config_id` format (CSV supported).
+- `--connected_accounts`: Toolkit map in `toolkit<>connected_account_id` format (CSV supported).
+
+Examples:
+
+```bash
+composio create \
+  --user_id "user_123" \
+  --auth_configs "gmail<>ac_123,slack<>ac_456" \
+  --connected_accounts "gmail<>ca_123"
+```
+
+#### Create a session auth link
+
+```bash
+composio session link --session_id "trs_123456789" --toolkit "gmail"
+```
+
+With callback URL:
+
+```bash
+composio session link \
+  --session_id "trs_123456789" \
+  --toolkit "gmail" \
+  --callback_url "https://your-app.example.com/oauth/callback"
 ```
 
 ## Configuration

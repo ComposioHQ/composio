@@ -39,6 +39,10 @@ describe('CLI: composio', () => {
         expect(sanitized).toContain('auth_configs create');
         expect(sanitized).toContain('connected_accounts whoami');
         expect(sanitized).toContain('triggers status');
+        expect(sanitized).toContain('create');
+        expect(sanitized).toContain('session link');
+        expect(sanitized).toContain('Create a Tool Router session');
+        expect(sanitized).toContain('Manage Tool Router session workflows');
       })
     );
   });
