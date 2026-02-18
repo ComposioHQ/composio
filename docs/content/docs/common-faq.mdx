@@ -135,6 +135,37 @@ Each user gets their own connected account scoped to their `user_id`, but they a
 Yes. Composio is SOC 2 Type II compliant and follows industry-standard security practices for data handling, encryption, and access control. Visit the [Composio Trust Center](https://trust.composio.dev/) for detailed compliance reports, security policies, and certifications.
 </Accordion>
 
+<Accordion title="What is the IP range for Composio's MCP servers?">
+Composio does not have fixed IP ranges. Traffic is routed through Cloudflare and Vercel, which use dynamic IPs.
+</Accordion>
+
+<Accordion title="How do I increase my quota?">
+Upgrade your plan. See [pricing](https://composio.dev/pricing) for available plans and limits.
+</Accordion>
+<Accordion title="When should I create a new session?">
+Create a new session when the config changes: different toolkits, different auth config, or a different connected account. You don't need to store or manage session IDs. Just call `create()` each time. See [Users and sessions](/docs/users-and-sessions).
+</Accordion>
+
+<Accordion title="How do I configure sessions with custom auth configs?">
+Some toolkits require your own OAuth credentials or API keys. Create an auth config in the dashboard by selecting the toolkit, choosing the auth scheme, and entering your credentials. Then pass the auth config ID when creating a session using the `auth_configs` (or `auth_config_id`) parameter so the session uses your developer credentials instead of Composio-managed auth. See [Using custom auth configuration](/docs/using-custom-auth-configuration).
+</Accordion>
+
+<Accordion title="How do I check complete logs / API calls from the SDK?">
+Enable debug logging to view all API calls and network requests made by the SDK.
+
+Python:
+```bash
+COMPOSIO_LOGGING_LEVEL=debug
+```
+
+TypeScript:
+```bash
+COMPOSIO_LOG_LEVEL=debug
+```
+
+See [Troubleshooting SDKs](/docs/troubleshooting/sdks).
+</Accordion>
+
 <Accordion title="Can Composio be self-hosted?">
 Yes, Composio supports self-hosting on the Enterprise plan. See [pricing](https://composio.dev/pricing) for details or [talk to us](https://calendly.com/composiohq/enterprise).
 </Accordion>
