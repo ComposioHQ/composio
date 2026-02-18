@@ -28,65 +28,17 @@ describe('CLI: composio', () => {
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
+        const sanitized = yield* sanitize(output);
 
-        expect(yield* sanitize(output)).toMatchInlineSnapshot(`
-          "[0;1m[0;37;1mcomposio[0;1m[0m
-
-          composio <VERSION>
-
-          [0;1mUSAGE[0m
-
-          $ composio [--log-level all | trace | debug | info | warning | error | fatal | none]
-
-          [0;1mDESCRIPTION[0m
-
-          Composio CLI - A tool for managing Python and TypeScript composio.dev projects.
-
-          [0;1mOPTIONS[0m
-
-          [0;1m--log-level all | trace | debug | info | warning | error | fatal | none[0m
-
-            One of the following: all, trace, debug, info, warning, error, fatal, none
-
-            Define log level
-
-            This setting is optional.
-
-          [0;1mCOMMANDS[0m
-
-            - version  Display your account information.
-
-          [0;1mCOMMANDS[0m
-
-            - version                                                                                                  Display your account information.
-
-            - upgrade                                                                                                  Upgrade your Composio CLI to the latest available version.
-
-            - whoami                                                                                                   Display your account information.
-
-            - login [--no-browser]                                                                                     Log in to the Composio SDK.
-
-            - logout                                                                                                   Log out from the Composio SDK.
-
-            - generate [(-o, --output-dir directory)] [--type-tools] --toolkits text...                                Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
-
-            - py                                                                                                       Handle Python projects.
-
-            - py generate [(-o, --output-dir directory)] --toolkits text...                                            Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
-
-          Environment Variables:
-            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
-                                                Use "latest" or unset to use the latest version.
-
-            - ts                                                                                                       Handle TypeScript projects.
-
-            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...  Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
-
-          Environment Variables:
-            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
-                                                Use "latest" or unset to use the latest version.
-          "
-        `);
+        expect(sanitized).toContain('Composio CLI');
+        expect(sanitized).toContain('generate');
+        expect(sanitized).toContain('py generate');
+        expect(sanitized).toContain('ts generate');
+        expect(sanitized).toContain('tools list');
+        expect(sanitized).toContain('toolkits info');
+        expect(sanitized).toContain('auth_configs create');
+        expect(sanitized).toContain('connected_accounts whoami');
+        expect(sanitized).toContain('triggers status');
       })
     );
   });

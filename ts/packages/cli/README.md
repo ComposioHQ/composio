@@ -25,18 +25,37 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 
 ## 🧭 Commands
 
-| Command                                                                                                                | Description                                                                                                        |
-| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `composio version`                                                                                                     | Display the current CLI version.                                                                                   |
-| `composio whoami`                                                                                                      | Show the currently logged-in user/account.                                                                         |
-| `composio login [--no-browser]`                                                                                        | Log in to the Composio SDK.                                                                                        |
-| `composio logout`                                                                                                      | Log out from the Composio SDK.                                                                                     |
-| `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`                               | Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers. |
-| `composio py`                                                                                                          | Python project-specific commands.                                                                                  |
-| `composio py generate [-o, --output-dir <directory>] [--toolkits <toolkit>]`                                           | Generate Python type stubs for toolkits, tools, and triggers from the Composio API.                                |
-| `composio ts`                                                                                                          | TypeScript project-specific commands.                                                                              |
-| `composio ts generate [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]` | Generate TypeScript types for toolkits, tools, and triggers from the Composio API.                                 |
-| `composio upgrade`                                                                                                     | Self-update the Composio CLI if a new release is out.                                                              |
+| Command                                                                                                                | Description                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `composio version`                                                                                                     | Display the current CLI version.                                                                                                  |
+| `composio whoami`                                                                                                      | Show the currently logged-in user/account.                                                                                        |
+| `composio login [--no-browser]`                                                                                        | Log in to the Composio SDK.                                                                                                       |
+| `composio logout`                                                                                                      | Log out from the Composio SDK.                                                                                                    |
+| `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`                               | Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.                |
+| `composio tools <subcommand>`                                                                                          | Discover and execute Composio tools (`list`, `search`, `info`, `execute`).                                                        |
+| `composio toolkits <subcommand>`                                                                                       | Discover toolkit metadata and auth requirements (`list`, `search`, `info`).                                                       |
+| `composio auth_configs <subcommand>`                                                                                   | Manage auth configuration resources (`list`, `info`, `create`, `delete`).                                                         |
+| `composio connected_accounts <subcommand>`                                                                             | Manage linked user accounts (`list`, `info`, `whoami`, `link`, `delete`).                                                         |
+| `composio triggers <subcommand>`                                                                                       | Manage trigger types and active trigger instances (`list`, `info`, `create`, `status`, `inspect`, `enable`, `disable`, `delete`). |
+| `composio py`                                                                                                          | Python project-specific commands.                                                                                                 |
+| `composio py generate [-o, --output-dir <directory>] [--toolkits <toolkit>]`                                           | Generate Python type stubs for toolkits, tools, and triggers from the Composio API.                                               |
+| `composio ts`                                                                                                          | TypeScript project-specific commands.                                                                                             |
+| `composio ts generate [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]` | Generate TypeScript types for toolkits, tools, and triggers from the Composio API.                                                |
+| `composio upgrade`                                                                                                     | Self-update the Composio CLI if a new release is out.                                                                             |
+
+### Toolkit Version Overrides
+
+For commands that resolve toolkit-specific entities (for example `tools list`, `tools info`, and trigger/toolkit lookups), you can pin toolkit versions using:
+
+```bash
+COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_SLUG>=<version>
+```
+
+Example:
+
+```bash
+COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00 composio tools list --toolkits gmail
+```
 
 ## Configuration
 

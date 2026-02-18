@@ -11,6 +11,11 @@ import { logoutCmd } from './logout.cmd';
 import { pyCmd } from './py/py.cmd';
 import { tsCmd } from './ts/ts.cmd';
 import { generateCmd } from './generate.cmd';
+import { toolsCmd } from './tools.cmd';
+import { toolkitsCmd } from './toolkits.cmd';
+import { authConfigsCmd } from './auth-configs.cmd';
+import { connectedAccountsCmd } from './connected-accounts.cmd';
+import { triggersCmd } from './triggers.cmd';
 
 const $cmd = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -20,6 +25,11 @@ const $cmd = $defaultCmd.pipe(
     loginCmd,
     logoutCmd,
     generateCmd,
+    toolsCmd,
+    toolkitsCmd,
+    authConfigsCmd,
+    connectedAccountsCmd,
+    triggersCmd,
     pyCmd,
     tsCmd,
   ])

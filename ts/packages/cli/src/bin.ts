@@ -14,6 +14,7 @@ import {
   ComposioToolkitsRepository,
 } from 'src/services/composio-clients';
 import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-cached';
+import { ComposioEntitiesRepository } from 'src/services/composio-entities';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { EnvLangDetector } from 'src/services/env-lang-detector';
@@ -59,6 +60,11 @@ export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
   ComposioToolkitsRepositoryLive
 ) satisfies RequiredLayer;
 
+export const ComposioEntitiesRepositoryLive = Layer.provide(
+  ComposioEntitiesRepository.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
 export const UpgradeBinaryLive = Layer.provide(
   UpgradeBinary.Default,
   Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
@@ -72,6 +78,7 @@ const layers = Layer.mergeAll(
   ComposioUserContextLive,
   ComposioSessionRepositoryLive,
   ComposioToolkitsRepositoryCachedLive, // Use the cached layer instead of the regular one
+  ComposioEntitiesRepositoryLive,
   EnvLangDetector.Default,
   JsPackageManagerDetector.Default,
   BunContext.layer,
