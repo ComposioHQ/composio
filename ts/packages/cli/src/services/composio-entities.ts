@@ -93,11 +93,26 @@ function createToolRouterEntityMethods(call: ApiCall) {
       sessionId: string,
       body: {
         readonly toolkit: string;
+        readonly user_id?: string;
         readonly callback_url?: string;
       }
     ) =>
       call(client => client.toolRouter.session.link(sessionId, body as never)).pipe(
         Effect.map(payload => asRecord(payload) ?? {})
+      ),
+
+    toolRouterSessionToolkits: (
+      sessionId: string,
+      query: {
+        readonly limit?: number;
+        readonly cursor?: string;
+        readonly toolkits?: ReadonlyArray<string>;
+        readonly is_connected?: boolean;
+        readonly search?: string;
+      }
+    ) =>
+      call(client => client.toolRouter.session.toolkits(sessionId, query as never)).pipe(
+        Effect.map(normalizePaginatedResponse)
       ),
   } as const;
 }

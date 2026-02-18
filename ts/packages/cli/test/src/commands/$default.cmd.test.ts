@@ -41,6 +41,7 @@ describe('CLI: composio', () => {
         expect(sanitized).toContain('triggers status');
         expect(sanitized).toContain('create');
         expect(sanitized).toContain('session link');
+        expect(sanitized).toContain('session toolkits');
         expect(sanitized).toContain('Create a Tool Router session');
         expect(sanitized).toContain('Manage Tool Router session workflows');
       })

@@ -54,6 +54,11 @@ const connectedAccountsOpt = Options.optional(Options.text('connected_accounts')
   )
 );
 
+const jsonOpt = Options.boolean('json').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Print machine-readable JSON output for agent/tool consumption.')
+);
+
 function buildToolsConfig(
   toolSlugs: ReadonlyArray<string>
 ): Effect.Effect<Record<string, { enable: Array<string> }> | undefined, Error> {
@@ -93,6 +98,7 @@ export const createCmd = Command.make(
     manageConnectionsOpt,
     authConfigsOpt,
     connectedAccountsOpt,
+    jsonOpt,
   },
   ({
     userIdOpt,
@@ -101,6 +107,7 @@ export const createCmd = Command.make(
     manageConnectionsOpt,
     authConfigsOpt,
     connectedAccountsOpt,
+    jsonOpt,
   }) =>
     Effect.gen(function* () {
       const repo = yield* ComposioEntitiesRepository;
@@ -137,6 +144,11 @@ export const createCmd = Command.make(
         auth_configs: authConfigs,
         connected_accounts: connectedAccounts,
       });
+
+      if (jsonOpt) {
+        yield* Console.log(JSON.stringify(response, null, 2));
+        return;
+      }
 
       const mcp = asRecord(response['mcp']);
       yield* Console.log('Session created successfully');

@@ -82,6 +82,27 @@ describe('CLI: composio create', () => {
         expect(output).toContain('toolkit<>auth_config_id');
         expect(output).toContain('toolkit<>connected_account_id');
         expect(output).toContain('Accepted values: true, false, 1, 0');
+        expect(output).toContain('machine-readable JSON output');
+      })
+    );
+
+    it.scoped('prints create response in json mode', () =>
+      Effect.gen(function* () {
+        yield* cli(['create', '--user_id', 'user_123', '--toolkits', 'gmail', '--json']);
+        const lines = yield* MockConsole.getLines();
+        const jsonLine = lines[lines.length - 1];
+        const parsed = JSON.parse(jsonLine);
+
+        expect(parsed).toEqual(
+          expect.objectContaining({
+            session_id: 'trs_test_1',
+          })
+        );
+        expect(parsed.mcp).toEqual(
+          expect.objectContaining({
+            url: 'https://mcp.composio.dev/tool_router/user_123/trs_test_1',
+          })
+        );
       })
     );
   });

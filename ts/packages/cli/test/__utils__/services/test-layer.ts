@@ -278,6 +278,28 @@ export const TestLayer = (input?: TestLiveInput) =>
             updated_at: '2026-01-01T00:00:00.000Z',
           }));
 
+    const defaultSessionToolkits = toolkitsData.toolkits.map((toolkit, idx) => ({
+      slug: toolkit.slug,
+      name: toolkit.name,
+      description: toolkit.meta.description,
+      icon_url: null,
+      app_name: toolkit.name,
+      is_no_auth: false,
+      composio_managed_auth_schemes: ['OAUTH2'],
+      connected_account:
+        idx % 2 === 0
+          ? {
+              id: `ca_${toolkit.slug}`,
+              status: idx % 4 === 0 ? 'ACTIVE' : 'INITIATED',
+              auth_config: {
+                id: `ac_${toolkit.slug}`,
+                mode: 'OAUTH2',
+                is_composio_managed: true,
+              },
+            }
+          : null,
+    }));
+
     const defaultTriggerInstances =
       entitiesData.triggerInstances.length > 0
         ? entitiesData.triggerInstances
@@ -646,6 +668,33 @@ export const TestLayer = (input?: TestLiveInput) =>
           Effect.succeed({
             status: 'success',
           }),
+        toolRouterSessionToolkits: (_sessionId, query) => {
+          let items = [...defaultSessionToolkits];
+
+          if (query.toolkits && query.toolkits.length > 0) {
+            const allowed = new Set(query.toolkits.map(toolkit => toolkit.toLowerCase()));
+            items = items.filter(item => allowed.has(item.slug.toLowerCase()));
+          }
+
+          if (query.search) {
+            const search = query.search.toLowerCase();
+            items = items.filter(item => {
+              const haystack =
+                `${item.slug} ${item.name ?? ''} ${item.description ?? ''}`.toLowerCase();
+              return haystack.includes(search);
+            });
+          }
+
+          if (query.is_connected !== undefined) {
+            items = items.filter(item => (item.connected_account !== null) === query.is_connected);
+          }
+
+          if (query.limit !== undefined) {
+            items = items.slice(0, query.limit);
+          }
+
+          return Effect.succeed(paginateRecords(items));
+        },
         toolRouterSessionCreate: body =>
           Effect.succeed({
             session_id: 'trs_test_1',
@@ -661,6 +710,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             connected_account_id: `ca_${body.toolkit}`,
             link_token: `lt_${sessionId}_${body.toolkit}`,
             redirect_url: `https://app.composio.dev/link/${sessionId}/${body.toolkit}`,
+            user_id: body.user_id ?? 'default',
           }),
       })
     );

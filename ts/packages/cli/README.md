@@ -38,7 +38,8 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 | `composio connected_accounts <subcommand>`                                                                             | Manage linked user accounts (`list`, `info`, `whoami`, `link`, `delete`).                                                         |
 | `composio triggers <subcommand>`                                                                                       | Manage trigger types and active trigger instances (`list`, `info`, `create`, `status`, `inspect`, `enable`, `disable`, `delete`). |
 | `composio create [options]`                                                                                            | Create a Tool Router session and print session id + MCP URL.                                                                      |
-| `composio session link --session_id <id> --toolkit <slug> [--callback_url <url>]`                                      | Create a toolkit auth link for an existing Tool Router session.                                                                   |
+| `composio session link <session_id> --user_id <id> --toolkit <slug> [--callback_url <url>] [--json]`                   | Create a toolkit auth link for an existing Tool Router session.                                                                   |
+| `composio session toolkits <session_id> [--toolkits <csv>] [--is_connected <bool>] [--search <text>] [--json]`         | List toolkits available in an existing Tool Router session with API-supported filters.                                            |
 | `composio py`                                                                                                          | Python project-specific commands.                                                                                                 |
 | `composio py generate [-o, --output-dir <directory>] [--toolkits <toolkit>]`                                           | Generate Python type stubs for toolkits, tools, and triggers from the Composio API.                                               |
 | `composio ts`                                                                                                          | TypeScript project-specific commands.                                                                                             |
@@ -85,6 +86,7 @@ Option details:
 - `--manage_connections`: Connection-management toggle. Accepted values: `true`, `false`, `1`, `0`.
 - `--auth_configs`: Toolkit map in `toolkit<>auth_config_id` format (CSV supported).
 - `--connected_accounts`: Toolkit map in `toolkit<>connected_account_id` format (CSV supported).
+- `--json`: Print raw JSON response for agent/tool consumption.
 
 Examples:
 
@@ -98,17 +100,49 @@ composio create \
 #### Create a session auth link
 
 ```bash
-composio session link --session_id "trs_123456789" --toolkit "gmail"
+composio session link "trs_123456789" --user_id "user_123" --toolkit "gmail"
 ```
 
 With callback URL:
 
 ```bash
 composio session link \
-  --session_id "trs_123456789" \
+  "trs_123456789" \
+  --user_id "user_123" \
   --toolkit "gmail" \
   --callback_url "https://your-app.example.com/oauth/callback"
 ```
+
+JSON output:
+
+```bash
+composio session link "trs_123456789" --user_id "user_123" --toolkit "gmail" --json
+```
+
+#### List session toolkits
+
+```bash
+composio session toolkits "trs_123456789"
+```
+
+Filter examples:
+
+```bash
+composio session toolkits "trs_123456789" \
+  --toolkits "gmail,slack" \
+  --is_connected true \
+  --search "mail" \
+  --limit 10
+```
+
+Supported filters:
+
+- `--toolkits`: comma-separated toolkit slug filter.
+- `--is_connected`: connection status filter (`true|false|1|0`).
+- `--search`: API-side search query filter.
+- `--limit`: max number of returned rows.
+- `--cursor`: pagination cursor from previous call.
+- `--json`: machine-readable JSON response for agents.
 
 ## Configuration
 
