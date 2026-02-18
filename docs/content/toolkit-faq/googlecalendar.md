@@ -14,11 +14,11 @@ When using custom OAuth credentials, the Google Calendar API must be enabled in 
 
 ## Why am I getting "Error 400: invalid_scope"?
 
-The requested scopes are invalid or incorrectly formatted in the authorization URL. Verify your scope values against the [Google OAuth scopes docs](https://developers.google.com/identity/protocols/oauth2). If you're creating auth configs programmatically, see the [programmatic auth config guide](/docs/programmatic-auth-configs).
+The requested scopes are invalid or incorrectly formatted in the authorization URL. Verify your scope values against the [Google OAuth scopes docs](https://developers.google.com/identity/protocols/oauth2). If you're creating auth configs programmatically, see the [programmatic auth config guide](/docs/auth-configuration/programmatic-auth-configs).
 
 ## Why does the OAuth consent screen show "Composio" instead of my app?
 
-By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling the OAuth consent screen](/docs/custom-auth-configs#white-labeling-the-oauth-consent-screen).
+By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling the OAuth consent screen](/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen).
 
 ## Why am I getting 401 errors on tool calls?
 
