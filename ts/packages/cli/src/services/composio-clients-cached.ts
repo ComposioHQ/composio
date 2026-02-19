@@ -251,6 +251,10 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       getAuthConfig: nanoid => underlyingRepository.getAuthConfig(nanoid),
       createAuthConfig: params => underlyingRepository.createAuthConfig(params),
       deleteAuthConfig: nanoid => underlyingRepository.deleteAuthConfig(nanoid),
+      // Connected account operations should NOT be cached (CRUD operations, must be fresh)
+      listConnectedAccounts: params => underlyingRepository.listConnectedAccounts(params),
+      getConnectedAccount: nanoid => underlyingRepository.getConnectedAccount(nanoid),
+      deleteConnectedAccount: nanoid => underlyingRepository.deleteConnectedAccount(nanoid),
     });
   })
 ).pipe(

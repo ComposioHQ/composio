@@ -34,6 +34,7 @@ import { JsPackageManagerDetector } from 'src/services/js-package-manager-detect
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import type { AuthConfigItem } from 'src/models/auth-configs';
+import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { AuthConfigCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
@@ -70,6 +71,13 @@ export interface TestLiveInput {
   authConfigsData?: {
     items?: AuthConfigItem[];
     createResponse?: AuthConfigCreateResponse;
+  };
+
+  /**
+   * Mock connected-account data to use in test.
+   */
+  connectedAccountsData?: {
+    items?: ConnectedAccountItem[];
   };
 }
 
@@ -113,6 +121,14 @@ export const TestLayer = (input?: TestLiveInput) =>
     const authConfigsData = {
       ...defaultAuthConfigsData,
       ...(input?.authConfigsData ?? {}),
+    };
+
+    const defaultConnectedAccountsData = {
+      items: [] as ConnectedAccountItem[],
+    } satisfies TestLiveInput['connectedAccountsData'];
+    const connectedAccountsData = {
+      ...defaultConnectedAccountsData,
+      ...(input?.connectedAccountsData ?? {}),
     };
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
@@ -395,6 +411,73 @@ export const TestLayer = (input?: TestLiveInput) =>
                 details: {
                   message: `Auth config "${nanoid}" not found.`,
                   suggestedFix: 'Check the auth config ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed({});
+        },
+        listConnectedAccounts: (params: {
+          toolkit_slugs?: string[];
+          user_ids?: string[];
+          statuses?: string[];
+          limit?: number;
+        }) => {
+          let results = [...connectedAccountsData.items];
+
+          if (params.toolkit_slugs && params.toolkit_slugs.length > 0) {
+            const slugs = params.toolkit_slugs.map(s => s.toLowerCase());
+            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
+          }
+
+          if (params.user_ids && params.user_ids.length > 0) {
+            const ids = new Set(params.user_ids);
+            results = results.filter(item => ids.has(item.user_id));
+          }
+
+          if (params.statuses && params.statuses.length > 0) {
+            const statuses = new Set(params.statuses);
+            results = results.filter(item => statuses.has(item.status));
+          }
+
+          const limit = params.limit ?? 30;
+          const items = results.slice(0, limit);
+          return Effect.succeed({
+            items,
+            total_items: results.length,
+            total_pages: Math.ceil(results.length / limit),
+            current_page: 1,
+            next_cursor: null,
+          });
+        },
+        getConnectedAccount: (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Connected account "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Connected account "${nanoid}" not found.`,
+                  suggestedFix: 'Check the connected account ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed(found);
+        },
+        deleteConnectedAccount: (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Connected account "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Connected account "${nanoid}" not found.`,
+                  suggestedFix: 'Check the connected account ID and try again.',
                   code: 404,
                 },
               })

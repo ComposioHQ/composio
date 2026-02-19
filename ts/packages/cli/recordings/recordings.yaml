@@ -186,3 +186,35 @@ recordings:
     - name: delete
       description: Delete without arguments
       command: "composio auth-configs delete"
+
+  connected-accounts:
+    - name: help
+      description: Show connected-accounts subcommand help
+      command: "composio connected-accounts --help"
+      height: dynamic
+
+    - name: list
+      description: List all connected accounts
+      command: "composio connected-accounts list"
+      height: dynamic
+
+    - name: list-toolkits-gmail
+      description: List filtered by toolkit
+      command: "composio connected-accounts list --toolkits gmail"
+      height: dynamic
+
+    - name: list-limit-1
+      description: List with --limit flag
+      command: "composio connected-accounts list --limit 1"
+
+    - name: info
+      description: Show info without arguments
+      command: "composio connected-accounts info"
+
+    - name: info-nonexistent
+      description: Info with nonexistent ID
+      command: "composio connected-accounts info nonexistent_id"
+
+    - name: delete
+      description: Delete without arguments
+      command: "composio connected-accounts delete"
