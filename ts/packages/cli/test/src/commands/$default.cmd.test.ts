@@ -119,6 +119,8 @@ describe('CLI: composio', () => {
             - connected-accounts whoami [<id>]                                                                                                                         Show the external account profile for a connected account.
 
             - connected-accounts delete [(-y, --yes)] [<id>]                                                                                                           Delete a connected account.
+
+            - connected-accounts link --auth-config text [--user-id text] [--no-browser]                                                                               Link an external account via OAuth redirect.
           "
         `);
       })

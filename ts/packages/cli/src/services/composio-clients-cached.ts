@@ -255,6 +255,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       listConnectedAccounts: params => underlyingRepository.listConnectedAccounts(params),
       getConnectedAccount: nanoid => underlyingRepository.getConnectedAccount(nanoid),
       deleteConnectedAccount: nanoid => underlyingRepository.deleteConnectedAccount(nanoid),
+      createConnectedAccountLink: params => underlyingRepository.createConnectedAccountLink(params),
     });
   })
 ).pipe(

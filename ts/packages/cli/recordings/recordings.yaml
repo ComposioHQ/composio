@@ -218,3 +218,7 @@ recordings:
     - name: delete
       description: Delete without arguments
       command: "composio connected-accounts delete"
+
+    - name: link-no-args
+      description: Link without arguments
+      command: "composio connected-accounts link"

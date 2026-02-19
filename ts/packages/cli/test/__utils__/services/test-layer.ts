@@ -35,7 +35,7 @@ import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import type { AuthConfigItem } from 'src/models/auth-configs';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import type { AuthConfigCreateResponse } from 'src/services/composio-clients';
+import type { AuthConfigCreateResponse, LinkCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
@@ -78,6 +78,7 @@ export interface TestLiveInput {
    */
   connectedAccountsData?: {
     items?: ConnectedAccountItem[];
+    linkResponse?: LinkCreateResponse;
   };
 }
 
@@ -125,6 +126,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const defaultConnectedAccountsData = {
       items: [] as ConnectedAccountItem[],
+      linkResponse: undefined as LinkCreateResponse | undefined,
     } satisfies TestLiveInput['connectedAccountsData'];
     const connectedAccountsData = {
       ...defaultConnectedAccountsData,
@@ -484,6 +486,17 @@ export const TestLayer = (input?: TestLiveInput) =>
             );
           }
           return Effect.succeed({});
+        },
+        createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) => {
+          if (connectedAccountsData.linkResponse) {
+            return Effect.succeed(connectedAccountsData.linkResponse);
+          }
+          return Effect.succeed({
+            connected_account_id: 'con_test_link',
+            expires_at: '2026-12-31T23:59:59Z',
+            link_token: 'lt_test_token',
+            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
+          } satisfies LinkCreateResponse);
         },
       })
     );

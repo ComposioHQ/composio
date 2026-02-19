@@ -344,6 +344,15 @@ export type ConnectedAccountListResponse = Schema.Schema.Type<typeof ConnectedAc
 export const ConnectedAccountRetrieveResponse = ConnectedAccountItem.annotations({
   identifier: 'ConnectedAccountRetrieveResponse',
 });
+
+// Link create response
+export const LinkCreateResponse = Schema.Struct({
+  connected_account_id: Schema.String,
+  expires_at: Schema.String,
+  link_token: Schema.String,
+  redirect_url: Schema.String,
+}).annotations({ identifier: 'LinkCreateResponse' });
+export type LinkCreateResponse = Schema.Schema.Type<typeof LinkCreateResponse>;
 export type ConnectedAccountRetrieveResponse = Schema.Schema.Type<
   typeof ConnectedAccountRetrieveResponse
 >;
@@ -922,6 +931,14 @@ function buildConnectedAccountsNamespace(
           Schema.Unknown
         )
       ),
+    /**
+     * Creates a new authentication link session for connecting an external account.
+     * @param params - auth_config_id and user_id
+     */
+    createLink: (params: { auth_config_id: string; user_id: string }) =>
+      withMetrics(
+        callClient(clientSingleton, client => client.link.create(params), LinkCreateResponse)
+      ),
   };
 }
 
@@ -1341,6 +1358,8 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         }) => client.connectedAccounts.list(params),
         getConnectedAccount: (nanoid: string) => client.connectedAccounts.retrieve(nanoid),
         deleteConnectedAccount: (nanoid: string) => client.connectedAccounts.delete(nanoid),
+        createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
+          client.connectedAccounts.createLink(params),
       };
     }),
     dependencies: [ComposioClientLive.Default],

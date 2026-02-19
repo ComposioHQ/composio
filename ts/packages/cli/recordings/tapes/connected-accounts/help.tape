@@ -1,4 +1,4 @@
-Set Height 1090
+Set Height 1190
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/connected-accounts/help.svg"
 Output "recordings/ascii/connected-accounts/help.ascii"
