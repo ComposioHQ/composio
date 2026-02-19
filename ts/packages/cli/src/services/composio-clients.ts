@@ -16,6 +16,7 @@ import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { Toolkit, Toolkits, ToolkitDetailed, type ToolkitSearchResult } from 'src/models/toolkits';
 import { AuthConfigItem, AuthConfigItems } from 'src/models/auth-configs';
+import { ConnectedAccountItem, ConnectedAccountItems } from 'src/models/connected-accounts';
 import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
 import {
   groupByVersion,
@@ -328,6 +329,33 @@ export const AuthConfigCreateResponse = Schema.Struct({
   }),
 }).annotations({ identifier: 'AuthConfigCreateResponse' });
 export type AuthConfigCreateResponse = Schema.Schema.Type<typeof AuthConfigCreateResponse>;
+
+// Connected account list response (single page with total_items for "Listing X of Y" display)
+export const ConnectedAccountListResponse = Schema.Struct({
+  items: ConnectedAccountItems,
+  total_items: Schema.Int,
+  total_pages: Schema.Int,
+  current_page: Schema.Int,
+  next_cursor: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+}).annotations({ identifier: 'ConnectedAccountListResponse' });
+export type ConnectedAccountListResponse = Schema.Schema.Type<typeof ConnectedAccountListResponse>;
+
+// Connected account retrieve response (same shape as a single list item)
+export const ConnectedAccountRetrieveResponse = ConnectedAccountItem.annotations({
+  identifier: 'ConnectedAccountRetrieveResponse',
+});
+
+// Link create response
+export const LinkCreateResponse = Schema.Struct({
+  connected_account_id: Schema.String,
+  expires_at: Schema.String,
+  link_token: Schema.String,
+  redirect_url: Schema.String,
+}).annotations({ identifier: 'LinkCreateResponse' });
+export type LinkCreateResponse = Schema.Schema.Type<typeof LinkCreateResponse>;
+export type ConnectedAccountRetrieveResponse = Schema.Schema.Type<
+  typeof ConnectedAccountRetrieveResponse
+>;
 
 /**
  * Error response schemas
@@ -843,6 +871,77 @@ function buildAuthConfigsNamespace(
   };
 }
 
+/**
+ * Build the `connectedAccounts` namespace for ComposioClientLive.
+ * Extracted to keep the main generator under the max-lines-per-function limit.
+ */
+function buildConnectedAccountsNamespace(
+  clientSingleton: ComposioClientSingleton,
+  withMetrics: <A, E, R>(
+    effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
+  ) => Effect.Effect<A, E, R>
+) {
+  return {
+    /**
+     * List connected accounts with optional filters. Returns a single page of results.
+     * @param params - Search/filter parameters
+     */
+    list: (params: {
+      toolkit_slugs?: string[];
+      user_ids?: string[];
+      statuses?: string[];
+      limit?: number;
+    }) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client =>
+            client.connectedAccounts.list({
+              toolkit_slugs: params.toolkit_slugs,
+              user_ids: params.user_ids,
+              statuses: params.statuses as
+                | Array<'INITIALIZING' | 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'INACTIVE'>
+                | undefined,
+              limit: params.limit,
+            }),
+          ConnectedAccountListResponse
+        )
+      ),
+    /**
+     * Retrieves detailed info about a single connected account by its nanoid.
+     * @param nanoid - Connected account ID (e.g. "con_1a2b3c4d5e6f")
+     */
+    retrieve: (nanoid: string) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.connectedAccounts.retrieve(nanoid),
+          ConnectedAccountRetrieveResponse
+        )
+      ),
+    /**
+     * Soft-deletes a connected account by its nanoid.
+     * @param nanoid - Connected account ID
+     */
+    delete: (nanoid: string) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.connectedAccounts.delete(nanoid),
+          Schema.Unknown
+        )
+      ),
+    /**
+     * Creates a new authentication link session for connecting an external account.
+     * @param params - auth_config_id and user_id
+     */
+    createLink: (params: { auth_config_id: string; user_id: string }) =>
+      withMetrics(
+        callClient(clientSingleton, client => client.link.create(params), LinkCreateResponse)
+      ),
+  };
+}
+
 // Service that wraps the raw Composio client, which is shared by all client services.
 export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
   'services/ComposioClientLive',
@@ -1013,6 +1112,7 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
             ),
         },
         authConfigs: buildAuthConfigsNamespace(clientSingleton, withMetrics),
+        connectedAccounts: buildConnectedAccountsNamespace(clientSingleton, withMetrics),
       };
     }),
     dependencies: [ComposioClientSingleton.Default],
@@ -1248,11 +1348,18 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
          * @param params - Create parameters (discriminated union: use_composio_managed_auth | use_custom_auth)
          */
         createAuthConfig: (params: AuthConfigCreateParams) => client.authConfigs.create(params),
-        /**
-         * Soft-deletes an auth config by its nanoid.
-         * @param nanoid - Auth config ID
-         */
         deleteAuthConfig: (nanoid: string) => client.authConfigs.delete(nanoid),
+        // Connected account operations (thin wrappers — see buildConnectedAccountsNamespace)
+        listConnectedAccounts: (params: {
+          toolkit_slugs?: string[];
+          user_ids?: string[];
+          statuses?: string[];
+          limit?: number;
+        }) => client.connectedAccounts.list(params),
+        getConnectedAccount: (nanoid: string) => client.connectedAccounts.retrieve(nanoid),
+        deleteConnectedAccount: (nanoid: string) => client.connectedAccounts.delete(nanoid),
+        createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
+          client.connectedAccounts.createLink(params),
       };
     }),
     dependencies: [ComposioClientLive.Default],

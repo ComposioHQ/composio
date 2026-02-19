@@ -1,0 +1,150 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent ID
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent ID
+> composio connected-accounts info nonexistent_id
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent ID
+> composio connected-accounts info nonexistent_id
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent ID
+> composio connected-accounts info nonexistent_id
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent ID
+> composio connected-accounts info nonexistent_id
+│
+◒  Fetching connected account "nonexistent_id"...
+▲  Fetching connected account "nonexistent_id"...
+│
+■  Failed to fetch connected account "nonexistent_id".
+│
+◇  Browse available connected accounts:
+│  > composio connected-accounts list
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
