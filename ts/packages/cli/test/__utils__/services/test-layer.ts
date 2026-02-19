@@ -312,6 +312,24 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed(found);
         },
+        listAuthConfigs: () =>
+          Effect.succeed({
+            items: [],
+            total_items: 0,
+            total_pages: 0,
+            current_page: 1,
+            next_cursor: null,
+          }),
+        getAuthConfig: (nanoid: string) =>
+          Effect.fail(
+            new HttpServerError({ cause: `Auth config "${nanoid}" not found`, status: 404 })
+          ),
+        createAuthConfig: () =>
+          Effect.succeed({
+            auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
+            toolkit: { slug: 'test' },
+          }),
+        deleteAuthConfig: () => Effect.succeed(undefined as unknown),
       })
     );
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();

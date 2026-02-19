@@ -246,6 +246,11 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       // Tool search/detail should NOT be cached (query-dependent, should be fresh)
       searchTools: params => underlyingRepository.searchTools(params),
       getToolDetailed: slug => underlyingRepository.getToolDetailed(slug),
+      // Auth config operations should NOT be cached (CRUD operations, must be fresh)
+      listAuthConfigs: params => underlyingRepository.listAuthConfigs(params),
+      getAuthConfig: nanoid => underlyingRepository.getAuthConfig(nanoid),
+      createAuthConfig: params => underlyingRepository.createAuthConfig(params),
+      deleteAuthConfig: nanoid => underlyingRepository.deleteAuthConfig(nanoid),
     });
   })
 ).pipe(

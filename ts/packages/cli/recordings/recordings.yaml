@@ -150,3 +150,35 @@ recordings:
       description: Info with nonexistent tool
       command: "composio tools info NONEXISTENT_TOOL"
       height: dynamic
+
+  auth-configs:
+    - name: help
+      description: Show auth-configs subcommand help
+      command: "composio auth-configs --help"
+      height: dynamic
+
+    - name: list
+      description: List all auth configs
+      command: "composio auth-configs list"
+      height: dynamic
+
+    - name: list-toolkits-gmail
+      description: List filtered by toolkit
+      command: "composio auth-configs list --toolkits gmail"
+      height: dynamic
+
+    - name: list-limit-1
+      description: List with --limit flag
+      command: "composio auth-configs list --limit 1"
+
+    - name: info
+      description: Show info without arguments
+      command: "composio auth-configs info"
+
+    - name: info-nonexistent
+      description: Info with nonexistent ID
+      command: "composio auth-configs info nonexistent_id"
+
+    - name: delete
+      description: Delete without arguments
+      command: "composio auth-configs delete"
