@@ -78,6 +78,10 @@ redirects:
   destination: /type-script/:path
 - source: /docs/tool-router/quick-start
   destination: /docs/tool-router/quick-start-deprecated
+- source: /docs/tool-router
+  destination: /tool-router/overview
+- source: /tool-router/docs
+  destination: /tool-router/overview
 tabs:
   docs:
     display-name: Docs
@@ -129,6 +133,9 @@ navigation:
     - page: Managed Authentication
       path: pages/dist/capabilities/managed-authentication.mdx
       slug: managed-authentication
+    - page: Background Agents
+      path: pages/dist/guides/background-agents.mdx
+      slug: background-agents
     - page: Tools
       path: pages/dist/capabilities/tools.mdx
       slug: tools
@@ -191,6 +198,9 @@ navigation:
     - page: User Management
       path: pages/dist/authentication/user-management.mdx
       slug: user-management
+    - page: Project Isolation
+      path: pages/dist/guides/project-isolation.mdx
+      slug: project-isolation
   - section: MCP
     icon: fa-light fa-database
     skip-slug: true

@@ -2,55 +2,150 @@
 title: Vercel AI SDK Provider
 subtitle: Use Composio with Vercel AI SDK
 slug: /providers/vercel
-image: "https://og.composio.dev/api/og?title=Vercel%20AI%20SDK%20Provider"   # image for socials
-keywords: ''
+image: "https://og.composio.dev/api/og?title=Vercel%20AI%20SDK%20Provider"
+keywords: "vercel, ai sdk, ai sdk 5, ai sdk 6, agent"
 hide-nav-links: false
 ---
 
-Vercel AI SDK allows you to configure an optional async `execute` function that the framework uses to execute the tool calls.
+The Vercel AI SDK provider transforms Composio tools into Vercel's [tool format](https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling) with built-in execution — no manual agentic loop needed.
 
-The Vercel provider for Composio formats the Composio tools and adds this `execute` function to the tool calls.
+<Warning>
+**AI SDK 5 vs 6 have breaking API differences.** Composio supports both **AI SDK 5** (`ai@^5`) and **AI SDK 6** (`ai@^6`). The key behavioral change: V5 defaults to **single-step** tool calling (your agent calls one tool and stops), while V6 defaults to **multi-step** (the agent loops automatically). If your agent calls one tool and immediately returns without finishing, you're likely on V5 without `stopWhen` — see [key differences](#key-differences-between-ai-sdk-5-and-6) below.
+</Warning>
+
+<Info>
+**Which version am I on?** Check your `package.json`: `"ai": "^5.x"` is V5, `"ai": "^6.x"` is V6. If you can import `Agent` from `"ai"`, you're on V6 — that class doesn't exist in V5. **Starting a new project?** Use AI SDK 6.
+</Info>
 
 ## Setup
 
 Vercel AI SDK and the provider are only available for the TypeScript SDK.
 
-```typescript TypeScript maxLines=60 wordWrap
-npm install @composio/vercel
+```bash
+npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
 ```
 
-You can specify and import the provider in the constructor.
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
 
-```typescript TypeScript maxLines=60 wordWrap
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-import { generateText } from 'ai';
-import { openai } from "@ai-sdk/openai";
-
-const composio = new Composio({
-  provider: new VercelProvider(),
-});
+```txt .env
+COMPOSIO_API_KEY=xxxxxxxxx
+ANTHROPIC_API_KEY=xxxxxxxxx
 ```
 
 ## Usage
 
-```typescript TypeScript maxLines=60 wordWrap
-// create an auth config for gmail 
-// then create a connected account with an external user id that identifies the user
-const externalUserId = "your-external-user-id";
-const tools = await composio.tools.get(externalUserId, "GMAIL_SEND_EMAIL");
+<Tabs>
+<Tab title="AI SDK 6">
 
-// env: OPENAI_API_KEY
-const { text } = await generateText({
-  model: openai("gpt-5"),
-  messages: [
-    {
-      role: "user",
-      content: `Send an email to soham.g@composio.dev with the subject 'Hello from composio 👋🏻' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
-    },
-  ],
+AI SDK 6 introduces the `Agent` abstraction and renames `system` to `instructions`. The default `stopWhen` is `stepCountIs(20)`, so multi-step agent loops work out of the box.
+
+```typescript TypeScript
+import { anthropic } from "@ai-sdk/anthropic";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { Agent, generateText } from "ai";
+
+const composio = new Composio({ provider: new VercelProvider() });
+
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+// Use the Agent abstraction for reusable agent configs
+const agent = new Agent({
+  model: anthropic("claude-sonnet-4-5-20250514"),
   tools,
+  instructions: "You are a helpful assistant that uses Composio tools to take action.",
 });
 
-console.log("Email sent successfully!", { text });
+const { text } = await generateText({
+  agent,
+  prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+});
+
+console.log(text);
 ```
+</Tab>
+<Tab title="AI SDK 5">
+
+In AI SDK 5, use `generateText` directly with `system` and an explicit `stopWhen` (defaults to 1 step).
+
+```typescript TypeScript
+import { anthropic } from "@ai-sdk/anthropic";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { generateText, stepCountIs } from "ai";
+
+const composio = new Composio({ provider: new VercelProvider() });
+
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const { text } = await generateText({
+  model: anthropic("claude-sonnet-4-5-20250514"),
+  tools,
+  system: "You are a helpful assistant that uses Composio tools to take action.",
+  prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+  stopWhen: stepCountIs(10), // Required in v5 for multi-step loops
+});
+
+console.log(text);
+```
+</Tab>
+</Tabs>
+
+## Key differences between AI SDK 5 and 6
+
+| Feature | AI SDK 5 (`ai@^5`) | AI SDK 6 (`ai@^6`) |
+|---------|-------|-------|
+| Agent abstraction | None — pass config inline to `generateText`/`streamText` | `new Agent({ model, tools, instructions })` |
+| System prompt | `system: "..."` | `instructions: "..."` |
+| Default step count | `stopWhen: stepCountIs(1)` (single step) | `stopWhen: stepCountIs(20)` (multi-step) |
+| Tool calling | Manual agentic loop with `stopWhen` | Automatic via `Agent` — handles multi-step tool calls by default |
+| Structured output | `generateObject` / `streamObject` | `generateText` / `streamText` with `output` option |
+
+### What this means in practice
+
+The biggest behavioral difference is **how tool-calling loops work**:
+
+- **AI SDK 5** defaults to a single step — the model calls one tool and stops. To get multi-step agent behavior (model calls tool → reads result → calls another tool → ...), you must set `stopWhen: stepCountIs(N)`. Without this, your agent will try to use a Composio tool once and then return, even if the task isn't complete.
+
+- **AI SDK 6** defaults to 20 steps via the `Agent` abstraction. The model will keep calling tools and reasoning until it considers the task done (or hits the step limit). This is the behavior most developers expect from an "agent."
+
+<Warning>
+**Common pitfall on AI SDK 5:** If your agent calls one tool and then immediately returns a text response without finishing the task, you're likely missing `stopWhen`. Add `stopWhen: stepCountIs(10)` (or higher) to enable multi-step tool calling.
+</Warning>
+
+### The `Agent` abstraction (V6 only)
+
+In AI SDK 6, `Agent` is a reusable configuration object — think of it as a named, preconfigured agent template. This is useful when you want to define an agent once and run it multiple times:
+
+```typescript TypeScript
+import { Agent, generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+
+// Define the agent once
+const emailAgent = new Agent({
+  model: anthropic("claude-sonnet-4-5-20250514"),
+  tools, // Composio tools from session.tools()
+  instructions: "You help users manage their email.",
+});
+
+// Reuse it for different prompts
+const { text: summary } = await generateText({
+  agent: emailAgent,
+  prompt: "Summarize my unread emails",
+});
+
+const { text: draft } = await generateText({
+  agent: emailAgent,
+  prompt: "Draft a reply to the latest email from Alice",
+});
+```
+
+In AI SDK 5, you'd pass `model`, `tools`, `system`, and `stopWhen` directly to `generateText` every time — there's no equivalent reusable abstraction.
+
+<Info>
+**Which version should I use?** If you're starting a new project, use AI SDK 6. The `Agent` abstraction simplifies multi-step tool calling significantly — you no longer need to manage `stopWhen` or build your own agentic loop. If you're on an existing AI SDK 5 project, both versions work with Composio — upgrade when ready.
+</Info>
+
+For the full migration guide, see [Vercel's AI SDK 5 to 6 migration docs](https://ai-sdk.dev/docs/migration-guides/migration-guide-6-0).

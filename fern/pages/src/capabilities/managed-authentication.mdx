@@ -3,13 +3,64 @@ title: Managed Authentication
 image: "https://og.composio.dev/api/og?title=Managed%20Authentication&description=Enterprise-grade%20authentication%20for%20AI%20agents"
 subtitle: "Auth management for your AI agents"
 description: "Let your AI agents authenticate with 500+ apps on behalf of users. OAuth, API keys, user isolation, and white-labeling built in."
-keywords: "managed authentication, ai agent auth, oauth, api keys, user isolation, white-labeling, connected accounts"
+keywords: "managed authentication, ai agent auth, oauth, api keys, user isolation, white-labeling, connected accounts, auth config, project"
 hide-nav-links: false
 ---
 
-Composio handles OAuth flows, API keys, token refresh, and credential storage for 500+ apps. 
+<Warning>
+**Server-side only.** Always initialize the Composio SDK on the server (API routes, server components, scripts) — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that should not be exposed to the browser. See [Users and Sessions](/tool-router/users-and-sessions#server-side-initialization) for details.
+</Warning>
 
-## Quick links 
+Composio handles OAuth flows, API keys, token refresh, and credential storage for 500+ apps.
+
+## Key concepts
+
+Before diving in, here's how the main authentication concepts relate to each other:
+
+| Concept | What it is | ID prefix | Example |
+|---------|-----------|-----------|---------|
+| **Project** | An isolated environment that scopes all your resources (API keys, users, connections). Think of it as a namespace. Each project has its own API key. | `proj_` | Your production app, your staging environment |
+| **Auth Config** | A blueprint that defines _how_ authentication works for a toolkit — the auth method, scopes, and credentials. Shared across all users in a project. You get one automatically via Composio managed auth; create your own to use custom OAuth credentials or scopes. | `ac_` | "Use OAuth2 for Gmail with read+send scopes using Composio's managed credentials" |
+| **Connected Account** | An individual user's authenticated connection to a toolkit. Created when a user completes an OAuth flow or provides an API key. Stores their tokens, which Composio auto-refreshes. | `ca_` | User 123's Gmail OAuth tokens |
+| **Session** | An ephemeral configuration that ties a user, their connections, and available toolkits together for an agent task. Created via `composio.create()`. | — | A Tool Router session for user 123 with Gmail + GitHub enabled |
+
+How they fit together:
+
+```
+Project (proj_xxx) ← your API key scopes everything to this project
+  └── Auth Config (ac_xxx) ← "Gmail via OAuth2 with read+send scopes"
+        │                      (one per toolkit per project, shared across users)
+        └── Connected Account (ca_xxx) ← "user_123's Gmail tokens"
+              │                            (one per user per toolkit)
+              └── Session ← "agent task using user_123's Gmail + GitHub"
+                              (ephemeral, created per agent task)
+```
+
+<Info>
+**The short version:** A **project** isolates your app. An **auth config** defines _how_ to authenticate with a toolkit (OAuth scopes, client credentials). A **connected account** is a specific user's tokens for that toolkit. A **session** ties it all together for one agent task. You mostly just call `composio.create(userId)` and Composio handles the rest.
+</Info>
+
+<Accordion title="Real-world analogy">
+Think of it like a building with offices:
+
+- **Project** = the building. Everything inside is isolated from other buildings. Each building has its own security key (API key).
+- **Auth Config** = the policy for a specific vendor. "We use OAuth for Gmail with read+send permissions, using our company's Google OAuth app." This policy applies to everyone in the building — it's not per-person.
+- **Connected Account** = an individual employee's badge. When Alice completes the Gmail OAuth flow, she gets her own badge (OAuth tokens) that lets her access her Gmail. Bob has his own badge for his Gmail.
+- **Session** = a specific task being done right now. "Alice's agent is checking her email" — it combines Alice's identity, her Gmail badge, and the tools she needs for this task.
+</Accordion>
+
+<Accordion title="When do I need to care about these concepts?">
+For most use cases, you only need to know about **sessions** and **connected accounts**:
+
+- **Just getting started?** Call `composio.create(userId)` and let Composio handle everything. You don't need to think about auth configs or projects.
+- **Building a multi-user app?** Pass each user's unique ID to `composio.create()`. Their connections are automatically isolated.
+- **Want to check if a user has connected an app?** Use `session.toolkits()` or the connected accounts API — see [Check if a user has connected a toolkit](#check-if-a-user-has-connected-a-toolkit) below.
+- **Running background/autonomous agents?** See [Background Agents](/docs/background-agents) — collect OAuth once in your UI, then run headless agents with `manageConnections: false`.
+- **Building a B2B SaaS with multiple customers?** Use one [project per tenant](/docs/project-isolation#multi-tenant-isolation) for complete isolation.
+- **Need custom OAuth scopes or your own OAuth app?** Create a [custom auth config](/docs/custom-auth-configs).
+</Accordion>
+
+## Quick links
 
 <CardGroup cols={3}>
   <Card
@@ -19,7 +70,7 @@ Composio handles OAuth flows, API keys, token refresh, and credential storage fo
   >
     Create auth configs and connect user accounts via Connect Link or direct SDK integration
   </Card>
-  
+
   <Card
     title="White-labeling"
     icon="fa-light fa-palette"
@@ -27,7 +78,7 @@ Composio handles OAuth flows, API keys, token refresh, and credential storage fo
   >
     Use your own OAuth apps and remove Composio branding from auth screens
   </Card>
-  
+
   <Card
     title="Connected Accounts API"
     icon="fa-light fa-plug"
@@ -35,5 +86,112 @@ Composio handles OAuth flows, API keys, token refresh, and credential storage fo
   >
     Manage user connections programmatically
   </Card>
-  
+
 </CardGroup>
+
+## Check if a user has connected a toolkit
+
+To programmatically check whether a user has granted access to a specific toolkit (e.g., before running a [background agent](/docs/background-agents)):
+
+### Using session.toolkits()
+
+<CodeGroup>
+```python Python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+
+session = composio.create(user_id="user_123")
+toolkits = session.toolkits()
+
+# Check a specific toolkit
+gmail = next((t for t in toolkits.items if t.slug == "gmail"), None)
+if gmail and gmail.connection.is_active:
+    print(f"Gmail connected: {gmail.connection.connected_account.id}")
+else:
+    print("Gmail not connected")
+
+# Check multiple toolkits at once
+required = ["gmail", "github"]
+connected = {t.slug for t in toolkits.items if t.connection.is_active}
+missing = [slug for slug in required if slug not in connected]
+
+if missing:
+    print(f"User needs to connect: {missing}")
+```
+```typescript TypeScript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your-api-key" });
+
+const session = await composio.create("user_123");
+const toolkits = await session.toolkits();
+
+// Check a specific toolkit
+const gmail = toolkits.items.find((t) => t.slug === "gmail");
+if (gmail?.connection?.connectedAccount) {
+  console.log(`Gmail connected: ${gmail.connection.connectedAccount.id}`);
+} else {
+  console.log("Gmail not connected");
+}
+
+// Check multiple toolkits at once
+const required = ["gmail", "github"];
+const connected = toolkits.items
+  .filter((t) => t.connection?.connectedAccount)
+  .map((t) => t.slug);
+const missing = required.filter((slug) => !connected.includes(slug));
+
+if (missing.length > 0) {
+  console.log(`User needs to connect: ${missing}`);
+}
+```
+</CodeGroup>
+
+### Using the connected accounts API
+
+You can also check at a lower level using the connected accounts API. This is useful when you don't need a full session — e.g., in a settings page that shows connection status:
+
+<CodeGroup>
+```python Python
+accounts = composio.connected_accounts.list(
+    user_ids=["user_123"],
+    statuses=["ACTIVE"]
+)
+
+# Build a map of toolkit → connected account
+connected = {
+    account.toolkit.slug: account.id
+    for account in accounts.items
+}
+
+has_gmail = "gmail" in connected  # True if user has connected Gmail
+```
+```typescript TypeScript
+const accounts = await composio.connectedAccounts.list({
+  userIds: ["user_123"],
+  statuses: ["ACTIVE"],
+});
+
+// Build a map of toolkit → connected account
+const connected = new Map(
+  accounts.items.map((a) => [a.toolkit.slug, a.id])
+);
+
+const hasGmail = connected.has("gmail"); // true if user has connected Gmail
+```
+</CodeGroup>
+
+### Using the REST API directly
+
+If you're not using the SDK (e.g., from a different language or a simple script), you can check connection status via the REST API:
+
+```bash
+# List active connected accounts for a user
+curl -s "https://backend.composio.dev/api/v3/connected_accounts?user_id=user_123&status=ACTIVE" \
+  -H "x-api-key: YOUR_API_KEY" | python3 -m json.tool
+
+# Check if a specific toolkit is connected
+curl -s "https://backend.composio.dev/api/v3/connected_accounts?user_id=user_123&status=ACTIVE&toolkit_slug=gmail" \
+  -H "x-api-key: YOUR_API_KEY"
+```

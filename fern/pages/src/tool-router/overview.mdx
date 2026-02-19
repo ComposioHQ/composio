@@ -17,8 +17,30 @@ Tool Router exposes a set of meta-tools that handle all this complexity includin
 
 This is what powers complex agentic products like [Rube](https://rube.app).
 
+## What Tool Router does
+
+When an agent needs to use a tool, Tool Router:
+
+1. **Discovers relevant tools** — surfaces the right tools based on the agent's task, so the LLM doesn't get overwhelmed with 1000+ tool definitions
+2. **Handles authentication** — prompts users to connect accounts when needed, or uses existing connections silently
+3. **Routes execution** — sends tool calls to the right service with the right credentials
+4. **Manages context** — provides tool schemas, descriptions, and metadata optimized for LLM consumption
+
+### Meta tools
+
+Tool Router sessions include **meta tools** — special tools that the agent uses to interact with Composio itself:
+
+| Meta Tool | Purpose |
+|-----------|---------|
+| `COMPOSIO_SEARCH_TOOLS` | Find relevant tools based on a natural language query. Returns tool names, descriptions, and schemas for the top matches. |
+| `COMPOSIO_MANAGE_CONNECTIONS` | Prompt users to connect accounts when a tool requires auth. Returns a Connect Link URL the user can click. |
+| `COMPOSIO_EXECUTE_TOOL` | Execute a discovered tool with arguments. Handles credential injection and API routing. |
+
 ## Quick links
 
 - [Quickstart](/tool-router/quickstart): Build your first AI agent with Tool Router.
-- [Using with MCP clients](/tool-router/using-with-mcp-clients): Guides on how to use Tool Router MCP with popular MCP clients.
-- [Using as a native tool](/tool-router/using-as-a-native-tool): Guide on how to use Tool Router as a native tool with any AI framework.
+- [Users and Sessions](/tool-router/users-and-sessions): How Tool Router scopes tools and connections per user.
+- [Authentication](/tool-router/authentication): How Tool Router handles user authentication to toolkits.
+- [Background Agents](/docs/background-agents): Run autonomous agents using pre-authenticated connections.
+- [Using with MCP clients](/tool-router/using-with-mcp-clients): Use Tool Router MCP with popular MCP clients.
+- [Using as a native tool](/tool-router/using-as-a-native-tool): Use Tool Router as a native tool with any AI framework.

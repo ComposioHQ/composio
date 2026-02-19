@@ -6,6 +6,10 @@ keywords: "sessions, users, tool router, configuration"
 hide-nav-links: false
 ---
 
+<Warning>
+**Server-side only.** The Composio SDK must be initialized on the server — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools. Exposing it in frontend code would let anyone use your users' connected accounts. See [Server-side initialization](#server-side-initialization) below.
+</Warning>
+
 A **user ID** is an identifier from your system (database ID, UUID, or any unique string) that scopes connected accounts and tool access to a specific user. User IDs can represent individuals, teams, or organizations. See [User Management](/docs/user-management) for patterns.
 
 A **session** is an ephemeral configuration that combines:
@@ -228,3 +232,54 @@ toolkits.items.forEach((toolkit) => {
 </CodeGroup>
 
 Returns the first 20 toolkits by default.
+
+## Server-side initialization
+
+The Composio SDK **must always run on the server**. There are two reasons:
+
+1. **Security** — Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools. Exposing it in frontend/browser code would let anyone use your users' connected accounts.
+2. **Architecture** — The SDK makes server-to-server API calls to Composio's backend. These calls include your API key in headers and should never originate from a browser (where they'd be visible in DevTools).
+
+**Where to initialize:**
+- Next.js API routes (`app/api/*/route.ts`)
+- Next.js Server Components or Server Actions
+- Express/Fastify/Hono route handlers
+- Background jobs (cron, queue workers)
+- Any server-side script
+
+**Where NOT to initialize:**
+- React client components (`"use client"`)
+- Browser-side JavaScript
+- Any code that runs in the user's browser
+
+<CodeGroup>
+```typescript TypeScript
+// app/api/agent/route.ts — Server-side API route (correct)
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+
+export async function POST(req: Request) {
+  const { userId, prompt } = await req.json();
+  const session = await composio.create(userId);
+  // ... run your agent
+}
+```
+```python Python
+# api/agent.py — Server-side endpoint (correct)
+from composio import Composio
+import os
+
+composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
+
+def handle_request(user_id: str, prompt: str):
+    session = composio.create(user_id=user_id)
+    # ... run your agent
+```
+</CodeGroup>
+
+<Warning>
+**Common mistake:** Don't initialize Composio in a React component, even if you're reading the API key from `NEXT_PUBLIC_*` env vars. The SDK makes server-to-server calls that should never originate from a browser. Your frontend should call your own API route, which then uses the Composio SDK server-side.
+</Warning>
+
+The correct pattern is: **frontend → your API route → Composio SDK → Composio backend**. Your frontend never talks to Composio directly.
