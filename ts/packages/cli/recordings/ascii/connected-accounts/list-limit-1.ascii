@@ -129,11 +129,11 @@
 ◒  Fetching connected accounts...
 ◇  Fetching connected accounts...
 │
-●  Listing 1 of 6 connected accounts
+●  Listing 1 of 5 connected accounts
 │
 │  Id                 User Id              Toolkit        Auth Config
   Auth Scheme    Status
-│  con_<REDACTED>     github-issues-age... github         ac_<REDACTED>
+│  con_<REDACTED>     default              github         ac_<REDACTED>
   OAUTH2         ACTIVE
 │
 ◇  To view details of a connected account:

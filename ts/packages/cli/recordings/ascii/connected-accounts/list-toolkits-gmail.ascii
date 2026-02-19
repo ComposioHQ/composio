@@ -129,16 +129,16 @@
 ◒  Fetching connected accounts...
 ◇  Fetching connected accounts...
 │
-▲  No connected accounts found for toolkit "gmail". Verify the toolkit slug
- with:
-│  > composio toolkits list
+●  Listing 1 of 1 connected accounts
+│
+│  Id                 User Id              Toolkit        Auth Config
+  Auth Scheme    Status
+│  con_<REDACTED>     jkomyno              gmail          ac_<REDACTED>
+  OAUTH2         ACTIVE
+│
+◇  To view details of a connected account:
+│  > composio connected-accounts info "con_<REDACTED>"
 >
-
-
-
-
-
-
 
 
 

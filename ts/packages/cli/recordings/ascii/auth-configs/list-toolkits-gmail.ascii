@@ -129,16 +129,16 @@
 ◒  Fetching auth configs...
 ◇  Fetching auth configs...
 │
-▲  No auth configs found for toolkit "gmail". Verify the toolkit slug with:
-│  > composio toolkits list
+●  Listing 1 of 1 auth configs
+│
+│  Name                     Id               Toolkit        Auth Scheme
+Type       Conns   Status
+│  auth_config_gmail_176... ac_<REDACTED>    gmail          OAUTH2
+default    1       ENABLED
+│
+◇  To view details of an auth config:
+│  > composio auth-configs info "ac_<REDACTED>"
 >
-
-
-
-
-
-
-
 
 
 
