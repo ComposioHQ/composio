@@ -11,7 +11,20 @@ The Vercel AI SDK provider transforms Composio tools into Vercel's [tool format]
 </Callout>
 
 <Callout type="info">
-**Which version am I on?** Check your `package.json`: `"ai": "^5.x"` is V5, `"ai": "^6.x"` is V6. If you can import `Agent` from `"ai"`, you're on V6 — that class doesn't exist in V5. **Starting a new project?** Use AI SDK 6.
+**Which version am I on?** Run this quick check:
+
+```bash
+# Check your installed version
+npm ls ai
+# Or check package.json
+grep '"ai"' package.json
+```
+
+- `"ai": "^5.x"` → **V5**
+- `"ai": "^6.x"` → **V6**
+- Can import `Agent` from `"ai"`? → **V6** (that class doesn't exist in V5)
+
+**Starting a new project?** Use AI SDK 6.
 </Callout>
 
 <Steps>
@@ -158,5 +171,64 @@ In AI SDK 5, you'd pass `model`, `tools`, `system`, and `stopWhen` directly to `
 <Callout type="info">
 **Which version should I use?** If you're starting a new project, use AI SDK 6. The `Agent` abstraction simplifies multi-step tool calling significantly — you no longer need to manage `stopWhen` or build your own agentic loop. If you're on an existing AI SDK 5 project, both versions work with Composio — upgrade when ready.
 </Callout>
+
+### Migrating from V5 to V6
+
+If you're upgrading an existing Composio integration from AI SDK 5 to 6:
+
+1. **Update the `ai` package**: `npm install ai@^6`
+2. **Rename `system` to `instructions`** in all `generateText`/`streamText` calls
+3. **Remove `stopWhen`** — V6 defaults to `stepCountIs(20)`, which is usually sufficient
+4. **Optionally adopt `Agent`** — wrap your model + tools + instructions into a reusable `Agent` object (not required, but recommended)
+5. **Update `generateObject`/`streamObject`** — in V6, use `generateText`/`streamText` with the `output` option instead
+
+```diff
+- import { generateText, stepCountIs } from "ai";
++ import { Agent, generateText } from "ai";
+
+- const { text } = await generateText({
+-   model: anthropic("claude-sonnet-4-6"),
+-   tools,
+-   system: "You are a helpful assistant.",
+-   prompt: "Send an email",
+-   stopWhen: stepCountIs(10),
+- });
++ const agent = new Agent({
++   model: anthropic("claude-sonnet-4-6"),
++   tools,
++   instructions: "You are a helpful assistant.",
++ });
++
++ const { text } = await generateText({
++   agent,
++   prompt: "Send an email",
++ });
+```
+
+### Common errors
+
+<Accordions>
+<Accordion title="Agent calls one tool and stops (V5)">
+**Symptom:** Your agent calls one tool, then returns a text response without finishing the task.
+
+**Cause:** AI SDK 5 defaults to `stopWhen: stepCountIs(1)` — it only runs one step.
+
+**Fix:** Add `stopWhen: stepCountIs(10)` (or higher) to your `generateText`/`streamText` call. Or upgrade to AI SDK 6, which defaults to 20 steps.
+</Accordion>
+<Accordion title="Cannot find module 'Agent' (V5)">
+**Symptom:** `import { Agent } from "ai"` throws a module not found error.
+
+**Cause:** `Agent` is a V6-only feature. You're on AI SDK 5.
+
+**Fix:** Either upgrade to V6 (`npm install ai@^6`) or use the V5 pattern: pass `model`, `tools`, `system`, and `stopWhen` directly to `generateText`.
+</Accordion>
+<Accordion title="'system' option not recognized (V6)">
+**Symptom:** TypeScript error on `system: "..."` in a `generateText` call.
+
+**Cause:** V6 renamed `system` to `instructions` when used with the `Agent` abstraction.
+
+**Fix:** Use `instructions` instead of `system`, or pass the system prompt via the `Agent` constructor.
+</Accordion>
+</Accordions>
 
 For the full migration guide, see [Vercel's AI SDK 5 to 6 migration docs](https://ai-sdk.dev/docs/migration-guides/migration-guide-6-0).

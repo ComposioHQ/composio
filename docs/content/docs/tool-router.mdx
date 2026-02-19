@@ -10,6 +10,10 @@ Tool Router is the core runtime that powers Composio sessions. When you call `co
 **New to Composio?** Start with the [Quickstart](/docs/quickstart) to build your first agent, then come back here to understand how Tool Router works under the hood. If you're looking for how to set up authentication, see [Authentication](/docs/authentication).
 </Callout>
 
+<Callout type="info">
+**What Tool Router is NOT:** Tool Router is not a separate product or service — it's the engine behind every `composio.create()` call. You don't install it separately or configure it independently. If you've used the Composio SDK, you've already used Tool Router.
+</Callout>
+
 ## Why Tool Router exists
 
 Without Tool Router, connecting an AI agent to external tools means: managing 1000+ tool definitions (too many for any LLM context window), handling OAuth flows for each user, routing tool calls to the right API with the right credentials, and keeping tool schemas up to date. Tool Router solves all of this in a single session abstraction.

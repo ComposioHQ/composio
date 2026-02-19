@@ -66,6 +66,14 @@ def handle_request(user_id: str, prompt: str):
 
 The correct pattern is: **frontend → your API route → Composio SDK → Composio backend**. Your frontend never talks to Composio directly.
 
+```
+❌  React component → Composio SDK → Composio backend
+    (API key visible in browser DevTools)
+
+✅  React component → Your API route → Composio SDK → Composio backend
+    (API key stays on the server)
+```
+
 ## Users
 
 A user is an identifier from your app. When someone connects their Gmail or GitHub, that connection is stored under their user ID, so tools always run with the right authentication. Every tool execution and authorization uses the user ID to identify the context. Connections are fully isolated between user IDs.

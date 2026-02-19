@@ -7,7 +7,12 @@ keywords: [connect link, oauth, auth config, connected account, glossary]
 Composio simplifies authentication with Connect Links: hosted pages where users securely connect their accounts.
 
 <Callout type="warn">
-**Server-side only.** Always initialize the Composio SDK on the server (API routes, server components, scripts) — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that should not be exposed to the browser. See [Users & Sessions](/docs/users-and-sessions) for details.
+**Server-side only.** Always initialize the Composio SDK on the server (API routes, server components, scripts) — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools. See [Server-side initialization](/docs/users-and-sessions#server-side-initialization) for details and code examples.
+
+```
+Frontend → Your API route → Composio SDK → Composio backend
+   ✅ Your API key stays on the server
+```
 </Callout>
 
 <Video src="/images/connect-link-auth-flow-recording.mp4" autoPlay />
@@ -51,12 +56,14 @@ Think of it like a building with offices:
 <Accordion title="When do I need to care about these concepts?">
 For most use cases, you only need to know about **sessions** and **connected accounts**:
 
-- **Just getting started?** Call `composio.create(userId)` and let Composio handle everything. You don't need to think about auth configs or projects.
-- **Building a multi-user app?** Pass each user's unique ID to `composio.create()`. Their connections are automatically isolated.
-- **Want to check if a user has connected an app?** Use `session.toolkits()` or `composio.connectedAccounts.list()` — see [Check if a user has connected a toolkit](#check-if-a-user-has-connected-a-toolkit) below.
-- **Running background/autonomous agents?** See [Background Agents](/docs/background-agents) — collect OAuth once in your UI, then run headless agents with `manageConnections: false`.
-- **Building a B2B SaaS with multiple customers?** Use one [project per tenant](/docs/projects#multi-tenant-isolation) for complete isolation.
-- **Need custom OAuth scopes or your own OAuth app?** Create a [custom auth config](/docs/using-custom-auth-configuration).
+| What you're doing | What you need to know |
+|---|---|
+| **Just getting started** | Call `composio.create(userId)`. That's it. Auth configs and projects are created automatically. |
+| **Building a multi-user app** | Pass each user's unique ID to `composio.create()`. Connections are isolated per user. |
+| **Checking if a user has connected an app** | Use `session.toolkits()` or `composio.connectedAccounts.list()` — see [Check if a user has connected a toolkit](#check-if-a-user-has-connected-a-toolkit) below. |
+| **Running background/autonomous agents** | Collect OAuth once in your UI, then run headless agents with `manageConnections: false`. See [Background Agents](/docs/background-agents). |
+| **Building B2B SaaS (multi-tenant)** | Use one [project per tenant](/docs/projects#multi-tenant-isolation) for complete isolation of user IDs and credentials. |
+| **Using your own OAuth app** | Create a [custom auth config](/docs/using-custom-auth-configuration) with your client ID/secret and scopes. |
 </Accordion>
 </Accordions>
 

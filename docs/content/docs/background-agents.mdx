@@ -335,3 +335,23 @@ The key points:
 - **`manageConnections: false`** prevents the agent from trying to prompt for OAuth (there's no user to prompt)
 - **`session.toolkits()`** lets you verify the connection is still active before running the agent
 - **Composio handles token refresh** — if the Gmail token expired, it's refreshed automatically before the tool executes
+
+## Subscribe to connection expiry events
+
+Instead of polling `session.toolkits()` before every run, you can proactively subscribe to connection expiry events. Composio sends a webhook when a user's connection is about to expire or has been revoked, so you can notify the user to re-authenticate.
+
+See [Subscribing to connection expiry events](/docs/subscribing-to-connection-expiry-events) for setup instructions.
+
+## Related guides
+
+<Cards>
+  <Card icon={<Key />} title="Check connection status" href="/docs/authentication#check-if-a-user-has-connected-a-toolkit">
+    Programmatically check if a user has connected a specific toolkit
+  </Card>
+  <Card icon={<BookOpen />} title="Multi-tenant isolation" href="/docs/projects#multi-tenant-isolation">
+    Use separate projects for B2B SaaS apps with multiple customers
+  </Card>
+  <Card icon={<BookOpen />} title="Server-side initialization" href="/docs/users-and-sessions#server-side-initialization">
+    Why and how to keep the Composio SDK on the server
+  </Card>
+</Cards>
