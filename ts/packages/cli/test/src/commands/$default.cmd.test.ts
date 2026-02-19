@@ -108,7 +108,7 @@ describe('CLI: composio', () => {
 
             - auth-configs create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credentials text] [<name>]  Create a new auth config.
 
-            - auth-configs delete [(-y, --yes)] [<id>]                                                                       Delete an auth config.
+            - auth-configs delete [(-y, --yes)] [<id>]                                                                      Delete an auth config.
           "
         `);
       })
