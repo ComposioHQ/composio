@@ -6,6 +6,10 @@ keywords: [projects, organizations, teams, api keys, environments]
 
 Every Composio account belongs to an **organization**. Inside an organization, **projects** are isolated environments that scope your API keys, connected accounts, auth configs, and webhook configurations. Resources in one project are not accessible from another.
 
+<Callout type="info">
+**Best practice for multi-tenant apps:** If you're building a B2B SaaS where each customer has their own end-users, use **one Composio project per customer** for complete isolation. This is the recommended pattern — see [Multi-tenant isolation](#multi-tenant-isolation) below.
+</Callout>
+
 ```mermaid
 graph LR
     ORG["Organization (org_xxx)"] --- P1["Project: Production (proj_xxx)"]
@@ -149,3 +153,12 @@ const session = await composio.create(endUser.id);
 <Callout type="info">
 **When to use this pattern:** If your app has distinct customers who each manage their own users (B2B SaaS), use one project per customer. If you have a single-tenant app with many users, one project is sufficient — user IDs already provide per-user isolation of connections.
 </Callout>
+
+### Deciding your isolation strategy
+
+| Scenario | Strategy | Why |
+|----------|----------|-----|
+| **Single-tenant app** (e.g., a personal productivity tool) | One project, unique user IDs | User IDs already isolate connections per user |
+| **B2B SaaS** (e.g., each customer has their own users) | One project per customer | Prevents user ID collisions, keeps credentials separate, enables per-customer billing |
+| **Separate environments** (dev, staging, prod) | One project per environment | Prevents test data from leaking into production |
+| **Multiple products** (e.g., separate apps under one company) | One project per product | Keeps OAuth credentials and user namespaces independent |

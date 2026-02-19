@@ -109,6 +109,48 @@ console.log(text);
 | Tool calling | Manual agentic loop with `stopWhen` | Automatic via `Agent` — handles multi-step tool calls by default |
 | Structured output | `generateObject` / `streamObject` | `generateText` / `streamText` with `output` option |
 
+### What this means in practice
+
+The biggest behavioral difference is **how tool-calling loops work**:
+
+- **AI SDK 5** defaults to a single step — the model calls one tool and stops. To get multi-step agent behavior (model calls tool → reads result → calls another tool → ...), you must set `stopWhen: stepCountIs(N)`. Without this, your agent will try to use a Composio tool once and then return, even if the task isn't complete.
+
+- **AI SDK 6** defaults to 20 steps via the `Agent` abstraction. The model will keep calling tools and reasoning until it considers the task done (or hits the step limit). This is the behavior most developers expect from an "agent."
+
+<Callout type="warn">
+**Common pitfall on AI SDK 5:** If your agent calls one tool and then immediately returns a text response without finishing the task, you're likely missing `stopWhen`. Add `stopWhen: stepCountIs(10)` (or higher) to enable multi-step tool calling.
+</Callout>
+
+### The `Agent` abstraction (V6 only)
+
+In AI SDK 6, `Agent` is a reusable configuration object — think of it as a named, preconfigured agent template. This is useful when you want to define an agent once and run it multiple times:
+
+```typescript
+// @noErrors
+import { Agent, generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+
+// Define the agent once
+const emailAgent = new Agent({
+  model: anthropic("claude-sonnet-4-6"),
+  tools, // Composio tools from session.tools()
+  instructions: "You help users manage their email.",
+});
+
+// Reuse it for different prompts
+const { text: summary } = await generateText({
+  agent: emailAgent,
+  prompt: "Summarize my unread emails",
+});
+
+const { text: draft } = await generateText({
+  agent: emailAgent,
+  prompt: "Draft a reply to the latest email from Alice",
+});
+```
+
+In AI SDK 5, you'd pass `model`, `tools`, `system`, and `stopWhen` directly to `generateText` every time — there's no equivalent reusable abstraction.
+
 <Callout type="info">
 **Which version should I use?** If you're starting a new project, use AI SDK 6. The `Agent` abstraction simplifies multi-step tool calling significantly — you no longer need to manage `stopWhen` or build your own agentic loop. If you're on an existing AI SDK 5 project, both versions work with Composio — upgrade when ready.
 </Callout>

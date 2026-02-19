@@ -39,6 +39,17 @@ Project (proj_xxx) ← your API key scopes everything to this project
 **The short version:** A **project** isolates your app. An **auth config** defines _how_ to authenticate with a toolkit (OAuth scopes, client credentials). A **connected account** is a specific user's tokens for that toolkit. A **session** ties it all together for one agent task. You mostly just call `composio.create(userId)` and Composio handles the rest.
 </Callout>
 
+<Accordions>
+<Accordion title="Real-world analogy">
+Think of it like a building with offices:
+
+- **Project** = the building. Everything inside is isolated from other buildings. Each building has its own security key (API key).
+- **Auth Config** = the policy for a specific vendor. "We use OAuth for Gmail with read+send permissions, using our company's Google OAuth app." This policy applies to everyone in the building — it's not per-person.
+- **Connected Account** = an individual employee's badge. When Alice completes the Gmail OAuth flow, she gets her own badge (OAuth tokens) that lets her access her Gmail. Bob has his own badge for his Gmail.
+- **Session** = a specific task being done right now. "Alice's agent is checking her email" — it combines Alice's identity, her Gmail badge, and the tools she needs for this task.
+</Accordion>
+</Accordions>
+
 ## In-chat authentication
 
 By default, when a tool requires authentication, the agent prompts the user with a Connect Link. The user authenticates and confirms in chat. The agent handles OAuth flows, token refresh, and credential management automatically.

@@ -233,3 +233,101 @@ const tools = await session.tools();
 <Callout type="info">
 Composio automatically refreshes OAuth tokens before they expire. You generally don't need to handle token expiry yourself — but it's good practice to check connection status before long-running background jobs, since users can revoke access at any time.
 </Callout>
+
+## Full example: Next.js app with background cron
+
+Here's a complete end-to-end example showing a Next.js app where users connect Gmail in a settings page, and a cron job runs a daily email digest agent in the background.
+
+### Settings page: collect OAuth consent
+
+```typescript
+// @noErrors
+// app/api/connect/gmail/route.ts — Server-side API route
+import { Composio } from "@composio/core";
+import { NextResponse } from "next/server";
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+
+export async function POST(req: Request) {
+  const { userId } = await req.json(); // your app's authenticated user ID
+
+  const session = await composio.create(userId, {
+    manageConnections: false,
+  });
+
+  const connectionRequest = await session.authorize("gmail", {
+    callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings?connected=gmail`,
+  });
+
+  return NextResponse.json({ redirectUrl: connectionRequest.redirectUrl });
+}
+```
+
+Your frontend calls this endpoint and redirects the user to the OAuth page:
+
+```typescript
+// @noErrors
+// app/settings/page.tsx — Client component
+const connectGmail = async () => {
+  const res = await fetch("/api/connect/gmail", {
+    method: "POST",
+    body: JSON.stringify({ userId: currentUser.id }),
+  });
+  const { redirectUrl } = await res.json();
+  window.location.href = redirectUrl; // User completes OAuth
+};
+```
+
+### Cron job: run the background agent
+
+```typescript
+// @noErrors
+// app/api/cron/daily-digest/route.ts — Called by Vercel Cron or similar
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  provider: new VercelProvider(),
+});
+
+export async function GET(req: Request) {
+  // Verify cron secret in production
+  const subscribedUserIds = await getSubscribedUsers(); // from your database
+
+  for (const userId of subscribedUserIds) {
+    // Check if user still has Gmail connected
+    const session = await composio.create(userId, {
+      toolkits: ["gmail"],
+      manageConnections: false, // No interactive prompts
+    });
+
+    const toolkits = await session.toolkits();
+    const gmail = toolkits.items.find((t) => t.slug === "gmail");
+    if (!gmail?.connection?.connectedAccount) {
+      console.log(`Skipping ${userId}: Gmail not connected`);
+      continue;
+    }
+
+    // Run the agent — uses stored OAuth tokens, no user interaction needed
+    const tools = await session.tools();
+    const { text } = await generateText({
+      model: anthropic("claude-sonnet-4-6"),
+      tools,
+      prompt: "Summarize my unread emails from today. Be concise.",
+    });
+
+    await sendDigestNotification(userId, text);
+  }
+
+  return new Response("OK");
+}
+```
+
+The key points:
+- **`composio.create(userId)`** uses the same user ID from the OAuth step — Composio automatically finds their stored connection
+- **`manageConnections: false`** prevents the agent from trying to prompt for OAuth (there's no user to prompt)
+- **`session.toolkits()`** lets you verify the connection is still active before running the agent
+- **Composio handles token refresh** — if the Gmail token expired, it's refreshed automatically before the tool executes

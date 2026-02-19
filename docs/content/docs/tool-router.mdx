@@ -28,13 +28,47 @@ graph LR
     Exec --> APIs["Gmail, GitHub, Slack, ..."]
 ```
 
+## Architecture
+
+Under the hood, Tool Router is a server-side session manager. When you call `composio.create()`, here's what happens:
+
+1. A session is created on Composio's servers, scoped to the user ID you provide
+2. The session is configured with the toolkits, auth configs, and connected accounts you specify (or defaults)
+3. You get back a session object with methods to retrieve tools or an MCP endpoint
+
+The session then serves as the bridge between your agent and Composio's tool execution infrastructure. When the agent calls a tool, Tool Router:
+- Resolves which connected account to use (based on the user ID and toolkit)
+- Injects the user's credentials into the tool call
+- Routes the execution to the right backend service
+- Returns the result to the agent
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant TR as Tool Router Session
+    participant Auth as Auth Store
+    participant Exec as Execution Engine
+    participant API as Third-Party API
+
+    Agent->>TR: Call GMAIL_SEND_EMAIL
+    TR->>Auth: Get user_123's Gmail credentials
+    Auth-->>TR: OAuth token (auto-refreshed)
+    TR->>Exec: Execute with credentials
+    Exec->>API: POST gmail.googleapis.com/...
+    API-->>Exec: 200 OK
+    Exec-->>TR: Result
+    TR-->>Agent: Tool result
+```
+
 ## How to use it
 
 Tool Router is accessed through the Composio SDK. You don't interact with it directly — it's the engine behind `composio.create()`. Every session is scoped to a user ID, so connections and tool access are isolated per user.
 
+There are two ways to consume Tool Router tools: **native providers** and **MCP**. Choose based on your framework.
+
 ### Via native provider (recommended)
 
-Native providers give your AI framework typed tool objects with built-in execution:
+Native providers give your AI framework typed tool objects with built-in execution. Use this when your AI framework has a Composio provider package (Vercel AI SDK, OpenAI Agents, LangChain, etc.):
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -61,7 +95,7 @@ const tools = await session.tools(); // Native Vercel AI SDK tools
 
 ### Via MCP
 
-Any MCP-compatible client can connect to a Tool Router session:
+Use MCP when your client supports the Model Context Protocol but doesn't have a dedicated Composio provider (e.g., Claude Desktop, Cursor, custom MCP clients). Any MCP-compatible client can connect to a Tool Router session:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -91,17 +125,28 @@ const { url, headers } = session.mcp;
 
 ## Meta tools
 
-Tool Router sessions include **meta tools** — special tools that the agent uses to interact with Composio itself:
+Tool Router sessions include **meta tools** — special tools that the agent uses to interact with Composio itself. Instead of loading all 1000+ tool definitions into the LLM context, the agent uses meta tools to dynamically discover and execute only the tools it needs.
 
 | Meta Tool | Purpose |
 |-----------|---------|
-| `COMPOSIO_SEARCH_TOOLS` | Find relevant tools based on a natural language query |
-| `COMPOSIO_MANAGE_CONNECTIONS` | Prompt users to connect accounts when a tool requires auth |
-| `COMPOSIO_EXECUTE_TOOL` | Execute a discovered tool with arguments |
+| `COMPOSIO_SEARCH_TOOLS` | Find relevant tools based on a natural language query. Returns tool names, descriptions, and schemas for the top matches. |
+| `COMPOSIO_MANAGE_CONNECTIONS` | Prompt users to connect accounts when a tool requires auth. Returns a Connect Link URL the user can click. |
+| `COMPOSIO_EXECUTE_TOOL` | Execute a discovered tool with arguments. Handles credential injection and API routing. |
 
-These meta tools are automatically included in every session. The agent uses `COMPOSIO_SEARCH_TOOLS` to find the right tool for a task, `COMPOSIO_MANAGE_CONNECTIONS` to handle auth if needed, and `COMPOSIO_EXECUTE_TOOL` to run it.
+### How meta tools work in a conversation
 
-You can disable the connection management meta tool if you handle auth in your own UI:
+Here's a typical flow when a user asks "send an email to Alice":
+
+1. Agent calls `COMPOSIO_SEARCH_TOOLS` with query "send email" → gets back `GMAIL_SEND_EMAIL` with its schema
+2. Agent calls `COMPOSIO_MANAGE_CONNECTIONS` to check if Gmail is connected → if not, returns a Connect Link for the user
+3. User clicks the link and completes OAuth
+4. Agent calls `COMPOSIO_EXECUTE_TOOL` with `GMAIL_SEND_EMAIL` and the email arguments → email is sent
+
+If the user already has Gmail connected (e.g., from a previous session), step 2-3 is skipped automatically.
+
+### Disabling connection management
+
+You can disable the `COMPOSIO_MANAGE_CONNECTIONS` meta tool if you handle auth in your own UI (e.g., a settings page where users connect accounts). This prevents the agent from prompting users to authenticate mid-conversation — useful for [background agents](/docs/background-agents) and apps with dedicated connection management UIs:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">

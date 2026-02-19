@@ -7,7 +7,58 @@ keywords: [session, user id, concepts, server-side]
 When building AI agents for multiple users, each user needs their own connections and context. This is represented through **users** and **sessions**.
 
 <Callout type="warn">
-**Server-side only.** The Composio SDK must be initialized on the server (API routes, server components, background jobs) — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools. Exposing it in frontend code would let anyone use your users' connected accounts.
+**Server-side only.** The Composio SDK must be initialized on the server — never in client-side browser code. See [Server-side initialization](#server-side-initialization) below.
+</Callout>
+
+## Server-side initialization
+
+The Composio SDK **must always run on the server**. Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools — exposing it in frontend/browser code would let anyone use your users' connected accounts.
+
+**Where to initialize:**
+- Next.js API routes (`app/api/*/route.ts`)
+- Next.js Server Components or Server Actions
+- Express/Fastify/Hono route handlers
+- Background jobs (cron, queue workers)
+- Any server-side script
+
+**Where NOT to initialize:**
+- React client components (`"use client"`)
+- Browser-side JavaScript
+- Any code that runs in the user's browser
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+// app/api/agent/route.ts — Server-side API route (correct)
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+
+export async function POST(req: Request) {
+  const { userId, prompt } = await req.json();
+  const session = await composio.create(userId);
+  // ... run your agent
+}
+```
+</Tab>
+<Tab value="Python">
+```python
+# api/agent.py — Server-side endpoint (correct)
+from composio import Composio
+import os
+
+composio = Composio(api_key=os.environ["COMPOSIO_API_KEY"])
+
+def handle_request(user_id: str, prompt: str):
+    session = composio.create(user_id=user_id)
+    # ... run your agent
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+**Common mistake:** Don't initialize Composio in a React component, even if you're reading the API key from `NEXT_PUBLIC_*` env vars. The SDK makes server-to-server calls that should never originate from a browser. Your frontend should call your own API route, which then uses the Composio SDK server-side.
 </Callout>
 
 ## Users
