@@ -12,7 +12,10 @@ When building AI agents for multiple users, each user needs their own connection
 
 ## Server-side initialization
 
-The Composio SDK **must always run on the server**. Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools — exposing it in frontend/browser code would let anyone use your users' connected accounts.
+The Composio SDK **must always run on the server**. There are two reasons:
+
+1. **Security** — Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools. Exposing it in frontend/browser code would let anyone use your users' connected accounts.
+2. **Architecture** — The SDK makes server-to-server API calls to Composio's backend. These calls include your API key in headers and should never originate from a browser (where they'd be visible in DevTools).
 
 **Where to initialize:**
 - Next.js API routes (`app/api/*/route.ts`)
@@ -60,6 +63,8 @@ def handle_request(user_id: str, prompt: str):
 <Callout type="warn">
 **Common mistake:** Don't initialize Composio in a React component, even if you're reading the API key from `NEXT_PUBLIC_*` env vars. The SDK makes server-to-server calls that should never originate from a browser. Your frontend should call your own API route, which then uses the Composio SDK server-side.
 </Callout>
+
+The correct pattern is: **frontend → your API route → Composio SDK → Composio backend**. Your frontend never talks to Composio directly.
 
 ## Users
 

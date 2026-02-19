@@ -48,6 +48,16 @@ Think of it like a building with offices:
 - **Connected Account** = an individual employee's badge. When Alice completes the Gmail OAuth flow, she gets her own badge (OAuth tokens) that lets her access her Gmail. Bob has his own badge for his Gmail.
 - **Session** = a specific task being done right now. "Alice's agent is checking her email" — it combines Alice's identity, her Gmail badge, and the tools she needs for this task.
 </Accordion>
+<Accordion title="When do I need to care about these concepts?">
+For most use cases, you only need to know about **sessions** and **connected accounts**:
+
+- **Just getting started?** Call `composio.create(userId)` and let Composio handle everything. You don't need to think about auth configs or projects.
+- **Building a multi-user app?** Pass each user's unique ID to `composio.create()`. Their connections are automatically isolated.
+- **Want to check if a user has connected an app?** Use `session.toolkits()` or `composio.connectedAccounts.list()` — see [Check if a user has connected a toolkit](#check-if-a-user-has-connected-a-toolkit) below.
+- **Running background/autonomous agents?** See [Background Agents](/docs/background-agents) — collect OAuth once in your UI, then run headless agents with `manageConnections: false`.
+- **Building a B2B SaaS with multiple customers?** Use one [project per tenant](/docs/projects#multi-tenant-isolation) for complete isolation.
+- **Need custom OAuth scopes or your own OAuth app?** Create a [custom auth config](/docs/using-custom-auth-configuration).
+</Accordion>
 </Accordions>
 
 ## In-chat authentication
@@ -170,7 +180,9 @@ if (missing.length > 0) {
 </Tab>
 </Tabs>
 
-You can also check at a lower level using the connected accounts API:
+### Using the connected accounts API
+
+You can also check at a lower level using the connected accounts API. This is useful when you don't need a full session — e.g., in a settings page that shows connection status:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -208,6 +220,20 @@ const hasGmail = connected.has("gmail"); // true if user has connected Gmail
 ```
 </Tab>
 </Tabs>
+
+### Using the REST API directly
+
+If you're not using the SDK (e.g., from a different language or a simple script), you can check connection status via the REST API:
+
+```bash
+# List active connected accounts for a user
+curl -s "https://backend.composio.dev/api/v3/connected_accounts?user_id=user_123&status=ACTIVE" \
+  -H "x-api-key: YOUR_API_KEY" | python3 -m json.tool
+
+# Check if a specific toolkit is connected
+curl -s "https://backend.composio.dev/api/v3/connected_accounts?user_id=user_123&status=ACTIVE&toolkit_slug=gmail" \
+  -H "x-api-key: YOUR_API_KEY"
+```
 
 ## Useful links
 

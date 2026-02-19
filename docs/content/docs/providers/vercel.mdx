@@ -6,8 +6,12 @@ keywords: [ai sdk, vercel, ai sdk 5, ai sdk 6]
 
 The Vercel AI SDK provider transforms Composio tools into Vercel's [tool format](https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling) with built-in execution — no manual agentic loop needed.
 
+<Callout type="warn">
+**AI SDK 5 vs 6 have breaking API differences.** Composio supports both **AI SDK 5** (`ai@^5`) and **AI SDK 6** (`ai@^6`). The key behavioral change: V5 defaults to **single-step** tool calling (your agent calls one tool and stops), while V6 defaults to **multi-step** (the agent loops automatically). If your agent calls one tool and immediately returns without finishing, you're likely on V5 without `stopWhen` — see [key differences](#key-differences-between-ai-sdk-5-and-6) below.
+</Callout>
+
 <Callout type="info">
-Composio supports both **AI SDK 5** (`ai@^5`) and **AI SDK 6** (`ai@^6`). The examples below show both versions where the API differs. If you're starting a new project, use AI SDK 6.
+**Which version am I on?** Check your `package.json`: `"ai": "^5.x"` is V5, `"ai": "^6.x"` is V6. If you can import `Agent` from `"ai"`, you're on V6 — that class doesn't exist in V5. **Starting a new project?** Use AI SDK 6.
 </Callout>
 
 <Steps>

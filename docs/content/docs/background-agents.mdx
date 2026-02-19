@@ -4,6 +4,10 @@ description: Run autonomous agents in the background using pre-authenticated use
 keywords: [background, autonomous, headless, cron, server-side, oauth]
 ---
 
+<Callout type="info">
+**TL;DR:** Collect OAuth consent in your UI once → store nothing yourself → later, call `composio.create(userId, { manageConnections: false })` in a cron job or webhook handler → Composio automatically uses the user's stored tokens. No interactive prompts needed.
+</Callout>
+
 A common pattern is to collect OAuth consent from users through your UI, then run agents autonomously in the background — without any interactive prompts. This is useful for:
 
 - **Scheduled automations** — daily email digests, weekly report generation
