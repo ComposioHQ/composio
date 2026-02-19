@@ -1,7 +1,7 @@
-from crewai import Agent, Task, Crew
-from composio import Composio
+from crewai import Agent, Crew, Task
 from crewai.mcp import MCPServerHTTP
 
+from composio import Composio
 
 composio = Composio()
 session = composio.create(

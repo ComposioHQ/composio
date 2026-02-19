@@ -19,6 +19,10 @@ export default defineConfig({
     // #file_tool_modifier
     'src/utils/modifiers/FileToolModifier.node.ts',
     'src/utils/modifiers/FileToolModifier.workerd.ts',
+
+    // #config_defaults
+    'src/utils/config-defaults/ConfigDefaults.node.ts',
+    'src/utils/config-defaults/ConfigDefaults.workerd.ts',
   ],
   attw: {
     ...baseConfig.attw,
@@ -41,5 +45,11 @@ export default defineConfig({
    * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)
    * as not all of them are available in Cloudflare Workers / Vercel Edge runtimes.
    */
-  external: [...(baseConfig.external ?? []), '#platform', '#files', '#file_tool_modifier'],
+  external: [
+    ...(baseConfig.external ?? []),
+    '#platform',
+    '#files',
+    '#file_tool_modifier',
+    '#config_defaults',
+  ],
 });

@@ -17,17 +17,26 @@ import {
 import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
-import type { Toolkits } from 'src/models/toolkits';
+import { TerminalUITest } from './terminal-ui-test';
+import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
 import {
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  HttpServerError,
   InvalidToolkitsError,
+  InvalidToolkitVersionsError,
+  type InvalidVersionDetail,
 } from 'src/services/composio-clients';
+import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
+import type { AuthConfigItem } from 'src/models/auth-configs';
+import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import type { AuthConfigCreateResponse, LinkCreateResponse } from 'src/services/composio-clients';
+import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
@@ -50,9 +59,26 @@ export interface TestLiveInput {
    */
   toolkitsData?: {
     toolkits?: Toolkits;
+    detailedToolkits?: ToolkitDetailed[];
     tools?: Tools;
     triggerTypesAsEnums?: TriggerTypesAsEnums;
     triggerTypes?: TriggerTypes;
+  };
+
+  /**
+   * Mock auth-config data to use in test.
+   */
+  authConfigsData?: {
+    items?: AuthConfigItem[];
+    createResponse?: AuthConfigCreateResponse;
+  };
+
+  /**
+   * Mock connected-account data to use in test.
+   */
+  connectedAccountsData?: {
+    items?: ConnectedAccountItem[];
+    linkResponse?: LinkCreateResponse;
   };
 }
 
@@ -76,14 +102,36 @@ export const TestLayer = (input?: TestLiveInput) =>
   Effect.gen(function* () {
     const defaultAppClientData = {
       toolkits: [] as Toolkits,
+      detailedToolkits: [] as ToolkitDetailed[],
       tools: [] as Tools,
       triggerTypesAsEnums: [] as TriggerTypesAsEnums,
       triggerTypes: [] as TriggerTypes,
     } satisfies TestLiveInput['toolkitsData'];
-    const { fixture, toolkitsData } = Object.assign(
-      { fixture: undefined, toolkitsData: defaultAppClientData },
-      input
-    );
+    const fixture = input?.fixture;
+    const toolkitsData = {
+      ...defaultAppClientData,
+      ...(input?.toolkitsData ?? {}),
+      detailedToolkits:
+        input?.toolkitsData?.detailedToolkits ?? defaultAppClientData.detailedToolkits,
+    };
+
+    const defaultAuthConfigsData = {
+      items: [] as AuthConfigItem[],
+      createResponse: undefined as AuthConfigCreateResponse | undefined,
+    } satisfies TestLiveInput['authConfigsData'];
+    const authConfigsData = {
+      ...defaultAuthConfigsData,
+      ...(input?.authConfigsData ?? {}),
+    };
+
+    const defaultConnectedAccountsData = {
+      items: [] as ConnectedAccountItem[],
+      linkResponse: undefined as LinkCreateResponse | undefined,
+    } satisfies TestLiveInput['connectedAccountsData'];
+    const connectedAccountsData = {
+      ...defaultConnectedAccountsData,
+      ...(input?.connectedAccountsData ?? {}),
+    };
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
@@ -150,6 +198,306 @@ export const TestLayer = (input?: TestLiveInput) =>
           const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
           return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
         },
+        getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) => {
+          // Filter tools based on toolkit slugs from specs
+          const toolkitSlugs = specs.map(s => s.toolkitSlug.toUpperCase());
+          const prefixes = toolkitSlugs.map(s => `${s}_`);
+          const tools = toolkitsData.tools.filter(t =>
+            prefixes.some(p => t.slug.toUpperCase().startsWith(p))
+          );
+          return Effect.succeed(tools);
+        },
+        validateToolkitVersions: (
+          overrides: ToolkitVersionOverrides,
+          relevantToolkits?: ReadonlyArray<string>
+        ) => {
+          // Mock implementation that validates against test fixture
+          const invalidVersions: InvalidVersionDetail[] = [];
+          const warnings: string[] = [];
+
+          for (const [toolkit, version] of overrides) {
+            // Check if toolkit should be validated
+            if (relevantToolkits && !relevantToolkits.map(s => s.toLowerCase()).includes(toolkit)) {
+              warnings.push(`Version override for "${toolkit}" will be ignored`);
+              continue;
+            }
+
+            // Check if toolkit exists in the fixture
+            const toolkitExists = toolkitsData.toolkits.some(
+              t => String.toLowerCase(t.slug) === toolkit
+            );
+
+            if (!toolkitExists) {
+              return Effect.fail(
+                new InvalidToolkitsError({
+                  invalidToolkits: [toolkit],
+                  availableToolkits: toolkitsData.toolkits.map(t => t.slug),
+                })
+              );
+            }
+
+            // Mock: only accept 'latest' or versions matching pattern YYYYMMDD_NN
+            const validPattern = /^\d{8}_\d{2}$/;
+            if (version !== 'latest' && !validPattern.test(version)) {
+              invalidVersions.push({
+                toolkit,
+                requestedVersion: version,
+                availableVersions: ['20250901_00', '20250815_00', '20250710_00'],
+              });
+            }
+          }
+
+          if (invalidVersions.length > 0) {
+            return Effect.fail(new InvalidToolkitVersionsError({ invalidVersions }));
+          }
+
+          return Effect.succeed({
+            validatedOverrides: overrides,
+            warnings: warnings as ReadonlyArray<string>,
+          });
+        },
+        searchToolkits: (params: {
+          search?: string;
+          category?: string;
+          limit?: number;
+          cursor?: string;
+        }) => {
+          let results = [...toolkitsData.toolkits];
+
+          if (params.search) {
+            const q = params.search.toLowerCase();
+            results = results.filter(
+              t =>
+                t.name.toLowerCase().includes(q) ||
+                t.slug.toLowerCase().includes(q) ||
+                t.meta.description.toLowerCase().includes(q)
+            );
+          }
+
+          const limit = params.limit ?? 30;
+          const items = results.slice(0, limit);
+          return Effect.succeed({
+            items,
+            total_items: results.length,
+            total_pages: Math.ceil(results.length / limit),
+            next_cursor: null,
+          });
+        },
+        searchTools: (params: {
+          search?: string;
+          toolkit_slug?: string;
+          tags?: string;
+          limit?: number;
+          cursor?: string;
+        }) => {
+          let results = [...toolkitsData.tools];
+
+          if (params.toolkit_slug) {
+            const slugs = params.toolkit_slug.split(',').map(s => s.trim().toUpperCase() + '_');
+            results = results.filter(t => slugs.some(p => t.slug.toUpperCase().startsWith(p)));
+          }
+
+          if (params.search) {
+            const q = params.search.toLowerCase();
+            results = results.filter(
+              t =>
+                t.name.toLowerCase().includes(q) ||
+                t.slug.toLowerCase().includes(q) ||
+                t.description.toLowerCase().includes(q)
+            );
+          }
+
+          if (params.tags) {
+            const tagList = params.tags.split(',').map(t => t.trim().toLowerCase());
+            results = results.filter(t =>
+              tagList.some(tag => t.tags.map(tt => tt.toLowerCase()).includes(tag))
+            );
+          }
+
+          const limit = params.limit ?? 30;
+          const items = results.slice(0, limit);
+          return Effect.succeed({
+            items,
+            total_pages: Math.ceil(results.length / limit),
+            next_cursor: null,
+          });
+        },
+        getToolDetailed: (slug: string) => {
+          const found = toolkitsData.tools.find(t => t.slug.toUpperCase() === slug.toUpperCase());
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({ cause: `Tool "${slug}" not found`, status: 404 })
+            );
+          }
+          // Derive toolkit slug from tool slug prefix (e.g. GMAIL_SEND_EMAIL -> gmail)
+          const parts = found.slug.split('_');
+          const toolkitSlug = parts.length > 1 ? parts[0]!.toLowerCase() : '';
+          return Effect.succeed({
+            ...found,
+            no_auth: false,
+            toolkit: { name: toolkitSlug, slug: toolkitSlug },
+          });
+        },
+        getToolkitDetailed: (slug: string) => {
+          const found = toolkitsData.detailedToolkits.find(
+            t => t.slug.toLowerCase() === slug.toLowerCase()
+          );
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({ cause: `Toolkit "${slug}" not found`, status: 404 })
+            );
+          }
+          return Effect.succeed(found);
+        },
+        listAuthConfigs: (params: {
+          search?: string;
+          toolkit_slug?: string;
+          limit?: number;
+          show_disabled?: boolean;
+        }) => {
+          let results = [...authConfigsData.items];
+
+          if (params.toolkit_slug) {
+            const slugs = params.toolkit_slug.split(',').map(s => s.trim().toLowerCase());
+            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
+          }
+
+          if (params.search) {
+            const q = params.search.toLowerCase();
+            results = results.filter(
+              item => item.name.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
+            );
+          }
+
+          const limit = params.limit ?? 30;
+          const items = results.slice(0, limit);
+          return Effect.succeed({
+            items,
+            total_items: results.length,
+            total_pages: Math.ceil(results.length / limit),
+            current_page: 1,
+            next_cursor: null,
+          });
+        },
+        getAuthConfig: (nanoid: string) => {
+          const found = authConfigsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Auth config "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Auth config "${nanoid}" not found.`,
+                  suggestedFix: 'Check the auth config ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed(found);
+        },
+        createAuthConfig: () =>
+          Effect.succeed(
+            authConfigsData.createResponse ?? {
+              auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
+              toolkit: { slug: 'test' },
+            }
+          ),
+        deleteAuthConfig: (nanoid: string) => {
+          const found = authConfigsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Auth config "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Auth config "${nanoid}" not found.`,
+                  suggestedFix: 'Check the auth config ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed({});
+        },
+        listConnectedAccounts: (params: {
+          toolkit_slugs?: string[];
+          user_ids?: string[];
+          statuses?: string[];
+          limit?: number;
+        }) => {
+          let results = [...connectedAccountsData.items];
+
+          if (params.toolkit_slugs && params.toolkit_slugs.length > 0) {
+            const slugs = params.toolkit_slugs.map(s => s.toLowerCase());
+            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
+          }
+
+          if (params.user_ids && params.user_ids.length > 0) {
+            const ids = new Set(params.user_ids);
+            results = results.filter(item => ids.has(item.user_id));
+          }
+
+          if (params.statuses && params.statuses.length > 0) {
+            const statuses = new Set(params.statuses);
+            results = results.filter(item => statuses.has(item.status));
+          }
+
+          const limit = params.limit ?? 30;
+          const items = results.slice(0, limit);
+          return Effect.succeed({
+            items,
+            total_items: results.length,
+            total_pages: Math.ceil(results.length / limit),
+            current_page: 1,
+            next_cursor: null,
+          });
+        },
+        getConnectedAccount: (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Connected account "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Connected account "${nanoid}" not found.`,
+                  suggestedFix: 'Check the connected account ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed(found);
+        },
+        deleteConnectedAccount: (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Connected account "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Connected account "${nanoid}" not found.`,
+                  suggestedFix: 'Check the connected account ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed({});
+        },
+        createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) => {
+          if (connectedAccountsData.linkResponse) {
+            return Effect.succeed(connectedAccountsData.linkResponse);
+          }
+          return Effect.succeed({
+            connected_account_id: 'con_test_link',
+            expires_at: '2026-12-31T23:59:59Z',
+            link_token: 'lt_test_token',
+            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
+          } satisfies LinkCreateResponse);
+        },
       })
     );
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();
@@ -186,7 +534,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
-    const _console = yield* MockConsole.effect;
+    const _console = yield* MockConsole.make;
 
     const layers = Layer.mergeAll(
       Console.setConsole(_console),
@@ -201,7 +549,8 @@ export const TestLayer = (input?: TestLiveInput) =>
       BunFileSystem.layer,
       BunContext.layer,
       MockTerminal.layer,
-      BunPath.layer
+      BunPath.layer,
+      TerminalUITest
     ) satisfies RequiredLayer;
 
     return layers;

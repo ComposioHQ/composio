@@ -4,6 +4,9 @@ import hashlib
 import os
 import typing as t
 from pathlib import Path
+from urllib.parse import unquote, urlparse
+import uuid
+import datetime
 
 import requests
 import typing_extensions as te
@@ -15,6 +18,7 @@ from composio.client.types import Tool
 from composio.exceptions import (
     ErrorDownloadingFile,
     ErrorUploadingFile,
+    ResponseTooLargeError,
     SDKFileNotFoundError,
 )
 from composio.utils import mimetypes
@@ -25,6 +29,26 @@ if t.TYPE_CHECKING:
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
 _FILE_UPLOAD = "/api/v3/files/upload/request"
+_MAX_FILENAME_LENGTH = 100
+"""
+Maximum filename length to prevent issues with long URLs from public buckets.
+Long filenames (containing hashes, UUIDs, or encoded metadata) are replaced
+with timestamped filenames to match TypeScript SDK behavior.
+"""
+
+_MAX_RESPONSE_SIZE = 100 * 1024 * 1024  # 100 MB default limit
+"""
+Maximum response size in bytes when fetching files from URLs.
+Prevents memory exhaustion attacks from malicious URLs pointing to large files.
+"""
+
+_CONNECT_TIMEOUT = 5  # seconds
+_READ_TIMEOUT = 60  # seconds
+"""
+Separate connect and read timeouts for URL fetching.
+Connect timeout is short to fail fast on unreachable hosts.
+Read timeout is longer to allow for slower file transfers.
+"""
 
 LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 """
@@ -64,7 +88,20 @@ Local output file directory name for composio tools
 """
 
 
-def get_md5(file: Path):
+def get_md5(file: Path) -> str:
+    """Calculate MD5 hash of a file for integrity verification.
+
+    Note: MD5 is used here for file integrity checking and deduplication,
+    not for cryptographic security. The Composio API requires MD5 hashes
+    for file upload verification. For security-critical applications,
+    consider using SHA-256 for additional integrity checks.
+
+    Args:
+        file: Path to file to hash
+
+    Returns:
+        Hexadecimal MD5 hash string
+    """
     obj = hashlib.md5()
     with file.open("rb") as fp:
         while True:
@@ -76,8 +113,18 @@ def get_md5(file: Path):
 
 
 def upload(url: str, file: Path) -> bool:
+    """Upload file to presigned S3 URL.
+
+    Args:
+        url: Presigned S3 upload URL
+        file: Path to file to upload
+
+    Returns:
+        True if upload succeeded (HTTP 200), False otherwise
+    """
     with file.open("rb") as data:
-        return requests.put(url=url, data=data).status_code in (200, 403)
+        response = requests.put(url=url, data=data)
+        return response.status_code == 200
 
 
 class _FileUploadResponse(_ComposioBaseModel):
@@ -85,6 +132,243 @@ class _FileUploadResponse(_ComposioBaseModel):
     key: str
     type: str
     new_presigned_url: str
+
+
+def _is_url(value: str) -> bool:
+    """Check if a string is a valid HTTP/HTTPS URL."""
+    try:
+        parsed = urlparse(value)
+        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+    except Exception:
+        return False
+
+
+def _get_extension_from_mimetype(mimetype: str) -> str:
+    """Get file extension from mimetype."""
+    mime_to_ext = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
+        "image/svg+xml": ".svg",
+        "image/bmp": ".bmp",
+        "image/tiff": ".tiff",
+        "application/pdf": ".pdf",
+        "application/json": ".json",
+        "application/xml": ".xml",
+        "text/plain": ".txt",
+        "text/html": ".html",
+        "text/css": ".css",
+        "text/javascript": ".js",
+        "application/zip": ".zip",
+        "application/gzip": ".gz",
+        "audio/mpeg": ".mp3",
+        "audio/wav": ".wav",
+        "video/mp4": ".mp4",
+        "video/webm": ".webm",
+    }
+    return mime_to_ext.get(mimetype.lower(), "")
+
+
+def _generate_timestamped_filename(extension: str) -> str:
+    """Generate a unique filename with timestamp."""
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique_id = uuid.uuid4().hex[:8]
+    return f"file_{timestamp}_{unique_id}{extension}"
+
+
+def _truncate_filename(filename: str, max_length: int = _MAX_FILENAME_LENGTH) -> str:
+    """Truncate filename if it exceeds max length by generating a timestamped name.
+
+    Long filenames are common with public bucket URLs containing hashes or UUIDs.
+    These can cause issues, so we replace them with timestamped filenames while
+    preserving the extension.
+
+    Args:
+        filename: The original filename
+        max_length: Maximum allowed length for the filename
+
+    Returns:
+        The original filename if within limits, or a timestamped filename
+        with the extension preserved if the original is too long
+    """
+    if len(filename) <= max_length:
+        return filename
+
+    # Extract extension
+    if "." in filename:
+        _, ext = filename.rsplit(".", 1)
+        ext = f".{ext}"
+    else:
+        ext = ""
+
+    # Generate a timestamped filename (matches TypeScript SDK behavior)
+    return _generate_timestamped_filename(ext)
+
+
+def _sanitize_url_for_logging(url: str) -> str:
+    """Sanitize URL for safe logging (remove sensitive query params).
+
+    Args:
+        url: URL to sanitize
+
+    Returns:
+        URL with query parameters hidden
+    """
+    parsed = urlparse(url)
+    if parsed.query:
+        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}?[REDACTED]"
+    return url
+
+
+def _fetch_file_from_url(
+    url: str,
+    max_size: int = _MAX_RESPONSE_SIZE,
+) -> t.Tuple[str, bytes, str]:
+    """Fetch file content from a URL with security protections.
+
+    Security features:
+    - Response size limiting (prevents memory exhaustion)
+    - Redirects disabled (prevents redirect-based attacks)
+    - Separate connect/read timeouts
+
+    Args:
+        url: URL to fetch file from
+        max_size: Maximum response size in bytes (default: 100MB)
+
+    Returns:
+        Tuple of (filename, content_bytes, mimetype)
+
+    Raises:
+        ResponseTooLargeError: If response exceeds max_size
+        ErrorUploadingFile: If fetch fails for other reasons
+    """
+    # Make request without following redirects
+    try:
+        response = requests.get(
+            url,
+            stream=True,  # Enable streaming for size limiting
+            allow_redirects=False,  # Disable redirects for security
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
+    except requests.exceptions.Timeout:
+        raise ErrorUploadingFile(
+            f"Request timed out fetching URL: {_sanitize_url_for_logging(url)}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(
+            f"Failed to fetch file from URL: {_sanitize_url_for_logging(url)}. Error: {e}"
+        )
+
+    # Reject redirects - require direct URL to resource
+    if response.status_code in (301, 302, 303, 307, 308):
+        location = response.headers.get("Location", "unknown")
+        response.close()
+        raise ErrorUploadingFile(
+            f"URL returned redirect to {_sanitize_url_for_logging(location)}. "
+            f"Please provide a direct URL to the file."
+        )
+
+    # Check for successful response
+    if not response.ok:
+        response.close()
+        raise ErrorUploadingFile(
+            f"Failed to fetch file from URL: {_sanitize_url_for_logging(url)}. "
+            f"Status: {response.status_code}"
+        )
+
+    # Check Content-Length header first (early abort for oversized files)
+    content_length = response.headers.get("Content-Length")
+    if content_length and int(content_length) > max_size:
+        response.close()
+        raise ResponseTooLargeError(
+            f"File size ({int(content_length)} bytes) exceeds maximum allowed "
+            f"size ({max_size} bytes)"
+        )
+
+    # Stream response with size tracking
+    chunks: t.List[bytes] = []
+    total_bytes = 0
+    chunk_size = 8192  # 8 KB chunks
+
+    try:
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            if chunk:
+                total_bytes += len(chunk)
+                if total_bytes > max_size:
+                    response.close()
+                    raise ResponseTooLargeError(
+                        f"Response size exceeds maximum allowed size ({max_size} bytes)"
+                    )
+                chunks.append(chunk)
+    finally:
+        response.close()
+
+    content = b"".join(chunks)
+
+    # Extract mimetype
+    mimetype = response.headers.get("content-type", "application/octet-stream")
+    # Handle mimetypes with charset or other parameters (e.g., "text/html; charset=utf-8")
+    mimetype = mimetype.split(";")[0].strip()
+
+    # Extract filename from URL (decode percent-encoded characters)
+    parsed_url = urlparse(url)
+    pathname = unquote(parsed_url.path)
+    filename = os.path.basename(pathname) if pathname else ""
+
+    # If no filename from URL or no extension, generate one
+    if not filename:
+        extension = _get_extension_from_mimetype(mimetype)
+        filename = _generate_timestamped_filename(extension)
+    else:
+        # If filename has no extension, try to add one from mimetype
+        if "." not in filename:
+            extension = _get_extension_from_mimetype(mimetype)
+            filename = _generate_timestamped_filename(extension)
+
+        # Truncate long filenames (common with public bucket URLs containing hashes)
+        filename = _truncate_filename(filename)
+
+    return filename, content, mimetype
+
+
+def _upload_bytes_to_s3(
+    client: HttpClient,
+    filename: str,
+    content: bytes,
+    mimetype: str,
+    tool: str,
+    toolkit: str,
+) -> str:
+    """Upload bytes content to S3 and return the S3 key."""
+    md5_hash = hashlib.md5(content).hexdigest()
+
+    s3meta = client.post(
+        path=_FILE_UPLOAD,
+        body={
+            "md5": md5_hash,
+            "filename": filename,
+            "mimetype": mimetype,
+            "tool_slug": tool,
+            "toolkit_slug": toolkit,
+        },
+        cast_to=_FileUploadResponse,
+    )
+
+    # Upload the content directly to S3
+    upload_response = requests.put(
+        url=s3meta.new_presigned_url,
+        data=content,
+        headers={"Content-Type": mimetype},
+    )
+
+    if upload_response.status_code != 200:
+        raise ErrorUploadingFile(
+            f"Failed to upload to S3. Status: {upload_response.status_code}. "
+            f"This may indicate an expired presigned URL or permission issue."
+        )
+
+    return s3meta.key
 
 
 class FileUploadable(BaseModel):
@@ -95,6 +379,37 @@ class FileUploadable(BaseModel):
     s3key: str
 
     @classmethod
+    def from_url(
+        cls,
+        client: HttpClient,
+        url: str,
+        tool: str,
+        toolkit: str,
+    ) -> te.Self:
+        """Create a FileUploadable from a public URL.
+
+        Fetches the file content from the URL and uploads it to S3.
+
+        :param client: The HTTP client for API calls
+        :param url: The public URL to fetch the file from
+        :param tool: The tool slug
+        :param toolkit: The toolkit slug
+        :return: FileUploadable instance with S3 key
+        """
+        filename, content, mimetype = _fetch_file_from_url(url)
+
+        s3key = _upload_bytes_to_s3(
+            client=client,
+            filename=filename,
+            content=content,
+            mimetype=mimetype,
+            tool=tool,
+            toolkit=toolkit,
+        )
+
+        return cls(name=filename, mimetype=mimetype, s3key=s3key)
+
+    @classmethod
     def from_path(
         cls,
         client: HttpClient,
@@ -102,6 +417,23 @@ class FileUploadable(BaseModel):
         tool: str,
         toolkit: str,
     ) -> te.Self:
+        """Create a FileUploadable from a local file path or public URL.
+
+        If the file parameter is a URL (starts with http:// or https://),
+        it will fetch the file content from the URL and upload it to S3.
+        Otherwise, it treats it as a local file path.
+
+        :param client: The HTTP client for API calls
+        :param file: Local file path or public URL
+        :param tool: The tool slug
+        :param toolkit: The toolkit slug
+        :return: FileUploadable instance with S3 key
+        """
+        # Check if it's a URL
+        if isinstance(file, str) and _is_url(file):
+            return cls.from_url(client=client, url=file, tool=tool, toolkit=toolkit)
+
+        # Handle as local file path
         file = Path(file)
         if not file.exists():
             raise SDKFileNotFoundError(

@@ -1,23 +1,19 @@
 ---
-title: OpenAI Agents
-description: Use Composio with OpenAI's Agents SDK
-keywords: [agents sdk]
+title: OpenAI Agents SDK
+description: Build an agent with OpenAI Agents SDK and enable it to use 1000+ tools with Composio.
+keywords: [openai agents sdk, agents sdk]
 ---
 
-The OpenAI Agents Provider is a provider that formats the Composio tools into an object compatible with OpenAI's Agents API.
+The OpenAI Agents SDK provider transforms Composio tools into the [Agents SDK tool format](https://openai.github.io/openai-agents-python/) with built-in execution.
 
-OpenAI Agents SDK is different from the OpenAI SDK. It helps build agentic AI apps in a lightweight, easy-to-use package with very few abstractions.
+<Steps>
+<Step>
+**Install**
 
-## Usage with Tools
-
-Use Composio Tool Router as a native tool with the OpenAI Agents SDK.
-
-### Installation
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```bash
-pip install python-dotenv composio composio-openai-agents openai-agents
+pip install composio composio-openai-agents openai-agents
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -26,336 +22,48 @@ npm install @composio/core @composio/openai-agents @openai/agents
 ```
 </Tab>
 </Tabs>
+</Step>
 
-### Usage
-
-Create a Tool Router session and use it as a native tool with OpenAI Agents SDK:
-
-<Callout type="info">
-- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
-</Callout>
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-from dotenv import load_dotenv
-from composio import Composio
-from agents import Agent, Runner, SQLiteSession
-from composio_openai_agents import OpenAIAgentsProvider
-
-load_dotenv()
-
-# Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
-composio = Composio(provider=OpenAIAgentsProvider())
-
-# Unique identifier of the user
-user_id = "user_123"
-
-# Create a session and get native tools for the user
-session = composio.create(user_id=user_id)
-tools = session.tools()
-
-# Configure OpenAI agent with Composio tools
-agent = Agent(
-    name="Personal Assistant",
-    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
-    model="gpt-5.2",
-    tools=tools,
-)
-
-# Memory for multi-turn conversation
-memory = SQLiteSession("conversation")
-
-# Execute an initial task
-print("Fetching GitHub issues from the Composio repository...\n")
-try:
-    result = Runner.run_sync(
-        starting_agent=agent,
-        input="Fetch all the open GitHub issues on the @ComposioHQ/composio repository and group them by bugs/features/docs.",
-        session=memory,
-    )
-    print(f"{result.final_output}\n")
-except Exception as e:
-    print(f"[Error]: {e}")
-
-# Continue with interactive conversation
-print("\nWhat else would you like me to do? (Type 'exit' to exit)")
-
-while True:
-    user_input = input("You: ").strip()
-    if user_input.lower() == "exit":
-        break
-
-    print("Assistant: ", end="", flush=True)
-    try:
-        result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
-        print(f"{result.final_output}\n")
-    except Exception as e:
-        print(f"\n[Error]: {e}")
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import "dotenv/config";
-import { Composio } from "@composio/core";
-import { Agent, run, MemorySession } from "@openai/agents";
-import { OpenAIAgentsProvider } from "@composio/openai-agents";
-import { createInterface } from "readline/promises";
-
-// Initialize Composio with OpenAI Agents provider (API key from env var COMPOSIO_API_KEY)
-const composio = new Composio({ provider: new OpenAIAgentsProvider() });
-
-// Unique identifier of the user
-const userId = "user_123";
-
-// Create a session and get native tools for the user
-const session = await composio.create(userId);
-const tools = await session.tools();
-
-const agent = new Agent({
-  name: "Personal Assistant",
-  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: "gpt-5.2",
-  tools,
-});
-
-// Create a memory session for persistent multi-turn conversation
-const memory = new MemorySession();
-
-// Execute an initial task
-console.log("Fetching GitHub issues from the Composio repository...\n");
-try {
-  const initialResult = await run(
-    agent,
-    "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
-    { session: memory }
-  );
-  console.log(`${initialResult.finalOutput}\n`);
-} catch (error) {
-  console.error("[Error]:", error instanceof Error ? error.message : error);
-}
-
-// Continue with interactive conversation
-const readline = createInterface({ input: process.stdin, output: process.stdout });
-
-console.log(`
-What else would you like me to do?
-(Type 'exit' to exit)
-`);
-
-
-while (true) {
-  const input = (await readline.question("You: ")).trim();
-  if (input.toLowerCase() === "exit") break;
-
-  console.log("Assistant: ");
-
-  try {
-    const result = await run(agent, input, { session: memory });
-    console.log(`${result.finalOutput}\n`);
-  } catch (error) {
-    console.error("\n[Error]:", error instanceof Error ? error.message : error);
-  }
-}
-readline.close();
-```
-</Tab>
-</Tabs>
-
-## Usage with MCP
-
-Use Composio Tool Router with the OpenAI Agents SDK for a fully managed MCP experience.
-
-### Installation
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```bash
-pip install python-dotenv composio openai-agents
-```
-</Tab>
-<Tab value="TypeScript">
-```bash
-npm install dotenv @composio/core @openai/agents zod@3
-```
-</Tab>
-</Tabs>
-
-### Usage
-
-Create a Tool Router session and execute tasks with OpenAI agents:
+<Step>
+**Configure API Keys**
 
 <Callout type="info">
-- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set `OPENAI_API_KEY` environment variable with your [OpenAI API key](https://platform.openai.com/api-keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-from dotenv import load_dotenv
-from composio import Composio
-from agents import Agent, Runner, HostedMCPTool
-
-load_dotenv()
-
-# Initialize Composio (API key from env var COMPOSIO_API_KEY)
-composio = Composio()
-# Unique identifier of the user
-user_id = "user_123"
-
-# Create a Tool Router session for the user
-session = composio.create(user_id=user_id)
-
-# Configure OpenAI agent with Composio MCP server
-agent = Agent(
-    name="Personal Assistant",
-    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
-    model="gpt-5.2",
-    tools=[
-        HostedMCPTool(
-            tool_config={
-                "type": "mcp",
-                "server_label": "composio",
-                "server_url": session.mcp.url,
-                "require_approval": "never",
-                "headers": session.mcp.headers,
-            }
-        )
-    ],
-)
-
-# Execute the task
-print("Fetching GitHub issues from the Composio repository @ComposioHQ/composio...\n")
-try:
-    result = Runner.run_sync(
-        starting_agent=agent,
-        input="Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
-    )
-    print(result.final_output)
-except Exception as e:
-    print(f"[Error]: {e}")
-
-print("\n\n---")
-print("Tip: If prompted to authenticate, complete the auth flow and run again.")
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
 ```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import "dotenv/config";
-import { Composio } from "@composio/core";
-import { Agent, hostedMcpTool, run, MemorySession } from "@openai/agents";
-import { createInterface } from "readline/promises";
+</Step>
 
-// Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly: { apiKey: "your-key" })
-const composio = new Composio();
+<Step>
+**Create session and run**
 
-// Unique identifier of the user
-const userId = "user_123";
-
-// Create a tool router session for the user
-const session = await composio.create(userId);
-
-const agent = new Agent({
-  name: "Personal Assistant",
-  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: "gpt-5.2",
-  tools: [
-    hostedMcpTool({
-      serverLabel: "composio",
-      serverUrl: session.mcp.url,
-      headers: session.mcp.headers, // Authentication headers for the Composio MCP server
-    }),
-  ],
-});
-
-// Create a memory session for persistent multi-turn conversation
-const memory = new MemorySession();
-
-// Execute an initial task
-console.log("Fetching GitHub issues from the Composio repository...\n");
-try {
-  const initialResult = await run(
-    agent,
-    "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
-    { session: memory }
-  );
-  console.log(`${initialResult.finalOutput}\n`);
-} catch (error) {
-  console.error("[Error]:", error instanceof Error ? error.message : error);
-}
-
-// Continue with interactive conversation
-const readline = createInterface({ input: process.stdin, output: process.stdout });
-
-console.log(`
-What else would you like me to do?
-(Type 'exit' to exit)
-`);
-
-while (true) {
-  const input = (await readline.question("You: ")).trim();
-  if (input.toLowerCase() === "exit") break;
-
-  console.log("Assistant: ");
-
-  try {
-    const result = await run(agent, input, { session: memory });
-    console.log(`${result.finalOutput}\n`);
-  } catch (error) {
-    console.error("\n[Error]:", error instanceof Error ? error.message : error);
-  }
-}
-readline.close();
-```
-</Tab>
-</Tabs>
-
-## Usage with direct tools
-
-### Setup
-
-<Tabs items={["Python", "TypeScript"]}>
-<Tab value="Python">
-```bash
-pip install composio openai-agents composio-openai-agents
-```
-</Tab>
-<Tab value="TypeScript">
-```bash
-npm install @composio/core @openai/agents @composio/openai-agents
-```
-</Tab>
-</Tabs>
-
-### Usage
-
-<Tabs items={["Python", "TypeScript"]}>
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
 import asyncio
 from composio import Composio
-from agents import Agent, Runner
 from composio_openai_agents import OpenAIAgentsProvider
+from agents import Agent, Runner
 
-composio = Composio(api_key="your-api-key", provider=OpenAIAgentsProvider())
+composio = Composio(provider=OpenAIAgentsProvider())
 
-# Create a connected account for the user for the gmail toolkit and replace with your own user id
-externalUserId = "your-user-id"
-
-# Get Gmail tools that are pre-configured
-tools = composio.tools.get(user_id=externalUserId, tools=["GMAIL_SEND_EMAIL"])
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
 agent = Agent(
-    name="Email Manager", instructions="You are a helpful assistant", tools=tools
+    name="Email Agent",
+    instructions="You are a helpful assistant.",
+    tools=tools,
 )
 
-# Run the agent
 async def main():
     result = await Runner.run(
         starting_agent=agent,
-        input="Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'",
+        input="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
     )
     print(result.final_output)
 
@@ -365,38 +73,31 @@ asyncio.run(main())
 <Tab value="TypeScript">
 ```typescript
 import { Composio } from "@composio/core";
-import { Agent, run } from "@openai/agents";
 import { OpenAIAgentsProvider } from "@composio/openai-agents";
+import { Agent, run } from "@openai/agents";
 
-// add OPENAI_API_KEY in your .env file
 const composio = new Composio({
-  apiKey: "your-api-key",
   provider: new OpenAIAgentsProvider(),
 });
 
-// Create a connected account for the user for the gmail toolkit and replace with your own user id
-const externalUserId = "your-user-id";
-
-// Fetch tools for GMAIL toolkit on behalf of the user
-const tools = await composio.tools.get(externalUserId, {
-    tools: ["GMAIL_SEND_EMAIL"],
-  });
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
 
 const agent = new Agent({
-    name: "Email Manager",
-    tools: tools,
+  name: "Email Agent",
+  instructions: "You are a helpful assistant.",
+  tools,
 });
 
-console.log(`Running agent...`);
 const result = await run(
-    agent,
-    "Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'"
+  agent,
+  "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
 );
 
-console.log(`Received response from agent`);
-if (result.finalOutput) {
-    console.log(JSON.stringify(result.finalOutput, null, 2));
-}
+console.log(result.finalOutput);
 ```
 </Tab>
 </Tabs>
+</Step>
+</Steps>

@@ -5,6 +5,7 @@ import { BunFileSystem } from '@effect/platform-bun';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
 import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
+import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { NodeOs } from './node-os';
 import { toolkitsFromJSON, toolkitsToJSON, type Toolkits } from 'src/models/toolkits';
 import {
@@ -217,12 +218,44 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
         );
       },
 
+      // Version-specific tools bypass cache because:
+      // 1. Different versions = different cache keys needed
+      // 2. Version-specific data shouldn't pollute the main cache
+      // The cache is mainly useful for 'latest' during repeated dev iterations.
+      getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) => {
+        return underlyingRepository.getToolsByVersionSpecs(specs);
+      },
+
       // These methods don't need caching as they operate on already fetched data
       // or perform validation that should always be fresh
       getMetrics: () => underlyingRepository.getMetrics(),
       validateToolkits: toolkitSlugs => underlyingRepository.validateToolkits(toolkitSlugs),
       filterToolkitsBySlugs: (toolkits, toolkitSlugs) =>
         underlyingRepository.filterToolkitsBySlugs(toolkits, toolkitSlugs),
+      // Version validation should NOT be cached because:
+      // 1. available_versions can change frequently as new versions are released
+      // 2. Validation should always reflect the current API state
+      // 3. Caching validation results could cause false positives/negatives
+      validateToolkitVersions: (overrides, relevantToolkits) =>
+        underlyingRepository.validateToolkitVersions(overrides, relevantToolkits),
+      // These methods should NOT be cached:
+      // - searchToolkits: results depend on query params, caching would be misleading
+      // - getToolkitDetailed: detailed info should be fresh (auth config fields change)
+      searchToolkits: params => underlyingRepository.searchToolkits(params),
+      getToolkitDetailed: slug => underlyingRepository.getToolkitDetailed(slug),
+      // Tool search/detail should NOT be cached (query-dependent, should be fresh)
+      searchTools: params => underlyingRepository.searchTools(params),
+      getToolDetailed: slug => underlyingRepository.getToolDetailed(slug),
+      // Auth config operations should NOT be cached (CRUD operations, must be fresh)
+      listAuthConfigs: params => underlyingRepository.listAuthConfigs(params),
+      getAuthConfig: nanoid => underlyingRepository.getAuthConfig(nanoid),
+      createAuthConfig: params => underlyingRepository.createAuthConfig(params),
+      deleteAuthConfig: nanoid => underlyingRepository.deleteAuthConfig(nanoid),
+      // Connected account operations should NOT be cached (CRUD operations, must be fresh)
+      listConnectedAccounts: params => underlyingRepository.listConnectedAccounts(params),
+      getConnectedAccount: nanoid => underlyingRepository.getConnectedAccount(nanoid),
+      deleteConnectedAccount: nanoid => underlyingRepository.deleteConnectedAccount(nanoid),
+      createConnectedAccountLink: params => underlyingRepository.createConnectedAccountLink(params),
     });
   })
 ).pipe(

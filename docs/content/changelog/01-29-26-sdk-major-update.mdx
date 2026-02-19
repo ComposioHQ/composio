@@ -1,0 +1,763 @@
+---
+title: 'SDK 0.6.0 Major Update: Cloudflare Workers Support and Breaking Changes'
+description: 'Major release with Cloudflare Workers support, webhook verification updates, and Mastra v1 compatibility. Includes breaking changes for webhook APIs.'
+date: '2026-01-29'
+---
+
+## Version Information
+
+### TypeScript/JavaScript
+
+- Package: `@composio/core` and all provider packages
+- Version: `0.6.0`+
+
+### Python
+
+- Package: `composio` and all provider packages
+- Version: `0.11.0`+
+
+---
+
+This major release focuses on Cloudflare Workers compatibility, platform-specific optimizations, and critical bug fixes. It includes **breaking changes** in both TypeScript and Python SDKs.
+
+<Callout type="warn">
+**Breaking Changes**: This release includes breaking changes that require code modifications:
+
+**TypeScript:**
+
+1. Webhook verification: Now async + signature changed (must add `await` + new required params: `id`, `timestamp`)
+2. Mastra provider updated to v1 API
+
+**Python:**
+
+1. Webhook verification: Signature changed (new required parameters: `id`, `timestamp` - still synchronous)
+
+See the [Migration Guide](#migration-guide) for detailed upgrade instructions.
+
+</Callout>
+
+## Breaking Changes
+
+### 1. Webhook Verification Breaking Changes
+
+**TypeScript PR**: [#2436](https://github.com/ComposioHQ/composio/pull/2436) | **Python PR**: [#2361](https://github.com/ComposioHQ/composio/pull/2361)
+
+The webhook verification API has breaking changes in both SDKs to support multiple webhook versions (v1, v2, v3) and edge runtime compatibility.
+
+#### TypeScript: Now Async + Signature Changed
+
+The `verifyWebhook()` method has **two breaking changes**: it's now async AND requires additional parameters.
+
+**Before:**
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Old signature - synchronous, fewer parameters
+const payload = composio.triggers.verifyWebhook({
+  payload: req.body.toString(),
+  signature: req.headers['x-composio-signature'] as string,
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+});
+// Returns: TriggerEvent
+```
+
+**After:**
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// New signature - async, requires id and timestamp
+const result = await composio.triggers.verifyWebhook({
+  id: req.headers['webhook-id'] as string, // NEW: required
+  payload: req.body.toString(),
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+  signature: req.headers['webhook-signature'] as string, // header name changed
+  timestamp: req.headers['webhook-timestamp'] as string, // NEW: required
+  tolerance: 300, // optional, default 300 seconds
+});
+// Returns: VerifyWebhookResult with version info
+```
+
+**Key Changes:**
+
+- ⚠️ **Now async** - Must use `await`
+- ⚠️ New required parameter: `id` (from `webhook-id` header)
+- ⚠️ New required parameter: `timestamp` (from `webhook-timestamp` header)
+- ⚠️ Header name changed: `x-composio-signature` → `webhook-signature`
+- ⚠️ Return type changed: `TriggerEvent` → `VerifyWebhookResult`
+
+**Why?**
+
+- Cloudflare Workers compatibility - uses Web Crypto API instead of `node:crypto`
+- Supports v1, v2, and v3 webhook formats with improved signature verification
+
+---
+
+#### Python: Signature Changed (v1/v2/v3 Support)
+
+The method signature changed to support new webhook versions and requires additional headers.
+
+**Before:**
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Old signature - fewer parameters
+event = composio.triggers.verify_webhook(
+    payload=request.get_data(as_text=True),
+    signature=request.headers.get('x-composio-signature'),
+    secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+)
+# Returns: TriggerEvent
+```
+
+**After:**
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+# New signature - requires id and timestamp headers
+result = composio.triggers.verify_webhook(
+    id=request.headers.get('webhook-id'),           # NEW: required
+    payload=request.get_data(as_text=True),
+    secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+    signature=request.headers.get('webhook-signature'),  # header name changed
+    timestamp=request.headers.get('webhook-timestamp'),  # NEW: required
+    tolerance=300,  # optional
+)
+# Returns: VerifyWebhookResult with version info
+```
+
+**Key Changes:**
+
+- ✅ **Still synchronous** (no `await` needed)
+- ⚠️ New required parameter: `id` (webhook-id header)
+- ⚠️ New required parameter: `timestamp` (webhook-timestamp header)
+- ⚠️ Header name changed: `x-composio-signature` → `webhook-signature`
+- ⚠️ Return type changed: `TriggerEvent` → `VerifyWebhookResult`
+- ⚠️ All parameters now keyword-only (must use `param=value`)
+
+**Why?** Supports v1, v2, and v3 webhook formats with improved signature verification.
+
+---
+
+### 2. Mastra v1 Provider Update
+
+**PR**: [#2433](https://github.com/ComposioHQ/composio/pull/2433)
+
+The `@composio/mastra` provider has been updated to support Mastra v1, which has breaking API changes from v0.x.
+
+#### Before (Mastra v0.x)
+
+```typescript
+// @noErrors
+import { MastraProvider } from '@composio/mastra';
+import { Mastra } from '@mastra/core';
+
+const mastra = new Mastra({
+  /* v0 config */
+});
+const provider = new MastraProvider();
+
+// v0 API usage
+const tools = await provider.wrapTools(composioTools);
+```
+
+#### After (Mastra v1)
+
+```typescript
+// @noErrors
+import { MastraProvider } from '@composio/mastra';
+import { Mastra } from '@mastra/core';
+
+const mastra = new Mastra({
+  /* v1 config */
+});
+const provider = new MastraProvider({ mastra });
+
+// v1 API - different tool format
+const tools = await provider.wrapTools(composioTools);
+```
+
+#### Changes Required
+
+1. **Update Mastra dependency**: `npm install @mastra/core@latest`
+2. **Update provider initialization**: Pass Mastra instance to provider
+3. **Update tool handling**: Mastra v1 uses different tool schema format
+4. **Check Zod version**: Mastra v1 supports both Zod v3 and v4
+5. **Check Node.js version**: Mastra v1 requires [Node.js v22.13.0](https://mastra.ai/guides/migrations/upgrade-to-v1/overview#update-nodejs-version) or higher
+
+<Callout type="info">
+  We've added comprehensive E2E tests for both Zod v3 and v4 compatibility with Mastra v1 and Tool
+  Router integration.
+</Callout>
+
+---
+
+## Major Features
+
+### 3. Platform-Specific File Tool Modifier
+
+**PR**: [#2437](https://github.com/ComposioHQ/composio/pull/2437)
+
+Separate implementations for Node.js and Cloudflare Workers to optimize file handling for each runtime.
+
+**Key Improvements:**
+
+- **Node.js**: Uses native file system APIs for better performance
+- **Cloudflare Workers**: Uses platform-specific APIs, avoids Node.js-only code
+- **Automatic selection**: SDK automatically picks the right implementation
+- **No code changes needed**: Works transparently
+
+<Callout type="info">
+**Related Change**: This platform-agnostic approach is why `composio.triggers.verifyWebhook()` became async in [Breaking Change #1](#1-webhook-verification-breaking-changes). Node.js `node:crypto` is mostly synchronous, but the standard `globalThis.crypto` (Web Crypto API) available in Cloudflare Workers is async. To support both platforms with a single API, the method had to become async.
+</Callout>
+
+---
+
+### 4. Platform-Specific Config Defaults
+
+**PR**: [#2437](https://github.com/ComposioHQ/composio/pull/2437)
+
+Different default configurations for different runtimes to optimize behavior.
+
+Changed the `autoUploadDownloadFiles` default configuration for the Cloudflare Workers runtime, to avoid triggering runtime errors on unsupported features.
+
+**Cloudflare Workers defaults:**
+
+```typescript
+{
+  autoUploadDownloadFiles: false; // We don't currently support file uploads/downloads in Cloudflare Workers
+}
+```
+
+**Benefits:**
+
+- **Zero config** for common use cases
+- **Optimized** for each platform's strengths
+- **Override** defaults when needed
+
+---
+
+### 5. Node Buffer → Uint8Array Refactoring
+
+**PR**: [#2438](https://github.com/ComposioHQ/composio/pull/2438)
+
+All `node:buffer` usage replaced with standard `Uint8Array` for universal compatibility.
+
+**Impact:**
+
+- Works in **Node.js and Cloudflare Workers**
+- **ESLint rules** enforce this pattern going forward
+- **Better type safety** with standard types
+- **Fully backward compatible** - no code changes needed
+
+<Callout type="info">
+**Why This Matters**: Removing Node.js-specific APIs like `node:buffer` and `node:crypto` enables Cloudflare Workers support. Cloudflare Workers don't have access to Node.js built-in modules, so we use Web Standard APIs (`Uint8Array`, `globalThis.crypto`) that work in both Node.js and Cloudflare Workers.
+</Callout>
+
+---
+
+## Bug Fixes
+
+### 6. Tool Fetching with Specific Version
+
+**PR**: [#2518](https://github.com/ComposioHQ/composio/pull/2518)
+
+Fixed issues when executing tools with version constraints.
+
+#### Before (Bug)
+
+```typescript
+// @noErrors
+// This would fail or fetch wrong version
+await composio.tools.execute('GITHUB_CREATE_ISSUE', {
+  userId: 'user_123',
+  version: '1.2.0', // Version constraint ignored
+  arguments: {
+    /* ... */
+  },
+});
+```
+
+#### After (Fixed)
+
+```typescript
+// @noErrors
+// Now correctly respects version constraint
+await composio.tools.execute('GITHUB_CREATE_ISSUE', {
+  userId: 'user_123',
+  version: '1.2.0', // Version constraint honored
+  arguments: {
+    /* ... */
+  },
+});
+```
+
+**Test Coverage**: Added 174 new test cases to prevent regression.
+
+---
+
+### 7. Python JSON Schema Default Values
+
+**PR**: [#2506](https://github.com/ComposioHQ/composio/pull/2506)
+
+Fixed type coercion for stringified default values in JSON schemas.
+
+#### Before (Bug)
+
+```python
+# Schema with stringified default
+{
+  "type": "integer",
+  "default": "42"  # String instead of int
+}
+
+# Would cause runtime errors
+```
+
+#### After (Fixed)
+
+```python
+# SDK automatically coerces to correct type
+{
+  "type": "integer",
+  "default": 42  # Properly coerced to int
+}
+
+# Works correctly
+```
+
+**Impact**: Fixes runtime errors with tools that have stringified defaults in their schemas.
+
+---
+
+### 8. Salesforce Type Error Fix
+
+**PR**: [#2426](https://github.com/ComposioHQ/composio/pull/2426)
+
+Fixed `SALESFORCE_CREATE_LEAD` type error with `custom_fields` parameter.
+
+#### Before (Bug)
+
+```python
+# Would fail with type error
+composio.tools.execute('SALESFORCE_CREATE_LEAD', {
+    'user_id': 'user_123',
+    'arguments': {
+        'custom_fields': {
+            'CustomField__c': 'value'
+        }
+    }
+})
+```
+
+#### After (Fixed)
+
+```python
+# Now works correctly
+composio.tools.execute('SALESFORCE_CREATE_LEAD', {
+    'user_id': 'user_123',
+    'arguments': {
+        'custom_fields': {
+            'CustomField__c': 'value'
+        }
+    }
+})
+```
+
+**Technical Details**: Implemented proper support for `anyOf` and `allOf` JSON Schema constructs in Python SDK.
+
+---
+
+## Migration Guide
+
+### Step 1: Update Dependencies
+
+<Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn', 'pip', 'uv']} persist>
+  <Tab value="npm">
+    ```bash npm update @composio/core@latest # Update provider packages if using them npm update
+    @composio/openai@latest npm update @composio/anthropic@latest npm update @composio/vercel@latest
+    # etc. ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash pnpm update @composio/core@latest # Update provider packages if using them pnpm update
+    @composio/openai@latest pnpm update @composio/anthropic@latest pnpm update
+    @composio/vercel@latest # etc. ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash yarn upgrade @composio/core@latest # Update provider packages if using them yarn upgrade
+    @composio/openai@latest yarn upgrade @composio/anthropic@latest yarn upgrade
+    @composio/vercel@latest # etc. ```
+  </Tab>
+  <Tab value="pip">```bash pip install --upgrade composio ```</Tab>
+  <Tab value="uv">```bash uv pip install --upgrade composio ```</Tab>
+</Tabs>
+
+---
+
+### Step 2: Update Webhook Verification (Required)
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+
+**Update signature with new parameters and add `await`:**
+
+```typescript
+// @noErrors
+// Before - old signature
+const payload = composio.triggers.verifyWebhook({
+  payload: req.body.toString(),
+  signature: req.headers['x-composio-signature'] as string,
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+});
+
+// After - new signature with await and additional parameters
+const result = await composio.triggers.verifyWebhook({
+  id: req.headers['webhook-id'] as string, // NEW
+  payload: req.body.toString(),
+  secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+  signature: req.headers['webhook-signature'] as string, // header name changed
+  timestamp: req.headers['webhook-timestamp'] as string, // NEW
+});
+
+// Access the normalized payload and version info
+const event = result.payload;
+const version = result.version; // 'V1', 'V2', or 'V3'
+```
+
+**Express.js Example:**
+
+```typescript
+// @noErrors
+import express from 'express';
+import { Composio } from '@composio/core';
+
+const app = express();
+const composio = new Composio();
+
+// Make route handler async
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    // New signature with all required headers
+    const result = await composio.triggers.verifyWebhook({
+      id: req.headers['webhook-id'] as string,
+      payload: req.body.toString(),
+      secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+      signature: req.headers['webhook-signature'] as string,
+      timestamp: req.headers['webhook-timestamp'] as string,
+    });
+
+    // Access verified webhook data
+    console.log('Webhook version:', result.version);
+    console.log('Received trigger:', result.payload.triggerSlug);
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Webhook verification failed:', error);
+    res.status(401).send('Unauthorized');
+  }
+});
+```
+
+**Cloudflare Workers Example:**
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
+
+    try {
+      const body = await request.text();
+
+      // Now works in Cloudflare Workers!
+      const result = await composio.triggers.verifyWebhook({
+        id: request.headers.get('webhook-id') || '',
+        payload: body,
+        secret: env.COMPOSIO_WEBHOOK_SECRET,
+        signature: request.headers.get('webhook-signature') || '',
+        timestamp: request.headers.get('webhook-timestamp') || '',
+      });
+
+      // Process verified webhook
+      console.log('Trigger:', result.payload.triggerSlug);
+
+      return new Response('OK', { status: 200 });
+    } catch (error) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+  },
+};
+```
+
+</Tab>
+<Tab value="Python">
+
+**Update signature to include new required parameters:**
+
+```python
+# Before - old signature
+event = composio.triggers.verify_webhook(
+    payload=request.get_data(as_text=True),
+    signature=request.headers.get('x-composio-signature'),
+    secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+)
+
+# After - new signature with additional parameters
+result = composio.triggers.verify_webhook(
+    id=request.headers.get('webhook-id'),           # NEW
+    payload=request.get_data(as_text=True),
+    secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+    signature=request.headers.get('webhook-signature'),  # header name changed
+    timestamp=request.headers.get('webhook-timestamp'),  # NEW
+)
+
+# Access the normalized payload
+event = result['payload']
+# Check webhook version
+version = result['version']  # 'V1', 'V2', or 'V3'
+```
+
+**FastAPI Example:**
+
+```python
+from fastapi import FastAPI, Request, HTTPException
+from composio import Composio
+import os
+
+app = FastAPI()
+composio = Composio()
+
+@app.post("/webhook")
+def webhook(request: Request):  # Still synchronous!
+    # New signature with all required headers
+    try:
+        result = composio.triggers.verify_webhook(
+            id=request.headers.get('webhook-id', ''),
+            payload=request.body().decode('utf-8'),
+            secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+            signature=request.headers.get('webhook-signature', ''),
+            timestamp=request.headers.get('webhook-timestamp', ''),
+        )
+
+        # Access normalized payload and version info
+        print(f"Webhook version: {result['version']}")
+        print(f"Trigger: {result['payload']['trigger_slug']}")
+
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+```
+
+**Flask Example:**
+
+```python
+from flask import Flask, request
+from composio import Composio
+import os
+
+app = Flask(__name__)
+composio = Composio()
+
+@app.route('/webhook', methods=['POST'])
+def webhook():  # Still synchronous!
+    try:
+        result = composio.triggers.verify_webhook(
+            id=request.headers.get('webhook-id', ''),
+            payload=request.get_data(as_text=True),
+            secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+            signature=request.headers.get('webhook-signature', ''),
+            timestamp=request.headers.get('webhook-timestamp', ''),
+        )
+
+        # Process verified webhook
+        event = result['payload']
+        return 'OK', 200
+    except Exception as e:
+        return 'Unauthorized', 401
+```
+
+</Tab>
+</Tabs>
+
+---
+
+### Step 3: Update Mastra Integration (If Using)
+
+**Only required if you use `@composio/mastra` provider**
+
+<Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn']} persist>
+  <Tab value="npm">
+    ```bash # Update to Mastra v1 npm install @mastra/core@latest @composio/mastra@latest ```
+  </Tab>
+  <Tab value="pnpm">```bash pnpm update @mastra/core@latest @composio/mastra@latest ```</Tab>
+  <Tab value="yarn">```bash yarn upgrade @mastra/core@latest @composio/mastra@latest ```</Tab>
+</Tabs>
+
+**Update your code:**
+
+```typescript
+// @noErrors
+// Before
+import { MastraProvider } from '@composio/mastra';
+
+const provider = new MastraProvider();
+
+// After
+import { MastraProvider } from '@composio/mastra';
+import { Mastra } from '@mastra/core';
+
+const mastra = new Mastra({
+  // Your Mastra v1 config
+});
+
+const provider = new MastraProvider({ mastra });
+```
+
+<Callout type="info">
+  **Zod Compatibility**: Mastra v1 works with both Zod v3 and v4. We test both versions in CI to
+  ensure compatibility.
+</Callout>
+
+---
+
+### Step 4: Test Your Integration
+
+1. **Run your test suite** to catch any issues
+2. **Test webhook verification** if you use triggers
+3. **Test file uploads/downloads** - behavior improved but API unchanged
+4. **Test in your target runtime** (Node.js, Cloudflare Workers, etc.)
+
+---
+
+## Backward Compatibility
+
+### Fully Compatible (No Changes Needed)
+
+The following features work without any code changes:
+
+- ✅ All tool execution APIs
+- ✅ Connected accounts management
+- ✅ Authentication flows
+- ✅ Custom tools
+- ✅ Tool Router sessions
+- ✅ File upload/download (API unchanged, implementation improved)
+- ✅ All provider packages (except Mastra)
+- ✅ Python SDK usage (except webhook verification)
+
+### Requires Changes
+
+The following features require code updates:
+
+- ⚠️ **Webhook verification (TypeScript)** - Must add `await` AND add `id` + `timestamp` parameters, update header names
+- ⚠️ **Webhook verification (Python)** - Must add `id` + `timestamp` parameters, update header names (still synchronous)
+- ⚠️ **Mastra integration (TypeScript only)** - Must update to v1 API
+
+---
+
+## Impact Summary
+
+| Change                            | TypeScript Breaking        | Python Breaking         | Migration Required     | Effort                        |
+| --------------------------------- | -------------------------- | ----------------------- | ---------------------- | ----------------------------- |
+| Webhook verification - TypeScript | ✅ Yes (async + signature) | N/A                     | ✅ Required            | Medium - Add `await` + params |
+| Webhook verification - Python     | N/A                        | ✅ Yes (signature only) | ✅ Required            | Low - Add parameters          |
+| Mastra v1 support                 | ✅ Yes                     | N/A                     | ✅ Required (if using) | Medium - Update API           |
+| Platform-specific file modifier   | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| Config defaults                   | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| Buffer → Uint8Array               | ❌ No                      | N/A                     | ❌ Optional            | None - Automatic              |
+| Tool version fix                  | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| JSON schema coercion              | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+| Salesforce type fix               | ❌ No                      | ❌ No                   | ❌ Optional            | None - Automatic              |
+
+---
+
+## Cloudflare Workers Support
+
+This release adds support for Cloudflare Workers:
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const composio = new Composio({
+      apiKey: env.COMPOSIO_API_KEY,
+    });
+
+    // SDK now works in Cloudflare Workers!
+    const tools = await composio.tools.get('user_123', {
+      toolkits: ['github'],
+    });
+
+    const result = await composio.tools.execute('GITHUB_CREATE_ISSUE', {
+      userId: 'user_123',
+      arguments: {
+        /* ... */
+      },
+    });
+
+    return new Response(JSON.stringify(result));
+  },
+};
+```
+
+**Key Features Working in Cloudflare Workers:**
+- ✅ Tool execution
+- ✅ Connected accounts
+- ✅ Webhook verification
+- ✅ File upload/download
+- ✅ Custom tools
+
+---
+
+## Testing
+
+This release includes extensive E2E testing:
+
+- ✅ **Node.js**: Both CJS and ESM compatibility tests
+- ✅ **Cloudflare Workers**: Multiple test suites including Tool Router
+- ✅ **Mastra v1**: Tests for both Zod v3 and v4
+- ✅ **File handling**: Comprehensive tests for all platforms
+- ✅ **Webhook verification**: Tests for all supported runtimes
+
+**Total new tests**: 200+ test cases added across TypeScript and Python SDKs.
+
+---
+
+## Getting Help
+
+If you encounter issues during migration:
+
+1. **Check the docs**: [docs.composio.dev](https://docs.composio.dev)
+2. **Join our Discord**: [discord.composio.dev](https://discord.composio.dev)
+3. **Open an issue**: [github.com/ComposioHQ/composio/issues](https://github.com/ComposioHQ/composio/issues)
+4. **Email support**: [support@composio.dev](mailto:support@composio.dev)
+
+---
+
+## What's Next
+
+Future releases will focus on:
+
+- 🚀 Performance optimizations
+- 🔧 More platform-specific improvements
+- 📚 Enhanced TypeScript types
+- 🛠️ New tool integrations
+- 🔐 Advanced authentication flows
+
+Stay tuned for updates!

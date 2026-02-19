@@ -1,0 +1,150 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show info without arguments
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show info without arguments
+> composio auth-configs info
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show info without arguments
+> composio auth-configs info
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show info without arguments
+> composio auth-configs info
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show info without arguments
+> composio auth-configs info
+│
+▲  Missing required argument: <id>
+│
+◇  Try specifying an auth config ID, e.g.:
+│  > composio auth-configs info "ac_1232323"
+│
+│  To find auth config IDs:
+│  > composio auth-configs list
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────

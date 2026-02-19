@@ -1,0 +1,8 @@
+{
+  "title": "Using Triggers",
+  "pages": [
+    "creating-triggers",
+    "subscribing-to-events",
+    "managing-triggers"
+  ]
+}

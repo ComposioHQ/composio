@@ -7,7 +7,7 @@ export default function HomePage() {
         Composio Documentation
       </h1>
       <p className="text-lg text-[var(--color-fd-muted-foreground)] max-w-xl mx-auto mb-8">
-        Connect AI agents to 250+ tools with managed authentication.
+        Connect AI agents to 1000+ tools with managed authentication.
       </p>
       <div className="flex gap-4 justify-center">
         <Link 

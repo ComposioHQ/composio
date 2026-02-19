@@ -10,11 +10,11 @@ import {
   BaseAgenticProvider,
   Tool,
   ExecuteToolFn,
-  jsonSchemaToZodSchema,
   McpUrlResponse,
   removeNonRequiredProperties,
 } from '@composio/core';
-import { createTool } from '@mastra/core';
+import { applyCompatLayer } from '@mastra/schema-compat';
+import { createTool } from '@mastra/core/tools';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
@@ -88,17 +88,29 @@ export class MastraProvider extends BaseAgenticProvider<
               required?: string[];
             }
           )
-        : (inputParams ?? {});
+        : inputParams;
+
+    const inputSchema = applyCompatLayer({
+      schema: parameters ?? {},
+      compatLayers: [],
+      mode: 'jsonSchema',
+    });
+
+    const outputSchema = applyCompatLayer({
+      schema: tool.outputParameters ?? {},
+      compatLayers: [],
+      mode: 'jsonSchema',
+    });
 
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
-      inputSchema: parameters ? jsonSchemaToZodSchema(parameters) : undefined,
-      outputSchema: tool.outputParameters
-        ? jsonSchemaToZodSchema(tool.outputParameters)
-        : undefined,
-      execute: async ({ context }) => {
-        const result = await executeTool(tool.slug, context);
+      // @ts-ignore
+      inputSchema,
+      // @ts-ignore
+      outputSchema,
+      execute: async (inputData, _context) => {
+        const result = await executeTool(tool.slug, inputData as Record<string, unknown>);
         return result;
       },
     });

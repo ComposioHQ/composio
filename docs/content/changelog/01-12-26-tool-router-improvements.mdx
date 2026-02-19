@@ -1,5 +1,6 @@
 ---
 title: "Tool Router Improvements and New Features"
+description: "Added waitForConnections property and other enhancements to Tool Router sessions"
 date: "2026-01-12"
 ---
 
@@ -10,7 +11,7 @@ date: "2026-01-12"
 - Version: `0.3.4` to `0.4.0`
 
 ### Python
-- Package: `composio-core` and provider packages
+- Package: `composio-core` and provider packages  
 - Version: `0.10.4` to `0.10.5`
 
 ## New Features
@@ -21,10 +22,7 @@ Added `waitForConnections` (TypeScript) / `wait_for_connections` (Python) proper
 
 **TypeScript:**
 ```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your-api-key' });
-const userId = 'user_123';
-// ---cut---
+// @noErrors
 const session = await composio.toolRouter.create(userId, {
   manageConnections: {
     enable: true,
@@ -52,10 +50,7 @@ Introduced new modifier types for better session-based tool execution: `SessionE
 
 **TypeScript:**
 ```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your-api-key' });
-const session = await composio.toolRouter.create('user_123', { manageConnections: { enable: true } });
-// ---cut---
+// @noErrors
 const tools = await session.tools({
   modifySchema: ({ toolSlug, toolkitSlug, schema }) => schema,
   beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => params,
@@ -71,7 +66,7 @@ from composio.core.models import before_execute_meta, after_execute_meta
 def before_modifier(tool, toolkit, session_id, params):
     return params
 
-@after_execute_meta
+@after_execute_meta  
 def after_modifier(tool, toolkit, session_id, response):
     return response
 
@@ -84,9 +79,7 @@ Added `getRawToolRouterMetaTools` (TypeScript) / `get_raw_tool_router_meta_tools
 
 **TypeScript:**
 ```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your-api-key' });
-// ---cut---
+// @noErrors
 const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', {
   modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
     // Customize schema
@@ -138,3 +131,4 @@ This release is fully backward compatible:
 | Optimized tool execution | No | No | No |
 
 All changes follow semantic versioning principles and maintain full backward compatibility.
+

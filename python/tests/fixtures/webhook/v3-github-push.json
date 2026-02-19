@@ -1,0 +1,17 @@
+{
+  "description": "V3 GitHub push webhook - sanitized real-world structure",
+  "capturedAt": "2026-01-29T10:30:00Z",
+  "headers": {
+    "webhook-id": "msg_fixture_v3_001",
+    "webhook-timestamp": "1738150200",
+    "webhook-signature": "v1,GqTsMaDtroeNNR7rDDzEGVTtHfFtIDknXhmkCXss7cA="
+  },
+  "payload": "{\"id\":\"evt_fixture_v3_001\",\"timestamp\":\"2026-01-29T10:30:00Z\",\"type\":\"composio.trigger.message\",\"metadata\":{\"log_id\":\"log_fixture_001\",\"trigger_slug\":\"GITHUB_PUSH_EVENT\",\"trigger_id\":\"ti_fixture_001\",\"connected_account_id\":\"ca_fixture_001\",\"auth_config_id\":\"ac_fixture_001\",\"user_id\":\"user_fixture_001\"},\"data\":{\"ref\":\"refs/heads/main\",\"repository\":{\"name\":\"test-repo\",\"full_name\":\"user/test-repo\"},\"pusher\":{\"name\":\"test-user\"},\"commits\":[{\"id\":\"abc123\",\"message\":\"Test commit\"}]}}",
+  "testSecret": "test-webhook-secret-for-fixtures",
+  "expectedResult": {
+    "version": "V3",
+    "triggerSlug": "GITHUB_PUSH_EVENT",
+    "userId": "user_fixture_001",
+    "connectedAccountId": "ca_fixture_001"
+  }
+}

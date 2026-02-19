@@ -37,9 +37,14 @@ export function Feedback({ page }: FeedbackProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           page,
+          pageTitle: document.title,
           sentiment,
           message: message.trim(),
           email: email.trim() || undefined,
+          userAgent: navigator.userAgent,
+          referrer: document.referrer || undefined,
+          viewport: `${window.innerWidth}x${window.innerHeight}`,
+          timestamp: new Date().toISOString(),
         }),
       });
 
@@ -73,69 +78,130 @@ export function Feedback({ page }: FeedbackProps) {
   return (
     <>
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1.5 text-sm text-fd-muted-foreground hover:text-fd-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring"
-        aria-label="Share feedback"
+        className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-2.5 sm:py-1.5 text-xs font-medium
+          text-fd-muted-foreground hover:text-fd-foreground
+          bg-fd-secondary/50 hover:bg-fd-secondary
+          rounded-md
+          transition-all duration-150 ease-out
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-background
+          active:scale-[0.98]
+          touch-manipulation
+          motion-reduce:transition-none motion-reduce:active:scale-100"
+        aria-label="Share feedback about this page"
       >
-        <MessageSquare className="w-4 h-4" aria-hidden="true" />
-        Share feedback
+        <MessageSquare className="size-3.5" aria-hidden="true" />
+        <span>Feedback</span>
       </button>
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center
+            bg-black/60 backdrop-blur-sm
+            animate-in fade-in duration-150
+            motion-reduce:animate-none
+            p-0 sm:p-4"
           onClick={handleClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feedback-title"
         >
           <div
-            className="bg-fd-background border border-fd-border rounded-lg shadow-lg w-full max-w-md mx-4 p-6"
+            className="bg-fd-background border border-fd-border shadow-2xl
+              w-full max-w-md p-5 sm:p-6
+              pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6
+              rounded-t-xl sm:rounded-xl
+              animate-in slide-in-from-bottom duration-200 sm:zoom-in-95
+              motion-reduce:animate-none
+              overscroll-contain
+              max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Share feedback</h2>
+              <h2 id="feedback-title" className="text-lg font-semibold text-fd-foreground">
+                Share feedback
+              </h2>
               <button
+                type="button"
                 onClick={handleClose}
-                className="text-fd-muted-foreground hover:text-fd-foreground transition-colors"
-                aria-label="Close"
+                className="p-1.5 -m-1.5 rounded-md
+                  text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-secondary
+                  transition-all duration-150 ease-out
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring
+                  active:scale-95
+                  motion-reduce:transition-none motion-reduce:active:scale-100"
+                aria-label="Close feedback dialog"
               >
-                <X className="w-5 h-5" />
+                <X className="size-5" aria-hidden="true" />
               </button>
             </div>
 
             {state === 'success' ? (
-              <p className="text-green-600 text-center py-8">
-                Thank you for your feedback!
-              </p>
+              <div
+                className="text-center py-8 animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="inline-flex items-center justify-center size-12 mb-3 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                  <svg
+                    className="size-6 text-emerald-600 dark:text-emerald-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-fd-foreground font-medium">Thank you!</p>
+                <p className="text-sm text-fd-muted-foreground mt-1">Your feedback helps us improve.</p>
+              </div>
             ) : (
               <form onSubmit={handleSubmit}>
                 <p className="text-sm text-fd-muted-foreground mb-4">
                   Help us improve our documentation by sharing your thoughts.
                 </p>
 
-                <div className="flex gap-2 mb-4">
-                  {[
-                    { value: 'positive', emoji: '😊', label: 'Positive' },
-                    { value: 'neutral', emoji: '😐', label: 'Neutral' },
-                    { value: 'negative', emoji: '😞', label: 'Negative' },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setSentiment(option.value as Sentiment)}
-                      className={`flex-1 py-2 px-3 rounded-md border text-xl transition-colors ${
-                        sentiment === option.value
-                          ? 'border-fd-primary bg-fd-primary/10'
-                          : 'border-fd-border hover:border-fd-muted-foreground'
-                      }`}
-                      aria-label={option.label}
-                    >
-                      {option.emoji}
-                    </button>
-                  ))}
-                </div>
+                <fieldset className="mb-4">
+                  <legend className="sr-only">How would you rate this page?</legend>
+                  <div className="flex gap-2" role="radiogroup" aria-label="Sentiment">
+                    {[
+                      { value: 'positive', emoji: '😊', label: 'Positive' },
+                      { value: 'neutral', emoji: '😐', label: 'Neutral' },
+                      { value: 'negative', emoji: '😞', label: 'Negative' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setSentiment(option.value as Sentiment)}
+                        className={`flex-1 py-3 sm:py-2.5 px-3 rounded-lg border text-xl
+                          transition-all duration-150 ease-out
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-background
+                          active:scale-[0.98]
+                          touch-manipulation
+                          motion-reduce:transition-none motion-reduce:active:scale-100
+                          ${
+                            sentiment === option.value
+                              ? 'border-fd-primary bg-fd-primary/10 shadow-sm ring-1 ring-fd-primary/20'
+                              : 'border-fd-border hover:border-fd-muted-foreground hover:bg-fd-secondary/50'
+                          }`}
+                        role="radio"
+                        aria-checked={sentiment === option.value}
+                        aria-label={option.label}
+                      >
+                        <span className="block transform transition-transform duration-150 hover:scale-110 motion-reduce:hover:scale-100">
+                          {option.emoji}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
 
                 <label className="block mb-4">
-                  <span className="text-sm font-medium">
-                    Your feedback <span className="text-red-500">*</span>
+                  <span className="text-sm font-medium text-fd-foreground">
+                    Your feedback <span className="text-red-500 dark:text-red-400">*</span>
                   </span>
                   <textarea
                     value={message}
@@ -143,37 +209,66 @@ export function Feedback({ page }: FeedbackProps) {
                     placeholder="Tell us what you think…"
                     required
                     rows={4}
-                    className="mt-1 w-full px-3 py-2 border border-fd-border rounded-md bg-fd-background text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus:ring-2 focus:ring-fd-ring resize-none"
+                    className="mt-1.5 w-full px-3 py-3 sm:py-2.5 border border-fd-border rounded-lg
+                      bg-fd-background text-fd-foreground text-base sm:text-sm
+                      placeholder:text-fd-muted-foreground
+                      transition-colors duration-150
+                      focus:outline-none focus:ring-2 focus:ring-fd-ring focus:border-transparent
+                      resize-none"
                   />
                 </label>
 
                 <label className="block mb-6">
-                  <span className="text-sm font-medium">Email (optional)</span>
+                  <span className="text-sm font-medium text-fd-foreground">
+                    Email <span className="text-fd-muted-foreground font-normal">(optional)</span>
+                  </span>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    placeholder="you@example.com"
                     autoComplete="email"
-                    className="mt-1 w-full px-3 py-2 border border-fd-border rounded-md bg-fd-background text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus:ring-2 focus:ring-fd-ring"
+                    className="mt-1.5 w-full px-3 py-3 sm:py-2.5 border border-fd-border rounded-lg
+                      bg-fd-background text-fd-foreground text-base sm:text-sm
+                      placeholder:text-fd-muted-foreground
+                      transition-colors duration-150
+                      focus:outline-none focus:ring-2 focus:ring-fd-ring focus:border-transparent"
                   />
                 </label>
 
-                <div className="flex gap-3 justify-end">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end pt-4 border-t border-fd-border/50">
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="px-4 py-2 text-sm font-medium text-fd-muted-foreground hover:text-fd-foreground transition-colors"
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-medium rounded-lg
+                      text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-secondary
+                      transition-all duration-150 ease-out
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring
+                      active:scale-[0.98]
+                      touch-manipulation
+                      motion-reduce:transition-none motion-reduce:active:scale-100"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={!message.trim() || state === 'loading'}
-                    className="px-4 py-2 text-sm font-medium bg-fd-primary text-fd-primary-foreground rounded-md hover:bg-fd-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-medium rounded-lg
+                      bg-fd-primary text-fd-primary-foreground
+                      hover:bg-fd-primary/90
+                      disabled:opacity-50 disabled:pointer-events-none
+                      transition-all duration-150 ease-out
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-background
+                      active:scale-[0.98]
+                      touch-manipulation
+                      motion-reduce:transition-none motion-reduce:active:scale-100
+                      inline-flex items-center justify-center gap-2"
+                    aria-live="polite"
                   >
-                    {state === 'loading' && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {state === 'error' ? 'Try again' : 'Submit feedback'}
+                    {state === 'loading' && (
+                      <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                    )}
+                    <span>{state === 'loading' ? 'Sending…' : state === 'error' ? 'Try again' : 'Submit'}</span>
                   </button>
                 </div>
               </form>

@@ -192,6 +192,29 @@ Run: `bun run generate:toolkits`
 
 ---
 
+## FAQ Section
+
+### How It Works
+- Per-toolkit FAQ sourced from plain markdown files in `content/toolkits/faq/{toolkit-slug}.md`
+- `##` headings are questions, body text is the answer
+- Markdown is converted to HTML at build time using `remark-parse` + `remark-rehype` + `hast-util-to-html` (all transitive deps from Fumadocs, no new packages)
+- Rendered as Fumadocs `Accordion` components between the Header and Auth Details sections
+- Only shown if a `.md` file exists for that toolkit and has valid Q&A content
+
+### Copy Page / LLM Markdown
+- FAQ content is also included in the `/toolkits/{slug}.md` LLM route output
+- Heading levels are bumped (`##` → `###`) so questions are children of the `## Frequently Asked Questions` section
+
+### No Sitemap Impact
+- FAQ is embedded within existing toolkit pages — no new URLs are created
+- No changes to sitemap or routing
+
+### Adding FAQ Content
+- Create/edit `content/toolkits/faq/{toolkit-slug}.md` — no code changes needed
+- Empty files or files with no valid `##` headings are safely ignored
+
+---
+
 ## Future: CI Hooks
 
 - Trigger docs regeneration from toolkit repo changes

@@ -36,7 +36,8 @@
     "prepublishOnly": "pnpm run build && pnpm run build:bin",
     "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
-    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
+    "record": "bun run ./scripts/record.ts"
   },
   "keywords": [
     "composio",
@@ -47,10 +48,10 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {
-    "@effect/eslint-plugin": "^0.3.2",
-    "@effect/language-service": "^0.27.1",
-    "@effect/platform": "^0.85.2",
-    "@effect/vitest": "^0.23.8",
+    "@effect/eslint-plugin": "catalog:",
+    "@effect/language-service": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/vitest": "catalog:",
     "@types/bun": "^1.2.16",
     "@types/decompress": "^4.2.7",
     "@types/semver": "^7.7.0",
@@ -61,17 +62,18 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@clack/prompts": "1.0.0-alpha.1",
+    "@clack/core": "catalog:",
+    "@clack/prompts": "catalog:",
     "@composio/client": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/ts-builders": "workspace:*",
-    "@effect/cli": "^0.64.2",
-    "@effect/platform-bun": "^0.70.4",
-    "@effect/platform-node-shared": "^0.40.4",
+    "@effect/cli": "catalog:",
+    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node-shared": "catalog:",
     "ansis": "^4.1.0",
     "comment-json": "^4.2.5",
     "decompress": "^4.2.1",
-    "effect": "^3.16.16",
+    "effect": "catalog:",
     "indent-string": "^5.0.0",
     "open": "^10.2.0",
     "openapi-typescript": "^7.8.0",

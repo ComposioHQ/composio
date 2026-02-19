@@ -1,134 +1,77 @@
-# Fumadocs - Composio Documentation
+# Composio Documentation
 
-## Project Overview
-This is the Composio documentation site built with Fumadocs (Next.js-based docs framework).
+Documentation site for Composio, built with [Fumadocs](https://fumadocs.dev/).
 
-## Key Files
-- `app/global.css` - All custom styles and design tokens
-- `source.config.ts` - MDX collections and schema definitions
-- `lib/source.ts` - Source loaders and utility functions
-- `app/(home)/layout.tsx` - Home layout with navigation
-- `app/docs/layout.tsx` - Docs layout with sidebar
+## Quick Reference
 
-## Design Tokens
-- `--composio-orange: #ea580c` - Brand accent color
-- `--composio-sidebar: #f7f5f2` (light) / `#252220` (dark)
-- `--font-sans: 'Inter'` - Body text
-- `--font-mono: 'IBM Plex Mono'` - Code blocks
-
-## SDK Reference Docs
-Auto-generated SDK documentation from source code.
-
-### TypeScript SDK
-- **Source**: `ts/packages/core/src/models/*.ts` (JSDoc comments)
-- **Generator**: `ts/packages/core/scripts/generate-docs.ts`
-- **Output**: `content/reference/sdk-reference/typescript/`
-- **Regenerate**: `pnpm --filter @composio/core generate:docs`
-
-### Python SDK
-- **Source**: `python/composio/**/*.py` (docstrings)
-- **Generator**: `python/scripts/generate-docs.py` (uses griffe)
-- **Output**: `content/reference/sdk-reference/python/`
-- **Regenerate**: `cd python && uv run --with griffe python scripts/generate-docs.py`
-
-CI auto-generates on changes to `ts/packages/core/src/**` or `python/composio/**` via `.github/workflows/generate-sdk-docs.yml`.
-
-## Common Gotchas
-1. **CSS variables**: Use `var(--composio-orange)` not `var(--orange)`. Check `global.css` for defined variables.
-2. **Date format**: Changelog dates must be YYYY-MM-DD format (validated in schema and runtime)
-3. **Toolkits data**: `public/data/toolkits.json` must exist - errors are thrown, not silently ignored
-4. **Root directory on Vercel**: Set to `docs` with "Include files outside root directory" DISABLED
-5. **Mobile nav**: Always test CSS changes on mobile. Fumadocs uses different nav patterns (dropdown on mobile, horizontal on desktop). Avoid absolute positioning or pseudo-elements that assume horizontal layout.
-6. **Twoslash in dev**: Twoslash is disabled in `bun dev` due to heap memory issues (loads full TypeScript compiler). Type checking only runs during `bun run build`. Run build locally to catch type errors before pushing.
-
-## Twoslash - TypeScript Code Block Type Checking
-
-**ALL TypeScript code blocks are type-checked at build time.** This ensures documentation stays in sync with the SDK.
-
-> **Note**: This only validates TypeScript (`ts`, `typescript`, `tsx`) code blocks. Python code blocks are NOT type-checked.
-
-### Key features
-- **Default on**: All TypeScript blocks are validated. No annotation needed.
-- **Build-time validation**: Type errors fail the build.
-- **CI enforcement**: `.github/workflows/docs-typescript-check.yml` runs on PRs to docs/
-- **Disabled in dev**: Twoslash is disabled during `bun dev` to prevent heap memory issues. It only runs during `bun run build` / CI.
-
-### Exclusions
-- **Reference docs** (`/content/reference/`): Excluded from Twoslash via collection-level `mdxOptions` in `source.config.ts`. These are auto-generated and don't need type checking.
-
-### Common patterns
-
-**Basic snippet with setup code (hidden from output):**
-````md
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'key' });
-const userId = 'user_123';
-// ---cut---
-// Only code below this line is shown in docs
-const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
+```bash
+bun install          # Install dependencies
+bun run dev          # Dev server (http://localhost:3000)
+bun run build        # Production build (validates TS code blocks)
+bun run types:check  # Type check
 ```
-````
 
-**Using SDK-exported types for callbacks:**
-The SDK exports types for modifiers - use them instead of inline type annotations:
-````md
-```typescript
-import { Composio, TransformToolSchemaModifier } from '@composio/core';
+## Project Structure
 
-const modifySchema: TransformToolSchemaModifier = ({ toolSlug, toolkitSlug, schema }) => {
-  // TypeScript infers all parameter types!
-  return schema;
-};
 ```
-````
-
-Available modifier types from `@composio/core`:
-- `beforeExecuteModifier` - for `beforeExecute` callbacks
-- `afterExecuteModifier` - for `afterExecute` callbacks
-- `TransformToolSchemaModifier` - for `modifySchema` callbacks
-
-**Skip type checking (for partial snippets or external deps):**
-````md
-```typescript
-// @noErrors
-import { SomeExternalThing } from 'not-installed-package';
+docs/
+├── app/                  # Next.js app router
+├── content/              # MDX content
+│   ├── docs/             # Main documentation
+│   ├── cookbooks/        # Cookbooks & guides
+│   ├── changelog/        # Release notes
+│   ├── reference/        # SDK & API reference
+│   └── toolkits/         # Toolkit docs + faq/ snippets
+├── components/           # React components
+├── lib/                  # Utilities
+├── public/               # Static assets
+├── scripts/              # Build scripts (link checker, etc.)
+└── .claude/              # Claude context (see below)
 ```
-````
 
-**Declare external variables in hidden section:**
-When code uses variables that aren't defined in the snippet, declare them before the cut:
-````md
-```typescript
-import { Composio } from '@composio/core';
+## Claude Context
 
-declare const composio: Composio;
-declare const userId: string;
-// ---cut---
-const tools = await composio.tools.get(userId, { toolkits: ['GITHUB'] });
-```
-````
+Detailed documentation for Claude is organized in `.claude/`:
 
-### Annotations
-- `// ---cut---` - Hide code above from output (but include for compilation)
-- `// @noErrors` - Skip all type checking for this block
-- `// @errors: 2322` - Expect specific error code (won't fail build)
-- `// ^?` - Show type on hover at that position
+### Context (Domain Knowledge)
+- [fumadocs.md](.claude/context/fumadocs.md) - Framework patterns, design tokens, MDX components
+- [twoslash.md](.claude/context/twoslash.md) - TypeScript code block type checking
+- [sdk-reference.md](.claude/context/sdk-reference.md) - SDK doc generation
+- [api-reference.md](.claude/context/api-reference.md) - API reference customizations (schema rendering, CSS overrides, upgrade notes)
 
-### Configuration
-- **Config**: `source.config.ts` - `transformerTwoslash({ explicitTrigger: false })`
-- **SDK packages**: Installed as devDependencies for import resolution
-- **Reference exclusion**: Uses `applyMdxPreset` with custom `rehypeCodeOptions` (no twoslash transformer)
+### Guides (How-To)
+- [changelog.md](.claude/guides/changelog.md) - Writing changelog entries
 
-### Troubleshooting
-- If imports fail, ensure the package is in `devDependencies`
-- Use `// @noErrors` for examples with external dependencies not in package.json
-- Use `// ---cut---` to add setup code (imports, variable declarations) that compiles but isn't shown
-- Check CI logs for specific error codes (e.g., 2304 = cannot find name, 2322 = type mismatch)
-- For callback types, prefer importing SDK types over inline `{ foo: string; bar: any }` annotations
-- Run `bun run build` locally to validate all code blocks before pushing
+### Decisions (ADRs)
+- [toolkits.md](.claude/decisions/toolkits.md) - Toolkits page implementation
+- [examples.md](.claude/decisions/examples.md) - Examples/cookbooks page plan
+- [feedback.md](.claude/decisions/feedback.md) - Feedback system
+- [llm-guardrails.md](.claude/decisions/llm-guardrails.md) - LLM guardrails system (frontmatter-scoped, pipeline-injected)
 
-## Deployment
-- Vercel project: `composio/docs`
-- Uses `bun install` and `bun run build`
-- Root directory: `docs` (this is a monorepo subfolder)
+## Key Rules
+
+1. **TypeScript code blocks are type-checked** - All TS code in MDX is validated at build time. See [twoslash.md](.claude/context/twoslash.md).
+
+2. **Run build before pushing** - `bun run build` catches type errors that `bun dev` misses. Also run `bun run scripts/validate-links.ts` to catch broken internal links.
+
+3. **CSS variables** - Use `var(--composio-orange)` not `var(--orange)`. Check `app/global.css`.
+
+4. **Date format** - Changelog dates must be YYYY-MM-DD format.
+
+5. **Toolkits data** - `public/data/toolkits.json` must exist; errors are thrown, not ignored.
+
+6. **Test on mobile** - Fumadocs nav differs on mobile. Avoid assumptions about horizontal layout.
+
+7. **Toolkit FAQ files** - FAQ snippets live in `content/toolkits/faq/{slug}.md`. They're plain markdown (no frontmatter) embedded in toolkit pages at build time, not standalone Fumadocs pages. They're excluded from the toolkits Fumadocs source via `files: ['**/*', '!faq/**']` in `source.config.ts` but still scanned by the link checker.
+
+8. **Link checker** - `scripts/validate-links.ts` validates all internal links. It needs `bunfig.toml` (Bun preload for fumadocs-mdx) to run. Key details:
+   - Populate keys use `(home)/` prefix to match the `app/(home)/` route group
+   - Fragment validation falls back to parsing raw markdown headings (since `data.toc` is unavailable outside Next.js)
+   - Dynamic toolkit pages are validated against slugs from `public/data/toolkits.json`
+   - Non-Fumadocs `.md` files (like FAQ snippets) are picked up via `content/**/*.md` glob
+
+## AI-Native Documentation
+
+**Prefer cURL over "click"** - Most docs traffic comes from AI crawlers. When documenting API interactions, prefer showing cURL commands over UI instructions like "click this button" or "navigate to settings". cURL is machine-readable and can be directly executed by AI agents.
+
+**LLM guardrails** - Every `.md` endpoint appends invisible guardrails steering AI code generators toward the session-based pattern. Controlled via `llmGuardrails` frontmatter field. See [llm-guardrails.md](.claude/decisions/llm-guardrails.md).

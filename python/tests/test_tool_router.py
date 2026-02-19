@@ -5,16 +5,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from composio.core.models.tool_router import (
-    ToolRouter,
-    ToolRouterMCPServerConfig,
-    ToolRouterToolkitsEnableConfig,
-    ToolRouterToolkitsDisableConfig,
-    ToolRouterManageConnectionsConfig,
-    ToolRouterExperimentalConfig,
-    ToolRouterSessionExperimental,
-    ToolkitConnectionState,
     ToolkitConnectionsDetails,
+    ToolkitConnectionState,
+    ToolRouter,
+    ToolRouterExperimentalConfig,
+    ToolRouterManageConnectionsConfig,
+    ToolRouterMCPServerConfig,
     ToolRouterMCPServerType,
+    ToolRouterSessionExperimental,
+    ToolRouterToolkitsDisableConfig,
+    ToolRouterToolkitsEnableConfig,
 )
 
 
@@ -1117,9 +1117,9 @@ class TestToolRouterTypes:
     def test_toolkit_connection_state(self):
         """Test ToolkitConnectionState dataclass."""
         from composio.core.models.tool_router import (
+            ToolkitConnectedAccount,
             ToolkitConnection,
             ToolkitConnectionAuthConfig,
-            ToolkitConnectedAccount,
         )
 
         connection = ToolkitConnection(
@@ -1242,8 +1242,8 @@ class TestToolRouterExecution:
             return response
 
         # Create a real execute function with modifiers
-        from composio.core.models.tools import Tools as RealTools
         from composio.core.models._modifiers import Modifier
+        from composio.core.models.tools import Tools as RealTools
 
         real_tools = RealTools(client=mock_client, provider=mock_provider)
 

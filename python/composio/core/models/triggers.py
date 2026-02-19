@@ -13,9 +13,9 @@ from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from unittest import mock
 
-from composio_client.types import TriggersTypeRetrieveResponse
 import typing_extensions as te
 from composio_client import omit
+from composio_client.types import TriggersTypeRetrieveResponse
 from pysher import Pusher
 from pysher.channel import Channel as PusherChannel
 from pysher.connection import Connection as PusherConnection
@@ -110,8 +110,20 @@ class WebhookPayloadV2(te.TypedDict):
     data: t.Dict[str, t.Any]
 
 
-class WebhookPayloadV3Metadata(te.TypedDict):
-    """V3 webhook payload metadata."""
+class WebhookPayloadV3(te.TypedDict):
+    """V3 webhook payload structure - generic envelope for all composio.* events."""
+
+    id: str
+    timestamp: str
+    type: str  # Any composio.* event type (e.g., 'composio.trigger.message', 'composio.connected_account.expired')
+    metadata: t.Dict[
+        str, t.Any
+    ]  # Shape varies by event type (trigger vs connection events)
+    data: t.Dict[str, t.Any]
+
+
+class WebhookTriggerPayloadV3Metadata(te.TypedDict):
+    """V3 trigger-specific webhook payload metadata."""
 
     log_id: str
     trigger_slug: str
@@ -121,13 +133,13 @@ class WebhookPayloadV3Metadata(te.TypedDict):
     user_id: str
 
 
-class WebhookPayloadV3(te.TypedDict):
-    """V3 webhook payload structure."""
+class WebhookTriggerPayloadV3(te.TypedDict):
+    """V3 trigger-specific webhook payload structure."""
 
     id: str
     timestamp: str
-    type: t.Literal["composio.trigger.message"]
-    metadata: WebhookPayloadV3Metadata
+    type: str
+    metadata: WebhookTriggerPayloadV3Metadata
     data: t.Dict[str, t.Any]
 
 
@@ -1074,21 +1086,16 @@ class Triggers(Resource):
                 f"Failed to parse webhook payload as JSON: {e}"
             ) from e
 
-        # Try V3 first (has 'type' === 'composio.trigger.message' and 'metadata')
-        # Validate metadata is a dict with all required fields (matching TypeScript's zod schema)
+        # Try V3 first (has 'type' starting with 'composio.' and 'metadata' as dict)
+        # Metadata shape varies by event type (trigger vs connection events),
+        # so we only check that it's a dict here.
         v3_metadata = data.get("metadata") if isinstance(data, dict) else None
-        v3_metadata_valid = (
-            isinstance(v3_metadata, dict)
-            and "log_id" in v3_metadata
-            and "trigger_slug" in v3_metadata
-            and "trigger_id" in v3_metadata
-            and "connected_account_id" in v3_metadata
-            and "auth_config_id" in v3_metadata
-            and "user_id" in v3_metadata
-        )
+        v3_metadata_valid = isinstance(v3_metadata, dict)
+        v3_type = data.get("type", "") if isinstance(data, dict) else ""
         if (
             isinstance(data, dict)
-            and data.get("type") == "composio.trigger.message"
+            and isinstance(v3_type, str)
+            and v3_type.startswith("composio.")
             and v3_metadata_valid
             and "id" in data
             and "data" in data
@@ -1212,36 +1219,88 @@ class Triggers(Resource):
     def _normalize_v3_payload(self, data: WebhookPayloadV3) -> TriggerEvent:
         """Normalize V3 payload to TriggerEvent format."""
         metadata = data["metadata"]
+
+        # Check if this is a trigger event (has trigger-specific metadata fields)
+        is_trigger_event = all(
+            k in metadata
+            for k in (
+                "trigger_id",
+                "trigger_slug",
+                "user_id",
+                "connected_account_id",
+                "auth_config_id",
+                "log_id",
+            )
+        )
+
+        if is_trigger_event:
+            trigger_data = t.cast(WebhookTriggerPayloadV3, data)
+            trigger_metadata = trigger_data["metadata"]
+            return t.cast(
+                TriggerEvent,
+                {
+                    "id": trigger_metadata["trigger_id"],
+                    "uuid": trigger_metadata["trigger_id"],
+                    "user_id": trigger_metadata["user_id"],
+                    "toolkit_slug": trigger_metadata["trigger_slug"]
+                    .split("_")[0]
+                    .upper()
+                    if "_" in trigger_metadata["trigger_slug"]
+                    else "UNKNOWN",
+                    "trigger_slug": trigger_metadata["trigger_slug"],
+                    "metadata": {
+                        "id": trigger_metadata["trigger_id"],
+                        "uuid": trigger_metadata["trigger_id"],
+                        "toolkit_slug": trigger_metadata["trigger_slug"]
+                        .split("_")[0]
+                        .upper()
+                        if "_" in trigger_metadata["trigger_slug"]
+                        else "UNKNOWN",
+                        "trigger_slug": trigger_metadata["trigger_slug"],
+                        "trigger_data": None,
+                        "trigger_config": {},
+                        "connected_account": {
+                            "id": trigger_metadata["connected_account_id"],
+                            "uuid": trigger_metadata["connected_account_id"],
+                            "auth_config_id": trigger_metadata["auth_config_id"],
+                            "auth_config_uuid": trigger_metadata["auth_config_id"],
+                            "user_id": trigger_metadata["user_id"],
+                            "status": "ACTIVE",
+                        },
+                    },
+                    "payload": trigger_data["data"],
+                    "original_payload": None,
+                },
+            )
+
+        # Non-trigger V3 event (e.g., connection expired)
+        event_type = data.get("type", "")
         return t.cast(
             TriggerEvent,
             {
-                "id": metadata["trigger_id"],
-                "uuid": metadata["trigger_id"],
-                "user_id": metadata["user_id"],
-                "toolkit_slug": metadata["trigger_slug"].split("_")[0].upper()
-                if "_" in metadata["trigger_slug"]
-                else "UNKNOWN",
-                "trigger_slug": metadata["trigger_slug"],
+                "id": data.get("id", ""),
+                "uuid": data.get("id", ""),
+                "user_id": "",
+                "toolkit_slug": "COMPOSIO",
+                "trigger_slug": event_type,
                 "metadata": {
-                    "id": metadata["trigger_id"],
-                    "uuid": metadata["trigger_id"],
-                    "toolkit_slug": metadata["trigger_slug"].split("_")[0].upper()
-                    if "_" in metadata["trigger_slug"]
-                    else "UNKNOWN",
-                    "trigger_slug": metadata["trigger_slug"],
+                    "id": data.get("id", ""),
+                    "uuid": data.get("id", ""),
+                    "toolkit_slug": "COMPOSIO",
+                    "trigger_slug": event_type,
                     "trigger_data": None,
                     "trigger_config": {},
                     "connected_account": {
-                        "id": metadata["connected_account_id"],
-                        "uuid": metadata["connected_account_id"],
-                        "auth_config_id": metadata["auth_config_id"],
-                        "auth_config_uuid": metadata["auth_config_id"],
-                        "user_id": metadata["user_id"],
+                        "id": "",
+                        "uuid": "",
+                        "auth_config_id": "",
+                        "auth_config_uuid": "",
+                        "user_id": "",
                         "status": "ACTIVE",
                     },
                 },
-                "payload": data["data"],
-                "original_payload": None,
+                "payload": data.get("data", {}),
+                "original_payload": data,
             },
         )
 

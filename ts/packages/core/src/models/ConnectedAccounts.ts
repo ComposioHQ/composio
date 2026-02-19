@@ -389,7 +389,7 @@ export class ConnectedAccounts {
       }
 
       params = {
-        body_redirect_url: parsedOptions.data.redirectUrl,
+        query_redirect_url: parsedOptions.data.redirectUrl,
         validate_credentials: parsedOptions.data.validateCredentials,
       };
     }

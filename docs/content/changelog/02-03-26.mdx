@@ -1,0 +1,119 @@
+---
+title: "Expanded Typed Responses with GitHub, Mailchimp & Trello - Planning Further Expansion"
+description: "60+ toolkits now feature typed responses, including newly typed GitHub, Mailchimp, and Trello. We're planning to expand response schemas to 40+ additional toolkits"
+date: "2026-02-03"
+---
+
+We've expanded our typed response support to include three major toolkits—GitHub, Mailchimp, and Trello—while also adding more typed actions across previously updated toolkits. All outputs now return strongly typed objects with clear field documentation instead of generic `response_data` blobs, enabling better IDE support and more reliable agent interactions.
+
+<Callout type="warn">
+**Breaking Change for `latest` Version**
+
+If you're using the `latest` version and your code depends on the old `response_data` structure for GitHub, Mailchimp, or Trello, you'll need to update your code to work with the new typed response schemas.
+</Callout>
+
+### Why This Matters
+- Enhanced type safety: GitHub, Mailchimp, and Trello now have fully typed responses
+- Expanded action coverage: More actions in existing toolkits now return typed data
+- Improved developer experience: Better autocomplete and field validation across all toolkits
+- Agent-friendly schemas: Cleaner output shapes reduce parsing errors and improve AI tool usage
+
+<Accordions>
+<Accordion title="Newly Typed Toolkits & Enhanced Coverage">
+
+#### Newly Typed Toolkits (3)
+**github**, **mailchimp**, **trello**
+
+#### Enhanced Existing Toolkits
+Additional typed actions added to:
+
+##### Communication & Collaboration
+discordbot, microsoft_teams, slack, zoom
+
+##### CRM & Sales
+apollo, attio, hubspot, instantly, intercom, kommo, salesforce
+
+##### Productivity & Docs
+coda, confluence, googledocs, googletasks, notion, todoist
+
+##### Marketing & Social Media
+facebook, instagram, klaviyo, linkedin, metaads, reddit, tiktok
+
+##### E-commerce & Payments
+brex, quickbooks, ramp, shopify, square, stripe, xero
+
+##### Project Management
+clickup, linear
+
+##### Design & Creative
+canva, figma
+
+##### Data & Analytics
+ahrefs, airtable, apify, exa, pplx, serpapi, tavily
+
+##### Email & Calendar
+calendly, outlook
+
+##### Storage & Files
+one_drive
+
+##### Web Tools
+firecrawl, fireflies, google_maps, google_search_console
+
+##### AI & Media
+elevenlabs, heygen, lmnt, mem0
+
+##### Customer Support
+freshdesk, zendesk
+
+##### Video & Content
+youtube
+
+</Accordion>
+</Accordions>
+
+### Coming Soon: 40+ More Toolkits
+
+We're planning to expand typed response coverage to 40+ additional toolkits in upcoming releases.
+
+<Accordions>
+<Accordion title="Upcoming Typed Response Toolkits">
+
+#### Developer & DevOps
+bitquery, clickhouse, composio, contentful_graphql, docusign, hookdeck, metabase, neon, parsera, postgrid, sentry, servicenow
+
+#### Communication & Collaboration
+dailybot, dialpad, gleap, gong, googlemeet, plain, retellai, smtp2go
+
+#### CRM & Business
+bamboohr, coupa, forcemanager, lever, mixpanel, monday, okta, peopledatalabs, pipedrive, productboard, workday
+
+#### Marketing & Analytics
+amplitude, datagma, diffbot, lemlist, mailerlite, posthog, remarkety, resend, retently, sendgrid
+
+#### AI & Automation
+affinda, agentql, bolna, entelligence, kadoa, multionai
+
+#### Media & Entertainment
+giphy, soundcloud, spotify, spotlightr
+
+#### Real Estate & Location
+acculynx, apaleo, foursquare, foursquare_v1, foursquare_v2, hotspotsystem
+
+#### E-commerce & Payments
+moneybird, open_sea, plisio, zoho_inventory
+
+#### Education & Learning
+blackboard, canvas, d2lbrightspace, habitica
+
+#### Project Management
+pagerduty, shortcut, taskade, wrike, workspace
+
+#### Productivity & Personal
+borneo, box, cal, etermin, formdesk, formbricks, google_admin, junglescout, klipfolio, onepage, strava, typefully, wakatime, zenrows, zoho, zoho_mail
+
+#### Other Services
+cults, faceup, semanticscholar
+
+</Accordion>
+</Accordions>

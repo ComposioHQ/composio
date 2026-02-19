@@ -1,11 +1,11 @@
 import process from 'node:process';
-import { Cause, Console, Effect, Exit, Layer, Logger } from 'effect';
+import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig } from '@effect/cli';
+import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
-import { runWithConfig } from 'src/commands';
+import { rootCommand, runWithConfig } from 'src/commands';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import { BaseConfigProviderLive, ConfigLive, extendConfigProvider } from 'src/services/config';
@@ -20,6 +20,7 @@ import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
+import { TerminalUILive } from 'src/services/terminal-ui';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -76,6 +77,7 @@ const layers = Layer.mergeAll(
   JsPackageManagerDetector.Default,
   BunContext.layer,
   BunFileSystem.layer,
+  TerminalUILive,
   Logger.pretty
 ) satisfies RequiredLayer;
 
@@ -91,6 +93,53 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
   unknown
 >;
 
+const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
+  switch (usage._tag) {
+    case 'Named': {
+      if (Option.isSome(usage.acceptedValues)) {
+        for (const name of usage.names) {
+          if (name.startsWith('-')) {
+            acc.add(name);
+          }
+        }
+      }
+      return;
+    }
+    case 'Optional':
+    case 'Repeated': {
+      collectValueOptionNamesFromUsage(usage.usage, acc);
+      return;
+    }
+    case 'Alternation':
+    case 'Concat': {
+      collectValueOptionNamesFromUsage(usage.left, acc);
+      collectValueOptionNamesFromUsage(usage.right, acc);
+      return;
+    }
+    case 'Mixed':
+    case 'Empty': {
+      return;
+    }
+  }
+};
+
+const valueOptionNames = (() => {
+  const names = new Set<string>();
+  const visited = new Set<CommandDescriptor.Command<unknown>>();
+  const visit = (command: CommandDescriptor.Command<unknown>) => {
+    if (visited.has(command)) {
+      return;
+    }
+    visited.add(command);
+    collectValueOptionNamesFromUsage(CommandDescriptor.getUsage(command), names);
+    for (const [, subcommand] of HashMap.toEntries(CommandDescriptor.getSubcommands(command))) {
+      visit(subcommand);
+    }
+  };
+  visit(rootCommand.descriptor);
+  return names;
+})();
+
 /**
  * CLI entrypoint, which:
  * - runs the Effect runtime and sets up its runtime environment
@@ -98,6 +147,19 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
  */
 runWithArgs.pipe(
   Effect.scoped,
+  // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
+  // via its own printDocs before re-failing. Swallow the re-thrown error to avoid
+  // routing it through the generic error box which would dump raw JSON.
+  // When a flag is passed without its required value (e.g. `--query` instead of
+  // `--query "text"`), @effect/cli reports it as "unknown argument" — add a tip.
+  Effect.catchIf(ValidationError.isValidationError, error => {
+    const text = HelpDoc.toAnsiText(error.error).trim();
+    const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
+    if (flagMatch && valueOptionNames.has(flagMatch[1])) {
+      return Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`);
+    }
+    return Effect.void;
+  }),
   Effect.withSpan('composio-cli', {
     attributes: {
       name: constants.APP_NAME,

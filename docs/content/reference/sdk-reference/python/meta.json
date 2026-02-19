@@ -6,6 +6,7 @@
     "toolkits",
     "triggers",
     "connected-accounts",
-    "auth-configs"
+    "auth-configs",
+    "mcp"
   ]
 }

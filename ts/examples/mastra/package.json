@@ -24,11 +24,10 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "dependencies": {
-    "@ai-sdk/openai": "^1.3.16",
+    "@ai-sdk/openai": "^3.0.13",
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
-    "@mastra/core": "^0.24.5",
-    "@mastra/mcp": "^0.12.0",
+    "@mastra/core": "^1.0.4",
     "dotenv": "^16.4.1",
     "zod": "catalog:"
   },

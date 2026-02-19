@@ -282,7 +282,7 @@ providing direct access to the tool's schema and metadata. Tool versions are con
 at the Composio SDK initialization level through the `toolkitVersions` configuration.
 
 ```typescript
-async getRawComposioToolBySlug(slug: string, options?: SchemaModifierOptions): Promise<...>
+async getRawComposioToolBySlug(slug: string, options?: ToolRetrievalOptions): Promise<...>
 ```
 
 **Parameters**
@@ -290,7 +290,7 @@ async getRawComposioToolBySlug(slug: string, options?: SchemaModifierOptions): P
 | Name | Type | Description |
 |------|------|-------------|
 | `slug` | `string` | The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS') |
-| `options?` | `SchemaModifierOptions` | Optional configuration for tool retrieval |
+| `options?` | `ToolRetrievalOptions` | Optional configuration for tool retrieval |
 
 **Returns**
 

@@ -26,12 +26,7 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).parent
 PACKAGE_DIR = SCRIPT_DIR.parent
 OUTPUT_DIR = (
-    PACKAGE_DIR.parent
-    / "docs"
-    / "content"
-    / "reference"
-    / "sdk-reference"
-    / "python"
+    PACKAGE_DIR.parent / "docs" / "content" / "reference" / "sdk-reference" / "python"
 )
 
 # GitHub base URL for source links
@@ -54,6 +49,7 @@ EXPECTED_CLASSES = {
     "Triggers": "triggers",
     "ConnectedAccounts": "connected_accounts",
     "AuthConfigs": "auth_configs",
+    "MCP": "mcp",
 }
 
 # Modules to search for classes
@@ -63,6 +59,7 @@ CLASS_MODULES = [
     "core.models.triggers",
     "core.models.connected_accounts",
     "core.models.auth_configs",
+    "core.models.mcp",
 ]
 
 

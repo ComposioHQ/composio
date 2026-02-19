@@ -143,7 +143,7 @@ To update the OpenAPI specifications used for generating SDK documentation:
 pnpm api:pull
 ```
 
-This command pulls the OpenAPI specification from `https://backend.composio.dev/api/v3/openapi.json` (defined in `fern/scripts/pull-openapi-spec.sh`) and updates the local API documentation files.
+This command pulls the OpenAPI specification from `https://backend.composio.dev/api/v3/openapi.json` and updates the local API documentation files.
 
 This is pulled automatically with build step.
 

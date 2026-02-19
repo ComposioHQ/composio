@@ -1,7 +1,9 @@
-from composio import Composio
-from composio_claude_agent_sdk import ClaudeAgentSDKProvider
-from claude_agent_sdk import query, ClaudeAgentOptions
 import asyncio
+
+from claude_agent_sdk import ClaudeAgentOptions, query
+from composio_claude_agent_sdk import ClaudeAgentSDKProvider
+
+from composio import Composio
 
 composio = Composio(provider=ClaudeAgentSDKProvider())
 session = composio.create(

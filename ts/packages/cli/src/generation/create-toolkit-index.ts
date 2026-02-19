@@ -3,6 +3,7 @@ import type { Simplify } from 'effect/Types';
 import { Toolkit, Toolkits, ToolkitName } from 'src/models/toolkits';
 import { ToolsAsEnums, Tools, ToolAsEnum, Tool } from 'src/models/tools';
 import { TriggerType, TriggerTypes } from 'src/models/trigger-types';
+import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
 
 const startsWith =
   <const P extends string>(prefix: P) =>
@@ -13,10 +14,14 @@ interface CreateToolkitIndexInput {
   toolkits: Toolkits; // e.g., [ { slug: 'gmail', ... }]
   typeableTools: { withTypes: false; tools: ToolsAsEnums } | { withTypes: true; tools: Tools }; // e.g., [ 'GMAIL_SEND_EMAIL' ] | [ { slug: 'GMAIL_SEND_EMAIL', ... } ]
   triggerTypes: TriggerTypes; // e.g., [ { slug: 'GMAIL_NEW_EMAIL', ... } ]
+  /** Map of lowercase toolkit slug to version (only includes non-'latest' versions) */
+  versionMap?: ToolkitVersionOverrides;
 }
 
 export type ToolkitIndexData = Simplify<{
   slug: string;
+  /** Version override for this toolkit (only present if not 'latest') */
+  version?: string;
   typeableTools:
     | { withTypes: false; value: Record<`${ToolkitName}_${string}`, ToolAsEnum> }
     | { withTypes: true; value: Record<`${ToolkitName}_${string}`, Tool> };
@@ -31,6 +36,8 @@ export type ToolkitIndex = Record<ToolkitName, ToolkitIndexData>;
  * which is found by looking at the prefix of the tool or trigger type.
  */
 export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<ToolkitIndex> {
+  const { versionMap } = input;
+
   return pipe(
     input,
     groupByToolkits,
@@ -39,6 +46,9 @@ export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<Too
       const stripPrefix = String.slice(key.length + 1);
 
       const { slug } = value.toolkit;
+
+      // Look up version override for this toolkit (lowercase key lookup)
+      const version = versionMap?.get(String.toLowerCase(slug));
 
       const typeableTools = Match.value(value.typeableTools).pipe(
         Match.when({ withTypes: true }, ({ withTypes, tools }) => {
@@ -64,6 +74,8 @@ export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<Too
         key,
         {
           slug,
+          // Only include version if it's not 'latest' (i.e., was overridden)
+          ...(version ? { version } : {}),
           typeableTools,
           triggerTypes: Record.fromEntries(triggerTypes),
         },

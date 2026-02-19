@@ -30,7 +30,7 @@ def get_type(slug: str) -> TriggersTypeRetrieveResponse
 List all active triggers
 
 ```python
-def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | None] = ..., auth_config_ids: list[str | None] = ..., connected_account_ids: list[str | None] = ..., show_disabled: bool | None = ..., limit: int | None = ..., page: int | None = ...)
+def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | None] = ..., auth_config_ids: list[str | None] = ..., connected_account_ids: list[str | None] = ..., show_disabled: bool | None = ..., limit: int | None = ..., cursor: str | None = ...)
 ```
 
 **Parameters**
@@ -43,7 +43,7 @@ def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | N
 | `connected_account_ids?` | `list[str \| None]` |
 | `show_disabled?` | `bool \| None` |
 | `limit?` | `int \| None` |
-| `page?` | `int \| None` |
+| `cursor?` | `str \| None` |
 
 ---
 
@@ -156,4 +156,4 @@ def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L689)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L701)

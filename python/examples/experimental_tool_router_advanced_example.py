@@ -138,8 +138,8 @@ def example_type_safe_configuration():
     print("\n=== Type-Safe Configuration Example ===")
 
     from composio.core.models.tool_router import (
-        ToolRouterToolkitsDisabledConfig,
         ToolRouterManageConnectionsConfig,
+        ToolRouterToolkitsDisabledConfig,
     )
 
     # Type-safe toolkit config

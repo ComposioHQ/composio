@@ -1,0 +1,146 @@
+---
+title: How Composio works
+description: Sessions, meta tools, authentication, and tool execution
+keywords: [architecture, how it works, sessions, meta tools, execution]
+---
+
+Composio connects AI agents to external services like GitHub, Gmail, and Slack. Your agent gets a small set of meta tools that can discover, authenticate, and execute tools across hundreds of apps at runtime.
+
+This page covers sessions, the meta tool pattern, authentication, and how tools execute. For setup, see the [quickstart](/docs/quickstart). For detailed concepts, see [Users & Sessions](/docs/users-and-sessions) and [Tools and toolkits](/docs/tools-and-toolkits).
+
+## Sessions
+
+When your app calls `composio.create()`, it creates a session scoped to a user.
+
+```python
+composio = Composio()
+session = composio.create(user_id="user_123")
+
+# Get tools formatted for your provider
+tools = session.tools()
+
+# Or get the MCP endpoint for MCP-compatible frameworks
+mcp_url = session.mcp.url
+mcp_headers = session.mcp.headers
+```
+
+A session ties together:
+
+- **A user**: whose credentials and connections to use
+- **Available toolkits**: all by default, or a specific set you configure
+- **Auth configuration**: which authentication method and connected accounts to use
+
+Sessions are immutable. Their configuration is fixed at creation. If the context changes (different toolkits, different connected account), create a new session. You don't need to cache or manage session IDs.
+
+<Card icon={<BookOpen />} title="Users & Sessions" href="/docs/users-and-sessions" description="How users and sessions scope tools and connections" />
+
+## Meta tools
+
+Rather than loading hundreds of tool definitions into your agent's context, a session provides 5 meta tools:
+
+```mermaid
+graph LR
+    A["Your agent"] --> B["Session"]
+    B --> C["Meta tools"]
+    C --> D["COMPOSIO_SEARCH_TOOLS"]
+    C --> E["COMPOSIO_MANAGE_CONNECTIONS"]
+    C --> F["COMPOSIO_MULTI_EXECUTE_TOOL"]
+    C --> G["COMPOSIO_REMOTE_WORKBENCH"]
+    C --> H["COMPOSIO_REMOTE_BASH_TOOL"]
+
+    D -.- D1["Discover tools by use case"]:::annotation
+    E -.- E1["Handle OAuth and API keys"]:::annotation
+    F -.- F1["Run tools with user credentials"]:::annotation
+    G -.- G1["Persistent Python sandbox"]:::annotation
+    H -.- H1["File operations and data processing"]:::annotation
+
+    classDef annotation stroke-dasharray: 5 5
+```
+
+| Meta tool | What it does |
+|-----------|-------------|
+| `COMPOSIO_SEARCH_TOOLS` | Finds relevant tools by use case, returns input schemas, connection status, execution plan, and related tools |
+| `COMPOSIO_MANAGE_CONNECTIONS` | Generates Connect Links for OAuth and API key authentication |
+| `COMPOSIO_MULTI_EXECUTE_TOOL` | Executes up to 20 tools in parallel with the user's credentials |
+| `COMPOSIO_REMOTE_WORKBENCH` | Runs Python code in a [persistent sandbox](/docs/workbench) |
+| `COMPOSIO_REMOTE_BASH_TOOL` | Runs bash commands in the same sandbox for file operations and data processing |
+
+Meta tool calls within a session share context through a `session_id`. The agent can search for a tool in one call and execute it in the next without losing state. Tools can also store information (IDs, relationships) in memory for subsequent calls.
+
+### How they work together
+
+The meta tools are how the agent reaches the actual toolkit tools:
+
+```mermaid
+graph TD
+    A["Agent: 'Create a GitHub issue for this bug'"] --> B["COMPOSIO_SEARCH_TOOLS"]
+    B --> C["GITHUB_CREATE_ISSUE"]
+    B --> C2["GITHUB_LIST_ISSUES"]
+    B --> C3["GITHUB_GET_REPO"]
+    B -.- B1["Returns matching tools with schemas"]:::annotation
+    C --> D["COMPOSIO_MULTI_EXECUTE_TOOL"]
+    D --> E["GitHub API"]
+    D -.- D1["Injects user's OAuth token, makes the call"]:::annotation
+
+    classDef annotation stroke-dasharray: 5 5
+```
+
+`SEARCH_TOOLS` discovers the right toolkit tools for the task. `MULTI_EXECUTE_TOOL` runs them against the external API with the user's credentials. If the user isn't authenticated yet, `MANAGE_CONNECTIONS` handles that in between.
+
+For large responses or bulk operations (labeling hundreds of emails, processing CSVs), the agent uses `COMPOSIO_REMOTE_WORKBENCH` to run Python with helper functions like `invoke_llm` and `run_composio_tool`.
+
+<Card icon={<BookOpen />} title="Tools and toolkits" href="/docs/tools-and-toolkits" description="Meta tools, context management, and execution" />
+
+## Authentication
+
+When a tool requires authentication and the user hasn't connected yet, the agent uses `COMPOSIO_MANAGE_CONNECTIONS` to generate a **Connect Link**, a hosted page where the user authorizes access.
+
+In a conversation, this looks like:
+
+> **You:** Create a GitHub issue for the login bug
+>
+> **Agent:** You'll need to connect your GitHub account. Please authorize here: \<Connect Link\>
+>
+> **You:** Done
+>
+> **Agent:** Created issue #42 on your-org/your-repo.
+
+Composio manages the OAuth flow end to end: redirects, authorization codes, token exchange, and automatic token refresh before expiration. Credentials are encrypted and scoped to user IDs.
+
+Connections persist across sessions. A user who connects GitHub once can use it in every future session without re-authenticating. Users can also connect multiple accounts for the same service (work and personal Gmail, for example).
+
+For apps that manage auth outside of chat, like during onboarding or on a settings page, use `session.authorize()` to generate Connect Links programmatically and wait for the user to complete the flow.
+
+<Cards>
+  <Card icon={<Key />} title="Authentication" href="/docs/authentication" description="Connect Links, OAuth, API keys, and custom auth configs" />
+  <Card icon={<BookOpen />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating" description="Authenticate users outside of chat with session.authorize()" />
+</Cards>
+
+## Tool execution
+
+When the agent calls `COMPOSIO_MULTI_EXECUTE_TOOL`, Composio resolves the session to look up the user and their connections, validates the input against the tool's schema, injects the user's OAuth token or API key, calls the external API, and returns a structured result.
+
+Your agent doesn't touch API credentials or handle token refresh. Composio resolves credentials from the session and connected account, makes the authenticated call, and returns the result.
+
+## Direct tool execution
+
+If you know exactly which tools you need, you can skip the meta tool pattern and execute tools directly:
+
+```python
+composio = Composio()
+
+tools = composio.tools.get(
+    user_id="user_123",
+    toolkits=["github"]
+)
+
+result = composio.tools.execute(
+    "GITHUB_STAR_REPOSITORY",
+    user_id="user_123",
+    arguments={"owner": "composiohq", "repo": "composio"}
+)
+```
+
+This is useful for deterministic workflows where the agent doesn't need to discover tools at runtime.
+
+<Card icon={<BookOpen />} title="Direct tool execution" href="/docs/tools-direct/executing-tools" description="Fetch, authenticate, and execute tools without meta tools" />

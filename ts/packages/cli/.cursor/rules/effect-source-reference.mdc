@@ -1,0 +1,21 @@
+---
+description: Reference Effect source code for accurate patterns
+globs:
+  - "src/**/*.ts"
+alwaysApply: true
+---
+
+# Effect Source Code Reference
+
+A local copy of the Effect source is available at `ts/vendor/effect/`.
+
+When writing or modifying CLI code that uses Effect APIs, consult:
+- `ts/vendor/effect/packages/cli/src/` for @effect/cli patterns (Command, Options, Args)
+- `ts/vendor/effect/packages/effect/src/` for core Effect patterns (Effect.gen, Layer, Service)
+- `ts/vendor/effect/packages/platform/src/` for @effect/platform patterns (FileSystem, Terminal)
+
+Key patterns used in this CLI:
+- Commands defined with `Command.make().pipe(Command.withHandler(...))`
+- Options defined with `Options.text()`, `Options.boolean()`, etc.
+- Services as `Effect.Service<T>()` classes with Layer composition
+- Error handling with tagged errors and `Effect.gen(function* () { ... })`

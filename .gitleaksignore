@@ -1,0 +1,2 @@
+# Decimal chat widget public config JWT (not a secret - contains allowed domains only)
+docs/app/layout.tsx:jwt

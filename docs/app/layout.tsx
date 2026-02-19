@@ -1,28 +1,39 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import './global.css';
-import { IBM_Plex_Mono } from 'next/font/google';
+import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import { PostHogProvider } from '@/components/posthog-provider';
+import { DecimalWidget } from '@/components/decimal-widget';
 
 export const metadata: Metadata = {
   title: {
     default: 'Composio Docs',
     template: '%s | Composio',
   },
-  description: 'Build AI agents with 250+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+  description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
   metadataBase: new URL('https://docs.composio.dev'),
   openGraph: {
     title: 'Composio Docs',
-    description: 'Build AI agents with 250+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+    description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
     siteName: 'Composio Docs',
     type: 'website',
+    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Composio Docs',
-    description: 'Build AI agents with 250+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+    description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+    images: ['https://og.composio.dev/api/og?title=Composio%20Docs'],
   },
 };
+
+const inter = Inter({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 const ibmPlexMono = IBM_Plex_Mono({
   weight: ['400', '500', '600'],
@@ -35,26 +46,54 @@ export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html
       lang="en"
-      className={ibmPlexMono.variable}
+      className={`${inter.variable} ${ibmPlexMono.variable}`}
       suppressHydrationWarning
     >
       <head>
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'WebSite',
+                  '@id': 'https://docs.composio.dev/#website',
+                  url: 'https://docs.composio.dev',
+                  name: 'Composio Docs',
+                  description: 'Build AI agents with 1000+ tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.',
+                  publisher: { '@id': 'https://composio.dev/#organization' },
+                },
+                {
+                  '@type': 'Organization',
+                  '@id': 'https://composio.dev/#organization',
+                  name: 'Composio',
+                  url: 'https://composio.dev',
+                  logo: {
+                    '@type': 'ImageObject',
+                    url: 'https://composio.dev/logo.png',
+                  },
+                  sameAs: [
+                    'https://github.com/composiohq',
+                    'https://twitter.com/composiohq',
+                    'https://discord.gg/composio',
+                  ],
+                },
+              ],
+            }),
+          }}
         />
       </head>
       <body className="flex flex-col min-h-screen font-sans">
+        <Analytics />
         <PostHogProvider>
           <RootProvider
             theme={{
               defaultTheme: 'light',
               attribute: 'class',
-              enableSystem: false,
+              enableSystem: true,
             }}
             search={{
               options: {
@@ -65,6 +104,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
             {children}
           </RootProvider>
         </PostHogProvider>
+        <DecimalWidget />
       </body>
     </html>
   );

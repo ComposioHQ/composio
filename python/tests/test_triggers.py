@@ -5,12 +5,14 @@ import hashlib
 import hmac
 import json
 import time
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
+
+import pytest
 from composio_client import omit
-from composio.core.models.triggers import Triggers, WebhookVersion
+
 from composio import exceptions
+from composio.core.models.triggers import Triggers, WebhookVersion
 
 
 class TestTriggers:
@@ -574,6 +576,47 @@ class TestVerifyWebhook:
         assert (
             result["payload"]["metadata"]["connected_account"]["user_id"] == "user-456"
         )
+
+    def test_verify_webhook_v3_non_trigger_event_type(
+        self, triggers, test_secret, test_webhook_id, test_timestamp
+    ):
+        """Test V3 payload with non-trigger event type is detected as V3, not V2.
+
+        Uses realistic connection metadata (project_id, org_id) instead of
+        fabricated trigger metadata, verifying V3 detection works for events
+        with different metadata shapes.
+        """
+        payload_dict = {
+            "id": "msg_abc123",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "type": "composio.connected_account.expired",
+            "metadata": {
+                "project_id": "pr_koucdrMIwRsf",
+                "org_id": "4a4ded8f-d3ae-4dea-a229-c30234298b05",
+            },
+            "data": {
+                "toolkit": {"slug": "gmail"},
+                "id": "ca__IvSeEzEBjVt",
+                "user_id": "test-user",
+                "status": "EXPIRED",
+            },
+        }
+        payload = json.dumps(payload_dict)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
+
+        result = triggers.verify_webhook(
+            id=test_webhook_id,
+            payload=payload,
+            signature=signature,
+            timestamp=test_timestamp,
+            secret=test_secret,
+        )
+
+        # Should be detected as V3, not fall back to V2
+        assert result["version"] == WebhookVersion.V3
+        assert result["raw_payload"] == payload_dict
 
     # Successful verification with V2 payload
 

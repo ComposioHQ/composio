@@ -1,6 +1,6 @@
 [project]
 name = "composio"
-version = "0.10.10"
+version = "0.11.1"
 description = "SDK for integrating Composio with your applications."
 readme = "README.md"
 requires-python = ">=3.10,<4"
@@ -10,6 +10,7 @@ dependencies = [
     "composio-client==1.27.0",
     "typing-extensions>=4.0.0",
     "openai",
+    "json-schema-to-pydantic>=0.4.8",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

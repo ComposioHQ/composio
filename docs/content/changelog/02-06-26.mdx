@@ -1,0 +1,122 @@
+---
+title: "75+ More Toolkits Get Typed Responses & Consistent Response Schema Wrapping"
+description: "Typed responses now cover 130+ toolkits with 75+ newly typed toolkits. Response wrapping is now consistent across all actions, with data always nested under a top-level data field."
+date: "2026-02-06"
+---
+
+We've expanded typed response coverage to 75+ additional toolkits. In total, over 130 toolkits now return strongly typed response objects. Additionally, we've standardized response schema wrapping so that all action responses consistently nest their output under a top-level `data` field.
+
+<Callout type="warn">
+**Breaking Change for `latest` Version**
+
+Two breaking changes ship in this release:
+
+1. **Newly typed toolkits** — If your code depends on the old `response_data` structure for any of the 75+ newly typed toolkits listed below, you'll need to update your code to work with the new typed response schemas.
+
+2. **Consistent response wrapping** — Actions that previously had `data` at the root level of their response schema now wrap the entire response under a `data` field. See the migration guide below.
+</Callout>
+
+### Consistent Response Schema Wrapping
+
+Previously, actions whose response schema already contained a `data` field at the root level would surface all fields (including `data`) alongside `successful` and `error` at the top level. Now, all action responses are uniformly wrapped: the full response object is nested inside a `data` field, with `successful` and `error` at the top level.
+
+#### Affected: Toolkits with `data` in their response model (e.g., Pipedrive `PIPEDRIVE_LIST_UPDATES_ABOUT_A_DEAL`)
+
+These actions had a `data` field in their original response schema. Previously, those fields were spread at the root level alongside `successful` and `error`. Now, they are nested under a top-level `data` field.
+
+**Before:**
+```json
+{
+  "data": { "deal_id": 1, "field_key": "stage_id", "old_value": "1", "new_value": "2" },
+  "successful": true,
+  "error": null
+}
+```
+
+**After:**
+```json
+{
+  "data": {
+    "data": { "deal_id": 1, "field_key": "stage_id", "old_value": "1", "new_value": "2" }
+  },
+  "successful": true,
+  "error": null
+}
+```
+
+If your code accesses fields directly at the root level (e.g., `result["data"]`), update it to access them under `result["data"]["data"]` instead.
+
+#### Not affected: Toolkits without `data` in their response model (e.g., GitHub `GITHUB_GET_THE_LATEST_RELEASE`)
+
+These actions never had a `data` field in their original response schema, so their wrapping behavior is unchanged. The response fields are nested under `data` as before.
+
+```json
+{
+  "data": {
+    "url": "https://api.github.com/repos/octocat/Hello-World/releases/1",
+    "tag_name": "v1.0.0",
+    "name": "v1.0.0",
+    "draft": false,
+    "prerelease": false,
+    "author": { "login": "octocat", "id": 1 }
+  },
+  "successful": true,
+  "error": null
+}
+```
+
+No migration needed for these toolkits.
+
+<Accordions>
+<Accordion title="Affected Toolkits (280+)">
+
+**abuselpdb**, **active_campaign**, **active_trail**, **adyntel**, **affinda**, **agentql**, **agenty**, **agiled**, **alpha_vantage**, **ambee**, **amcards**, **amplitude**, **anchor_browser**, **anthropic_administrator**, **api_bible**, **api_labz**, **apify**, **apipie_ai**, **apiverve**, **appcircle**, **asana**, **attio**, **bamboohr**, **beaconchain**, **beaconstac**, **benchmark_email**, **benzinga**, **better_proposals**, **better_stack**, **bigpicture_io**, **bitbucket**, **bitquery**, **blackbaud**, **boloforms**, **brightdata**, **browseai**, **browserless**, **byteforms**, **cal**, **calendarhero**, **callerapi**, **callingly**, **callpage**, **canvas**, **carbone**, **cardly**, **census_bureau**, **certifier**, **chaser**, **claid_ai**, **clearout**, **clickhouse**, **clicksend**, **close**, **cloudcart**, **cloudconvert**, **cloudinary**, **cloudlayer**, **codemagic**, **cody**, **coinbase**, **coinmarketcal**, **coinmarketcap**, **coinranking**, **connecteam**, **contentful_graphql**, **corrently**, **crowdin**, **cults**, **customerio**, **customgpt**, **databricks**, **datagma**, **datarobot**, **deepimage**, **deepseek**, **demio**, **dialmycalls**, **diffbot**, **dnsfilter**, **dock_certs**, **docsumo**, **documenso**, **documint**, **docupilot**, **docupost**, **docuseal**, **dotsimple**, **dovetail**, **dripcel**, **dromo**, **dropcontact**, **emailoctopus**, **emelia**, **endorsal**, **enigma**, **esignatures_io**, **esputnik**, **etermin**, **eversign**, **exa**, **faceup**, **fibery**, **figma**, **files_com**, **finage**, **findymail**, **fireberry**, **firecrawl**, **fireflies**, **firmao**, **flutterwave**, **fluxguard**, **folk**, **forcemanager**, **formbricks**, **freshdesk**, **gamma**, **gan_ai**, **getform**, **giphy**, **github**, **givebutter**, **gleap**, **goody**, **googlesheets**, **gosquared**, **groqcloud**, **gtmetrix**, **habitica**, **headout**, **helpwise**, **heygen**, **hookdeck**, **hotspotsystem**, **html_to_image**, **hunter**, **hyperbrowser**, **icypeas**, **imgbb**, **imgix**, **insighto_ai**, **instagram**, **instantly**, **intelliprint**, **intercom**, **ip2location**, **iqair_airvisual**, **jobnimbus**, **junglescout**, **kadoa**, **kaggle**, **kibana**, **klaviyo**, **klipfolio**, **ko_fi**, **laposta**, **leadfeeder**, **leiga**, **lemon_squeezy**, **lever**, **linear**, **listclean**, **lodgify**, **loops_so**, **mailcoach**, **mailerlite**, **mailersend**, **mails_so**, **mapulus**, **melo**, **memberspot**, **memberstack**, **metaads**, **metabase**, **minerstat**, **miro**, **mistral_ai**, **monday**, **moneybird**, **msg91**, **multionai**, **mx_toolbox**, **nango**, **needle**, **nextdns**, **omnisend**, **openai**, **openrouter**, **paradym**, **passcreator**, **pdfless**, **peopledatalabs**, **perigon**, **persistiq**, **phantombuster**, **piggy**, **pilvio**, **pinecone**, **pipedrive**, **placid**, **plain**, **plisio**, **polygon**, **postgrid**, **postgrid_verify**, **postman**, **prisma**, **productboard**, **promptmate_io**, **proofly**, **proxiedmail**, **pushbullet**, **rafflys**, **raisely**, **ramp**, **reddit**, **refiner**, **remarkety**, **remote_retrieval**, **remove_bg**, **reply**, **reply_io**, **resend**, **respond_io**, **retailed**, **retently**, **rocket_reach**, **rocketlane**, **rootly**, **satismeter**, **scrapfly**, **segment**, **semrush**, **sendbird**, **sendfox**, **sendlane**, **sendloop**, **shopify**, **shotstack**, **signaturely**, **simple_analytics**, **skyfire**, **slack**, **smtp2go**, **snowflake**, **snowflake_basic**, **sourcegraph**, **stannp**, **statuscake**, **stormglass_io**, **stripe**, **survey_monkey**, **svix**, **sympla**, **telnyx**, **teltel**, **textcortex**, **textrazor**, **thanks_io**, **tiktok**, **timelinesai**, **toggl**, **token_metrics**, **tomba**, **tripadvisor**, **tripadvisor_content_api**, **truvera**, **twelve_data**, **v0**, **vercel**, **verifiedemail**, **virustotal**, **wakatime**, **whatsapp**, **workday**, **wrike**, **writer**, **yelp**, **ynab**, **zoho**, **zoho_bigin**, **zoho_mail**
+
+</Accordion>
+</Accordions>
+
+### 75+ Newly Typed Response Toolkits
+
+All outputs for these toolkits now return strongly typed objects with clear field documentation instead of generic `response_data` blobs. Combined with the 60+ toolkits typed in the previous release, over 130 toolkits now have typed responses.
+
+<Accordions>
+<Accordion title="Newly Typed Toolkits (78)">
+
+#### Developer & DevOps
+bitquery, docusign, hookdeck, metabase, neon, parsera, postgrid, sentry, servicenow
+
+#### Communication & Collaboration
+dailybot, dialpad, gleap, gong, googlemeet, retellai, smtp2go
+
+#### CRM & Business
+bamboohr, coupa, forcemanager, lever, mixpanel, monday, okta, peopledatalabs, pipedrive, productboard, workday
+
+#### Marketing & Analytics
+amplitude, datagma, diffbot, lemlist, mailerlite, posthog, remarkety, resend, retently, sendgrid
+
+#### AI & Automation
+bolna, multionai
+
+#### Media & Entertainment
+giphy, soundcloud, spotify, spotlightr
+
+#### Real Estate & Location
+acculynx, apaleo, foursquare, foursquare_v1, foursquare_v2, hotspotsystem
+
+#### E-commerce & Payments
+moneybird, open_sea, plisio, zoho_inventory
+
+#### Education & Learning
+blackboard, canvas, d2lbrightspace, habitica
+
+#### Project Management
+pagerduty, shortcut, taskade, wrike, workspace
+
+#### Productivity & Personal
+borneo, box, cal, etermin, formdesk, google_admin, junglescout, klipfolio, onepage, strava, typefully, wakatime, zenrows, zoho, zoho_mail
+
+#### Other
+semanticscholar
+
+</Accordion>
+</Accordions>

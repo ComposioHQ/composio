@@ -8,6 +8,7 @@ import {
 } from 'fumadocs-mdx/config';
 import { transformerTwoslash } from '@shikijs/twoslash';
 import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs';
+import { remarkMdxMermaid } from 'fumadocs-core/mdx-plugins';
 import { z } from 'zod';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
@@ -16,6 +17,11 @@ import { z } from 'zod';
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
+  /** Controls which LLM guardrail set is appended to the .md output.
+   *  - undefined / omitted → default session-based guardrails
+   *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
+   *  - "none" → no guardrails appended */
+  llmGuardrails: z.enum(['direct-execution', 'none']).optional(),
 });
 
 export const docs = defineDocs({
@@ -37,6 +43,9 @@ export const reference = defineDocs({
   dir: 'content/reference',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
     mdxOptions: applyMdxPreset({
       rehypeCodeOptions: {
         themes: {
@@ -52,10 +61,13 @@ export const reference = defineDocs({
   },
 });
 
-export const examples = defineDocs({
-  dir: 'content/examples',
+export const cookbooks = defineDocs({
+  dir: 'content/cookbooks',
   docs: {
     schema: docsSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -66,6 +78,10 @@ export const toolkits = defineDocs({
   dir: 'content/toolkits',
   docs: {
     schema: docsSchema,
+    files: ['**/*', '!faq/**'],
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
   meta: {
     schema: metaSchema,
@@ -84,12 +100,13 @@ export const changelog = defineCollections({
 
 export default defineConfig({
   mdxOptions: {
+    remarkPlugins: [remarkMdxMermaid],
     rehypeCodeOptions: {
       themes: {
         light: 'github-light',
         dark: 'github-dark',
       },
-      // Twoslash disabled in dev (heap memory issues), enabled in build/CI
+      // Twoslash for type checking only - no hover UI
       transformers:
         process.env.NODE_ENV === 'production'
           ? [
@@ -98,6 +115,13 @@ export default defineConfig({
                 typesCache: createFileSystemTypesCache({
                   dir: '.next/cache/twoslash',
                 }),
+                renderer: {
+                  // Empty renderer - type checks but renders nothing
+                  nodeStaticInfo: () => ({}),
+                  nodeError: () => ({}),
+                  nodeQuery: () => ({}),
+                  nodeCompletion: () => ({}),
+                },
               }),
             ]
           : [],

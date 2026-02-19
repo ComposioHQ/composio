@@ -8,7 +8,6 @@ from langchain_openai import ChatOpenAI
 
 from composio import Composio
 
-
 openai_client = ChatOpenAI(model="gpt-5")
 
 

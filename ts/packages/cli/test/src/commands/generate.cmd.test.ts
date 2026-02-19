@@ -85,7 +85,6 @@ describe('CLI: composio generate', () => {
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('Project type detected: TypeScript');
-          expect(output).toContain('Filtering to 1 toolkit(s): gmail');
 
           // Check generated files - only gmail.ts should exist
           const files = yield* fs.readDirectory(outputDir);
@@ -118,7 +117,6 @@ describe('CLI: composio generate', () => {
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('Project type detected: Python');
-          expect(output).toContain('Filtering to 1 toolkit(s): gmail');
 
           // Check generated files - only gmail.py should exist
           const files = yield* fs.readDirectory(outputDir);

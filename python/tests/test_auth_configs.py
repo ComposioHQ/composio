@@ -1,14 +1,15 @@
 """Tests for auth configs management."""
 
-import pytest
 from unittest.mock import Mock
 
-from composio.core.models.auth_configs import AuthConfigs
+import pytest
+
 from composio.client.types import (
-    auth_config_list_response,
     auth_config_create_response,
+    auth_config_list_response,
     auth_config_retrieve_response,
 )
+from composio.core.models.auth_configs import AuthConfigs
 
 
 class TestAuthConfigs:

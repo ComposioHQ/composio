@@ -9,16 +9,18 @@ Build your first AI agent with Composio Tools.
 <QuickstartFlow>
 
 <FrameworkOption id="openai-agents" name="OpenAI Agents" logo="/images/providers/openai-logo.svg" logoDark="/images/providers/openai-logo-dark.svg">
+
+<IntegrationTabs>
+<IntegrationContent value="native">
+
 <Steps>
 <Step>
-### Install
-
-Install the Composio SDK and OpenAI Agents SDK.
+<StepTitle>Install</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```bash
-pip install composio composio-openai-agents openai-agents
+pip install python-dotenv composio composio-openai-agents openai-agents
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -30,215 +32,376 @@ npm install @composio/core @composio/openai-agents @openai/agents
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
 </Callout>
 
-```txt title=".env"
-COMPOSIO_API_KEY=xxxxxxxxx
-OPENAI_API_KEY=xxxxxxxxx
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 </Step>
 
 <Step>
-### Create session and run agent
-
-[Sessions](/docs/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
-
-<Callout type="info">
-Replace the sample user ID with your own user's identifier. See [User Management](/docs/user-management) for details.
-</Callout>
+<StepTitle>Create session and run agent</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-import asyncio
+from dotenv import load_dotenv
 from composio import Composio
-from agents import Agent, Runner
+from agents import Agent, Runner, SQLiteSession
 from composio_openai_agents import OpenAIAgentsProvider
+
+load_dotenv()
 
 # Initialize Composio with OpenAI Agents provider
 composio = Composio(provider=OpenAIAgentsProvider())
 
-external_user_id = "user_2nFh83Hd"
-recipient_email = "soham.g@composio.dev"
-
-# Create a tool router session
-session = composio.create(
-    user_id=external_user_id,
-)
-
-# Get tools from the session (native)
+# Create a session for your user
+user_id = "user_123"
+session = composio.create(user_id=user_id)
 tools = session.tools()
 
-# Create agent with tools
 agent = Agent(
-    name="Email Manager",
-    instructions="You are a helpful assistant that helps users manage their Gmail accounts.",
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
+    model="gpt-5.2",
     tools=tools,
 )
 
-# Run the agent
-async def main():
-    result = await Runner.run(
-        starting_agent=agent,
-        input=f"Send an email to {recipient_email} with the subject 'Hello from Composio' and the body 'This is a test email!'",
-    )
-    print(result.final_output)
+# Memory for multi-turn conversation
+memory = SQLiteSession("conversation")
 
-asyncio.run(main())
+print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+""")
+
+while True:
+    user_input = input("You: ").strip()
+    if user_input.lower() == "exit":
+        break
+
+    print("Assistant: ", end="", flush=True)
+    result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
+    print(f"{result.final_output}\n")
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import "dotenv/config";
 import { Composio } from "@composio/core";
-import { Agent, run } from "@openai/agents";
+import { Agent, run, MemorySession } from "@openai/agents";
 import { OpenAIAgentsProvider } from "@composio/openai-agents";
+import { createInterface } from "readline/promises";
 
 // Initialize Composio with OpenAI Agents provider
-const composio = new Composio({
-  provider: new OpenAIAgentsProvider(),
-});
+const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
-const externalUserId = "user_2nFh83Hd";
-const recipientEmail = "soham.g@composio.dev";
-
-// Create a tool router session
-const session = await composio.create(externalUserId);
-
-// Get tools from the session (native)
+// Create a session for your user
+const userId = "user_123";
+const session = await composio.create(userId);
 const tools = await session.tools();
 
-// Create agent with tools
 const agent = new Agent({
-  name: "Email Manager",
-  model: "gpt-4o",
-  instructions: "You are a helpful assistant. Use Composio tools to execute tasks.",
-  tools: tools,
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: "gpt-5.2",
+  tools,
 });
 
-// Run the agent
-console.log(`🔄 Running agent...`);
-const result = await run(
-  agent,
-  `Send an email to ${recipientEmail} with the subject 'Hello from Composio' and the body 'This is a test email!'`
-);
+const memory = new MemorySession();
+const readline = createInterface({ input: process.stdin, output: process.stdout });
 
-console.log(`✅ Received response from agent`);
-if (result.finalOutput) {
-  console.log(result.finalOutput);
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+`);
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  process.stdout.write("Assistant: ");
+  const result = await run(agent, input, { session: memory });
+  process.stdout.write(`${result.finalOutput}\n`);
 }
+readline.close();
 ```
 </Tab>
 </Tabs>
 </Step>
 </Steps>
-</FrameworkOption>
 
-<FrameworkOption id="claude-agents" name="Claude Agents" logo="/images/providers/anthropic-logo.svg" logoDark="/images/providers/anthropic-logo-dark.svg">
+</IntegrationContent>
+<IntegrationContent value="mcp">
+
 <Steps>
 <Step>
-### Install
-
-Install the Composio SDK and Claude Agent SDK.
+<StepTitle>Install</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```bash
-pip install composio composio-claude-agent-sdk claude-agent-sdk
+pip install python-dotenv composio openai-agents
 ```
 </Tab>
 <Tab value="TypeScript">
 ```bash
-npm install @composio/core @composio/claude-agent-sdk @anthropic-ai/claude-agent-sdk
+npm install dotenv @composio/core @openai/agents zod@3
 ```
 </Tab>
 </Tabs>
 </Step>
 
 <Step>
-### Configure API Keys
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
 </Callout>
 
-```txt title=".env"
-COMPOSIO_API_KEY=xxxxxxxxx
-ANTHROPIC_API_KEY=xxxxxxxxx
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 </Step>
 
 <Step>
-### Create session and run agent
+<StepTitle>Create session and run agent</StepTitle>
 
-[Sessions](/docs/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from dotenv import load_dotenv
+from composio import Composio
+from agents import Agent, Runner, HostedMCPTool, SQLiteSession
+
+load_dotenv()
+
+# Initialize Composio
+composio = Composio()
+
+# Create a session for your user
+user_id = "user_123"
+session = composio.create(user_id=user_id)
+
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful personal assistant. Use Composio tools to take action.",
+    model="gpt-5.2",
+    tools=[
+        HostedMCPTool(
+            tool_config={
+                "type": "mcp",
+                "server_label": "composio",
+                "server_url": session.mcp.url,
+                "require_approval": "never",
+                "headers": session.mcp.headers,
+            }
+        )
+    ],
+)
+
+memory = SQLiteSession(user_id)
+
+print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+""")
+
+while True:
+    user_input = input("You: ").strip()
+    if user_input.lower() == "exit":
+        break
+
+    print("Assistant: ", end="", flush=True)
+    result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
+    print(f"{result.final_output}\n")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import "dotenv/config";
+import { Composio } from "@composio/core";
+import { Agent, run, hostedMcpTool, MemorySession } from "@openai/agents";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio
+const composio = new Composio();
+
+// Create a session for your user
+const userId = "user_123";
+const session = await composio.create(userId);
+
+const agent = new Agent({
+  name: "Personal Assistant",
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
+  model: "gpt-5.2",
+  tools: [
+    hostedMcpTool({
+      serverLabel: "composio",
+      serverUrl: session.mcp.url,
+      headers: session.mcp.headers,
+    }),
+  ],
+});
+
+const memory = new MemorySession();
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+`);
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  process.stdout.write("Assistant: ");
+  const result = await run(agent, input, { session: memory });
+  process.stdout.write(`${result.finalOutput}\n`);
+}
+readline.close();
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+
+</IntegrationContent>
+</IntegrationTabs>
+
+</FrameworkOption>
+
+<FrameworkOption id="claude-agents" name="Claude Agent SDK" logo="/images/providers/anthropic-logo.svg" logoDark="/images/providers/anthropic-logo-dark.svg">
+
+<IntegrationTabs>
+<IntegrationContent value="native">
+
+<Steps>
+<Step>
+<StepTitle>Install</StepTitle>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```bash
+pip install python-dotenv composio composio-claude-agent-sdk claude-agent-sdk
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install dotenv @composio/core @composio/claude-agent-sdk @anthropic-ai/claude-agent-sdk
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
-Replace the sample user ID with your own user's identifier. See [User Management](/docs/user-management) for details.
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
 </Callout>
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+</Step>
+
+<Step>
+<StepTitle>Create session and run agent</StepTitle>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 import asyncio
+from dotenv import load_dotenv
 from composio import Composio
 from composio_claude_agent_sdk import ClaudeAgentSDKProvider
-from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server, AssistantMessage, TextBlock
 
-# Initialize Composio
+load_dotenv()
+
+# Initialize Composio with Claude Agent SDK provider
 composio = Composio(provider=ClaudeAgentSDKProvider())
 
-external_user_id = "user_2nFh83Hd"
-recipient_email = "soham.g@composio.dev"
-
-# Create a tool router session
-session = composio.create(
-    user_id=external_user_id,
-)
-
-# Get tools from the session (native)
+# Create a session for your user
+user_id = "user_123"
+session = composio.create(user_id=user_id)
 tools = session.tools()
+
 custom_server = create_sdk_mcp_server(name="composio", version="1.0.0", tools=tools)
 
-# Query Claude with MCP tools
 async def main():
     options = ClaudeAgentOptions(
-        system_prompt="You are a helpful assistant",
+        system_prompt="You are a helpful assistant. Use tools to complete tasks.",
         permission_mode="bypassPermissions",
-        mcp_servers={
-            "composio": custom_server,
-        },
+        mcp_servers={"composio": custom_server},
     )
 
     async with ClaudeSDKClient(options=options) as client:
-        await client.query(f"Send an email to {recipient_email} with the subject 'Hello from Composio' and the body 'This is a test email!'")
-        # Extract and print response
-        async for msg in client.receive_response():
-            print(msg)
+        print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+""")
+
+        while True:
+            user_input = input("You: ").strip()
+            if user_input.lower() == "exit":
+                break
+
+            await client.query(user_input)
+            print("Claude: ", end="", flush=True)
+            async for message in client.receive_response():
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            print(block.text, end="", flush=True)
+            print()
 
 asyncio.run(main())
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+import "dotenv/config";
 import { Composio } from "@composio/core";
-import { ClaudeAgentSDKProvider} from "@composio/claude-agent-sdk";
+import { ClaudeAgentSDKProvider } from "@composio/claude-agent-sdk";
 import { createSdkMcpServer, query } from "@anthropic-ai/claude-agent-sdk";
+import { createInterface } from "readline/promises";
 
-// Initialize Composio
-const composio = new Composio({
-  provider: new ClaudeAgentSDKProvider(),
-});
+// Initialize Composio with Claude Agent SDK provider
+const composio = new Composio({ provider: new ClaudeAgentSDKProvider() });
 
-const externalUserId = "user_2nFh83Hd";
-const recipientEmail = "soham.g@composio.dev";
-
-// Create a tool router session
-const session = await composio.create(externalUserId);
-// Get tools from the session (native)
+// Create a session for your user
+const userId = "user_123";
+const session = await composio.create(userId);
 const tools = await session.tools();
 
 const customServer = createSdkMcpServer({
@@ -247,120 +410,419 @@ const customServer = createSdkMcpServer({
   tools: tools,
 });
 
-// Initialize Claude client
-for await (const content of query({
-  prompt: `Send an email to ${recipientEmail} saying hello`,
-  options: {
-    mcpServers: { composio: customServer },
-    permissionMode: "bypassPermissions",
-  },
-})) {
-  if (content.type === "assistant") {
-    console.log("Claude:", content.message);
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+`);
+
+let isFirstQuery = true;
+const options = {
+  mcpServers: { composio: customServer },
+  permissionMode: "bypassPermissions" as const,
+};
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  const queryOptions = isFirstQuery ? options : { ...options, continue: true };
+  isFirstQuery = false;
+
+  process.stdout.write("Claude: ");
+  for await (const stream of query({ prompt: input, options: queryOptions })) {
+    if (stream.type === "assistant") {
+      for (const block of stream.message.content) {
+        if (block.type === "text") {
+          process.stdout.write(block.text);
+        }
+      }
+    }
   }
+  console.log();
 }
 
-console.log(`✅ Received response from Claude`);
+readline.close();
 ```
 </Tab>
 </Tabs>
 </Step>
 </Steps>
+
+</IntegrationContent>
+<IntegrationContent value="mcp">
+
+<Steps>
+<Step>
+<StepTitle>Install</StepTitle>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```bash
+pip install python-dotenv composio claude-agent-sdk
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install dotenv @composio/core @anthropic-ai/claude-agent-sdk
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+<StepTitle>Configure API Keys</StepTitle>
+
+<Callout type="info">
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
+</Callout>
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+</Step>
+
+<Step>
+<StepTitle>Create session and run agent</StepTitle>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+import asyncio
+from dotenv import load_dotenv
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, AssistantMessage, TextBlock, ToolUseBlock
+from composio import Composio
+
+load_dotenv()
+
+# Initialize Composio
+composio = Composio()
+
+# Create a session for your user
+user_id = "user_123"
+session = composio.create(user_id=user_id)
+
+options = ClaudeAgentOptions(
+    system_prompt=(
+        "You are a helpful assistant with access to external tools. "
+        "Always use the available tools to complete user requests."
+    ),
+    mcp_servers={
+        "composio": {
+            "type": "http",
+            "url": session.mcp.url,
+            "headers": session.mcp.headers,
+        }
+    },
+    permission_mode="bypassPermissions",
+)
+
+async def main():
+    print("""
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository and create a notion page with the issues'
+""")
+
+    async with ClaudeSDKClient(options) as client:
+        while True:
+            user_input = input("You: ").strip()
+            if user_input.lower() == "exit":
+                break
+
+            await client.query(user_input)
+            print("Claude: ", end="", flush=True)
+            async for msg in client.receive_response():
+                if isinstance(msg, AssistantMessage):
+                    for block in msg.content:
+                        if isinstance(block, ToolUseBlock):
+                            print(f"\n  [Using tool: {block.name}]")
+                        elif isinstance(block, TextBlock):
+                            print(block.text, end="", flush=True)
+            print()
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import "dotenv/config";
+import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
+import { Composio } from "@composio/core";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio
+const composio = new Composio();
+
+// Create a session for your user
+const userId = "user_123";
+const session = await composio.create(userId);
+
+const options: Options = {
+  systemPrompt: `You are a helpful assistant with access to external tools. ` +
+    `Always use the available tools to complete user requests.`,
+  mcpServers: {
+    composio: {
+      type: "http",
+      url: session.mcp.url,
+      headers: session.mcp.headers,
+    },
+  },
+  permissionMode: "bypassPermissions",
+};
+
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository and create a Google Sheet with the issues'
+`);
+
+let isFirstQuery = true;
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  const queryOptions = isFirstQuery ? options : { ...options, continue: true };
+  isFirstQuery = false;
+
+  process.stdout.write("Claude: ");
+  for await (const stream of query({ prompt: input, options: queryOptions })) {
+    if (stream.type === "assistant") {
+      for (const block of stream.message.content) {
+        if (block.type === "tool_use") {
+          process.stdout.write(`\n  [Using tool: ${block.name}]\n`);
+        } else if (block.type === "text") {
+          process.stdout.write(block.text);
+        }
+      }
+    }
+  }
+  console.log();
+}
+
+readline.close();
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+
+</IntegrationContent>
+</IntegrationTabs>
+
 </FrameworkOption>
 
 <FrameworkOption id="vercel-ai" name="Vercel AI" logo="/images/providers/vercel-logo.svg" logoDark="/images/providers/vercel-logo-dark.svg">
+
+<IntegrationTabs>
+<IntegrationContent value="native">
+
 <Steps>
 <Step>
-### Install
+<StepTitle>Install</StepTitle>
 
-Install the Composio SDK and Vercel AI SDK.
-
-<Tabs groupId="language" items={['TypeScript']} persist>
-<Tab value="TypeScript">
 ```bash
-npm install @composio/core @composio/vercel ai @ai-sdk/openai @ai-sdk/mcp
-```
-</Tab>
-</Tabs>
-</Step>
-
-<Step>
-### Configure API Keys
-
-<Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
-</Callout>
-
-```txt title=".env"
-COMPOSIO_API_KEY=xxxxxxxxx
-OPENAI_API_KEY=xxxxxxxxx
+npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
 ```
 </Step>
 
 <Step>
-### Create session and run agent
-
-[Sessions](/docs/users-and-sessions) are ephemeral, user-scoped and manage connections and tools for that user.
+<StepTitle>Configure API Keys</StepTitle>
 
 <Callout type="info">
-Replace the sample user ID with your own user's identifier. See [User Management](/docs/user-management) for details.
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
 </Callout>
 
-<Tabs groupId="language" items={['TypeScript']} persist>
-<Tab value="TypeScript">
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+</Step>
+
+<Step>
+<StepTitle>Create session and run agent</StepTitle>
+
 ```typescript
-import { openai } from "@ai-sdk/openai";
+import "dotenv/config";
+import { anthropic } from "@ai-sdk/anthropic";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { stepCountIs, streamText } from "ai";
+import { streamText, stepCountIs, type ModelMessage } from "ai";
+import { createInterface } from "readline/promises";
 
 // Initialize Composio with Vercel provider
-const composio = new Composio({
-  provider: new VercelProvider(),
-});
+const composio = new Composio({ provider: new VercelProvider() });
 
-const externalUserId = "user_2nFh83Hd";
-const recipientEmail = "soham.g@composio.dev";
-
-// Create a tool router session
-const session = await composio.create(externalUserId);
-
-// Get tools from the session (native)
+// Create a session for your user
+const userId = "user_123";
+const session = await composio.create(userId);
 const tools = await session.tools();
 
-// Stream text with tools
-console.log(`🔄 Running agent...`);
-const stream = await streamText({
-  model: openai("gpt-4o-mini"),
-  prompt: `Send an email to ${recipientEmail} with the subject 'Hello from Composio' and the body 'This is a test email!'`,
-  stopWhen: stepCountIs(10),
-  tools,
-});
+const readline = createInterface({ input: process.stdin, output: process.stdout });
 
-// Stream the response
-for await (const textPart of stream.textStream) {
-  process.stdout.write(textPart);
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+`);
+
+const messages: ModelMessage[] = [];
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  messages.push({ role: "user", content: input });
+  process.stdout.write("Assistant: ");
+
+  const result = await streamText({
+    system: "You are a helpful personal assistant. Use Composio tools to take action.",
+    model: anthropic("claude-sonnet-4-6"),
+    messages,
+    stopWhen: stepCountIs(10),
+    onStepFinish: (step) => {
+      for (const toolCall of step.toolCalls) {
+        process.stdout.write(`\n[Using tool: ${toolCall.toolName}]`);
+      }
+    },
+    tools,
+  });
+
+  for await (const textPart of result.textStream) {
+    process.stdout.write(textPart);
+  }
+  console.log();
+
+  messages.push(...(await result.response).messages);
 }
+
+readline.close();
 ```
-</Tab>
-</Tabs>
 </Step>
 </Steps>
+
+</IntegrationContent>
+<IntegrationContent value="mcp">
+
+<Steps>
+<Step>
+<StepTitle>Install</StepTitle>
+
+```bash
+npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
+```
+</Step>
+
+<Step>
+<StepTitle>Configure API Keys</StepTitle>
+
+<Callout type="info">
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `ANTHROPIC_API_KEY` from [Anthropic](https://console.anthropic.com/settings/keys).
+</Callout>
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+</Step>
+
+<Step>
+<StepTitle>Create session and run agent</StepTitle>
+
+```typescript
+import "dotenv/config";
+import { anthropic } from "@ai-sdk/anthropic";
+import { createMCPClient } from "@ai-sdk/mcp";
+import { Composio } from "@composio/core";
+import { streamText, stepCountIs, type ModelMessage } from "ai";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio
+const composio = new Composio();
+
+// Create a session for your user
+const userId = "user_123";
+const { mcp } = await composio.create(userId);
+
+// Create an MCP client to connect to Composio
+const client = await createMCPClient({
+  transport: {
+    type: "http",
+    url: mcp.url,
+    headers: mcp.headers,
+  },
+});
+const tools = await client.tools();
+
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+`);
+
+const messages: ModelMessage[] = [];
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  messages.push({ role: "user", content: input });
+  process.stdout.write("Assistant: ");
+
+  const result = await streamText({
+    system: "You are a helpful personal assistant. Use Composio tools to take action.",
+    model: anthropic("claude-sonnet-4-6"),
+    messages,
+    stopWhen: stepCountIs(10),
+    onStepFinish: (step) => {
+      for (const toolCall of step.toolCalls) {
+        process.stdout.write(`\n[Using tool: ${toolCall.toolName}]`);
+      }
+    },
+    tools,
+  });
+
+  for await (const textPart of result.textStream) {
+    process.stdout.write(textPart);
+  }
+  console.log();
+
+  messages.push(...(await result.response).messages);
+}
+
+await client.close();
+readline.close();
+```
+</Step>
+</Steps>
+
+</IntegrationContent>
+</IntegrationTabs>
+
 </FrameworkOption>
 
 </QuickstartFlow>
 
-## Next steps
-
-<Cards>
-  <Card
-    title="Session management"
-    href="/docs/users-and-sessions"
-    description="Learn about users, sessions, and how they work."
-  />
-  <Card
-    title="Tools and toolkits"
-    href="/docs/tools-and-toolkits"
-    description="Learn about tools, toolkits, and how to configure them."
-  />
-</Cards>

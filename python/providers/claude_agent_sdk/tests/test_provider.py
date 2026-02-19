@@ -6,7 +6,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from composio_claude_agent_sdk.provider import ClaudeAgentSDKProvider
 
 

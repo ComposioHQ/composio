@@ -17,6 +17,10 @@
       "#file_tool_modifier": [
         "./src/utils/modifiers/FileToolModifier.node.ts",
         "./src/utils/modifiers/FileToolModifier.workerd.ts"
+      ],
+      "#config_defaults": [
+        "./src/utils/config-defaults/ConfigDefaults.node.ts",
+        "./src/utils/config-defaults/ConfigDefaults.workerd.ts"
       ]
     }
   },

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
-import { Search, ChevronDown, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink, Grip } from 'lucide-react';
+import { Search, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink, Grip } from 'lucide-react';
 import toolkitsData from '@/public/data/toolkits-list.json';
 import type { ToolkitSummary } from '@/types/toolkit';
+import { PageActions } from '@/components/page-actions';
 
 const toolkits = toolkitsData as ToolkitSummary[];
 
@@ -21,21 +22,24 @@ const POPULAR_SLUGS = [
   'hubspot',
 ];
 
-// Get unique categories
-const categories = Array.from(
-  new Set(toolkits.map((t) => t.category).filter(Boolean))
-).sort() as string[];
+function ToolkitIcon({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: boolean }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const fallback = toolkit.name.trim().charAt(0).toUpperCase();
 
-function ToolkitIcon({ toolkit }: { toolkit: ToolkitSummary }) {
   return (
-    <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-fd-border/50 bg-fd-background bg-center bg-no-repeat text-sm font-medium text-fd-muted-foreground sm:h-10 sm:w-10"
-      style={toolkit.logo ? {
-        backgroundImage: `url(${toolkit.logo})`,
-        backgroundSize: '65%',
-      } : undefined}
-    >
-      {!toolkit.logo && toolkit.name.trim().charAt(0).toUpperCase()}
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-fd-border/50 bg-fd-background text-sm font-medium text-fd-muted-foreground sm:h-10 sm:w-10">
+      {toolkit.logo && !imgFailed ? (
+        <img
+          src={toolkit.logo}
+          alt=""
+          loading={lazy ? 'lazy' : 'eager'}
+          decoding="async"
+          className="h-[65%] w-[65%] object-contain"
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        fallback
+      )}
     </div>
   );
 }
@@ -62,7 +66,7 @@ function CopySlugButton({ slug }: { slug: string }) {
   );
 }
 
-function ToolkitRow({ toolkit }: { toolkit: ToolkitSummary }) {
+function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: boolean }) {
   return (
     <Link
       href={`/toolkits/${toolkit.slug}`}
@@ -70,7 +74,7 @@ function ToolkitRow({ toolkit }: { toolkit: ToolkitSummary }) {
     >
       {/* Left side: Icon, Name, Slug */}
       <div className="flex items-center gap-3">
-        <ToolkitIcon toolkit={toolkit} />
+        <ToolkitIcon toolkit={toolkit} lazy={lazy} />
         <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <span className="truncate text-sm font-medium text-fd-foreground">{toolkit.name.trim()}</span>
           <CopySlugButton slug={toolkit.slug} />
@@ -93,7 +97,7 @@ function ToolkitRow({ toolkit }: { toolkit: ToolkitSummary }) {
 
 export function ToolkitsLanding() {
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<string>('all');
+  const deferredSearch = useDeferredValue(search);
 
   // Get popular toolkits
   const popularToolkits = useMemo(() => {
@@ -103,25 +107,15 @@ export function ToolkitsLanding() {
   }, []);
 
   const filteredToolkits = useMemo(() => {
-    let result = toolkits;
+    if (!deferredSearch) return toolkits;
 
-    // Filter by category
-    if (category !== 'all') {
-      result = result.filter((t) => t.category === category);
-    }
-
-    // Filter by search (name and slug only)
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(
-        (toolkit) =>
-          toolkit.name.toLowerCase().includes(searchLower) ||
-          toolkit.slug.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return result;
-  }, [search, category]);
+    const searchLower = deferredSearch.toLowerCase();
+    return toolkits.filter(
+      (toolkit) =>
+        toolkit.name.toLowerCase().includes(searchLower) ||
+        toolkit.slug.toLowerCase().includes(searchLower)
+    );
+  }, [deferredSearch]);
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
@@ -159,6 +153,7 @@ export function ToolkitsLanding() {
           <p className="mt-1.5 text-sm text-fd-muted-foreground sm:mt-2 sm:text-base">
             Browse {toolkits.length} toolkits supported by Composio
           </p>
+          <PageActions path="/toolkits" />
         </div>
         <div className="flex items-center gap-2">
           <a
@@ -196,56 +191,34 @@ export function ToolkitsLanding() {
         <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-orange-500" />
       </Link>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fd-muted-foreground" aria-hidden="true" />
-          <input
-            type="text"
-            name="toolkit-search"
-            aria-label="Search toolkits"
-            placeholder="Search toolkits…"
-            autoComplete="off"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20"
-          />
-        </div>
-
-        {/* Category dropdown */}
-        <div className="relative w-full sm:w-auto">
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            aria-label="Filter by category"
-            className="h-10 w-full appearance-none rounded-lg border border-fd-border bg-fd-background pl-4 pr-10 text-sm text-fd-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20 sm:w-auto"
-          >
-            <option value="all">All categories</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fd-muted-foreground" />
-        </div>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fd-muted-foreground" aria-hidden="true" />
+        <input
+          type="text"
+          name="toolkit-search"
+          aria-label="Search toolkits"
+          placeholder="Search toolkits…"
+          autoComplete="off"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20"
+        />
       </div>
 
       {/* Results count */}
       <p className="text-sm text-fd-muted-foreground">
         {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
-        {category !== 'all' && ` in ${category}`}
-        {search && ` matching "${search}"`}
+        {deferredSearch && ` matching "${deferredSearch}"`}
       </p>
 
-      {/* Popular Toolkits - only show when no filters */}
-      {!search && category === 'all' && popularToolkits.length > 0 && (
+      {/* Popular Toolkits - only show when no search */}
+      {!deferredSearch && popularToolkits.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-semibold text-fd-muted-foreground">Popular</h2>
           <div className="divide-y divide-fd-border">
             {popularToolkits.map((toolkit) => (
-              <ToolkitRow key={toolkit.slug} toolkit={toolkit} />
+              <ToolkitRow key={toolkit.slug} toolkit={toolkit} lazy={false} />
             ))}
           </div>
         </div>
@@ -269,13 +242,10 @@ export function ToolkitsLanding() {
         <div className="py-12 text-center">
           <p className="text-fd-muted-foreground">No toolkits found.</p>
           <button
-            onClick={() => {
-              setSearch('');
-              setCategory('all');
-            }}
+            onClick={() => setSearch('')}
             className="mt-2 text-sm text-fd-primary hover:underline"
           >
-            Clear filters
+            Clear search
           </button>
         </div>
       )}

@@ -509,7 +509,7 @@ describe('ConnectedAccounts', () => {
       const result = await connectedAccounts.refresh(nanoid, { redirectUrl });
 
       expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        body_redirect_url: redirectUrl,
+        query_redirect_url: redirectUrl,
         validate_credentials: undefined,
       });
       expect(result).toEqual(mockResponse);
@@ -524,7 +524,7 @@ describe('ConnectedAccounts', () => {
       const result = await connectedAccounts.refresh(nanoid, { validateCredentials: true });
 
       expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        body_redirect_url: undefined,
+        query_redirect_url: undefined,
         validate_credentials: true,
       });
       expect(result).toEqual(mockResponse);
@@ -543,7 +543,7 @@ describe('ConnectedAccounts', () => {
       const result = await connectedAccounts.refresh(nanoid, options);
 
       expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        body_redirect_url: options.redirectUrl,
+        query_redirect_url: options.redirectUrl,
         validate_credentials: options.validateCredentials,
       });
       expect(result).toEqual(mockResponse);
@@ -569,7 +569,7 @@ describe('ConnectedAccounts', () => {
       const result = await connectedAccounts.refresh(nanoid, {});
 
       expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        body_redirect_url: undefined,
+        query_redirect_url: undefined,
         validate_credentials: undefined,
       });
       expect(result).toEqual(mockResponse);

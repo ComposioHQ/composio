@@ -2,6 +2,9 @@
   "title": "Reference",
   "pages": [
     "index",
+    "authentication",
+    "rate-limits",
+    "errors",
     "api-reference",
     "sdk-reference"
   ]

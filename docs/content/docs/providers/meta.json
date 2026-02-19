@@ -1,15 +1,20 @@
 {
   "title": "Providers",
   "pages": [
-    "openai",
+    "...",
+    "claude-agent-sdk",
     "anthropic",
-    "google",
-    "langchain",
-    "llamaindex",
-    "crewai",
-    "vercel",
     "openai-agents",
+    "openai",
+    "autogen",
+    "crewai",
+    "google",
+    "google-adk",
+    "langchain",
+    "langgraph",
+    "llamaindex",
     "mastra",
+    "vercel",
     "custom-providers"
   ]
 }

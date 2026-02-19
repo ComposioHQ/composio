@@ -1,13 +1,13 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import type { Platform } from './types';
+import type { Platform, Uint8ArrayEncoding } from './types';
 
 /**
  * Node.js platform implementation.
  * Provides full file system and OS operations using Node.js built-in modules.
  */
-export const platform: Platform = {
+export const platform = {
   supportsFileSystem: true,
 
   homedir(): string | null {
@@ -34,18 +34,26 @@ export const platform: Platform = {
     fs.mkdirSync(dirPath, { recursive: true });
   },
 
-  readFileSync(filePath: string, encoding?: BufferEncoding): string | Buffer {
-    if (encoding) {
-      return fs.readFileSync(filePath, encoding);
+  readFileSync(filePath: string, encoding?: Uint8ArrayEncoding): string | Uint8Array {
+    if (encoding === undefined) {
+      const buf = fs.readFileSync(filePath, { encoding: null });
+      const uint8 = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+      return uint8;
     }
-    return fs.readFileSync(filePath);
+
+    const str = fs.readFileSync(filePath, { encoding });
+    return str;
   },
 
-  writeFileSync(filePath: string, content: string | Buffer, encoding?: BufferEncoding): void {
+  writeFileSync(
+    filePath: string,
+    content: string | Uint8Array,
+    encoding?: Uint8ArrayEncoding
+  ): void {
     if (encoding && typeof content === 'string') {
-      fs.writeFileSync(filePath, content, encoding);
+      fs.writeFileSync(filePath, content, { encoding });
     } else {
       fs.writeFileSync(filePath, content);
     }
   },
-};
+} as Platform;

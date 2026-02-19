@@ -6,7 +6,7 @@ from composio.client.types import Tool
 from composio.core.provider.base import BaseProvider, TTool, TToolCollection
 
 
-class NonAgenticProvider(BaseProvider, t.Generic[TTool, TToolCollection]):
+class NonAgenticProvider(BaseProvider[TTool, TToolCollection]):
     """
     Base class for all non-agentic providers, such as `openai` This class is not
     meant to be used directly, but rather to be extended by concrete implementations

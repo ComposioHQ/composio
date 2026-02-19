@@ -1,0 +1,224 @@
+vhs:
+  shell: bash
+  width: 1400
+  height: 750
+  fontSize: 16
+  fontFamily: "JetBrains Mono" # "Fira Code", "Source Code Pro"
+  padding: 20
+  # https://github.com/agentstation/vhs/blob/main/THEMES.md
+  theme: "Catppuccin Frappe"
+  typingSpeed: 40ms
+  framerate: 30
+  cursorBlink: false
+  windowBar: Colorful
+  sleepAfterEnter: 6s
+
+recordings:
+  composio:
+    - name: help
+      description: Show composio command help
+      command: "composio --help"
+      height: dynamic
+
+    - name: version
+      description: Show composio version
+      command: "composio --version"
+
+    - name: whoami
+      description: Show whoami subcommand help
+      command: "composio whoami"
+
+  ts-generate:
+    - name: help
+      description: Show ts generate subcommand help
+      command: "composio ts generate --help"
+      height: dynamic
+
+  toolkits:
+    - name: help
+      description: Show toolkits subcommand help
+      command: "composio toolkits --help"
+      height: dynamic
+
+    - name: search-google
+      description: Search toolkits by name
+      command: "composio toolkits search google"
+      height: dynamic
+
+    - name: search-google-limit-1
+      description: Search with --limit flag
+      command: "composio toolkits search google --limit 1"
+
+    - name: search-gmail
+      description: Search for a specific toolkit
+      command: "composio toolkits search gmail"
+      height: dynamic
+
+    - name: search-gma
+      description: Search with partial match
+      command: "composio toolkits search gma"
+      height: dynamic
+
+    - name: search-gmax
+      description: Search with no results
+      command: "composio toolkits search gmax"
+
+    - name: search-gmail-pipe
+      description: Pipe output to JSON
+      command: "composio toolkits search gmail | jq 'first'"
+      height: dynamic
+
+    - name: info
+      description: Show info without arguments
+      command: "composio toolkits info"
+
+    - name: info-gmail
+      description: Show toolkit details
+      command: "composio toolkits info gmail"
+      height: dynamic
+
+    - name: info-gmai
+      description: Info with partial match
+      command: "composio toolkits info gmai"
+      height: dynamic
+
+    - name: info-gmax
+      description: Info with no results
+      command: "composio toolkits info gmax"
+
+    - name: list
+      description: List all toolkits
+      command: "composio toolkits list"
+      height: dynamic
+
+    - name: list-limit-1
+      description: List with --limit flag
+      command: "composio toolkits list --limit 1"
+
+    - name: list-query-gmail
+      description: List with --query filter
+      command: "composio toolkits list --query 'gmail'"
+      height: dynamic
+
+    - name: list-query-gmail-limit-1
+      description: Combine --query and --limit
+      command: "composio toolkits list --query 'gmail' --limit 1"
+
+    - name: list-query-gmaxx
+      description: List with no results
+      command: "composio toolkits list --query 'gmaxx'"
+
+  tools:
+    - name: help
+      description: Show tools subcommand help
+      command: "composio tools --help"
+      height: dynamic
+
+    - name: list-toolkit-gmail
+      description: List tools in a toolkit
+      command: "composio tools list --toolkits gmail"
+      height: dynamic
+
+    - name: list-toolkit-gmail-limit-3
+      description: List with --limit flag
+      command: "composio tools list --toolkits gmail --limit 3"
+
+    - name: list-query-send-email
+      description: List with --query filter
+      command: "composio tools list --query 'send email'"
+      height: dynamic
+
+    - name: list-search-no-results
+      description: List with no results
+      command: "composio tools list --toolkits 'nonexistent'"
+
+    - name: search-send-email
+      description: Search tools by use case
+      command: "composio tools search 'send email'"
+      height: dynamic
+
+    - name: search-no-results
+      description: Search with no results
+      command: "composio tools search 'xyznonexistent'"
+
+    - name: info
+      description: Show info without arguments
+      command: "composio tools info"
+
+    - name: info-gmail-send-email
+      description: Show tool details
+      command: "composio tools info GMAIL_SEND_EMAIL"
+      height: dynamic
+
+    - name: info-nonexistent
+      description: Info with nonexistent tool
+      command: "composio tools info NONEXISTENT_TOOL"
+      height: dynamic
+
+  auth-configs:
+    - name: help
+      description: Show auth-configs subcommand help
+      command: "composio auth-configs --help"
+      height: dynamic
+
+    - name: list
+      description: List all auth configs
+      command: "composio auth-configs list"
+      height: dynamic
+
+    - name: list-toolkits-gmail
+      description: List filtered by toolkit
+      command: "composio auth-configs list --toolkits gmail"
+      height: dynamic
+
+    - name: list-limit-1
+      description: List with --limit flag
+      command: "composio auth-configs list --limit 1"
+
+    - name: info
+      description: Show info without arguments
+      command: "composio auth-configs info"
+
+    - name: info-nonexistent
+      description: Info with nonexistent ID
+      command: "composio auth-configs info nonexistent_id"
+
+    - name: delete
+      description: Delete without arguments
+      command: "composio auth-configs delete"
+
+  connected-accounts:
+    - name: help
+      description: Show connected-accounts subcommand help
+      command: "composio connected-accounts --help"
+      height: dynamic
+
+    - name: list
+      description: List all connected accounts
+      command: "composio connected-accounts list"
+      height: dynamic
+
+    - name: list-toolkits-gmail
+      description: List filtered by toolkit
+      command: "composio connected-accounts list --toolkits gmail"
+      height: dynamic
+
+    - name: list-limit-1
+      description: List with --limit flag
+      command: "composio connected-accounts list --limit 1"
+
+    - name: info
+      description: Show info without arguments
+      command: "composio connected-accounts info"
+
+    - name: info-nonexistent
+      description: Info with nonexistent ID
+      command: "composio connected-accounts info nonexistent_id"
+
+    - name: delete
+      description: Delete without arguments
+      command: "composio connected-accounts delete"
+
+    - name: link-no-args
+      description: Link without arguments
+      command: "composio connected-accounts link"

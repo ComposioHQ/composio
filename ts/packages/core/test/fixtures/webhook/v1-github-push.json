@@ -1,0 +1,16 @@
+{
+  "description": "V1 GitHub push webhook - legacy format sanitized",
+  "capturedAt": "2026-01-29T10:30:00Z",
+  "headers": {
+    "webhook-id": "msg_fixture_v1_001",
+    "webhook-timestamp": "1738150200",
+    "webhook-signature": "v1,A/VFbvOJ8JAzXZweWvc+IHaBie19NVKUpQKbeobt5xo="
+  },
+  "payload": "{\"trigger_name\":\"GITHUB_PUSH_EVENT\",\"connection_id\":\"conn_fixture_001\",\"trigger_id\":\"trigger_fixture_001\",\"payload\":{\"ref\":\"refs/heads/main\",\"commits\":[{\"id\":\"def456\",\"message\":\"Legacy commit\"}]},\"log_id\":\"log_fixture_003\"}",
+  "testSecret": "test-webhook-secret-for-fixtures",
+  "expectedResult": {
+    "version": "V1",
+    "triggerSlug": "GITHUB_PUSH_EVENT",
+    "triggerId": "trigger_fixture_001"
+  }
+}

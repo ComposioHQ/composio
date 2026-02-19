@@ -1,295 +1,150 @@
 ---
 title: Anthropic
-description: Use Composio tools with Claude
-keywords: [claude]
+description: Build an agent with Claude and enable it to use 1000+ tools with Composio.
+keywords: [claude, messages api]
 ---
 
-The Anthropic Provider transforms Composio tools into a format compatible with Anthropic's function calling capabilities through its Messages API.
-
-## Usage with MCP
-
-Use Composio Tool Router with the Claude Agent SDK for a fully managed MCP experience.
-
-### Installation
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```bash
-pip install python-dotenv composio claude-agent-sdk
-```
-</Tab>
-<Tab value="TypeScript">
-```bash
-npm install dotenv @composio/core @anthropic-ai/claude-agent-sdk
-```
-</Tab>
-</Tabs>
-
-### Usage
-
-Create a Tool Router session and execute tasks with Claude:
+The Anthropic Provider transforms Composio tools into a format compatible with the [Claude Messages API](https://docs.anthropic.com/en/api/messages).
 
 <Callout type="info">
-- Set your `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set your `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
+Looking for the Claude Agent SDK? See the [Claude Agent SDK](/docs/providers/claude-agent-sdk) provider page.
 </Callout>
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-import asyncio
-from dotenv import load_dotenv
-from claude_agent_sdk.client import ClaudeSDKClient
-from claude_agent_sdk.types import (
-    ClaudeAgentOptions,
-    AssistantMessage,
-    TextBlock,
-    ToolUseBlock,
-)
-from composio import Composio
+<Steps>
+<Step>
+**Install**
 
-load_dotenv()
-
-# Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly)
-composio = Composio()
-
-# Unique identifier of the user
-user_id = "user_123"
-# Create a tool router session for the user
-session = composio.create(user_id=user_id)
-
-# Configure Claude with Composio MCP server
-options = ClaudeAgentOptions(
-    system_prompt=(
-        "You are a helpful assistant with access to external tools. "
-        "Always use the available tools to complete user requests."
-    ),
-    mcp_servers={
-        "composio": {
-            "type": "http",
-            "url": session.mcp.url,
-            "headers": session.mcp.headers,  # Authentication headers for the Composio MCP server
-        }
-    },
-    permission_mode="bypassPermissions",  # Auto-approve tools (demo only)
-)
-
-async def main():
-    print("""
-What task would you like me to help you with?
-I can use tools like Gmail, GitHub, Linear, Notion, and more.
-(Type 'exit' to exit)
-Example tasks:
-  • 'Summarize my emails from today'
-  • 'List all open issues on the composio github repository and create a notion page with the issues'
-""")
-
-    async with ClaudeSDKClient(options) as client:
-        # Multi-turn conversation with agentic tool calling
-        while True:
-            user_input = input("\nYou: ").strip()
-            if user_input.lower() == "exit":
-                break
-
-            print("\nClaude: ", end="", flush=True)
-            try:
-                await client.query(user_input)
-                async for msg in client.receive_response():
-                    if isinstance(msg, AssistantMessage):
-                        for block in msg.content:
-                            if isinstance(block, ToolUseBlock):
-                                print(f"\n[Using tool: {block.name}]", end="")
-                            elif isinstance(block, TextBlock):
-                                print(block.text, end="", flush=True)
-            except Exception as e:
-                print(f"\n[Error]: {e}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import "dotenv/config";
-import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
-import { Composio } from "@composio/core";
-import { createInterface } from "readline/promises";
-
-// Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly: { apiKey: "your-key" })
-const composio = new Composio();
-
-// Unique identifier of the user
-const userId = "user_123";
-
-// Create a tool router session for the user
-const session = await composio.create(userId);
-
-const options: Options = {
-  systemPrompt: `You are a helpful assistant with access to external tools. ` +
-    `Always use the available tools to complete user requests.`,
-  mcpServers: {
-    composio: {
-      type: "http",
-      url: session.mcp.url,
-      headers: session.mcp.headers // Authentication headers for the Composio MCP server
-    },
-  },
-  permissionMode: "bypassPermissions", // Auto-approve tools (demo only - use "default" in production)
-};
-
-// Set up interactive terminal input/output for the conversation
-const readline = createInterface({ input: process.stdin, output: process.stdout });
-
-console.log(`
-What task would you like me to help you with?
-I can use tools like Gmail, GitHub, Linear, Notion, and more.
-(Type 'exit' to exit)
-Example tasks:
-  • 'Summarize my emails from today'
-  • 'List all open issues on the composio github repository and create a notion page with the issues'
-`);
-
-let isFirstQuery = true;
-
-// Multi-turn conversation with agentic tool calling
-while (true) {
-  const answer = await readline.question('You: ');
-  const input = answer.trim();
-  if (input.toLowerCase() === "exit") break;
-
-  process.stdout.write("Claude: ");
-
-  const queryOptions = isFirstQuery ? options : { ...options, continue: true };
-  isFirstQuery = false;
-
-  try {
-    for await (const stream of query({ prompt: input, options: queryOptions })) {
-      // Only process assistant messages (the SDK also sends result/error messages)
-      if (stream.type === "assistant") {
-        const { content } = stream.message;
-        for (const block of content) {
-          if (block.type === "tool_use") {
-            process.stdout.write(`\n[Using tool: ${block.name}]`);
-          } else if (block.type === "text") {
-            process.stdout.write(block.text);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error("\n[Error]:", error instanceof Error ? error.message : error);
-  }
-  process.stdout.write("\n");
-}
-
-readline.close();
-```
-</Tab>
-</Tabs>
-
-## Usage with direct tools
-
-### Setup
-
-<Tabs items={["Python", "TypeScript"]}>
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```bash
-pip install composio composio-anthropic
+pip install composio composio_anthropic anthropic
 ```
 </Tab>
 <Tab value="TypeScript">
 ```bash
-npm install @composio/anthropic @anthropic-ai/sdk
+npm install @composio/core @composio/anthropic @anthropic-ai/sdk
 ```
 </Tab>
 </Tabs>
+</Step>
 
-You can specify the provider in the constructor. The constructor also takes in an optional `cacheTools` parameter.
+<Step>
+**Configure API Keys**
 
-<Tabs items={["Python", "TypeScript"]}>
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+ANTHROPIC_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
+import json
 import anthropic
-
 from composio import Composio
 from composio_anthropic import AnthropicProvider
 
-# Initialize tools.
-anthropic_client = anthropic.Anthropic()
 composio = Composio(provider=AnthropicProvider())
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from "@composio/core";
-import { AnthropicProvider } from "@composio/anthropic";
-import Anthropic from '@anthropic-ai/sdk';
+client = anthropic.Anthropic()
 
-const composio = new Composio({
-  provider: new AnthropicProvider({
-    cacheTools: false,  // default
-  }),
-});
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-const anthropic = new Anthropic();
-```
-</Tab>
-</Tabs>
+messages = [
+    {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+]
 
-### Usage
-
-<Tabs items={["Python", "TypeScript"]}>
-<Tab value="Python">
-```python
-# Define your user ID
-user_id = "your-user-id"
-
-# Get GitHub tool for listing stargazers
-tools = composio.tools.get(user_id=user_id, tools=["GITHUB_LIST_STARGAZERS"])
-
-# Get response from the LLM
-response = anthropic_client.messages.create(
-    model="claude-sonnet-4-5",
-    max_tokens=1024,
+response = client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=4096,
     tools=tools,
-    messages=[
-        {"role": "user", "content": "List my github stargazers. for the repo composiohq/composio"},
-    ],
+    messages=messages,
 )
 
-# Execute the function calls.
-result = composio.provider.handle_tool_calls(user_id=user_id, response=response)
-print(result)
+# Agentic loop — keep executing tool calls until the model responds with text
+while response.stop_reason == "tool_use":
+    tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
+    results = composio.provider.handle_tool_calls(user_id="user_123", response=response)
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({
+        "role": "user",
+        "content": [
+            {"type": "tool_result", "tool_use_id": tool_use_blocks[i].id, "content": json.dumps(result)}
+            for i, result in enumerate(results)
+        ]
+    })
+    response = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=4096,
+        tools=tools,
+        messages=messages,
+    )
+
+# Print final response
+for block in response.content:
+    if block.type == "text":
+        print(block.text)
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-import { Composio } from "@composio/core";
-import { AnthropicProvider } from "@composio/anthropic";
 import Anthropic from '@anthropic-ai/sdk';
-const composio = new Composio({ provider: new AnthropicProvider() });
-const anthropic = new Anthropic();
-// ---cut---
-const userId = "your-user-id";
-const tools = await composio.tools.get(userId, {
-  tools: ["GITHUB_LIST_STARGAZERS"]
-})
+import { Composio } from '@composio/core';
+import { AnthropicProvider } from '@composio/anthropic';
 
-const msg = await anthropic.messages.create({
-  model: "claude-sonnet-4-5",
-  messages: [
+const composio = new Composio({
+    provider: new AnthropicProvider(),
+});
+const client = new Anthropic();
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const messages: Anthropic.MessageParam[] = [
     {
-      role: "user",
-      content: "List my github stargazers. for the repo composiohq/composio",
+        role: "user",
+        content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
     },
-  ],
-  tools: tools,
-  max_tokens: 1000,
+];
+
+let response = await client.messages.create({
+    model: "claude-opus-4-6",
+    max_tokens: 4096,
+    tools: tools,
+    messages: messages,
 });
 
-const res = await composio.provider.handleToolCalls(userId, msg);
+// Agentic loop — keep executing tool calls until the model responds with text
+while (response.stop_reason === "tool_use") {
+    const toolResults = await composio.provider.handleToolCalls("user_123", response);
+    messages.push({ role: "assistant", content: response.content });
+    messages.push(...toolResults);
+    response = await client.messages.create({
+        model: "claude-opus-4-6",
+        max_tokens: 4096,
+        tools: tools,
+        messages: messages,
+    });
+}
 
-console.log(res[0].content);
+// Print final response
+for (const block of response.content) {
+    if (block.type === "text") {
+        console.log(block.text);
+    }
+}
 ```
 </Tab>
 </Tabs>
+</Step>
+</Steps>

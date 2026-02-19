@@ -2,7 +2,7 @@
 
 Verifies that `composio ts generate` produces TypeScript files that compile correctly with `moduleResolution: "nodenext"`.
 
-## The Issue
+## Background
 
 When `composio ts generate --output-dir ./types` runs without `--transpiled`:
 
@@ -16,21 +16,54 @@ This causes `TS2307: Cannot find module './foo.mjs'` errors.
 
 ## What It Tests
 
-| Test                   | Description                                                 |
-| ---------------------- | ----------------------------------------------------------- |
+| Test                   | Description                                                    |
+| ---------------------- | -------------------------------------------------------------- |
 | composio ts generate   | Runs CLI to generate TypeScript files for entelligence toolkit |
-| File existence         | Verifies generated .ts files exist                          |
-| TypeScript compilation | Runs `tsc --noEmit` to check import resolution              |
+| File existence         | Verifies generated .ts files exist                             |
+| TypeScript compilation | Runs `tsc --noEmit` to check import resolution                 |
+
+## Fixture
+
+```
+fixtures/
+├── index.mjs       # Test runner script that generates and compiles TypeScript
+└── tsconfig.json   # TypeScript config with moduleResolution: "nodenext"
+```
+
+The fixture script:
+
+1. Cleans up any previous generated files
+2. Runs `composio ts generate --toolkits entelligence --output-dir ./generated`
+3. Verifies generated `.ts` files exist
+4. Runs `npx tsc --noEmit` to check TypeScript compilation
+5. Fails if TS2307 errors occur (indicating `.mjs` import bug)
+
+**tsconfig.json:**
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noEmit": true
+  },
+  "include": ["generated/**/*.ts"]
+}
+```
+
+## Isolation Tool
+
+**Docker** with Node.js versions: current (as specified in `.nvmrc`).
 
 ## Running
 
 ```bash
-# With nvm - test specific Node.js versions
-nvm use 20.18.0 && pnpm install && pnpm test:e2e
-nvm use 20.19.0 && pnpm install && pnpm test:e2e
+pnpm test:e2e
 ```
 
 ## Expected Behavior
 
-- **If bug exists (importExtension: 'mjs')**: Test 3 fails with TS2307
+- **If bug exists (importExtension: 'mjs')**: TypeScript compilation fails with TS2307
 - **If fixed (importExtension: 'js')**: All tests pass

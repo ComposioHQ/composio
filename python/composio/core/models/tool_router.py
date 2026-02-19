@@ -11,14 +11,15 @@ import typing as t
 from dataclasses import dataclass
 from enum import Enum
 
+import typing_extensions as te
 from composio_client import omit
 from composio_client.types.tool_router import session_create_params
-import typing_extensions as te
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
 from composio.core.models.connected_accounts import ConnectionRequest
-from composio.core.provider import TProvider
+from composio.core.provider import TTool, TToolCollection
+from composio.core.provider.base import BaseProvider
 
 if t.TYPE_CHECKING:
     from composio.core.models._modifiers import Modifiers
@@ -33,10 +34,21 @@ ToolkitsFn = t.Callable[
 ]
 
 
-class ToolsFn(t.Protocol):
-    """Protocol for the tools function that returns provider-wrapped tools."""
+# Local type variable for ToolsFn protocol (covariant for return type)
+_TToolCollectionReturn = t.TypeVar("_TToolCollectionReturn", covariant=True)
 
-    def __call__(self, modifiers: t.Optional["Modifiers"] = None) -> t.Any:
+
+class ToolsFn(t.Protocol[_TToolCollectionReturn]):
+    """Protocol for the tools function that returns provider-wrapped tools.
+
+    The return type is generic to support provider-specific tool collections.
+    For example, AnthropicProvider returns list[ToolParam], OpenAIProvider
+    returns list[ChatCompletionToolParam], etc.
+    """
+
+    def __call__(
+        self, modifiers: t.Optional["Modifiers"] = None
+    ) -> _TToolCollectionReturn:
         """Get provider-wrapped tools for execution with your AI framework."""
         ...
 
@@ -309,9 +321,13 @@ class ToolRouterSessionExperimental:
 
 
 @dataclass
-class ToolRouterSession(t.Generic[TProvider]):
+class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
     Tool router session containing session information and helper functions.
+
+    Generic Parameters:
+        TTool: The individual tool type returned by the provider.
+        TToolCollection: The collection type returned by tools().
 
     Attributes:
         session_id: Unique session identifier
@@ -320,17 +336,21 @@ class ToolRouterSession(t.Generic[TProvider]):
         authorize: Function to authorize a toolkit
         toolkits: Function to get toolkit connection states
         experimental: Optional experimental features data from the session response
+
+    Note:
+        The `tools` function returns a provider-specific tool collection.
+        The return type is inferred from the provider's generic parameters.
     """
 
     session_id: str
     mcp: ToolRouterMCPServerConfig
-    tools: ToolsFn
+    tools: "ToolsFn[TToolCollection]"
     authorize: AuthorizeFn
     toolkits: ToolkitsFn
     experimental: t.Optional[ToolRouterSessionExperimental] = None
 
 
-class ToolRouter(Resource, t.Generic[TProvider]):
+class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
     """
     ToolRouter class for managing tool routing sessions.
 
@@ -361,7 +381,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
     def __init__(
         self,
         client: HttpClient,
-        provider: t.Optional[TProvider] = None,
+        provider: t.Optional["BaseProvider[TTool, TToolCollection]"] = None,
         auto_upload_download_files: bool = True,
     ):
         """
@@ -602,7 +622,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
     def _create_tools_fn(
         self,
         session_id: str,
-    ) -> ToolsFn:
+    ) -> ToolsFn[TToolCollection]:
         """
         Create a tools function that wraps tools for the provider.
 
@@ -625,7 +645,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             auto_upload_download_files=self._auto_upload_download_files,
         )
 
-        def tools_fn(modifiers: t.Optional[Modifiers] = None) -> t.Any:
+        def tools_fn(modifiers: t.Optional[Modifiers] = None) -> TToolCollection:
             """
             Get provider-wrapped tools for execution with your AI framework.
 
@@ -702,15 +722,23 @@ class ToolRouter(Resource, t.Generic[TProvider]):
 
             # Wrap tools with provider
             if issubclass(type(self._provider), NonAgenticProvider):
-                return t.cast(NonAgenticProvider, self._provider).wrap_tools(
-                    tools=router_tools
+                return t.cast(
+                    TToolCollection,
+                    t.cast(
+                        NonAgenticProvider[TTool, TToolCollection], self._provider
+                    ).wrap_tools(tools=router_tools),
                 )
 
-            return t.cast(AgenticProvider, self._provider).wrap_tools(
-                tools=router_tools,
-                execute_tool=tools_model._wrap_execute_tool_for_tool_router(
-                    session_id=session_id,
-                    modifiers=modifiers,
+            return t.cast(
+                TToolCollection,
+                t.cast(
+                    AgenticProvider[TTool, TToolCollection], self._provider
+                ).wrap_tools(
+                    tools=router_tools,
+                    execute_tool=tools_model._wrap_execute_tool_for_tool_router(
+                        session_id=session_id,
+                        modifiers=modifiers,
+                    ),
                 ),
             )
 
@@ -775,7 +803,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
-    ) -> ToolRouterSession[TProvider]:
+    ) -> ToolRouterSession[TTool, TToolCollection]:
         """
         Create a new tool router session for a user.
 
@@ -1071,7 +1099,7 @@ class ToolRouter(Resource, t.Generic[TProvider]):
             experimental=experimental_response,
         )
 
-    def use(self, session_id: str) -> ToolRouterSession[TProvider]:
+    def use(self, session_id: str) -> ToolRouterSession[TTool, TToolCollection]:
         """
         Retrieve and use an existing tool router session.
 

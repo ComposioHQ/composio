@@ -1,0 +1,150 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio toolkits list --limit 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio toolkits list --limit 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio toolkits list --limit 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio toolkits list --limit 1
+│
+◒  Fetching toolkits...
+◇  Fetching toolkits...
+│
+●  Listing 1 of 984 toolkits
+│
+│  Name                 Slug                 Tools   Triggers   Description
+│  Gmail                gmail                40      2          Gmail is Go
+ogle’s email service, featuring spam...
+│
+◇  To view details of a toolkit:
+│  > composio toolkits info "gmail"
+>
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────

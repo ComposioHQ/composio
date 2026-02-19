@@ -7,10 +7,12 @@ and execute complex workflows.
 """
 
 import asyncio
+
 from agents import Agent, Runner
+from composio_openai_agents import OpenAIAgentsProvider
+
 from composio import Composio, after_execute, before_execute
 from composio.types import ToolExecuteParams, ToolExecutionResponse
-from composio_openai_agents import OpenAIAgentsProvider
 
 
 async def main():

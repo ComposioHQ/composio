@@ -19,6 +19,7 @@ import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, ToolRouterSession } from './types/toolRouter.types';
+import { CONFIG_DEFAULTS } from './utils/config-defaults';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -249,8 +250,9 @@ export class Composio<
       baseURL: baseURLParsed,
       apiKey: apiKeyParsed,
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
-      allowTracking: config?.allowTracking ?? true,
-      autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
+      allowTracking: config?.allowTracking ?? CONFIG_DEFAULTS.allowTracking,
+      autoUploadDownloadFiles:
+        config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles,
       provider: config?.provider ?? this.provider,
     };
 

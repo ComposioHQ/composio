@@ -1,89 +1,115 @@
-import { source, examplesSource } from '@/lib/source';
+import { source, cookbooksSource, referenceSource, toolkitsSource } from '@/lib/source';
+import type { ReactNode } from 'react';
 
 export const revalidate = false;
 
+// Fumadocs page tree node types
+interface PageNode {
+  type: 'page';
+  name: ReactNode;
+  url: string;
+}
+
+interface SeparatorNode {
+  type: 'separator';
+  name?: ReactNode;
+}
+
+interface FolderNode {
+  type: 'folder';
+  name: ReactNode;
+  index?: PageNode;
+  children: TreeNode[];
+}
+
+type TreeNode = PageNode | SeparatorNode | FolderNode;
+
+/** Extract plain text from a ReactNode (handles strings, numbers, skips elements). */
+function nodeText(name: ReactNode): string | null {
+  if (typeof name === 'string') return name;
+  if (typeof name === 'number') return String(name);
+  return null;
+}
+
+/**
+ * Walk the fumadocs page tree and generate a markdown index.
+ * Separators become ## headings, pages become URL entries, folders recurse.
+ */
+function walkPageTree(nodes: TreeNode[], depth = 2): string {
+  const lines: string[] = [];
+
+  for (const node of nodes) {
+    switch (node.type) {
+      case 'separator': {
+        const text = nodeText(node.name);
+        if (text) {
+          lines.push('', `${'#'.repeat(depth)} ${text}`, '');
+        }
+        break;
+      }
+
+      case 'page':
+        lines.push(`- https://docs.composio.dev${node.url}.md`);
+        break;
+
+      case 'folder': {
+        // Folders are sub-sections within separator sections, so one level deeper
+        const text = nodeText(node.name);
+        if (text) {
+          lines.push('', `${'#'.repeat(depth + 1)} ${text}`, '');
+        }
+        // If folder has an index page, include it
+        if (node.index) {
+          lines.push(`- https://docs.composio.dev${node.index.url}.md`);
+        }
+        // Recurse into children
+        if (node.children.length > 0) {
+          lines.push(walkPageTree(node.children, depth + 1));
+        }
+        break;
+      }
+    }
+  }
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatPage(page: any) {
+  return `- https://docs.composio.dev${page.url}.md`;
+}
+
 export async function GET() {
   try {
-    const docsPages = source.getPages();
-    const examplesPages = examplesSource.getPages();
+    const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
 
-    // Group docs pages by directory
-    const groupedDocs = new Map<string, typeof docsPages>();
-
-    for (const page of docsPages) {
-      const slugs = page.slugs;
-      // Get category from first slug if nested, otherwise 'core'
-      const category = slugs.length > 1 ? slugs[0] : 'core';
-      if (!groupedDocs.has(category)) {
-        groupedDocs.set(category, []);
-      }
-      groupedDocs.get(category)!.push(page);
-    }
-
-    // Format page as simple URL (like Cursor's llms.txt)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const formatPage = (page: any) =>
-      `- https://composio.dev${page.url}.md`;
-
-    // Build sections
-    const coreDocs = groupedDocs.get('core') || [];
-    const providerDocs = groupedDocs.get('providers') || [];
-    const modifierDocs = groupedDocs.get('modify-tool-behavior') || [];
-    const troubleshootingDocs = groupedDocs.get('troubleshooting') || [];
-    const migrationDocs = groupedDocs.get('migration-guide') || [];
-    const nativeToolsDocs = groupedDocs.get('native-tools') || [];
-    const mcpDocs = groupedDocs.get('mcp') || [];
-    const featuresDocs = groupedDocs.get('features') || [];
+    const cookbooksPages = cookbooksSource.getPages();
+    const referencePages = referenceSource.getPages();
+    const toolkitsPages = toolkitsSource.getPages();
 
     const index = `# Composio Documentation
 
-> Composio is the simplest way to connect AI agents to external tools and services. Build AI agents with 800+ tools across GitHub, Slack, Gmail, and more.
+> Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
 
-## Getting Started
+> **For AI agents:** Composio supports two integration modes. **Native Tools:** use \`composio.create(user_id)\` + \`session.tools()\` with a provider package (e.g. \`composio_openai\`, \`@composio/openai\`). **MCP:** use \`composio.create(user_id)\` + \`session.mcp.url\` with any MCP-compatible client — no provider package needed. See any page's .md endpoint for full usage instructions.
 
-${coreDocs.filter(p => ['quickstart', 'index', 'authenticating-tools', 'executing-tools', 'fetching-tools'].some(s => p.slugs.includes(s))).map(formatPage).join('\n')}
+${docsTree}
 
-## Authentication & Users
+## Cookbooks
 
-${coreDocs.filter(p => ['connected-accounts', 'user-management', 'custom-auth-configs', 'programmatic-auth-configs', 'custom-auth-params'].some(s => p.slugs.includes(s))).map(formatPage).join('\n')}
+${cookbooksPages.map(formatPage).join('\n')}
 
-## Tools & Execution
+## API Reference
 
-${coreDocs.filter(p => ['custom-tools', 'toolkit-versioning', 'capabilities'].some(s => p.slugs.includes(s))).map(formatPage).join('\n')}
-${nativeToolsDocs.length > 0 ? nativeToolsDocs.map(formatPage).join('\n') : ''}
+${referencePages.map(formatPage).join('\n')}
 
-## MCP (Model Context Protocol)
+## Toolkits
 
-${mcpDocs.map(formatPage).join('\n')}
-
-## Triggers
-
-${coreDocs.filter(p => ['triggers'].some(s => p.slugs.includes(s))).map(formatPage).join('\n')}
-
-## Modify Tool Behavior
-
-${modifierDocs.map(formatPage).join('\n')}
-
-## Providers
-
-${providerDocs.map(formatPage).join('\n')}
-
-## Troubleshooting
-
-${troubleshootingDocs.map(formatPage).join('\n')}
-${coreDocs.filter(p => ['cli', 'debugging-info'].some(s => p.slugs.includes(s))).map(formatPage).join('\n')}
-
-## Migration Guides
-
-${migrationDocs.map(formatPage).join('\n')}
-
-## Examples
-
-${examplesPages.map(formatPage).join('\n')}
+${toolkitsPages.map(formatPage).join('\n')}
 
 ## Full Documentation
 
-- https://composio.dev/llms-full.txt
+- https://docs.composio.dev/llms-full.txt
 `;
 
     return new Response(index, {

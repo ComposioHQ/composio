@@ -1,0 +1,107 @@
+name: Changelog Notification
+
+on:
+  push:
+    branches: [next]
+    paths:
+      - 'docs/content/changelog/**.mdx'
+
+jobs:
+  notify-changelog:
+    name: Send Changelog Notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Fetch full history to detect changes across all commits in push
+
+      - name: Get Changed Changelog Files
+        id: changed-files
+        run: |
+          # Get the commit range for this push
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          
+          echo "Push event details:"
+          echo "  Before: $BEFORE"
+          echo "  After: $AFTER"
+          echo "  Commits in push: $(git rev-list --count "$BEFORE".."$AFTER" 2>/dev/null || echo "N/A")"
+          
+          # Handle first push to branch (before SHA is all zeros)
+          if [[ "$BEFORE" =~ ^0+$ ]]; then
+            echo "First push to branch detected, checking only the latest commit"
+            CHANGED_FILES=$(git diff --name-only --diff-filter=AM HEAD^..HEAD | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          else
+            echo "Checking all commits in push range: $BEFORE..$AFTER"
+            # Get the list of added/modified changelog files across all commits in this push
+            CHANGED_FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          fi
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changelog files changed in this push"
+            echo "has_changelog=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changelog files found:"
+            echo "$CHANGED_FILES"
+            # Get the first changelog file (in case multiple were added)
+            CHANGELOG_FILE=$(echo "$CHANGED_FILES" | head -n 1)
+            echo ""
+            echo "Processing changelog: $CHANGELOG_FILE"
+            echo "changelog_file=$CHANGELOG_FILE" >> $GITHUB_OUTPUT
+            echo "has_changelog=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract Changelog Metadata
+        if: steps.changed-files.outputs.has_changelog == 'true'
+        id: extract-metadata
+        run: |
+          CHANGELOG_FILE="${{ steps.changed-files.outputs.changelog_file }}"
+          
+          # Extract title from frontmatter
+          TITLE=$(grep "^title:" "$CHANGELOG_FILE" | sed "s/^title: *['\"]*//" | sed "s/['\"]* *$//")
+          
+          # Extract date from frontmatter
+          DATE=$(grep "^date:" "$CHANGELOG_FILE" | sed "s/^date: *['\"]*//" | sed "s/['\"]* *$//")
+          
+          # Format date for URL (YYYY-MM-DD to YYYY/MM/DD)
+          URL_DATE=$(echo "$DATE" | sed 's/-/\//g')
+          
+          # Build the changelog URL
+          CHANGELOG_URL="https://docs.composio.dev/docs/changelog/${URL_DATE}"
+          
+          # Get the commit author who added/modified this changelog
+          AUTHOR=$(git log -1 --format='%an' -- "$CHANGELOG_FILE")
+          AUTHOR_EMAIL=$(git log -1 --format='%ae' -- "$CHANGELOG_FILE")
+          
+          # Build properly escaped JSON payload using jq
+          SLACK_PAYLOAD=$(jq -n \
+            --arg title "$TITLE" \
+            --arg date "$DATE" \
+            --arg url "$CHANGELOG_URL" \
+            --arg author "$AUTHOR" \
+            '{text: "*New Changelog Published*\n\n*\($title)*\n\nDate: \($date)\n<\($url)|View Changelog>\nAuthor: \($author)"}')
+          
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+          echo "url=$CHANGELOG_URL" >> $GITHUB_OUTPUT
+          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+          echo "author_email=$AUTHOR_EMAIL" >> $GITHUB_OUTPUT
+          
+          # Save the JSON payload for the next step
+          echo "slack_payload<<EOF" >> $GITHUB_OUTPUT
+          echo "$SLACK_PAYLOAD" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "📝 Changelog Title: $TITLE"
+          echo "📅 Date: $DATE"
+          echo "🔗 URL: $CHANGELOG_URL"
+          echo "👤 Author: $AUTHOR ($AUTHOR_EMAIL)"
+
+      - name: Send Slack Notification
+        if: steps.changed-files.outputs.has_changelog == 'true'
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        with:
+          payload: ${{ steps.extract-metadata.outputs.slack_payload }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CUSTOMER_COMMS_WEBHOOK_URL }}

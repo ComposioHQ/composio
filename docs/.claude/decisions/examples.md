@@ -29,7 +29,7 @@ Based on user interview analysis from #user-interviews Slack channel (50 use cas
 |---------|---------------------|
 | Build a PR review agent with GitHub and Claude | Multi-tool (GitHub + AI), code context |
 | Deploy an email assistant that drafts responses | Email integration, response generation |
-| Create a Slack bot with access to 250+ tools | Tool router, many toolkits |
+| Create a Slack bot with access to 1000+ tools | Tool router, many toolkits |
 | Run a research agent that searches, scrapes, and summarizes | Web tools, chaining outputs |
 | Build an AI SDR that enriches leads automatically | CRM + web research, data enrichment |
 | Build an agentic RAG agent over your docs | RAG + tool calling combined |

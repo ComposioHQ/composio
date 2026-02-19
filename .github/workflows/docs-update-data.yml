@@ -1,0 +1,85 @@
+name: Docs - Update Data
+
+on:
+  repository_dispatch:
+    types: [apollo-production-deploy]
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log trigger source
+        run: |
+          echo "Workflow triggered by: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "Triggered by Apollo production deployment"
+            echo "Hermes commit: ${{ github.event.client_payload.hermes_commit }}"
+            echo "Timestamp: ${{ github.event.client_payload.timestamp }}"
+          fi
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Generate toolkits data
+        run: bun run generate:toolkits
+
+      - name: Fetch OpenAPI spec
+        run: bun run scripts/fetch-openapi.mjs
+
+      - name: Generate API index pages
+        run: bun run generate:api-index
+
+      - name: Check for changes
+        id: changes
+        run: |
+          cd ..
+          git add -N docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ 2>/dev/null || true
+          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ 2>/dev/null; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git diff --stat docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ 2>/dev/null || true
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725 # v8.0.0
+        with:
+          commit-message: 'docs: update toolkits and API data'
+          title: 'docs: Update toolkits and API data'
+          body: |
+            Auto-generated update from Apollo production deployment.
+
+            This PR updates:
+            - `docs/public/data/toolkits.json` - Full toolkit data
+            - `docs/public/data/toolkits-list.json` - Light toolkit list
+            - `docs/public/openapi.json` - OpenAPI specification
+            - `docs/content/reference/api-reference/*.mdx` - API index pages
+
+            ${{ github.event_name == 'repository_dispatch' && format('Hermes commit: {0}', github.event.client_payload.hermes_commit) || '' }}
+          branch: docs/auto-update-data
+          base: next
+          add-paths: |
+            docs/public/data/
+            docs/public/openapi.json
+            docs/content/reference/api-reference/

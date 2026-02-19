@@ -6,6 +6,12 @@ export interface ParameterSchema {
   default?: unknown;
   example?: unknown;
   enum?: string[];
+  // Nested object properties (JSON Schema)
+  properties?: Record<string, ParameterSchema>;
+  // Required fields within this object
+  requiredFields?: string[];
+  // Array item schema
+  items?: ParameterSchema;
 }
 
 export interface Tool {
@@ -24,6 +30,11 @@ export interface Trigger {
   slug: string;
   name: string;
   description: string;
+  // Detailed fields fetched on-demand
+  type?: 'webhook' | 'poll';
+  config?: Record<string, ParameterSchema>;
+  payload?: Record<string, ParameterSchema>;
+  instructions?: string;
 }
 
 // Auth config field definition
@@ -52,21 +63,21 @@ export interface AuthConfigDetail {
   };
 }
 
-// Light version for landing page (no tools/triggers arrays)
+// Light version for landing page (only fields needed for listing)
 export interface ToolkitSummary {
   slug: string;
   name: string;
   logo: string | null;
-  description: string;
   category: string | null;
-  authSchemes: string[];
   toolCount: number;
   triggerCount: number;
-  version: string | null;
 }
 
 // Full version with tools, triggers, and auth config details
 export interface Toolkit extends ToolkitSummary {
+  description: string;
+  authSchemes: string[];
+  version: string | null;
   tools: Tool[];
   triggers: Trigger[];
   authConfigDetails?: AuthConfigDetail[];

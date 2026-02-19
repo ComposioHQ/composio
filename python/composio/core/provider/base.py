@@ -13,8 +13,8 @@ import typing_extensions as te
 if t.TYPE_CHECKING:
     from composio.core.models.tools import Modifiers, ToolExecutionResponse
 
-TTool = t.TypeVar("TTool", covariant=True)
-TToolCollection = t.TypeVar("TToolCollection", covariant=True)
+TTool = t.TypeVar("TTool")
+TToolCollection = t.TypeVar("TToolCollection")
 
 
 class ExecuteToolFn(t.Protocol):
@@ -69,5 +69,5 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
             "skip_defaults", self.__schema_skip_defaults__
         )
 
-    def set_execute_tool_fn(self, execute_tool_fn: ExecuteToolFn):
+    def set_execute_tool_fn(self, execute_tool_fn: ExecuteToolFn) -> None:
         self.execute_tool = execute_tool_fn

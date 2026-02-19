@@ -1,2 +1,2 @@
-export type { Platform } from './types';
+export type { Platform, Uint8ArrayEncoding } from './types';
 export { platform } from '#platform';

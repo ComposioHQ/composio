@@ -17,6 +17,7 @@ export * from './types/connectedAccountAuthStates.types';
 export * from './types/connectedAccounts.types';
 export * from './types/toolkit.types';
 export * from './types/triggers.types';
+export * from './types/webhookEvents.types';
 export * from './types/mcp.types';
 export * from './types/files.types';
 export * from './types/connectionRequest.types';

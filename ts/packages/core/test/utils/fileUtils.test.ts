@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils';
+import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils.node';
 import ComposioClient from '@composio/client';
-import * as uuid from '../../src/utils/uuid';
 
 // Mock the uuid module
 vi.mock('../../src/utils/uuid', () => ({

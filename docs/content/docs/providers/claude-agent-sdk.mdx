@@ -1,0 +1,111 @@
+---
+title: Claude Agent SDK
+description: Build an agent with the Claude Agent SDK and enable it to use 1000+ tools with Composio.
+keywords: [claude agent sdk, claude code]
+---
+
+The Claude Agent SDK provider transforms Composio tools into tools compatible with the [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk).
+
+<Callout type="info">
+Looking for the Claude Messages API? See the [Anthropic](/docs/providers/anthropic) provider page.
+</Callout>
+
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```bash
+pip install composio composio_claude_agent_sdk claude-agent-sdk
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/claude-agent-sdk @anthropic-ai/claude-agent-sdk
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+ANTHROPIC_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+import asyncio
+from composio import Composio
+from composio_claude_agent_sdk import ClaudeAgentSDKProvider
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server
+
+composio = Composio(provider=ClaudeAgentSDKProvider())
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+tool_server = create_sdk_mcp_server(name="composio", version="1.0.0", tools=tools)
+
+async def main():
+    options = ClaudeAgentOptions(
+        system_prompt="You are a helpful assistant",
+        permission_mode="bypassPermissions",
+        mcp_servers={"composio": tool_server},
+    )
+
+    async with ClaudeSDKClient(options=options) as client:
+        await client.query("Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")
+        async for msg in client.receive_response():
+            print(msg)
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="TypeScript">
+```js
+import { Composio } from '@composio/core';
+import { ClaudeAgentSDKProvider } from '@composio/claude-agent-sdk';
+import { createSdkMcpServer, query } from '@anthropic-ai/claude-agent-sdk';
+
+const composio = new Composio({
+    provider: new ClaudeAgentSDKProvider(),
+});
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+const toolServer = createSdkMcpServer({
+    name: "composio",
+    version: "1.0.0",
+    tools: tools,
+});
+
+for await (const content of query({
+    prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+    options: {
+        mcpServers: { composio: toolServer },
+        permissionMode: "bypassPermissions",
+    },
+})) {
+    if (content.type === "assistant") {
+        console.log("Claude:", content.message);
+    }
+}
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>

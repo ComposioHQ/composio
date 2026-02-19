@@ -1,12 +1,13 @@
-"""Test tool execution with toolkit versions."""
+"""Test tool execution with toolkit versions and argument serialization."""
 
 from unittest.mock import Mock, patch
 
 import pytest
+from pydantic import BaseModel, RootModel
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
-from composio.core.models.tools import Tools
+from composio.core.models.tools import Tools, _serialize_arguments, _needs_serialization
 from composio.exceptions import ToolVersionRequiredError
 
 
@@ -984,3 +985,134 @@ class TestToolExecution:
             mock_client.tools.execute.assert_called_once()
             call_args = mock_client.tools.execute.call_args
             assert call_args.kwargs["custom_connection_data"] == custom_connection
+
+
+class TestSerializeArguments:
+    """Test _serialize_arguments and _needs_serialization helpers."""
+
+    def test_plain_dict_returns_same_object(self):
+        """When no Pydantic models are present, return the original dict (no copy)."""
+        args = {"page_id": "abc-123", "title": "Hello"}
+        result = _serialize_arguments(args)
+        assert result is args
+
+    def test_needs_serialization_false_for_primitives(self):
+        assert not _needs_serialization({"s": "hello", "i": 42, "b": True})
+
+    def test_needs_serialization_true_for_basemodel(self):
+        class M(BaseModel):
+            x: int
+
+        assert _needs_serialization({"m": M(x=1)})
+
+    def test_basemodel_serialized(self):
+        class Block(BaseModel):
+            type: str
+            content: str
+
+        result = _serialize_arguments(
+            {"block": Block(type="paragraph", content="Hello")}
+        )
+        assert result == {"block": {"type": "paragraph", "content": "Hello"}}
+
+    def test_rootmodel_list_serialized(self):
+        class Block(BaseModel):
+            type: str
+
+        class BlockList(RootModel[list[Block]]):
+            pass
+
+        blocks = BlockList([Block(type="paragraph"), Block(type="heading_1")])
+        result = _serialize_arguments({"children": blocks})
+        assert result == {"children": [{"type": "paragraph"}, {"type": "heading_1"}]}
+
+    def test_list_of_models_serialized(self):
+        class Block(BaseModel):
+            type: str
+
+        result = _serialize_arguments(
+            {"children": [Block(type="paragraph"), Block(type="heading_1")]}
+        )
+        assert result == {"children": [{"type": "paragraph"}, {"type": "heading_1"}]}
+
+    def test_nested_dict_with_models(self):
+        class Inner(BaseModel):
+            value: int
+
+        result = _serialize_arguments({"outer": {"inner": Inner(value=42)}})
+        assert result == {"outer": {"inner": {"value": 42}}}
+
+    def test_execute_tool_serializes_pydantic_arguments(self):
+        """Regression test for PLEN-1514: Pydantic models in arguments must be
+        serialized to plain dicts before being sent to the API."""
+        mock_client = Mock()
+        mock_provider = Mock()
+        mock_provider.name = "test_provider"
+
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            toolkit_versions={"notion": "latest"},
+        )
+
+        notion_tool = Tool(
+            name="Test NOTION_REPLACE_PAGE_CONTENT",
+            slug="NOTION_REPLACE_PAGE_CONTENT",
+            description="Test tool",
+            input_parameters={},
+            output_parameters={},
+            available_versions=["v1.0.0"],
+            version="v1.0.0",
+            scopes=[],
+            status="active",
+            toolkit=tool_list_response.ItemToolkit(
+                name="Notion", slug="notion", logo=""
+            ),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["v1.0.0"],
+                displayName="Test NOTION_REPLACE_PAGE_CONTENT",
+                version="v1.0.0",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+        class Block(BaseModel):
+            type: str
+            content: str
+
+        with patch.object(
+            tools, "get_raw_composio_tool_by_slug", return_value=notion_tool
+        ):
+            mock_response = Mock()
+            mock_response.model_dump.return_value = {
+                "data": {"result": "success"},
+                "error": None,
+                "successful": True,
+            }
+            mock_client.tools.execute.return_value = mock_response
+
+            tools._execute_tool(
+                slug="NOTION_REPLACE_PAGE_CONTENT",
+                arguments={
+                    "page_id": "abc-123",
+                    "children": [
+                        Block(type="paragraph", content="Hello from composio"),
+                    ],
+                },
+                dangerously_skip_version_check=True,
+            )
+
+            call_args = mock_client.tools.execute.call_args
+            sent_arguments = call_args.kwargs["arguments"]
+            assert sent_arguments == {
+                "page_id": "abc-123",
+                "children": [
+                    {"type": "paragraph", "content": "Hello from composio"},
+                ],
+            }
+            for child in sent_arguments["children"]:
+                assert not isinstance(child, BaseModel)

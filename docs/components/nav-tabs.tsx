@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 const tabs = [
   { href: '/docs', label: 'Docs', exact: true },
   { href: '/docs/api', label: 'API' },
-  { href: '/docs/examples', label: 'Examples' },
+  { href: '/cookbooks', label: 'Cookbooks' },
 ];
 
 export function NavTabs() {
@@ -16,7 +16,7 @@ export function NavTabs() {
     if (exact) {
       // For "Docs", only active if exactly /docs or /docs/ but not /docs/api
       return pathname === href || pathname === `${href}/` || 
-        (pathname.startsWith('/docs') && !pathname.startsWith('/docs/api') && !pathname.startsWith('/docs/examples'));
+        (pathname.startsWith('/docs') && !pathname.startsWith('/docs/api'));
     }
     return pathname.startsWith(href);
   };

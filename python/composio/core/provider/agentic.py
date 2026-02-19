@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing as t
 
 from composio.client.types import Tool
@@ -20,14 +22,11 @@ class AgenticProviderExecuteFn(t.Protocol):
         ...
 
 
-class AgenticProvider(BaseProvider, t.Generic[TTool, TToolCollection]):
+class AgenticProvider(BaseProvider[TTool, TToolCollection]):
     """
     Base class for all agentic providers. This class is not meant to be used
     directly but rather to be extended by concrete provider implementations.
     """
-
-    tool_type: t.Type[TTool]
-    tool_collection_type: t.Type[TToolCollection]
 
     def __init_subclass__(cls, name: str) -> None:
         cls.name = name

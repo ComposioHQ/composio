@@ -1,0 +1,330 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent tool
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent tool
+> composio tools info NONEXISTENT_TOOL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent tool
+> composio tools info NONEXISTENT_TOOL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent tool
+> composio tools info NONEXISTENT_TOOL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent tool
+> composio tools info NONEXISTENT_TOOL
+│
+◒  Fetching tool "NONEXISTENT_TOOL"...
+▲  Fetching tool "NONEXISTENT_TOOL"...
+│
+■  Tool "NONEXISTENT_TOOL" not found.
+│
+◇  Did you mean?
+│    COMPOSIO_CHECK_ACTIVE_CONNECTION — Deprecated: use check active connec
+tions instead for bulk operations. check active connection status for a too
+lkit or specific connected account id. returns connection details if active
+, or required parameters for establishing connection if none exists. active
+ connections enable agent actions on the toolkit.
+│    COMPOSIO_CHECK_ACTIVE_CONNECTIONS — Check active connection status for
+ multiple toolkits or specific connected account ids. returns connection de
+tails if active, or required parameters for establishing connection if none
+ exists. active connections enable agent actions on toolkits.
+│    COMPOSIO_CREATE_UPDATE_RECIPE — Convert executed workflow into a reusa
+ble notebook. Only use when workflow is complete or user explicitly request
+s.
+│
+│  --- DESCRIPTION FORMAT (MARKDOWN) - MUST BE NEUTRAL ---
+│
+│  Description is for ANY user of this recipe, not just the creator. Keep i
+t generic.
+│  - NO PII (no real emails, names, channel names, repo names)
+│  - NO user-specific defaults (defaults go in defaults_for_required_parame
+ters only)
+│  - Use placeholder examples only
+│
+│  Generate rich markdown with these sections:
+│
+│  ## Overview
+│  [2-3 sentences: what it does, what problem it solves]
+│
+│  ## How It Works
+│  [End-to-end flow in plain language]
+│
+│  ## Key Features
+│  - [Feature 1]
+│  - [Feature 2]
+│
+│  ## Step-by-Step Flow
+│  1. **[Step]**: [What happens]
+│  2. **[Step]**: [What happens]
+│
+│  ## Apps & Integrations
+│  | App | Purpose |
+│  |-----|---------|
+│  | [App] | [Usage] |
+│
+│  ## Inputs Required
+│  | Input | Description | Format |
+────────────────────────────────────────────────────────────────────────────────

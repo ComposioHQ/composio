@@ -160,6 +160,40 @@ describe('Triggers.verifyWebhook', () => {
         status: 'ACTIVE',
       });
     });
+
+    it('should detect V3 payload with non-trigger event type (e.g., connected_account.expired)', async () => {
+      // This test uses realistic connection metadata (project_id, org_id)
+      // instead of fabricated trigger metadata, verifying that V3 detection
+      // works for events with different metadata shapes.
+      const payload = {
+        id: 'msg_abc123',
+        timestamp: new Date().toISOString(),
+        type: 'composio.connected_account.expired',
+        metadata: {
+          project_id: 'pr_koucdrMIwRsf',
+          org_id: '4a4ded8f-d3ae-4dea-a229-c30234298b05',
+        },
+        data: {
+          toolkit: { slug: 'gmail' },
+          id: 'ca__IvSeEzEBjVt',
+          user_id: 'test-user',
+          status: 'EXPIRED',
+        },
+      };
+      const payloadStr = JSON.stringify(payload);
+      const signature = createSignature(testWebhookId, testTimestamp, payloadStr, testSecret);
+
+      const result = await triggers.verifyWebhook({
+        payload: payloadStr,
+        signature,
+        secret: testSecret,
+        id: testWebhookId,
+        timestamp: testTimestamp,
+      });
+
+      expect(result.version).toBe(WebhookVersions.V3);
+      expect(result.rawPayload).toEqual(payload);
+    });
   });
 
   describe('successful verification with V2 payload', () => {
@@ -502,6 +536,30 @@ describe('Triggers.verifyWebhook', () => {
           timestamp: testTimestamp,
         })
       ).rejects.toThrow('does not match any known version');
+    });
+
+    it('should include detailed schema errors when payload does not match any version', async () => {
+      const invalidPayload = JSON.stringify({ invalid: 'data' });
+      const signature = createSignature(testWebhookId, testTimestamp, invalidPayload, testSecret);
+
+      try {
+        await triggers.verifyWebhook({
+          payload: invalidPayload,
+          signature,
+          secret: testSecret,
+          id: testWebhookId,
+          timestamp: testTimestamp,
+        });
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ComposioWebhookPayloadError);
+        const webhookError = error as ComposioWebhookPayloadError;
+        expect(webhookError.cause).toBeDefined();
+        // The cause should contain v1Error, v2Error, and v3Error with schema validation messages
+        expect((webhookError.cause as any).v1Error).toBeDefined();
+        expect((webhookError.cause as any).v2Error).toBeDefined();
+        expect((webhookError.cause as any).v3Error).toBeDefined();
+      }
     });
   });
 

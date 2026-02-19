@@ -1,0 +1,150 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio auth-configs list --limit 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio auth-configs list --limit 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio auth-configs list --limit 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio auth-configs list --limit 1
+│
+◒  Fetching auth configs...
+◇  Fetching auth configs...
+│
+●  Listing 1 of 3 auth configs
+│
+│  Name                     Id               Toolkit        Auth Scheme
+Type       Conns   Status
+│  auth_config_github_17... ac_<REDACTED>    github         OAUTH2
+default    2       ENABLED
+│
+◇  To view details of an auth config:
+│  > composio auth-configs info "ac_<REDACTED>"
+>
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────

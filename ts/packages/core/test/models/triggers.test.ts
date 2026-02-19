@@ -978,4 +978,275 @@ describe('Triggers', () => {
       expect(callback2).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('parsePusherPayload (V1/V2/V3 format support)', () => {
+    const mockCallback = vi.fn();
+
+    // V1 mock payload matching WebhookPayloadV1Schema
+    const mockV1Payload = {
+      trigger_name: 'GMAIL_NEW_GMAIL_MESSAGE',
+      connection_id: 'conn-123',
+      trigger_id: 'trigger-456',
+      payload: { subject: 'Test email', from: 'test@example.com' },
+      log_id: 'log-789',
+    };
+
+    // V2 mock payload matching WebhookPayloadV2Schema
+    const mockV2Payload = {
+      type: 'GMAIL_NEW_GMAIL_MESSAGE',
+      timestamp: '2026-01-28T12:00:00Z',
+      log_id: 'log-789',
+      data: {
+        connection_id: 'conn-uuid',
+        connection_nano_id: 'conn-123',
+        trigger_nano_id: 'trigger-456',
+        trigger_id: 'trigger-uuid',
+        user_id: 'user-789',
+        subject: 'Test email',
+        from: 'test@example.com',
+      },
+    };
+
+    // V3 mock payload matching WebhookPayloadV3Schema
+    const mockV3Payload = {
+      id: 'msg-123',
+      timestamp: '2026-01-28T12:00:00Z',
+      type: 'composio.trigger.message',
+      metadata: {
+        log_id: 'log-789',
+        trigger_slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+        trigger_id: 'trigger-456',
+        connected_account_id: 'conn-123',
+        auth_config_id: 'auth-456',
+        user_id: 'user-789',
+      },
+      data: { subject: 'Test email', from: 'test@example.com' },
+    };
+
+    beforeEach(() => {
+      mockCallback.mockClear();
+      vi.mocked(logger.debug).mockClear();
+      vi.mocked(logger.warn).mockClear();
+    });
+
+    it('should parse V3 Pusher payload', async () => {
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV3Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'trigger-456',
+          triggerSlug: 'GMAIL_NEW_GMAIL_MESSAGE',
+          userId: 'user-789',
+          toolkitSlug: 'GMAIL',
+          payload: { subject: 'Test email', from: 'test@example.com' },
+          metadata: expect.objectContaining({
+            id: 'trigger-456',
+            triggerSlug: 'GMAIL_NEW_GMAIL_MESSAGE',
+            connectedAccount: expect.objectContaining({
+              id: 'conn-123',
+              userId: 'user-789',
+              authConfigId: 'auth-456',
+            }),
+          }),
+        })
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V3 format');
+    });
+
+    it('should parse V2 Pusher payload', async () => {
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV2Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'trigger-456',
+          uuid: 'trigger-uuid',
+          triggerSlug: 'GMAIL_NEW_GMAIL_MESSAGE',
+          userId: 'user-789',
+          toolkitSlug: 'GMAIL',
+          metadata: expect.objectContaining({
+            id: 'trigger-456',
+            uuid: 'trigger-uuid',
+            connectedAccount: expect.objectContaining({
+              id: 'conn-123',
+              uuid: 'conn-uuid',
+              userId: 'user-789',
+            }),
+          }),
+        })
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V2 format');
+    });
+
+    it('should parse V1 Pusher payload', async () => {
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV1Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'trigger-456',
+          triggerSlug: 'GMAIL_NEW_GMAIL_MESSAGE',
+          toolkitSlug: 'GMAIL',
+          payload: { subject: 'Test email', from: 'test@example.com' },
+          metadata: expect.objectContaining({
+            id: 'trigger-456',
+            triggerSlug: 'GMAIL_NEW_GMAIL_MESSAGE',
+            connectedAccount: expect.objectContaining({
+              id: 'conn-123',
+            }),
+          }),
+        })
+      );
+      expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V1 format');
+    });
+
+    it('should parse legacy TriggerData payload for backwards compatibility', async () => {
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockTriggerData);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(mockCallback).toHaveBeenCalledWith(mockIncomingTriggerPayload);
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Parsed Pusher payload as legacy TriggerData format'
+      );
+    });
+
+    it('should log warning for unknown payload format and attempt legacy transformation', async () => {
+      const unknownPayload = {
+        someField: 'value',
+        anotherField: 123,
+      };
+
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      // This should not throw, but should log a warning
+      expect(() => filterCallback(unknownPayload)).not.toThrow();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Unknown Pusher payload format')
+      );
+    });
+
+    it('should handle non-string values in fallback payload without crashing', async () => {
+      const malformedPayload = {
+        toolkitSlug: 123, // number instead of string
+        triggerSlug: { foo: 1 }, // object instead of string
+        id: null,
+        userId: undefined,
+        trigger_name: 456, // number instead of string for fallback field
+      };
+
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      // Should not throw, even with non-string values
+      expect(() => filterCallback(malformedPayload)).not.toThrow();
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+
+      // The callback should receive a payload with string values that are safe to use with string methods
+      const receivedPayload = mockCallback.mock.calls[0][0];
+      expect(typeof receivedPayload.toolkitSlug).toBe('string');
+      expect(typeof receivedPayload.triggerSlug).toBe('string');
+      expect(typeof receivedPayload.id).toBe('string');
+      expect(typeof receivedPayload.userId).toBe('string');
+
+      // Verify that calling toLowerCase() doesn't crash (this is what shouldSendTriggerAfterFilters does)
+      expect(() => receivedPayload.toolkitSlug.toLowerCase()).not.toThrow();
+      expect(() => receivedPayload.triggerSlug.toLowerCase()).not.toThrow();
+    });
+
+    it('should safely convert various non-string types in fallback payload', async () => {
+      const payloadWithVariousTypes = {
+        id: 12345, // number
+        uuid: true, // boolean
+        toolkitSlug: ['array'], // array
+        triggerSlug: { nested: 'object' }, // object
+        userId: Symbol('symbol'), // symbol - will convert to 'Symbol(symbol)'
+        appName: null, // null
+        trigger_name: undefined, // undefined
+      };
+
+      await triggers.subscribe(mockCallback);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      // Should not throw
+      expect(() => filterCallback(payloadWithVariousTypes)).not.toThrow();
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+
+      const receivedPayload = mockCallback.mock.calls[0][0];
+
+      // All values should be strings
+      expect(typeof receivedPayload.id).toBe('string');
+      expect(typeof receivedPayload.uuid).toBe('string');
+      expect(typeof receivedPayload.toolkitSlug).toBe('string');
+      expect(typeof receivedPayload.triggerSlug).toBe('string');
+      expect(typeof receivedPayload.userId).toBe('string');
+
+      // Numeric ID should be converted to string
+      expect(receivedPayload.id).toBe('12345');
+    });
+
+    it('should filter V3 payloads correctly by triggerId', async () => {
+      const filters = { triggerId: 'trigger-456' };
+      await triggers.subscribe(mockCallback, filters);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV3Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+    });
+
+    it('should filter V3 payloads correctly and reject non-matching triggerId', async () => {
+      const filters = { triggerId: 'wrong-trigger-id' };
+      await triggers.subscribe(mockCallback, filters);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV3Payload);
+
+      expect(mockCallback).not.toHaveBeenCalled();
+    });
+
+    it('should filter V2 payloads by toolkit', async () => {
+      const filters = { toolkits: ['GMAIL'] };
+      await triggers.subscribe(mockCallback, filters);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV2Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+    });
+
+    it('should filter V1 payloads by triggerSlug', async () => {
+      const filters = { triggerSlug: ['GMAIL_NEW_GMAIL_MESSAGE'] };
+      await triggers.subscribe(mockCallback, filters);
+      const subscribeCall = vi.mocked(mockPusherService.subscribe).mock.calls[0];
+      const filterCallback = subscribeCall[0];
+
+      filterCallback(mockV1Payload);
+
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+    });
+  });
 });

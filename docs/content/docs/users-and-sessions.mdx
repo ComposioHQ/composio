@@ -1,19 +1,44 @@
 ---
-title: Users and sessions
-description: Understand how Tool Router scopes tools and connections per user
-keywords: [session, user id, enable toolkits, disable toolkits]
+title: Users & Sessions
+description: How Composio scopes tools and connections to your users
+keywords: [session, user id, concepts]
 ---
 
-A **user ID** is an identifier from your system (database ID, UUID, or any unique string) that scopes connected accounts and tool access to a specific user. User IDs can represent individuals, teams, or organizations. See [User Management](/docs/user-management) for patterns.
+When building AI agents for multiple users, each user needs their own connections and context. This is represented through **users** and **sessions**.
 
-A **session** is an ephemeral configuration that combines:
-- Which user's connected accounts to use
-- Which toolkits are available
-- Which auth configs to use
+## Users
 
-Tool Router's meta-tools are the same for everyone. The session determines the context they operate within.
+A user is an identifier from your app. When someone connects their Gmail or GitHub, that connection is stored under their user ID, so tools always run with the right authentication. Every tool execution and authorization uses the user ID to identify the context. Connections are fully isolated between user IDs.
 
-## Creating a session
+<Accordions>
+<Accordion title="Best practices for User IDs">
+- **Recommended:** Database UUID or primary key (`user.id`)
+- **Acceptable:** Unique username (`user.username`)
+- **Avoid:** Email addresses (they can change)
+- **Never:** `default` in production (exposes other users' data)
+</Accordion>
+</Accordions>
+
+A user can have multiple connections to the same toolkit.
+Let's say you want to allow users to connect both their work and personal email. You can represent the user with the same user ID but differentiate between the two with the connected
+account ID.
+
+Here is a detailed guide on how to manage such connections:
+<Card icon={<BookOpen />} title="Managing Multiple Connections" href="/docs/managing-multiple-connected-accounts" description="Handle multiple accounts per toolkit for a single user" />
+
+Triggers are scoped to a connected account. When you create a trigger, it's tied to a specific user's connection:
+<Card icon={<Zap />} title="Triggers" href="/docs/triggers" description="Event-driven payloads from connected apps" />
+
+
+## Sessions
+
+A session is an ephemeral configuration. You specify:
+
+- Which user's authorization and data the agent will access
+- What toolkits are enabled or disabled
+- What authentication method, scopes, and credentials to use
+
+### Creating a session
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -31,241 +56,24 @@ const session = await composio.create("user_123");
 </Tab>
 </Tabs>
 
-### Enabling toolkits
+### Session methods
 
-Restrict the session to specific toolkits:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-# Using array format
-session = composio.create(
-    user_id="user_123",
-    toolkits=["github", "gmail", "slack"]
-)
-
-# Using object format with enable key
-session = composio.create(
-    user_id="user_123",
-    toolkits={"enable": ["github", "gmail", "slack"]}
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-// Using array format
-const session = await composio.create("user_123", {
-  toolkits: ["github", "gmail", "slack"],
-});
-
-// Using object format with enable key
-const session2 = await composio.create("user_123", {
-  toolkits: { enable: ["github", "gmail", "slack"] },
-});
-```
-</Tab>
-</Tabs>
-
-### Disabling toolkits
-
-Keep all toolkits enabled except specific ones:
+Once created, a session provides methods to get tools and manage connections:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
-    user_id="user_123",
-    toolkits={"disable": ["exa", "firecrawl"]}
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create("user_123", {
-  toolkits: { disable: ["exa", "firecrawl"] },
-});
-```
-</Tab>
-</Tabs>
-
-### Custom auth configs
-
-Use your own OAuth credentials instead of Composio's defaults:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-session = composio.create(
-    user_id="user_123",
-    auth_configs={
-        "github": "ac_your_github_config",
-        "slack": "ac_your_slack_config"
-    }
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create("user_123", {
-  authConfigs: {
-    github: "ac_your_github_config",
-    slack: "ac_your_slack_config",
-  },
-});
-```
-</Tab>
-</Tabs>
-
-See [White-labeling authentication](/docs/guides/white-labeling-authentication) for branding, or [Using custom auth configs](/docs/guides/using-custom-auth-configuration) for toolkits that require your own credentials.
-
-## Connected accounts
-
-Connected accounts are stored in Composio and persist across sessions. When a user connects their GitHub account in one session, it remains available in future sessions. Sessions configure *which* connections to use, but don't own the connections themselves.
-
-### Account selection
-
-If a user has multiple connected accounts for the same toolkit, you can specify which one to use:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-session = composio.create(
-    user_id="user_123",
-    connected_accounts={
-        "gmail": "ca_work_gmail",
-        "github": "ca_personal_github"
-    }
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create("user_123", {
-  connectedAccounts: {
-    gmail: "ca_work_gmail",
-    github: "ca_personal_github",
-  },
-});
-```
-</Tab>
-</Tabs>
-
-### Precedence
-
-When executing a tool, Tool Router selects the connected account in this order:
-
-1. `connectedAccounts` override if provided in session config
-2. `authConfigs` override - finds or creates connection on that config
-3. Auth config previously created by Tool Router for this toolkit
-4. Creates new auth config using Composio managed auth (tagged as Tool Router created)
-5. Error if no Composio managed auth scheme exists for the toolkit
-
-If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
-
-## Session methods
-
-### mcp
-
-Get the MCP server URL to use with any MCP-compatible client.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-mcp_url = session.mcp.url
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
-// ---cut---
-const { mcp } = session;
-console.log(mcp.url);
-```
-</Tab>
-</Tabs>
-
-For framework examples, see provider-specific documentation like [OpenAI Agents](/docs/providers/openai-agents) or [Vercel AI SDK](/docs/providers/vercel).
-
-### tools()
-
-Get native tools from the session for use with AI frameworks.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
+# Get tools for your AI framework
 tools = session.tools()
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
-// ---cut---
-const tools = await session.tools();
-```
-</Tab>
-</Tabs>
 
-### authorize()
+# Get MCP server URL
+mcp_url = session.mcp.url
 
-Manually authenticate a user to a toolkit outside of the chat flow.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
+# Authenticate a user to a toolkit
 connection_request = session.authorize("github")
 
-print(connection_request.redirect_url)
-
-connected_account = connection_request.wait_for_connection()
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
-// ---cut---
-const connectionRequest = await session.authorize("github", {
-  callbackUrl: "https://myapp.com/callback",
-});
-
-console.log(connectionRequest.redirectUrl);
-
-const connectedAccount = await connectionRequest.waitForConnection();
-```
-</Tab>
-</Tabs>
-
-For more details, see [Manually authenticating users](/docs/authenticating-users/manually-authenticating).
-
-### toolkits()
-
-List available toolkits and their connection status. You can use this to build a UI showing which apps are connected.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
+# List available toolkits and their connection status
 toolkits = session.toolkits()
-
-for toolkit in toolkits.items:
-    status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
-    print(f"{toolkit.name}: {status}")
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -274,13 +82,44 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 // ---cut---
-const toolkits = await session.toolkits();
+// Get tools for your AI framework
+const tools = await session.tools();
 
-toolkits.items.forEach((toolkit) => {
-  console.log(`${toolkit.name}: ${toolkit.connection?.connectedAccount?.id ?? "Not connected"}`);
-});
+// Get MCP server URL
+const mcpUrl = session.mcp.url;
+
+// Authenticate a user to a toolkit
+const connectionRequest = await session.authorize("github");
+
+// List available toolkits and their connection status
+const toolkits = await session.toolkits();
 ```
 </Tab>
 </Tabs>
 
-Returns the first 20 toolkits by default.
+## How sessions behave
+
+A session ties together a user, a set of available toolkits, auth configuration for those toolkits, and connected accounts. Call `create()` whenever you want to do a task. Each session is designed for a particular agentic task, and if you want to change the context of the task, create a new session.
+
+You don't need to cache session IDs, manage session lifetimes, or worry about expiration. Sessions persist on the server and don't expire. Just call `create()` with what you need.
+
+### Sessions are immutable
+
+A session's configuration is fixed at creation. You cannot change the toolkits, auth configs, or connected accounts on an existing session.
+
+This means the boundary for a new session isn't a new chat or a new request. It's when the contract changes. If a user starts with "search my personal Gmail" and then says "actually use my work email," that's a different session because the auth changed.
+
+### Connected accounts persist across sessions
+
+Connections are tied to the user ID, not the session. A user who connected Gmail in one session can access it in every future session without re-authenticating.
+
+<Accordions>
+<Accordion title="When should I create a new session?">
+Create a new session when the config changes: different toolkits, different auth config, or a different connected account. You don't need to store or manage session IDs. Just call `create()` each time.
+</Accordion>
+</Accordions>
+
+<Cards>
+  <Card icon={<BookOpen />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Enable toolkits, set auth configs, and select connected accounts" />
+  <Card icon={<BookOpen />} title="Workbench" href="/docs/workbench" description="Write and run code in a persistent sandbox" />
+</Cards>

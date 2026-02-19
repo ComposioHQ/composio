@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 const navItems = [
   { href: '/docs', label: 'Docs' },
   { href: '/docs/api', label: 'API' },
-  { href: '/docs/examples', label: 'Examples' },
+  { href: '/cookbooks', label: 'Cookbooks' },
 ];
 
 export function TopNav() {
@@ -15,10 +15,9 @@ export function TopNav() {
 
   const isActive = (href: string) => {
     if (href === '/docs') {
-      return pathname === '/docs' || 
-        (pathname.startsWith('/docs') && 
-         !pathname.startsWith('/docs/api') && 
-         !pathname.startsWith('/docs/examples'));
+      return pathname === '/docs' ||
+        (pathname.startsWith('/docs') &&
+         !pathname.startsWith('/docs/api'));
     }
     return pathname.startsWith(href);
   };

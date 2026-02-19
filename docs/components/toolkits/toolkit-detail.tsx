@@ -1,30 +1,39 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
+import { processSchema } from '@/lib/toolkit-schema';
 import { PageActions } from '@/components/page-actions';
 import { AuthDetailsSection } from '@/components/toolkits/auth-details-section';
+import { FaqSection, type FaqItem } from '@/components/toolkits/faq-section';
 
 interface ToolkitDetailProps {
   toolkit: Toolkit;
   tools: Tool[];
   triggers: Trigger[];
   path: string;
+  faq?: FaqItem[] | null;
 }
 
 function ToolkitIcon({ toolkit }: { toolkit: Toolkit }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const fallback = (toolkit.name?.trim() || toolkit.slug).charAt(0).toUpperCase();
+
   return (
-    <div
-      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-fd-border bg-fd-card bg-center bg-no-repeat text-xl font-semibold text-fd-muted-foreground shadow-sm"
-      style={toolkit.logo ? {
-        backgroundImage: `url(${toolkit.logo})`,
-        backgroundSize: '60%',
-      } : undefined}
-    >
-      {!toolkit.logo && (toolkit.name?.trim() || toolkit.slug).charAt(0).toUpperCase()}
+    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-fd-border bg-fd-card text-xl font-semibold text-fd-muted-foreground shadow-sm">
+      {toolkit.logo && !imgFailed ? (
+        <img
+          src={toolkit.logo}
+          alt=""
+          className="h-[60%] w-[60%] object-contain"
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        fallback
+      )}
     </div>
   );
 }
@@ -36,40 +45,98 @@ function formatDefault(value: unknown): string | undefined {
   return String(value);
 }
 
-// Convert parameter schema to TypeTable format
+// Format type with enum values if available
+function formatType(param: ParameterSchema): string {
+  let typeStr = param.type || 'string';
+
+  // Show array item type
+  if (typeStr === 'array' && param.items) {
+    const itemType = param.items.type || 'unknown';
+    typeStr = `array<${itemType}>`;
+  }
+
+  // Include enum values in type display
+  if (param.enum && param.enum.length > 0) {
+    const enumValues = param.enum.map(v => `"${v}"`).join(' | ');
+    typeStr = `${typeStr} (${enumValues})`;
+  }
+
+  return typeStr;
+}
+
+// Get children from a param (object properties or array item properties)
+function getChildren(param: ParameterSchema): Record<string, ParameterSchema> | null {
+  const props = param.properties || param.items?.properties;
+  if (!props || typeof props !== 'object') return null;
+
+  const requiredList: string[] = param.requiredFields || param.items?.requiredFields || [];
+  const result: Record<string, ParameterSchema> = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (typeof value === 'object' && value !== null) {
+      const raw = value as ParameterSchema & { required?: string[] | boolean };
+      result[key] = {
+        ...raw,
+        required: Array.isArray(requiredList) ? requiredList.includes(key) : false,
+        // Map the child's own JSON Schema required array to requiredFields
+        // so that deeper nesting levels preserve required info
+        ...(Array.isArray(raw.required) ? { requiredFields: raw.required } : {}),
+      };
+    }
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+// Build a ReactNode description that includes text + nested TypeTable for children
+function buildDescription(param: ParameterSchema): ReactNode {
+  const children = getChildren(param);
+  if (!children) return param.description || undefined;
+
+  return (
+    <div className="space-y-2">
+      {param.description && <p>{param.description}</p>}
+      <TypeTable type={paramsToTypeTable(children)} />
+    </div>
+  );
+}
+
+// Convert parameter schema to TypeTable format, recursively nesting child TypeTables in descriptions
 function paramsToTypeTable(params: Record<string, ParameterSchema>): Record<string, {
   type: string;
-  description?: string;
+  description?: ReactNode;
   default?: string;
   required?: boolean;
 }> {
-  const result: Record<string, {
-    type: string;
-    description?: string;
-    default?: string;
-    required?: boolean;
-  }> = {};
-
+  const result: Record<string, { type: string; description?: ReactNode; default?: string; required?: boolean }> = {};
   for (const [name, param] of Object.entries(params)) {
     result[name] = {
-      type: param.type || 'string',
-      description: param.description || undefined,
+      type: formatType(param),
+      description: buildDescription(param),
       default: formatDefault(param.default),
       required: param.required,
     };
   }
-
   return result;
 }
+
 
 // Check if item is a Tool with parameters
 function isTool(item: Tool | Trigger): item is Tool {
   return 'input_parameters' in item || 'output_parameters' in item;
 }
 
-function ToolItem({ item }: { item: Tool | Trigger }) {
+// Check if item is a Trigger with config/payload
+function isTrigger(item: Tool | Trigger): item is Trigger {
+  return 'config' in item || 'payload' in item || 'type' in item;
+}
+
+function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersion?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [detailedParams, setDetailedParams] = useState<{
+    input?: Record<string, ParameterSchema>;
+    output?: Record<string, ParameterSchema>;
+  } | null>(null);
+  const [fetched, setFetched] = useState(false);
 
   const copySlug = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -79,8 +146,35 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
   };
 
   const tool = isTool(item) ? item : null;
-  const hasInputParams = tool?.input_parameters && Object.keys(tool.input_parameters).length > 0;
-  const hasOutputParams = tool?.output_parameters && Object.keys(tool.output_parameters).length > 0;
+  const trigger = isTrigger(item) ? item : null;
+
+  // Fetch detailed schema once when a tool is first expanded
+  useEffect(() => {
+    if (!expanded || !tool || fetched) return;
+    setFetched(true);
+    const versionParam = toolkitVersion ? `?version=${encodeURIComponent(toolkitVersion)}` : '';
+    fetch(`/api/tools/${item.slug}${versionParam}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setDetailedParams({
+            input: processSchema(data.input_parameters),
+            output: processSchema(data.output_parameters),
+          });
+        }
+      })
+      .catch(() => {
+        // silently fall back to basic params
+      });
+  }, [expanded, tool, fetched, item.slug, toolkitVersion]);
+
+  const inputParams = detailedParams?.input || tool?.input_parameters;
+  const outputParams = detailedParams?.output || tool?.output_parameters;
+
+  const hasInputParams = inputParams && Object.keys(inputParams).length > 0;
+  const hasOutputParams = outputParams && Object.keys(outputParams).length > 0;
+  const hasConfig = trigger?.config && Object.keys(trigger.config).length > 0;
+  const hasPayload = trigger?.payload && Object.keys(trigger.payload).length > 0;
 
   return (
     <div className="border-b border-fd-border/50 last:border-0">
@@ -92,7 +186,18 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-          <span className="truncate text-sm font-medium text-fd-foreground">{item.name}</span>
+          <span className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium text-fd-foreground">{item.name}</span>
+            {trigger?.type && (
+              <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
+                trigger.type === 'webhook'
+                  ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+              }`}>
+                {trigger.type}
+              </span>
+            )}
+          </span>
           <span
             role="button"
             onClick={copySlug}
@@ -107,17 +212,33 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
         <div className="space-y-4 bg-fd-muted/20 px-4 py-3 pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
 
+          {/* Tool parameters */}
           {hasInputParams && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Input Parameters</h4>
-              <TypeTable type={paramsToTypeTable(tool.input_parameters!)} />
+              <TypeTable type={paramsToTypeTable(inputParams!)} />
             </div>
           )}
 
           {hasOutputParams && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Output</h4>
-              <TypeTable type={paramsToTypeTable(tool.output_parameters!)} />
+              <TypeTable type={paramsToTypeTable(outputParams!)} />
+            </div>
+          )}
+
+          {/* Trigger config/payload */}
+          {hasConfig && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Configuration</h4>
+              <TypeTable type={paramsToTypeTable(trigger.config!)} />
+            </div>
+          )}
+
+          {hasPayload && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Payload</h4>
+              <TypeTable type={paramsToTypeTable(trigger.payload!)} />
             </div>
           )}
         </div>
@@ -126,7 +247,7 @@ function ToolItem({ item }: { item: Tool | Trigger }) {
   );
 }
 
-export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailProps) {
+export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDetailProps) {
   const [copied, setCopied] = useState(false);
   const [versionCopied, setVersionCopied] = useState(false);
   const [toolSearch, setToolSearch] = useState('');
@@ -181,7 +302,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
 
       {/* Header */}
       <div className="flex gap-4">
-          <ToolkitIcon toolkit={toolkit} />
+          <ToolkitIcon key={toolkit.slug} toolkit={toolkit} />
           <div className="min-w-0 flex-1">
             {/* Title row */}
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -218,6 +339,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
                 <Link
                   href={`https://platform.composio.dev/auth?next_page=${encodeURIComponent(`/tool-router?toolkits=${toolkit.slug}`)}`}
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
                 >
                   Try {(toolkit.name?.trim() || toolkit.slug)}
@@ -230,6 +352,9 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
             <PageActions path={path} />
           </div>
       </div>
+
+      {/* FAQ */}
+      {faq && faq.length > 0 && <FaqSection faq={faq} />}
 
       {/* Authentication Details */}
       {toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0 && (
@@ -291,7 +416,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
             {activeTab === 'tools' && (
               filteredTools.length > 0 ? (
                 filteredTools.map((tool) => (
-                  <ToolItem key={tool.slug} item={tool} />
+                  <ToolItem key={tool.slug} item={tool} toolkitVersion={toolkit.version} />
                 ))
               ) : (
                 <p className="px-4 py-8 text-center text-sm text-fd-muted-foreground">
@@ -302,7 +427,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path }: ToolkitDetailP
             {activeTab === 'triggers' && (
               filteredTriggers.length > 0 ? (
                 filteredTriggers.map((trigger) => (
-                  <ToolItem key={trigger.slug} item={trigger} />
+                  <ToolItem key={trigger.slug} item={trigger} toolkitVersion={toolkit.version} />
                 ))
               ) : (
                 <p className="px-4 py-8 text-center text-sm text-fd-muted-foreground">

@@ -7,8 +7,8 @@ import pytest
 from composio import exceptions
 from composio.core.models.connected_accounts import (
     AuthScheme,
-    ConnectionRequest,
     ConnectedAccounts,
+    ConnectionRequest,
 )
 
 

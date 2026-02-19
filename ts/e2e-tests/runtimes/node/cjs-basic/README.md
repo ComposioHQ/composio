@@ -1,4 +1,4 @@
-# Node.js CommonJS Compatibility Tests
+# Node.js CommonJS Compatibility Test
 
 Verifies that `@composio/core` works correctly when imported via `require()` in CommonJS environments.
 
@@ -23,19 +23,27 @@ Many Node.js projects still use CommonJS. This suite ensures:
 | jsonSchemaToZodSchema | Utility function is exported              |
 | constants             | Constants namespace is accessible         |
 | logger                | Logger instance is exported               |
-| Uses LLMs?            | ❌                                        |
+
+## Fixture
+
+```
+fixtures/
+└── test.cjs    # CommonJS test script using require()
+```
+
+The fixture is a standalone `.cjs` file that:
+
+- Uses `require('@composio/core')` to import the package
+- Verifies each export exists and has the correct type
+- Attempts to instantiate `OpenAIProvider` to catch runtime errors
+- Outputs test results to stdout with pass/fail markers
 
 ## Isolation Tool
 
-**Docker** with specific Node.js versions (20.17.0, 20.19.0)
-
-This ensures tests run against exact Node.js versions independent of the developer's local setup, catching version-specific module resolution issues.
+**Docker** with Node.js versions: 20.18.0, 20.19.0, 22.12.0.
 
 ## Running
 
 ```bash
-# Via pnpm (recommended)
 pnpm test:e2e
 ```
-
-The test runs on different Node.js versions (20.17.0 and 20.19.0) to catch regressions across versions.

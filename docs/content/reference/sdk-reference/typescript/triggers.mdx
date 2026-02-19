@@ -168,7 +168,7 @@ async listEnum(): Promise<TriggersTypeRetrieveEnumResponse>
 List all the trigger types
 
 ```typescript
-async listTypes(query?: { cursor?: string; limit?: null | number; toolkits?: null | string[] }): Promise<...>
+async listTypes(query?: { cursor?: string; limit?: number | null; toolkits?: string[] | null }): Promise<...>
 ```
 
 **Parameters**
@@ -269,7 +269,7 @@ The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${pa
 and is expected in the format: `v1,base64EncodedSignature`
 
 ```typescript
-verifyWebhook(params: object): VerifyWebhookResult
+async verifyWebhook(params: object): Promise<VerifyWebhookResult>
 ```
 
 **Parameters**
@@ -280,15 +280,15 @@ verifyWebhook(params: object): VerifyWebhookResult
 
 **Returns**
 
-`VerifyWebhookResult` — The verified and parsed webhook payload with version information
+`Promise<VerifyWebhookResult>` — The verified and parsed webhook payload with version information
 
 **Example**
 
 ```typescript
 // In an Express.js webhook handler
-app.post('/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    const result = composio.triggers.verifyWebhook({
+    const result = await composio.triggers.verifyWebhook({
       payload: req.body.toString(),
       signature: req.headers['webhook-signature'] as string,
       webhookId: req.headers['webhook-id'] as string,

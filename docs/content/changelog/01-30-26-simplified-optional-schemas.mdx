@@ -1,0 +1,66 @@
+---
+title: "Simplified Schemas for Optional Fields"
+description: "Tool schemas are now cleaner for optional fields by removing redundant anyOf null constructs"
+date: "2026-01-30"
+---
+
+Tool schemas are now cleaner for optional fields by removing redundant `anyOf: [{type}, {type: "null"}]` constructs.
+
+## Background: How JSON Schema Handles Optional Fields
+
+In JSON Schema, there are two distinct concepts:
+
+| Concept | Meaning | How it's expressed |
+|---------|---------|-------------------|
+| **Optional** | Field can be omitted entirely | Field is NOT in the `required` array |
+| **Nullable** | Field accepts `null` as a value | `anyOf: [{type}, {type: "null"}]` |
+
+Previously, our schemas used `anyOf` with null type for all optional fields—even when the field wasn't in `required`. This was redundant: if a field can be omitted, explicitly marking it as "accepts null" adds no value.
+
+## What Changed
+
+For fields that are **not in the `required` array**, the schema processing now:
+- Removes the redundant `{type: "null"}` from `anyOf` arrays
+- Removes `default: null` since it's implied by being optional
+- Flattens single-type `anyOf` to direct `type` declarations
+
+## Before vs After
+
+For example, the `page_token` field in `GOOGLECALENDAR_LIST_CALENDARS` (which is optional/not required):
+
+**Previous (verbose):**
+```json
+{
+  "page_token": {
+    "anyOf": [
+      { "type": "string" },
+      { "type": "null" }
+    ],
+    "default": null,
+    "description": "Token for the page of results to return...",
+    "title": "Page Token"
+  }
+}
+```
+
+**Now (simplified):**
+```json
+{
+  "page_token": {
+    "type": "string",
+    "description": "Token for the page of results to return...",
+    "title": "Page Token"
+  }
+}
+```
+
+## What's Preserved
+
+- **Required nullable fields**: Fields in the `required` array that accept null still use `anyOf` with null type
+- **Union types**: Fields accepting multiple value types (e.g., `string | number`) retain their full `anyOf` array
+
+## Why This Matters
+
+- **Fewer tokens**: Simpler schemas reduce token usage when tools are passed to LLMs
+- **Better compatibility**: Some code generators and validators handle direct types better than `anyOf` constructs
+- **Clearer semantics**: Non-required fields don't need explicit null type—being optional already implies they can be omitted

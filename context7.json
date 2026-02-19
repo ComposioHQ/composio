@@ -1,7 +1,7 @@
 {
   "projectTitle": "Composio",
   "description": "Composio equip's your AI agents & LLMs with 100+ high-quality integrations via function calling",
-  "folders": ["fern/pages/src", "fern/snippets", "ts", "python"],
+  "folders": ["docs/content", "ts", "python"],
   "excludeFolders": [],
   "excludeFiles": [
     "CHANGELOG.md",

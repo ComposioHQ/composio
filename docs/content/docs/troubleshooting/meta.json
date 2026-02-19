@@ -1,7 +1,6 @@
 {
   "title": "Troubleshooting",
   "pages": [
-    "index",
     "api",
     "authentication",
     "cli",

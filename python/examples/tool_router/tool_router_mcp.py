@@ -6,11 +6,13 @@ The MCP server provides a standardized way to access tools across different plat
 and OpenAI Agents provider allows you to use these tools with OpenAI's agent framework.
 """
 
-import os
 import asyncio
-from composio import Composio
+import os
+
+from agents import Agent, HostedMCPTool, Runner
 from composio_openai_agents import OpenAIAgentsProvider
-from agents import Agent, Runner, HostedMCPTool
+
+from composio import Composio
 
 
 async def main():

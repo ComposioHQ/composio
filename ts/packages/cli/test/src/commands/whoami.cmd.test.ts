@@ -16,7 +16,7 @@ describe('CLI: composio whoami', () => {
 
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain(`API KEY: api_key_from_test_config_provider`);
+        expect(output).toContain(`api_key_from_test_config_provider`);
       })
     );
   });
@@ -29,7 +29,7 @@ describe('CLI: composio whoami', () => {
 
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain(`API KEY: api_key_from_test_fixture`);
+        expect(output).toContain(`api_key_from_test_fixture`);
       })
     );
   });

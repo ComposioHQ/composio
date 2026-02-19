@@ -3,9 +3,12 @@ name: Claude Docs Review
 on:
   pull_request:
     types: [ opened, synchronize ]
-    # Optional: Only run on specific file changes
+    # Run on docs changes (content, components, styles)
     paths:
-    - "fern/pages/**/*.mdx"
+    - "docs/content/**/*.mdx"
+    - "docs/components/**/*.tsx"
+    - "docs/app/**/*.tsx"
+    - "docs/app/**/*.css"
 jobs:
   claude-review:
     # Optional: Filter by PR author
@@ -37,18 +40,14 @@ jobs:
         # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
         # model: "claude-opus-4-20250514"
 
-        # Direct prompt for automated review (no @claude mention needed)
+        # Review instructions in docs/.claude/agents/docs-reviewer.md
         prompt: |
-          REPO: ${{ github.repository }}
-          PR NUMBER: ${{ github.event.pull_request.number }}
+          Review this PR using the guidelines in docs/.claude/agents/docs-reviewer.md
 
-          Please review this pull request for documentation changes and provide feedback on:
-          - Grammar and spelling
-          - Clarity and readability
-          - Consistency and tone
-          - Proper adherence to the documentation style guide in `fern/CLAUDE.md`
-
-          Be constructive and helpful in your feedback.
+          1. Read docs/.claude/agents/docs-reviewer.md for full review criteria
+          2. Run `git diff origin/${{ github.event.pull_request.base.ref }}...HEAD` to see changes
+          3. Apply the review checklist to changed files
+          4. If issues: Comment with specific fixes. If none: Approve with "Looks good"
         # Optional: Customize review based on file types
         # direct_prompt: |
         #   Review this PR focusing on:

@@ -66,6 +66,14 @@
    Design Tokens
    ========================================================================== */
 
+/* ==========================================================================
+   Global Defaults
+   ========================================================================== */
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 :root {
   /* Brand */
   --composio-orange: #ea580c;
@@ -189,7 +197,7 @@ html {
 
 /* Headings */
 h1, h2, h3, h4 {
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 500;
   letter-spacing: -0.01em;
 }
@@ -328,8 +336,12 @@ textarea:focus-visible {
   outline: none;
 }
 
-[data-card]:hover {
-  border-color: color-mix(in srgb, var(--composio-orange) 50%, transparent);
+[data-card="true"] {
+  background: var(--color-fd-muted);
+}
+
+[data-card="true"]:hover {
+  border-color: var(--composio-orange);
 }
 
 [data-fumadocs-tabs] [data-state="active"] {
@@ -458,6 +470,44 @@ nav a[href*="app.composio"]:focus-visible {
 }
 
 /* ==========================================================================
+   OpenAPI Reference - Field Indicators
+
+   Replaces fumadocs-openapi's default ? and * indicators with explicit
+   "Required" label after the type for required fields.
+
+   Targets: span (simple types), button (expandable objects/arrays), a (links)
+
+   Note: This depends on fumadocs-openapi's internal class structure.
+   If the library updates its classes, this CSS may need adjustment.
+   ========================================================================== */
+
+/* Hide original indicators (* and ?) after property name */
+span.font-mono.text-fd-primary > span.text-red-400:last-child,
+span.font-mono.text-fd-primary > span.text-fd-muted-foreground:last-child {
+  display: none;
+}
+
+/* Add "Required" after type for required fields */
+div.flex.items-center:has(> span.font-mono.text-fd-primary > span.text-red-400) > :is(span, button, a).text-sm.font-mono::after {
+  content: "Required";
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-left: 0.25rem;
+  color: #f87171;
+}
+
+/* Hide empty schema wrapper divs (e.g. when Error schema is skipped) */
+div.border.rounded-lg:not(:has(*)) {
+  display: none;
+}
+
+/* Hide redundant "application/json" content type labels */
+p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
+  display: none;
+}
+
+
+/* ==========================================================================
    Table of Contents (Right Sidebar)
    ========================================================================== */
 
@@ -469,6 +519,21 @@ nav a[href*="app.composio"]:focus-visible {
 /* TOC - scope primary color to orange for active indicator */
 #nd-toc {
   --color-fd-primary: var(--composio-orange);
+}
+
+/* Accordion copy-link button: hidden by default, visible on hover */
+[data-accordion-value] button[aria-label="Copy Link"] {
+  opacity: 0;
+  transition: opacity 150ms;
+}
+[data-accordion-value]:hover button[aria-label="Copy Link"],
+[data-accordion-value]:focus-within button[aria-label="Copy Link"] {
+  opacity: 1;
+}
+/* Green check feedback on copy (matches heading anchor style) */
+[data-accordion-value] button[aria-label="Copy Link"]:has(.lucide-check) {
+  opacity: 1;
+  color: var(--color-green-500);
 }
 
 @layer base {

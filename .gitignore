@@ -39,18 +39,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # lerna
 lerna-debug.log*
 
-# fern
-fern/tools/*
-fern/toolkits/*
-!fern/toolkits/src/
-!fern/toolkits/src/**
-!fern/tools/src/
-!fern/tools/src/**
-fern/apis/openapi.yml
-fern/apis/openapi.json
-fern/apis/openapi-mcp.json
-fern/pages/dist/
-fern/pages/sdk/
 
 # Python cache files
 __pycache__/
@@ -65,8 +53,6 @@ __pycache__/
 # VS Code
 .vscode
 temp/
-fern/llms-txt-worker/public/*
-!fern/llms-txt-worker/public/.keepFolder
 
 # E2E test node_modules
 test/e2e/*/node_modules

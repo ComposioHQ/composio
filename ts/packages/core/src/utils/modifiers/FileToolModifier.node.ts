@@ -7,7 +7,7 @@ import {
 import ComposioClient from '@composio/client';
 import logger from '../logger';
 import { ComposioFileUploadError } from '../../errors/FileModifierErrors';
-import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../fileUtils';
+import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../fileUtils.node';
 import {
   isPlainObject,
   transformProperties,

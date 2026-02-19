@@ -1,10 +1,12 @@
 ---
 title: Authentication
-description: Understand how Tool Router handles user authentication to toolkits
-keywords: [connect link, oauth]
+description: Understand how Composio handles user authentication to toolkits
+keywords: [connect link, oauth, auth config]
 ---
 
-Tool Router handles authentication through [Connect Links](/docs/authenticating-tools#hosted-authentication-connect-link), hosted pages where users complete OAuth or enter credentials.
+Composio simplifies authentication with Connect Links: hosted pages where users securely connect their accounts.
+
+<Video src="/images/connect-link-auth-flow-recording.mp4" autoPlay />
 
 ## In-chat authentication
 
@@ -12,64 +14,96 @@ By default, when a tool requires authentication, the agent prompts the user with
 
 Here's what this looks like in a conversation:
 
-```
-You: Star the composio repo on GitHub
+> **You:** Summarize my emails from today
+>
+> **Agent:** I need you to connect your Gmail account first. Please click here to authorize: https://connect.composio.dev/link/ln_abc123
+>
+> **You:** Done
+>
+> **Agent:** Here's a summary of your emails from today...
 
-Agent: I need you to connect your GitHub account first.
-       Please click here to authorize: https://connect.composio.dev/link/ln_abc123
+This flow works well for chat applications where users interact directly with the agent.
 
-You: Done
-
-Agent: Done! I've starred ComposioHQ/composio.
-```
-
-This flow works well for chat applications where users interact directly with the agent. See [In-chat authentication](/docs/authenticating-users/in-chat-authentication).
+<Card icon={<BookOpen />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication">
+  Let the agent handle authentication prompts automatically during conversation
+</Card>
 
 ## Manual authentication
 
-For apps that manage auth outside of chat, use `session.authorize()` to generate Connect Links programmatically:
+For apps that manage auth outside of chat, use `session.authorize()` to generate Connect Links programmatically. This is useful when you want users to connect accounts during onboarding, or when building a custom connections page.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-connection_request = session.authorize("github")
-print(connection_request.redirect_url)
-# https://connect.composio.dev/link/ln_abc123
+<Card icon={<BookOpen />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating">
+  Control when and how users connect their accounts
+</Card>
+
+## How Composio manages authentication
+
+Behind the scenes, Composio uses **auth configs** to manage authentication.
+
+An **auth config** is a blueprint that defines how authentication works for a toolkit across all your users. It specifies:
+
+- **Authentication method** — OAuth2, Bearer token, API key, or Basic Auth
+- **Scopes** — what actions your tools can perform
+- **Credentials** — your own app credentials or Composio's managed auth
+
+Composio creates one auth config per toolkit, and it applies to every user who connects that toolkit. When a user authenticates, Composio creates a **connected account** that stores their credentials (OAuth tokens or API keys) and links them to your user ID. When you need to use your own OAuth credentials or customize scopes, you can create [custom auth configs](/docs/using-custom-auth-configuration).
+
+```mermaid
+graph LR
+    AC["Auth Config<br/><b>ac_gmail_oauth2</b>"]
+
+    subgraph user_1
+        CA1["Work Gmail · <b>ca_1a2b3c</b>"]
+        CA2["Personal Gmail · <b>ca_4d5e6f</b>"]
+    end
+
+    subgraph user_2
+        CA3["Gmail · <b>ca_7g8h9i</b>"]
+    end
+
+    AC --> CA1
+    AC --> CA2
+    AC --> CA3
 ```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.toolRouter.create('user_123', { toolkits: ['github'] });
-// ---cut---
-const connectionRequest = await session.authorize("github");
-console.log(connectionRequest.redirectUrl);
-// https://connect.composio.dev/link/ln_abc123
-```
-</Tab>
-</Tabs>
 
-Use this when you want users to connect accounts during onboarding, or when building a custom connections page. See [Manually authenticating users](/docs/authenticating-users/manually-authenticating) for a detailed guide.
+Composio handles this automatically:
 
-## How Tool Router manages auth configs
+1. When a toolkit needs authentication, we create an auth config using Composio managed credentials
+2. The auth config is reused for all users authenticating with that toolkit
+3. Connected accounts are created and linked to your users
 
-When executing a tool, Tool Router needs an auth config to find or create a connected account. It handles this automatically:
+<Accordions>
+<Accordion title="What are connected accounts?">
+A connected account is created when a user authenticates with a toolkit. It stores the user's credentials (OAuth tokens or API keys) and links them to your user ID. Each user can have multiple connected accounts, even for the same toolkit (e.g., work and personal Gmail).
+</Accordion>
+<Accordion title="What happens when tokens expire?">
+Composio automatically refreshes OAuth tokens before they expire. You don't need to handle re-authentication or token expiration. Connected accounts stay valid as long as the user doesn't revoke access.
+</Accordion>
+</Accordions>
 
-1. Uses your `authConfigs` override if provided
-2. Otherwise, reuses an auth config it previously created for this toolkit
-3. If none exists, creates one using Composio managed auth
+Most toolkits work out of the box with **Composio managed OAuth**. For API key-based toolkits, users enter their keys directly via Connect Link.
 
-You don't need to create auth configs manually for most toolkits.
+You only need to create a custom auth config when:
+- You want to use your **own OAuth app credentials** for white-labeling
+- You need **specific OAuth scopes** beyond the defaults
+- The toolkit doesn't have Composio managed auth
+- You have **existing auth configs** with connected accounts you want to use
 
-## Supported auth methods
+To bring your own OAuth apps or customize scopes, see [custom auth configs](/docs/using-custom-auth-configuration).
 
-Tool Router supports **Composio managed OAuth** (GitHub, Gmail, Slack, and most toolkits) and **API key auth** (users enter their own keys via Connect Link).
+## Useful links
 
-<Callout type="info">
-Toolkits without Composio managed auth require a custom auth config. See [Using custom auth configs](/docs/guides/using-custom-auth-configuration).
-</Callout>
-
-## White-labeling
-
-Show your own branding on OAuth consent screens by creating your own OAuth app. See [White-labeling authentication](/docs/guides/white-labeling-authentication).
+<Cards>
+  <Card icon={<BookOpen />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication">
+    Let the agent prompt users to authenticate during conversation
+  </Card>
+  <Card icon={<BookOpen />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating">
+    Generate Connect Links programmatically in your app
+  </Card>
+  <Card icon={<Palette />} title="White-labeling" href="/docs/white-labeling-authentication">
+    Customize OAuth screens with your branding
+  </Card>
+  <Card icon={<Key />} title="Custom auth configs" href="/docs/using-custom-auth-configuration">
+    Use your own OAuth apps
+  </Card>
+</Cards>

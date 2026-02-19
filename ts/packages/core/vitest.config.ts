@@ -13,6 +13,10 @@ export default defineConfig({
         __dirname,
         'src/utils/modifiers/FileToolModifier.node.ts'
       ),
+      '#config_defaults': path.resolve(
+        __dirname,
+        'src/utils/config-defaults/ConfigDefaults.node.ts'
+      ),
     },
   },
   test: {

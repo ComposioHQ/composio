@@ -1,0 +1,150 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Pipe output to JSON
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Pipe output to JSON
+> composio toolkits search gmail | jq 'first'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Pipe output to JSON
+> composio toolkits search gmail | jq 'first'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Pipe output to JSON
+> composio toolkits search gmail | jq 'first'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Pipe output to JSON
+> composio toolkits search gmail | jq 'first'
+{
+  "name": "Gmail",
+  "slug": "gmail",
+  "tools_count": 40,
+  "triggers_count": 2,
+  "description": "Gmail is Google’s email service, featuring spam protectio
+n, search functions, and seamless integration with other G Suite apps for p
+roductivity"
+}
+>
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────

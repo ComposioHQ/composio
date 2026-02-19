@@ -1,5 +1,6 @@
 ---
 title: "True PATCH Semantics for Auth Config Updates"
+description: "Auth config PATCH endpoint now preserves omitted fields instead of clearing them"
 date: "2026-01-14"
 ---
 
@@ -40,7 +41,7 @@ The `PATCH /api/v3/auth_configs/{id}` endpoint now implements proper partial upd
 
 Update just `client_secret` without resending `client_id` or other fields:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript']}>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -48,6 +49,7 @@ from composio import Composio
 composio = Composio()
 
 # Only send the field you want to update - other credentials are preserved
+
 composio.auth_configs.update(
     "ac_yourAuthConfigId",
     options={
@@ -61,6 +63,7 @@ composio.auth_configs.update(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -80,7 +83,7 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
 
 Previously, this would fail because `credentials` was required. Now it works:
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript']}>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -88,6 +91,7 @@ from composio import Composio
 composio = Composio()
 
 # Update tool restrictions - credentials are automatically preserved
+
 composio.auth_configs.update(
     "ac_yourAuthConfigId",
     options={
@@ -101,6 +105,7 @@ composio.auth_configs.update(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -134,7 +139,7 @@ await composio.authConfigs.update("ac_yourAuthConfigId", {
 | `tool_access_config` | `"tool_access_config": {"tools_available_for_execution": []}` | `toolAccessConfig: { toolsAvailableForExecution: [] }` |
 | `scopes` (default)   | `"scopes": ""`                                                | `scopes: ""` (via HTTP API)                            |
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tabs groupId="language" items={['Python', 'TypeScript']}>
 <Tab value="Python">
 ```python
 from composio import Composio
@@ -142,6 +147,7 @@ from composio import Composio
 composio = Composio()
 
 # Explicitly clear tool restrictions with empty array
+
 composio.auth_configs.update(
     "ac_yourAuthConfigId",
     options={
@@ -155,6 +161,7 @@ composio.auth_configs.update(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio();

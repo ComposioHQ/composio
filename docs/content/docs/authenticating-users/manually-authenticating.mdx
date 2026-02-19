@@ -10,7 +10,7 @@ Manual authentication lets you connect users to toolkits outside of the chat flo
 
 ## Authorize a toolkit
 
-Use `session.authorize()` to generate a [Connect Link](/docs/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to complete:
+Use `session.authorize()` to generate a [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to complete:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -50,6 +50,47 @@ Redirect the user to the redirect URL. After they authenticate, they'll return t
 If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
 </Callout>
 
+## Redirecting users after authentication
+
+Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, for example to identify which user or session triggered the connection.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+connection_request = session.authorize(
+    "gmail",
+    callback_url="https://your-app.com/callback?user_id=user_123&source=onboarding"
+)
+
+print(connection_request.redirect_url)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const connectionRequest = await session.authorize("gmail", {
+  callbackUrl: "https://your-app.com/callback?user_id=user_123&source=onboarding",
+});
+
+console.log(connectionRequest.redirectUrl);
+```
+</Tab>
+</Tabs>
+
+After authentication, Composio redirects the user to your callback URL with the following parameters appended, while preserving your existing ones:
+
+| Parameter | Description |
+|-----------|-------------|
+| `status` | `success` or `failed` |
+| `connected_account_id` | The ID of the newly created connected account |
+
+```
+https://your-app.com/callback?user_id=user_123&source=onboarding&status=success&connected_account_id=ca_abc123
+```
+
 ## Check connection status
 
 Use `session.toolkits()` to see all toolkits in the session and their connection status:
@@ -81,7 +122,7 @@ toolkits.items.forEach((toolkit) => {
 
 ## Disabling in-chat auth
 
-By default, Tool Router includes the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To disable this and handle auth entirely in your UI:
+By default, sessions include the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To disable this and handle auth entirely in your UI:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">

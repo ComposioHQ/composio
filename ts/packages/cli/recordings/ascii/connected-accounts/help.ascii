@@ -1,0 +1,258 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show connected-accounts subcommand help
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show connected-accounts subcommand help
+> composio connected-accounts --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show connected-accounts subcommand help
+> composio connected-accounts --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show connected-accounts subcommand help
+> composio connected-accounts --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show connected-accounts subcommand help
+> composio connected-accounts --help
+composio
+
+composio 0.1.24
+
+USAGE
+
+$ connected-accounts
+
+DESCRIPTION
+
+View and manage Composio connected accounts.
+
+COMMANDS
+
+  - list [--toolkits text] [--user-id text] [--status INITIALIZING | INITIA
+TED | ACTIVE | FAILED | EXPIRED | INACTIVE] [--limit integer]  List connect
+ed accounts.
+
+  - info [<id>]
+                                                               View details
+ of a specific connected account.
+
+  - whoami [<id>]
+                                                               Show the ext
+ernal account profile for a connected account.
+
+  - delete [(-y, --yes)] [<id>]
+                                                               Delete a con
+nected account.
+
+  - link --auth-config text [--user-id text] [--no-browser]
+                                                               Link an exte
+rnal account via OAuth redirect.
+
+>
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
