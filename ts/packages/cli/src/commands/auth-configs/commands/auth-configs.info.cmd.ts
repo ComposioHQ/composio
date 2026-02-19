@@ -1,8 +1,10 @@
 import { Args, Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { requireAuth } from 'src/effects/require-auth';
+import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { redact } from 'src/ui/redact';
 import { formatAuthConfigInfo } from '../format';
 
 const id = Args.text({ name: 'id' }).pipe(
@@ -20,15 +22,10 @@ const id = Args.text({ name: 'id' }).pipe(
  */
 export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    const ctx = yield* ComposioUserContext;
-    const repo = yield* ComposioToolkitsRepository;
+    if (!(yield* requireAuth)) return;
 
-    // Auth guard
-    if (Option.isNone(ctx.data.apiKey)) {
-      yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
-      return;
-    }
+    const ui = yield* TerminalUI;
+    const repo = yield* ComposioToolkitsRepository;
 
     // Missing ID guard
     if (Option.isNone(id)) {
@@ -41,22 +38,17 @@ export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
 
     const idValue = id.value;
 
+    // Auth config IDs are opaque nanoids — "Did you mean?" suggestions would not be useful
     const itemOpt = yield* ui
       .withSpinner(`Fetching auth config "${idValue}"...`, repo.getAuthConfig(idValue))
       .pipe(
         Effect.asSome,
-        Effect.catchTag('services/HttpServerError', (e: HttpServerError) =>
-          Effect.gen(function* () {
-            if (e.details) {
-              yield* ui.log.error(e.details.message);
-              yield* ui.log.step(e.details.suggestedFix);
-            } else {
-              yield* ui.log.error(`Failed to fetch auth config "${idValue}".`);
-            }
-
-            yield* ui.log.step('Browse available auth configs:\n> composio auth-configs list');
-
-            return Option.none();
+        Effect.catchTag(
+          'services/HttpServerError',
+          handleHttpServerError(ui, {
+            fallbackMessage: `Failed to fetch auth config "${idValue}".`,
+            hint: 'Browse available auth configs:\n> composio auth-configs list',
+            fallbackValue: Option.none(),
           })
         )
       );
@@ -69,8 +61,12 @@ export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
 
     yield* ui.note(formatAuthConfigInfo(item), `Auth Config: ${item.name}`);
 
+    const redactedId = redact({ value: item.id, prefix: 'ac_' });
+
     // Next step hint
-    yield* ui.log.step(`To delete this auth config:\n> composio auth-configs delete "${item.id}"`);
+    yield* ui.log.step(
+      `To delete this auth config:\n> composio auth-configs delete "${redactedId}"`
+    );
 
     yield* ui.output(JSON.stringify(item, null, 2));
   })

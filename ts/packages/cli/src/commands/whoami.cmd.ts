@@ -2,6 +2,7 @@ import { Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { redact } from 'src/ui/redact';
 
 /**
  * CLI command to display your account information.
@@ -23,7 +24,9 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
           onSome: apiKey =>
             Effect.gen(function* () {
-              yield* ui.note(apiKey, 'API Key');
+              const redactedApiKey = redact({ value: apiKey, prefix: 'ak_' });
+
+              yield* ui.note(redactedApiKey, 'API Key');
               yield* ui.output(apiKey);
             }),
         })

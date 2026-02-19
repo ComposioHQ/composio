@@ -1,8 +1,8 @@
 import { Args, Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { requireAuth } from 'src/effects/require-auth';
 import type { ToolkitDetailed, AuthConfigDetail } from 'src/models/toolkits';
 import { bold, gray } from 'src/ui/colors';
 
@@ -95,15 +95,10 @@ function formatToolkitInfo(toolkit: ToolkitDetailed): string {
  */
 export const toolkitsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    const ctx = yield* ComposioUserContext;
-    const repo = yield* ComposioToolkitsRepository;
+    if (!(yield* requireAuth)) return;
 
-    // Auth guard
-    if (Option.isNone(ctx.data.apiKey)) {
-      yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
-      return;
-    }
+    const ui = yield* TerminalUI;
+    const repo = yield* ComposioToolkitsRepository;
 
     // Missing slug guard
     if (Option.isNone(slug)) {

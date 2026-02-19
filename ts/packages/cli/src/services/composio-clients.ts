@@ -444,14 +444,17 @@ const streamResponseWithByteCount = (
         })
     );
 
-    // Collect all chunks while counting bytes
+    // Collect all chunks while counting bytes (mutate array in-place for O(N) instead of O(N^2))
     const [chunks, byteSize] = yield* pipe(
       byteStream,
       Stream.run(
         Sink.fold<[Uint8Array[], number], Uint8Array>(
           [[], 0],
           () => true,
-          ([chunks, size], chunk) => [[...chunks, chunk], size + chunk.byteLength]
+          ([chunks, size], chunk) => {
+            chunks.push(chunk);
+            return [chunks, size + chunk.byteLength] as [Uint8Array[], number];
+          }
         )
       )
     );

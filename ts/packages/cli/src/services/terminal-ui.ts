@@ -70,6 +70,15 @@ export interface TerminalUI {
   ) => Effect.Effect<A, E, R>;
 
   /**
+   * Ask the user a yes/no confirmation question.
+   * In non-interactive mode (piped), returns `defaultValue` (defaults to `true`).
+   */
+  readonly confirm: (
+    message: string,
+    options?: { readonly defaultValue?: boolean }
+  ) => Effect.Effect<boolean>;
+
+  /**
    * Create a controllable spinner that is automatically stopped on error or interruption.
    * The `use` function receives a SpinnerHandle and must return an Effect.
    * On success: the caller should call `spinner.stop(...)` inside `use`.
@@ -160,6 +169,19 @@ const makeLive: TerminalUI = {
     Effect.sync(() =>
       decorate(() => p.note(message, title ?? '', { format: line => line, output: process.stderr }))
     ),
+
+  confirm: (message, options) =>
+    isInteractive
+      ? Effect.promise(async () => {
+          const result = await p.confirm({
+            message,
+            initialValue: options?.defaultValue ?? true,
+            output: process.stderr,
+          });
+          // p.confirm returns boolean | symbol (symbol on cancel)
+          return typeof result === 'boolean' ? result : false;
+        })
+      : Effect.succeed(options?.defaultValue ?? true),
 
   withSpinner: (message, effect, options) =>
     isInteractive

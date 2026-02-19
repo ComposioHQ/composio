@@ -26,6 +26,8 @@ export const TerminalUITest = Layer.succeed(
 
     note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
 
+    confirm: (_message, options) => Effect.succeed(options?.defaultValue ?? true),
+
     withSpinner: (message, effect, options) =>
       Effect.gen(function* () {
         const result = yield* effect;

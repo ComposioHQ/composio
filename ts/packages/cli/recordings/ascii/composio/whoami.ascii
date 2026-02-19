@@ -23,7 +23,7 @@
 
 
 ────────────────────────────────────────────────────────────────────────────────
-> # Search with --limit flag
+> # Show whoami subcommand help
 >
 
 
@@ -48,8 +48,8 @@
 
 
 ────────────────────────────────────────────────────────────────────────────────
-> # Search with --limit flag
-> composio toolkits search google --limit 1
+> # Show whoami subcommand help
+> composio whoami
 
 
 
@@ -73,8 +73,8 @@
 
 
 ────────────────────────────────────────────────────────────────────────────────
-> # Search with --limit flag
-> composio toolkits search google --limit 1
+> # Show whoami subcommand help
+> composio whoami
 
 
 
@@ -98,8 +98,8 @@
 
 
 ────────────────────────────────────────────────────────────────────────────────
-> # Search with --limit flag
-> composio toolkits search google --limit 1
+> # Show whoami subcommand help
+> composio whoami
 
 
 
@@ -123,20 +123,20 @@
 
 
 ────────────────────────────────────────────────────────────────────────────────
-> # Search with --limit flag
-> composio toolkits search google --limit 1
+> # Show whoami subcommand help
+> composio whoami
 │
-◒  Searching toolkits for "google"...
-◇  Searching toolkits for "google"...
-│
-●  Found 1 of 34 toolkits
-│
-│  Name                 Slug                 Tools   Triggers   Description
-│  Gmail                gmail                40      2          Gmail is Go
-ogle’s email service, featuring spam...
-│
-◇  To view details:
-│  > composio toolkits info "gmail"
+◇  API Key ───────╮
+│                 │
+│  ak_<REDACTED>  │
+│                 │
+├─────────────────╯
+>
+
+
+
+
+
 
 
 

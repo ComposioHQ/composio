@@ -1,8 +1,8 @@
 import { Args, Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { requireAuth } from 'src/effects/require-auth';
 import { formatToolInfo } from '../format';
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -20,15 +20,10 @@ const slug = Args.text({ name: 'slug' }).pipe(
  */
 export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    const ctx = yield* ComposioUserContext;
-    const repo = yield* ComposioToolkitsRepository;
+    if (!(yield* requireAuth)) return;
 
-    // Auth guard
-    if (Option.isNone(ctx.data.apiKey)) {
-      yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
-      return;
-    }
+    const ui = yield* TerminalUI;
+    const repo = yield* ComposioToolkitsRepository;
 
     // Missing slug guard
     if (Option.isNone(slug)) {

@@ -22,6 +22,36 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List with --query filter
 >
@@ -47,9 +77,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # List with --query filter
-> composio tools list --query 'send email'
 
 
 
@@ -58,23 +85,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # List with --query filter
-> composio tools list --query 'send email'
 
 
 
@@ -122,13 +132,39 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List with --query filter
 > composio tools list --query 'send email'
-Received unknown argument: '--query'
-
-Tip: --query requires a value, e.g. --query "value"
->
 
 
 
@@ -147,4 +183,148 @@ Tip: --query requires a value, e.g. --query "value"
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --query filter
+> composio tools list --query 'send email'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --query filter
+> composio tools list --query 'send email'
+│
+◒  Fetching tools...
+◇  Fetching tools...
+│
+●  Listing 30 tools (page 1 of 19)
+│
+│  Slug                                Name                 Description
+│  ABSTRACT_EMAIL_REPUTATION_API       Email validation ... Validate email
+addresses and assess their deliv...
+│  ACTIVE_CAMPAIGN_CREATE_MESSAGE      Create Message       Tool to create
+a message in ActiveCampaign. Use...
+│  ACTIVE_CAMPAIGN_LIST_MESSAGES       List Messages        Tool to list al
+l messages in ActiveCampaign. Us...
+│  ACTIVE_CAMPAIGN_UPDATE_MESSAGE      Update Message       Tool to update
+an existing message in ActiveCam...
+│  ACTIVE_TRAIL_CREATE_CAMPAIGN_FOR... Create Campaign f... Tool to create
+and send a new campaign to speci...
+│  ACTIVE_TRAIL_GET_ALL_CAMPAIGN_RE... Get All Campaign ... Tool to retriev
+e a full overview of all campaig...
+│  ACTIVE_TRAIL_GET_AUTOMATIONS_EMA... Get Automation Em... Tool to retriev
+e all email campaign steps in an...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_DOMAIN... Get Campaign Doma... Tool to retriev
+e a report by domain for a speci...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_REPORT    Get Campaign Report  Retrieves compr
+ehensive performance metrics for...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_SCHEDU... Get Campaign Sche... Retrieves the s
+cheduling configuration for a sp...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_S_DETAILS Get Campaign by ID   Tool to retriev
+e complete campaign information ...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_S_DETA... Get Campaign by I... Tool to retriev
+e complete campaign information ...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_TEMPLATE  Get Campaign Temp... Retrieves templ
+ate details (design, content, su...
+│  ACTIVE_TRAIL_GET_SENDING_PROFILES   Get Sending Profiles Tool to retriev
+e account email sending profiles...
+│  ACTIVE_TRAIL_GET_USER_BOUNCES_BY... Get User Bounces ... Tool to retriev
+e specific user details of users...
+│  ACTIVE_TRAIL_POST_TEMPLATES_CAMP... Create Campaign f... Creates a new e
+mail campaign from an existing t...
+│  ACTIVE_TRAIL_PUT_CAMPAIGNS_DETAILS  Update Campaign D... Updates an emai
+l campaign's core details includ...
+│  ACTIVE_TRAIL_SEND_OPERATIONAL_ME... Send Operational ... Tool to send op
+erational email messages to indi...
+│  ACTIVE_TRAIL_SEND_OPERATIONAL_ME... Send Operational ... Tool to send tr
+ansactional/operational email me...
+│  ACTIVE_TRAIL_UPDATE_CAMPAIGN_S_D... Update Campaign D... Updates an emai
+l campaign's core details includ...
+│  ADDRESSFINDER_EMAIL_VERIFICATION... Email Verificatio... Tool to verify
+email addresses including syntax...
+│  AGENT_MAIL_GET_MESSAGE              Get Message          Retrieve the co
+mplete details of a specific ema...
+│  AGENT_MAIL_SEND_EMAIL               Send Email           Send an email u
 ────────────────────────────────────────────────────────────────────────────────

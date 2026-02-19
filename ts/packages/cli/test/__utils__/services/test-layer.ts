@@ -33,6 +33,8 @@ import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
+import type { AuthConfigItem } from 'src/models/auth-configs';
+import type { AuthConfigCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
@@ -60,6 +62,14 @@ export interface TestLiveInput {
     tools?: Tools;
     triggerTypesAsEnums?: TriggerTypesAsEnums;
     triggerTypes?: TriggerTypes;
+  };
+
+  /**
+   * Mock auth-config data to use in test.
+   */
+  authConfigsData?: {
+    items?: AuthConfigItem[];
+    createResponse?: AuthConfigCreateResponse;
   };
 }
 
@@ -94,6 +104,15 @@ export const TestLayer = (input?: TestLiveInput) =>
       ...(input?.toolkitsData ?? {}),
       detailedToolkits:
         input?.toolkitsData?.detailedToolkits ?? defaultAppClientData.detailedToolkits,
+    };
+
+    const defaultAuthConfigsData = {
+      items: [] as AuthConfigItem[],
+      createResponse: undefined as AuthConfigCreateResponse | undefined,
+    } satisfies TestLiveInput['authConfigsData'];
+    const authConfigsData = {
+      ...defaultAuthConfigsData,
+      ...(input?.authConfigsData ?? {}),
     };
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
@@ -312,24 +331,77 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return Effect.succeed(found);
         },
-        listAuthConfigs: () =>
-          Effect.succeed({
-            items: [],
-            total_items: 0,
-            total_pages: 0,
+        listAuthConfigs: (params: {
+          search?: string;
+          toolkit_slug?: string;
+          limit?: number;
+          show_disabled?: boolean;
+        }) => {
+          let results = [...authConfigsData.items];
+
+          if (params.toolkit_slug) {
+            const slugs = params.toolkit_slug.split(',').map(s => s.trim().toLowerCase());
+            results = results.filter(item => slugs.includes(item.toolkit.slug.toLowerCase()));
+          }
+
+          if (params.search) {
+            const q = params.search.toLowerCase();
+            results = results.filter(
+              item => item.name.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
+            );
+          }
+
+          const limit = params.limit ?? 30;
+          const items = results.slice(0, limit);
+          return Effect.succeed({
+            items,
+            total_items: results.length,
+            total_pages: Math.ceil(results.length / limit),
             current_page: 1,
             next_cursor: null,
-          }),
-        getAuthConfig: (nanoid: string) =>
-          Effect.fail(
-            new HttpServerError({ cause: `Auth config "${nanoid}" not found`, status: 404 })
-          ),
+          });
+        },
+        getAuthConfig: (nanoid: string) => {
+          const found = authConfigsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Auth config "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Auth config "${nanoid}" not found.`,
+                  suggestedFix: 'Check the auth config ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed(found);
+        },
         createAuthConfig: () =>
-          Effect.succeed({
-            auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
-            toolkit: { slug: 'test' },
-          }),
-        deleteAuthConfig: () => Effect.succeed(undefined as unknown),
+          Effect.succeed(
+            authConfigsData.createResponse ?? {
+              auth_config: { id: 'ac_test', auth_scheme: 'OAUTH2', is_composio_managed: true },
+              toolkit: { slug: 'test' },
+            }
+          ),
+        deleteAuthConfig: (nanoid: string) => {
+          const found = authConfigsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            return Effect.fail(
+              new HttpServerError({
+                cause: `Auth config "${nanoid}" not found`,
+                status: 404,
+                details: {
+                  message: `Auth config "${nanoid}" not found.`,
+                  suggestedFix: 'Check the auth config ID and try again.',
+                  code: 404,
+                },
+              })
+            );
+          }
+          return Effect.succeed({});
+        },
       })
     );
     const ComposioSessionRepositoryTest = yield* setupComposioSessionRepository();

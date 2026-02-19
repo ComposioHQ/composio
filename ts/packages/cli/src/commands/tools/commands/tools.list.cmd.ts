@@ -1,8 +1,9 @@
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { requireAuth } from 'src/effects/require-auth';
+import { clampLimit } from 'src/ui/clamp-limit';
 import { formatToolsTable, formatToolsJson } from '../format';
 
 const query = Options.text('query').pipe(
@@ -42,17 +43,12 @@ export const toolsCmd$List = Command.make(
   { query, toolkits, tags, limit },
   ({ query, toolkits, tags, limit }) =>
     Effect.gen(function* () {
+      if (!(yield* requireAuth)) return;
+
       const ui = yield* TerminalUI;
-      const ctx = yield* ComposioUserContext;
       const repo = yield* ComposioToolkitsRepository;
 
-      // Auth guard
-      if (Option.isNone(ctx.data.apiKey)) {
-        yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
-        return;
-      }
-
-      const clampedLimit = Math.max(1, Math.min(1000, limit));
+      const clampedLimit = clampLimit(limit);
 
       const result = yield* ui.withSpinner(
         'Fetching tools...',

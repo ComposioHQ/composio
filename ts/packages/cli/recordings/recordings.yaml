@@ -24,6 +24,10 @@ recordings:
       description: Show composio version
       command: "composio --version"
 
+    - name: whoami
+      description: Show whoami subcommand help
+      command: "composio whoami"
+
   ts-generate:
     - name: help
       description: Show ts generate subcommand help

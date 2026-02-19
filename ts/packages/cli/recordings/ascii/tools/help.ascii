@@ -174,14 +174,14 @@ Discover and inspect Composio tools.
 
 COMMANDS
 
-  - list [--search text] [--toolkits text] [--tags text] [--limit integer]
- List available tools.
+  - list [--query text] [--toolkits text] [--tags text] [--limit integer]
+List available tools.
 
   - info [<slug>]
- View details of a specific tool.
+View details of a specific tool.
 
   - search [--toolkits text] [--limit integer] <query>
- Search tools by use case.
+Search tools by use case.
 
 >
 

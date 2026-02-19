@@ -1,8 +1,10 @@
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { requireAuth } from 'src/effects/require-auth';
+import { clampLimit } from 'src/ui/clamp-limit';
+import { redact } from 'src/ui/redact';
 import { formatAuthConfigsTable, formatAuthConfigsJson } from '../format';
 
 const toolkits = Options.text('toolkits').pipe(
@@ -37,24 +39,17 @@ export const authConfigsCmd$List = Command.make(
   { toolkits, query, limit },
   ({ toolkits, query, limit }) =>
     Effect.gen(function* () {
+      if (!(yield* requireAuth)) return;
+
       const ui = yield* TerminalUI;
-      const ctx = yield* ComposioUserContext;
       const repo = yield* ComposioToolkitsRepository;
-
-      // Auth guard
-      if (Option.isNone(ctx.data.apiKey)) {
-        yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
-        return;
-      }
-
-      const clampedLimit = Math.max(1, Math.min(1000, limit));
 
       const result = yield* ui.withSpinner(
         'Fetching auth configs...',
         repo.listAuthConfigs({
           search: Option.getOrUndefined(query),
           toolkit_slug: Option.getOrUndefined(toolkits),
-          limit: clampedLimit,
+          limit: clampLimit(limit),
         })
       );
 
@@ -75,9 +70,11 @@ export const authConfigsCmd$List = Command.make(
 
       // Next step hint
       const firstId = result.items[0]?.id;
+      const redactedId = redact({ value: firstId, prefix: 'ac_' });
+
       if (firstId) {
         yield* ui.log.step(
-          `To view details of an auth config:\n> composio auth-configs info "${firstId}"`
+          `To view details of an auth config:\n> composio auth-configs info "${redactedId}"`
         );
       }
 

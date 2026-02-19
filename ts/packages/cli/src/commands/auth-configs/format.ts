@@ -1,6 +1,7 @@
 import type { AuthConfigItem } from 'src/models/auth-configs';
 import type { AuthConfigCreateResponse } from 'src/services/composio-clients';
 import { bold, gray } from 'src/ui/colors';
+import { redact } from 'src/ui/redact';
 import { truncate } from 'src/ui/truncate';
 
 /**
@@ -11,7 +12,7 @@ export function formatAuthConfigsTable(items: ReadonlyArray<AuthConfigItem>): st
 
   const rows = items.map(item => {
     const name = truncate(item.name, 24).padEnd(24);
-    const id = truncate(item.id, 16).padEnd(16);
+    const id = truncate(redact({ value: item.id, prefix: 'ac_' }), 16).padEnd(16);
     const toolkit = truncate(item.toolkit.slug, 14).padEnd(14);
     const authScheme = truncate(item.auth_scheme || '-', 14).padEnd(14);
     const type = item.type.padEnd(10);
@@ -49,7 +50,7 @@ export function formatAuthConfigsJson(items: ReadonlyArray<AuthConfigItem>): str
 export function formatAuthConfigInfo(item: AuthConfigItem): string {
   const lines: string[] = [];
 
-  lines.push(`${bold('Id:')} ${item.id}`);
+  lines.push(`${bold('Id:')} ${redact({ value: item.id, prefix: 'ac_' })}`);
   lines.push(`${bold('Name:')} ${item.name}`);
   lines.push(`${bold('Toolkit:')} ${item.toolkit.slug}`);
   lines.push(`${bold('Auth Scheme:')} ${item.auth_scheme || '(none)'}`);
@@ -72,7 +73,7 @@ export function formatAuthConfigInfo(item: AuthConfigItem): string {
 export function formatAuthConfigCreated(result: AuthConfigCreateResponse): string {
   const lines: string[] = [];
 
-  lines.push(`${bold('Id:')} ${result.auth_config.id}`);
+  lines.push(`${bold('Id:')} ${redact({ value: result.auth_config.id, prefix: 'ac_' })}`);
   lines.push(`${bold('Auth Scheme:')} ${result.auth_config.auth_scheme}`);
   lines.push(`${bold('Toolkit:')} ${result.toolkit.slug}`);
   lines.push(

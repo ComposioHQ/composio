@@ -3,6 +3,10 @@ import { Schema } from 'effect';
 /**
  * An auth config item from the list or retrieve endpoints.
  * Field names match the raw API response (snake_case).
+ *
+ * SECURITY: This schema intentionally excludes `credentials`, `shared_credentials`,
+ * `proxy_config`, and `deprecated_params` fields to prevent secret leakage in CLI output.
+ * Do NOT add credential-bearing fields without adding a redaction layer.
  */
 export const AuthConfigItem = Schema.Struct({
   id: Schema.String,

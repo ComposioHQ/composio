@@ -125,15 +125,15 @@
 ────────────────────────────────────────────────────────────────────────────────
 > # Info with nonexistent ID
 > composio auth-configs info nonexistent_id
-Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami'
-, 'login', 'logout', 'generate', 'py', 'ts', 'toolkits', 'tools'
-
+│
+◒  Fetching auth config "nonexistent_id"...
+▲  Fetching auth config "nonexistent_id"...
+│
+■  Failed to fetch auth config "nonexistent_id".
+│
+◇  Browse available auth configs:
+│  > composio auth-configs list
 >
-
-
-
-
-
 
 
 

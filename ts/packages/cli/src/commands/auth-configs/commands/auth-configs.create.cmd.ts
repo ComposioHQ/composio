@@ -1,9 +1,11 @@
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
-import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { requireAuth } from 'src/effects/require-auth';
+import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { redact } from 'src/ui/redact';
 import { formatAuthConfigCreated } from '../format';
 
 const name = Args.text({ name: 'name' }).pipe(
@@ -52,15 +54,10 @@ export const authConfigsCmd$Create = Command.make(
   { name, toolkit, authScheme, scopes, customCredentials },
   ({ name, toolkit, authScheme, scopes, customCredentials }) =>
     Effect.gen(function* () {
-      const ui = yield* TerminalUI;
-      const ctx = yield* ComposioUserContext;
-      const repo = yield* ComposioToolkitsRepository;
+      if (!(yield* requireAuth)) return;
 
-      // Auth guard
-      if (Option.isNone(ctx.data.apiKey)) {
-        yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
-        return;
-      }
+      const ui = yield* TerminalUI;
+      const repo = yield* ComposioToolkitsRepository;
 
       // Parse custom credentials JSON if provided
       let parsedCustomCredentials: Record<string, unknown> | undefined;
@@ -89,15 +86,15 @@ export const authConfigsCmd$Create = Command.make(
       let params: AuthConfigCreateParams;
 
       if (Option.isSome(authScheme)) {
-        // Custom auth mode
+        // Custom auth mode — spread user-provided credentials FIRST so explicit fields always win
         params = {
           toolkit: { slug: toolkit },
           auth_config: {
+            ...parsedCustomCredentials,
             type: 'use_custom_auth' as const,
             authScheme: authScheme.value as AuthConfigCreateParams.UnionMember1['authScheme'],
             name: nameValue,
             credentials: scopesList ? { scopes: scopesList } : undefined,
-            ...parsedCustomCredentials,
           },
         };
       } else {
@@ -116,20 +113,12 @@ export const authConfigsCmd$Create = Command.make(
         .withSpinner('Creating auth config...', repo.createAuthConfig(params))
         .pipe(
           Effect.asSome,
-          Effect.catchTag('services/HttpServerError', (e: HttpServerError) =>
-            Effect.gen(function* () {
-              if (e.details) {
-                yield* ui.log.error(e.details.message);
-                yield* ui.log.step(e.details.suggestedFix);
-              } else {
-                yield* ui.log.error('Failed to create auth config.');
-              }
-
-              yield* ui.log.step(
-                `Check available auth schemes for "${toolkit}":\n> composio toolkits info "${toolkit}"`
-              );
-
-              return Option.none();
+          Effect.catchTag(
+            'services/HttpServerError',
+            handleHttpServerError(ui, {
+              fallbackMessage: 'Failed to create auth config.',
+              hint: `Check available auth schemes for "${toolkit}":\n> composio toolkits info "${toolkit}"`,
+              fallbackValue: Option.none(),
             })
           )
         );
@@ -143,10 +132,10 @@ export const authConfigsCmd$Create = Command.make(
       yield* ui.log.success('Auth config created.');
       yield* ui.note(formatAuthConfigCreated(result), 'New Auth Config');
 
+      const redactedId = redact({ value: result.auth_config.id, prefix: 'ac_' });
+
       // Next step hint
-      yield* ui.log.step(
-        `To view details:\n> composio auth-configs info "${result.auth_config.id}"`
-      );
+      yield* ui.log.step(`To view details:\n> composio auth-configs info "${redactedId}"`);
 
       yield* ui.output(JSON.stringify(result, null, 2));
     })
