@@ -1,111 +1,123 @@
 ---
-title: Google Gen AI
+title: Google Generative AI
 description: Build an agent with Gemini and enable it to use 800+ tools with Composio.
-keywords: [gemini]
+keywords: [gemini, google generative ai, google genai]
 ---
 
-The Google provider transforms Composio tools into a format compatible with Gemini's function calling capabilities through it's API
+The Google Generative AI provider transforms Composio tools into a format compatible with [Gemini's function calling](https://ai.google.dev/) capabilities.
 
-## Setup
+<Steps>
+<Step>
+**Install**
 
-<Tabs items={["Python", "TypeScript"]}>
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```bash
-pip install google-genai composio_google
+pip install composio composio_google google-genai
 ```
 </Tab>
 <Tab value="TypeScript">
 ```bash
-npm install @google/genai
-npm i @composio/core @composio/gemini
+npm install @composio/core @composio/google @google/genai
 ```
 </Tab>
 </Tabs>
+</Step>
 
-<Tabs items={["Python", "TypeScript"]}>
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+GOOGLE_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
 from composio import Composio
-from composio_gemini import GeminiProvider
+from composio_google import GoogleProvider
 from google import genai
 from google.genai import types
 
-# Create composio client
-composio = Composio(provider=GeminiProvider())
-# Create google client
+composio = Composio(provider=GoogleProvider())
 client = genai.Client()
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import {Composio} from '@composio/core';
-import {GoogleProvider} from '@composio/google'
-import {GoogleGenAI} from '@google/genai'
 
-const composio = new Composio({
-    apiKey: "your-composio-api-key",
-    provider: new GoogleProvider()
-})
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-const ai = new GoogleGenAI({
-    apiKey: "your-gemini-api-key"
-})
-```
-</Tab>
-</Tabs>
-
-## Usage
-
-<Tabs items={["Python", "TypeScript"]}>
-<Tab value="Python">
-```python
-user_id = "0000-1111-2222"
-tools = composio.tools.get(user_id, tools=["COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH"])
-
-# Create genai client config
 config = types.GenerateContentConfig(tools=tools)
+chat = client.chats.create(model="gemini-3-pro-preview", config=config)
+response = chat.send_message("Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")
 
-# # Use the chat interface.
-chat = client.chats.create(model="gemini-2.0-flash", config=config)
-response = chat.send_message("search about the latest info on windsurf acquisition.")
+# Agentic loop — keep executing tool calls until the model responds with text
+while response.function_calls:
+    parts = []
+    for fc in response.function_calls:
+        result = composio.provider.execute_tool_call(user_id="user_123", function_call=fc)
+        parts.append(types.Part.from_function_response(name=fc.name, response=result))
+    response = chat.send_message(parts)
+
 print(response.text)
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-import {Composio} from '@composio/core';
-import {GoogleProvider} from '@composio/google'
-import {GoogleGenAI} from '@google/genai'
-const composio = new Composio({ apiKey: "key", provider: new GoogleProvider() });
-const ai = new GoogleGenAI({ apiKey: "key" });
-// ---cut---
-// Use a unique identifier for each user in your application
-const user_id = "your-external-user-id"
+import { Composio } from '@composio/core';
+import { GoogleProvider } from '@composio/google';
+import { GoogleGenAI, type Part } from '@google/genai';
 
-// Get tools - this returns already wrapped tools when using GoogleProvider
-const tools = await composio.tools.get(user_id, 'HACKERNEWS_GET_USER')
+const composio = new Composio({
+    provider: new GoogleProvider(),
+});
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
 
-const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash-001',
-    contents: "Search for the user 'pg's",
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const chat = ai.chats.create({
+    model: 'gemini-3-pro-preview',
     config: {
         tools: [{ functionDeclarations: tools }],
     },
 });
 
-if (response.functionCalls && response.functionCalls.length > 0) {
-    console.log(`Calling tool ${response.functionCalls[0].name}`);
-    const functionCall = {
-        name: response.functionCalls[0].name || '',
-        args: response.functionCalls[0].args || {},
-    };
-    const result = await composio.provider.executeToolCall(user_id, functionCall);
-    console.log(`Result: ${result}`);
-} else {
-    console.log('No function calls in the response');
-    console.log(response.text);
+let response = await chat.sendMessage({
+    message: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+});
+
+// Agentic loop — keep executing tool calls until the model responds with text
+while (response.functionCalls && response.functionCalls.length > 0) {
+    const parts: Part[] = [];
+    for (const fc of response.functionCalls) {
+        const result = await composio.provider.executeToolCall("user_123", {
+            name: fc.name || '',
+            args: (fc.args || {}) as Record<string, unknown>,
+        });
+        parts.push({
+            functionResponse: {
+                id: fc.id,
+                name: fc.name,
+                response: JSON.parse(result),
+            },
+        });
+    }
+    response = await chat.sendMessage({ message: parts });
 }
+
+console.log(response.text);
 ```
 </Tab>
 </Tabs>
-
+</Step>
+</Steps>

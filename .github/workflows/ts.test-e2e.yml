@@ -92,6 +92,44 @@ jobs:
       - name: Run Deno E2E Tests
         run: pnpm run test:e2e:deno
 
+  # CLI E2E tests, running in scratch Docker to isolate environment
+  test-e2e-cli-docker:
+    name: E2E Test CLI (scratch)
+    runs-on: ubuntu-24.04
+    permissions: read-all
+    env:
+      CI: 1
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build:packages
+
+      - name: Pre-build Docker image for CLI e2e tests
+        run: |
+          CLI_VERSION=$(node -p "require('./ts/packages/cli/package.json').version")
+          echo "COMPOSIO_E2E_CLI_VERSION=${CLI_VERSION}" >> "$GITHUB_ENV"
+          docker build -f ts/e2e-tests/_utils/Dockerfile.cli \
+            --build-arg CLI_VERSION="${CLI_VERSION}" \
+            --label composio.e2e=true \
+            --label composio.runtime=cli \
+            --label "composio.cli_version=${CLI_VERSION}" \
+            -t "composio-e2e-cli:${CLI_VERSION}" \
+            .
+
+      - name: Run CLI E2E Tests
+        run: pnpm run test:e2e:cli
+
   # Cloudflare Workerd E2E tests
   test-e2e-cloudflare:
     name: E2E Test Cloudflare Workerd

@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Builds Docker images for Node.js and Deno e2e tests.
+ * Builds Docker images for Node.js, Deno, and CLI e2e tests.
  *
- * In CI mode (COMPOSIO_E2E_NODE_VERSION or COMPOSIO_E2E_DENO_VERSION set):
- *   Only builds the image for the specified version.
+ * In CI mode (COMPOSIO_E2E_NODE_VERSION or COMPOSIO_E2E_DENO_VERSION or COMPOSIO_E2E_CLI_VERSION set):
+ *   Only builds the image for the specified version(s).
  *
  * In local mode:
  *   Builds images for all versions in WELL_KNOWN_NODE_VERSIONS and WELL_KNOWN_DENO_VERSIONS.
@@ -36,6 +36,15 @@ function getDvmrcVersion(repoRoot: string): string {
   } catch {
     return '2.6.7'; // fallback default
   }
+}
+
+function getCliPackageVersion(repoRoot: string): string {
+  const pkg = readFileSync(resolve(repoRoot, 'ts/packages/cli/package.json'), 'utf-8');
+  const parsed = JSON.parse(pkg) as { version?: string };
+  if (!parsed.version) {
+    throw new Error('Missing version in ts/packages/cli/package.json');
+  }
+  return String(parsed.version).trim();
 }
 
 // ============================================================================
@@ -119,6 +128,46 @@ async function buildDenoImage(denoVersion: string, repoRoot: string): Promise<bo
 }
 
 // ============================================================================
+// CLI image building
+// ============================================================================
+
+function imageTagForCliVersion(cliVersion: string): string {
+  return `composio-e2e-cli:${cliVersion}`;
+}
+
+function defaultCliLabels(cliVersion: string): Record<string, string> {
+  return {
+    'composio.e2e': 'true',
+    'composio.runtime': 'cli',
+    'composio.cli_version': cliVersion,
+  };
+}
+
+async function buildCliImage(cliVersion: string, repoRoot: string): Promise<boolean> {
+  const dockerfilePath = resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.cli');
+  const imageTag = imageTagForCliVersion(cliVersion);
+  const labels = defaultCliLabels(cliVersion);
+  const labelArgs = Object.entries(labels)
+    .map(([k, v]) => `--label=${k}=${v}`)
+    .join(' ');
+
+  console.log(`\nBuilding image for CLI ${cliVersion}...`);
+
+  const result = await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    .cwd(repoRoot)
+    .nothrow();
+
+  if (result.exitCode !== 0) {
+    console.error(`  Failed to build ${imageTag}:`);
+    console.error(result.stderr.toString() || result.stdout.toString());
+    return false;
+  }
+
+  console.log(`  Built ${imageTag}`);
+  return true;
+}
+
+// ============================================================================
 // Main
 // ============================================================================
 
@@ -126,17 +175,20 @@ async function main() {
   const repoRoot = getRepoRoot();
   const currentNodeVersion = getNvmrcVersion(repoRoot);
   const currentDenoVersion = getDvmrcVersion(repoRoot);
+  const currentCliVersion = getCliPackageVersion(repoRoot);
   const envNodeVersion = Bun.env.COMPOSIO_E2E_NODE_VERSION;
   const envDenoVersion = Bun.env.COMPOSIO_E2E_DENO_VERSION;
+  const envCliVersion = Bun.env.COMPOSIO_E2E_CLI_VERSION;
 
   const nodeVersions = new Set<string>();
   const denoVersions = new Set<string>();
+  const cliVersions = new Set<string>();
 
   // Determine which Node.js versions to build
   if (envNodeVersion) {
     nodeVersions.add(envNodeVersion);
     console.log(`Building Docker image for CI matrix Node.js version: ${envNodeVersion}`);
-  } else if (!envDenoVersion) {
+  } else if (!envDenoVersion && !envCliVersion) {
     // Build all Node.js versions only if no specific runtime was requested
     for (const version of WELL_KNOWN_NODE_VERSIONS) {
       if (version === 'current') {
@@ -158,7 +210,7 @@ async function main() {
   if (envDenoVersion) {
     denoVersions.add(envDenoVersion);
     console.log(`Building Docker image for CI matrix Deno version: ${envDenoVersion}`);
-  } else if (!envNodeVersion) {
+  } else if (!envNodeVersion && !envCliVersion) {
     // Build all Deno versions only if no specific runtime was requested
     for (const version of WELL_KNOWN_DENO_VERSIONS) {
       if (version === 'current') {
@@ -174,6 +226,15 @@ async function main() {
         console.log(`  - ${v}${isCurrent}`);
       }
     }
+  }
+
+  // Determine which CLI versions to build
+  if (envCliVersion) {
+    cliVersions.add(envCliVersion);
+    console.log(`Building Docker image for CI matrix CLI version: ${envCliVersion}`);
+  } else if (!envNodeVersion && !envDenoVersion) {
+    cliVersions.add(currentCliVersion);
+    console.log(`Building Docker image for CLI version: ${currentCliVersion}`);
   }
 
   let failed = 0;
@@ -192,6 +253,15 @@ async function main() {
   for (const version of denoVersions) {
     total++;
     const success = await buildDenoImage(version, repoRoot);
+    if (!success) {
+      failed++;
+    }
+  }
+
+  // Build CLI images
+  for (const version of cliVersions) {
+    total++;
+    const success = await buildCliImage(version, repoRoot);
     if (!success) {
       failed++;
     }

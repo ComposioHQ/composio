@@ -17,7 +17,7 @@
 
 import path from 'node:path';
 import { Command, Options } from '@effect/cli';
-import { Console, Effect, Option, pipe, Array } from 'effect';
+import { Effect, Option, pipe, Array } from 'effect';
 import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -39,6 +39,7 @@ import {
   type ToolkitVersionOverrides,
 } from 'src/effects/toolkit-version-overrides';
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
+import { TerminalUI, type SpinnerHandle } from 'src/services/terminal-ui';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -109,10 +110,11 @@ function fetchFilteredData(
   client: ComposioToolkitsRepository,
   slugs: ReadonlyArray<string>,
   typeTools: boolean,
-  versionOverrides: ToolkitVersionOverrides
+  versionOverrides: ToolkitVersionOverrides,
+  spinner: SpinnerHandle
 ): Effect.Effect<FetchResult, Error, never> {
   return Effect.gen(function* () {
-    yield* Console.log(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
+    yield* spinner.message(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
 
     // Build version specs for each requested toolkit
     const versionSpecs = buildToolkitVersionSpecs(slugs, versionOverrides);
@@ -167,8 +169,8 @@ function fetchFilteredData(
       { concurrency: 'unbounded' }
     );
 
-    yield* Console.log(
-      `Filtering to ${filteredToolkits.length} toolkit(s): ${filteredToolkits.map(t => t.slug).join(', ')}`
+    yield* spinner.message(
+      `Found ${filteredToolkits.length} toolkit(s): ${filteredToolkits.map(t => t.slug).join(', ')}`
     );
 
     return {
@@ -186,7 +188,8 @@ function fetchFilteredData(
  */
 function fetchAllDataFastPath(
   client: ComposioToolkitsRepository,
-  typeTools: boolean
+  typeTools: boolean,
+  spinner: SpinnerHandle
 ): Effect.Effect<FetchResult, Error, never> {
   return Effect.gen(function* () {
     // Fetch all data in parallel
@@ -218,7 +221,7 @@ function fetchAllDataFastPath(
       { concurrency: 'unbounded' }
     );
 
-    yield* Console.log(`Found ${allToolkits.length} toolkit(s)`);
+    yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);
 
     return {
       toolkits: allToolkits,
@@ -236,7 +239,8 @@ function fetchAllDataFastPath(
 function fetchAllDataWithOverrides(
   client: ComposioToolkitsRepository,
   typeTools: boolean,
-  versionOverrides: ToolkitVersionOverrides
+  versionOverrides: ToolkitVersionOverrides,
+  spinner: SpinnerHandle
 ): Effect.Effect<FetchResult, Error, never> {
   return Effect.gen(function* () {
     // 1. First fetch all toolkit metadata to know what's available
@@ -277,7 +281,7 @@ function fetchAllDataWithOverrides(
       { concurrency: 'unbounded' }
     );
 
-    yield* Console.log(`Found ${allToolkits.length} toolkit(s)`);
+    yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);
 
     return {
       toolkits: allToolkits,
@@ -295,16 +299,17 @@ function fetchAllDataWithOverrides(
 function fetchAllData(
   client: ComposioToolkitsRepository,
   typeTools: boolean,
-  versionOverrides: ToolkitVersionOverrides
+  versionOverrides: ToolkitVersionOverrides,
+  spinner: SpinnerHandle
 ): Effect.Effect<FetchResult, Error, never> {
   return Effect.gen(function* () {
-    yield* Console.log('Fetching all toolkits, tools, and triggers from Composio API...');
+    yield* spinner.message('Fetching all toolkits, tools, and triggers...');
 
     if (versionOverrides.size === 0) {
-      return yield* fetchAllDataFastPath(client, typeTools);
+      return yield* fetchAllDataFastPath(client, typeTools, spinner);
     }
 
-    return yield* fetchAllDataWithOverrides(client, typeTools, versionOverrides);
+    return yield* fetchAllDataWithOverrides(client, typeTools, versionOverrides, spinner);
   });
 }
 
@@ -350,10 +355,13 @@ export function generateTypescriptTypeStubs({
   toolkitsOpt,
 }: GetCmdParams<typeof _tsCmd$Generate> & { transpiled?: boolean }) {
   return Effect.gen(function* () {
+    const ui = yield* TerminalUI;
     const fs = yield* FileSystem.FileSystem;
     const process = yield* NodeProcess;
     const cwd = process.cwd;
     const client = yield* ComposioToolkitsRepository;
+
+    yield* ui.intro('composio ts generate');
 
     // Determine the actual output directory
     const outputDir = yield* outputOpt.pipe(
@@ -366,7 +374,7 @@ export function generateTypescriptTypeStubs({
       })
     );
 
-    yield* Effect.log(`Writing type stubs to ${outputDir}...`);
+    yield* ui.log.step(`Writing type stubs to ${outputDir}`);
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
     // Read toolkit version overrides from environment variables
@@ -385,58 +393,70 @@ export function generateTypescriptTypeStubs({
       client,
     });
 
-    // Fetch data using two distinct strategies based on whether --toolkits filter is provided
-    const { toolkits, triggerTypes, typeableTools, versionMap } = yield* toolkitSlugsFilter !== null
-      ? fetchFilteredData(client, toolkitSlugsFilter, typeTools, validatedOverrides)
-      : fetchAllData(client, typeTools, validatedOverrides);
+    // Fetch, generate, and write with a spinner that auto-cleans up on error
+    yield* ui.useMakeSpinner('Fetching data from Composio API...', spinner =>
+      Effect.gen(function* () {
+        const { toolkits, triggerTypes, typeableTools, versionMap } = yield* toolkitSlugsFilter !==
+        null
+          ? fetchFilteredData(client, toolkitSlugsFilter, typeTools, validatedOverrides, spinner)
+          : fetchAllData(client, typeTools, validatedOverrides, spinner);
 
-    yield* Console.log('Writing TypeScript type stubs to disk...');
-    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
+        yield* spinner.message('Generating TypeScript type stubs...');
+        const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
-    // Generate TypeScript sources
-    const sources = yield* generateTypeScriptSources({
-      outputDir,
-      emitSingleFile: Boolean(compact), // Ensure boolean type
-      banner: BANNER,
-      importExtension: 'js',
-    })(index);
+        // Generate TypeScript sources
+        const sources = yield* generateTypeScriptSources({
+          outputDir,
+          emitSingleFile: Boolean(compact), // Ensure boolean type
+          banner: BANNER,
+          importExtension: 'js',
+        })(index);
 
-    // Write all generated files
-    yield* pipe(
-      Effect.all(
-        sources.map(([filePath, content]) =>
-          fs
-            .writeFileString(filePath, content)
-            .pipe(Effect.mapError(error => new Error(`Failed to write file ${filePath}: ${error}`)))
-        ),
-        { concurrency: 'unbounded' }
-      ),
-      Effect.mapError(error => new Error(`Failed to write generated files: ${error}`))
+        yield* spinner.message('Writing files to disk...');
+
+        // Write all generated files
+        yield* pipe(
+          Effect.all(
+            sources.map(([filePath, content]) =>
+              fs
+                .writeFileString(filePath, content)
+                .pipe(
+                  Effect.mapError(error => new Error(`Failed to write file ${filePath}: ${error}`))
+                )
+            ),
+            { concurrency: 'unbounded' }
+          ),
+          Effect.mapError(error => new Error(`Failed to write generated files: ${error}`))
+        );
+
+        // Compile TypeScript to JavaScript if needed
+        if (transpiled) {
+          yield* spinner.message('Transpiling to JavaScript...');
+          yield* pipe(
+            transpileTypeScriptSources({ sources, outputDir }),
+            Effect.catchAll(error =>
+              Effect.logWarning(`Failed to compile TypeScript files: ${error.message}`)
+            )
+          );
+        }
+
+        yield* spinner.stop('Type stubs generated successfully');
+      })
     );
 
-    // Compile TypeScript to JavaScript if needed
-    if (transpiled) {
-      yield* pipe(
-        transpileTypeScriptSources({ sources, outputDir }),
-        Effect.catchAll(error =>
-          Effect.logWarning(`Failed to compile TypeScript files: ${error.message}`)
-        )
-      );
-    }
-
     yield* Option.isNone(outputOpt)
-      ? Console.log(
-          '✅ Type stubs generated successfully.\n' +
-            'You can now import generated types via `import { Toolkits } from "@composio/core/generated"`'
+      ? ui.note(
+          'import { Toolkits } from "@composio/core/generated"',
+          'Import your generated types'
         )
-      : Console.log(
-          `✅ Type stubs generated successfully.\n` +
-            `Generated files are available at: ${outputDir}`
-        );
+      : ui.log.info(`Generated files are available at: ${outputDir}`);
 
     // Log API metrics
     const metrics = yield* client.getMetrics();
     yield* logMetrics(metrics);
+
+    yield* ui.outro('Done');
+    yield* ui.output(outputDir);
 
     return outputDir;
   });

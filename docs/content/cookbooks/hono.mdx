@@ -215,8 +215,6 @@ export function provideComposioClient(): Composio<OpenAIProvider> {
 export type ComposioClient = Composio<OpenAIProvider>;
 ```
 
-Check [config/composio.ts](./src/config/composio.ts) module for more details.
-
 ### Invoke agent via Hono
 
 When invoking an agent, make sure you validate the `user_id`.
@@ -290,17 +288,9 @@ app.post("/agent", async (c) => {
 });
 ```
 
-<Callout>
-  Check [src/api.ts](./src/api.ts) module for service implementation
-</Callout>
-
 ## Putting everything together
 
 So far, we have created an agent with ability to interact with `gmail` using the `composio` SDK, functions to manage connected accounts for users and a Hono service. Now let's run the service.
-
-<Callout>
-  Before proceeding, check the [code](./src/api.ts) for utility endpoints not discussed in the cookbook
-</Callout>
 
 1. Clone the repository
    ```bash

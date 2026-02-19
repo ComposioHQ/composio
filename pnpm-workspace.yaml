@@ -1,5 +1,6 @@
 packages:
   - ts/e2e-tests/_utils
+  - ts/e2e-tests/cli/*
   - ts/e2e-tests/runtimes/node/*
   - ts/e2e-tests/runtimes/deno/*
   - ts/e2e-tests/runtimes/cloudflare/*
@@ -14,12 +15,23 @@ packages:
 catalog:
   '@ai-sdk/openai': ^3.0.19
   '@arethetypeswrong/cli': ^0.18.2
+  '@clack/core': '^1.0.1'
+  '@clack/prompts': '^1.0.1'
   '@cloudflare/vitest-pool-workers': ^0.9.2
   '@cloudflare/workers-types': ^4.20250917.0
   '@composio/client': 0.1.0-alpha.56
+  '@effect/cli': ^0.73.2
+  "@effect/eslint-plugin": ^0.3.2
+  '@effect/language-service': ^0.74.0
+  '@effect/platform': ^0.94.5
+  '@effect/platform-bun': ^0.87.1
+  '@effect/platform-node': ^0.104.1
+  '@effect/platform-node-shared': ^0.57.1
+  '@effect/vitest': ^0.27.0
   '@mastra/core': ^1.0.4
   '@modelcontextprotocol/sdk': ^1.25.2
   ai: ^6.0.27
+  effect: ^3.19.15
   hono: ^4.11.4
   openai: ^6.16.0
   pnpm: ^10.28.0

@@ -3,8 +3,9 @@
  */
 
 /**
- * Sanitize command output for stable snapshot comparisons.
- * Removes ANSI escape codes, normalizes line endings, and trims whitespace.
+ * Sanitize command output for stable comparisons.
+ * Removes ANSI escape codes, normalizes line endings, and trims leading/trailing
+ * whitespace around the first/last meaningful output.
  *
  * @param output - Raw command output (stdout or stderr)
  * @returns Sanitized output suitable for assertions and snapshots
@@ -16,10 +17,6 @@ export function sanitizeOutput(output: string): string {
       .replace(/\x1b\[[0-9;]*m/g, '')
       // Normalize line endings (Windows → Unix)
       .replace(/\r\n/g, '\n')
-      // Trim trailing whitespace from each line
-      .split('\n')
-      .map((line) => line.trimEnd())
-      .join('\n')
       // Trim leading/trailing whitespace from entire output
       .trim()
   );

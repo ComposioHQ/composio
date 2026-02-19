@@ -11,7 +11,7 @@ Composio signs every webhook request. Always verify signatures in production to 
 The SDK handles signature verification, payload parsing, and version detection (V1, V2, V3).
 
 <Callout>
-Your webhook secret is returned **only once**: when you [create a webhook subscription](/reference/api-reference/webhooks/create-webhook-subscription) or [rotate the secret](/reference/api-reference/webhooks/rotate-webhook-subscription-secret). If you didn't copy it at creation time, rotate it to get a new one. Store it securely as `COMPOSIO_WEBHOOK_SECRET`.
+Your webhook secret is returned **only once**: when you [create a webhook subscription](/reference/api-reference/webhooks/postWebhookSubscriptions) or [rotate the secret](/reference/api-reference/webhooks/postWebhookSubscriptionsByIdRotateSecret). If you didn't copy it at creation time, rotate it to get a new one. Store it securely as `COMPOSIO_WEBHOOK_SECRET`.
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -61,7 +61,7 @@ An optional `tolerance` parameter (default: `300` seconds) controls how old a we
 If you are not using the Composio SDK and want to verify signatures manually.
 
 <Callout>
-Your webhook secret is returned **only once**: when you [create a webhook subscription](/reference/api-reference/webhooks/create-webhook-subscription) or [rotate the secret](/reference/api-reference/webhooks/rotate-webhook-subscription-secret). If you didn't copy it at creation time, rotate it to get a new one. Store it securely as `COMPOSIO_WEBHOOK_SECRET`.
+Your webhook secret is returned **only once**: when you [create a webhook subscription](/reference/api-reference/webhooks/postWebhookSubscriptions) or [rotate the secret](/reference/api-reference/webhooks/postWebhookSubscriptionsByIdRotateSecret). If you didn't copy it at creation time, rotate it to get a new one. Store it securely as `COMPOSIO_WEBHOOK_SECRET`.
 </Callout>
 
 Every webhook request includes three headers: `webhook-signature`, `webhook-id`, and `webhook-timestamp`. Use these along with the raw request body to verify the signature:

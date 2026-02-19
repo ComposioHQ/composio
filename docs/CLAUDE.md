@@ -20,10 +20,12 @@ docs/
 │   ├── docs/             # Main documentation
 │   ├── cookbooks/        # Cookbooks & guides
 │   ├── changelog/        # Release notes
-│   └── reference/        # SDK & API reference
+│   ├── reference/        # SDK & API reference
+│   └── toolkits/         # Toolkit docs + faq/ snippets
 ├── components/           # React components
 ├── lib/                  # Utilities
 ├── public/               # Static assets
+├── scripts/              # Build scripts (link checker, etc.)
 └── .claude/              # Claude context (see below)
 ```
 
@@ -50,7 +52,7 @@ Detailed documentation for Claude is organized in `.claude/`:
 
 1. **TypeScript code blocks are type-checked** - All TS code in MDX is validated at build time. See [twoslash.md](.claude/context/twoslash.md).
 
-2. **Run build before pushing** - `bun run build` catches type errors that `bun dev` misses.
+2. **Run build before pushing** - `bun run build` catches type errors that `bun dev` misses. Also run `bun run scripts/validate-links.ts` to catch broken internal links.
 
 3. **CSS variables** - Use `var(--composio-orange)` not `var(--orange)`. Check `app/global.css`.
 
@@ -59,6 +61,14 @@ Detailed documentation for Claude is organized in `.claude/`:
 5. **Toolkits data** - `public/data/toolkits.json` must exist; errors are thrown, not ignored.
 
 6. **Test on mobile** - Fumadocs nav differs on mobile. Avoid assumptions about horizontal layout.
+
+7. **Toolkit FAQ files** - FAQ snippets live in `content/toolkits/faq/{slug}.md`. They're plain markdown (no frontmatter) embedded in toolkit pages at build time, not standalone Fumadocs pages. They're excluded from the toolkits Fumadocs source via `files: ['**/*', '!faq/**']` in `source.config.ts` but still scanned by the link checker.
+
+8. **Link checker** - `scripts/validate-links.ts` validates all internal links. It needs `bunfig.toml` (Bun preload for fumadocs-mdx) to run. Key details:
+   - Populate keys use `(home)/` prefix to match the `app/(home)/` route group
+   - Fragment validation falls back to parsing raw markdown headings (since `data.toc` is unavailable outside Next.js)
+   - Dynamic toolkit pages are validated against slugs from `public/data/toolkits.json`
+   - Non-Fumadocs `.md` files (like FAQ snippets) are picked up via `content/**/*.md` glob
 
 ## AI-Native Documentation
 

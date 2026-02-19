@@ -16,6 +16,7 @@
     "test:e2e": "turbo test:e2e --filter='@e2e-tests/*'",
     "test:e2e:node": "turbo test:e2e:node --filter='@e2e-tests/node-*'",
     "test:e2e:deno": "turbo test:e2e:deno --filter='@e2e-tests/deno-*'",
+    "test:e2e:cli": "turbo test:e2e:cli --filter='@e2e-tests/cli-*'",
     "test:e2e:cloudflare": "turbo test:e2e:cloudflare --filter='@e2e-tests/cf-*'",
     "test:ui": "vitest --ui",
     "typecheck": "turbo typecheck --filter=./ts/packages/**",

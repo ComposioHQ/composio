@@ -1,6 +1,7 @@
 import { Command } from '@effect/cli';
-import { Effect, Console } from 'effect';
+import { Effect } from 'effect';
 import { ComposioUserContext } from 'src/services/user-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 
 /**
  * CLI command to log out from the Composio CLI.
@@ -12,14 +13,15 @@ import { ComposioUserContext } from 'src/services/user-context';
  */
 export const logoutCmd = Command.make('logout', {}, () =>
   Effect.gen(function* () {
+    const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
 
     if (!ctx.isLoggedIn()) {
-      yield* Console.log('You are not logged in yet. Please run `composio login`.');
+      yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
       return;
     }
 
     yield* ctx.logout;
-    yield* Console.log(`Logged out successfully.`);
+    yield* ui.log.success('Logged out successfully.');
   })
 ).pipe(Command.withDescription('Log out from the Composio SDK.'));

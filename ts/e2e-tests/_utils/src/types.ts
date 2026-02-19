@@ -1,4 +1,4 @@
-import { WELL_KNOWN_NODE_VERSIONS, WELL_KNOWN_DENO_VERSIONS } from './const';
+import { WELL_KNOWN_NODE_VERSIONS, WELL_KNOWN_DENO_VERSIONS, WELL_KNOWN_CLI_VERSIONS } from './const';
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
@@ -15,6 +15,7 @@ export type NonEmptyString<T extends string> = T extends '' ? never : T;
 
 export type NodeVersionFromUser = typeof WELL_KNOWN_NODE_VERSIONS[number];
 export type DenoVersionFromUser = typeof WELL_KNOWN_DENO_VERSIONS[number];
+export type CliVersionFromUser = typeof WELL_KNOWN_CLI_VERSIONS[number];
 
 /**
  * Result of CI skip check for a specific Node version.
@@ -43,14 +44,25 @@ export type DenoVersionMeta =
   | { kind: 'current'; value: string; skip: SkipInCI };
 
 /**
+ * Metadata for a resolved CLI version to test against.
+ * Includes skip state for CI mode.
+ */
+export type CliVersionMeta =
+  | { kind: 'static'; value: string; skip: SkipInCI }
+  | { kind: 'overridden'; value: string; skip: SkipInCI }
+  | { kind: 'current'; value: string; skip: SkipInCI };
+
+/**
  * Runtime versions to test against.
- * Supports both Node.js and Deno runtimes.
+ * Supports Node.js, Deno, and CLI runtimes.
  */
 export interface RuntimeVersions {
   /** Node.js versions to test */
   node?: readonly NodeVersionFromUser[];
   /** Deno versions to test */
   deno?: readonly DenoVersionFromUser[];
+  /** CLI versions to test */
+  cli?: readonly CliVersionFromUser[];
 }
 
 /**
@@ -63,6 +75,14 @@ export interface E2ETestResult {
   stdout: string;
   /** Captured stderr */
   stderr: string;
+}
+
+/**
+ * Result of executing a command with requested file captures.
+ */
+export interface E2ETestResultWithFiles<F extends string = string> extends E2ETestResult {
+  /** Captured file contents keyed by requested file path */
+  files: { [K in F]: string };
 }
 
 /**
@@ -87,7 +107,17 @@ export interface RunFixtureOptions {
 /**
  * Supported runtime environments for e2e tests.
  */
-export type RuntimeKind = 'node' | 'deno';
+export type RuntimeKind = 'node' | 'deno' | 'cli';
+
+/**
+ * Options for runCmd.
+ */
+export interface RunCmdOptions {
+  /** Command to execute */
+  command: string;
+  /** Files to copy out of the container after execution */
+  files?: string[];
+}
 
 /**
  * Context passed to defineTests callback.
@@ -96,7 +126,10 @@ export interface DefineTestsContext {
   /** The runtime environment for this test execution */
   runtime: RuntimeKind;
   /** Run an arbitrary command in the Docker container */
-  runCmd: (command: string) => Promise<E2ETestResult>;
+  runCmd: {
+    <const C extends string>(command: NonEmptyString<C>): Promise<E2ETestResult>;
+    <const C extends string, const F extends string>(options: { command: NonEmptyString<C>; files: NonEmptyArray<F> }): Promise<E2ETestResultWithFiles<F>>;
+  };
   /**
    * Run a fixture file with Node.js.
    *
@@ -135,7 +168,7 @@ export interface DefineTestsContext {
 export interface E2EConfig {
   /**
    * Runtime versions to test against.
-   * Supports Node.js and Deno runtimes.
+   * Supports Node.js, Deno, and CLI runtimes.
    *
    * @example
    * ```typescript

@@ -20,6 +20,7 @@ import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
+import { TerminalUILive } from 'src/services/terminal-ui';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -76,6 +77,7 @@ const layers = Layer.mergeAll(
   JsPackageManagerDetector.Default,
   BunContext.layer,
   BunFileSystem.layer,
+  TerminalUILive,
   Logger.pretty
 ) satisfies RequiredLayer;
 

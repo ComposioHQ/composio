@@ -7502,9 +7502,19 @@
               "type": "string"
             },
             "required": false,
-            "description": "Free-text search query to find tools by name, description, or functionality",
+            "description": "Full-text search query to filter tools by name, slug, or description. Applied as a soft filter on top of other filters.",
             "in": "query",
-            "name": "search"
+            "name": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Deprecated: use \"query\" instead. Free-text search query to find tools by name, description, or functionality.",
+            "in": "query",
+            "name": "search",
+            "deprecated": true
           },
           {
             "schema": {
@@ -8532,7 +8542,8 @@
                   "allow_tracing": {
                     "type": "boolean",
                     "nullable": true,
-                    "description": "Enable debug tracing for tool execution (useful for debugging)",
+                    "description": "Deprecated. Enable debug tracing for tool execution (useful for debugging)",
+                    "deprecated": true,
                     "example": false
                   }
                 }

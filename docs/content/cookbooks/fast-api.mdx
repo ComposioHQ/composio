@@ -199,8 +199,6 @@ A Composio client dependency.
 """
 ```
 
-Check [dependencies](./simple_gmail_agent/server/dependencies.py) module for more details.
-
 ### Invoke agent via FastAPI
 
 When invoking an agent, make sure you validate the `user_id`.
@@ -265,17 +263,9 @@ def _run_gmail_agent(
     return result
 ```
 
-<Callout>
-Check [server](./simple_gmail_agent/server/) module for service implementation
-</Callout>
-
 ## Putting everything together
 
 So far, we have created an agent with ability to interact with `gmail` using the `composio` SDK, functions to manage connected accounts for users and a FastAPI service. Now let's run the service.
-
-<Callout>
-Before proceeding, check the [code](./simple_gmail_agent/server/api.py) for utility endpoints not discussed in the cookbook
-</Callout>
 
 
 1. Clone the repository

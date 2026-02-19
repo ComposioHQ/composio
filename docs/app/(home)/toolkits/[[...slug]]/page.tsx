@@ -108,7 +108,7 @@ function markdownToHtml(md: string): string {
 }
 
 async function readToolkitFaq(slug: string): Promise<FaqItem[] | null> {
-  const filePath = join(process.cwd(), 'content/toolkit-faq', `${slug}.md`);
+  const filePath = join(process.cwd(), 'content/toolkits/faq', `${slug}.md`);
   let content: string;
   try {
     content = await readFile(filePath, 'utf-8');

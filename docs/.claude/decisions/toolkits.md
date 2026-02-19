@@ -195,7 +195,7 @@ Run: `bun run generate:toolkits`
 ## FAQ Section
 
 ### How It Works
-- Per-toolkit FAQ sourced from plain markdown files in `content/toolkit-faq/{toolkit-slug}.md`
+- Per-toolkit FAQ sourced from plain markdown files in `content/toolkits/faq/{toolkit-slug}.md`
 - `##` headings are questions, body text is the answer
 - Markdown is converted to HTML at build time using `remark-parse` + `remark-rehype` + `hast-util-to-html` (all transitive deps from Fumadocs, no new packages)
 - Rendered as Fumadocs `Accordion` components between the Header and Auth Details sections
@@ -210,7 +210,7 @@ Run: `bun run generate:toolkits`
 - No changes to sitemap or routing
 
 ### Adding FAQ Content
-- Create/edit `content/toolkit-faq/{toolkit-slug}.md` — no code changes needed
+- Create/edit `content/toolkits/faq/{toolkit-slug}.md` — no code changes needed
 - Empty files or files with no valid `##` headings are safely ignored
 
 ---

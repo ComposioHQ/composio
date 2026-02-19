@@ -608,7 +608,7 @@ function renderParamsMarkdown(params: Record<string, ParameterSchema>): string[]
 // Read FAQ markdown for a toolkit (returns raw markdown or null)
 async function readToolkitFaqMarkdown(slug: string): Promise<string | null> {
   try {
-    const filePath = join(process.cwd(), 'content/toolkit-faq', `${slug}.md`);
+    const filePath = join(process.cwd(), 'content/toolkits/faq', `${slug}.md`);
     return await readFile(filePath, 'utf-8');
   } catch {
     return null;

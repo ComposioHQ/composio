@@ -1,6 +1,7 @@
 import { Command } from '@effect/cli';
-import { Effect, Console } from 'effect';
+import { Effect } from 'effect';
 import { getVersion } from 'src/effects/version';
+import { TerminalUI } from 'src/services/terminal-ui';
 
 /**
  * CLI command to display the version of the Composio CLI.
@@ -11,11 +12,13 @@ import { getVersion } from 'src/effects/version';
  * ```
  */
 export const versionCmd = Command.make('version', {}).pipe(
-  Command.withDescription('Display your account information.'),
+  Command.withDescription('Display the current Composio CLI version.'),
   Command.withHandler(() =>
     Effect.gen(function* () {
+      const ui = yield* TerminalUI;
       const version = yield* getVersion;
-      yield* Console.log(`${version}`);
+      yield* ui.log.info(version);
+      yield* ui.output(version);
 
       yield* Effect.logDebug('Composio CLI version command executed successfully.');
     })

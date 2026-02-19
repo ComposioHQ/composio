@@ -1,6 +1,6 @@
 # E2E Tests
 
-End-to-end tests for `@composio/core` across different JavaScript runtimes.
+End-to-end tests for `@composio/core` and the CLI across different runtimes.
 
 ## Directory Structure
 
@@ -9,8 +9,9 @@ ts/e2e-tests/
 ├── _utils/                                  # Shared test infrastructure
 │   ├── Dockerfile.node                      # Docker image for Node.js tests
 │   ├── Dockerfile.deno                      # Docker image for Deno tests
+│   ├── Dockerfile.cli                       # Docker image for CLI tests (scratch)
 │   ├── scripts/                             # Docker build and cleanup scripts
-│   │   ├── docker-build.ts                  # Pre-build images for all Node/Deno versions
+│   │   ├── docker-build.ts                  # Pre-build images for all Node/Deno/CLI versions
 │   │   └── docker-clean.ts                  # Remove all e2e Docker images
 │   ├── src/                                 # TypeScript runner utilities
 │   │   ├── config.ts                        # Configuration utilities
@@ -23,7 +24,7 @@ ts/e2e-tests/
 │   │   ├── types.ts                         # TypeScript type definitions
 │   │   └── volume.ts                        # Docker volume management
 │   └── README.md                            # Utils documentation
-└── runtimes/
+├── runtimes/
     ├── node/                                # Node.js runtime tests
     │   ├── cjs-basic/                       # CommonJS compatibility tests
     │   ├── esm-basic/                       # ESM compatibility tests
@@ -39,6 +40,9 @@ ts/e2e-tests/
         ├── cf-workers-basic/                # Basic Cloudflare Workers tests
         ├── cf-workers-files/                # Cloudflare Workers file handling tests
         └── cf-workers-tool-router-ai/       # Cloudflare Workers AI SDK tool router tests
+└── cli/                                     # CLI runtime tests (scratch)
+    ├── version/                             # composio version command tests
+    └── whoami/                              # composio whoami command tests
 ```
 
 ## Running Tests
@@ -81,6 +85,18 @@ COMPOSIO_E2E_DENO_VERSION=2.6.7 pnpm test:e2e:deno
 
 ```bash
 pnpm test:e2e:cloudflare
+```
+
+### CLI Tests Only
+
+```bash
+pnpm test:e2e:cli
+```
+
+To run with a specific CLI version:
+
+```bash
+COMPOSIO_E2E_CLI_VERSION=0.1.24 pnpm test:e2e:cli
 ```
 
 ## Adding New Tests
@@ -207,6 +223,42 @@ e2e(import.meta.url, {
 2. Add a `package.json` with name `@e2e-tests/cf-my-test`
 3. Add `test:e2e` and `test:e2e:cloudflare` scripts
 4. Configure vitest with `@cloudflare/vitest-pool-workers`
+
+### CLI Runtime Tests
+
+1. Create a new directory under `cli/` (e.g., `cli/my-test`)
+2. Add a `package.json` with name `@e2e-tests/cli-my-test`
+3. Add `test:e2e` and `test:e2e:cli` scripts
+4. Create an `e2e.test.ts` file with inline configuration:
+
+```typescript
+import { e2e, sanitizeOutput, type E2ETestResult } from '@e2e-tests/utils';
+import { TIMEOUTS } from '@e2e-tests/utils/const';
+import { describe, it, expect, beforeAll } from 'bun:test';
+
+e2e(import.meta.url, {
+  versions: {
+    cli: ['current'],
+  },
+  defineTests: ({ runCmd }) => {
+    let result: E2ETestResult;
+
+    beforeAll(async () => {
+      result = await runCmd('composio version');
+    }, TIMEOUTS.FIXTURE);
+
+    describe('output', () => {
+      it('exits successfully', () => {
+        expect(result.exitCode).toBe(0);
+      });
+
+      it('stdout matches snapshot', () => {
+        expect(sanitizeOutput(result.stdout)).toMatchSnapshot();
+      });
+    });
+  },
+});
+```
 
 ## Debugging
 

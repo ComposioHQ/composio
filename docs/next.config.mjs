@@ -522,11 +522,7 @@ const config = {
         destination: '/docs/quickstart',
         permanent: true,
       },
-      {
-        source: '/docs/providers',
-        destination: '/docs/tools-and-toolkits',
-        permanent: true,
-      },
+      // Removed: /docs/providers now has its own index page
       {
         source: '/docs/providers/custom-providers/my-ai-provider',
         destination: '/docs/providers/custom-providers/typescript',

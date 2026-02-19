@@ -171,10 +171,24 @@ export function mdxToCleanMarkdown(content: string): string {
   );
   result = result.replace(/<\/FrameworkOption>/g, '');
 
-  // Convert IntegrationContent to labeled section (Native Tools / MCP)
+  // Convert IntegrationTabs — extract label from tabs prop if present
+  const tabLabelMap: Record<string, string> = { native: 'Native Tools', mcp: 'MCP' };
+  result = result.replace(
+    /<IntegrationTabs[\s\S]*?tabs=\{\[([\s\S]*?)\]\}[\s\S]*?>/g,
+    (_, tabsContent: string) => {
+      const labelRegex = /value:\s*"([^"]+)"[\s\S]*?label:\s*"([^"]+)"/g;
+      let match;
+      while ((match = labelRegex.exec(tabsContent)) !== null) {
+        tabLabelMap[match[1]] = match[2];
+      }
+      return '';
+    }
+  );
+
+  // Convert IntegrationContent to labeled section
   result = result.replace(
     /<IntegrationContent[\s\S]*?value="([^"]*)"[\s\S]*?>/g,
-    (_, value) => `\n### ${value === 'native' ? 'Native Tools' : 'MCP'}\n`
+    (_, value: string) => `\n### ${tabLabelMap[value] || value}\n`
   );
   result = result.replace(/<\/IntegrationContent>/g, '');
 

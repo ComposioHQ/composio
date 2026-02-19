@@ -1,6 +1,7 @@
-import { Console, Effect } from 'effect';
+import { Effect } from 'effect';
 import colors from 'picocolors';
 import { S_BAR, unicodeOr } from '@clack/prompts';
+import { TerminalUI } from 'src/services/terminal-ui';
 import type {
   ComposioToolkitsRepository,
   InvalidVersionDetail,
@@ -140,20 +141,20 @@ export const validateToolkitVersionOverrides = ({
   versionOverrides,
   toolkitSlugsFilter,
   client,
-}: ValidateVersionsOptions): Effect.Effect<ValidateVersionsResult, Error> =>
+}: ValidateVersionsOptions): Effect.Effect<ValidateVersionsResult, Error, TerminalUI> =>
   Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+
     // Skip if no overrides
     if (versionOverrides.size === 0) {
       return { validatedOverrides: versionOverrides };
     }
 
     // Log detected overrides
-    yield* Console.log('Detected toolkit version overrides:');
-    for (const [toolkit, version] of versionOverrides) {
-      yield* Console.log(`  - ${toolkit}: ${version}`);
-    }
-
-    yield* Console.log('Validating toolkit version overrides...');
+    const overrideLines = [...versionOverrides]
+      .map(([toolkit, version]) => `  ${toolkit}: ${version}`)
+      .join('\n');
+    yield* ui.log.info(`Detected toolkit version overrides:\n${overrideLines}`);
 
     const { validatedOverrides, warnings } = yield* client
       .validateToolkitVersions(versionOverrides, toolkitSlugsFilter ?? undefined)
@@ -182,7 +183,7 @@ export const validateToolkitVersionOverrides = ({
 
     // Log warnings for unused overrides
     for (const warning of warnings) {
-      yield* Console.warn(`Warning: ${warning}`);
+      yield* ui.log.warn(`${warning}`);
     }
 
     return { validatedOverrides };

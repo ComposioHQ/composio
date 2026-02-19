@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 /**
- * Removes all Docker images used by Node.js and Deno e2e tests.
+ * Removes all Docker images used by Node.js, Deno, and CLI e2e tests.
  * Images are identified by the label `composio.e2e=true`.
  */
 
 import { $ } from 'bun';
 
-async function cleanImages(runtime: 'node' | 'deno'): Promise<number> {
-  console.log(`Finding e2e ${runtime === 'node' ? 'Node.js' : 'Deno'} Docker images...`);
+async function cleanImages(runtime: 'node' | 'deno' | 'cli'): Promise<number> {
+  const runtimeLabel = runtime === 'node' ? 'Node.js' : runtime === 'deno' ? 'Deno' : 'CLI';
+  console.log(`Finding e2e ${runtimeLabel} Docker images...`);
 
   // Find all images with the e2e labels
   const result = await $`docker images --filter label=composio.e2e=true --filter label=composio.runtime=${runtime} --format {{.Repository}}:{{.Tag}}`
@@ -26,7 +27,7 @@ async function cleanImages(runtime: 'node' | 'deno'): Promise<number> {
     .filter((img) => img.length > 0 && !img.includes('<none>'));
 
   if (images.length === 0) {
-    console.log(`No e2e ${runtime === 'node' ? 'Node.js' : 'Deno'} Docker images found.`);
+    console.log(`No e2e ${runtimeLabel} Docker images found.`);
     return 0;
   }
 
@@ -58,6 +59,9 @@ async function main() {
 
   // Clean Deno images
   totalFailures += await cleanImages('deno');
+
+  // Clean CLI images
+  totalFailures += await cleanImages('cli');
 
   if (totalFailures > 0) {
     console.error(`\nFailed to remove ${totalFailures} image(s).`);

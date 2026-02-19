@@ -1,9 +1,9 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Console, Schedule } from 'effect';
-import { green } from 'ansis';
+import { Effect, Schedule } from 'effect';
 import open, { apps } from 'open';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
@@ -20,13 +20,17 @@ export const noBrowser = Options.boolean('no-browser').pipe(
  */
 export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
   Effect.gen(function* () {
+    const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
 
+    yield* ui.intro('composio login');
+
     if (ctx.isLoggedIn()) {
-      yield* Console.log(`✔ You're already logged in!.`);
-      yield* Console.log(
-        `✔ If you want to log in with a different account, please run \`composio logout\` first.`
+      yield* ui.log.warn(`You're already logged in!`);
+      yield* ui.log.info(
+        `If you want to log in with a different account, please run \`composio logout\` first.`
       );
+      yield* ui.outro('');
       return;
     }
 
@@ -41,12 +45,13 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
     const url = `${ctx.data.webURL}?cliKey=${session.id}`;
 
     if (noBrowser) {
-      yield* Console.log(`> Please login using the following URL:`);
+      yield* ui.log.info('Please login using the following URL:');
     } else {
-      yield* Console.log(`> Redirecting you to the login page`);
+      yield* ui.log.step('Redirecting you to the login page');
     }
 
-    yield* Console.log(green`> ${url}`);
+    yield* ui.note(url, 'Login URL');
+    yield* ui.output(url);
 
     if (!noBrowser) {
       // Open the given `url` in the default browser
@@ -60,27 +65,33 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
       );
     }
 
-    // Retry operation until the session status is "linked" with exponential backoff
-    const linkedSession = yield* Effect.retry(
-      Effect.gen(function* () {
-        const currentSession = yield* client.getSession({
-          ...session,
-        });
+    // Retry operation until the session status is "linked" with exponential backoff.
+    // useMakeSpinner auto-cleans up the spinner on interruption (e.g., Ctrl+C).
+    const linkedSession = yield* ui.useMakeSpinner('Waiting for login...', spinner =>
+      Effect.retry(
+        Effect.gen(function* () {
+          const currentSession = yield* client.getSession({
+            ...session,
+          });
 
-        // Check if session is linked
-        if (currentSession.status === 'linked') {
-          return currentSession;
-        }
+          // Check if session is linked
+          if (currentSession.status === 'linked') {
+            return currentSession;
+          }
 
-        // If still pending, fail to trigger retry
-        return yield* Effect.fail(
-          new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
-        );
-      }),
-      // Exponential backoff: start with 0.3s, max 5s, up to 15 retries
-      Schedule.exponential('0.3 seconds').pipe(
-        Schedule.intersect(Schedule.recurs(15)),
-        Schedule.intersect(Schedule.spaced('5 seconds'))
+          // If still pending, fail to trigger retry
+          return yield* Effect.fail(
+            new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
+          );
+        }),
+        // Exponential backoff: start with 0.3s, max 5s, up to 15 retries
+        Schedule.exponential('0.3 seconds').pipe(
+          Schedule.intersect(Schedule.recurs(15)),
+          Schedule.intersect(Schedule.spaced('5 seconds'))
+        )
+      ).pipe(
+        Effect.tap(() => spinner.stop('Login successful')),
+        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
       )
     );
 
@@ -88,6 +99,7 @@ export const loginCmd = Command.make('login', { noBrowser }, ({ noBrowser }) =>
 
     yield* ctx.login(linkedSession.api_key);
 
-    yield* Console.log(`Logged in with user account ${linkedSession.account.email}`);
+    yield* ui.log.success(`Logged in with user account ${linkedSession.account.email}`);
+    yield* ui.outro("You're all set!");
   })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

@@ -1,4 +1,4 @@
-import { Data, Effect, Console, Config, Option } from 'effect';
+import { Data, Effect, Config, Option } from 'effect';
 import { HttpClient, FileSystem } from '@effect/platform';
 import * as path from 'node:path';
 import { APP_VERSION } from '../constants';
@@ -11,6 +11,7 @@ import { CompareSemverError, semverComparator } from 'src/effects/compare-semver
 import decompress from 'decompress';
 import type { Predicate } from 'effect/Predicate';
 import { renderPrettyError } from './utils/pretty-error';
+import { TerminalUI } from './terminal-ui';
 
 export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinaryError')<{
   readonly cause?: unknown;
@@ -138,7 +139,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           );
         }
 
-        yield* Console.log(`Downloading ${asset.name}...`);
+        yield* Effect.logDebug(`Downloading ${asset.name}...`);
 
         const response = yield* Effect.gen(function* () {
           const resp = yield* httpClient.get(asset.browser_download_url);
@@ -312,51 +313,64 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
      */
     const upgrade = () =>
       Effect.gen(function* () {
+        const ui = yield* TerminalUI;
         const upgradeTargetOpt = yield* DEBUG_OVERRIDE_CONFIG['UPGRADE_TARGET'];
         const currentPath = yield* getCurrentExecutablePath();
         yield* Effect.logDebug(`Current executable path: ${currentPath}`);
 
+        yield* ui.intro('composio upgrade');
+
         // If local binary path is provided (for testing), use it directly
         if (Option.isSome(upgradeTargetOpt)) {
-          yield* Console.log(`📦 New local version available (current: ${APP_VERSION})`);
+          yield* ui.log.info(`New local version available (current: ${APP_VERSION})`);
           yield* replaceBinary(upgradeTargetOpt.value, currentPath);
+          yield* ui.outro('Upgrade completed');
           return;
         }
 
-        yield* Console.log('Checking for updates...');
+        const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
+          Effect.gen(function* () {
+            const release = yield* fetchLatestRelease();
+            const updateAvailable = yield* isUpdateAvailable(release);
+            if (!updateAvailable) {
+              yield* spinner.stop('You are already running the latest version!');
+              return false;
+            }
 
-        const release = yield* fetchLatestRelease();
-        const updateAvailable = yield* isUpdateAvailable(release);
-        if (!updateAvailable) {
-          yield* Console.log('✅ You are already running the latest version!');
-          return;
-        }
+            yield* spinner.message(
+              `New version available: ${release.tag_name} (current: ${APP_VERSION}). Downloading...`
+            );
 
-        yield* Console.log(
-          `📦 New version available: ${release.tag_name} (current: ${APP_VERSION})`
+            const platformArch = yield* detectPlatform;
+            const { name, data } = yield* downloadBinary(release, platformArch);
+
+            yield* spinner.message('Extracting...');
+
+            // The temporary directory is automatically cleaned up
+            const tmpDir = yield* fs
+              .makeTempDirectoryScoped({ prefix: `${CLI_BINARY_NAME}-upgrade}` })
+              .pipe(
+                Effect.catchAll(error =>
+                  Effect.fail(
+                    new UpgradeBinaryError({
+                      cause: error as Error,
+                      message: 'Failed to create temporary directory',
+                    })
+                  )
+                )
+              );
+
+            const extractedBinaryPath = yield* extractBinary({ name, data }, tmpDir);
+            yield* replaceBinary(extractedBinaryPath, currentPath);
+
+            yield* spinner.stop('Upgrade completed!');
+            return true;
+          })
         );
 
-        const platformArch = yield* detectPlatform;
-        const { name, data } = yield* downloadBinary(release, platformArch);
-
-        // The temporary directory is automatically cleaned up
-        const tmpDir = yield* fs
-          .makeTempDirectoryScoped({ prefix: `${CLI_BINARY_NAME}-upgrade}` })
-          .pipe(
-            Effect.catchAll(error =>
-              Effect.fail(
-                new UpgradeBinaryError({
-                  cause: error as Error,
-                  message: 'Failed to create temporary directory',
-                })
-              )
-            )
-          );
-
-        const extractedBinaryPath = yield* extractBinary({ name, data }, tmpDir);
-        yield* replaceBinary(extractedBinaryPath, currentPath);
-
-        yield* Console.log(`🎉 Upgrade completed! Restart your terminal to use the new version.`);
+        yield* ui.outro(
+          didUpgrade ? 'Restart your terminal to use the new version.' : 'No upgrade needed.'
+        );
       });
 
     return {

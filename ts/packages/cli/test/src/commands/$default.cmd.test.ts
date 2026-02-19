@@ -14,7 +14,9 @@ describe('CLI: composio', () => {
 
         expect(result).toEqual(
           ValidationError.commandMismatch(
-            HelpDoc.p("Invalid subcommand for composio - use 'version'")
+            HelpDoc.p(
+              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'generate', 'py', 'ts'"
+            )
           )
         );
       })
@@ -54,11 +56,7 @@ describe('CLI: composio', () => {
 
           [0;1mCOMMANDS[0m
 
-            - version  Display your account information.
-
-          [0;1mCOMMANDS[0m
-
-            - version                                                                                                  Display your account information.
+            - version                                                                                                  Display the current Composio CLI version.
 
             - upgrade                                                                                                  Upgrade your Composio CLI to the latest available version.
 

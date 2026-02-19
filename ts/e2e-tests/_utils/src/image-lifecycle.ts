@@ -53,6 +53,8 @@ export interface RunNodeContainerOptions {
   env?: Record<string, string | undefined>;
   labels?: Record<string, string>;
   name?: string;
+  /** Whether to auto-remove the container after exit (default: true) */
+  remove?: boolean;
 }
 
 /**
@@ -102,6 +104,20 @@ function defaultDenoLabels(denoVersion?: string): Record<string, string> {
   };
   if (denoVersion) {
     labels['composio.deno_version'] = denoVersion;
+  }
+  return labels;
+}
+
+/**
+ * Creates default Docker labels for CLI e2e images.
+ */
+function defaultCliLabels(cliVersion?: string): Record<string, string> {
+  const labels: Record<string, string> = {
+    'composio.e2e': 'true',
+    'composio.runtime': 'cli',
+  };
+  if (cliVersion) {
+    labels['composio.cli_version'] = cliVersion;
   }
   return labels;
 }
@@ -224,7 +240,7 @@ export async function ensureNodeImage(
  * Runs a command in a Node Docker container.
  */
 export async function runNodeContainer(options: RunNodeContainerOptions): Promise<ExecResult> {
-  const { imageTag, cmd, cwd, mounts, volumes, env, labels, name } = options;
+  const { imageTag, cmd, cwd, mounts, volumes, env, labels, name, remove } = options;
 
   // Validate imageTag is provided, as it determines which Docker image to run.
   if (!imageTag || typeof imageTag !== 'string') {
@@ -233,7 +249,10 @@ export async function runNodeContainer(options: RunNodeContainerOptions): Promis
 
   const nodeVersion = parseNodeVersionFromImageTag(imageTag);
 
-  const dockerArgs = ['run', '--rm'];
+  const dockerArgs = ['run'];
+  if (remove !== false) {
+    dockerArgs.push('--rm');
+  }
 
   dockerArgs.push(...labelsToArgs({ ...defaultNodeLabels(nodeVersion), ...(labels ?? {}) }));
 
@@ -317,6 +336,8 @@ export interface RunDenoContainerOptions {
   env?: Record<string, string | undefined>;
   labels?: Record<string, string>;
   name?: string;
+  /** Whether to auto-remove the container after exit (default: true) */
+  remove?: boolean;
 }
 
 /**
@@ -398,7 +419,7 @@ export async function ensureDenoImage(
  * Runs a command in a Deno Docker container.
  */
 export async function runDenoContainer(options: RunDenoContainerOptions): Promise<ExecResult> {
-  const { imageTag, cmd, cwd, mounts, volumes, env, labels, name } = options;
+  const { imageTag, cmd, cwd, mounts, volumes, env, labels, name, remove } = options;
 
   // Validate imageTag is provided, as it determines which Docker image to run.
   if (!imageTag || typeof imageTag !== 'string') {
@@ -407,7 +428,10 @@ export async function runDenoContainer(options: RunDenoContainerOptions): Promis
 
   const denoVersion = parseDenoVersionFromImageTag(imageTag);
 
-  const dockerArgs = ['run', '--rm'];
+  const dockerArgs = ['run'];
+  if (remove !== false) {
+    dockerArgs.push('--rm');
+  }
 
   dockerArgs.push(...labelsToArgs({ ...defaultDenoLabels(denoVersion), ...(labels ?? {}) }));
 
@@ -470,6 +494,171 @@ export async function runDenoContainer(options: RunDenoContainerOptions): Promis
     dockerArgs.push('sh', '-lc', cmd);
   } else {
     throw new Error('runDenoContainer({ cmd, ... }): cmd must be a non-empty string or string[]');
+  }
+
+  return exec('docker', dockerArgs);
+}
+
+// ============================================================================
+// CLI Docker utilities
+// ============================================================================
+
+/**
+ * Options for running a CLI container.
+ */
+export interface RunCliContainerOptions {
+  imageTag: string;
+  cmd: string | string[];
+  cwd?: string;
+  mounts?: DockerMount[];
+  /** Named volume mounts (volumes must be created beforehand with `docker volume create`) */
+  volumes?: DockerVolumeMount[];
+  env?: Record<string, string | undefined>;
+  labels?: Record<string, string>;
+  name?: string;
+  /** Whether to auto-remove the container after exit (default: true) */
+  remove?: boolean;
+}
+
+/**
+ * Options for ensureCliImage.
+ */
+export interface EnsureCliImageOptions {
+  repoRoot?: string;
+  dockerfilePath?: string;
+}
+
+/**
+ * Creates image tag for a given CLI version.
+ */
+function imageTagForCliVersion(cliVersion: string): string {
+  return `composio-e2e-cli:${cliVersion}`;
+}
+
+/**
+ * Parses CLI version from an image tag.
+ */
+function parseCliVersionFromImageTag(imageTag: string): string | undefined {
+  const match = /^composio-e2e-cli:(.+)$/.exec(imageTag);
+  return match?.[1];
+}
+
+/**
+ * Ensures a Docker image exists for the given CLI version, building it if necessary.
+ */
+export async function ensureCliImage(
+  cliVersion: string,
+  options: EnsureCliImageOptions = {}
+): Promise<string> {
+  if (!cliVersion || typeof cliVersion !== 'string') {
+    throw new Error(`ensureCliImage(${cliVersion}): cliVersion must be a non-empty string`);
+  }
+
+  const repoRoot = options.repoRoot ?? getRepoRoot();
+  const dockerfilePath = options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.cli');
+  const imageTag = imageTagForCliVersion(cliVersion);
+
+  const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
+  if (inspect.exitCode === 0) {
+    return imageTag;
+  }
+
+  const buildArgs = [
+    'build',
+    '-f',
+    dockerfilePath,
+    '--build-arg',
+    `CLI_VERSION=${cliVersion}`,
+    ...labelsToArgs(defaultCliLabels(cliVersion)),
+    '-t',
+    imageTag,
+    repoRoot,
+  ];
+
+  const built = await exec('docker', buildArgs, { cwd: repoRoot });
+  if (built.exitCode !== 0) {
+    const output = built.stderr || built.stdout;
+    if (output.includes('already exists')) {
+      const recheck = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
+      if (recheck.exitCode === 0) {
+        return imageTag;
+      }
+    }
+
+    const err = new Error(`Failed to build Docker image ${imageTag}`);
+    (err as Error & { cause: Error }).cause = new Error(output);
+    throw err;
+  }
+
+  return imageTag;
+}
+
+/**
+ * Runs a command in a CLI Docker container.
+ */
+export async function runCliContainer(options: RunCliContainerOptions): Promise<ExecResult> {
+  const { imageTag, cmd, cwd, mounts, volumes, env, labels, name, remove } = options;
+
+  if (!imageTag || typeof imageTag !== 'string') {
+    throw new Error('runCliContainer({ imageTag, ... }): imageTag must be a non-empty string');
+  }
+
+  const cliVersion = parseCliVersionFromImageTag(imageTag);
+
+  const dockerArgs = ['run'];
+  if (remove !== false) {
+    dockerArgs.push('--rm');
+  }
+
+  dockerArgs.push(...labelsToArgs({ ...defaultCliLabels(cliVersion), ...(labels ?? {}) }));
+
+  if (name) {
+    dockerArgs.push('--name', name);
+  }
+
+  if (cwd) {
+    const containerCwd = cwd.startsWith('/') ? cwd : `/app/${cwd}`;
+    dockerArgs.push('--workdir', containerCwd);
+  }
+
+  if (env) {
+    for (const [k, v] of Object.entries(env)) {
+      if (v === undefined) continue;
+      dockerArgs.push('-e', `${k}=${v}`);
+    }
+  }
+
+  if (mounts) {
+    for (const m of mounts) {
+      if (!m?.source || !m?.target) {
+        throw new Error('runCliContainer(...): each mount must have { source, target }');
+      }
+      const parts = [`type=bind`, `src=${m.source}`, `dst=${m.target}`];
+      if (m.readonly) parts.push('readonly');
+      dockerArgs.push('--mount', parts.join(','));
+    }
+  }
+
+  if (volumes) {
+    for (const v of volumes) {
+      if (!v?.volume || !v?.target) {
+        throw new Error('runCliContainer(...): each volume must have { volume, target }');
+      }
+      const parts = [`type=volume`, `src=${v.volume}`, `dst=${v.target}`];
+      if (v.readonly) parts.push('readonly');
+      dockerArgs.push('--mount', parts.join(','));
+    }
+  }
+
+  dockerArgs.push(imageTag);
+
+  if (Array.isArray(cmd)) {
+    dockerArgs.push(...cmd.map(String));
+  } else if (typeof cmd === 'string' && cmd.length > 0) {
+    // Use -c (not -lc) for busybox sh compatibility in scratch images
+    dockerArgs.push('sh', '-c', cmd);
+  } else {
+    throw new Error('runCliContainer({ cmd, ... }): cmd must be a non-empty string or string[]');
   }
 
   return exec('docker', dockerArgs);

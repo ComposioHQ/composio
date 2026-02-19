@@ -6,65 +6,98 @@ keywords: [gpt, responses api, chat completions]
 
 The OpenAI Provider is the default provider for the Composio SDK. It transforms Composio tools into a format compatible with OpenAI's function calling capabilities through both the Responses and Chat Completion APIs.
 
-## Setup
+<Callout type="info">
+Looking for the OpenAI Agents SDK? See the [OpenAI Agents SDK](/docs/providers/openai-agents) provider page.
+</Callout>
 
-By default, the OpenAI Provider is installed when you install the Composio SDK. You can also install it manually:
+<IntegrationTabs tabs={[
+  { value: "responses", label: "Responses API" },
+  { value: "chat", label: "Chat Completions" },
+]}>
 
-<Tabs items={["Python", "TypeScript"]}>
+<IntegrationContent value="responses">
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```bash
-pip install composio_openai
+pip install composio composio_openai openai
 ```
 </Tab>
 <Tab value="TypeScript">
 ```bash
-npm install @composio/openai
+npm install @composio/core @composio/openai openai
 ```
 </Tab>
 </Tabs>
+</Step>
 
-## Responses API
+<Step>
+**Configure API Keys**
 
-The Responses API is the recommended way to build more agentic flows with the OpenAI API.
-Read more about it in the [OpenAI documentation](https://platform.openai.com/docs/api-reference/responses)
-
-<Callout>
-Before executing any tools that require authentication (like Gmail), you'll need to:
-1. [Create an Auth Configuration](/docs/tools-direct/authenticating-tools#creating-an-auth-config) for your app
-2. [Set up a Connected Account](/docs/tools-direct/authenticating-tools#connecting-an-account) for the user.
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Callout>
 
-<Tabs items={["Python", "TypeScript"]}>
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+The [Responses API](https://platform.openai.com/docs/api-reference/responses) is the recommended way to build agentic flows with OpenAI.
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
+import json
 from openai import OpenAI
 from composio import Composio
 from composio_openai import OpenAIResponsesProvider
 
-# Initialize Composio client with OpenAI Provider
 composio = Composio(provider=OpenAIResponsesProvider())
-openai = OpenAI()
+client = OpenAI()
 
-# Make sure to create an auth config and a connected account for the user with gmail toolkit
-# Make sure to replace "your-user-id" with the actual user ID
-user_id = "your-user-id"
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-tools = composio.tools.get(user_id=user_id, tools=["GMAIL_SEND_EMAIL"])
-
-response = openai.responses.create(
-    model="gpt-5",
+response = client.responses.create(
+    model="gpt-5.2",
     tools=tools,
     input=[
         {
             "role": "user",
-            "content": "Send an email to soham.g@composio.dev with the subject 'Running OpenAI Provider snippet' and body 'Hello from the code snippet in openai docs'"
+            "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
         }
     ]
 )
 
-# Execute the function calls
-result = composio.provider.handle_tool_calls(response=response, user_id=user_id)
-print(result)
+# Agentic loop — keep executing tool calls until the model responds with text
+while True:
+    tool_calls = [o for o in response.output if o.type == "function_call"]
+    if not tool_calls:
+        break
+    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    response = client.responses.create(
+        model="gpt-5.2",
+        tools=tools,
+        previous_response_id=response.id,
+        input=[
+            {"type": "function_call_output", "call_id": tool_calls[i].call_id, "output": json.dumps(result)}
+            for i, result in enumerate(results)
+        ]
+    )
+
+# Print final response
+for item in response.output:
+    if item.type == "message":
+        print(item.content[0].text)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -73,83 +106,140 @@ import OpenAI from 'openai';
 import { Composio } from '@composio/core';
 import { OpenAIResponsesProvider } from '@composio/openai';
 
-// Initialize Composio client with OpenAI Provider
 const composio = new Composio({
     provider: new OpenAIResponsesProvider(),
 });
-const openai = new OpenAI({});
+const client = new OpenAI();
 
-// Make sure to create an auth config and a connected account for the user with gmail toolkit
-// Make sure to replace "your-user-id" with the actual user ID
-const userId = "your-user-id";
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
 
-async function main() {
-    try {
-        const tools = await composio.tools.get(userId, {tools: ["GMAIL_SEND_EMAIL"]});
+let response = await client.responses.create({
+    model: "gpt-5.2",
+    tools: tools,
+    input: [
+        {
+            role: "user",
+            content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+        },
+    ],
+});
 
-        const response = await openai.responses.create({
-            model: "gpt-5",
-            tools: tools,
-            input: [
-                {
-                    role: "user",
-                    content: "Send an email to soham.g@composio.dev with the subject 'Running OpenAI Provider snippet' and body 'Hello from the code snippet in openai docs'"
-                },
-            ],
-        });
+// Agentic loop — keep executing tool calls until the model responds with text
+while (true) {
+    const toolCalls = response.output.filter((o) => o.type === "function_call");
+    if (toolCalls.length === 0) break;
 
-        // Execute the function calls
-        const result = await composio.provider.handleToolCalls(userId, response.output);
-        console.log(result);
-    } catch (error) {
-        console.error('Error:', error);
-    }
+    const results = await composio.provider.handleToolCalls("user_123", response.output);
+    response = await client.responses.create({
+        model: "gpt-5.2",
+        tools: tools,
+        previous_response_id: response.id,
+        input: results.map((result, i) => ({
+            type: "function_call_output" as const,
+            call_id: toolCalls[i].call_id,
+            output: JSON.stringify(result),
+        })),
+    });
 }
 
-main();
+// Print final response
+for (const item of response.output) {
+    if (item.type === "message") {
+        const block = item.content[0];
+        if (block.type === "output_text") {
+            console.log(block.text);
+        }
+    }
+}
 ```
 </Tab>
 </Tabs>
+</Step>
+</Steps>
+</IntegrationContent>
 
-## Chat Completion API
+<IntegrationContent value="chat">
+<Steps>
+<Step>
+**Install**
 
-The Chat Completion API generates a model response from a list of messages. Read more about it in the [OpenAI documentation](https://platform.openai.com/docs/api-reference/chat).
-The OpenAI Chat Provider is the default provider used by Composio SDK, but you can also explicitly initialise it.
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```bash
+pip install composio composio_openai openai
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/openai openai
+```
+</Tab>
+</Tabs>
+</Step>
 
-<Callout>
-Before executing any tools that require authentication (like Gmail), you'll need to:
-1. [Create an Auth Configuration](/docs/tools-direct/authenticating-tools#creating-an-auth-config) for your app
-2. [Set up a Connected Account](/docs/tools-direct/authenticating-tools#connecting-an-account) for the user.
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Callout>
 
-<Tabs items={["Python", "TypeScript"]}>
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+The [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) generates a model response from a list of messages.
+The `OpenAIProvider` (Chat Completions) is the default provider used by Composio SDK.
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
 ```python
+import json
 from openai import OpenAI
 from composio import Composio
 from composio_openai import OpenAIProvider
 
-# Initialize Composio client with OpenAI Provider
 composio = Composio(provider=OpenAIProvider())
-openai = OpenAI()
+client = OpenAI()
 
-# Make sure to create an auth config and a connected account for the user with gmail toolkit
-# Make sure to replace "your-user-id" with the actual user ID
-user_id = "your-user-id"
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-tools = composio.tools.get(user_id=user_id, tools=["GMAIL_SEND_EMAIL"])
+messages = [
+    {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+]
 
-response = openai.chat.completions.create(
-    model="gpt-5",
+response = client.chat.completions.create(
+    model="gpt-5.2",
     tools=tools,
-    messages=[
-        {"role": "user", "content": "Send an email to soham.g@composio.dev with the subject 'Running OpenAI Provider snippet' and body 'Hello from the code snippet in openai docs'"},
-    ],
+    messages=messages,
 )
 
-# Execute the function calls
-result = composio.provider.handle_tool_calls(response=response, user_id=user_id)
-print(result)
+# Agentic loop — keep executing tool calls until the model responds with text
+while response.choices[0].message.tool_calls:
+    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    messages.append(response.choices[0].message)
+    for i, tc in enumerate(response.choices[0].message.tool_calls):
+        messages.append({
+            "role": "tool",
+            "tool_call_id": tc.id,
+            "content": json.dumps(results[i]),
+        })
+    response = client.chat.completions.create(
+        model="gpt-5.2",
+        tools=tools,
+        messages=messages,
+    )
+
+print(response.choices[0].message.content)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -158,41 +248,52 @@ import OpenAI from 'openai';
 import { Composio } from '@composio/core';
 import { OpenAIProvider } from '@composio/openai';
 
-// Initialize Composio client with OpenAI Provider
 const composio = new Composio({
     provider: new OpenAIProvider(),
 });
+const client = new OpenAI();
 
-const openai = new OpenAI();
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
 
-// Make sure to create an auth config and a connected account for the user with gmail toolkit
-// Make sure to replace "your-user-id" with the actual user ID
-const userId = "your-user-id";
+const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    {
+        role: "user",
+        content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+    },
+];
 
-async function main() {
-    try {
-        const tools = await composio.tools.get(userId, {tools: ["GMAIL_SEND_EMAIL"]});
+let response = await client.chat.completions.create({
+    model: "gpt-5.2",
+    tools: tools,
+    messages: messages,
+});
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-5",
-            tools: tools,
-            messages: [
-                {
-                    role: "user",
-                    content: "Send an email to soham.g@composio.dev with the subject 'Running OpenAI Provider snippet' and body 'Hello from the code snippet in openai docs'"
-                },
-            ],
+// Agentic loop — keep executing tool calls until the model responds with text
+while (response.choices[0].message.tool_calls) {
+    const results = await composio.provider.handleToolCalls("user_123", response);
+    messages.push(response.choices[0].message);
+    for (const [i, tc] of response.choices[0].message.tool_calls.entries()) {
+        messages.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            content: JSON.stringify(results[i]),
         });
-
-        // Execute the function calls
-        const result = await composio.provider.handleToolCalls(userId, response);
-        console.log(result);
-    } catch (error) {
-        console.error('Error:', error);
     }
+    response = await client.chat.completions.create({
+        model: "gpt-5.2",
+        tools: tools,
+        messages: messages,
+    });
 }
 
-main();
+console.log(response.choices[0].message.content);
 ```
 </Tab>
 </Tabs>
+</Step>
+</Steps>
+</IntegrationContent>
+
+</IntegrationTabs>

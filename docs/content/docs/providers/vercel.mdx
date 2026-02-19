@@ -1,191 +1,58 @@
 ---
 title: Vercel AI SDK
 description: Build an agent with Vercel AI SDK and enable it to use 800+ tools with Composio.
-keywords: [ai sdk]
+keywords: [ai sdk, vercel]
 ---
 
-Vercel AI SDK allows you to configure an optional async `execute` function that the framework uses to execute the tool calls.
+The Vercel AI SDK provider transforms Composio tools into Vercel's [tool format](https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling) with built-in execution — no manual agentic loop needed.
 
-The Vercel provider for Composio formats the Composio tools and adds this `execute` function to the tool calls.
-
-## Usage with Tools
-
-Use Composio as a native tool with the Vercel AI SDK.
-
-### Installation
+<Steps>
+<Step>
+**Install**
 
 ```bash
 npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
 ```
+</Step>
 
-### Usage
-
-Create a session and use it as a native tool with Vercel AI SDK:
+<Step>
+**Configure API Keys**
 
 <Callout type="info">
-- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
 </Callout>
 
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+ANTHROPIC_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+The Vercel provider is **agentic** — tools include an `execute` function, so the AI SDK handles tool calls automatically via [`stopWhen`](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling).
+
 ```typescript
-// @noErrors
-import "dotenv/config";
 import { anthropic } from "@ai-sdk/anthropic";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { stepCountIs, streamText } from "ai";
+import { generateText, stepCountIs } from "ai";
 
-// Initialize Composio with Vercel provider (API key from env var COMPOSIO_API_KEY)
 const composio = new Composio({ provider: new VercelProvider() });
 
-// Unique identifier of the user
-const userId = "user_123";
-
-// Create a session and get native tools for the user
-const session = await composio.create(userId);
+// Create a session for your user
+const session = await composio.create("user_123");
 const tools = await session.tools();
 
-console.log("Fetching GitHub issues from the Composio repository...");
-
-// Stream the response with tool calling
-const stream = await streamText({
-  system: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: anthropic("claude-sonnet-4-5"),
-  prompt: "Fetch all the open GitHub issues on the composio repository and group them by bugs/features/docs.",
-  stopWhen: stepCountIs(10),
-  onStepFinish: (step) => {
-    for (const toolCall of step.toolCalls) {
-      console.log(`[Using tool: ${toolCall.toolName}]`);
-    }
-  },
-  tools,
-});
-
-for await (const textPart of stream.textStream) {
-  process.stdout.write(textPart);
-}
-
-console.log("\n\n---");
-console.log("Tip: If prompted to authenticate, complete the auth flow and run again.");
-```
-
-## Usage with MCP
-
-Use Composio with the Vercel AI SDK for a fully managed MCP experience.
-
-### Installation
-
-```bash
-npm install dotenv @composio/core ai @ai-sdk/anthropic @ai-sdk/mcp
-```
-
-### Usage
-
-Use Composio with Vercel AI SDK's `streamText` for completions:
-
-<Callout type="info">
-- Set `COMPOSIO_API_KEY` environment variable with your API key from [Settings](https://platform.composio.dev/?next_page=/settings).
-- Set `ANTHROPIC_API_KEY` environment variable with your [Anthropic API key](https://platform.claude.com/settings/keys).
-</Callout>
-
-```typescript
-// @noErrors
-import "dotenv/config";
-import { anthropic } from "@ai-sdk/anthropic";
-import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
-import { Composio } from "@composio/core";
-import { stepCountIs, streamText } from "ai";
-
-// Initialize Composio (API key from env var COMPOSIO_API_KEY or pass explicitly: { apiKey: "your-key" })
-const composio = new Composio();
-
-// Unique identifier of the user
-const userId = "user_123";
-
-// Create a session for the user
-const { mcp } = await composio.create(userId);
-
-// Create an MCP client to connect to the Composio MCP server
-const client = await createMCPClient({
-  transport: {
-    type: "http",
-    url: mcp.url,
-    headers: mcp.headers, // Authentication headers for the Composio MCP server
-  },
-});
-const tools = await client.tools();
-
-console.log("Summarizing your emails from today");
-
-const stream = await streamText({
-  system: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: anthropic("claude-sonnet-4-5"),
-  prompt: "Summarize my emails from today",
-  stopWhen: stepCountIs(10),
-  onStepFinish: (step) => {
-    for (const toolCall of step.toolCalls) {
-      console.log(`[Using tool: ${toolCall.toolName}]`);
-    }
-  },
-  tools,
-});
-
-for await (const textPart of stream.textStream) {
-  process.stdout.write(textPart);
-}
-
-console.log("\n\n---");
-console.log("Tip: If prompted to authenticate, complete the auth flow and run again.")
-```
-
-## Usage with direct tools
-
-### Setup
-
-Vercel AI SDK and the provider are only available for the TypeScript SDK.
-
-```bash
-npm install @composio/vercel
-```
-
-You can specify and import the provider in the constructor.
-
-```typescript
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-import { generateText } from 'ai';
-import { openai } from "@ai-sdk/openai";
-
-const composio = new Composio({
-  provider: new VercelProvider(),
-});
-```
-
-### Usage
-
-```typescript
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-import { generateText } from 'ai';
-import { openai } from "@ai-sdk/openai";
-const composio = new Composio({ provider: new VercelProvider() });
-// ---cut---
-// create an auth config for gmail
-// then create a connected account with an external user id that identifies the user
-const externalUserId = "your-external-user-id";
-const tools = await composio.tools.get(externalUserId, "GMAIL_SEND_EMAIL");
-
-// env: OPENAI_API_KEY
 const { text } = await generateText({
-  model: openai("gpt-5"),
-  messages: [
-    {
-      role: "user",
-      content: `Send an email to soham.g@composio.dev with the subject 'Hello from composio' and the body 'Congratulations on sending your first email using AI Agents and Composio!'`,
-    },
-  ],
+  model: anthropic("claude-opus-4-6"),
   tools,
+  prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+  stopWhen: stepCountIs(10),
 });
 
-console.log("Email sent successfully!", { text });
+console.log(text);
 ```
+</Step>
+</Steps>

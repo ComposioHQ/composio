@@ -26,7 +26,7 @@ curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
 ```
 
 <Callout type="warn">
-The response includes a `secret` for [verifying webhook signatures](/docs/webhook-verification). This is only returned at creation time or when you [rotate the secret](/reference/api-reference/webhooks/rotate-webhook-subscription-secret). Store it securely.
+The response includes a `secret` for [verifying webhook signatures](/docs/webhook-verification). This is only returned at creation time or when you [rotate the secret](/reference/api-reference/webhooks/postWebhookSubscriptionsByIdRotateSecret). Store it securely.
 </Callout>
 
 ### Handling events

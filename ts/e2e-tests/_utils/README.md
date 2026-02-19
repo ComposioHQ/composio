@@ -1,6 +1,6 @@
 # E2E Test Utilities
 
-Shared infrastructure for running `@composio/core` end-to-end tests in isolated Docker environments.
+Shared infrastructure for running `@composio/core` and CLI end-to-end tests in isolated Docker environments.
 
 ## What's Here
 
@@ -10,6 +10,7 @@ Shared infrastructure for running `@composio/core` end-to-end tests in isolated 
 | `scripts/`        | Docker build and cleanup scripts                       |
 | `Dockerfile.node` | Multi-stage Dockerfile for Node.js test environments   |
 | `Dockerfile.deno` | Dockerfile for Deno test environments                  |
+| `Dockerfile.cli`  | Scratch Dockerfile for CLI test environments           |
 
 ## API
 
@@ -26,6 +27,7 @@ e2e(import.meta.url, {
   versions: {
     node: ['20.18.0', '20.19.0', '22.12.0'], // optional, defaults to .nvmrc
     deno: ['2.6.7'],                          // optional, defaults to .dvmrc
+    cli: ['current'],                         // optional, defaults to CLI package.json version
   },
   env: { MY_VAR: 'value' },                   // optional env vars
   defineTests: ({ runtime, runCmd, runFixture }) => {
@@ -61,6 +63,7 @@ Configuration object passed to `e2e()`:
 | -------- | -------------------------------- | ------------------------------------------------ |
 | `node`   | `readonly NodeVersionFromUser[]` | Node.js versions. Defaults to `.nvmrc`           |
 | `deno`   | `readonly DenoVersionFromUser[]` | Deno versions. Defaults to `.dvmrc`              |
+| `cli`    | `readonly CliVersionFromUser[]`  | CLI versions. Defaults to CLI package.json       |
 
 ### `DefineTestsContext`
 
@@ -68,7 +71,7 @@ The context passed to the `defineTests` callback:
 
 | Property     | Type/Signature                                                   | Description                                    |
 | ------------ | ---------------------------------------------------------------- | ---------------------------------------------- |
-| `runtime`    | `'node' \| 'deno'`                                               | Current runtime being tested                   |
+| `runtime`    | `'node' \| 'deno' \| 'cli'`                                      | Current runtime being tested                   |
 | `runCmd`     | `(command: string) => Promise<E2ETestResult>`                    | Run arbitrary command in Docker container      |
 | `runFixture` | `(options: RunFixtureOptions) => Promise<E2ETestResult \| E2ETestResultWithSetup>` | Run fixture with optional setup phase |
 
@@ -110,6 +113,21 @@ interface E2ETestResult {
   stderr: string;    // Captured stderr
 }
 ```
+
+### `runCmd` with File Capture
+
+When you need to assert on files created inside the container, pass a `files` array:
+
+```typescript
+const result = await runCmd({
+  command: 'composio version > out.txt',
+  files: ['out.txt'],
+});
+
+expect(result.files['out.txt']).toBe('0.1.24');
+```
+
+The files are copied out of the container after execution and returned as a map in the result.
 
 ### `E2ETestResultWithSetup`
 
@@ -190,6 +208,18 @@ The following versions are pre-defined in `const.ts`:
 - `2.6.7`
 - `current` (resolves to `.dvmrc` version)
 
+### CLI Version Resolution
+
+CLI versions to test are resolved in this order:
+
+1. **`COMPOSIO_E2E_CLI_VERSION` env var** (highest priority): Use `[env_value]`
+2. **`config.versions.cli`**: Use the provided array
+3. **Default**: Use version from `ts/packages/cli/package.json`
+
+### Well-Known CLI Versions
+
+- `current` (resolves to CLI package.json version)
+
 ## Environment Variable Validation
 
 Environment variables passed to `E2EConfig.env` are validated at test startup. If any variable has an `undefined` value, the test fails fast with a clear error message:
@@ -231,10 +261,10 @@ e2e(import.meta.url, {
 ## Scripts
 
 ```bash
-# Pre-build Docker images for all well-known Node and Deno versions
+# Pre-build Docker images for all well-known Node, Deno, and CLI versions
 pnpm docker:build
 
-# Remove all e2e Docker images (both Node.js and Deno)
+# Remove all e2e Docker images (Node.js, Deno, and CLI)
 pnpm docker:clean
 ```
 

@@ -2,7 +2,6 @@ import { Context, Schema, LogLevel, String, pipe, Layer, Effect } from 'effect';
 import { Command, Options } from '@effect/cli';
 import { setMinimumLogLevel } from 'src/effects/with-log-level';
 import type { ConfigError } from 'effect/ConfigError';
-import { versionCmd } from './version.cmd';
 
 const logLevelChoices = LogLevel.allLevels.map(level => String.toLowerCase(level._tag));
 
@@ -45,7 +44,6 @@ class $DefaultCmdContext extends Context.Tag('cli/$DefaultCmdContext')<
  * ```
  */
 export const $defaultCmd = Command.make('composio', { logLevel }).pipe(
-  Command.withSubcommands([versionCmd]),
   Command.withDescription(
     `Composio CLI - A tool for managing Python and TypeScript composio.dev projects.`
   ),

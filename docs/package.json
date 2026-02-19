@@ -67,6 +67,7 @@
     "ajv-draft-04": "^1.0.0",
     "eslint": "^9.39.2",
     "eslint-config-next": "16.1.0",
+    "github-slugger": "^2.0.0",
     "next-validate-link": "^1.6.4",
     "openai": "^6.16.0",
     "postcss": "^8.5.6",

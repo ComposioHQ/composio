@@ -1,6 +1,7 @@
 import { Command } from '@effect/cli';
-import { Effect, Console, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { ComposioUserContext } from 'src/services/user-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 
 /**
  * CLI command to display your account information.
@@ -14,16 +15,19 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
   Command.withDescription('Display your account information.'),
   Command.withHandler(() =>
     Effect.gen(function* () {
+      const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
 
-      const message = ctx.data.apiKey.pipe(
+      yield* ctx.data.apiKey.pipe(
         Option.match({
-          onNone: () => 'You are not logged in yet. Please run `composio login`.',
-          onSome: apiKey => `API KEY: ${apiKey}`,
+          onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
+          onSome: apiKey =>
+            Effect.gen(function* () {
+              yield* ui.note(apiKey, 'API Key');
+              yield* ui.output(apiKey);
+            }),
         })
       );
-
-      yield* Console.log(message);
     })
   )
 );

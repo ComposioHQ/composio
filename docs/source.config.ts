@@ -78,6 +78,7 @@ export const toolkits = defineDocs({
   dir: 'content/toolkits',
   docs: {
     schema: docsSchema,
+    files: ['**/*', '!faq/**'],
     postprocess: {
       includeProcessedMarkdown: true,
     },

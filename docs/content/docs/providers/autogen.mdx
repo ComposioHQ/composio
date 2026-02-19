@@ -1,0 +1,69 @@
+---
+title: AutoGen
+description: Build an agent with AutoGen and enable it to use 800+ tools with Composio.
+keywords: [autogen, microsoft autogen]
+---
+
+The AutoGen provider transforms Composio tools into AutoGen's [FunctionTool](https://microsoft.github.io/autogen/) format for use with AutoGen agents.
+
+<Steps>
+<Step>
+**Install**
+
+```bash
+pip install composio composio_autogen autogen-agentchat
+```
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+```python
+from autogen import AssistantAgent, UserProxyAgent
+from composio import Composio
+from composio_autogen import AutogenProvider
+
+composio = Composio(provider=AutogenProvider())
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+chatbot = AssistantAgent(
+    "chatbot",
+    system_message="Reply TERMINATE when the task is done or when user's content is empty",
+    llm_config={"config_list": [{"model": "gpt-5.2"}]},
+)
+
+user_proxy = UserProxyAgent(
+    "user_proxy",
+    is_termination_msg=lambda msg: "TERMINATE" in (msg.get("content", "") or ""),
+    human_input_mode="NEVER",
+    code_execution_config={"use_docker": False},
+)
+
+# Register tools with both agents
+composio.provider.register_tools(caller=chatbot, executor=user_proxy, tools=tools)
+
+response = user_proxy.initiate_chat(
+    chatbot,
+    message="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+)
+
+print(response.chat_history)
+```
+</Step>
+</Steps>

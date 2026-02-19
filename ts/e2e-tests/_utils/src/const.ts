@@ -15,6 +15,12 @@ export const WELL_KNOWN_NODE_VERSIONS = ['20.18.0', '20.19.0', '22.12.0', 'curre
  */
 export const WELL_KNOWN_DENO_VERSIONS = ['2.6.7', 'current'] as const;
 
+/**
+ * CLI versions that are well-known to the CI strategy.
+ * `current` refers to the version in ts/packages/cli/package.json.
+ */
+export const WELL_KNOWN_CLI_VERSIONS = ['current'] as const;
+
 export const TIMEOUTS = {
   DEFAULT: 5_000,
   FIXTURE: 120_000,
