@@ -65,12 +65,12 @@ const config = {
       },
       {
         source: '/tool-router',
-        destination: '/docs/quickstart',
+        destination: '/docs/tool-router',
         permanent: true,
       },
       {
         source: '/tool-router/overview',
-        destination: '/docs/quickstart',
+        destination: '/docs/tool-router',
         permanent: true,
       },
       {
@@ -602,17 +602,17 @@ const config = {
       // Tool router pages that still 404
       {
         source: '/tool-router/using-as-a-native-tool',
-        destination: '/docs/quickstart',
+        destination: '/docs/tool-router',
         permanent: true,
       },
       {
         source: '/tool-router/using-with-mcp-clients',
-        destination: '/docs/quickstart',
+        destination: '/docs/tool-router',
         permanent: true,
       },
       {
         source: '/tool-router/:path*',
-        destination: '/docs/quickstart',
+        destination: '/docs/tool-router',
         permanent: true,
       },
       // Docs pages that moved (confirmed real 404s from Datadog)
