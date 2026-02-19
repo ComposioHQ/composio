@@ -601,6 +601,11 @@ const config = {
       },
       // Tool router pages that still 404
       {
+        source: '/tool-router/docs',
+        destination: '/docs/tool-router',
+        permanent: true,
+      },
+      {
         source: '/tool-router/using-as-a-native-tool',
         destination: '/docs/tool-router',
         permanent: true,
