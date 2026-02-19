@@ -6,6 +6,10 @@ keywords: [tutorial, setup, first agent]
 
 Build your first AI agent with Composio Tools.
 
+<Callout type="warn">
+**Server-side only.** Always initialize the Composio SDK on the server (API routes, server components, scripts) — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that should not be exposed to the browser.
+</Callout>
+
 <QuickstartFlow>
 
 <FrameworkOption id="openai-agents" name="OpenAI Agents" logo="/images/providers/openai-logo.svg" logoDark="/images/providers/openai-logo-dark.svg">
@@ -631,6 +635,10 @@ readline.close();
 
 <IntegrationTabs>
 <IntegrationContent value="native">
+
+<Callout type="info">
+This example uses **AI SDK 5** syntax. For AI SDK 6 (with the `Agent` abstraction and `instructions` instead of `system`), see the [Vercel AI SDK provider page](/docs/providers/vercel).
+</Callout>
 
 <Steps>
 <Step>

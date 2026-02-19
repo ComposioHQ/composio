@@ -86,3 +86,66 @@ curl -X PATCH https://backend.composio.dev/api/v3/org/project/config \
 ```
 
 You can also view and update these from **Settings > Project Settings** in the [dashboard](https://platform.composio.dev?next_page=/settings). See the [Projects API reference](/reference/api-reference/projects) for all available settings.
+
+## Multi-tenant isolation
+
+If you're building a platform where multiple customers (tenants) each have their own end-users, use **separate projects per tenant** to achieve clean isolation. This ensures:
+
+- **User ID isolation** — `user_123` in Tenant A's project is completely separate from `user_123` in Tenant B's project
+- **Credential isolation** — each tenant's OAuth credentials, API keys, and connected accounts are scoped to their project
+- **Audit separation** — logs and webhook events are scoped per project
+
+```mermaid
+graph TD
+    ORG["Your Organization"] --- PA["Project: Tenant A"]
+    ORG --- PB["Project: Tenant B"]
+    ORG --- PC["Project: Tenant C"]
+    PA --- UA["Tenant A's users & connections"]
+    PB --- UB["Tenant B's users & connections"]
+    PC --- UC["Tenant C's users & connections"]
+```
+
+### Setting up per-tenant projects
+
+When a new tenant signs up for your platform, create a Composio project for them:
+
+```bash
+# Create a project for the new tenant
+curl -X POST https://backend.composio.dev/api/v3/org/owner/project/new \
+  -H "x-org-api-key: YOUR_ORG_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "tenant-acme-corp",
+    "should_create_api_key": true
+  }'
+```
+
+Store the returned `api_key` for this tenant. When initializing the Composio SDK for a tenant's request, use their project API key:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+# Each tenant gets their own Composio client with their project API key
+composio = Composio(api_key=tenant.composio_api_key)
+
+session = composio.create(user_id=end_user.id)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+
+// Each tenant gets their own Composio client with their project API key
+const composio = new Composio({ apiKey: tenant.composioApiKey });
+
+const session = await composio.create(endUser.id);
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+**When to use this pattern:** If your app has distinct customers who each manage their own users (B2B SaaS), use one project per customer. If you have a single-tenant app with many users, one project is sufficient — user IDs already provide per-user isolation of connections.
+</Callout>

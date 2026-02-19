@@ -1,10 +1,14 @@
 ---
 title: Users & Sessions
 description: How Composio scopes tools and connections to your users
-keywords: [session, user id, concepts]
+keywords: [session, user id, concepts, server-side]
 ---
 
 When building AI agents for multiple users, each user needs their own connections and context. This is represented through **users** and **sessions**.
+
+<Callout type="warn">
+**Server-side only.** The Composio SDK must be initialized on the server (API routes, server components, background jobs) — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that grants full access to your project's connections and tools. Exposing it in frontend code would let anyone use your users' connected accounts.
+</Callout>
 
 ## Users
 
