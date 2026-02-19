@@ -6,6 +6,10 @@ keywords: [tool router, session, mcp, meta tools]
 
 Tool Router is the core runtime that powers Composio sessions. When you call `composio.create()`, you're creating a Tool Router session — it handles tool discovery, authentication prompts, and execution routing so your agent can use 1000+ tools without managing any of that yourself.
 
+## Why Tool Router exists
+
+Without Tool Router, connecting an AI agent to external tools means: managing 1000+ tool definitions (too many for any LLM context window), handling OAuth flows for each user, routing tool calls to the right API with the right credentials, and keeping tool schemas up to date. Tool Router solves all of this in a single session abstraction.
+
 ## What Tool Router does
 
 When an agent needs to use a tool, Tool Router:
@@ -26,7 +30,7 @@ graph LR
 
 ## How to use it
 
-Tool Router is accessed through the Composio SDK. You don't interact with it directly — it's the engine behind `composio.create()`.
+Tool Router is accessed through the Composio SDK. You don't interact with it directly — it's the engine behind `composio.create()`. Every session is scoped to a user ID, so connections and tool access are isolated per user.
 
 ### Via native provider (recommended)
 
@@ -123,6 +127,20 @@ const session = await composio.create("user_123", {
 ## Configuring sessions
 
 Sessions can be customized to control which toolkits are available, which auth configs to use, and which connected accounts to prefer. See [Configuring Sessions](/docs/configuring-sessions) for details.
+
+## Common patterns
+
+### Interactive chat agent
+
+The default — users chat with an agent that discovers and uses tools on the fly. Tool Router handles auth prompts in-conversation via `COMPOSIO_MANAGE_CONNECTIONS`.
+
+### Background automation
+
+Collect OAuth consent upfront in your UI, then run headless agents in cron jobs or webhooks. Disable in-chat auth with `manageConnections: false`. See [Background Agents](/docs/background-agents) for a full walkthrough.
+
+### Scoped sessions
+
+Restrict a session to specific toolkits for security or performance. See [Configuring Sessions](/docs/configuring-sessions).
 
 ## API reference
 

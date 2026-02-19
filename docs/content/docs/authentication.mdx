@@ -6,6 +6,10 @@ keywords: [connect link, oauth, auth config, connected account, glossary]
 
 Composio simplifies authentication with Connect Links: hosted pages where users securely connect their accounts.
 
+<Callout type="warn">
+**Server-side only.** Always initialize the Composio SDK on the server (API routes, server components, scripts) — never in client-side browser code. Your `COMPOSIO_API_KEY` is a secret that should not be exposed to the browser. See [Users & Sessions](/docs/users-and-sessions) for details.
+</Callout>
+
 <Video src="/images/connect-link-auth-flow-recording.mp4" autoPlay />
 
 ## Key concepts
@@ -14,19 +18,26 @@ Before diving in, here's how the main concepts relate to each other:
 
 | Concept | What it is | ID prefix | Example |
 |---------|-----------|-----------|---------|
-| **Project** | An isolated environment that scopes all your resources (API keys, users, connections). Think of it as a namespace. | `proj_` | Your production app, your staging environment |
-| **Auth Config** | A blueprint that defines _how_ authentication works for a toolkit — the auth method, scopes, and credentials. Shared across all users in a project. | `ac_` | "Use OAuth2 for Gmail with read+send scopes using Composio's managed credentials" |
-| **Connected Account** | An individual user's authenticated connection to a toolkit. Created when a user completes an OAuth flow or provides an API key. | `ca_` | User 123's Gmail OAuth tokens |
-| **Session** | An ephemeral configuration that ties a user, their connections, and available toolkits together for an agent task. | — | A Tool Router session for user 123 with Gmail + GitHub enabled |
+| **Project** | An isolated environment that scopes all your resources (API keys, users, connections). Think of it as a namespace. Each project has its own API key. | `proj_` | Your production app, your staging environment |
+| **Auth Config** | A blueprint that defines _how_ authentication works for a toolkit — the auth method, scopes, and credentials. Shared across all users in a project. You get one automatically via Composio managed auth; create your own to use custom OAuth credentials or scopes. | `ac_` | "Use OAuth2 for Gmail with read+send scopes using Composio's managed credentials" |
+| **Connected Account** | An individual user's authenticated connection to a toolkit. Created when a user completes an OAuth flow or provides an API key. Stores their tokens, which Composio auto-refreshes. | `ca_` | User 123's Gmail OAuth tokens |
+| **Session** | An ephemeral configuration that ties a user, their connections, and available toolkits together for an agent task. Created via `composio.create()`. | — | A Tool Router session for user 123 with Gmail + GitHub enabled |
 
 How they fit together:
 
 ```
-Project (proj_xxx)
-  └── Auth Config (ac_xxx) — "Gmail via OAuth2 with read+send scopes"
-        └── Connected Account (ca_xxx) — "user_123's Gmail tokens"
-              └── Session — "agent task using user_123's Gmail + GitHub"
+Project (proj_xxx) ← your API key scopes everything to this project
+  └── Auth Config (ac_xxx) ← "Gmail via OAuth2 with read+send scopes"
+        │                      (one per toolkit per project, shared across users)
+        └── Connected Account (ca_xxx) ← "user_123's Gmail tokens"
+              │                            (one per user per toolkit)
+              └── Session ← "agent task using user_123's Gmail + GitHub"
+                              (ephemeral, created per agent task)
 ```
+
+<Callout type="info">
+**The short version:** A **project** isolates your app. An **auth config** defines _how_ to authenticate with a toolkit (OAuth scopes, client credentials). A **connected account** is a specific user's tokens for that toolkit. A **session** ties it all together for one agent task. You mostly just call `composio.create(userId)` and Composio handles the rest.
+</Callout>
 
 ## In-chat authentication
 
@@ -204,5 +215,8 @@ const hasGmail = connected.has("gmail"); // true if user has connected Gmail
   </Card>
   <Card icon={<BookOpen />} title="Background agents" href="/docs/background-agents">
     Run autonomous agents using pre-authenticated connections
+  </Card>
+  <Card icon={<BookOpen />} title="Projects & multi-tenant isolation" href="/docs/projects">
+    Use separate projects for tenant isolation in B2B apps
   </Card>
 </Cards>

@@ -636,10 +636,6 @@ readline.close();
 <IntegrationTabs>
 <IntegrationContent value="native">
 
-<Callout type="info">
-This example uses **AI SDK 5** syntax. For AI SDK 6 (with the `Agent` abstraction and `instructions` instead of `system`), see the [Vercel AI SDK provider page](/docs/providers/vercel).
-</Callout>
-
 <Steps>
 <Step>
 <StepTitle>Install</StepTitle>
@@ -664,6 +660,64 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 
 <Step>
 <StepTitle>Create session and run agent</StepTitle>
+
+<Tabs groupId="ai-sdk-version" items={['AI SDK 6', 'AI SDK 5']} persist>
+<Tab value="AI SDK 6">
+
+AI SDK 6 introduces the `Agent` abstraction. The default `stopWhen` is `stepCountIs(20)`, so multi-step loops work out of the box.
+
+```typescript
+// @noErrors
+import "dotenv/config";
+import { anthropic } from "@ai-sdk/anthropic";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { Agent, generateText } from "ai";
+import { createInterface } from "readline/promises";
+
+// Initialize Composio with Vercel provider
+const composio = new Composio({ provider: new VercelProvider() });
+
+// Create a session for your user
+const userId = "user_123";
+const session = await composio.create(userId);
+const tools = await session.tools();
+
+const agent = new Agent({
+  model: anthropic("claude-sonnet-4-6"),
+  tools,
+  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
+});
+
+const readline = createInterface({ input: process.stdin, output: process.stdout });
+
+console.log(`
+What task would you like me to help you with?
+I can use tools like Gmail, GitHub, Linear, Notion, and more.
+(Type 'exit' to exit)
+Example tasks:
+  - 'Summarize my emails from today'
+  - 'List all open issues on the composio github repository'
+`);
+
+while (true) {
+  const input = (await readline.question("You: ")).trim();
+  if (input.toLowerCase() === "exit") break;
+
+  process.stdout.write("Assistant: ");
+  const { text } = await generateText({
+    agent,
+    prompt: input,
+  });
+  console.log(text);
+}
+
+readline.close();
+```
+</Tab>
+<Tab value="AI SDK 5">
+
+In AI SDK 5, use `generateText`/`streamText` directly with `system` and an explicit `stopWhen` (defaults to 1 step).
 
 ```typescript
 import "dotenv/config";
@@ -724,6 +778,8 @@ while (true) {
 
 readline.close();
 ```
+</Tab>
+</Tabs>
 </Step>
 </Steps>
 
@@ -833,4 +889,21 @@ readline.close();
 </FrameworkOption>
 
 </QuickstartFlow>
+
+## Next steps
+
+<Cards>
+  <Card icon={<BookOpen />} title="Users & Sessions" href="/docs/users-and-sessions">
+    How user IDs, sessions, and server-side initialization work
+  </Card>
+  <Card icon={<Key />} title="Authentication" href="/docs/authentication">
+    Auth configs, connected accounts, and how to check connection status
+  </Card>
+  <Card icon={<BookOpen />} title="Background Agents" href="/docs/background-agents">
+    Collect OAuth consent in your UI, then run agents autonomously in the background
+  </Card>
+  <Card icon={<BookOpen />} title="Tool Router" href="/docs/tool-router">
+    How tool discovery, authentication, and execution routing work under the hood
+  </Card>
+</Cards>
 

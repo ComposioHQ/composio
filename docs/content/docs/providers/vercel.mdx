@@ -106,6 +106,11 @@ console.log(text);
 | Agent abstraction | None — pass config inline to `generateText`/`streamText` | `new Agent({ model, tools, instructions })` |
 | System prompt | `system: "..."` | `instructions: "..."` |
 | Default step count | `stopWhen: stepCountIs(1)` (single step) | `stopWhen: stepCountIs(20)` (multi-step) |
+| Tool calling | Manual agentic loop with `stopWhen` | Automatic via `Agent` — handles multi-step tool calls by default |
 | Structured output | `generateObject` / `streamObject` | `generateText` / `streamText` with `output` option |
+
+<Callout type="info">
+**Which version should I use?** If you're starting a new project, use AI SDK 6. The `Agent` abstraction simplifies multi-step tool calling significantly — you no longer need to manage `stopWhen` or build your own agentic loop. If you're on an existing AI SDK 5 project, both versions work with Composio — upgrade when ready.
+</Callout>
 
 For the full migration guide, see [Vercel's AI SDK 5 to 6 migration docs](https://ai-sdk.dev/docs/migration-guides/migration-guide-6-0).
