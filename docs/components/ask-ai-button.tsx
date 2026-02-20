@@ -13,7 +13,7 @@ function getDecimal() {
 
 let widgetOpen = false;
 
-function toggleDecimalWidget() {
+export function toggleDecimalWidget() {
   const decimal = getDecimal();
   if (!decimal) {
     setTimeout(() => {

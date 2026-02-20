@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Copy, Check, Loader2, ExternalLink } from 'lucide-react';
+import { Copy, Check, Loader2, ExternalLink, BotMessageSquare } from 'lucide-react';
 import { Feedback } from './feedback';
+import { toggleDecimalWidget } from './ask-ai-button';
 
 interface PageActionsProps {
   path: string;
@@ -132,6 +133,25 @@ export function PageActions({ path }: PageActionsProps) {
         role="separator"
         aria-orientation="vertical"
       />
+
+      {/* Ask AI */}
+      <button
+        type="button"
+        onClick={toggleDecimalWidget}
+        className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-2.5 sm:py-1.5 text-xs font-medium
+          text-fd-muted-foreground hover:text-fd-foreground
+          bg-fd-secondary/50 hover:bg-fd-secondary
+          rounded-md
+          transition-all duration-150 ease-out
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-background
+          active:scale-[0.98]
+          touch-manipulation
+          motion-reduce:transition-none motion-reduce:active:scale-100"
+        aria-label="Ask AI"
+      >
+        <BotMessageSquare className="size-3.5" aria-hidden="true" />
+        <span>Ask AI</span>
+      </button>
 
       {/* Feedback */}
       <Feedback page={path} />

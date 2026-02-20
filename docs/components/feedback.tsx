@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Loader2 } from 'lucide-react';
+import { PenLine, X, Loader2 } from 'lucide-react';
 
 type Sentiment = 'positive' | 'neutral' | 'negative' | null;
 
@@ -91,7 +91,7 @@ export function Feedback({ page }: FeedbackProps) {
           motion-reduce:transition-none motion-reduce:active:scale-100"
         aria-label="Share feedback about this page"
       >
-        <MessageSquare className="size-3.5" aria-hidden="true" />
+        <PenLine className="size-3.5" aria-hidden="true" />
         <span>Feedback</span>
       </button>
 
