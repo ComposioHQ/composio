@@ -143,7 +143,7 @@
     "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "workspace:*",
     "@types/json-schema": "^7.0.15",
-    "chalk": "^4.1.2",
+    "chalk": "^5.6.2",
     "openai": "catalog:",
     "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
