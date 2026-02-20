@@ -105,9 +105,7 @@ jobs:
           prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
           generate_release_notes: true
           make_latest: ${{ github.event_name != 'workflow_dispatch' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          token: ${{ secrets.GITHUB_TOKEN }}  # Migrated from env var
   test-installation:
     name: Test Installation
     needs: build-binaries

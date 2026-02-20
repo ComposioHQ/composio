@@ -46,7 +46,7 @@ jobs:
 
       - name: Claude suggests docs updates
         if: steps.detect.outputs.found == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@v1.0.55
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |

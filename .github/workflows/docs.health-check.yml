@@ -98,8 +98,7 @@ jobs:
 
       - name: Notify Slack
         if: steps.check.outputs.has_failures == 'true'
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a  # v2.1.1
         with:
           payload: ${{ steps.check.outputs.slack_payload }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+          webhook: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}  # Migrated from env var
