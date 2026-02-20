@@ -103,5 +103,4 @@ jobs:
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
           payload: ${{ steps.extract-metadata.outputs.slack_payload }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CUSTOMER_COMMS_WEBHOOK_URL }}
+          slack-message: ${{ secrets.SLACK_CUSTOMER_COMMS_WEBHOOK_URL }}  # Migrated from env var
