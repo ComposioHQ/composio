@@ -194,8 +194,16 @@ def json_schema_to_model(
     :param skip_default: Skip the default values when building field object
     :return: Pydantic `BaseModel` type
     """
-    model_name = json_schema.get("title")
-    field_definitions = {}
+    model_name = json_schema.get("title") or json_schema.get("name")
+    # Pydantic requires a string model name. Some tool schemas contain anonymous
+    # nested objects (e.g., array items) and/or omit a title entirely.
+    if not model_name or model_name == "null":
+        model_name = f"GeneratedModel_{uuid.uuid4().hex}"
+    model_name = str(model_name).replace(" ", "")
+    if not model_name:
+        model_name = f"GeneratedModel_{uuid.uuid4().hex}"
+
+    field_definitions: t.Dict[str, t.Any] = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
             name,
