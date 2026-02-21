@@ -85,7 +85,7 @@ export default function CustomSearchDialog({
         <div className="flex items-center justify-between border-t px-3 py-2">
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 text-xs text-fd-muted-foreground hover:text-fd-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--composio-orange)] hover:text-[var(--composio-orange)]/80 transition-colors"
             onClick={() => {
               props.onOpenChange(false);
               toggleDecimalWidget();
