@@ -585,7 +585,10 @@ class TestToolRouter:
         assert kwargs["assistive_prompt_config"] == {
             "user_timezone": "Asia/Tokyo",
         }
-        assert kwargs["experimental"]["assistive_prompt_config"]["user_timezone"] == "Asia/Tokyo"
+        assert (
+            kwargs["experimental"]["assistive_prompt_config"]["user_timezone"]
+            == "Asia/Tokyo"
+        )
 
     def test_create_session_with_workbench_config(self, tool_router, mock_client):
         """Test creating a session with workbench configuration."""
