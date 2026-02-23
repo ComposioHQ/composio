@@ -56,7 +56,13 @@ export const toolsCmd$Search = Command.make(
         return;
       }
 
-      yield* ui.log.info(`Found ${result.items.length} tools\n\n${formatToolsTable(result.items)}`);
+      const showing = result.items.length;
+      const totalPages = result.total_pages;
+      yield* ui.log.info(
+        totalPages > 1
+          ? `Found ${showing} tools (page 1 of ${totalPages})\n\n${formatToolsTable(result.items)}`
+          : `Found ${showing} tools\n\n${formatToolsTable(result.items)}`
+      );
 
       // Next step hint
       const firstSlug = result.items[0]?.slug;

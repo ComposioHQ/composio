@@ -23,12 +23,22 @@ jobs:
             local url="$2"
             shift 2
             CHECKED=$((CHECKED + 1))
-            if STATUS=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 15 "$@" "$url" 2>/dev/null); then
-              :
-            else
-              STATUS="000"
-            fi
-            if [ "$STATUS" -ge 400  2>/dev/null ] || [ "$STATUS" = "000" ]; then
+            local attempt=0
+            local STATUS="000"
+            while [ "$attempt" -lt 2 ]; do
+              if STATUS=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 15 "$@" "$url" 2>/dev/null); then
+                :
+              else
+                STATUS="000"
+              fi
+              if [ "$STATUS" -ge 400 2>/dev/null ] || [ "$STATUS" = "000" ]; then
+                attempt=$((attempt + 1))
+                [ "$attempt" -lt 2 ] && sleep 3
+              else
+                break
+              fi
+            done
+            if [ "$STATUS" -ge 400 2>/dev/null ] || [ "$STATUS" = "000" ]; then
               echo "FAIL: ${label} → ${STATUS}"
               echo "${label} → ${STATUS}" >> "$FAIL_FILE"
               FAIL_COUNT=$((FAIL_COUNT + 1))
@@ -103,3 +113,7 @@ jobs:
           payload: ${{ steps.check.outputs.slack_payload }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+
+      - name: Fail on unhealthy endpoints
+        if: steps.check.outputs.has_failures == 'true'
+        run: exit 1

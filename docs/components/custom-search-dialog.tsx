@@ -16,12 +16,12 @@ import {
 import { useI18n } from 'fumadocs-ui/contexts/i18n';
 import { useDocsSearch } from 'fumadocs-core/search/client';
 import { BotMessageSquare } from 'lucide-react';
-import { toggleDecimalWidget } from './ask-ai-button';
+import { toggleDecimalWidget, detectMac } from './ask-ai-button';
 
 function MetaKey() {
   const [key, setKey] = useState('⌘');
   useEffect(() => {
-    if (!navigator.platform.toUpperCase().includes('MAC')) setKey('Ctrl');
+    if (!detectMac()) setKey('Ctrl');
   }, []);
   return key;
 }

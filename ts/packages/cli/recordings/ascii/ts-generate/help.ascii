@@ -22,36 +22,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ────────────────────────────────────────────────────────────────────────────────
 > # Show ts generate subcommand help
 >
@@ -77,14 +47,9 @@
 
 
 
-
-
-
-
-
-
-
-
+────────────────────────────────────────────────────────────────────────────────
+> # Show ts generate subcommand help
+> composio ts generate --help
 
 
 
@@ -132,124 +97,9 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ────────────────────────────────────────────────────────────────────────────────
 > # Show ts generate subcommand help
 > composio ts generate --help
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # Show ts generate subcommand help
-> composio ts generate --help
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -296,35 +146,5 @@ SIO_TOOLKIT_VERSION_GMAIL=20250901_00)
 st version.
 
 OPTIONS
-
-(-o, --output-dir directory)
-
-  A directory.
-
-  Output directory for the generated TypeScript type stubs.
-
-  This setting is optional.
-
---compact
-
-  A true or false value.
-
-  Emit a single TypeScript file
-
-  This setting is optional.
-
-  This setting is optional.
-
---transpiled
-
-  A true or false value.
-
-  Whether to emit transpiled JavaScript alongside TypeScript files
-
-  This setting is optional.
-
-  This setting is optional.
-
---type-tools
 
 ────────────────────────────────────────────────────────────────────────────────

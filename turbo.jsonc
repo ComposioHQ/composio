@@ -42,6 +42,10 @@
       "env": ["COMPOSIO_API_KEY", "OPENAI_API_KEY"],
       "cache": false
     },
+    "install:binary": {
+      "dependsOn": ["build:binary"],
+      "cache": false
+    },
     "clean": {
       "cache": false
     },

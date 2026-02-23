@@ -197,35 +197,35 @@
 > composio tools search 'send email'
 │
 ◒  Searching tools for "send email"...
-◇  Searching tools for "send email"...
-│
-●  Found 10 tools
-│
-│  Slug                                Name                 Description
-│  ABSTRACT_EMAIL_REPUTATION_API       Email validation ... Validate email
-addresses and assess their deliv...
-│  ACTIVE_CAMPAIGN_CREATE_MESSAGE      Create Message       Tool to create
-a message in ActiveCampaign. Use...
-│  ACTIVE_CAMPAIGN_LIST_MESSAGES       List Messages        Tool to list al
-l messages in ActiveCampaign. Us...
-│  ACTIVE_CAMPAIGN_UPDATE_MESSAGE      Update Message       Tool to update
-an existing message in ActiveCam...
-│  ACTIVE_TRAIL_CREATE_CAMPAIGN_FOR... Create Campaign f... Tool to create
-and send a new campaign to speci...
-│  ACTIVE_TRAIL_GET_ALL_CAMPAIGN_RE... Get All Campaign ... Tool to retriev
-e a full overview of all campaig...
-│  ACTIVE_TRAIL_GET_AUTOMATIONS_EMA... Get Automation Em... Tool to retriev
-e all email campaign steps in an...
-│  ACTIVE_TRAIL_GET_CAMPAIGN_DOMAIN... Get Campaign Doma... Tool to retriev
-e a report by domain for a speci...
-│  ACTIVE_TRAIL_GET_CAMPAIGN_REPORT    Get Campaign Report  Retrieves compr
-ehensive performance metrics for...
-│  ACTIVE_TRAIL_GET_CAMPAIGN_SCHEDU... Get Campaign Sche... Retrieves the s
-cheduling configuration for a sp...
-│
-◇  To view details:
-│  > composio tools info "ABSTRACT_EMAIL_REPUTATION_API"
->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -26,10 +26,24 @@ export function toggleDecimalWidget() {
   widgetOpen = !widgetOpen;
 }
 
+export function detectMac(): boolean {
+  try {
+    if ('userAgentData' in navigator) {
+      const platform = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform;
+      if (platform) {
+        return platform === 'macOS';
+      }
+    }
+    return /mac/i.test(navigator.platform);
+  } catch {
+    return true; // default to Mac
+  }
+}
+
 function useIsMac() {
   const [isMac, setIsMac] = useState(true);
   useEffect(() => {
-    setIsMac(navigator.platform.toUpperCase().includes('MAC'));
+    setIsMac(detectMac());
   }, []);
   return isMac;
 }
@@ -81,7 +95,7 @@ export function SearchAndAskAI() {
         className="inline-flex items-center gap-2 rounded-lg border border-[var(--composio-orange)]/20 bg-[var(--composio-orange)]/5 p-1.5 ps-2.5 text-sm text-[var(--composio-orange)] transition-colors hover:bg-[var(--composio-orange)]/10 shrink-0"
       >
         Ask AI
-        <div className="hidden xl:inline-flex gap-0.5">
+        <div className="hidden lg:inline-flex gap-0.5">
           <kbd className="rounded-md border bg-fd-background px-1.5">{isMac ? '⌘' : 'Ctrl'}</kbd>
           <kbd className="rounded-md border bg-fd-background px-1.5">I</kbd>
         </div>

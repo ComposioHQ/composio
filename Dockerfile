@@ -27,7 +27,7 @@ RUN pnpm build
 
 # Build the CLI binary
 WORKDIR /app/packages/cli
-RUN pnpm build:bin
+RUN pnpm build:binary
 
 # Stage 2: Create a minimal runtime image
 FROM debian:bookworm-slim

@@ -1,4 +1,4 @@
-Set Height 840
+Set Height 865
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/toolkits/list-query-gmail.svg"
 Output "recordings/ascii/toolkits/list-query-gmail.ascii"

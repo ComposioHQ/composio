@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "build:bin": "turbo build:bin --filter=./ts/packages/cli",
+    "build:binary": "turbo build:binary --filter=./ts/packages/cli",
+    "install:binary": "turbo install:binary --filter=./ts/packages/cli",
     "build:packages": "turbo build --filter=./ts/packages/**",
     "cli:record": "turbo run record --filter=./ts/packages/cli",
     "record": "turbo run record",

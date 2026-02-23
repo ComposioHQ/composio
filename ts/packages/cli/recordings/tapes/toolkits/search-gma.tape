@@ -1,4 +1,4 @@
-Set Height 840
+Set Height 865
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/toolkits/search-gma.svg"
 Output "recordings/ascii/toolkits/search-gma.ascii"

@@ -138,7 +138,7 @@ default    1       ENABLED
 │
 ◇  To view details of an auth config:
 │  > composio auth-configs info "ac_<REDACTED>"
->
+
 
 
 

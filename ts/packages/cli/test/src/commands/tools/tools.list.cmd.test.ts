@@ -67,7 +67,7 @@ describe('CLI: composio tools list', () => {
 
           expect(output).toContain('GMAIL_SEND_EMAIL');
           expect(output).toContain('SLACK_SEND_MESSAGE');
-          expect(output).toContain('Fetched 3 tools');
+          expect(output).toContain('Listing 3 tools');
         })
       );
     }
@@ -85,7 +85,7 @@ describe('CLI: composio tools list', () => {
           expect(output).toContain('GMAIL_SEND_EMAIL');
           expect(output).toContain('GMAIL_CREATE_DRAFT');
           expect(output).not.toContain('SLACK_SEND_MESSAGE');
-          expect(output).toContain('Fetched 2 tools');
+          expect(output).toContain('Listing 2 tools');
         })
       );
     }

@@ -37,6 +37,7 @@
 
 
 
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show toolkit details
 >
@@ -77,45 +78,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # Show toolkit details
-> composio toolkits info gmail
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ────────────────────────────────────────────────────────────────────────────────
 > # Show toolkit details
@@ -157,9 +119,52 @@
 
 
 
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show toolkit details
 > composio toolkits info gmail
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show toolkit details
+> composio toolkits info gmail
+
 
 
 
@@ -208,6 +213,7 @@
 │                                                                        │
 │  Name: Gmail                                                           │
 │  Slug: gmail                                                           │
+│  Latest Version: 20251027_00 (50 available)                            │
 │  Description: Gmail is Google’s email service, featuring spam          │
 │  protection, search functions, and seamless integration with other G   │
 │  Suite apps for productivity                                           │
@@ -230,7 +236,7 @@
 ├────────────────────────────────────────────────────────────────────────╯
 │
 ◇  To list tools in this toolkit:
-│  > composio tools list --toolkit "gmail"
+│  > composio tools list --toolkits "gmail"
 >
 
 

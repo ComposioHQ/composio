@@ -1,8 +1,9 @@
 import { Args, Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
+import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { formatToolInfo } from '../format';
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -40,34 +41,21 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
       .withSpinner(`Fetching tool "${slugValue}"...`, repo.getToolDetailed(slugValue))
       .pipe(
         Effect.asSome,
-        Effect.catchTag('services/HttpServerError', (e: HttpServerError) =>
-          Effect.gen(function* () {
-            // Show structured error message and suggested fix from the API
-            if (e.details) {
-              yield* ui.log.error(e.details.message);
-              yield* ui.log.step(e.details.suggestedFix);
-            } else {
-              yield* ui.log.error(`Tool "${slugValue}" not found.`);
-            }
-
-            // Try to suggest similar tools
-            const suggestions = yield* repo.searchTools({ search: slugValue, limit: 3 }).pipe(
-              Effect.map(r => r.items),
-              Effect.catchAll(() => Effect.succeed([]))
-            );
-
-            if (suggestions.length > 0) {
-              const suggestionLines = suggestions
-                .map(s => `  ${s.slug} — ${s.description}`)
-                .join('\n');
-              yield* ui.log.step(
-                `Did you mean?\n${suggestionLines}\n\n> composio tools info "${suggestions[0]!.slug}"`
-              );
-            } else {
-              yield* ui.log.step('Browse available tools:\n> composio tools list');
-            }
-
-            return Option.none();
+        Effect.catchTag(
+          'services/HttpServerError',
+          handleHttpServerError(ui, {
+            fallbackMessage: `Tool "${slugValue}" not found.`,
+            hint: 'Browse available tools:\n> composio tools list',
+            fallbackValue: Option.none(),
+            searchForSuggestions: () =>
+              repo.searchTools({ search: slugValue, limit: 3 }).pipe(
+                Effect.map(r =>
+                  r.items.map(s => ({
+                    label: `${s.slug} — ${s.description}`,
+                    command: `> composio tools info "${s.slug}"`,
+                  }))
+                )
+              ),
           })
         )
       );

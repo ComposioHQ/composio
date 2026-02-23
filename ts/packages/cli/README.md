@@ -109,7 +109,7 @@ bun run build
 ### Build self-contained executable
 
 ```bash
-bun run build:bin
+bun run build:binary
 ```
 
 or
@@ -121,7 +121,7 @@ bun run ./scripts/build-binary.ts
 ### Install self-contained executable
 
 ```bash
-bun run install:bin
+bun run install:binary
 ```
 
 or

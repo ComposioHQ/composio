@@ -18,7 +18,7 @@ const testToolkits: Toolkits = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20250101', '20250601', '20250909'],
       tools_count: 36,
       triggers_count: 2,
     },
@@ -37,7 +37,7 @@ const detailedToolkits: ToolkitDetailed[] = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20250101', '20250601', '20250909'],
       tools_count: 36,
       triggers_count: 2,
     },
@@ -125,6 +125,8 @@ describe('CLI: composio toolkits info', () => {
           expect(output).toContain('Gmail');
           expect(output).toContain('gmail');
           expect(output).toContain('Email service to send and receive emails');
+          expect(output).toContain('20250909');
+          expect(output).toContain('3 available');
           expect(output).toContain('OAUTH2');
           expect(output).toContain('BEARER_TOKEN');
           expect(output).toContain('apiKey');
@@ -145,6 +147,8 @@ describe('CLI: composio toolkits info', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('Code Interpreter');
+          expect(output).toContain('Latest Version:');
+          expect(output).toContain('-');
           expect(output).toContain('No authentication required');
         })
       );

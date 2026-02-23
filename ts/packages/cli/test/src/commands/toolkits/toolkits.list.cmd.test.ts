@@ -18,7 +18,7 @@ const testToolkits: Toolkits = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20250101', '20250909'],
       tools_count: 36,
       triggers_count: 2,
     },
@@ -52,7 +52,7 @@ const testToolkits: Toolkits = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20260101'],
       tools_count: 50,
       triggers_count: 10,
     },
@@ -81,6 +81,10 @@ describe('CLI: composio toolkits list', () => {
           expect(output).toContain('gmail');
           expect(output).toContain('Slack');
           expect(output).toContain('GitHub');
+          // Version column
+          expect(output).toContain('Version');
+          expect(output).toContain('20250909');
+          expect(output).toContain('20260101');
           expect(output).toContain('Listing 3 of 3 toolkits');
         })
       );

@@ -50,8 +50,8 @@ jobs:
       - name: Build CLI binary
         working-directory: ts/packages/cli
         run: |
-          # Use the existing build:bin script which builds for current platform
-          pnpm build:bin
+          # Use the existing build:binary script which builds for current platform
+          pnpm build:binary
 
           # Create binaries directory and copy/rename the binary
           mkdir -p dist/binaries

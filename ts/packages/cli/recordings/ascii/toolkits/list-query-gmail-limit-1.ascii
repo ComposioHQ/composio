@@ -131,14 +131,14 @@
 │
 ●  Listing 1 of 5 toolkits
 │
-│  Name                 Slug                 Tools   Triggers   Description
-│  Gmail                gmail                40      2          Gmail is Go
-ogle’s email service, featuring spam...
+│  Name                 Slug                 Version      Tools   Triggers
+  Description
+│  Gmail                gmail                -            40      2
+  Gmail is Google’s email service, featuring spam...
 │
 ◇  To view details of a toolkit:
 │  > composio toolkits info "gmail"
 >
-
 
 
 

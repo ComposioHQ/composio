@@ -36,6 +36,7 @@
 
 
 
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Search toolkits by name
 >
@@ -75,44 +76,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # Search toolkits by name
-> composio toolkits search google
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ────────────────────────────────────────────────────────────────────────────────
 > # Search toolkits by name
@@ -153,9 +116,51 @@
 
 
 
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Search toolkits by name
 > composio toolkits search google
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Search toolkits by name
+> composio toolkits search google
+
 
 
 
@@ -201,27 +206,28 @@
 │
 ●  Found 10 of 34 toolkits
 │
-│  Name                 Slug                 Tools   Triggers   Description
-│  Gmail                gmail                40      2          Gmail is Go
-ogle’s email service, featuring spam...
-│  Google Calendar      googlecalendar       46      7          Google Cale
-ndar is a time management tool provi...
-│  Google Sheets        googlesheets         44      2          Google Shee
-ts is a cloud-based spreadsheet tool...
-│  Google Drive         googledrive          59      7          Google Driv
-e is a cloud storage solution for up...
-│  Google Docs          googledocs           35      4          Google Docs
- is a cloud-based word processor wit...
-│  Google Tasks         googletasks          17      0          Google Task
-s provides a simple to-do list and t...
-│  Google Maps          google_maps          21      0          Integrate G
-oogle Maps to access location data, ...
-│  Semrush              semrush              37      0          Semrush is
-a popular SEO tool suite that specia...
-│  Google Meet          googlemeet           12      0          Google Meet
- is a secure video conferencing plat...
-│  Google BigQuery      googlebigquery       60      0          Google BigQ
-uery is a fully managed data warehou...
+│  Name                 Slug                 Version      Tools   Triggers
+  Description
+│  Gmail                gmail                -            40      2
+  Gmail is Google’s email service, featuring spam...
+│  Google Calendar      googlecalendar       -            46      7
+  Google Calendar is a time management tool provi...
+│  Google Sheets        googlesheets         -            44      2
+  Google Sheets is a cloud-based spreadsheet tool...
+│  Google Drive         googledrive          -            59      7
+  Google Drive is a cloud storage solution for up...
+│  Google Docs          googledocs           -            35      4
+  Google Docs is a cloud-based word processor wit...
+│  Google Tasks         googletasks          -            17      0
+  Google Tasks provides a simple to-do list and t...
+│  Google Maps          google_maps          -            21      0
+  Integrate Google Maps to access location data, ...
+│  Semrush              semrush              -            37      0
+  Semrush is a popular SEO tool suite that specia...
+│  Google Meet          googlemeet           -            12      0
+  Google Meet is a secure video conferencing plat...
+│  Google BigQuery      googlebigquery       -            60      0
+  Google BigQuery is a fully managed data warehou...
 │
 ◇  To view details:
 │  > composio toolkits info "gmail"
