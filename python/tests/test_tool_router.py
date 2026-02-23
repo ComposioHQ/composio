@@ -496,6 +496,97 @@ class TestToolRouter:
         kwargs = call_args.kwargs
         assert kwargs["connected_accounts"] == {"github": "ca_xxx", "slack": "ca_yyy"}
 
+    def test_create_session_with_allow_shared_connected_accounts_true(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with allow_shared_connected_accounts=True."""
+        session = tool_router.create(
+            user_id="user_123",
+            connected_accounts={"datadog": "ca_shared123"},
+            allow_shared_connected_accounts=True,
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["connected_accounts"] == {"datadog": "ca_shared123"}
+        assert kwargs["allow_shared_connected_accounts"] is True
+
+    def test_create_session_with_allow_shared_connected_accounts_false(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with allow_shared_connected_accounts=False."""
+        session = tool_router.create(
+            user_id="user_123",
+            allow_shared_connected_accounts=False,
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["allow_shared_connected_accounts"] is False
+
+    def test_create_session_without_allow_shared_connected_accounts(
+        self, tool_router, mock_client
+    ):
+        """Test that allow_shared_connected_accounts is not sent when not provided."""
+        session = tool_router.create(user_id="user_123")
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "allow_shared_connected_accounts" not in kwargs
+
+    def test_create_session_with_top_level_assistive_prompt(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with top-level assistive_prompt config."""
+        session = tool_router.create(
+            user_id="user_123",
+            assistive_prompt={"user_timezone": "Asia/Tokyo"},
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["assistive_prompt_config"] == {
+            "user_timezone": "Asia/Tokyo",
+        }
+        # Should also be sent via experimental for backward compat
+        assert kwargs["experimental"] == {
+            "assistive_prompt_config": {
+                "user_timezone": "Asia/Tokyo",
+            }
+        }
+
+    def test_create_session_assistive_prompt_priority_over_experimental(
+        self, tool_router, mock_client
+    ):
+        """Test that top-level assistive_prompt takes priority over experimental."""
+        session = tool_router.create(
+            user_id="user_123",
+            assistive_prompt={"user_timezone": "Asia/Tokyo"},
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "Europe/London",
+                }
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        # Top-level should win
+        assert kwargs["assistive_prompt_config"] == {
+            "user_timezone": "Asia/Tokyo",
+        }
+        assert kwargs["experimental"]["assistive_prompt_config"]["user_timezone"] == "Asia/Tokyo"
+
     def test_create_session_with_workbench_config(self, tool_router, mock_client):
         """Test creating a session with workbench configuration."""
         session = tool_router.create(
@@ -545,7 +636,7 @@ class TestToolRouter:
         assert "workbench" in kwargs
 
     def test_create_session_with_experimental_config(self, tool_router, mock_client):
-        """Test creating a session with experimental configuration."""
+        """Test creating a session with experimental configuration (backward compat)."""
         session = tool_router.create(
             user_id="user_123",
             experimental={
@@ -557,7 +648,7 @@ class TestToolRouter:
 
         assert session.session_id == "session_123"
 
-        # Verify the API was called with experimental config transformed correctly
+        # Verify the API was called with both top-level and experimental config
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert "experimental" in kwargs
@@ -565,6 +656,10 @@ class TestToolRouter:
             "assistive_prompt_config": {
                 "user_timezone": "America/New_York",
             }
+        }
+        # Should also send top-level assistive_prompt_config
+        assert kwargs["assistive_prompt_config"] == {
+            "user_timezone": "America/New_York",
         }
 
     def test_create_session_with_experimental_empty_config(

@@ -202,7 +202,8 @@ class ToolRouterExperimentalConfig(te.TypedDict, total=False):
     Note: These features are experimental and may be modified or removed in future versions.
 
     Attributes:
-        assistive_prompt: Configuration for assistive prompt generation.
+        assistive_prompt: [Deprecated] Use top-level assistive_prompt parameter instead.
+                         Kept for backward compatibility.
     """
 
     assistive_prompt: ToolRouterAssistivePromptConfig
@@ -801,7 +802,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         ] = None,
         auth_configs: t.Optional[t.Dict[str, str]] = None,
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
+        allow_shared_connected_accounts: t.Optional[bool] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        assistive_prompt: t.Optional[ToolRouterAssistivePromptConfig] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
@@ -857,7 +860,14 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param auth_configs: Optional mapping of toolkit slug to auth config ID.
                            Example: {'github': 'ac_xxx', 'slack': 'ac_yyy'}
         :param connected_accounts: Optional mapping of toolkit slug to connected account ID.
+                                  By default these must belong to the same user_id as the session
+                                  unless allow_shared_connected_accounts is True.
                                   Example: {'github': 'ca_xxx', 'slack': 'ca_yyy'}
+        :param allow_shared_connected_accounts: When True, explicit connected account overrides
+                                               may reference accounts belonging to a different user.
+                                               Use for intentionally shared, non-user-scoped services
+                                               (e.g., shared Firecrawl or Datadog accounts). Default False.
+                                               Example: True
         :param workbench: Optional workbench configuration (ToolRouterWorkbenchConfig).
                          Dict with:
                          - 'enable_proxy_execution' (bool): Whether to allow proxy execute
@@ -865,8 +875,14 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                          - 'auto_offload_threshold' (int): Maximum execution payload size to
                            offload to workbench.
                          Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
-        :param experimental: Optional experimental configuration (ToolRouterExperimentalConfig).
-                            Note: These features are experimental and may change.
+        :param assistive_prompt: Optional assistive prompt configuration.
+                               Takes priority over experimental.assistive_prompt.
+                               Dict with:
+                               - 'user_timezone' (str): IANA timezone identifier
+                                 (e.g., "America/New_York", "Europe/London").
+                               Example: {'user_timezone': 'America/New_York'}
+        :param experimental: [Deprecated] Optional experimental configuration.
+                            Use top-level assistive_prompt instead.
                             Dict with:
                             - 'assistive_prompt' (dict): Configuration for assistive prompt generation.
                               - 'user_timezone' (str): IANA timezone identifier
@@ -1035,6 +1051,11 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         if connected_accounts is not None:
             create_params["connected_accounts"] = connected_accounts
 
+        if allow_shared_connected_accounts is not None:
+            create_params["allow_shared_connected_accounts"] = (
+                allow_shared_connected_accounts
+            )
+
         if toolkits_payload is not None:
             create_params["toolkits"] = toolkits_payload
 
@@ -1060,20 +1081,27 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             if execution_payload:
                 create_params["workbench"] = execution_payload
 
-        # Build experimental config
-        # Map SDK's experimental.assistive_prompt.user_timezone to API's
-        # experimental.assistive_prompt_config.user_timezone
-        if experimental is not None:
-            assistive_prompt_config = experimental.get("assistive_prompt")
-            if assistive_prompt_config is not None:
-                user_timezone = assistive_prompt_config.get("user_timezone")
-                # Only include if user_timezone is a non-empty string
-                if user_timezone:
-                    create_params["experimental"] = {
-                        "assistive_prompt_config": {
-                            "user_timezone": user_timezone,
-                        }
-                    }
+        # Resolve assistive prompt config: top-level takes priority over deprecated
+        # experimental path. Maps to API's assistive_prompt_config.user_timezone
+        resolved_timezone: t.Optional[str] = None
+        if assistive_prompt is not None:
+            resolved_timezone = assistive_prompt.get("user_timezone") or None
+        if not resolved_timezone and experimental is not None:
+            exp_prompt = experimental.get("assistive_prompt")
+            if exp_prompt is not None:
+                resolved_timezone = exp_prompt.get("user_timezone") or None
+
+        if resolved_timezone:
+            # Send as top-level assistive_prompt_config
+            create_params["assistive_prompt_config"] = {
+                "user_timezone": resolved_timezone,
+            }
+            # Also send via experimental for backward compat with older API versions
+            create_params["experimental"] = {
+                "assistive_prompt_config": {
+                    "user_timezone": resolved_timezone,
+                }
+            }
 
         # Make API call to create session
         session = self._client.tool_router.session.create(**create_params)

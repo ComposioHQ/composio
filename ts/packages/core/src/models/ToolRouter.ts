@@ -254,10 +254,18 @@ export class ToolRouter<
   ): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
 
+    // Resolve assistive prompt config: top-level takes priority over deprecated experimental path
+    const resolvedTimezone =
+      routerConfig.assistivePrompt?.userTimezone ||
+      routerConfig.experimental?.assistivePrompt?.userTimezone;
+
     const payload: SessionCreateParams = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
+      ...(routerConfig.allowSharedConnectedAccounts !== undefined && {
+        allow_shared_connected_accounts: routerConfig.allowSharedConnectedAccounts,
+      }),
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
       tools: transformToolRouterToolsParams(routerConfig.tools),
       tags: transformToolRouterTagsParams(routerConfig.tags),
@@ -265,11 +273,19 @@ export class ToolRouter<
         routerConfig.manageConnections
       ),
       workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
-      // Map SDK's experimental.assistivePrompt.userTimezone to API's experimental.assistive_prompt_config.user_timezone
-      experimental: routerConfig.experimental?.assistivePrompt?.userTimezone
+      // Map resolved assistive prompt config to top-level API field
+      ...(resolvedTimezone
         ? {
             assistive_prompt_config: {
-              user_timezone: routerConfig.experimental.assistivePrompt.userTimezone,
+              user_timezone: resolvedTimezone,
+            },
+          }
+        : {}),
+      // Also send via experimental for backward compatibility with older API versions
+      experimental: resolvedTimezone
+        ? {
+            assistive_prompt_config: {
+              user_timezone: resolvedTimezone,
             },
           }
         : undefined,

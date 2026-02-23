@@ -173,9 +173,15 @@ export const ToolRouterCreateSessionConfigSchema = z
     connectedAccounts: z
       .record(z.string(), z.string())
       .describe(
-        'The connected accounts to use in the tool router session. The key is the toolkit slug, the value is the connected account id.'
+        'The connected accounts to use in the tool router session. The key is the toolkit slug, the value is the connected account id. By default these must belong to the same user_id as the session unless allowSharedConnectedAccounts is true.'
       )
       .default({}),
+    allowSharedConnectedAccounts: z
+      .boolean()
+      .optional()
+      .describe(
+        'When true, explicit connected account overrides may reference accounts belonging to a different user. Use this for intentionally shared, non-user-scoped services (e.g., shared Firecrawl or Datadog accounts). Default false.'
+      ),
     manageConnections: z
       .union([z.boolean(), ToolRouterConfigManageConnectionsSchema])
       .optional()
@@ -183,12 +189,27 @@ export const ToolRouterCreateSessionConfigSchema = z
       .describe(
         'The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.'
       ),
+    assistivePrompt: z
+      .object({
+        userTimezone: z
+          .string()
+          .optional()
+          .describe(
+            'IANA timezone identifier (e.g., "America/New_York", "Europe/London") for timezone-aware assistive prompts'
+          ),
+      })
+      .optional()
+      .describe(
+        'Configuration for assistive prompt generation. Takes priority over experimental.assistivePrompt.'
+      ),
     workbench: z
       .object({
         enableProxyExecution: z
           .boolean()
           .optional()
-          .describe('Whether to enable proxy execution in the tool router session'),
+          .describe(
+            'When true, enables direct API execution from workbench when relevant toolkit tools are not available.'
+          ),
         autoOffloadThreshold: z
           .number()
           .optional()
@@ -210,7 +231,9 @@ export const ToolRouterCreateSessionConfigSchema = z
               ),
           })
           .optional()
-          .describe('Configuration for assistive prompt generation'),
+          .describe(
+            '[Deprecated] Use top-level assistivePrompt instead. Kept for backward compatibility.'
+          ),
       })
       .optional()
       .describe('Experimental features configuration - not stable, may be modified or removed'),
@@ -224,7 +247,10 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
- * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
+ * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session. By default must belong to the same user_id unless allowSharedConnectedAccounts is true.
+ * @param {boolean} [allowSharedConnectedAccounts] - When true, connected account overrides may reference accounts from a different user. Default false.
+ * @param {object} [assistivePrompt] - Configuration for assistive prompt generation. Takes priority over experimental.assistivePrompt.
+ * @param {string} [assistivePrompt.userTimezone] - IANA timezone identifier for timezone-aware assistive prompts
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
