@@ -13,6 +13,10 @@ function getDecimal() {
 
 let widgetOpen = false;
 
+export function markWidgetOpen() {
+  widgetOpen = true;
+}
+
 export function toggleDecimalWidget() {
   const decimal = getDecimal();
   if (!decimal) {

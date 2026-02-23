@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
+import { markWidgetOpen } from './ask-ai-button';
 
 export type DecimalAPI = {
   show: () => void;
@@ -44,6 +45,12 @@ export function DecimalWidget() {
     };
 
     applyTheme();
+
+    // Auto-open the widget on large screens
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      Decimal.show();
+      markWidgetOpen();
+    }
 
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
