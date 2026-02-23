@@ -3,17 +3,18 @@ name: Test Installation
 on:
   push:
     tags:
+      # Temporary compatibility window: support both legacy v* and package-scoped CLI tags.
       - 'v*'
+      - '@composio/cli@*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to test (e.g., v1.0.0)'
-        required: false
-        default: 'latest'
+        description: 'Semver version to test (e.g., 1.0.0)'
+        required: true
   workflow_call:
     inputs:
       version:
-        description: 'Version to test'
+        description: 'Release tag or semver version to test'
         required: false
         default: 'latest'
         type: string
@@ -69,6 +70,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Resolve and validate target release
+        id: release_target
+        shell: bash
+        run: |
+          raw_input="${{ inputs.version }}"
+          if [[ -z "$raw_input" || "$raw_input" == "latest" ]]; then
+            echo "use_latest=true" >> "$GITHUB_OUTPUT"
+            echo "release_tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # For manual runs, require semver input and build the release tag.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ ! "$raw_input" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+              echo "Invalid semver version: '$raw_input'"
+              echo "Expected format like: 1.2.3, 1.2.3-beta.1, 1.2.3+build.7"
+              exit 1
+            fi
+            echo "use_latest=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=@composio/cli@$raw_input" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # For workflow_call / push, accept a full package tag, semver, or legacy v* tag.
+          if [[ "$raw_input" =~ ^@composio/cli@ ]]; then
+            echo "use_latest=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=$raw_input" >> "$GITHUB_OUTPUT"
+          elif [[ "$raw_input" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "use_latest=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=@composio/cli@$raw_input" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_latest=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=$raw_input" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup shell environment
         run: |
           if [[ "${{ matrix.shell }}" == "zsh" ]]; then
@@ -97,7 +133,7 @@ jobs:
           fi
 
       - name: Test install script (latest version)
-        if: inputs.version == 'latest' || inputs.version == ''
+        if: steps.release_target.outputs.use_latest == 'true'
         shell: bash
         run: |
           echo "Testing installation with auto-detected latest CLI version..."
@@ -127,13 +163,14 @@ jobs:
           fi
 
       - name: Test install script (specific version)
-        if: inputs.version != 'latest' && inputs.version != ''
+        if: steps.release_target.outputs.use_latest != 'true'
         shell: bash
         run: |
-          echo "Testing installation with version: ${{ inputs.version }}"
+          RELEASE_TAG="${{ steps.release_target.outputs.release_tag }}"
+          echo "Testing installation with version: ${RELEASE_TAG}"
 
           # Test the install script with specific version
-          bash install.sh ${{ inputs.version }}
+          bash install.sh "${RELEASE_TAG}"
 
           # Verify installation
           source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
@@ -259,7 +296,12 @@ jobs:
 
           # Test with custom directory using the same version as the workflow
           export COMPOSIO_INSTALL="/tmp/custom-composio"
-          bash install.sh ${{ inputs.version || 'cli@0.1.24-2' }}
+          if [[ "${{ steps.release_target.outputs.use_latest }}" == "true" ]]; then
+            bash install.sh
+          else
+            RELEASE_TAG="${{ steps.release_target.outputs.release_tag }}"
+            bash install.sh "${RELEASE_TAG}"
+          fi
 
           # Verify custom installation
           if [[ -f "/tmp/custom-composio/bin/composio" ]]; then

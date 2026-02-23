@@ -66,6 +66,20 @@ Additionally, `composio upgrade` supports the following environment variables:
 | COMPOSIO_GITHUB_TAG          | The tag to use when fetching the Composio CLI binary from Github                                       | latest                 |
 | COMPOSIO_GITHUB_ACCESS_TOKEN | The access token for the GitHub API. Useful during development to avoid getting rate-limited by Github | None                   |
 
+### CLI binary release tags
+
+CLI binaries are published as GitHub release assets.
+
+- Current tag format: `@composio/cli@<semver>` (for example `@composio/cli@0.1.24`)
+- Temporary compatibility: legacy `v<semver>` tags are also supported during migration
+- `composio upgrade` and `install.sh` can resolve either format during the compatibility window
+
+If you pin upgrades with `COMPOSIO_GITHUB_TAG`, prefer the package-scoped tag format:
+
+```bash
+COMPOSIO_GITHUB_TAG='@composio/cli@0.1.24' composio upgrade
+```
+
 ## Caching
 
 The CLI implements a file-based caching system for improved performance and offline capabilities.
