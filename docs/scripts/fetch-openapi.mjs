@@ -18,6 +18,8 @@ const IGNORED_PATHS = [
   '/api/v3/cli/get-session',
   '/api/v3/cli/create-session',
   '/api/v3/auth/session/logout',
+  '/api/v3/cli/realtime/credentials',
+  '/api/v3/cli/realtime/auth',
 ];
 
 // Tags to ignore (internal/admin)
@@ -25,6 +27,7 @@ const IGNORED_TAGS = [
   'CLI',
   'Admin',
   'Profiling',
+  'User',
 ];
 
 async function fetchAndFilterSpec() {
@@ -56,6 +59,12 @@ async function fetchAndFilterSpec() {
       const hasValidTag = tags.some(tag => !IGNORED_TAGS.includes(tag));
 
       if (!hasValidTag && tags.length > 0) {
+        removedCount++;
+        continue;
+      }
+
+      // Skip if marked as internal
+      if (operation['x-internal'] === true) {
         removedCount++;
         continue;
       }

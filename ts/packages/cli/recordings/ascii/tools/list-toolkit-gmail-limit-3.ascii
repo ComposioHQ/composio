@@ -22,6 +22,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List with --limit flag
 >
@@ -47,6 +60,57 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --limit flag
+> composio tools list --toolkits gmail --limit 3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List with --limit flag
 > composio tools list --toolkits gmail --limit 3
@@ -72,6 +136,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List with --limit flag
 > composio tools list --toolkits gmail --limit 3
@@ -88,18 +165,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # List with --limit flag
-> composio tools list --toolkits gmail --limit 3
 
 
 
@@ -132,16 +197,29 @@
 ●  Listing 3 tools (page 1 of 14)
 │
 │  Slug                                Name                 Description
-│  GMAIL_ADD_LABEL_TO_EMAIL            Modify email labels  Adds and/or rem
-oves specified Gmail labels for ...
-│  GMAIL_BATCH_DELETE_MESSAGES         Batch delete Gmai... Tool to permane
-ntly delete multiple Gmail messa...
-│  GMAIL_BATCH_MODIFY_MESSAGES         Batch modify Gmai... Modify labels o
-n multiple Gmail messages in one...
+│  GMAIL_ADD_LABEL_TO_EMAIL            Modify email labels  Adds and/or removes spe
+cified Gmail labels for ...
+│  GMAIL_BATCH_DELETE_MESSAGES         Batch delete Gmai... Tool to permanently del
+ete multiple Gmail messa...
+│  GMAIL_BATCH_MODIFY_MESSAGES         Batch modify Gmai... Modify labels on multip
+le Gmail messages in one...
 │
 ◇  To view details of a tool:
 │  > composio tools info "GMAIL_ADD_LABEL_TO_EMAIL"
 >
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

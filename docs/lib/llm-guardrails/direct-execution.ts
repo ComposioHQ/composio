@@ -1,3 +1,5 @@
+import { TERMINOLOGY_MIGRATION } from './terminology';
+
 /**
  * Guardrails for pages tagged with llmGuardrails: "direct-execution".
  * Concise rules + key patterns for LLMs generating direct execution code.
@@ -68,4 +70,5 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 2. **\`tools.execute()\` signature** — Python: \`execute(slug, arguments_dict, *, user_id=...)\` (arguments is the second positional param). TypeScript: \`execute(slug, { userId, arguments })\`.
 3. **Provider at init** — \`Composio(provider=OpenAIProvider())\` in Python, \`new Composio({ provider: new OpenAIProvider() })\` in TypeScript. Defaults to OpenAI if omitted.
 4. **Correct provider imports** — \`composio_<provider>\` for Python, \`@composio/<provider>\` for TypeScript. For OpenAI Agents SDK use \`composio_openai_agents\` / \`@composio/openai-agents\`.
+${TERMINOLOGY_MIGRATION}
 `;

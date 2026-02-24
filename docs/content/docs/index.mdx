@@ -8,43 +8,46 @@ Composio powers 1000+ toolkits, tool search, context management, authentication,
 
 <Cards>
   <Card
+    title="Tutorial: Build a chat app"
+    href="/cookbooks/chat-app"
+    description="Build a Next.js chat app where your agent can discover and use tools across 1000+ apps."
+  />
+  <Card
+    title="How Composio works"
+    href="/docs/how-composio-works"
+    description="See what happens under the hood when your agent searches, authenticates, and executes a tool."
+  />
+</Cards>
+
+## Get Started
+
+<AIToolsBanner />
+
+<Cards className="grid-cols-1">
+  <Card
     icon={<Rocket />}
     title="Quickstart"
     href="/docs/quickstart"
-    description="Build your first agent in 5 minutes"
+    description="Install the SDK, connect an app, and run your first tool call in 5 minutes."
+  />
+</Cards>
+
+## Explore
+
+<Cards>
+  <Card
+    icon={<Wrench />}
+    title="Toolkits"
+    href="/toolkits"
+    description="Browse 1000+ toolkits across GitHub, Gmail, Slack, Notion, and more."
   />
   <Card
     icon={<Play />}
     title="Playground"
     href="https://platform.composio.dev/auth?next_page=%2Ftool-router"
-    description="Try Composio in your browser"
-  />
-  <Card
-    icon={<Rocket />}
-    title="How it works"
-    href="/docs/how-composio-works"
-    description="Sessions, meta tools, authentication, and execution"
-  />
-  <Card
-    icon={<Wrench />}
-    title="Toolkits"
-    href="/toolkits"
-    description="Browse 1000+ toolkits"
+    description="Try Composio in your browser without writing any code."
   />
 </Cards>
-
-## For AI tools
-
-- [composio.dev/llms.txt](/llms.txt) - Documentation index with links
-- [composio.dev/llms-full.txt](/llms-full.txt) - Complete documentation in one file
-
-### Skills
-
-```bash
-npx skills add composiohq/skills
-```
-
-[View on Skills.sh](https://skills.sh/composiohq/skills/composio-tool-router) · [GitHub](https://github.com/composiohq/skills)
 
 ## Providers
 

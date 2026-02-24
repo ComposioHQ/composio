@@ -227,6 +227,18 @@ export function mdxToCleanMarkdown(content: string): string {
     '- [$2]($1): $3'
   );
 
+  // Convert AIToolsBanner to plain text
+  result = result.replace(
+    /<AIToolsBanner\s*\/>/g,
+    '### For AI tools\n\n' +
+    '**Skills:**\n' +
+    '```bash\nnpx skills add composiohq/skills\n```\n' +
+    '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
+    '**Context files:**\n' +
+    '- [llms.txt](/llms.txt) — Documentation index with links\n' +
+    '- [llms-full.txt](/llms-full.txt) — Complete documentation in one file'
+  );
+
   // Remove wrapper components (Cards, ProviderGrid, Tabs, Frame, div, QuickstartFlow, IntegrationTabs, Accordions, ToolTypeFlow, ToolkitsLanding, TemplateGrid, etc.)
   result = result.replace(/<\/?(Cards|ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid)[^>]*>/g, '');
 

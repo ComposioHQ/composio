@@ -1,4 +1,4 @@
-import { Data, Effect } from 'effect';
+import { Data, Effect, Runtime } from 'effect';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
 
 type RawRealtimeEvent = Record<string, unknown>;
@@ -22,6 +22,7 @@ type PusherChannel = {
   bind: (event: string, callback: (data: unknown) => void) => void;
   bind_global?: (callback: (eventName: string, data: unknown) => void) => void;
   unbind?: (event?: string, callback?: (data: unknown) => void) => void;
+  unbind_all?: () => void;
 };
 
 type PusherClient = {
@@ -70,6 +71,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
   {
     effect: Effect.gen(function* () {
       const sessionRepo = yield* ComposioSessionRepository;
+      const runtime = yield* Effect.runtime<never>();
 
       const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
         Effect.acquireUseRelease(
@@ -97,7 +99,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                       throw new Error('Missing channel_name or socket_id for realtime auth');
                     }
 
-                    const response = await Effect.runPromise(
+                    const response = await Runtime.runPromise(runtime)(
                       sessionRepo.authRealtimeChannel({
                         channel_name,
                         socket_id,
@@ -125,7 +127,44 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
             });
 
             const channel = pusher.subscribe(channelName);
-            const chunkedEvents = new Map<string, { chunks: string[]; receivedFinal: boolean }>();
+
+            // Pusher has a 10 KB per-message limit.  When the Composio backend
+            // produces a trigger payload that exceeds this, it splits the JSON
+            // into numbered chunks sent as separate `chunked-trigger_to_client`
+            // events.  We reassemble them here by accumulating chunks keyed by
+            // event id, then joining once the final chunk arrives and every
+            // intermediate index is present.
+            //
+            // Guard-rails:
+            //  - Reject chunk indices outside [0, MAX_CHUNK_INDEX] to prevent a
+            //    single malformed event from allocating a huge sparse array.
+            //  - Evict incomplete entries older than CHUNK_TTL_MS so that lost
+            //    chunks don't leak memory over long-running sessions.
+            //  - Cap the total number of in-flight reassemblies to bound memory
+            //    usage even under pathological input.
+            const MAX_CHUNK_INDEX = 1_000;
+            const CHUNK_TTL_MS = 60_000;
+            const MAX_PENDING_CHUNKS = 100;
+
+            type PendingChunkedEvent = {
+              chunks: string[];
+              receivedFinal: boolean;
+              createdAt: number;
+            };
+
+            const chunkedEvents = new Map<string, PendingChunkedEvent>();
+
+            // Periodic sweep: drop entries that have been sitting incomplete for
+            // longer than CHUNK_TTL_MS.  Runs every CHUNK_TTL_MS and is cleared
+            // on shutdown.
+            const cleanupInterval = setInterval(() => {
+              const now = Date.now();
+              for (const [id, entry] of chunkedEvents) {
+                if (now - entry.createdAt > CHUNK_TTL_MS) {
+                  chunkedEvents.delete(id);
+                }
+              }
+            }, CHUNK_TTL_MS);
 
             channel.bind('trigger_to_client', eventData => {
               onEvent((eventData ?? {}) as RawRealtimeEvent);
@@ -137,8 +176,29 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 return;
               }
 
+              // Reject non-integer or out-of-range indices to prevent a single
+              // malformed event from creating a massive sparse array.
+              if (
+                !Number.isInteger(typed.index) ||
+                typed.index < 0 ||
+                typed.index > MAX_CHUNK_INDEX
+              ) {
+                return;
+              }
+
               if (!chunkedEvents.has(typed.id)) {
-                chunkedEvents.set(typed.id, { chunks: [], receivedFinal: false });
+                // If we already have too many in-flight reassemblies, drop the
+                // oldest one to make room.
+                if (chunkedEvents.size >= MAX_PENDING_CHUNKS) {
+                  const oldestId = chunkedEvents.keys().next().value;
+                  if (oldestId !== undefined) chunkedEvents.delete(oldestId);
+                }
+
+                chunkedEvents.set(typed.id, {
+                  chunks: [],
+                  receivedFinal: false,
+                  createdAt: Date.now(),
+                });
               }
 
               const current = chunkedEvents.get(typed.id)!;
@@ -147,6 +207,10 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 current.receivedFinal = true;
               }
 
+              // Completeness check: for a dense array, .length equals the
+              // number of defined keys.  For a sparse array (missing chunks),
+              // .length is highestIndex + 1 but Object.keys only counts the
+              // indices that were actually assigned, so the two diverge.
               if (
                 current.receivedFinal &&
                 current.chunks.length === Object.keys(current.chunks).length
@@ -154,6 +218,8 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 try {
                   const parsed = JSON.parse(current.chunks.join('')) as RawRealtimeEvent;
                   onEvent(parsed);
+                } catch {
+                  // Silently discard events that fail to parse after chunk reassembly
                 } finally {
                   chunkedEvents.delete(typed.id);
                 }
@@ -162,7 +228,8 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
 
             return {
               shutdown: async () => {
-                channel.unbind?.();
+                clearInterval(cleanupInterval);
+                channel.unbind_all?.();
                 pusher.unsubscribe(channelName);
                 pusher.disconnect();
               },

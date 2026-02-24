@@ -22,6 +22,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show tool details
 >
@@ -47,6 +60,57 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show tool details
+> composio tools info GMAIL_SEND_EMAIL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show tool details
 > composio tools info GMAIL_SEND_EMAIL
@@ -72,6 +136,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show tool details
 > composio tools info GMAIL_SEND_EMAIL
@@ -88,18 +165,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # Show tool details
-> composio tools info GMAIL_SEND_EMAIL
 
 
 
@@ -127,24 +192,37 @@
 > composio tools info GMAIL_SEND_EMAIL
 │
 ◒  Fetching tool "GMAIL_SEND_EMAIL"...
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+◇  Fetching tool "GMAIL_SEND_EMAIL"...
+│
+◇  Tool: Send Email ──────────────────────────────────────────────────────────────╮
+│                                                                                 │
+│  Name: Send Email                                                               │
+│  Slug: GMAIL_SEND_EMAIL                                                         │
+│  Description: Sends an email via Gmail API using the authenticated user's       │
+│  Google profile display name. At least one of 'to' (or 'recipient_email'),      │
+│  'cc', or 'bcc' must be provided. At least one of subject or body must be       │
+│  provided. Requires `is_html=True` if the body contains HTML. For attachments,  │
+│   you must provide a FileUploadable object with valid `s3key` (obtained from a  │
+│   previous file download action like GMAIL_GET_ATTACHMENT), `mimetype` (e.g.,   │
+│  'image/png', 'application/pdf'), and `name` (filename). All common file types  │
+│   including PNG, JPG, PDF, MP4, etc. are supported. Gmail API limits total      │
+│  message size to ~25 MB after base64 encoding.                                  │
+│  Tags: important, openWorldHint                                                 │
+│  Toolkit: gmail (gmail)                                                         │
+│  Versions: 20260223_00, 20260212_00, 20260211_00, 20260209_00, 20260204_00,     │
+│  20260203_01, 20260203_00, 20260130_00, 20260128_00, 20260127_00, 20260126_00,  │
+│   20260122_00, 20260119_00, 20260115_00, 20260114_00, 20260113_00,              │
+│  20260111_00, 20260110_00, 20260108_00, 20260107_00, 20260106_00, 20260105_00,  │
+│   20260102_00, 20251230_01, 20251230_00, 20251229_00, 20251222_02,              │
+│  20251222_01, 20251222_00, 20251218_00, 20251217_00, 20251215_00, 20251211_01,  │
+│   20251211_00, 20251210_00, 20251209_00, 20251208_01, 20251208_00,              │
+│  20251204_01, 20251204_00, 20251202_01, 20251202_00, 20251201_00, 20251119_00,  │
+│   20251111_00, 20251107_00, 20251103_02, 20251103_01, 20251103_00, 20251028_00  │
+│                                                                                 │
+│  Input Parameters:                                                              │
+│    cc               array   optional  "Carbon Copy (CC) recipients' email       │
+│  addresses. A..."                                                               │
+│    bcc              array   optional  "Blind Carbon Copy (BCC) recipients'      │
+│  email addre..."                                                                │
+│    body             string  optional  "Email content (plain text or HTML).      │
 ────────────────────────────────────────────────────────────────────────────────

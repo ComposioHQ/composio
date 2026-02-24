@@ -29,7 +29,7 @@ export const matchesTriggerListenFilters = (
     return false;
   }
 
-  if (filters.userId && filters.userId !== data.metadata.connectedAccount.userId) {
+  if (filters.userId && filters.userId !== data.userId) {
     return false;
   }
 

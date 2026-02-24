@@ -28,6 +28,38 @@ If you don't have an agent, you can [execute tools directly](/docs/tools-direct/
 You can browse all toolkits on the [Toolkits page](/toolkits) in the docs or in the [Composio dashboard](https://platform.composio.dev?next_page=/marketplace). Both list every supported app along with available auth schemes and tools.
 </Accordion>
 
+<Accordion title="What toolkits are available by default in a session?">
+All toolkits in the Composio catalog are available by default. When you create a session without specifying a `toolkits` parameter, your agent can discover and use any toolkit through `COMPOSIO_SEARCH_TOOLS`.
+
+To restrict which toolkits are available, pass `toolkits` when creating the session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Only GitHub and Gmail
+session = composio.create(user_id="user_123", toolkits=["github", "gmail"])
+
+# Everything except Linear and Jira
+session = composio.create(user_id="user_123", toolkits={"disable": ["linear", "jira"]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Only GitHub and Gmail
+const session = await composio.create("user_123", { toolkits: ["github", "gmail"] });
+
+// Everything except Linear and Jira
+const session2 = await composio.create("user_123", { toolkits: { disable: ["linear", "jira"] } });
+```
+</Tab>
+</Tabs>
+
+You can also list the toolkits available in a session with `session.toolkits()`. See [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
+</Accordion>
+
 <Accordion title="The tool I need doesn't exist. How do I request one?">
 You can request new tools or toolkits on the [tool request board](https://request.composio.dev/boards/tool-requests). The team reviews requests regularly.
 </Accordion>

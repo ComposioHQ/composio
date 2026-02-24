@@ -20,6 +20,7 @@ import { CapabilityCard, CapabilityList } from '@/components/capability-card';
 import { TemplateCard, TemplateGrid } from '@/components/template-card';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { Mermaid } from '@/components/mermaid';
+import { AIToolsBanner } from '@/components/ai-tools-banner';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -86,6 +87,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     TemplateGrid,
     ToolkitsLanding,
     Mermaid,
+    AIToolsBanner,
     StepTitle,
     // Lucide icons
     ShieldCheck,

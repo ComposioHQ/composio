@@ -1,4 +1,4 @@
-Set Height 1090
+Set Height 750
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/tools/search-send-email.svg"
 Output "recordings/ascii/tools/search-send-email.ascii"

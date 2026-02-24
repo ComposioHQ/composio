@@ -35,9 +35,6 @@
 
 
 
-
-
-
 ────────────────────────────────────────────────────────────────────────────────
 > # Show toolkit details
 >
@@ -76,6 +73,41 @@
 
 
 
+────────────────────────────────────────────────────────────────────────────────
+> # Show toolkit details
+> composio toolkits info gmail
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -117,56 +149,9 @@
 
 
 
-
-
-
 ────────────────────────────────────────────────────────────────────────────────
 > # Show toolkit details
 > composio toolkits info gmail
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # Show toolkit details
-> composio toolkits info gmail
-
-
-
 
 
 
@@ -209,38 +194,35 @@
 ◒  Fetching toolkit "gmail"...
 ◇  Fetching toolkit "gmail"...
 │
-◇  Toolkit: Gmail ───────────────────────────────────────────────────────╮
-│                                                                        │
-│  Name: Gmail                                                           │
-│  Slug: gmail                                                           │
-│  Latest Version: 20251027_00 (50 available)                            │
-│  Description: Gmail is Google’s email service, featuring spam          │
-│  protection, search functions, and seamless integration with other G   │
-│  Suite apps for productivity                                           │
-│  Auth Schemes: OAUTH2                                                  │
-│  Composio Managed Auth Schemes: OAUTH2                                 │
-│                                                                        │
-│  Fields Required for AuthConfig creation:                              │
-│    gmail_oauth (OAUTH2):                                               │
-│      client_id          required string  "Client id of the app"        │
-│      client_secret      required string  "Client secret of the app"    │
-│      oauth_redirect_uri optional string  "Add this Redirect URL to     │
-│  your app's OAuth allow list."                                         │
-│      scopes             optional string  "Scopes to request from the   │
-│  user, comma separated"                                                │
-│                                                                        │
-│  Fields Required for Connected Account creation:                       │
-│    gmail_oauth (OAUTH2):                                               │
-│      (none)                                                            │
-│                                                                        │
-├────────────────────────────────────────────────────────────────────────╯
+◇  Toolkit: Gmail ────────────────────────────────────────────────────────────────╮
+│                                                                                 │
+│  Name: Gmail                                                                    │
+│  Slug: gmail                                                                    │
+│  Latest Version: 20251028_00 (50 available)                                     │
+│  Description: Gmail is Google’s email service, featuring spam protection,       │
+│  search functions, and seamless integration with other G Suite apps for         │
+│  productivity                                                                   │
+│  Auth Schemes: OAUTH2                                                           │
+│  Composio Managed Auth Schemes: OAUTH2                                          │
+│                                                                                 │
+│  Fields Required for AuthConfig creation:                                       │
+│    gmail_oauth (OAUTH2):                                                        │
+│      client_id          required string  "Client id of the app"                 │
+│      client_secret      required string  "Client secret of the app"             │
+│      oauth_redirect_uri optional string  "Add this Redirect URL to your app's   │
+│  OAuth allow list."                                                             │
+│      scopes             optional string  "Scopes to request from the user,      │
+│  comma separated"                                                               │
+│                                                                                 │
+│  Fields Required for Connected Account creation:                                │
+│    gmail_oauth (OAUTH2):                                                        │
+│      (none)                                                                     │
+│                                                                                 │
+├─────────────────────────────────────────────────────────────────────────────────╯
 │
 ◇  To list tools in this toolkit:
 │  > composio tools list --toolkits "gmail"
 >
-
-
-
 
 
 ────────────────────────────────────────────────────────────────────────────────

@@ -100,6 +100,8 @@ describe('CLI: composio', () => {
 
             - tools search [--toolkits text] [--limit integer] <query>                                                                                                                                            Search tools by use case.
 
+            - tools execute [(-d, --data text)] [--user-id text] [--connected-account-id text] [--toolkit-version text] <slug>                                                                                    Execute a tool by slug with JSON arguments.
+
             - auth-configs                                                                                                                                                                                        View and manage Composio auth configs.
 
             - auth-configs list [--toolkits text] [--query text] [--limit integer]                                                                                                                                List auth configs.

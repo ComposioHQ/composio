@@ -29,6 +29,12 @@
 
 
 
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show tools subcommand help
 >
@@ -61,32 +67,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # Show tools subcommand help
-> composio tools --help
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -125,9 +105,59 @@
 
 
 
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show tools subcommand help
 > composio tools --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show tools subcommand help
+> composio tools --help
+
+
+
+
+
+
 
 
 
@@ -175,15 +205,21 @@ Discover and inspect Composio tools.
 COMMANDS
 
   - list [--query text] [--toolkits text] [--tags text] [--limit integer]
-List available tools.
+                             List available tools.
 
   - info [<slug>]
-View details of a specific tool.
+                             View details of a specific tool.
 
   - search [--toolkits text] [--limit integer] <query>
-Search tools by use case.
+                             Search tools by use case.
+
+  - execute [(-d, --data text)] [--user-id text] [--connected-account-id text] [--t
+oolkit-version text] <slug>  Execute a tool by slug with JSON arguments.
 
 >
+
+
+
 
 
 

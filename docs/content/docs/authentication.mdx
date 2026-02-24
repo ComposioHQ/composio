@@ -4,15 +4,20 @@ description: Understand how Composio handles user authentication to toolkits
 keywords: [connect link, oauth, auth config]
 ---
 
-Composio simplifies authentication with Connect Links: hosted pages where users securely connect their accounts.
+Composio simplifies authentication with Connect Links: hosted pages where users securely connect their accounts. There are two approaches. Choose based on where in your app users should authenticate.
 
 <Video src="/images/connect-link-auth-flow-recording.mp4" autoPlay />
 
+## Which approach should I use?
+
+- **Users chat with your agent?** Use [in-chat authentication](#in-chat-authentication). The agent handles connection prompts automatically, no setup needed.
+- **Want users connected before they chat?** Use [manual authentication](#manual-authentication). Your app calls `session.authorize()` during onboarding or from a settings page.
+
+Not sure? Start with in-chat. You can add manual auth later.
+
 ## In-chat authentication
 
-By default, when a tool requires authentication, the agent prompts the user with a Connect Link. The user authenticates and confirms in chat. The agent handles OAuth flows, token refresh, and credential management automatically.
-
-Here's what this looks like in a conversation:
+By default, when a tool requires authentication, the agent prompts the user with a Connect Link. The user authenticates and confirms in chat. No setup needed. Just create a session and the agent handles OAuth flows, token refresh, and credential management automatically.
 
 > **You:** Summarize my emails from today
 >
@@ -22,18 +27,20 @@ Here's what this looks like in a conversation:
 >
 > **Agent:** Here's a summary of your emails from today...
 
-This flow works well for chat applications where users interact directly with the agent.
-
-<Card icon={<MessageCircle />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication">
-  Let the agent handle authentication prompts automatically during conversation
+<Card icon={<MessageCircle />} title="In-chat authentication guide" href="/docs/authenticating-users/in-chat-authentication">
+  Configuration, callback URLs, and full examples
 </Card>
 
 ## Manual authentication
 
-For apps that manage auth outside of chat, use `session.authorize()` to generate Connect Links programmatically. This is useful when you want users to connect accounts during onboarding, or when building a custom connections page.
+Use `session.authorize()` to generate Connect Links programmatically when you want to control when and where users authenticate. Common use cases:
 
-<Card icon={<ShieldCheck />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating">
-  Control when and how users connect their accounts
+- **Onboarding**: connect accounts during signup before the user ever chats with the agent
+- **Settings page**: let users manage their connections from a dedicated UI
+- **Pre-flight checks**: verify all required connections are active before starting a task
+
+<Card icon={<ShieldCheck />} title="Manual authentication guide" href="/docs/authenticating-users/manually-authenticating">
+  `session.authorize()` API, callback URLs, and connection status checks
 </Card>
 
 ## How Composio manages authentication
@@ -42,9 +49,9 @@ Behind the scenes, Composio uses **auth configs** to manage authentication.
 
 An **auth config** is a blueprint that defines how authentication works for a toolkit across all your users. It specifies:
 
-- **Authentication method** — OAuth2, Bearer token, API key, or Basic Auth
-- **Scopes** — what actions your tools can perform
-- **Credentials** — your own app credentials or Composio's managed auth
+- **Authentication method**: OAuth2, Bearer token, API key, or Basic Auth
+- **Scopes**: what actions your tools can perform
+- **Credentials**: your own app credentials or Composio's managed auth
 
 Composio creates one auth config per toolkit, and it applies to every user who connects that toolkit. When a user authenticates, Composio creates a **connected account** that stores their credentials (OAuth tokens or API keys) and links them to your user ID. When you need to use your own OAuth credentials or customize scopes, you can create [custom auth configs](/docs/using-custom-auth-configuration).
 
@@ -91,19 +98,17 @@ You only need to create a custom auth config when:
 
 To bring your own OAuth apps or customize scopes, see [custom auth configs](/docs/using-custom-auth-configuration).
 
-## Useful links
+## What to read next
 
 <Cards>
-  <Card icon={<MessageCircle />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication">
-    Let the agent prompt users to authenticate during conversation
-  </Card>
-  <Card icon={<ShieldCheck />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating">
-    Generate Connect Links programmatically in your app
-  </Card>
-  <Card icon={<Palette />} title="White-labeling" href="/docs/white-labeling-authentication">
-    Customize OAuth screens with your branding
-  </Card>
-  <Card icon={<Key />} title="Custom auth configs" href="/docs/using-custom-auth-configuration">
-    Use your own OAuth apps
-  </Card>
+  <Card icon={<Wrench />} title="Tools and toolkits" href="/docs/tools-and-toolkits" description="How meta tools discover, authenticate, and execute tools" />
+  <Card icon={<MessageCircle />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication" description="Let the agent prompt users to authenticate during conversation" />
+  <Card icon={<ShieldCheck />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating" description="Generate Connect Links programmatically in your app" />
+</Cards>
+
+### Related guides
+
+<Cards>
+  <Card icon={<Palette />} title="White-labeling" href="/docs/white-labeling-authentication" description="Customize OAuth screens with your branding" />
+  <Card icon={<Key />} title="Custom auth configs" href="/docs/using-custom-auth-configuration" description="Use your own OAuth apps" />
 </Cards>

@@ -100,17 +100,28 @@ interface RecordingsConfig {
 
 // --- Tape generation ---
 
+/**
+ * Wraps a value in a VHS-compatible quoted string.
+ *
+ * VHS supports three string delimiters (`"`, `'`, `` ` ``) and NONE support
+ * escape sequences — the delimiter character always terminates the string.
+ * We pick a delimiter that doesn't appear in the value.
+ *
+ * @see https://github.com/charmbracelet/vhs/discussions/141
+ */
 function vhsQuote(value: string): string {
-  if (value.includes('"')) {
-    return `"${value.replace(/"/g, "'")}"`;
-  }
-  return `"${value}"`;
+  if (!value.includes('"')) return `"${value}"`;
+  if (!value.includes('`')) return `\`${value}\``;
+  if (!value.includes("'")) return `'${value}'`;
+  throw new Error(
+    `Cannot quote VHS string — value contains all three delimiters (" ' \`): ${value}`
+  );
 }
 
 function generateSharedTape(vhs: VhsConfig): string {
+  // VHS requires ALL Set directives before any non-Set directive (Require, Env, etc.).
+  // Placing Require/Env before Set causes VHS to silently ignore the Set directives.
   const lines = [
-    `Require composio`,
-    `Env CI ${vhsQuote(env.CI)}`,
     `Set Shell ${vhs.shell}`,
     `Set Width ${vhs.width}`,
     // Height is intentionally omitted — set per-recording tape to support dynamic heights.
@@ -122,6 +133,8 @@ function generateSharedTape(vhs: VhsConfig): string {
     `Set Framerate ${vhs.framerate}`,
     `Set CursorBlink ${vhs.cursorBlink}`,
     `Set WindowBar ${vhs.windowBar}`,
+    `Require composio`,
+    `Env CI ${vhsQuote(env.CI)}`,
   ];
   return lines.join('\n') + '\n';
 }
@@ -144,12 +157,18 @@ function generateRecordingTape(opts: {
     lines.push('Show');
   }
 
-  lines.push(
-    `Type ${vhsQuote(opts.command)}`,
-    'Sleep 300ms',
-    'Enter',
-    `Sleep ${opts.sleepAfterEnter}`
-  );
+  // Split multi-line commands into separate Type/Enter directives.
+  // For single-line commands, the loop runs once with the usual Sleep/Enter/Sleep after.
+  // For multi-line commands (with `\` continuations), each line gets its own Type/Enter
+  // pair so bash enters continuation mode between lines.
+  const commandLines = opts.command.split('\n');
+  for (let i = 0; i < commandLines.length; i++) {
+    lines.push(`Type ${vhsQuote(commandLines[i]!)}`);
+    if (i < commandLines.length - 1) {
+      lines.push('Enter');
+    }
+  }
+  lines.push('Sleep 300ms', 'Enter', `Sleep ${opts.sleepAfterEnter}`);
 
   return lines.join('\n') + '\n';
 }

@@ -48,6 +48,10 @@ Detailed documentation for Claude is organized in `.claude/`:
 - [feedback.md](.claude/decisions/feedback.md) - Feedback system
 - [llm-guardrails.md](.claude/decisions/llm-guardrails.md) - LLM guardrails system (frontmatter-scoped, pipeline-injected)
 
+## Git Workflow
+
+**Docs branches are always based off `next` and PRs target `next`** (not `master`). When creating a new branch for docs work, branch from `next`. When opening a PR, set the base to `next`.
+
 ## Key Rules
 
 1. **TypeScript code blocks are type-checked** - All TS code in MDX is validated at build time. See [twoslash.md](.claude/context/twoslash.md).
@@ -69,6 +73,10 @@ Detailed documentation for Claude is organized in `.claude/`:
    - Fragment validation falls back to parsing raw markdown headings (since `data.toc` is unavailable outside Next.js)
    - Dynamic toolkit pages are validated against slugs from `public/data/toolkits.json`
    - Non-Fumadocs `.md` files (like FAQ snippets) are picked up via `content/**/*.md` glob
+
+## Code Review Guidelines
+
+**`docs/examples/` is tutorial code.** Review for correctness and clarity, not production-readiness. Skip accessibility (aria attributes, focus management), error boundaries, i18n, comprehensive error handling, and similar concerns that add noise to a teaching example. The goal is to teach Composio integration with minimal code.
 
 ## AI-Native Documentation
 

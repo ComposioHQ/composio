@@ -75,7 +75,7 @@ class OpenAIProvider(
 
         :param response: Chat completion object from
                         openai.OpenAI.chat.completions.create function call
-        :param entity_id: Entity ID to use for executing the function call.
+        :param user_id: User ID to use for executing the function call.
         :return: A list of output objects from the function calls.
         """
         outputs = []

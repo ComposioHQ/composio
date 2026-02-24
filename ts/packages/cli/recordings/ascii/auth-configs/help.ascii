@@ -32,6 +32,9 @@
 
 
 
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show auth-configs subcommand help
 >
@@ -67,38 +70,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # Show auth-configs subcommand help
-> composio auth-configs --help
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -137,9 +108,53 @@
 
 
 
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show auth-configs subcommand help
 > composio auth-configs --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show auth-configs subcommand help
+> composio auth-configs --help
+
+
+
 
 
 
@@ -190,18 +205,21 @@ View and manage Composio auth configs.
 COMMANDS
 
   - list [--toolkits text] [--query text] [--limit integer]
-                          List auth configs.
+                  List auth configs.
 
   - info [<id>]
-                          View details of a specific auth config.
+                  View details of a specific auth config.
 
-  - create --toolkit text [--auth-scheme text] [--scopes text] [--custom-cr
-edentials text] [<name>]  Create a new auth config.
+  - create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credential
+s text] [<name>]  Create a new auth config.
 
   - delete [(-y, --yes)] [<id>]
-                          Delete an auth config.
+                  Delete an auth config.
 
 >
+
+
+
 
 
 

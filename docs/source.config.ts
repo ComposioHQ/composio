@@ -112,6 +112,12 @@ export default defineConfig({
           ? [
               transformerTwoslash({
                 explicitTrigger: false,
+                twoslashOptions: {
+                  compilerOptions: {
+                    jsx: 4, // JsxEmit.ReactJSX
+                    jsxImportSource: 'react',
+                  },
+                },
                 typesCache: createFileSystemTypesCache({
                   dir: '.next/cache/twoslash',
                 }),

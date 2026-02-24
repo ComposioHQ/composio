@@ -108,7 +108,13 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key",
-        "description": "API key authentication"
+        "description": "Project API key authentication"
+      },
+      "UserApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-user-api-key",
+        "description": "User API key authentication"
       },
       "OrgApiKeyAuth": {
         "type": "apiKey",
@@ -562,6 +568,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -899,6 +908,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -1250,6 +1262,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1634,6 +1649,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1912,6 +1930,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2190,6 +2211,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2272,6 +2296,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2367,6 +2394,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2908,6 +2938,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -3409,6 +3442,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3819,6 +3855,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3923,6 +3962,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4048,6 +4090,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4210,6 +4255,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -4587,6 +4635,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -4857,6 +4908,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -5051,6 +5105,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -5114,6 +5171,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -5416,6 +5476,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -5519,6 +5582,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -6491,6 +6557,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -6643,6 +6712,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -6796,6 +6868,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -6912,6 +6987,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7072,6 +7150,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7150,6 +7231,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7235,6 +7319,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -7320,6 +7407,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7644,6 +7734,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -7755,6 +7848,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -8257,6 +8353,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -8507,6 +8606,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -8588,6 +8690,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -8712,6 +8817,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -9004,6 +9112,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -9577,6 +9688,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -9729,6 +9843,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -10285,6 +10402,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -10517,6 +10637,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -10915,6 +11038,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11023,6 +11149,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11166,6 +11295,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -11237,6 +11369,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11465,6 +11600,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11746,6 +11884,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -12089,6 +12230,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -12390,6 +12534,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -12629,6 +12776,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -12818,6 +12968,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13041,6 +13194,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13379,6 +13535,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13487,6 +13646,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13853,6 +14015,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14081,6 +14246,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14244,6 +14412,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14347,6 +14518,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14511,6 +14685,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -14754,6 +14931,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14881,6 +15061,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -15765,6 +15948,9 @@
             "ApiKeyAuth": []
           },
           {
+            "UserApiKeyAuth": []
+          },
+          {
             "workbench_access_key": []
           }
         ],
@@ -15917,6 +16103,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16076,6 +16265,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16414,6 +16606,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16555,6 +16750,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16703,6 +16901,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16804,6 +17005,448 @@
         }
       }
     },
+    "/api/v3/tool_router/session/{session_id}/search": {
+      "post": {
+        "summary": "Search for tools using a query",
+        "description": "Search for tools matching a given use case query within a tool router session. Returns matching tool slugs, full tool schemas, toolkit connection statuses, and workflow guidance in a predictable format.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "postToolRouterSessionBySessionIdSearch",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "toolRouterSessionId",
+              "description": "Tool router session ID (trs_*)",
+              "example": "trs_LX9uJKBinWWr"
+            },
+            "required": true,
+            "description": "Tool router session ID (trs_*)",
+            "name": "session_id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "queries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "use_case": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "The task or use case to search tools for. Provide a detailed description to get the best results.",
+                          "example": "Send an email to john@example.com with a summary of my last 5 slack messages"
+                        },
+                        "known_fields": {
+                          "type": "string",
+                          "description": "Known field hints as key:value pairs (e.g., \"channel_name:general, user_email:john@example.com\")",
+                          "example": "channel_name:general"
+                        }
+                      },
+                      "required": [
+                        "use_case"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 7,
+                    "description": "List of search queries to execute in parallel. Up to 7 queries supported.",
+                    "example": [
+                      {
+                        "use_case": "Send a slack message to a channel"
+                      }
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Optional model hint for search/planning behavior (e.g., \"gpt-4o\"). Ignored if invalid.",
+                    "example": "gpt-4o"
+                  }
+                },
+                "required": [
+                  "queries"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully executed the search. Returns matching tool slugs, schemas, connection statuses, and guidance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether all searches completed successfully. False if any query failed."
+                    },
+                    "error": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Error message if any searches failed, null if all succeeded. Format: \"X out of Y searches failed, reasons: <details>\""
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "index": {
+                            "type": "number",
+                            "description": "1-based index of the query in the request"
+                          },
+                          "use_case": {
+                            "type": "string",
+                            "description": "The use case that was searched"
+                          },
+                          "execution_guidance": {
+                            "type": "string",
+                            "description": "Guidance message about the search results, particularly when a cached plan is available"
+                          },
+                          "difficulty": {
+                            "type": "string",
+                            "description": "Task difficulty assessment (e.g., \"easy - Simple single-tool operation with known parameters\")"
+                          },
+                          "recommended_plan_steps": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Workflow steps from cached plan (only present when cached plan is available)"
+                          },
+                          "known_pitfalls": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Common pitfalls and considerations (only present when cached plan is available)"
+                          },
+                          "reference_workbench_snippets": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "description": {
+                                  "type": "string",
+                                  "description": "Description of what the code snippet does"
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "description": "Python code snippet for the workbench"
+                                }
+                              },
+                              "required": [
+                                "description",
+                                "code"
+                              ]
+                            },
+                            "description": "Reference Python code snippets for processing tool responses in the workbench (only present when cached plan is available)"
+                          },
+                          "primary_tool_slugs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "List of main tool slugs matching the search criteria"
+                          },
+                          "related_tool_slugs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "List of related tool slugs that might be useful"
+                          },
+                          "toolkits": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "List of unique toolkit slugs used by tools in this query"
+                          },
+                          "plan_id": {
+                            "type": "string",
+                            "description": "ID of cached plan if available"
+                          },
+                          "error": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Error message if the search for this query failed, null otherwise. Always present for failed queries."
+                          },
+                          "memory": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "description": "Memory data relevant to this query, grouped by app. Only present for non-cached search results."
+                          }
+                        },
+                        "required": [
+                          "index",
+                          "use_case",
+                          "primary_tool_slugs",
+                          "related_tool_slugs",
+                          "toolkits"
+                        ]
+                      },
+                      "description": "Per-query search results with tools, reasoning, and memory. One entry per query in request order."
+                    },
+                    "toolkit_connection_statuses": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "toolkit": {
+                            "type": "string",
+                            "description": "The toolkit slug identifier (e.g., \"gmail\", \"slack\")"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Description of what the toolkit does and its capabilities"
+                          },
+                          "has_active_connection": {
+                            "type": "boolean",
+                            "description": "Whether an active connection exists for this toolkit"
+                          },
+                          "connection_details": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Connection details including auth config and connected account IDs. Only present when has_active_connection is true."
+                          },
+                          "current_user_info": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Information about the currently connected user (email, name, etc.)"
+                          },
+                          "status_message": {
+                            "type": "string",
+                            "description": "Human-readable message about the connection status and next steps"
+                          }
+                        },
+                        "required": [
+                          "toolkit",
+                          "description",
+                          "has_active_connection",
+                          "status_message"
+                        ]
+                      },
+                      "description": "Connection status for all toolkits mentioned across all queries, with descriptions merged in."
+                    },
+                    "tool_schemas": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "toolkit": {
+                            "type": "string",
+                            "description": "The slug of the toolkit that provides this tool"
+                          },
+                          "tool_slug": {
+                            "type": "string",
+                            "description": "The slug of the tool"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Description of the tool"
+                          },
+                          "input_schema": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Input schema for the tool (only present when hasFullSchema is true)"
+                          },
+                          "output_schema": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Output/response schema for the tool"
+                          },
+                          "hasFullSchema": {
+                            "type": "boolean",
+                            "description": "Whether the full input_schema is included in this response"
+                          },
+                          "schemaRef": {
+                            "type": "object",
+                            "properties": {
+                              "tool": {
+                                "type": "string",
+                                "enum": [
+                                  "COMPOSIO_GET_TOOL_SCHEMAS"
+                                ],
+                                "description": "Tool to call"
+                              },
+                              "args": {
+                                "type": "object",
+                                "properties": {
+                                  "tool_slugs": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool slugs to fetch schemas for"
+                                  }
+                                },
+                                "required": [
+                                  "tool_slugs"
+                                ],
+                                "description": "Arguments to pass to the tool"
+                              },
+                              "message": {
+                                "type": "string",
+                                "description": "Instruction message for the LLM"
+                              }
+                            },
+                            "required": [
+                              "tool",
+                              "args",
+                              "message"
+                            ],
+                            "description": "Reference to fetch full schema when hasFullSchema is false"
+                          }
+                        },
+                        "required": [
+                          "toolkit",
+                          "tool_slug"
+                        ]
+                      },
+                      "description": "Deduplicated tool definitions keyed by tool_slug for O(1) lookup. Each tool appears once even if used in multiple queries."
+                    },
+                    "time_info": {
+                      "type": "object",
+                      "properties": {
+                        "current_time_utc": {
+                          "type": "string",
+                          "description": "Current time in ISO format (UTC)"
+                        },
+                        "current_time_utc_epoch_seconds": {
+                          "type": "number",
+                          "description": "Current time as Unix epoch timestamp in seconds"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Important message about time handling and timezone considerations"
+                        }
+                      },
+                      "required": [
+                        "current_time_utc",
+                        "current_time_utc_epoch_seconds",
+                        "message"
+                      ],
+                      "description": "Time information for the query"
+                    },
+                    "session": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Session identifier to be passed to subsequent meta tool calls as session_id."
+                        },
+                        "generate_id": {
+                          "type": "boolean",
+                          "description": "Whether a fresh session id was generated in this call."
+                        },
+                        "instructions": {
+                          "type": "string",
+                          "description": "LLM-facing guidance on how to reuse this session id"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "generate_id",
+                        "instructions"
+                      ],
+                      "description": "Session info for correlating meta tool calls"
+                    },
+                    "next_steps_guidance": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Combined workflow guidance covering connections, planner, and memory usage. Each element is a step instruction."
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "results",
+                    "toolkit_connection_statuses",
+                    "tool_schemas",
+                    "time_info",
+                    "session",
+                    "next_steps_guidance"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v3/toolkits/changelog": {
       "get": {
         "summary": "Get toolkits changelog",
@@ -16815,6 +17458,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {

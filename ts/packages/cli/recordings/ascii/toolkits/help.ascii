@@ -27,6 +27,14 @@
 
 
 
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show toolkits subcommand help
 >
@@ -57,28 +65,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # Show toolkits subcommand help
-> composio toolkits --help
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -117,9 +103,63 @@
 
 
 
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Show toolkits subcommand help
 > composio toolkits --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show toolkits subcommand help
+> composio toolkits --help
+
+
+
+
+
+
+
+
 
 
 
@@ -166,12 +206,20 @@ COMMANDS
 
   - list [--query text] [--limit integer]  List available toolkits.
 
-  - info [<slug>]                          View details of a specific toolk
-it.
+  - info [<slug>]                          View details of a specific toolkit.
 
   - search [--limit integer] <query>       Search toolkits by use case.
 
 >
+
+
+
+
+
+
+
+
+
 
 
 

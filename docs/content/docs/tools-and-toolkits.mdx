@@ -68,6 +68,16 @@ A **tool** is an individual action your agent can execute. Each tool has an inpu
 If you know exactly which tools you need, you can [execute them directly](/docs/tools-direct/executing-tools) without meta tools.
 </Callout>
 
+## Default toolkit access
+
+<Accordions>
+<Accordion title="What toolkits can my agent access by default?">
+All of them. When you create a session without specifying a `toolkits` parameter, every toolkit in the Composio catalog is discoverable through `COMPOSIO_SEARCH_TOOLS`. The agent searches for relevant tools at runtime — it doesn't load them all into context at once.
+
+To restrict which toolkits are available, pass `toolkits` when creating the session. See [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
+</Accordion>
+</Accordions>
+
 ## Authentication
 
 Tools execute with the user's authenticated credentials. When a user connects their GitHub account, all GitHub tools run with their permissions.
@@ -78,13 +88,11 @@ If a tool requires authentication and the user hasn't connected yet, the agent c
   Learn how Composio handles user authentication
 </Card>
 
-## Useful links
+## What to read next
 
 <Cards>
-  <Card icon={<Blocks />} title="Browse toolkits" href="/toolkits">
-    Explore all available toolkits
-  </Card>
-  <Card icon={<Wrench />} title="Fetching tools" href="/docs/toolkits/fetching-tools-and-toolkits">
-    Browse the catalog and fetch tools for sessions
-  </Card>
+  <Card icon={<Monitor />} title="Workbench" href="/docs/workbench" description="Persistent Python sandbox for bulk operations and data processing" />
+  <Card icon={<Blocks />} title="Browse toolkits" href="/toolkits" description="Explore all available toolkits" />
+  <Card icon={<Wrench />} title="Fetching tools" href="/docs/toolkits/fetching-tools-and-toolkits" description="Browse the catalog and fetch tools for sessions" />
+  <Card icon={<Zap />} title="Direct tool execution" href="/docs/tools-direct/executing-tools" description="Execute tools without meta tools for deterministic workflows" />
 </Cards>
