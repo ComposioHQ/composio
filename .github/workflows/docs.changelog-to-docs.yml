@@ -47,6 +47,7 @@ jobs:
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          sandbox: workspace-write
           prompt: |
             New changelog entries were merged to next. Read the agent instructions and update documentation accordingly.
 
