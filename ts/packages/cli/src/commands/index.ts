@@ -8,6 +8,7 @@ import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
 import { logoutCmd } from './logout.cmd';
+import { initCmd } from './init.cmd';
 import { pyCmd } from './py/py.cmd';
 import { tsCmd } from './ts/ts.cmd';
 import { generateCmd } from './generate.cmd';
@@ -24,6 +25,7 @@ const $cmd = $defaultCmd.pipe(
     whoamiCmd,
     loginCmd,
     logoutCmd,
+    initCmd,
     generateCmd,
     pyCmd,
     tsCmd,

@@ -58,6 +58,9 @@ import type {
   SessionToolkitsParams,
 } from '@composio/client/resources/tool-router';
 import { Stdin } from 'src/services/stdin';
+import { ProjectKeyRegistry } from 'src/services/project-key-registry';
+import { ProjectContext } from 'src/services/project-context';
+import { Option } from 'effect';
 
 export interface TestLiveInput {
   /**
@@ -873,7 +876,21 @@ export const TestLayer = (input?: TestLiveInput) =>
       MockTerminal.layer,
       BunPath.layer,
       StdinTest,
-      TerminalUITest
+      TerminalUITest,
+      Layer.succeed(
+        ProjectKeyRegistry,
+        new ProjectKeyRegistry({
+          register: () => Effect.void,
+          listAll: () => Effect.succeed([]),
+          removeAll: () => Effect.void,
+        })
+      ),
+      Layer.succeed(
+        ProjectContext,
+        new ProjectContext({
+          resolve: Effect.succeed(Option.none()),
+        })
+      )
     ) satisfies RequiredLayer;
 
     return layers;

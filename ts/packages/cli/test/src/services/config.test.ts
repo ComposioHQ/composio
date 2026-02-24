@@ -26,6 +26,8 @@ describe('Config', () => {
             BASE_URL: 'https://backend.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
             WEB_URL: 'https://platform.composio.dev',
           })
         );
@@ -50,6 +52,8 @@ describe('Config', () => {
             BASE_URL: 'https://backend.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
             WEB_URL: 'https://platform.composio.dev',
           })
         );
@@ -76,6 +80,8 @@ describe('Config', () => {
             WEB_URL: 'https://test.localhost',
             CACHE_DIR: Option.some('~/.composio'),
             LOG_LEVEL: Option.some(LogLevel.Info),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
           })
         );
       });
@@ -183,6 +189,8 @@ describe('Config', () => {
             WEB_URL: 'https://platform.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
           })
         );
       });
@@ -205,6 +213,8 @@ describe('Config', () => {
             WEB_URL: 'https://platform.composio.dev',
             CACHE_DIR: Option.none(),
             LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
           })
         );
       });
@@ -228,6 +238,8 @@ describe('Config', () => {
             WEB_URL: 'https://test.localhost',
             CACHE_DIR: Option.some('~/.composio'),
             LOG_LEVEL: Option.some(LogLevel.Info),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
           })
         );
       });

@@ -336,6 +336,41 @@ export type TriggerInstanceManageDeleteResponse = Schema.Schema.Type<
   typeof TriggerInstanceManageDeleteResponse
 >;
 
+/**
+ * Response from GET /api/v3/auth/session/info.
+ * Contains project, org member, and API key details for the authenticated session.
+ * Fields like webhook_url, webhook_secret, auto_id, deleted are intentionally omitted.
+ */
+export const SessionInfoResponse = Schema.Struct({
+  project: Schema.Struct({
+    name: Schema.String,
+    id: Schema.String,
+    org_id: Schema.String,
+    nano_id: Schema.String,
+    email: Schema.String,
+    created_at: Schema.String,
+    updated_at: Schema.String,
+    org: Schema.Struct({
+      name: Schema.String,
+      id: Schema.String,
+      plan: Schema.String,
+    }),
+  }),
+  org_member: Schema.Struct({
+    id: Schema.String,
+    email: Schema.String,
+    name: Schema.String,
+    role: Schema.String,
+  }),
+  api_key: Schema.Struct({
+    name: Schema.String,
+    project_id: Schema.String,
+    id: Schema.String,
+    org_member_id: Schema.String,
+  }),
+}).annotations({ identifier: 'SessionInfoResponse' });
+export type SessionInfoResponse = Schema.Schema.Type<typeof SessionInfoResponse>;
+
 export interface TriggerInstancesListActiveParams {
   user_ids?: string[];
   connected_account_ids?: string[];
@@ -639,6 +674,53 @@ const streamResponseWithByteCount = (
     });
 
     return { json, byteSize };
+  });
+
+/**
+ * Calls GET /api/v3/auth/session/info with the full layered auth headers.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ * This is a standalone function, NOT on ComposioSessionRepository, to keep
+ * the repository as a pure facade over @composio/client.
+ */
+export const getSessionInfo = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  projectId: string;
+}): Effect.Effect<SessionInfoResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/auth/session/info`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-api-key': params.apiKey,
+            'x-org-id': params.orgId,
+            'x-project-id': params.projectId,
+            'User-Agent': '@composio/cli',
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(SessionInfoResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
   });
 
 // Utility function for calling the Composio API and decoding its response.
@@ -1235,12 +1317,13 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
         cli: {
           /**
            * Generates a new CLI session with a random 6-character code.
+           * @param params.scope - 'user' for login, 'project' for init (future)
            */
-          createSession: () =>
+          createSession: (params?: { scope?: 'user' | 'project' }) =>
             withMetrics(
               callClient(
                 clientSingleton,
-                client => client.cli.createSession(),
+                client => client.cli.createSession({ scope: params?.scope ?? 'user' }),
                 CliCreateSessionResponse
               )
             ),
@@ -1541,7 +1624,8 @@ export class ComposioSessionRepository extends Effect.Service<ComposioSessionRep
       const client = yield* ComposioClientLive;
 
       return {
-        createSession: () => client.cli.createSession(),
+        createSession: (params?: { scope?: 'user' | 'project' }) =>
+          client.cli.createSession(params),
         getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
         getRealtimeCredentials: () => client.cli.getRealtimeCredentials(),
         authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>

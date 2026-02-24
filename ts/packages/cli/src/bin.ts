@@ -24,6 +24,8 @@ import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { ProjectKeyRegistry } from 'src/services/project-key-registry';
+import { ProjectContext } from 'src/services/project-context';
 import { StdinLive } from 'src/services/stdin';
 
 /**
@@ -84,6 +86,16 @@ export const ToolsExecutorLive = Layer.provide(
   ComposioClientSingletonLive
 ) satisfies RequiredLayer;
 
+export const ProjectKeyRegistryLive = Layer.provide(
+  ProjectKeyRegistry.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
+export const ProjectContextLive = Layer.provide(
+  ProjectContext.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
   NodeOs.Default,
@@ -97,6 +109,8 @@ const layers = Layer.mergeAll(
   EnvLangDetector.Default,
   JsPackageManagerDetector.Default,
   TriggersRealtimeLive,
+  ProjectKeyRegistryLive,
+  ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
   StdinLive,

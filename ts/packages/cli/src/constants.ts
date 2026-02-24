@@ -46,6 +46,26 @@ export const APP_VERSION = pkg.version;
 export const APP_NAME = pkg.name;
 
 /**
+ * Name of the global directory used to store the registry of known org+project pairs.
+ */
+export const KEYS_DIR_NAME = '_keys';
+
+/**
+ * Name of the per-directory project config file.
+ */
+export const PROJECT_CONFIG_FILE_NAME = 'project.json';
+
+/**
+ * Name of the per-directory .env file for CLI-only config overrides.
+ */
+export const PROJECT_ENV_FILE_NAME = '.env';
+
+/**
+ * Name of the per-directory Composio config directory.
+ */
+export const PROJECT_COMPOSIO_DIR = '.composio';
+
+/**
  * GitHub repository information for release fetching
  */
 export const GITHUB_REPO = {

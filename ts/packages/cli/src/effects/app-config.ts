@@ -7,6 +7,8 @@ type APP_CONFIG = Config.Config.Wrap<{
   WEB_URL: string;
   CACHE_DIR: Option.Option<string>;
   LOG_LEVEL: Option.Option<LogLevel.LogLevel>;
+  ORG_ID: Option.Option<string>;
+  PROJECT_ID: Option.Option<string>;
 }>;
 
 /**
@@ -28,4 +30,10 @@ export const APP_CONFIG = {
 
   // The log level for the Composio CLI
   LOG_LEVEL: Config.option(Config.logLevel('LOG_LEVEL')),
+
+  // The organization ID for multi-project auth (overrides file-based config)
+  ORG_ID: Config.option(Config.string('ORG_ID')),
+
+  // The project ID for multi-project auth (overrides file-based config)
+  PROJECT_ID: Config.option(Config.string('PROJECT_ID')),
 } satisfies APP_CONFIG;
