@@ -1,6 +1,7 @@
 import { Args, Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
+import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { formatTriggerTypeInfo } from '../format';
@@ -34,28 +35,26 @@ export const triggersCmd$Info = Command.make('info', { slug }, ({ slug }) =>
     }
 
     const slugValue = slug.value;
-    const triggerType = yield* ui
+
+    const triggerTypeOpt = yield* ui
       .withSpinner('Fetching trigger type details...', repo.getTriggerTypeDetailed(slugValue))
       .pipe(
-        Effect.catchTag('services/HttpServerError', e =>
-          Effect.if(e.status === 404, {
-            onTrue: () =>
-              ui.log
-                .error(`Trigger "${slugValue}" not found.`)
-                .pipe(
-                  Effect.zipRight(
-                    ui.log.step('Browse available trigger types:\n> composio triggers list')
-                  ),
-                  Effect.as(undefined)
-                ),
-            onFalse: () => Effect.fail(e),
+        Effect.asSome,
+        Effect.catchTag(
+          'services/HttpServerError',
+          handleHttpServerError(ui, {
+            fallbackMessage: `Trigger "${slugValue}" not found.`,
+            hint: 'Browse available trigger types:\n> composio triggers list',
+            fallbackValue: Option.none(),
           })
         )
       );
 
-    if (!triggerType) return;
+    if (Option.isNone(triggerTypeOpt)) return;
 
-    yield* ui.log.info(formatTriggerTypeInfo(triggerType));
+    const triggerType = triggerTypeOpt.value;
+
+    yield* ui.note(formatTriggerTypeInfo(triggerType), `Trigger: ${triggerType.name}`);
 
     const toolkitSlug = triggerType.toolkit?.slug?.toLowerCase();
     if (toolkitSlug) {

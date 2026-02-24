@@ -52,9 +52,18 @@ export const triggersCmd$List = Command.make('list', { toolkits, limit }, ({ too
       return;
     }
 
+    const count = triggerTypes.length;
     yield* ui.log.info(
-      `Listing ${triggerTypes.length} trigger types\n\n${formatTriggerTypesTable(triggerTypes)}`
+      `Listing ${count} trigger type${count === 1 ? '' : 's'}\n\n${formatTriggerTypesTable(triggerTypes)}`
     );
+
+    const firstSlug = triggerTypes[0]?.slug;
+    if (firstSlug) {
+      yield* ui.log.step(
+        `To view details of a trigger type:\n> composio triggers info "${firstSlug}"`
+      );
+    }
+
     yield* ui.output(formatTriggerTypesJson(triggerTypes));
   })
 ).pipe(Command.withDescription('List available trigger types.'));

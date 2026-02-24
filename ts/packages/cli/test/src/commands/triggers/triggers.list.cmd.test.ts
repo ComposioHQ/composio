@@ -11,6 +11,7 @@ const testTriggerTypes: TriggerTypes = [
     name: 'NEW_GMAIL_MESSAGE',
     description: 'Fires when a new message arrives in Gmail',
     instructions: 'Connect Gmail and subscribe to this trigger',
+    toolkit: { name: 'Gmail', slug: 'gmail' },
     type: 'webhook',
     config: { type: 'object', properties: {} },
     payload: { type: 'object', properties: {} },
@@ -20,6 +21,7 @@ const testTriggerTypes: TriggerTypes = [
     name: 'NEW_LABEL',
     description: 'Fires when a new label is created in Gmail',
     instructions: 'Connect Gmail and subscribe to this trigger',
+    toolkit: { name: 'Gmail', slug: 'gmail' },
     type: 'poll',
     config: { type: 'object', properties: {} },
     payload: { type: 'object', properties: {} },
@@ -29,6 +31,7 @@ const testTriggerTypes: TriggerTypes = [
     name: 'NEW_MESSAGE',
     description: 'Fires when a new message is posted in Slack',
     instructions: 'Connect Slack and subscribe to this trigger',
+    toolkit: { name: 'Slack', slug: 'slack' },
     type: 'webhook',
     config: { type: 'object', properties: {} },
     payload: { type: 'object', properties: {} },
@@ -80,15 +83,31 @@ describe('CLI: composio triggers list', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] --limit 1 [Then] lists one trigger type',
+    '[Given] --limit 1 [Then] lists one trigger type with singular grammar',
     it => {
-      it.scoped('respects limit', () =>
+      it.scoped('uses singular form for one result', () =>
         Effect.gen(function* () {
           yield* cli(['triggers', 'list', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('Listing 1 trigger types');
+          expect(output).toContain('Listing 1 trigger type');
+          expect(output).not.toContain('Listing 1 trigger types');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] no flags [Then] shows next step hint',
+    it => {
+      it.scoped('shows hint to view trigger details', () =>
+        Effect.gen(function* () {
+          yield* cli(['triggers', 'list']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('composio triggers info');
         })
       );
     }
