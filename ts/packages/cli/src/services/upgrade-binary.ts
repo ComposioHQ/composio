@@ -25,6 +25,8 @@ export const CLI_BINARY_NAME = 'composio';
 
 type GitHubRelease = {
   tag_name: string;
+  prerelease?: boolean;
+  draft?: boolean;
   assets: Array<{
     name: string;
     browser_download_url: string;
@@ -45,6 +47,56 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     /**
      * Fetch latest release from GitHub
      */
+    const fetchGitHubJson = <T>({
+      url,
+      fetchErrorMessage,
+      parseErrorMessage,
+    }: {
+      url: string;
+      fetchErrorMessage: string;
+      parseErrorMessage: string;
+    }): Effect.Effect<T, UpgradeBinaryError, never> =>
+      Effect.gen(function* () {
+        yield* Effect.logDebug(`GET ${url}`);
+
+        const response = yield* httpClient.get(url).pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: fetchErrorMessage,
+              })
+            )
+          )
+        );
+
+        if (response.status < 200 || response.status >= 300) {
+          const pretty = yield* response.json.pipe(
+            Effect.map(json => renderPrettyError(Object.entries(json as object))),
+            Effect.catchAll(() => Effect.succeed(''))
+          );
+
+          const cause = pretty ? `HTTP ${response.status}\n${pretty}` : `HTTP ${response.status}`;
+          return yield* Effect.fail(
+            new UpgradeBinaryError({
+              cause,
+              message: fetchErrorMessage,
+            })
+          );
+        }
+
+        return (yield* response.json.pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: parseErrorMessage,
+              })
+            )
+          )
+        )) as T;
+      });
+
     const fetchLatestRelease = (): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         const release = yield* githubConfig.TAG.pipe(
@@ -54,45 +106,11 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                 'No tag specified, resolving latest package-scoped CLI release'
               );
               const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
-              yield* Effect.logDebug(`GET ${url}`);
-
-              const response = yield* Effect.gen(function* () {
-                const resp = yield* httpClient.get(url);
-                if (resp.status < 200 || resp.status >= 300) {
-                  const json = yield* resp.json;
-                  const keyValues = Object.entries(json as object);
-                  const pretty = renderPrettyError(keyValues);
-
-                  return yield* Effect.fail(
-                    new UpgradeBinaryError({
-                      cause: `HTTP ${resp.status}\n${pretty}`,
-                    })
-                  );
-                }
-                return resp;
-              }).pipe(
-                Effect.catchAll(error =>
-                  Effect.fail(
-                    new UpgradeBinaryError({
-                      cause: error,
-                      message: 'Failed to fetch releases from GitHub',
-                    })
-                  )
-                )
-              );
-
-              const releases = yield* Effect.gen(function* () {
-                return yield* response.json;
-              }).pipe(
-                Effect.catchAll(error =>
-                  Effect.fail(
-                    new UpgradeBinaryError({
-                      cause: error,
-                      message: 'Failed to parse GitHub releases JSON response',
-                    })
-                  )
-                )
-              );
+              const releases = yield* fetchGitHubJson<unknown>({
+                url,
+                fetchErrorMessage: 'Failed to fetch releases from GitHub',
+                parseErrorMessage: 'Failed to parse GitHub releases JSON response',
+              });
 
               if (!Array.isArray(releases)) {
                 return yield* Effect.fail(
@@ -109,6 +127,8 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                   release !== null &&
                   'tag_name' in release &&
                   typeof release.tag_name === 'string' &&
+                  ('prerelease' in release ? release.prerelease === false : true) &&
+                  ('draft' in release ? release.draft === false : true) &&
                   CLI_RELEASE_TAG_PATTERN.test(release.tag_name)
               );
 
@@ -145,45 +165,11 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             onSome: Effect.fn(function* (tag) {
               yield* Effect.logDebug(`Using tag: ${tag}`);
               const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${tag}`;
-              yield* Effect.logDebug(`GET ${url}`);
-
-              const response = yield* Effect.gen(function* () {
-                const resp = yield* httpClient.get(url);
-                if (resp.status < 200 || resp.status >= 300) {
-                  const json = yield* resp.json;
-                  const keyValues = Object.entries(json as object);
-                  const pretty = renderPrettyError(keyValues);
-
-                  return yield* Effect.fail(
-                    new UpgradeBinaryError({
-                      cause: `HTTP ${resp.status}\n${pretty}`,
-                    })
-                  );
-                }
-                return resp;
-              }).pipe(
-                Effect.catchAll(error =>
-                  Effect.fail(
-                    new UpgradeBinaryError({
-                      cause: error,
-                      message: `Failed to fetch tags/${tag} release from GitHub`,
-                    })
-                  )
-                )
-              );
-
-              const release = yield* Effect.gen(function* () {
-                return yield* response.json;
-              }).pipe(
-                Effect.catchAll(error =>
-                  Effect.fail(
-                    new UpgradeBinaryError({
-                      cause: error,
-                      message: 'Failed to parse GitHub release JSON response',
-                    })
-                  )
-                )
-              );
+              const release = yield* fetchGitHubJson<GitHubRelease>({
+                url,
+                fetchErrorMessage: `Failed to fetch tags/${tag} release from GitHub`,
+                parseErrorMessage: 'Failed to parse GitHub release JSON response',
+              });
 
               return release as GitHubRelease;
             }),
