@@ -21,6 +21,7 @@ import { TerminalUITest } from './terminal-ui-test';
 import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
 import {
+  ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
   HttpServerError,
@@ -189,6 +190,26 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
+
+    const mockRawComposioClient = {
+      logs: {
+        tools: {
+          retrieve: async () => ({}),
+          list: async () => ({ data: [], nextCursor: null }),
+        },
+        triggers: {
+          retrieve: async () => ({ log: {} }),
+          list: async () => ({ data: [], nextCursor: null }),
+        },
+      },
+    };
+
+    const ComposioClientSingletonTest = Layer.succeed(
+      ComposioClientSingleton,
+      new ComposioClientSingleton({
+        get: () => Effect.succeed(mockRawComposioClient as never),
+      })
+    );
 
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
@@ -713,6 +734,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeProcessTest,
       UpgradeBinaryTest,
       ComposioUserContextTest,
+      ComposioClientSingletonTest,
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,
