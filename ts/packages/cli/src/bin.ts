@@ -17,7 +17,6 @@ import {
 import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-cached';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
@@ -102,7 +101,6 @@ const layers = Layer.mergeAll(
   ComposioClientSingletonLive, // Expose ComposioClientSingleton for commands that use Tool Router directly
   ComposioToolkitsRepositoryCachedLive, // Use the cached layer instead of the regular one
   ToolsExecutorLive,
-  EnvLangDetector.Default,
   JsPackageManagerDetector.Default,
   ProjectEnvironmentDetector.Default,
   CommandRunner.Default,

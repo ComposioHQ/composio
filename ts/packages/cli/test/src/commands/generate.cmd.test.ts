@@ -66,6 +66,63 @@ describe('CLI: composio generate', () => {
 
   layer(
     TestLive({
+      fixture: 'typescript-pnpm-monorepo',
+    })
+  )(it => {
+    it.scoped('[Given] a pnpm monorepo project in cwd [Then] it detects TypeScript', () =>
+      Effect.gen(function* () {
+        const process = yield* NodeProcess;
+        const cwd = process.cwd;
+
+        const args = ['generate', '--output-dir', cwd];
+        yield* cli(args);
+        const lines = yield* MockConsole.getLines();
+        const output = lines.join('\n');
+        expect(output).toContain('Project type detected: TypeScript');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      fixture: 'typescript-bun-project',
+    })
+  )(it => {
+    it.scoped('[Given] a bun project in cwd [Then] it detects TypeScript', () =>
+      Effect.gen(function* () {
+        const process = yield* NodeProcess;
+        const cwd = process.cwd;
+
+        const args = ['generate', '--output-dir', cwd];
+        yield* cli(args);
+        const lines = yield* MockConsole.getLines();
+        const output = lines.join('\n');
+        expect(output).toContain('Project type detected: TypeScript');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      fixture: 'python-uv-project',
+    })
+  )(it => {
+    it.scoped('[Given] a uv Python project in cwd [Then] it detects Python', () =>
+      Effect.gen(function* () {
+        const process = yield* NodeProcess;
+        const cwd = process.cwd;
+
+        const args = ['generate', '--output-dir', cwd];
+        yield* cli(args);
+        const lines = yield* MockConsole.getLines();
+        const output = lines.join('\n');
+        expect(output).toContain('Project type detected: Python');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
       fixture: 'typescript-project',
       toolkitsData: appClientData,
     })

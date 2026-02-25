@@ -30,7 +30,6 @@ import {
   type InvalidVersionDetail,
 } from 'src/services/composio-clients';
 import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
-import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
@@ -899,7 +898,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       TriggersRealtimeTest,
       ComposioClientSingletonTest,
       ComposioToolkitsRepositoryTest,
-      EnvLangDetector.Default,
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
       CommandRunnerTest,
