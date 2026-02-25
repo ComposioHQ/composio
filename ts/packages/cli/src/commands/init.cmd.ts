@@ -6,6 +6,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectKeyRegistry } from 'src/services/project-key-registry';
 import { NodeProcess } from 'src/services/node-process';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
+import { listOrgProjects, type OrgProject } from 'src/services/composio-clients';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 
@@ -23,15 +24,13 @@ import { TerminalUI } from 'src/services/terminal-ui';
  *
  * ## Planned improvements (future PRs)
  *
- * ### Remote project selection
- * The project picker currently reads from the local `_keys/` registry, which only
- * contains the single project from the most recent `composio login`. In the future,
- * `composio init` should:
- * - Call a projects API (e.g., `GET /api/v3/projects`) using the UAK + `x-org-id`
- *   to fetch ALL projects available to the logged-in user's organization.
- * - Present them in the Clack `select` picker with human-readable names.
- * - Optionally create a new project-scoped session (`scope: 'project'`) to
- *   obtain a project-level API key.
+ * ### Remote project selection ✅ (implemented)
+ * The project picker fetches ALL projects for the user's org via
+ * `GET /api/v3/org/owner/project/list` (using the UAK as `x-org-api-key`).
+ * Projects are presented in the Clack `select` picker with human-readable names.
+ * The selected project is also registered in the local `_keys/` registry.
+ * Future: optionally create a new project-scoped session (`scope: 'project'`) to
+ * obtain a project-level API key.
  *
  * ### Project environment detection
  * After project selection, detect the kind of project in the current directory:
@@ -368,43 +367,82 @@ export const initCmd = Command.make(
         return;
       }
 
-      // 2. Read available project profiles from registry
-      // Future: fetch ALL projects for the user's org via API instead of reading
-      // from the local _keys/ registry. This requires a projects API endpoint
-      // (e.g., GET /api/v3/projects with x-api-key + x-org-id headers).
-      const profiles = yield* registry.listAll();
+      // 2. Fetch all projects available to the user's org via API
+      const apiKey = Option.getOrUndefined(ctx.data.apiKey);
+      if (!apiKey) {
+        yield* ui.log.warn('No API key found. Run `composio login` to authenticate.');
+        yield* ui.outro('');
+        return;
+      }
 
-      if (profiles.length === 0) {
-        yield* ui.log.warn('No project profiles found in the registry.');
+      const orgProjects = yield* listOrgProjects({
+        baseURL: ctx.data.baseURL,
+        apiKey,
+      }).pipe(
+        Effect.catchTag('services/HttpServerError', e =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Failed to list org projects:', e);
+            yield* ui.log.warn('Could not fetch projects from the server.');
+            yield* ui.log.info(
+              'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
+            );
+            yield* ui.outro('');
+            return yield* Effect.fail(e);
+          })
+        ),
+        Effect.catchTag('services/HttpDecodingError', e =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Failed to decode org projects response:', e);
+            yield* ui.log.warn('Unexpected response from the server.');
+            yield* ui.log.info(
+              'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
+            );
+            yield* ui.outro('');
+            return yield* Effect.fail(e);
+          })
+        )
+      );
+
+      if (orgProjects.items.length === 0) {
+        yield* ui.log.warn('No projects found for your organization.');
         yield* ui.log.info(
-          'Use `composio init --org-id <org> --project-id <project>` to set up your project.'
-        );
-        yield* ui.log.info(
-          'You can find your org and project IDs at https://app.composio.dev/settings'
+          'Create a project at https://app.composio.dev, then run `composio init` again.'
         );
         yield* ui.outro('');
         return;
       }
 
-      // 3. Select a project profile
-      const selected: ProjectKeys =
-        profiles.length === 1
-          ? profiles[0]
-          : yield* ui.select<ProjectKeys>(
+      // 3. Select a project from the org's project list
+      const orgProjectToKeys = (p: OrgProject): ProjectKeys => ({
+        orgId: p.org_id,
+        projectId: p.id,
+        projectName: Option.some(p.name),
+        orgName: Option.none(),
+        email: Option.some(p.email),
+      });
+
+      const selectedProject: OrgProject =
+        orgProjects.items.length === 1
+          ? orgProjects.items[0]
+          : yield* ui.select<OrgProject>(
               'Select a project:',
-              profiles.map(p => ({
+              orgProjects.items.map(p => ({
                 value: p,
-                label: profileLabel(p),
-                hint: profileHint(p),
+                label: p.name,
+                hint: p.nano_id,
               }))
             );
 
-      yield* ui.log.step(`Using project "${profileLabel(selected)}"`);
+      const selected = orgProjectToKeys(selectedProject);
+      yield* ui.log.step(`Using project "${selectedProject.name}"`);
 
-      // 4. Run the init wizard (usage mode → framework → install skills)
+      // 4. Register the selected project in the global _keys/ registry
+      yield* registry.register(selected);
+
+      // 5. Run the init wizard (usage mode → framework → install skills)
       const config = yield* runInitWizard;
 
-      // 5. Write <cwd>/.composio/project.json + config.json + .gitignore
+      // 6. Write <cwd>/.composio/project.json + config.json + .gitignore
       yield* writeProjectConfig(composioDir, selected, config);
 
       // Future: if config.installSkills, run `npx skills add ComposioHQ/skills`

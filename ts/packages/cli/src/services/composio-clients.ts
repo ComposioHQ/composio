@@ -677,6 +677,74 @@ const streamResponseWithByteCount = (
   });
 
 /**
+ * A single project entry returned by GET /api/v3/org/owner/project/list.
+ */
+export const OrgProject = Schema.Struct({
+  name: Schema.String,
+  id: Schema.String,
+  org_id: Schema.String,
+  nano_id: Schema.String,
+  email: Schema.String,
+  created_at: Schema.String,
+  updated_at: Schema.String,
+}).annotations({ identifier: 'OrgProject' });
+export type OrgProject = Schema.Schema.Type<typeof OrgProject>;
+
+/**
+ * Response from GET /api/v3/org/owner/project/list.
+ */
+export const OrgProjectListResponse = Schema.Struct({
+  items: Schema.Array(OrgProject),
+}).annotations({ identifier: 'OrgProjectListResponse' });
+export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListResponse>;
+
+/**
+ * Lists all projects for the logged-in user's organization.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ *
+ * @param params.baseURL - API base URL
+ * @param params.apiKey  - UAK (sent as `x-org-api-key`)
+ * @param params.limit   - Max projects to return (default 100)
+ */
+export const listOrgProjects = (params: {
+  baseURL: string;
+  apiKey: string;
+  limit?: number;
+}): Effect.Effect<OrgProjectListResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const limit = params.limit ?? 100;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/owner/project/list?limit=${limit}`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-org-api-key': params.apiKey,
+            'User-Agent': '@composio/cli',
+            Accept: 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(OrgProjectListResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+/**
  * Calls GET /api/v3/auth/session/info with the full layered auth headers.
  * Uses plain fetch since this endpoint is not available in @composio/client.
  * This is a standalone function, NOT on ComposioSessionRepository, to keep
