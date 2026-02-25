@@ -47,6 +47,7 @@ export function transformConnectedAccountResponse(
       authConfig: {
         ...response.auth_config,
         id: response.auth_config.id,
+        authScheme: response.auth_config.auth_scheme,
         isComposioManaged: response.auth_config.is_composio_managed,
         isDisabled: response.auth_config.is_disabled,
       },

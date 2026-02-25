@@ -35,7 +35,6 @@
 
 
 
-
 ────────────────────────────────────────────────────────────────────────────────
 > # Search tools by use case
 >
@@ -74,6 +73,43 @@
 
 
 
+────────────────────────────────────────────────────────────────────────────────
+> # Search tools by use case
+> composio tools search 'send email'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ────────────────────────────────────────────────────────────────────────────────
 > # Search tools by use case
@@ -113,50 +149,9 @@
 
 
 
-
 ────────────────────────────────────────────────────────────────────────────────
 > # Search tools by use case
 > composio tools search 'send email'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # Search tools by use case
-> composio tools search 'send email'
-
 
 
 
@@ -197,36 +192,35 @@
 > composio tools search 'send email'
 │
 ◒  Searching tools for "send email"...
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+◇  Searching tools for "send email"...
+│
+●  Found 10 tools (page 1 of 63)
+│
+│  Slug                                Name                 Description
+│  ABSTRACT_EMAIL_REPUTATION_API       Email validation ... Validate email addresse
+s and assess their deliv...
+│  ACTIVE_CAMPAIGN_CREATE_MESSAGE      Create Message       Tool to create a messag
+e in ActiveCampaign. Use...
+│  ACTIVE_CAMPAIGN_LIST_MESSAGES       List Messages        Tool to list all messag
+es in ActiveCampaign. Us...
+│  ACTIVE_CAMPAIGN_UPDATE_MESSAGE      Update Message       Tool to update an exist
+ing message in ActiveCam...
+│  ACTIVE_TRAIL_CREATE_CAMPAIGN_FOR... Create Campaign f... Tool to create and send
+ a new campaign to speci...
+│  ACTIVE_TRAIL_GET_ALL_CAMPAIGN_RE... Get All Campaign ... Tool to retrieve a full
+ overview of all campaig...
+│  ACTIVE_TRAIL_GET_AUTOMATIONS_EMA... Get Automation Em... Tool to retrieve all em
+ail campaign steps in an...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_DOMAIN... Get Campaign Doma... Tool to retrieve a repo
+rt by domain for a speci...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_REPORT    Get Campaign Report  Retrieves comprehensive
+ performance metrics for...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_SCHEDU... Get Campaign Sche... Retrieves the schedulin
+g configuration for a sp...
+│
+◇  To view details:
+│  > composio tools info "ABSTRACT_EMAIL_REPUTATION_API"
+>
 
 
 

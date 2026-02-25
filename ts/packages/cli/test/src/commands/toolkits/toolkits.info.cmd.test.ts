@@ -23,6 +23,23 @@ const testToolkits: Toolkits = [
       triggers_count: 2,
     },
   },
+  {
+    name: 'Code Interpreter',
+    slug: 'codeinterpreter',
+    auth_schemes: [],
+    composio_managed_auth_schemes: [],
+    is_local_toolkit: false,
+    no_auth: true,
+    meta: {
+      description: 'Execute code in a sandboxed environment',
+      categories: [],
+      created_at: new Date('2024-05-03T11:44:32.061Z') as any,
+      updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+      available_versions: [],
+      tools_count: 1,
+      triggers_count: 0,
+    },
+  },
 ];
 
 const detailedToolkits: ToolkitDetailed[] = [
@@ -116,7 +133,7 @@ describe('CLI: composio toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug "gmail"',
     it => {
-      it.scoped('shows detailed info with auth schemes', () =>
+      it.scoped('shows detailed info with connection status', () =>
         Effect.gen(function* () {
           yield* cli(['toolkits', 'info', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -125,13 +142,8 @@ describe('CLI: composio toolkits info', () => {
           expect(output).toContain('Gmail');
           expect(output).toContain('gmail');
           expect(output).toContain('Email service to send and receive emails');
-          expect(output).toContain('20250909');
-          expect(output).toContain('3 available');
-          expect(output).toContain('OAUTH2');
-          expect(output).toContain('BEARER_TOKEN');
-          expect(output).toContain('apiKey');
-          expect(output).toContain('AuthConfig creation');
-          expect(output).toContain('Connected Account creation');
+          // Connection status
+          expect(output).toContain('Not connected');
         })
       );
     }
@@ -140,15 +152,13 @@ describe('CLI: composio toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit with no_auth=true',
     it => {
-      it.scoped('shows "No authentication required"', () =>
+      it.scoped('shows "no auth"', () =>
         Effect.gen(function* () {
           yield* cli(['toolkits', 'info', 'codeinterpreter']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Code Interpreter');
-          expect(output).toContain('Latest Version:');
-          expect(output).toContain('-');
           expect(output).toContain('No authentication required');
         })
       );
@@ -160,11 +170,11 @@ describe('CLI: composio toolkits info', () => {
     it => {
       it.scoped('shows error', () =>
         Effect.gen(function* () {
-          const result = yield* cli(['toolkits', 'info', 'gmal']).pipe(Effect.either);
+          yield* cli(['toolkits', 'info', 'gmal']).pipe(Effect.either);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('Failed to fetch toolkit "gmal"');
+          expect(output).toContain('Toolkit "gmal" not found');
         })
       );
     }
@@ -173,16 +183,14 @@ describe('CLI: composio toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug with substring match',
     it => {
-      it.scoped('shows error with suggestion', () =>
+      it.scoped('shows error with hint', () =>
         Effect.gen(function* () {
-          // "gma" is a substring of "gmail", so the mock will find suggestions
-          const result = yield* cli(['toolkits', 'info', 'gma']).pipe(Effect.either);
+          yield* cli(['toolkits', 'info', 'gma']).pipe(Effect.either);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('Failed to fetch toolkit "gma"');
-          expect(output).toContain('Did you mean?');
-          expect(output).toContain('gmail');
+          expect(output).toContain('Toolkit "gma" not found');
+          expect(output).toContain('composio toolkits info "gmail"');
         })
       );
     }

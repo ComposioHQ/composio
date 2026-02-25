@@ -1,0 +1,380 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient":"to@example.com","subject":"Draft","body":"Draft body"}' \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient":"to@example.com","subject":"Draft","body":"Draft body"}' \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient":"to@example.com","subject":"Draft","body":"Draft body"}' \
+>   --user-id default
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient":"to@example.com","subject":"Draft","body":"Draft body"}' \
+>   --user-id default
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient":"to@example.com","subject":"Draft","body":"Draft body"}' \
+>   --user-id default
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execeute a tool, with no connected account associated
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient":"to@example.com","subject":"Draft","body":"Draft body"}' \
+>   --user-id default
+│
+◒  Executing tool "GMAIL_CREATE_EMAIL_DRAFT"...
+▲  Executing tool "GMAIL_CREATE_EMAIL_DRAFT"...
+│
+■  No connected account found for entity ID default for toolkit gmail
+│
+◇  Error details ───────────────────────────────────────────────────────────────╮
+│                                                                               │
+│  {                                                                            │
+│    "message": "No connected account found for entity ID default for toolkit   │
+│  gmail",                                                                      │
+│    "code": 1810,                                                              │
+│    "slug": "ActionExecute_ConnectedAccountNotFound",                          │
+│    "status": 400,                                                             │
+│    "request_id": "<REDACTED>",                                                │
+│    "suggested_fix": ""                                                        │
+│  }                                                                            │
+│                                                                               │
+├───────────────────────────────────────────────────────────────────────────────╯
+│
+◇  Tips ────────────────────────────────────────────────────────────────────╮
+│                                                                           │
+│  Create or find an auth config: composio auth-configs list --toolkits     │
+│  <toolkit>                                                                │
+│  Link the account: composio connected-accounts link --auth-config         │
+│  <AUTH_CONFIG_ID> --user-id <USER_ID>                                     │
+│  Verify the link: composio connected-accounts list --toolkits <toolkit>   │
+│  --user-id <USER_ID>                                                      │
+│  Retry the tool or pass --connected-account-id <ID>                       │
+│                                                                           │
+├───────────────────────────────────────────────────────────────────────────╯
+>
+
+────────────────────────────────────────────────────────────────────────────────

@@ -35,23 +35,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ────────────────────────────────────────────────────────────────────────────────
 > # List tools in a toolkit
 >
@@ -90,6 +73,27 @@
 
 
 
+────────────────────────────────────────────────────────────────────────────────
+> # List tools in a toolkit
+> composio tools list --toolkits gmail
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -145,98 +149,9 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ────────────────────────────────────────────────────────────────────────────────
 > # List tools in a toolkit
 > composio tools list --toolkits gmail
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # List tools in a toolkit
-> composio tools list --toolkits gmail
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -282,49 +197,32 @@
 ●  Listing 30 tools (page 1 of 2)
 │
 │  Slug                                Name                 Description
-│  GMAIL_ADD_LABEL_TO_EMAIL            Modify email labels  Adds and/or rem
-oves specified Gmail labels for ...
-│  GMAIL_BATCH_DELETE_MESSAGES         Batch delete Gmai... Tool to permane
-ntly delete multiple Gmail messa...
-│  GMAIL_BATCH_MODIFY_MESSAGES         Batch modify Gmai... Modify labels o
-n multiple Gmail messages in one...
-│  GMAIL_CREATE_EMAIL_DRAFT            Create email draft   Creates a Gmail
- email draft. All fields are opt...
-│  GMAIL_CREATE_LABEL                  Create label         Creates a new l
-abel with a unique name in the s...
-│  GMAIL_DELETE_DRAFT                  Delete Draft         Permanently del
-etes a specific Gmail draft usin...
-│  GMAIL_DELETE_LABEL                  Delete label from... Permanently DEL
-ETES a user-created Gmail label ...
-│  GMAIL_DELETE_MESSAGE                Delete message       Permanently del
-etes a specific email message by...
-│  GMAIL_FETCH_EMAILS                  Fetch emails         Fetches a list
-of email messages from a Gmail a...
-│  GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID   Fetch message by ... Fetches a speci
-fic email message by its ID, pro...
-│  GMAIL_FETCH_MESSAGE_BY_THREAD_ID    Fetch Message by ... Retrieves messa
-ges from a Gmail thread using it...
-│  GMAIL_FORWARD_MESSAGE               Forward email mes... Forward an exis
-ting Gmail message to specified ...
-│  GMAIL_GET_ATTACHMENT                Get Gmail attachment Retrieves a spe
-cific attachment by ID from a me...
-│  GMAIL_GET_AUTO_FORWARDING           Get Auto-Forwardi... Tool to get the
- auto-forwarding setting for the...
-│  GMAIL_GET_CONTACTS                  Get contacts         Fetches contact
-s (connections) for the authenti...
-│  GMAIL_GET_DRAFT                     Get Draft            Retrieves a sin
-gle Gmail draft by its ID. Use t...
-│  GMAIL_GET_LANGUAGE_SETTINGS         Get Language Sett... Tool to retriev
-e the language settings for a Gm...
-│  GMAIL_GET_PEOPLE                    Get People           Retrieves eithe
-r a specific person's details (u...
-│  GMAIL_GET_PROFILE                   Get Profile          Retrieves key G
-mail profile information (email ...
-│  GMAIL_GET_VACATION_SETTINGS         Get Vacation Sett... Tool to retriev
-e vacation responder settings fo...
-│  GMAIL_LIST_CSE_IDENTITIES           List CSE identities  Tool to list cl
-ient-side encrypted identities f...
-│  GMAIL_LIST_CSE_KEYPAIRS             List CSE key pairs   Tool to list cl
-ient-side encryption key pairs f...
-│  GMAIL_LIST_DRAFTS                   List Drafts          Retrieves a pag
+│  GMAIL_ADD_LABEL_TO_EMAIL            Modify email labels  Adds and/or removes spe
+cified Gmail labels for ...
+│  GMAIL_BATCH_DELETE_MESSAGES         Batch delete Gmai... Tool to permanently del
+ete multiple Gmail messa...
+│  GMAIL_BATCH_MODIFY_MESSAGES         Batch modify Gmai... Modify labels on multip
+le Gmail messages in one...
+│  GMAIL_CREATE_EMAIL_DRAFT            Create email draft   Creates a Gmail email d
+raft. All fields are opt...
+│  GMAIL_CREATE_LABEL                  Create label         Creates a new label wit
+h a unique name in the s...
+│  GMAIL_DELETE_DRAFT                  Delete Draft         Permanently deletes a s
+pecific Gmail draft usin...
+│  GMAIL_DELETE_LABEL                  Delete label from... Permanently DELETES a u
+ser-created Gmail label ...
+│  GMAIL_DELETE_MESSAGE                Delete message       Permanently deletes a s
+pecific email message by...
+│  GMAIL_FETCH_EMAILS                  Fetch emails         Fetches a list of email
+ messages from a Gmail a...
+│  GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID   Fetch message by ... Fetches a specific emai
+l message by its ID, pro...
+│  GMAIL_FETCH_MESSAGE_BY_THREAD_ID    Fetch Message by ... Retrieves messages from
+ a Gmail thread using it...
+│  GMAIL_FORWARD_MESSAGE               Forward email mes... Forward an existing Gma
+il message to specified ...
+│  GMAIL_GET_ATTACHMENT                Get Gmail attachment Retrieves a specific at
+tachment by ID from a me...
+│  GMAIL_GET_AUTO_FORWARDING           Get Auto-Forwardi... Tool to get the auto-fo
+rwarding setting for the...
 ────────────────────────────────────────────────────────────────────────────────

@@ -114,6 +114,34 @@ recordings:
       command: "composio tools --help"
       height: dynamic
 
+    - name: execute-help
+      description: Show execute subcommand help
+      command: "composio tools execute --help"
+      height: dynamic
+
+    - name: execute-explicit
+      description: Execute a tool, with explicit user ID and toolkit version
+      command: |-
+        composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+          -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}' \
+          --user-id jkomyno \
+          --toolkit-version 20250909_00
+
+    - name: execute-failure-no-connected-account
+      description: Execeute a tool, with no connected account associated
+      command: |-
+        composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+          -d '{"recipient":"to@example.com","subject":"Draft","body":"Draft body"}' \
+          --user-id default
+
+    - name: execute-pipe
+      description: Execute a tool, with piped input
+      command: |-
+        echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}' \
+          | composio tools execute GMAIL_SEND_EMAIL \
+            --user-id jkomyno \
+          | jq
+
     - name: list-toolkit-gmail
       description: List tools in a toolkit
       command: "composio tools list --toolkits gmail"

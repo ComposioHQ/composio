@@ -1,0 +1,456 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+>     --user-id jkomyno \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+>     --user-id jkomyno \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+>     --user-id jkomyno \
+>   | jq
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+>     --user-id jkomyno \
+>   | jq
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+>     --user-id jkomyno \
+>   | jq
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with piped input
+> echo '{"recipient_email":"to@example.com","subject":"Hello","body":"From stdin"}'
+ \
+>   | composio tools execute GMAIL_SEND_EMAIL \
+>     --user-id jkomyno \
+>   | jq
+{
+  "data": {
+    "id": "<REDACTED>",
+    "labelIds": [
+      "SENT"
+    ],
+    "threadId": "<REDACTED>"
+  },
+  "error": null,
+  "successful": true,
+  "logId": "log_<REDACTED>"
+}
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────

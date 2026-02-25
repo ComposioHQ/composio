@@ -147,6 +147,7 @@ const session = await composio.create("user_123", {
 
 ## Putting it together
 
+
 A common pattern is to verify all required connections before starting the agent:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -212,3 +213,11 @@ console.log(`All toolkits connected! MCP URL: ${session.mcp.url}`);
 ```
 </Tab>
 </Tabs>
+
+## What to read next
+
+<Cards>
+  <Card icon={<MessageCircle />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication" description="Let the agent prompt users to connect accounts during conversation instead" />
+  <Card icon={<Palette />} title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Use your own OAuth apps so users see your branding on consent screens" />
+  <Card icon={<Database />} title="Managing multiple accounts" href="/docs/managing-multiple-connected-accounts" description="Handle users with multiple accounts for the same toolkit (e.g., work and personal Gmail)" />
+</Cards>

@@ -61,7 +61,12 @@ export const TriggerType = Schema.Struct({
   /**
    * Information about the toolkit that provides this trigger
    */
-  // toolkit: Toolkit,
+  toolkit: Schema.optional(
+    Schema.Struct({
+      name: Schema.String,
+      slug: Schema.String,
+    })
+  ),
 
   /**
    * The trigger mechanism - either webhook (event-based) or poll (scheduled check)

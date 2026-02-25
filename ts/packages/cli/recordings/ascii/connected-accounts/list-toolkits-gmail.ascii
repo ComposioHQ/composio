@@ -22,6 +22,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List filtered by toolkit
 >
@@ -47,6 +60,57 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List filtered by toolkit
+> composio connected-accounts list --toolkits gmail
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List filtered by toolkit
 > composio connected-accounts list --toolkits gmail
@@ -72,6 +136,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List filtered by toolkit
 > composio connected-accounts list --toolkits gmail
@@ -88,18 +165,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # List filtered by toolkit
-> composio connected-accounts list --toolkits gmail
 
 
 
@@ -131,14 +196,27 @@
 │
 ●  Listing 1 of 1 connected accounts
 │
-│  Id                 User Id              Toolkit        Auth Config
-  Auth Scheme    Status
-│  con_<REDACTED>     jkomyno              gmail          ac_<REDACTED>
-  OAUTH2         ACTIVE
+│  Id                 User Id              Toolkit        Auth Config        Auth S
+cheme    Status
+│  con_<REDACTED>     jkomyno              gmail          ac_<REDACTED>      OAUTH2
+         ACTIVE
 │
 ◇  To view details of a connected account:
 │  > composio connected-accounts info "con_<REDACTED>"
 >
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

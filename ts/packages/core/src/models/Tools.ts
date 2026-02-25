@@ -27,6 +27,7 @@ import {
   ToolListResponse as ComposioToolListResponse,
   ToolExecuteResponse as ComposioToolExecuteResponse,
   ToolListParams as ComposioToolListParams,
+  ToolExecuteParams as ComposioToolExecuteParams,
 } from '@composio/client/resources/tools';
 import { CustomTools } from './CustomTools';
 import { CustomToolInputParameter, CustomToolOptions } from '../types/customTool.types';
@@ -793,7 +794,8 @@ export class Tools<
          * Please use custom_connection_data instead.
          *
          */
-        custom_connection_data: body.customConnectionData,
+        custom_connection_data:
+          body.customConnectionData as ComposioToolExecuteParams['custom_connection_data'],
         arguments: body.arguments,
         user_id: body.userId,
         version: toolkitVersion,

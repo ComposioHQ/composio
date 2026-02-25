@@ -4,6 +4,7 @@
   "pages": [
     "---Getting Started---",
     "templates",
+    "chat-app",
     "fast-api",
     "hono",
     "---Productivity & Automation---",

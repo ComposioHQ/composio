@@ -1,6 +1,6 @@
 import { Command, Options } from '@effect/cli';
 import { Effect, Match } from 'effect';
-import { EnvLangDetector } from 'src/services/env-lang-detector';
+import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { generateTypescriptTypeStubs } from './ts/commands/ts.generate.cmd';
@@ -43,13 +43,14 @@ export const generateCmd = Command.make('generate', { outputOpt, typeTools, tool
       const cwd = process.cwd;
 
       yield* Effect.logDebug('Identifying project type...');
-      const envLangDetector = yield* EnvLangDetector;
-      const envLang = yield* envLangDetector.detectEnvLanguage(cwd);
-      yield* ui.log.step(`Project type detected: ${envLang}`);
+      const envDetector = yield* ProjectEnvironmentDetector;
+      const env = yield* envDetector.detectProjectEnvironment(cwd);
+      const displayLang = env.kind === 'js' ? 'TypeScript' : 'Python';
+      yield* ui.log.step(`Project type detected: ${displayLang}`);
 
       // Redirect to either `ts generate` or `py generate` commands
-      yield* Match.value(envLang).pipe(
-        Match.when('TypeScript', () =>
+      yield* Match.value(env.kind).pipe(
+        Match.when('js', () =>
           generateTypescriptTypeStubs({
             outputOpt,
             compact: false,
@@ -58,7 +59,7 @@ export const generateCmd = Command.make('generate', { outputOpt, typeTools, tool
             toolkitsOpt,
           })
         ),
-        Match.when('Python', () => generatePythonTypeStubs({ outputOpt, toolkitsOpt })),
+        Match.when('python', () => generatePythonTypeStubs({ outputOpt, toolkitsOpt })),
         Match.exhaustive
       );
     })

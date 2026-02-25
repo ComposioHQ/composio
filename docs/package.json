@@ -38,6 +38,7 @@
     "@ai-sdk/anthropic": "^3.0.11",
     "@ai-sdk/mcp": "^1.0.6",
     "@ai-sdk/openai": "^3.0.9",
+    "@ai-sdk/react": "^3.0.99",
     "@anthropic-ai/claude-agent-sdk": "^0.2.5",
     "@anthropic-ai/sdk": "^0.71.2",
     "@composio/anthropic": "^0.5.5",

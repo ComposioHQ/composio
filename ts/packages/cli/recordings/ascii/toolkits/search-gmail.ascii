@@ -27,6 +27,14 @@
 
 
 
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Search for a specific toolkit
 >
@@ -57,28 +65,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # Search for a specific toolkit
-> composio toolkits search gmail
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -117,9 +103,63 @@
 
 
 
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Search for a specific toolkit
 > composio toolkits search gmail
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Search for a specific toolkit
+> composio toolkits search gmail
+
+
+
+
+
+
+
+
 
 
 
@@ -156,22 +196,30 @@
 │
 ●  Found 5 of 5 toolkits
 │
-│  Name                 Slug                 Version      Tools   Triggers
-  Description
-│  Gmail                gmail                -            40      2
-  Gmail is Google’s email service, featuring spam...
-│  Google Tasks         googletasks          -            17      0
-  Google Tasks provides a simple to-do list and t...
-│  Google Super         googlesuper          -            361     23
-  Google Super App combines all Google services i...
-│  Mixmax               mixmax               -            96      0
-  The #1 Sales Engagement Platform for Gmail. Mix...
-│  NetHunt CRM          nethunt_crm          -            12      0
-  NetHunt is a Gmail CRM that brings sales automa...
+│  Name                 Slug                 Version      Tools   Triggers   Descri
+ption
+│  Gmail                gmail                -            40      2          Gmail
+is Google’s email service, featuring spam...
+│  Google Tasks         googletasks          -            18      0          Google
+ Tasks provides a simple to-do list and t...
+│  Google Super         googlesuper          -            441     23         Google
+ Super App combines all Google services i...
+│  Mixmax               mixmax               -            96      0          The #1
+ Sales Engagement Platform for Gmail. Mix...
+│  NetHunt CRM          nethunt_crm          -            12      0          NetHun
+t is a Gmail CRM that brings sales automa...
 │
 ◇  To view details:
 │  > composio toolkits info "gmail"
 >
+
+
+
+
+
+
+
+
 
 
 

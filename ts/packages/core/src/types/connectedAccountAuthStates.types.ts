@@ -166,6 +166,52 @@ export type Oauth2InactiveConnectionData = z.infer<typeof Oauth2InactiveConnecti
 export type Oauth2ConnectionData = z.infer<typeof Oauth2ConnectionDataSchema>;
 export type CustomOauth2ConnectionData = z.infer<typeof CustomOauth2ConnectionDataSchema>;
 
+// S2S_OAUTH2
+const S2SOauth2BaseSchema = BaseSchemeRaw.extend({
+  status: z.literal(ConnectionStatuses.INITIALIZING),
+}).catchall(z.unknown());
+const S2SOauth2ConnectionDataSchema = z.discriminatedUnion('status', [
+  S2SOauth2BaseSchema,
+  S2SOauth2BaseSchema.extend({
+    status: z.literal(ConnectionStatuses.INITIATED),
+  }).catchall(z.unknown()),
+  S2SOauth2BaseSchema.extend({
+    status: z.literal(ConnectionStatuses.ACTIVE),
+    access_token: z.string().optional(),
+    id_token: z.string().optional(),
+    token_type: z.string().optional(),
+    refresh_token: z.string().nullish(),
+    expires_in: z.union([z.string(), z.number(), z.null()]).optional(),
+    scope: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
+  }).catchall(z.unknown()),
+  S2SOauth2BaseSchema.extend({
+    status: z.literal(ConnectionStatuses.INACTIVE),
+    access_token: z.string().optional(),
+    id_token: z.string().optional(),
+    token_type: z.string().optional(),
+    refresh_token: z.string().nullish(),
+    expires_in: z.union([z.string(), z.number(), z.null()]).optional(),
+    scope: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
+  }).catchall(z.unknown()),
+  S2SOauth2BaseSchema.extend({
+    status: z.literal(ConnectionStatuses.FAILED),
+    error: z.string().optional(),
+    error_description: z.string().optional(),
+  }).catchall(z.unknown()),
+  S2SOauth2BaseSchema.extend({
+    status: z.literal(ConnectionStatuses.EXPIRED),
+    expired_at: z.string().optional(),
+  }).catchall(z.unknown()),
+]);
+const CustomS2SOauth2ConnectionDataSchema = BaseSchemeRaw.extend({
+  access_token: z.string().optional(),
+  id_token: z.string().optional(),
+  token_type: z.string().optional(),
+  refresh_token: z.string().nullish().optional(),
+  expires_in: z.union([z.string(), z.number(), z.null()]).optional(),
+  scope: z.union([z.string(), z.array(z.string()), z.null()]).optional(),
+}).catchall(z.unknown());
+
 // OAUTH1
 export const Oauth1InitiatingConnectionDataSchema = BaseSchemeRaw.extend({
   status: z.literal(ConnectionStatuses.INITIALIZING),
@@ -638,6 +684,13 @@ export const ConnectionDataSchema = z.discriminatedUnion('authScheme', [
     val: Oauth2ConnectionDataSchema,
   }),
   z.object({
+    authScheme: z.literal(AuthSchemeTypes.S2S_OAUTH2),
+    /**
+     * the main connection data discriminated by auth scheme
+     */
+    val: S2SOauth2ConnectionDataSchema,
+  }),
+  z.object({
     authScheme: z.literal(AuthSchemeTypes.API_KEY),
     /**
      * the main connection data discriminated by auth scheme
@@ -730,6 +783,11 @@ export const CustomConnectionDataSchema = z.discriminatedUnion('authScheme', [
     authScheme: z.literal(AuthSchemeTypes.OAUTH2),
     toolkitSlug: z.string(),
     val: CustomOauth2ConnectionDataSchema,
+  }),
+  z.object({
+    authScheme: z.literal(AuthSchemeTypes.S2S_OAUTH2),
+    toolkitSlug: z.string(),
+    val: CustomS2SOauth2ConnectionDataSchema,
   }),
   z.object({
     authScheme: z.literal(AuthSchemeTypes.DCR_OAUTH),

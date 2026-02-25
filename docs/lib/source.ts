@@ -117,28 +117,35 @@ export function mdxToCleanMarkdown(content: string): string {
     (_, content) => `> ${content.trim()}`
   );
 
+  // Remove Cards wrapper before processing individual Card tags
+  // (prevents <Cards> from being matched by <Card regex since <Cards starts with <Card)
+  result = result.replace(/<\/?Cards\b[^>]*>/g, '');
+
   // Convert Card - handle multiline and various attribute orders
   // Self-closing Cards with description attribute
   result = result.replace(
-    /<Card[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?description="([^"]*)"[\s\S]*?\/>/g,
+    /<Card\b[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?description="([^"]*)"[\s\S]*?\/>/g,
     '- [$1]($2): $3'
   );
   // Cards with children content (non-self-closing)
   result = result.replace(
-    /<Card[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
+    /<Card\b[\s\S]*?title="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
     '- [$1]($2): $3'
   );
   // Cards with href before title
   result = result.replace(
-    /<Card[\s\S]*?href="([^"]*)"[\s\S]*?title="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
+    /<Card\b[\s\S]*?href="([^"]*)"[\s\S]*?title="([^"]*)"[\s\S]*?>([\s\S]*?)<\/Card>/g,
     '- [$2]($1): $3'
   );
-
   // Convert ProviderCard to markdown link
   result = result.replace(
     /<ProviderCard[\s\S]*?name="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?languages=\{\[([^\]]*)\]\}[\s\S]*?\/>/g,
     (_, name, href, langs) => `- [${name}](${href}) (${langs.replace(/"/g, '')})`
   );
+
+  // Strip orphaned indentation from converted list items
+  // (Cards/ProviderCards nested inside wrapper components had JSX indentation that persists after wrapper removal)
+  result = result.replace(/^[ \t]+(- \[)/gm, '$1');
 
   // Convert Tabs/Tab content - keep inner content
   result = result.replace(/<TabsList>[\s\S]*?<\/TabsList>/g, '');
@@ -227,8 +234,27 @@ export function mdxToCleanMarkdown(content: string): string {
     '- [$2]($1): $3'
   );
 
-  // Remove wrapper components (Cards, ProviderGrid, Tabs, Frame, div, QuickstartFlow, IntegrationTabs, Accordions, ToolTypeFlow, ToolkitsLanding, TemplateGrid, etc.)
-  result = result.replace(/<\/?(Cards|ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid)[^>]*>/g, '');
+  // Convert GlossaryTerm to heading + definition
+  result = result.replace(
+    /<GlossaryTerm[\s\S]*?name="([^"]*)"[\s\S]*?>([\s\S]*?)<\/GlossaryTerm>/g,
+    (_, name, content) => `### ${name}\n\n${content.trim()}`
+  );
+
+  // Convert AIToolsBanner to plain text
+  result = result.replace(
+    /<AIToolsBanner\s*\/>/g,
+    '### For AI tools\n\n' +
+    '**Skills:**\n' +
+    '```bash\nnpx skills add composiohq/skills\n```\n' +
+    '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
+    '**Context files:**\n' +
+    '- [llms.txt](/llms.txt) — Documentation index with links\n' +
+    '- [llms-full.txt](/llms-full.txt) — Complete documentation in one file'
+  );
+
+  // Remove wrapper components (ProviderGrid, Tabs, Frame, div, QuickstartFlow, IntegrationTabs, Accordions, ToolTypeFlow, ToolkitsLanding, TemplateGrid, etc.)
+  // Note: Cards wrapper is removed earlier (before Card conversion) to prevent regex conflicts
+  result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary)[^>]*>/g, '');
 
   // Remove remaining self-closing JSX tags (including those with JSX expressions)
   result = result.replace(/<[A-Z][a-zA-Z]*[\s\S]*?\/>/g, '');
@@ -366,7 +392,7 @@ ${page.data.description || ''}`;
   const cleanContent = mdxToCleanMarkdown(content);
 
   const footer = includeFooter
-    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Cookbooks](https://docs.composio.dev/llms.mdx/cookbooks) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
+    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/docs/glossary) | [Cookbooks](https://docs.composio.dev/llms.mdx/cookbooks) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
     : '';
 
   const guardrails = includeGuardrails ? getGuardrails(page.data.llmGuardrails) : '';

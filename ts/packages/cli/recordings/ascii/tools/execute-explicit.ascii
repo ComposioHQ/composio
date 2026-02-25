@@ -1,0 +1,456 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+>   --user-id jkomyno \
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+>   --user-id jkomyno \
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+>   --user-id jkomyno \
+>   --toolkit-version 20250909_00
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+>   --user-id jkomyno \
+>   --toolkit-version 20250909_00
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+>   --user-id jkomyno \
+>   --toolkit-version 20250909_00
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Execute a tool, with explicit user ID and toolkit version
+> composio tools execute GMAIL_CREATE_EMAIL_DRAFT \
+>   -d '{"recipient_email":"to@example.com","subject":"Draft","body":"Draft body"}'
+ \
+>   --user-id jkomyno \
+>   --toolkit-version 20250909_00
+│
+◒  Executing tool "GMAIL_CREATE_EMAIL_DRAFT"...
+◇  Execution successful (logId: log_<REDACTED>)
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────

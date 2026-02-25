@@ -22,6 +22,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Info with nonexistent tool
 >
@@ -47,6 +60,57 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with nonexistent tool
+> composio tools info NONEXISTENT_TOOL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Info with nonexistent tool
 > composio tools info NONEXISTENT_TOOL
@@ -72,6 +136,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Info with nonexistent tool
 > composio tools info NONEXISTENT_TOOL
@@ -88,18 +165,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # Info with nonexistent tool
-> composio tools info NONEXISTENT_TOOL
 
 
 
@@ -127,6 +192,19 @@
 > composio tools info NONEXISTENT_TOOL
 │
 ◒  Fetching tool "NONEXISTENT_TOOL"...
+▲  Fetching tool "NONEXISTENT_TOOL"...
+│
+■  Tool "NONEXISTENT_TOOL" not found.
+
+
+
+
+
+
+
+
+
+
 
 
 

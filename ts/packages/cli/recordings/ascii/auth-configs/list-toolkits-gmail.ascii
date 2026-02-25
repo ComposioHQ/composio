@@ -22,6 +22,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List filtered by toolkit
 >
@@ -47,6 +60,57 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List filtered by toolkit
+> composio auth-configs list --toolkits gmail
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List filtered by toolkit
 > composio auth-configs list --toolkits gmail
@@ -72,6 +136,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # List filtered by toolkit
 > composio auth-configs list --toolkits gmail
@@ -88,18 +165,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-────────────────────────────────────────────────────────────────────────────────
-> # List filtered by toolkit
-> composio auth-configs list --toolkits gmail
 
 
 
@@ -131,13 +196,26 @@
 │
 ●  Listing 1 of 1 auth configs
 │
-│  Name                     Id               Toolkit        Auth Scheme
-Type       Conns   Status
-│  auth_config_gmail_176... ac_<REDACTED>    gmail          OAUTH2
-default    1       ENABLED
+│  Name                     Id               Toolkit        Auth Scheme    Type
+   Conns   Status
+│  gmail-auth               ac_<REDACTED>    gmail          OAUTH2         default
+   1       ENABLED
 │
 ◇  To view details of an auth config:
 │  > composio auth-configs info "ac_<REDACTED>"
+>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

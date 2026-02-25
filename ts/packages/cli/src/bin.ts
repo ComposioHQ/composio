@@ -10,17 +10,23 @@ import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import { BaseConfigProviderLive, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
+  ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
 } from 'src/services/composio-clients';
 import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-cached';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUILive } from 'src/services/terminal-ui';
+import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { ProjectContext } from 'src/services/project-context';
+import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
+import { CommandRunner } from 'src/services/command-runner';
+import { StdinLive } from 'src/services/stdin';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -65,6 +71,26 @@ export const UpgradeBinaryLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
 ) satisfies RequiredLayer;
 
+export const TriggersRealtimeLive = Layer.provide(
+  TriggersRealtime.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
+export const ComposioClientSingletonLive = Layer.provide(
+  ComposioClientSingleton.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+) satisfies RequiredLayer;
+
+export const ToolsExecutorLive = Layer.provide(
+  _ToolsExecutorLive,
+  ComposioClientSingletonLive
+) satisfies RequiredLayer;
+
+export const ProjectContextLive = Layer.provide(
+  ProjectContext.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
   NodeOs.Default,
@@ -72,11 +98,17 @@ const layers = Layer.mergeAll(
   UpgradeBinaryLive,
   ComposioUserContextLive,
   ComposioSessionRepositoryLive,
+  ComposioClientSingletonLive, // Expose ComposioClientSingleton for commands that use Tool Router directly
   ComposioToolkitsRepositoryCachedLive, // Use the cached layer instead of the regular one
-  EnvLangDetector.Default,
+  ToolsExecutorLive,
   JsPackageManagerDetector.Default,
+  ProjectEnvironmentDetector.Default,
+  CommandRunner.Default,
+  TriggersRealtimeLive,
+  ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
+  StdinLive,
   TerminalUILive,
   Logger.pretty
 ) satisfies RequiredLayer;
@@ -172,13 +204,22 @@ runWithArgs.pipe(
       const captured = yield* captureErrors(cause, {
         stripCwd: true,
       });
-      const message = prettyPrintFromCapturedErrors(captured, {
-        hideStackTrace: true,
-        stripCwd: true,
-        enabled: true,
-      });
+      const filteredErrors = captured.errors.filter(
+        error => error.errorType !== 'ToolExecutionError'
+      );
 
-      yield* Console.error(message);
+      if (captured.interrupted || filteredErrors.length > 0) {
+        const message = prettyPrintFromCapturedErrors(
+          { ...captured, errors: filteredErrors },
+          {
+            hideStackTrace: true,
+            stripCwd: true,
+            enabled: true,
+          }
+        );
+
+        yield* Console.error(message);
+      }
     })
   ),
   Effect.provide(layers),

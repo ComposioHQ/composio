@@ -17,6 +17,7 @@ import type { AuthConfigCreateParams } from '@composio/client/resources/auth-con
 import { Toolkit, Toolkits, ToolkitDetailed, type ToolkitSearchResult } from 'src/models/toolkits';
 import { AuthConfigItem, AuthConfigItems } from 'src/models/auth-configs';
 import { ConnectedAccountItem, ConnectedAccountItems } from 'src/models/connected-accounts';
+import { TriggerInstanceItems } from 'src/models/triggers';
 import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
 import {
   groupByVersion,
@@ -221,6 +222,21 @@ export type CliCreateSessionResponse = Schema.Schema.Type<typeof CliCreateSessio
 export const CliGetSessionResponse = RetrievedSession;
 export type CliRetrieveSessionResponse = Schema.Schema.Type<typeof CliGetSessionResponse>;
 
+export const CliRealtimeCredentialsResponse = Schema.Struct({
+  project_id: Schema.String,
+  pusher_key: Schema.String,
+  pusher_cluster: Schema.String,
+}).annotations({ identifier: 'CliRealtimeCredentialsResponse' });
+export type CliRealtimeCredentialsResponse = Schema.Schema.Type<
+  typeof CliRealtimeCredentialsResponse
+>;
+
+export const CliRealtimeAuthResponse = Schema.Struct({
+  auth: Schema.String,
+  channel_data: Schema.optional(Schema.String),
+}).annotations({ identifier: 'CliRealtimeAuthResponse' });
+export type CliRealtimeAuthResponse = Schema.Schema.Type<typeof CliRealtimeAuthResponse>;
+
 export const ToolkitsResponse = Schema.Struct({
   items: Toolkits,
   total_pages: Schema.Int,
@@ -286,6 +302,158 @@ export const TriggerTypesResponse = Schema.Struct({
   total_pages: Schema.Int,
   next_cursor: Schema.NullOr(Schema.String),
 }).annotations({ identifier: 'TriggerTypesResponse' });
+export type TriggerTypesResponse = Schema.Schema.Type<typeof TriggerTypesResponse>;
+
+export const TriggerInstancesListActiveResponse = Schema.Struct({
+  items: TriggerInstanceItems,
+  total_items: Schema.optionalWith(Schema.Int, { default: () => 0 }),
+  total_pages: Schema.optionalWith(Schema.Int, { default: () => 1 }),
+  current_page: Schema.optionalWith(Schema.Int, { default: () => 1 }),
+  next_cursor: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+}).annotations({ identifier: 'TriggerInstancesListActiveResponse' });
+export type TriggerInstancesListActiveResponse = Schema.Schema.Type<
+  typeof TriggerInstancesListActiveResponse
+>;
+
+export const TriggerInstanceUpsertResponse = Schema.Struct({
+  trigger_id: Schema.String,
+}).annotations({ identifier: 'TriggerInstanceUpsertResponse' });
+export type TriggerInstanceUpsertResponse = Schema.Schema.Type<
+  typeof TriggerInstanceUpsertResponse
+>;
+
+export const TriggerInstanceManageUpdateResponse = Schema.Struct({
+  status: Schema.Literal('success'),
+}).annotations({ identifier: 'TriggerInstanceManageUpdateResponse' });
+export type TriggerInstanceManageUpdateResponse = Schema.Schema.Type<
+  typeof TriggerInstanceManageUpdateResponse
+>;
+
+export const TriggerInstanceManageDeleteResponse = Schema.Struct({
+  trigger_id: Schema.String,
+}).annotations({ identifier: 'TriggerInstanceManageDeleteResponse' });
+export type TriggerInstanceManageDeleteResponse = Schema.Schema.Type<
+  typeof TriggerInstanceManageDeleteResponse
+>;
+
+/**
+ * Response from GET /api/v3/auth/session/info.
+ * Contains project, org member, and API key details for the authenticated session.
+ * Fields like webhook_url, webhook_secret, auto_id, deleted are intentionally omitted.
+ */
+export const SessionInfoResponse = Schema.Struct({
+  project: Schema.Struct({
+    name: Schema.String,
+    id: Schema.String,
+    org_id: Schema.String,
+    nano_id: Schema.String,
+    email: Schema.String,
+    created_at: Schema.String,
+    updated_at: Schema.String,
+    org: Schema.Struct({
+      name: Schema.String,
+      id: Schema.String,
+      plan: Schema.String,
+    }),
+  }),
+  org_member: Schema.Struct({
+    id: Schema.String,
+    email: Schema.String,
+    name: Schema.String,
+    role: Schema.String,
+  }),
+  api_key: Schema.Struct({
+    name: Schema.String,
+    project_id: Schema.String,
+    id: Schema.String,
+    org_member_id: Schema.String,
+  }),
+}).annotations({ identifier: 'SessionInfoResponse' });
+export type SessionInfoResponse = Schema.Schema.Type<typeof SessionInfoResponse>;
+
+export interface TriggerInstancesListActiveParams {
+  user_ids?: string[];
+  connected_account_ids?: string[];
+  auth_config_ids?: string[];
+  trigger_ids?: string[];
+  trigger_names?: string[];
+  show_disabled?: boolean;
+  limit?: number;
+}
+
+export interface TriggerInstanceUpsertParams {
+  connected_account_id?: string;
+  trigger_config?: Record<string, unknown>;
+}
+
+function buildTriggerInstancesNamespace(
+  clientSingleton: ComposioClientSingleton,
+  withMetrics: <A, E, R>(
+    effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
+  ) => Effect.Effect<A, E, R>
+) {
+  return {
+    /**
+     * Lists active trigger instances with optional filters.
+     * Returns a single page of results.
+     */
+    listActive: (params: TriggerInstancesListActiveParams) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client =>
+            client.triggerInstances.listActive({
+              user_ids: params.user_ids,
+              connected_account_ids: params.connected_account_ids,
+              auth_config_ids: params.auth_config_ids,
+              trigger_ids: params.trigger_ids,
+              trigger_names: params.trigger_names,
+              show_disabled: params.show_disabled,
+              limit: params.limit,
+            }),
+          TriggerInstancesListActiveResponse
+        )
+      ),
+    upsert: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.triggerInstances.upsert(triggerSlug, params),
+          TriggerInstanceUpsertResponse
+        )
+      ),
+    manageUpdate: (triggerId: string, params: { status: 'enable' | 'disable' }) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.triggerInstances.manage.update(triggerId, params),
+          TriggerInstanceManageUpdateResponse
+        )
+      ),
+    manageDelete: (triggerId: string) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.triggerInstances.manage.delete(triggerId),
+          TriggerInstanceManageDeleteResponse
+        )
+      ),
+  };
+}
+
+function buildTriggerInstanceRepositoryOperations(client: ComposioClientLive) {
+  return {
+    listActiveTriggers: (params: TriggerInstancesListActiveParams) =>
+      client.triggerInstances.listActive(params),
+    createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
+      client.triggerInstances.upsert(triggerSlug, params),
+    enableTrigger: (triggerId: string) =>
+      client.triggerInstances.manageUpdate(triggerId, { status: 'enable' }),
+    disableTrigger: (triggerId: string) =>
+      client.triggerInstances.manageUpdate(triggerId, { status: 'disable' }),
+    deleteTrigger: (triggerId: string) => client.triggerInstances.manageDelete(triggerId),
+  };
+}
 
 // Single-page search response (includes total_items for "Listing X of Y" display)
 export const ToolkitSearchResponse = Schema.Struct({
@@ -508,6 +676,179 @@ const streamResponseWithByteCount = (
     return { json, byteSize };
   });
 
+/**
+ * A single project entry returned by GET /api/v3/org/project/list.
+ */
+export const OrgProject = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  email: Schema.String,
+  deleted: Schema.Boolean,
+  org_id: Schema.String,
+  created_at: Schema.String,
+  updated_at: Schema.String,
+}).annotations({ identifier: 'OrgProject' });
+export type OrgProject = Schema.Schema.Type<typeof OrgProject>;
+
+/**
+ * Response from GET /api/v3/org/project/list.
+ */
+export const OrgProjectListResponse = Schema.Struct({
+  data: Schema.Array(OrgProject),
+  next_cursor: Schema.NullOr(Schema.String),
+  total_pages: Schema.Int,
+  current_page: Schema.Int,
+  total_items: Schema.Int,
+}).annotations({ identifier: 'OrgProjectListResponse' });
+export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListResponse>;
+
+/**
+ * Lists all projects for the logged-in user's organization.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ *
+ * @param params.baseURL    - API base URL
+ * @param params.apiKey     - UAK (sent as `x-user-api-key`)
+ * @param params.orgId      - Organization ID (sent as `x-composio-org-id`)
+ * @param params.projectId  - Project ID (sent as `x-composio-project-id`)
+ * @param params.limit      - Max projects to return (default 100)
+ */
+export const listOrgProjects = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  projectId: string;
+  limit?: number;
+}): Effect.Effect<OrgProjectListResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const limit = params.limit ?? 100;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(
+          `${params.baseURL}/api/v3/org/project/list?list_all_org_projects=true&limit=${limit}`,
+          {
+            method: 'GET',
+            redirect: 'error',
+            headers: {
+              'x-user-api-key': params.apiKey,
+              'x-composio-org-id': params.orgId,
+              'x-composio-project-id': params.projectId,
+              'User-Agent': '@composio/cli',
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(OrgProjectListResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+/**
+ * Calls GET /api/v3/auth/session/info with the full layered auth headers.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ * This is a standalone function, NOT on ComposioSessionRepository, to keep
+ * the repository as a pure facade over @composio/client.
+ */
+export const getSessionInfo = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  projectId: string;
+}): Effect.Effect<SessionInfoResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/auth/session/info`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-api-key': params.apiKey,
+            'x-org-id': params.orgId,
+            'x-project-id': params.projectId,
+            'User-Agent': '@composio/cli',
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(SessionInfoResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+/**
+ * Calls GET /api/v3/auth/session/info using only the x-user-api-key header.
+ * Unlike getSessionInfo which requires org/project IDs, this variant resolves
+ * session metadata from the UAK alone — useful during login before org/project
+ * context is known.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ */
+export const getSessionInfoByUserApiKey = (params: {
+  baseURL: string;
+  userApiKey: string;
+}): Effect.Effect<SessionInfoResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/auth/session/info`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.userApiKey,
+            'User-Agent': '@composio/cli',
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(SessionInfoResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
 // Utility function for calling the Composio API and decoding its response.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const callClient = <T, S extends Schema.Schema<any, any>>(
@@ -659,7 +1000,7 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
  * a raw (uneffectful, Promise-based) Composio client instance.
  */
-class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
+export class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
   'services/ComposioClientSingleton',
   {
     accessors: true,
@@ -1069,6 +1410,18 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               )
             ),
           /**
+           * Retrieves detailed info about a single trigger type by slug.
+           * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
+           */
+          retrieve: (slug: string) =>
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.triggersTypes.retrieve(slug),
+                TriggerType
+              )
+            ),
+          /**
            * Retrieve a list of trigger types, automatically handling pagination.
            * @param toolkitSlugs - Optional array of toolkit slugs to filter by
            */
@@ -1086,15 +1439,23 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               )
             ),
         },
+        triggerInstances: buildTriggerInstancesNamespace(clientSingleton, withMetrics),
         cli: {
           /**
            * Generates a new CLI session with a random 6-character code.
+           * @param params.scope - 'user' for login, 'project' for init (future)
+           *
+           * TODO: don't use `@composio/client`, wrap `fetch` directly.
            */
-          createSession: () =>
+          createSession: (params?: { scope?: 'user' | 'project' }) =>
             withMetrics(
               callClient(
                 clientSingleton,
-                client => client.cli.createSession(),
+                client =>
+                  client.cli.createSession(
+                    { scope: params?.scope ?? 'user' },
+                    { headers: { 'Content-Type': 'application/json' } }
+                  ),
                 CliCreateSessionResponse
               )
             ),
@@ -1108,6 +1469,22 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
                 clientSingleton,
                 client => client.cli.getSession(session),
                 CliGetSessionResponse
+              )
+            ),
+          getRealtimeCredentials: () =>
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.cli.realtime.credentials(),
+                CliRealtimeCredentialsResponse
+              )
+            ),
+          authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.cli.realtime.auth(params),
+                CliRealtimeAuthResponse
               )
             ),
         },
@@ -1215,6 +1592,11 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
             )
           ),
         getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
+        /**
+         * Retrieves detailed info about a single trigger type by slug.
+         * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
+         */
+        getTriggerTypeDetailed: (slug: string) => client.triggersTypes.retrieve(slug),
         /**
          * Fetches trigger types with optional toolkit filtering.
          * When toolkitSlugs is provided, fetches all matching trigger types.
@@ -1360,6 +1742,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         deleteConnectedAccount: (nanoid: string) => client.connectedAccounts.delete(nanoid),
         createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
           client.connectedAccounts.createLink(params),
+        ...buildTriggerInstanceRepositoryOperations(client),
       };
     }),
     dependencies: [ComposioClientLive.Default],
@@ -1373,8 +1756,12 @@ export class ComposioSessionRepository extends Effect.Service<ComposioSessionRep
       const client = yield* ComposioClientLive;
 
       return {
-        createSession: () => client.cli.createSession(),
+        createSession: (params?: { scope?: 'user' | 'project' }) =>
+          client.cli.createSession(params),
         getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
+        getRealtimeCredentials: () => client.cli.getRealtimeCredentials(),
+        authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
+          client.cli.authRealtimeChannel(params),
       };
     }),
     dependencies: [ComposioClientLive.Default],

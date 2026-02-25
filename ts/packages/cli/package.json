@@ -79,6 +79,7 @@
     "open": "^10.2.0",
     "openapi-typescript": "^7.8.0",
     "picocolors": "^1.1.1",
+    "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
     "source-map-js": "^1.2.1",
     "superjson": "^2.2.2",

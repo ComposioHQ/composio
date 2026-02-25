@@ -6,6 +6,10 @@ Instructions for AI agents working on `@composio/cli`.
 
 The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. It follows a service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling.
 
+## Required Checks
+
+When you touch CLI commands (anything under `ts/packages/cli/src/commands/`), you must run `pnpm typecheck` from the repo root. If it fails, fix the issues before proceeding.
+
 ### Entry Point
 
 `src/bin.ts` bootstraps the CLI by composing Effect layers and running the root command via `BunRuntime.runMain()`:

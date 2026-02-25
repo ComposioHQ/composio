@@ -25,8 +25,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20260218.0
     '@composio/client':
-      specifier: 0.1.0-alpha.56
-      version: 0.1.0-alpha.56
+      specifier: 0.1.0-alpha.60
+      version: 0.1.0-alpha.60
     '@effect/cli':
       specifier: ^0.73.2
       version: 0.73.2
@@ -1019,7 +1019,7 @@ importers:
         version: 1.0.1
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.56
+        version: 0.1.0-alpha.60
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1059,6 +1059,9 @@ importers:
       picocolors:
         specifier: ^1.1.1
         version: 1.1.1
+      pusher-js:
+        specifier: ^8.4.0
+        version: 8.4.0
       semver:
         specifier: ^7.7.2
         version: 7.7.4
@@ -1113,7 +1116,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.56
+        version: 0.1.0-alpha.60
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1760,8 +1763,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@0.1.0-alpha.56':
-    resolution: {integrity: sha512-hNgChB5uhdvT4QXNzzfUuvtG6vrfanQQFY2hPyKwbeR4x6mEmIGFiZ4y2qynErdUWldAZiB/7pY/MBMg6Q9E0g==}
+  '@composio/client@0.1.0-alpha.60':
+    resolution: {integrity: sha512-i1/S+GX7ATzdQK0UzoaPdWqP4lmn/sCWF4ojGdq26k+cyEiq3aWN4HZFKYBp1jmwD1Sxn02RX9iTL09YAPn3Rg==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -6853,7 +6856,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@0.1.0-alpha.56': {}
+  '@composio/client@0.1.0-alpha.60': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

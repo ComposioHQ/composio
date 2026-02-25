@@ -686,6 +686,7 @@ describe('ConnectedAccounts', () => {
         status: ConnectedAccountStatuses.ACTIVE,
         authConfig: {
           id: 'auth_config_123',
+          authScheme: AuthSchemeTypes.OAUTH2,
           isComposioManaged: true,
           isDisabled: false,
         },
