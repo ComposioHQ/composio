@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
-import { vi, afterEach } from 'vitest';
+import { vi, afterEach, beforeAll, afterAll } from 'vitest';
 import { Console, Effect, Exit } from 'effect';
 import { CommandExecutor, FileSystem } from '@effect/platform';
 import { NodeProcess } from 'src/services/node-process';
@@ -117,6 +117,21 @@ const makeTerminalUIWithSelectOverrides = (selectOverrides: Record<number, numbe
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('CLI: composio init', () => {
+  let savedUserAgent: string | undefined;
+
+  beforeAll(() => {
+    savedUserAgent = process.env.npm_config_user_agent;
+    delete process.env.npm_config_user_agent;
+  });
+
+  afterAll(() => {
+    if (savedUserAgent !== undefined) {
+      process.env.npm_config_user_agent = savedUserAgent;
+    } else {
+      delete process.env.npm_config_user_agent;
+    }
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });

@@ -954,10 +954,22 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     // Retry the task with a delay between retries and a maximum of 3 retries
     const policy = Schedule.addDelay(Schedule.recurs(3), () => '100 millis');
 
-    // If all retries fail, run the fallback effect
+    // If all retries fail, run the fallback effect.
+    // Use tar to skip heavy directories (.venv) that the global setup may have created.
+    // tar --exclude is POSIX and available on any Linux/macOS without extra packages.
     const task = Effect.gen(function* () {
       yield* fs.makeDirectory(tmpFixturesPath, { recursive: true });
-      yield* fs.copy(realFixturePath, tmpFixturesPath);
+      const tarCmd = Command.make(
+        'tar',
+        '-cf',
+        '-',
+        '--exclude',
+        '.venv',
+        '-C',
+        realFixturePath,
+        '.'
+      ).pipe(Command.pipeTo(Command.make('tar', '-xf', '-', '-C', tmpFixturesPath)));
+      yield* tarCmd.pipe(Command.exitCode, Effect.provide(BunContext.layer));
     });
 
     const repeated = Effect.retryOrElse(policy, () =>
