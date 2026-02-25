@@ -2,8 +2,6 @@ import { Args, Command, Options } from '@effect/cli';
 import util from 'node:util';
 import { Effect, Option, Either } from 'effect';
 import { FileSystem } from '@effect/platform';
-import { ComposioError } from '@composio/core';
-import type { ToolExecuteParams } from '@composio/core';
 import { JSONParse } from 'src/effects/json';
 import { redact } from 'src/ui/redact';
 import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';
@@ -13,6 +11,7 @@ import {
   ActionExecuteConnectedAccountNotFoundError,
   ToolsExecutor,
 } from 'src/services/tools-executor';
+import type { ToolExecuteParams } from 'src/services/tools-executor';
 import {
   extractApiErrorDetails,
   extractMessage,
@@ -33,16 +32,6 @@ const data = Options.text('data').pipe(
 const userId = Options.text('user-id').pipe(
   Options.withDefault('default'),
   Options.withDescription('User ID to execute the tool for (default: "default")')
-);
-
-const connectedAccountId = Options.text('connected-account-id').pipe(
-  Options.withDescription('Connected account ID to use for authenticated tools'),
-  Options.optional
-);
-
-const toolkitVersion = Options.text('toolkit-version').pipe(
-  Options.withDescription('Toolkit version to execute (e.g. "20250909_00")'),
-  Options.optional
 );
 
 const resolveInput = (input: Option.Option<string>) =>
@@ -90,15 +79,32 @@ const parseArguments = (raw: string) =>
     return parsed as Record<string, unknown>;
   });
 
-const formatPossibleFixes = (fixes: ReadonlyArray<string>) =>
-  fixes.map(fix => `- ${fix}`).join('\n');
+/**
+ * Derive the toolkit slug from a tool slug.
+ * e.g. "GMAIL_CREATE_EMAIL_DRAFT" → "gmail", "GITHUB_GET_REPOS" → "github"
+ *
+ * Returns `undefined` for meta tool slugs (COMPOSIO_*) since they don't map
+ * to a real toolkit and would produce misleading connection tips.
+ */
+const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
+  const idx = toolSlug.indexOf('_');
+  if (idx <= 0) return toolSlug.toLowerCase();
+  const prefix = toolSlug.slice(0, idx).toLowerCase();
+  // Meta tools (COMPOSIO_*) are internal and don't correspond to a real toolkit.
+  if (prefix === 'composio') return undefined;
+  return prefix;
+};
 
-const connectedAccountTips = [
-  `Create or find an auth config: ${bold('composio auth-configs list --toolkits <toolkit>')}`,
-  `Link the account: ${bold('composio connected-accounts link --auth-config <AUTH_CONFIG_ID> --user-id <USER_ID>')}`,
-  `Verify the link: ${bold('composio connected-accounts list --toolkits <toolkit> --user-id <USER_ID>')}`,
-  `Retry the tool or pass ${bold('--connected-account-id <ID>')}`,
-].join('\n');
+const connectionTips = (toolSlug: string, userId: string) => {
+  const toolkit = toolkitFromToolSlug(toolSlug);
+  if (!toolkit) {
+    return `Retry: ${bold(`composio tools execute ${toolSlug} ...`)}`;
+  }
+  return [
+    `Link the toolkit first: ${bold(`composio connected-accounts link ${toolkit} --user-id ${userId}`)}`,
+    `Then retry:             ${bold(`composio tools execute ${toolSlug} ...`)}`,
+  ].join('\n');
+};
 
 /**
  * JSON.stringify replacer that redacts ID-like string values in CI.
@@ -144,7 +150,7 @@ const normalizeError = (error: unknown): unknown => {
   while (current && typeof current === 'object' && !seen.has(current)) {
     seen.add(current);
 
-    if (current instanceof ComposioError || current instanceof Error) {
+    if (current instanceof Error) {
       return current;
     }
 
@@ -167,7 +173,11 @@ const normalizeError = (error: unknown): unknown => {
  *
  * Returns a structured error summary suitable for `ui.output()` in piped mode.
  */
-const handleExecutionError = (ui: TerminalUI, error: unknown) =>
+const handleExecutionError = (
+  ui: TerminalUI,
+  error: unknown,
+  context: { toolSlug: string; userId: string }
+) =>
   Effect.gen(function* () {
     const normalized = normalizeError(error);
 
@@ -187,25 +197,6 @@ const handleExecutionError = (ui: TerminalUI, error: unknown) =>
     // Display the primary error message
     yield* ui.log.error(message);
 
-    // ComposioError-specific: show code, status, cause, possible fixes
-    if (normalized instanceof ComposioError) {
-      if (normalized.code) {
-        yield* ui.log.message(`Code: ${normalized.code}`);
-      }
-      const statusCode = (normalized as { statusCode?: number }).statusCode;
-      if (statusCode) {
-        yield* ui.log.message(`Status: ${statusCode}`);
-      }
-      const cause = (normalized as { cause?: unknown }).cause;
-      if (cause) {
-        const causeMessage = cause instanceof Error ? cause.message : String(cause);
-        yield* ui.log.message(`Cause: ${causeMessage}`);
-      }
-      if (normalized.possibleFixes && normalized.possibleFixes.length > 0) {
-        yield* ui.note(formatPossibleFixes(normalized.possibleFixes), 'Possible fixes');
-      }
-    }
-
     // Show API error details when available
     const detailsObject =
       apiDetails ??
@@ -218,9 +209,11 @@ const handleExecutionError = (ui: TerminalUI, error: unknown) =>
       yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
     }
 
-    // Connected-account tips
-    if (slugValue === 'ActionExecute_ConnectedAccountNotFound') {
-      yield* ui.note(connectedAccountTips, 'Tips');
+    // No-connection tips — the executor already classifies these into
+    // ActionExecuteConnectedAccountNotFoundError, so check the typed error
+    // instead of re-inspecting the slug.
+    if (normalized instanceof ActionExecuteConnectedAccountNotFoundError) {
+      yield* ui.note(connectionTips(context.toolSlug, context.userId), 'Tips');
     }
 
     // Return structured summary for piped output
@@ -243,8 +236,8 @@ class ToolExecutionError {
  */
 export const toolsCmd$Execute = Command.make(
   'execute',
-  { slug, data, userId, connectedAccountId, toolkitVersion },
-  ({ slug, data, userId, connectedAccountId, toolkitVersion }) =>
+  { slug, data, userId },
+  ({ slug, data, userId }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
@@ -254,15 +247,9 @@ export const toolsCmd$Execute = Command.make(
       const input = yield* resolveInput(data);
       const args = yield* parseArguments(input);
 
-      const versionValue = Option.getOrUndefined(toolkitVersion);
-      const shouldSkipVersionCheck = !versionValue || versionValue === 'latest';
-
       const params: ToolExecuteParams = {
         userId,
         arguments: args,
-        connectedAccountId: Option.getOrUndefined(connectedAccountId),
-        version: versionValue,
-        dangerouslySkipVersionCheck: shouldSkipVersionCheck ? true : undefined,
       };
 
       yield* ui.useMakeSpinner(`Executing tool "${slug}"...`, spinner =>
@@ -272,7 +259,10 @@ export const toolsCmd$Execute = Command.make(
           // Hard failure: API threw an exception
           if (Either.isLeft(resultEither)) {
             yield* spinner.error();
-            const summary = yield* handleExecutionError(ui, resultEither.left);
+            const summary = yield* handleExecutionError(ui, resultEither.left, {
+              toolSlug: slug,
+              userId,
+            });
             yield* ui.output(
               JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
             );
@@ -281,14 +271,17 @@ export const toolsCmd$Execute = Command.make(
 
           const result = resultEither.right;
 
-          // Soft failure: API returned { successful: false }
+          // Soft failure: execution returned an error
           if (!result.successful) {
             const logId = result.logId
               ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
               : '';
             yield* spinner.error(`Execution failed${logId}`);
 
-            const summary = yield* handleExecutionError(ui, result.error ?? result);
+            const summary = yield* handleExecutionError(ui, result.error ?? result, {
+              toolSlug: slug,
+              userId,
+            });
             yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
             return yield* Effect.fail(new ToolExecutionError(summary.error));
           }

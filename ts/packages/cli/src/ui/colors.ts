@@ -7,6 +7,7 @@ export const {
   bgBlack,
   bgRed,
   gray,
+  dim,
   green,
   red,
   redBright,

@@ -4903,6 +4903,188 @@
         }
       }
     },
+    "/api/v3/internal/trigger/log/{id}": {
+      "get": {
+        "summary": "Get detailed trigger log by ID",
+        "tags": [
+          "Logs"
+        ],
+        "operationId": "getInternalTriggerLogById",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved trigger log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "log": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "connectionId": {
+                          "type": "string"
+                        },
+                        "clientId": {
+                          "type": "string"
+                        },
+                        "entityId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "appName": {
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "trigger",
+                            "action"
+                          ],
+                          "description": "Log entity type (trigger or action)",
+                          "example": "trigger"
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "trigger",
+                                "action"
+                              ],
+                              "description": "Log entity type (trigger or action)",
+                              "example": "trigger"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "provider": {
+                              "type": "string"
+                            },
+                            "clientId": {
+                              "type": "string"
+                            },
+                            "connectionId": {
+                              "type": "string"
+                            },
+                            "triggerProviderPayload": {
+                              "type": "string"
+                            },
+                            "triggerClientPayload": {
+                              "type": "string"
+                            },
+                            "triggerClientError": {
+                              "type": "string"
+                            },
+                            "triggerName": {
+                              "type": "string"
+                            },
+                            "triggerClientResponse": {
+                              "type": "string"
+                            },
+                            "triggerId": {
+                              "type": "string"
+                            },
+                            "triggerNanoId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "type",
+                            "createdAt",
+                            "updatedAt",
+                            "provider",
+                            "clientId",
+                            "connectionId"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "connectionId",
+                        "clientId",
+                        "entityId",
+                        "status",
+                        "appName",
+                        "createdAt",
+                        "type",
+                        "meta"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "log"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v3/internal/action_execution/logs": {
       "post": {
         "summary": "Search and retrieve action execution logs",

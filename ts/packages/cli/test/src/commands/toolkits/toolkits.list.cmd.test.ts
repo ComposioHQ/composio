@@ -81,10 +81,8 @@ describe('CLI: composio toolkits list', () => {
           expect(output).toContain('gmail');
           expect(output).toContain('Slack');
           expect(output).toContain('GitHub');
-          // Version column
-          expect(output).toContain('Version');
-          expect(output).toContain('20250909');
-          expect(output).toContain('20260101');
+          // Connection status column
+          expect(output).toContain('Connected');
           expect(output).toContain('Listing 3 of 3 toolkits');
         })
       );

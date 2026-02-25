@@ -86,9 +86,9 @@ describe('CLI: composio', () => {
 
             - toolkits                                                                                                                                                                                                                                                                                                 Discover and inspect Composio toolkits.
 
-            - toolkits list [--query text] [--limit integer]                                                                                                                                                                                                                                                           List available toolkits.
+            - toolkits list [--query text] [--limit integer] [--connected] [--user-id text]                                                                                                                       List available toolkits with connection status.
 
-            - toolkits info [<slug>]                                                                                                                                                                                                                                                                                   View details of a specific toolkit.
+            - toolkits info [--user-id text] [<slug>]                                                                                                                                                             View details of a specific toolkit.
 
             - toolkits search [--limit integer] <query>                                                                                                                                                                                                                                                                Search toolkits by use case.
 
@@ -100,7 +100,7 @@ describe('CLI: composio', () => {
 
             - tools search [--toolkits text] [--limit integer] <query>                                                                                                                                                                                                                                                 Search tools by use case.
 
-            - tools execute [(-d, --data text)] [--user-id text] [--connected-account-id text] [--toolkit-version text] <slug>                                                                                                                                                                                         Execute a tool by slug with JSON arguments.
+            - tools execute [(-d, --data text)] [--user-id text] <slug>                                                                                                                                           Execute a tool by slug with JSON arguments.
 
             - auth-configs                                                                                                                                                                                                                                                                                             View and manage Composio auth configs.
 
@@ -122,7 +122,7 @@ describe('CLI: composio', () => {
 
             - connected-accounts delete [(-y, --yes)] [<id>]                                                                                                                                                                                                                                                           Delete a connected account.
 
-            - connected-accounts link --auth-config text [--user-id text] [--no-browser]                                                                                                                                                                                                                               Link an external account via OAuth redirect.
+            - connected-accounts link [--auth-config text] [--user-id text] [--no-browser] [<toolkit>]                                                                                                            Link an external account via OAuth redirect.
 
             - triggers                                                                                                                                                                                                                                                                                                 Inspect and subscribe to trigger events.
 

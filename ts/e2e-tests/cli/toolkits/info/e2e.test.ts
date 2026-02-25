@@ -64,35 +64,27 @@ e2e(import.meta.url, {
         expect(obj.slug).toBe('gmail');
       });
 
-      it('has meta with description, tools_count, and triggers_count', () => {
+      it('has meta with description and logo', () => {
         const obj = JSON.parse(sanitizeOutput(validResult.stdout));
         expect(obj.meta).toHaveProperty('description');
-        expect(typeof obj.meta.tools_count).toBe('number');
-        expect(typeof obj.meta.triggers_count).toBe('number');
+        expect(typeof obj.meta.description).toBe('string');
+        expect(obj.meta).toHaveProperty('logo');
       });
 
-      it('has auth_config_details array', () => {
+      it('has is_no_auth and enabled', () => {
         const obj = JSON.parse(sanitizeOutput(validResult.stdout));
-        expect(Array.isArray(obj.auth_config_details)).toBe(true);
-        expect(obj.auth_config_details.length).toBeGreaterThan(0);
+        expect(typeof obj.is_no_auth).toBe('boolean');
+        expect(typeof obj.enabled).toBe('boolean');
       });
 
-      it('each auth_config_detail has mode, name, and fields', () => {
-        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
-        for (const detail of obj.auth_config_details) {
-          expect(detail).toHaveProperty('mode');
-          expect(detail).toHaveProperty('name');
-          expect(detail).toHaveProperty('fields');
-          expect(detail.fields).toHaveProperty('auth_config_creation');
-          expect(detail.fields).toHaveProperty('connected_account_initiation');
-        }
-      });
-
-      it('has composio_managed_auth_schemes, no_auth, and is_local_toolkit', () => {
+      it('has composio_managed_auth_schemes array', () => {
         const obj = JSON.parse(sanitizeOutput(validResult.stdout));
         expect(Array.isArray(obj.composio_managed_auth_schemes)).toBe(true);
-        expect(typeof obj.no_auth).toBe('boolean');
-        expect(typeof obj.is_local_toolkit).toBe('boolean');
+      });
+
+      it('has connected_account (object or null)', () => {
+        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
+        expect(obj).toHaveProperty('connected_account');
       });
     });
 
@@ -110,7 +102,8 @@ e2e(import.meta.url, {
       });
 
       it('out.json contains valid JSON with slug "gmail"', () => {
-        const obj = JSON.parse(sanitizeOutput(redirectResult.files['out.json']));
+        const content = redirectResult.files['out.json'];
+        const obj = JSON.parse(sanitizeOutput(content));
         expect(obj.slug).toBe('gmail');
       });
     });

@@ -57,9 +57,10 @@ e2e(import.meta.url, {
         const item = JSON.parse(sanitizeOutput(exactResult.stdout))[0];
         expect(item).toHaveProperty('name');
         expect(item).toHaveProperty('slug');
-        expect(item).toHaveProperty('tools_count');
-        expect(item).toHaveProperty('triggers_count');
         expect(item).toHaveProperty('description');
+        expect(item).toHaveProperty('is_no_auth');
+        expect(item).toHaveProperty('enabled');
+        expect(item).toHaveProperty('composio_managed_auth_schemes');
       });
     });
 
@@ -93,8 +94,8 @@ e2e(import.meta.url, {
         expect(noFuzzyResult.stderr).toBe('');
       });
 
-      it('stdout is empty (no results)', () => {
-        expect(sanitizeOutput(noFuzzyResult.stdout)).toBe('');
+      it('stdout is an empty JSON array (no results)', () => {
+        expect(sanitizeOutput(noFuzzyResult.stdout)).toBe('[]');
       });
     });
   },

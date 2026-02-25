@@ -2,7 +2,6 @@ import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
-import { ComposioToolExecutionError } from '@composio/core';
 import { ActionExecuteConnectedAccountNotFoundError } from 'src/services/tools-executor';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
@@ -17,7 +16,10 @@ const parseLastJson = (lines: ReadonlyArray<string>) => {
     if (!line) continue;
     try {
       return JSON.parse(line) as {
-        data: { slug: string; params: Record<string, unknown> };
+        successful: boolean;
+        data: Record<string, unknown>;
+        error: string | null;
+        logId: string;
       };
     } catch {
       // keep searching for the last JSON line
@@ -43,18 +45,18 @@ describe('CLI: composio tools execute', () => {
       baseConfigProvider: testConfigProvider,
       stdin: { isTTY: true, data: '' },
     })
-  )('[Given] -d inline JSON [Then] executes with defaults', it => {
-    it.scoped('executes with defaults', () =>
+  )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
+    it.scoped('executes via Tool Router with defaults', () =>
       Effect.gen(function* () {
         yield* cli(['tools', 'execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
-        const params = output.data.params as Record<string, unknown>;
 
-        expect(output.data.slug).toBe('GMAIL_SEND_EMAIL');
-        expect(params.userId).toBe('default');
-        expect(params.arguments).toEqual({ recipient: 'a' });
-        expect(params.dangerouslySkipVersionCheck).toBe(true);
+        // Response flows through real ToolsExecutorLive → mock session.execute
+        expect(output.successful).toBe(true);
+        expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
+        expect(output.data.arguments).toEqual({ recipient: 'a' });
+        expect(output.logId).toBe('log_test');
       })
     );
   });
@@ -70,9 +72,10 @@ describe('CLI: composio tools execute', () => {
         yield* cli(['tools', 'execute', 'GITHUB_GET_REPOS']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
-        const params = output.data.params as Record<string, unknown>;
 
-        expect(params.arguments).toEqual({ owner: 'composio' });
+        expect(output.successful).toBe(true);
+        expect(output.data.tool_slug).toBe('GITHUB_GET_REPOS');
+        expect(output.data.arguments).toEqual({ owner: 'composio' });
       })
     );
   });
@@ -88,8 +91,8 @@ describe('CLI: composio tools execute', () => {
         }),
       },
     })
-  )('[Given] connected account not found slug [Then] prints tips', it => {
-    it.scoped('prints connected account tips', () =>
+  )('[Given] connected account not found slug (legacy) [Then] prints tips', it => {
+    it.scoped('prints connected account tips for legacy slug', () =>
       Effect.gen(function* () {
         yield* cli([
           'tools',
@@ -108,32 +111,75 @@ describe('CLI: composio tools execute', () => {
     );
   });
 
+  // --- Tool Router error path (flows through real ToolsExecutorLive) ---
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
       stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: async () => {
+          throw Object.assign(new Error("No active connection found for toolkit(s) 'gmail'"), {
+            error: {
+              message: "No active connection found for toolkit(s) 'gmail' in this session",
+              code: 4302,
+              slug: 'ToolRouterV2_NoActiveConnection',
+              status: 400,
+              request_id: 'test-request-id',
+            },
+          });
+        },
+      },
     })
-  )('[Given] --version override [Then] passes version and no auto-skip', it => {
-    it.scoped('passes version and no auto-skip', () =>
+  )('[Given] Tool Router NoActiveConnection error [Then] prints connection tips', it => {
+    it.scoped('prints connection tips with toolkit name derived from tool slug', () =>
       Effect.gen(function* () {
         yield* cli([
           'tools',
           'execute',
-          'GITHUB_GET_REPOS',
+          'GMAIL_CREATE_EMAIL_DRAFT',
           '-d',
-          '{"owner":"composio"}',
-          '--user-id',
-          'user_123',
-          '--toolkit-version',
-          '20250909_00',
+          '{"recipient":"to@example.com"}',
+        ]).pipe(Effect.catchAll(() => Effect.void));
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('No active connection');
+        expect(output).toContain('Tips');
+        expect(output).toContain('composio connected-accounts link gmail');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, custom: 'response' },
+          error: null,
+          log_id: 'log_custom',
+        }),
+      },
+    })
+  )('[Given] custom Tool Router execute mock [Then] returns custom response', it => {
+    it.scoped('flows through real ToolsExecutorLive with custom mock', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'tools',
+          'execute',
+          'GITHUB_STAR_REPO',
+          '-d',
+          '{"owner":"composio","repo":"composio"}',
         ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
-        const params = output.data.params as Record<string, unknown>;
 
-        expect(params.userId).toBe('user_123');
-        expect(params.version).toBe('20250909_00');
-        expect('dangerouslySkipVersionCheck' in params).toBe(false);
+        expect(output.successful).toBe(true);
+        expect(output.data.tool_slug).toBe('GITHUB_STAR_REPO');
+        expect(output.data.custom).toBe('response');
+        expect(output.logId).toBe('log_custom');
       })
     );
   });
@@ -144,12 +190,9 @@ describe('CLI: composio tools execute', () => {
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         failWith: {
-          error: new ComposioToolExecutionError(
-            'Error executing the tool GMAIL_CREATE_EMAIL_DRAFT',
-            {
-              possibleFixes: ['Ensure the tool slug is correct'],
-            }
-          ),
+          error: {
+            message: 'Error executing the tool GMAIL_CREATE_EMAIL_DRAFT',
+          },
         },
       },
     })
@@ -167,8 +210,6 @@ describe('CLI: composio tools execute', () => {
         const output = lines.join('\n');
 
         expect(output).toContain('Error executing the tool GMAIL_CREATE_EMAIL_DRAFT');
-        expect(output).toContain('Possible fixes');
-        expect(output).toContain('Ensure the tool slug is correct');
       })
     );
   });
@@ -248,6 +289,7 @@ describe('CLI: composio tools execute', () => {
           data: {},
           error: 'Tool execution failed',
           successful: false,
+          logId: '',
         },
       },
     })
@@ -268,7 +310,37 @@ describe('CLI: composio tools execute', () => {
         expect(output).not.toContain('Executing tool');
         expect(output).toContain('Execution failed');
         expect(output).toContain('Tool execution failed');
-        expect(output).not.toContain('logId');
+        // logId is empty, so the spinner line should not show "(logId: ...)"
+        expect(output).not.toContain('(logId:');
+      })
+    );
+  });
+
+  // --- Meta tool error tests ---
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        failWith: new ActionExecuteConnectedAccountNotFoundError({
+          slug: 'ToolRouterV2_NoActiveConnection',
+          message: 'No active connection found for toolkit(s) in this session',
+        }),
+      },
+    })
+  )('[Given] meta tool NoActiveConnection error [Then] does not suggest "link composio"', it => {
+    it.scoped('omits connection tips for meta tool slugs', () =>
+      Effect.gen(function* () {
+        yield* cli(['tools', 'execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']).pipe(
+          Effect.catchAll(() => Effect.void)
+        );
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('No active connection');
+        // Should NOT produce a misleading tip like "link composio"
+        expect(output).not.toContain('link composio');
       })
     );
   });
@@ -379,59 +451,6 @@ describe('CLI: composio tools execute', () => {
         expect(result instanceof Error ? result.message : String(result)).toContain(
           'Invalid JSON input'
         );
-      })
-    );
-  });
-
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      stdin: { isTTY: true, data: '' },
-    })
-  )('[Given] --toolkit-version latest [Then] sets dangerouslySkipVersionCheck', it => {
-    it.scoped('skips version check for "latest"', () =>
-      Effect.gen(function* () {
-        yield* cli([
-          'tools',
-          'execute',
-          'GITHUB_GET_REPOS',
-          '-d',
-          '{"owner":"composio"}',
-          '--toolkit-version',
-          'latest',
-        ]);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = parseLastJson(lines);
-        const params = output.data.params as Record<string, unknown>;
-
-        expect(params.version).toBe('latest');
-        expect(params.dangerouslySkipVersionCheck).toBe(true);
-      })
-    );
-  });
-
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      stdin: { isTTY: true, data: '' },
-    })
-  )('[Given] --connected-account-id [Then] passes it through', it => {
-    it.scoped('forwards connected account id', () =>
-      Effect.gen(function* () {
-        yield* cli([
-          'tools',
-          'execute',
-          'GMAIL_SEND_EMAIL',
-          '-d',
-          '{"recipient":"a"}',
-          '--connected-account-id',
-          'con_abc123',
-        ]);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = parseLastJson(lines);
-        const params = output.data.params as Record<string, unknown>;
-
-        expect(params.connectedAccountId).toBe('con_abc123');
       })
     );
   });

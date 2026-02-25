@@ -1,8 +1,8 @@
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
+import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { formatToolkitsTable, formatToolkitsJson } from '../format';
 
@@ -16,51 +16,75 @@ const limit = Options.integer('limit').pipe(
   Options.withDescription('Number of results per page (1-1000)')
 );
 
+const connected = Options.boolean('connected').pipe(
+  Options.withDescription('Filter to connected toolkits only'),
+  Options.optional
+);
+
+const userId = Options.text('user-id').pipe(
+  Options.withDefault('default'),
+  Options.withDescription('User ID for connection status (default: "default")')
+);
+
 /**
- * List available toolkits with optional filters.
+ * List available toolkits with connection status.
  *
  * @example
  * ```bash
  * composio toolkits list
  * composio toolkits list --query "email"
- * composio toolkits list --category "messaging" --limit 10
+ * composio toolkits list --connected
+ * composio toolkits list --user-id "alice"
  * ```
  */
-export const toolkitsCmd$List = Command.make('list', { query, limit }, ({ query, limit }) =>
-  Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
+export const toolkitsCmd$List = Command.make(
+  'list',
+  { query, limit, connected, userId },
+  ({ query, limit, connected, userId }) =>
+    Effect.gen(function* () {
+      if (!(yield* requireAuth)) return;
 
-    const ui = yield* TerminalUI;
-    const repo = yield* ComposioToolkitsRepository;
+      const ui = yield* TerminalUI;
 
-    const clampedLimit = clampLimit(limit);
+      const clampedLimit = clampLimit(limit);
 
-    const result = yield* ui.withSpinner(
-      'Fetching toolkits...',
-      repo.searchToolkits({
-        search: Option.getOrUndefined(query),
-        limit: clampedLimit,
-      })
-    );
+      const result = yield* ui.withSpinner(
+        'Fetching toolkits...',
+        Effect.gen(function* () {
+          const { client, sessionId } = yield* resolveToolRouterSession(userId);
+          return yield* Effect.tryPromise(() =>
+            client.toolRouter.session.toolkits(sessionId, {
+              search: Option.getOrUndefined(query),
+              limit: clampedLimit,
+              is_connected: Option.getOrUndefined(connected),
+            })
+          );
+        })
+      );
 
-    if (result.items.length === 0) {
-      yield* ui.log.warn('No toolkits found. Try broadening your search.');
-      return;
-    }
+      const { items } = result;
 
-    const showing = result.items.length;
-    const total = result.total_items;
+      if (items.length === 0) {
+        yield* ui.log.warn('No toolkits found. Try broadening your search.');
+        yield* ui.output('[]');
+        return;
+      }
 
-    yield* ui.log.info(
-      `Listing ${showing} of ${total} toolkits\n\n${formatToolkitsTable(result.items)}`
-    );
+      const showing = items.length;
+      const total = result.total_items;
 
-    // Next step hint
-    const firstSlug = result.items[0]?.slug;
-    if (firstSlug) {
-      yield* ui.log.step(`To view details of a toolkit:\n> composio toolkits info "${firstSlug}"`);
-    }
+      yield* ui.log.info(
+        `Listing ${showing} of ${total} toolkits\n\n${formatToolkitsTable(items)}`
+      );
 
-    yield* ui.output(formatToolkitsJson(result.items));
-  })
-).pipe(Command.withDescription('List available toolkits.'));
+      // Next step hint
+      const firstSlug = items[0]?.slug;
+      if (firstSlug) {
+        yield* ui.log.step(
+          `To view details of a toolkit:\n> composio toolkits info "${firstSlug}"`
+        );
+      }
+
+      yield* ui.output(formatToolkitsJson(items));
+    })
+).pipe(Command.withDescription('List available toolkits with connection status.'));

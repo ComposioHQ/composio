@@ -43,8 +43,20 @@ import { ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
-import type { ToolExecuteResponse } from '@composio/core';
-import { ToolsExecutor } from 'src/services/tools-executor';
+import { ToolsExecutor, ToolsExecutorLive } from 'src/services/tools-executor';
+import type { ToolExecuteResponse } from 'src/services/tools-executor';
+import type {
+  SessionCreateResponse,
+  SessionExecuteResponse,
+  SessionExecuteMetaResponse,
+  SessionLinkResponse,
+  SessionToolkitsResponse,
+  SessionCreateParams,
+  SessionExecuteParams,
+  SessionExecuteMetaParams,
+  SessionLinkParams,
+  SessionToolkitsParams,
+} from '@composio/client/resources/tool-router';
 import { Stdin } from 'src/services/stdin';
 
 export interface TestLiveInput {
@@ -112,12 +124,45 @@ export interface TestLiveInput {
   /**
    * Override tools executor behavior for tests.
    *
-   * - `failWith`: The executor rejects with this value (hard failure, e.g. API throw).
-   * - `respondWith`: The executor resolves with this response (for soft failures like `{ successful: false }`).
+   * When set, the `ToolsExecutor` service is replaced with a canned mock
+   * that bypasses the real `ToolsExecutorLive` and the Tool Router entirely.
+   * Use this only for tests that need to control the executor response directly
+   * (e.g. soft failure tests).
+   *
+   * When NOT set, the real `ToolsExecutorLive` is used, which flows through
+   * the mock `ComposioClientSingleton` → Tool Router session mocks.
    */
   toolsExecutor?: {
     failWith?: unknown;
     respondWith?: ToolExecuteResponse;
+  };
+
+  /**
+   * Override Tool Router session behavior for tests.
+   *
+   * Controls the mock `ComposioClientSingleton`'s `toolRouter.session.*` methods.
+   * Each method can be overridden individually; defaults are provided for all.
+   *
+   * When `toolsExecutor` is also set, its mock takes precedence for `tools execute`
+   * (the Tool Router mock is still used by `toolkits list`, `toolkits info`, etc.).
+   */
+  toolRouter?: {
+    /** Override `session.create`. Receives the create params. */
+    create?: (params: SessionCreateParams) => Promise<SessionCreateResponse>;
+    /** Override `session.execute`. Receives sessionId and params. */
+    execute?: (sessionId: string, params: SessionExecuteParams) => Promise<SessionExecuteResponse>;
+    /** Override `session.executeMeta`. Receives sessionId and params. */
+    executeMeta?: (
+      sessionId: string,
+      params: SessionExecuteMetaParams
+    ) => Promise<SessionExecuteMetaResponse>;
+    /** Override `session.link`. Receives sessionId and params. */
+    link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
+    /** Override `session.toolkits`. Receives sessionId and optional params. */
+    toolkits?: (
+      sessionId: string,
+      params?: SessionToolkitsParams | null
+    ) => Promise<SessionToolkitsResponse>;
   };
 }
 
@@ -697,25 +742,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
     );
 
-    const ToolsExecutorTest = Layer.succeed(
-      ToolsExecutor,
-      ToolsExecutor.of({
-        execute: (slug, params) => {
-          if (input?.toolsExecutor?.failWith) {
-            return Effect.fail(input.toolsExecutor.failWith);
-          }
-          if (input?.toolsExecutor?.respondWith) {
-            return Effect.succeed(input.toolsExecutor.respondWith);
-          }
-          return Effect.succeed({
-            data: { slug, params },
-            error: null,
-            successful: true,
-          });
-        },
-      })
-    );
-
     const StdinTest = Layer.succeed(
       Stdin,
       Stdin.of({
@@ -723,6 +749,131 @@ export const TestLayer = (input?: TestLiveInput) =>
         readAll: () => Effect.succeed(input?.stdin?.data ?? ''),
       })
     );
+
+    // --- Tool Router mock (ComposioClientSingleton) ---
+    // Provides a fake `@composio/client` Composio instance with configurable
+    // `toolRouter.session.*` methods. Each method has a sensible default that
+    // can be overridden per-test via `input.toolRouter.<method>`.
+
+    const toolRouterOverrides = input?.toolRouter;
+
+    const defaultToolkitsHandler = async (
+      _sessionId: string,
+      params?: SessionToolkitsParams | null
+    ): Promise<SessionToolkitsResponse> => {
+      let results: SessionToolkitsResponse['items'] = toolkitsData.toolkits.map(t => ({
+        slug: t.slug,
+        name: t.name,
+        meta: { description: t.meta.description, logo: '' },
+        is_no_auth: t.no_auth ?? false,
+        enabled: true,
+        connected_account: null,
+        composio_managed_auth_schemes: [...(t.composio_managed_auth_schemes ?? [])],
+      }));
+
+      if (params?.search) {
+        const q = params.search.toLowerCase();
+        results = results.filter(
+          t =>
+            t.name.toLowerCase().includes(q) ||
+            t.slug.toLowerCase().includes(q) ||
+            t.meta.description.toLowerCase().includes(q)
+        );
+      }
+
+      if (params?.toolkits) {
+        const slugSet = new Set(params.toolkits.map(s => s.toLowerCase()));
+        results = results.filter(t => slugSet.has(t.slug.toLowerCase()));
+      }
+
+      const limit = params?.limit ?? 1000;
+      const items = results.slice(0, limit);
+      return {
+        items,
+        current_page: 1,
+        total_items: results.length,
+        total_pages: Math.ceil(results.length / limit),
+        next_cursor: null,
+      };
+    };
+
+    const mockComposioClient = {
+      toolRouter: {
+        session: {
+          create:
+            toolRouterOverrides?.create ??
+            (async (params: SessionCreateParams) => ({
+              session_id: 'trs_test_session',
+              config: { user_id: params.user_id },
+              mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+              tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+            })),
+          execute:
+            toolRouterOverrides?.execute ??
+            (async (_sessionId: string, params: SessionExecuteParams) => ({
+              data: { tool_slug: params.tool_slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_test',
+            })),
+          executeMeta:
+            toolRouterOverrides?.executeMeta ??
+            (async (_sessionId: string, params: SessionExecuteMetaParams) => ({
+              data: { slug: params.slug, arguments: params.arguments },
+              error: null,
+              log_id: 'log_test',
+            })),
+          link:
+            toolRouterOverrides?.link ??
+            (async () => ({
+              connected_account_id: 'con_test_link',
+              link_token: 'lt_test_token',
+              redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+            })),
+          toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
+          tools: async () => ({
+            items: [],
+          }),
+        },
+      },
+    };
+
+    const ComposioClientSingletonTest = Layer.succeed(
+      ComposioClientSingleton,
+      new ComposioClientSingleton({
+        get: Effect.fn(function* () {
+          // Partial mock: only implements `toolRouter.session.*` methods used by
+          // CLI commands under test. The full Composio client interface is too
+          // large to mock completely for unit tests.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return mockComposioClient as any;
+        }),
+      })
+    );
+
+    // --- ToolsExecutor ---
+    // When `input.toolsExecutor` is set, use a canned mock (bypasses Tool Router).
+    // Otherwise, use the real ToolsExecutorLive which flows through the mock ComposioClientSingleton.
+    const ToolsExecutorTest = input?.toolsExecutor
+      ? Layer.succeed(
+          ToolsExecutor,
+          ToolsExecutor.of({
+            execute: (slug, params) => {
+              if (input.toolsExecutor!.failWith) {
+                return Effect.fail(input.toolsExecutor!.failWith);
+              }
+              if (input.toolsExecutor!.respondWith) {
+                return Effect.succeed(input.toolsExecutor!.respondWith);
+              }
+              return Effect.succeed({
+                data: { slug, params },
+                error: null,
+                successful: true,
+                logId: 'log_test',
+              });
+            },
+          })
+        )
+      : Layer.provide(ToolsExecutorLive, ComposioClientSingletonTest);
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
@@ -737,6 +888,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioClientSingletonTest,
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
+      ComposioClientSingletonTest,
       ComposioToolkitsRepositoryTest,
       EnvLangDetector.Default,
       JsPackageManagerDetector.Default,

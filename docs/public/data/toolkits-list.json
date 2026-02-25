@@ -68,7 +68,7 @@
     "name": "Outlook",
     "logo": "https://logos.composio.dev/api/outlook",
     "category": "email",
-    "toolCount": 64,
+    "toolCount": 393,
     "triggerCount": 5
   },
   {
@@ -300,7 +300,7 @@
     "name": "Microsoft Teams",
     "logo": "https://logos.composio.dev/api/microsoft_teams",
     "category": "team chat",
-    "toolCount": 34,
+    "toolCount": 180,
     "triggerCount": 0
   },
   {
@@ -724,7 +724,7 @@
     "name": "Zendesk",
     "logo": "https://logos.composio.dev/api/zendesk",
     "category": "crm",
-    "toolCount": 18,
+    "toolCount": 19,
     "triggerCount": 2
   },
   {
@@ -748,7 +748,7 @@
     "name": "Meta Ads",
     "logo": "https://logos.composio.dev/api/metaads",
     "category": "ads & conversion",
-    "toolCount": 52,
+    "toolCount": 54,
     "triggerCount": 0
   },
   {
@@ -932,7 +932,7 @@
     "name": "SharePoint",
     "logo": "https://logos.composio.dev/api/share_point",
     "category": "documents",
-    "toolCount": 59,
+    "toolCount": 91,
     "triggerCount": 0
   },
   {
