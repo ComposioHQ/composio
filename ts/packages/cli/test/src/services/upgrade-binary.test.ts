@@ -5,6 +5,7 @@ import { BunFileSystem } from '@effect/platform-bun';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
+import { NodeOs } from 'src/services/node-os';
 
 const TerminalUINoop = Layer.succeed(
   TerminalUI,
@@ -32,6 +33,15 @@ const TerminalUINoop = Layer.succeed(
   })
 );
 
+const NodeOsTest = Layer.succeed(
+  NodeOs,
+  new NodeOs({
+    homedir: '/tmp',
+    platform: 'darwin',
+    arch: 'arm64',
+  })
+);
+
 const runUpgrade = (configEntries: ReadonlyArray<[string, string]>) =>
   Effect.gen(function* () {
     const service = yield* UpgradeBinary;
@@ -41,7 +51,9 @@ const runUpgrade = (configEntries: ReadonlyArray<[string, string]>) =>
     Effect.provide(FetchHttpClient.layer),
     Effect.provide(BunFileSystem.layer),
     Effect.provide(TerminalUINoop),
+    Effect.provide(NodeOsTest),
     Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
+    Effect.scoped,
     Effect.runPromise
   );
 
@@ -52,11 +64,9 @@ const withHttpServer = async (
   const server = createServer(handler);
 
   await new Promise<void>((resolve, reject) => {
-    server.listen(0, '127.0.0.1', error => {
-      if (error) {
-        reject(error);
-        return;
-      }
+    server.once('error', reject);
+    server.listen({ port: 0, host: '127.0.0.1' }, () => {
+      server.off('error', reject);
       resolve();
     });
   });
@@ -101,6 +111,9 @@ describe('UpgradeBinary', () => {
           ]);
 
           expect(error).toBeInstanceOf(UpgradeBinaryError);
+          if (!(error instanceof UpgradeBinaryError)) {
+            throw error;
+          }
           expect(error.message).toBe('Failed to fetch releases from GitHub');
           expect(String(error.cause)).toContain('HTTP 500');
         }
@@ -129,6 +142,9 @@ describe('UpgradeBinary', () => {
           ]);
 
           expect(error).toBeInstanceOf(UpgradeBinaryError);
+          if (!(error instanceof UpgradeBinaryError)) {
+            throw error;
+          }
           expect(error.message).toBe('Failed to parse GitHub release JSON response');
         }
       );
