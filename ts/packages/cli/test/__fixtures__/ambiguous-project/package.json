@@ -1,0 +1,7 @@
+{
+  "name": "test-ambiguous",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

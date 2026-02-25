@@ -59,6 +59,10 @@ import type {
 } from '@composio/client/resources/tool-router';
 import { Stdin } from 'src/services/stdin';
 import { ProjectContext } from 'src/services/project-context';
+import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
+import { CommandRunner } from 'src/services/command-runner';
+import { TerminalUI } from 'src/services/terminal-ui';
+import { CommandExecutor } from '@effect/platform';
 import { Option } from 'effect';
 
 export interface TestLiveInput {
@@ -166,6 +170,19 @@ export interface TestLiveInput {
       params?: SessionToolkitsParams | null
     ) => Promise<SessionToolkitsResponse>;
   };
+
+  /**
+   * Override CommandRunner behavior for tests.
+   * When set, the `CommandRunner` service uses the provided mock instance.
+   * When NOT set, uses a default mock that always returns exit code 0.
+   */
+  commandRunner?: CommandRunner;
+
+  /**
+   * Override TerminalUI behavior for tests.
+   * When set, replaces the default TerminalUITest (which auto-selects first option).
+   */
+  terminalUI?: TerminalUI;
 }
 
 /**
@@ -855,6 +872,21 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
+    // CommandRunner mock — default returns exit code 0
+    const CommandRunnerTest = input?.commandRunner
+      ? Layer.succeed(CommandRunner, input.commandRunner)
+      : Layer.succeed(
+          CommandRunner,
+          new CommandRunner({
+            run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+          })
+        );
+
+    // TerminalUI — use provided override or default TerminalUITest
+    const TerminalUILayer = input?.terminalUI
+      ? Layer.succeed(TerminalUI, input.terminalUI)
+      : TerminalUITest;
+
     const _console = yield* MockConsole.make;
 
     const layers = Layer.mergeAll(
@@ -869,13 +901,15 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepositoryTest,
       EnvLangDetector.Default,
       JsPackageManagerDetector.Default,
+      ProjectEnvironmentDetector.Default,
+      CommandRunnerTest,
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunContext.layer,
       MockTerminal.layer,
       BunPath.layer,
       StdinTest,
-      TerminalUITest,
+      TerminalUILayer,
       Layer.succeed(
         ProjectContext,
         new ProjectContext({

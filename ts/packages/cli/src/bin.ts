@@ -25,6 +25,8 @@ import { TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
 import { ProjectContext } from 'src/services/project-context';
+import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
+import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 
 /**
@@ -102,6 +104,8 @@ const layers = Layer.mergeAll(
   ToolsExecutorLive,
   EnvLangDetector.Default,
   JsPackageManagerDetector.Default,
+  ProjectEnvironmentDetector.Default,
+  CommandRunner.Default,
   TriggersRealtimeLive,
   ProjectContextLive,
   BunContext.layer,
