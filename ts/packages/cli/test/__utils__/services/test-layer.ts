@@ -30,7 +30,6 @@ import {
   type InvalidVersionDetail,
 } from 'src/services/composio-clients';
 import type { ToolkitVersionOverrides } from 'src/effects/toolkit-version-overrides';
-import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import type { Tools } from 'src/models/tools';
 import type { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
@@ -58,6 +57,12 @@ import type {
   SessionToolkitsParams,
 } from '@composio/client/resources/tool-router';
 import { Stdin } from 'src/services/stdin';
+import { ProjectContext } from 'src/services/project-context';
+import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
+import { CommandRunner } from 'src/services/command-runner';
+import { TerminalUI } from 'src/services/terminal-ui';
+import { CommandExecutor } from '@effect/platform';
+import { Option } from 'effect';
 
 export interface TestLiveInput {
   /**
@@ -164,6 +169,19 @@ export interface TestLiveInput {
       params?: SessionToolkitsParams | null
     ) => Promise<SessionToolkitsResponse>;
   };
+
+  /**
+   * Override CommandRunner behavior for tests.
+   * When set, the `CommandRunner` service uses the provided mock instance.
+   * When NOT set, uses a default mock that always returns exit code 0.
+   */
+  commandRunner?: CommandRunner;
+
+  /**
+   * Override TerminalUI behavior for tests.
+   * When set, replaces the default TerminalUITest (which auto-selects first option).
+   */
+  terminalUI?: TerminalUI;
 }
 
 /**
@@ -857,6 +875,21 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const CliConfigLive = CliConfig.layer(ComposioCliConfig);
 
+    // CommandRunner mock — default returns exit code 0
+    const CommandRunnerTest = input?.commandRunner
+      ? Layer.succeed(CommandRunner, input.commandRunner)
+      : Layer.succeed(
+          CommandRunner,
+          new CommandRunner({
+            run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+          })
+        );
+
+    // TerminalUI — use provided override or default TerminalUITest
+    const TerminalUILayer = input?.terminalUI
+      ? Layer.succeed(TerminalUI, input.terminalUI)
+      : TerminalUITest;
+
     const _console = yield* MockConsole.make;
 
     const layers = Layer.mergeAll(
@@ -869,15 +902,22 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
       ComposioToolkitsRepositoryTest,
-      EnvLangDetector.Default,
       JsPackageManagerDetector.Default,
+      ProjectEnvironmentDetector.Default,
+      CommandRunnerTest,
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunContext.layer,
       MockTerminal.layer,
       BunPath.layer,
       StdinTest,
-      TerminalUITest
+      TerminalUILayer,
+      Layer.succeed(
+        ProjectContext,
+        new ProjectContext({
+          resolve: Effect.succeed(Option.none()),
+        })
+      )
     ) satisfies RequiredLayer;
 
     return layers;
@@ -918,10 +958,22 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     // Retry the task with a delay between retries and a maximum of 3 retries
     const policy = Schedule.addDelay(Schedule.recurs(3), () => '100 millis');
 
-    // If all retries fail, run the fallback effect
+    // If all retries fail, run the fallback effect.
+    // Use tar to skip heavy directories (.venv) that the global setup may have created.
+    // tar --exclude is POSIX and available on any Linux/macOS without extra packages.
     const task = Effect.gen(function* () {
       yield* fs.makeDirectory(tmpFixturesPath, { recursive: true });
-      yield* fs.copy(realFixturePath, tmpFixturesPath);
+      const tarCmd = Command.make(
+        'tar',
+        '-cf',
+        '-',
+        '--exclude',
+        '.venv',
+        '-C',
+        realFixturePath,
+        '.'
+      ).pipe(Command.pipeTo(Command.make('tar', '-xf', '-', '-C', tmpFixturesPath)));
+      yield* tarCmd.pipe(Command.exitCode, Effect.provide(BunContext.layer));
     });
 
     const repeated = Effect.retryOrElse(policy, () =>

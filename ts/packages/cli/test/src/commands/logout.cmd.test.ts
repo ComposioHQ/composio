@@ -17,6 +17,8 @@ describe('CLI: composio logout', () => {
             apiKey: Option.none(),
             baseURL: 'https://backend.composio.dev',
             webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
           });
 
           expect(ctx.data).toMatchObject(expectedUserData);
@@ -51,6 +53,8 @@ describe('CLI: composio logout', () => {
               apiKey: Option.some('api_key_already_logged_in'),
               baseURL: 'https://backend.composio.dev',
               webURL: 'https://platform.composio.dev',
+              orgId: Option.none(),
+              projectId: Option.none(),
             })
           );
 

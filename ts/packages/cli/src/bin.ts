@@ -17,13 +17,15 @@ import {
 import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-cached';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { ProjectContext } from 'src/services/project-context';
+import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
+import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 
 /**
@@ -84,6 +86,11 @@ export const ToolsExecutorLive = Layer.provide(
   ComposioClientSingletonLive
 ) satisfies RequiredLayer;
 
+export const ProjectContextLive = Layer.provide(
+  ProjectContext.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
   NodeOs.Default,
@@ -94,9 +101,11 @@ const layers = Layer.mergeAll(
   ComposioClientSingletonLive, // Expose ComposioClientSingleton for commands that use Tool Router directly
   ComposioToolkitsRepositoryCachedLive, // Use the cached layer instead of the regular one
   ToolsExecutorLive,
-  EnvLangDetector.Default,
   JsPackageManagerDetector.Default,
+  ProjectEnvironmentDetector.Default,
+  CommandRunner.Default,
   TriggersRealtimeLive,
+  ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
   StdinLive,
