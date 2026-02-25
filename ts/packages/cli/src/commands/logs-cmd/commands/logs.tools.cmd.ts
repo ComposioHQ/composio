@@ -6,7 +6,36 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
-import { parseSearchParams, toSearchParam } from '../utils';
+import { toSearchParam } from '../utils';
+
+type ToolLogFilterInput = {
+  tool?: string;
+  toolkit?: string;
+  connectedAccountId?: string;
+  authConfigId?: string;
+  status?: string;
+  userId?: string;
+  logId?: string;
+  toolRouterSessionId?: string;
+  sessionId?: string;
+};
+
+const toSearchParams = (value: string | undefined, field: string) =>
+  value === undefined ? [] : parseCsv(value).map(item => toSearchParam(field, item));
+
+export const buildToolLogShorthandSearchParams = (
+  filters: ToolLogFilterInput
+): Array<ReturnType<typeof toSearchParam>> => [
+  ...toSearchParams(filters.tool, 'action_key'),
+  ...toSearchParams(filters.toolkit, 'toolkit_key'),
+  ...toSearchParams(filters.connectedAccountId, 'connected_account_id'),
+  ...toSearchParams(filters.authConfigId, 'auth_config_id'),
+  ...toSearchParams(filters.status, 'execution_status'),
+  ...toSearchParams(filters.userId, 'user_id'),
+  ...toSearchParams(filters.logId, 'log_id'),
+  ...toSearchParams(filters.toolRouterSessionId, 'tool_router_session_id'),
+  ...toSearchParams(filters.sessionId, 'session_id'),
+];
 
 const cursor = Options.integer('cursor').pipe(
   Options.optional,
@@ -33,29 +62,49 @@ const caseSensitive = Options.boolean('case-sensitive').pipe(
   Options.withDescription('Whether search params are case-sensitive')
 );
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,slack")'),
+const toolkit = Options.text('toolkit').pipe(
+  Options.withDescription('Filter by toolkit key(s), comma-separated (e.g. "gmail,slack")'),
   Options.optional
 );
 
-const connectedAccounts = Options.text('connected-accounts').pipe(
-  Options.withDescription('Filter by connected account ids, comma-separated'),
+const tool = Options.text('tool').pipe(
+  Options.withDescription('Filter by tool key(s), comma-separated (e.g. "GMAIL_SEND_EMAIL")'),
   Options.optional
 );
 
-const tools = Options.text('tools').pipe(
-  Options.withDescription('Filter by tool slugs, comma-separated (e.g. "GMAIL_SEND_EMAIL")'),
+const connectedAccountId = Options.text('connected-account-id').pipe(
+  Options.withDescription('Filter by connected account id(s), comma-separated'),
+  Options.optional
+);
+
+const authConfigId = Options.text('auth-config-id').pipe(
+  Options.withDescription('Filter by auth config id(s), comma-separated'),
+  Options.optional
+);
+
+const status = Options.text('status').pipe(
+  Options.withDescription('Filter by execution status value(s), comma-separated'),
   Options.optional
 );
 
 const userId = Options.text('user-id').pipe(
-  Options.withDescription('Filter by user id'),
+  Options.withDescription('Filter by user id(s), comma-separated'),
   Options.optional
 );
 
-const query = Options.text('query').pipe(
-  Options.repeated,
-  Options.withDescription('Advanced filter in "field:operation:value" format (repeatable)')
+const logIdFilter = Options.text('log-id').pipe(
+  Options.withDescription('Filter by log id(s), comma-separated'),
+  Options.optional
+);
+
+const toolRouterSessionId = Options.text('tool-router-session-id').pipe(
+  Options.withDescription('Filter by tool router session id(s), comma-separated'),
+  Options.optional
+);
+
+const sessionId = Options.text('session-id').pipe(
+  Options.withDescription('Filter by session id(s), comma-separated'),
+  Options.optional
 );
 
 const logId = Args.text({ name: 'log_id' }).pipe(
@@ -70,10 +119,10 @@ const logId = Args.text({ name: 'log_id' }).pipe(
  * ```bash
  * composio logs tools --limit 50
  * composio logs tools <log_id>
- * composio logs tools --toolkits gmail --tools GMAIL_SEND_EMAIL
- * composio logs tools --connected-accounts con_123 --user-id user_123
+ * composio logs tools --toolkit gmail --tool GMAIL_SEND_EMAIL
+ * composio logs tools --connected-account-id con_123 --user-id user_123
+ * composio logs tools --status success --auth-config-id ac_123
  * composio logs tools --from 1735689600000 --to 1735776000000
- * composio logs tools --query "actionKey:eq:GMAIL_SEND_EMAIL"
  * ```
  */
 export const logsCmd$Tools = Command.make(
@@ -85,11 +134,15 @@ export const logsCmd$Tools = Command.make(
     to,
     limit,
     caseSensitive,
-    toolkits,
-    connectedAccounts,
-    tools,
+    toolkit,
+    tool,
+    connectedAccountId,
+    authConfigId,
+    status,
     userId,
-    query,
+    logIdFilter,
+    toolRouterSessionId,
+    sessionId,
   },
   ({
     logId,
@@ -98,11 +151,15 @@ export const logsCmd$Tools = Command.make(
     to,
     limit,
     caseSensitive,
-    toolkits,
-    connectedAccounts,
-    tools,
+    toolkit,
+    tool,
+    connectedAccountId,
+    authConfigId,
+    status,
     userId,
-    query,
+    logIdFilter,
+    toolRouterSessionId,
+    sessionId,
   }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
@@ -111,22 +168,17 @@ export const logsCmd$Tools = Command.make(
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
       const clampedLimit = clampLimit(limit);
-      const parsedSearchParams = parseSearchParams(query);
-      const shorthandSearchParams = [
-        ...(Option.isSome(toolkits)
-          ? parseCsv(toolkits.value).map(value => toSearchParam('appKey', value))
-          : []),
-        ...(Option.isSome(connectedAccounts)
-          ? parseCsv(connectedAccounts.value).map(value =>
-              toSearchParam('connectedAccountId', value)
-            )
-          : []),
-        ...(Option.isSome(tools)
-          ? parseCsv(tools.value).map(value => toSearchParam('actionKey', value))
-          : []),
-        ...(Option.isSome(userId) ? [toSearchParam('entityId', userId.value)] : []),
-      ];
-      const combinedSearchParams = [...shorthandSearchParams, ...parsedSearchParams];
+      const shorthandSearchParams = buildToolLogShorthandSearchParams({
+        tool: Option.getOrUndefined(tool),
+        toolkit: Option.getOrUndefined(toolkit),
+        connectedAccountId: Option.getOrUndefined(connectedAccountId),
+        authConfigId: Option.getOrUndefined(authConfigId),
+        status: Option.getOrUndefined(status),
+        userId: Option.getOrUndefined(userId),
+        logId: Option.getOrUndefined(logIdFilter),
+        toolRouterSessionId: Option.getOrUndefined(toolRouterSessionId),
+        sessionId: Option.getOrUndefined(sessionId),
+      });
       const toolLogId = Option.getOrUndefined(logId);
 
       if (toolLogId) {
@@ -151,7 +203,7 @@ export const logsCmd$Tools = Command.make(
             to: Option.getOrUndefined(to),
             limit: clampedLimit,
             case_sensitive: caseSensitive,
-            search_params: combinedSearchParams.length > 0 ? combinedSearchParams : undefined,
+            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
           })
         )
       );

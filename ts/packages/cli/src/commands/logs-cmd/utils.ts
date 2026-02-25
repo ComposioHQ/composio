@@ -24,6 +24,6 @@ export const parseSearchParams = (values: ReadonlyArray<string>): Array<SearchPa
 
 export const toSearchParam = (field: string, value: string): SearchParam => ({
   field,
-  operation: 'eq',
+  operation: '==',
   value,
 });

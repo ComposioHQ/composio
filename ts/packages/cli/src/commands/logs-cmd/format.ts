@@ -1,5 +1,5 @@
 import type { Logs } from '@composio/client/resources/logs/logs';
-import { bold, gray } from 'src/ui/colors';
+import { bold, gray, green, red } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
 type TriggerLog = Logs.TriggerListResponse.Data;
@@ -8,16 +8,17 @@ type ToolLogDetailed = Logs.ToolRetrieveResponse;
 
 const TRIGGER_LOG_TABLE = {
   createdAt: 24,
-  status: 8,
+  id: 18,
+  triggerId: 18,
   app: 12,
   triggerName: 28,
-  userId: 16,
+  triggerUserId: 16,
   connectedAccountId: 20,
 } as const;
 
 const TOOL_LOG_TABLE = {
-  id: 18,
   createdAt: 24,
+  id: 18,
   status: 8,
   app: 12,
   actionKey: 28,
@@ -28,11 +29,12 @@ const TOOL_LOG_TABLE = {
 export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLog>): string => {
   const header = [
     bold('Created At'.padEnd(TRIGGER_LOG_TABLE.createdAt)),
-    bold('Status'.padEnd(TRIGGER_LOG_TABLE.status)),
-    bold('App'.padEnd(TRIGGER_LOG_TABLE.app)),
+    bold('Log Id'.padEnd(TRIGGER_LOG_TABLE.id)),
+    bold('Trigger Id'.padEnd(TRIGGER_LOG_TABLE.triggerId)),
+    bold('Toolkit'.padEnd(TRIGGER_LOG_TABLE.app)),
     bold('Trigger'.padEnd(TRIGGER_LOG_TABLE.triggerName)),
-    bold('User Id'.padEnd(TRIGGER_LOG_TABLE.userId)),
-    bold('Connected Account'),
+    bold('User Id'.padEnd(TRIGGER_LOG_TABLE.triggerUserId)),
+    bold('Connected Account Id'),
   ].join(' ');
 
   const rows = logs.map(log => {
@@ -41,23 +43,25 @@ export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLog>): string 
         TRIGGER_LOG_TABLE.createdAt
       )
     );
-    const status = truncate(log.status ?? '-', TRIGGER_LOG_TABLE.status).padEnd(
-      TRIGGER_LOG_TABLE.status
+    const id = (log.id ?? '-').padEnd(TRIGGER_LOG_TABLE.id);
+    const triggerId = truncate(getTriggerId(log), TRIGGER_LOG_TABLE.triggerId).padEnd(
+      TRIGGER_LOG_TABLE.triggerId
     );
     const app = truncate(log.appName ?? '-', TRIGGER_LOG_TABLE.app).padEnd(TRIGGER_LOG_TABLE.app);
-    const triggerName = truncate(
-      log.meta?.triggerName ?? '-',
+    const triggerName = truncate(getTriggerName(log), TRIGGER_LOG_TABLE.triggerName).padEnd(
       TRIGGER_LOG_TABLE.triggerName
-    ).padEnd(TRIGGER_LOG_TABLE.triggerName);
-    const userId = truncate(log.entityId ?? '-', TRIGGER_LOG_TABLE.userId).padEnd(
-      TRIGGER_LOG_TABLE.userId
+    );
+    const triggerUserId = truncate(log.entityId ?? '-', TRIGGER_LOG_TABLE.triggerUserId).padEnd(
+      TRIGGER_LOG_TABLE.triggerUserId
     );
     const connectedAccountId = truncate(
       log.connectionId ?? '-',
       TRIGGER_LOG_TABLE.connectedAccountId
     );
 
-    return [createdAt, status, app, triggerName, userId, connectedAccountId].join(' ');
+    return [createdAt, id, triggerId, app, triggerName, triggerUserId, connectedAccountId].join(
+      ' '
+    );
   });
 
   return [header, ...rows].join('\n');
@@ -65,38 +69,93 @@ export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLog>): string 
 
 export const formatToolLogsTable = (logs: ReadonlyArray<ToolLog>): string => {
   const header = [
-    bold('Log Id'.padEnd(TOOL_LOG_TABLE.id)),
     bold('Created At'.padEnd(TOOL_LOG_TABLE.createdAt)),
+    bold('Log Id'.padEnd(TOOL_LOG_TABLE.id)),
     bold('Status'.padEnd(TOOL_LOG_TABLE.status)),
-    bold('App'.padEnd(TOOL_LOG_TABLE.app)),
-    bold('Action'.padEnd(TOOL_LOG_TABLE.actionKey)),
+    bold('Toolkit'.padEnd(TOOL_LOG_TABLE.app)),
+    bold('Tool'.padEnd(TOOL_LOG_TABLE.actionKey)),
     bold('Exec Time'.padEnd(TOOL_LOG_TABLE.executionMs)),
     bold('Connected Account'),
   ].join(' ');
 
   const rows = logs.map(log => {
-    // Keep log ids untruncated for copy/paste workflows.
-    const id = (log.id ?? '-').padEnd(TOOL_LOG_TABLE.id);
     const createdAt = gray(
       truncate(formatCreatedAt(log.createdAt), TOOL_LOG_TABLE.createdAt).padEnd(
         TOOL_LOG_TABLE.createdAt
       )
     );
-    const status = truncate(log.status ?? '-', TOOL_LOG_TABLE.status).padEnd(TOOL_LOG_TABLE.status);
+    // Keep log ids untruncated for copy/paste workflows.
+    const id = (log.id ?? '-').padEnd(TOOL_LOG_TABLE.id);
+    const status = formatLogStatus(log.status, TOOL_LOG_TABLE.status);
     const app = truncate(log.app?.name ?? '-', TOOL_LOG_TABLE.app).padEnd(TOOL_LOG_TABLE.app);
     const actionKey = truncate(log.actionKey ?? '-', TOOL_LOG_TABLE.actionKey).padEnd(
       TOOL_LOG_TABLE.actionKey
     );
     const executionMs = `${log.executionTime ?? 0}ms`.padEnd(TOOL_LOG_TABLE.executionMs);
     const connectedAccountId = truncate(
-      log.connectedAccountId ?? '-',
+      valueOrDash(log.connectedAccountId),
       TOOL_LOG_TABLE.connectedAccountId
     );
 
-    return [id, createdAt, status, app, actionKey, executionMs, connectedAccountId].join(' ');
+    return [createdAt, id, status, app, actionKey, executionMs, connectedAccountId].join(' ');
   });
 
   return [header, ...rows].join('\n');
+};
+
+const formatLogStatus = (status: string | null | undefined, width: number): string => {
+  const label = truncate(valueOrDash(status), width).padEnd(width);
+  const normalizedStatus = status?.trim().toLowerCase();
+
+  if (normalizedStatus === 'success') return green(label);
+  if (normalizedStatus === 'failure' || normalizedStatus === 'failed') return red(label);
+  return label;
+};
+
+const valueOrDash = (value: string | null | undefined): string => {
+  if (value == null) return '-';
+  const normalizedValue = value.trim();
+  return normalizedValue.length > 0 ? normalizedValue : '-';
+};
+
+const getTriggerId = (log: TriggerLog): string => {
+  const dynamicLog = log as unknown as Record<string, unknown>;
+  const dynamicMeta = (dynamicLog.meta ?? {}) as Record<string, unknown>;
+  const triggerId =
+    typeof dynamicMeta.triggerNanoId === 'string'
+      ? dynamicMeta.triggerNanoId
+      : typeof dynamicMeta.trigger_nano_id === 'string'
+        ? dynamicMeta.trigger_nano_id
+        : typeof dynamicMeta.triggerId === 'string'
+          ? dynamicMeta.triggerId
+          : typeof dynamicMeta.trigger_id === 'string'
+            ? dynamicMeta.trigger_id
+            : typeof dynamicLog.triggerNanoId === 'string'
+              ? dynamicLog.triggerNanoId
+              : typeof dynamicLog.trigger_nano_id === 'string'
+                ? dynamicLog.trigger_nano_id
+                : typeof dynamicLog.triggerId === 'string'
+                  ? dynamicLog.triggerId
+                  : typeof dynamicLog.trigger_id === 'string'
+                    ? dynamicLog.trigger_id
+                    : null;
+  return valueOrDash(triggerId);
+};
+
+const getTriggerName = (log: TriggerLog): string => {
+  const dynamicLog = log as unknown as Record<string, unknown>;
+  const dynamicMeta = (dynamicLog.meta ?? {}) as Record<string, unknown>;
+  const triggerName =
+    typeof dynamicMeta.triggerName === 'string'
+      ? dynamicMeta.triggerName
+      : typeof dynamicMeta.trigger_name === 'string'
+        ? dynamicMeta.trigger_name
+        : typeof dynamicLog.triggerName === 'string'
+          ? dynamicLog.triggerName
+          : typeof dynamicLog.trigger_name === 'string'
+            ? dynamicLog.trigger_name
+            : null;
+  return valueOrDash(triggerName);
 };
 
 const formatEpoch = (value: number): string => {
@@ -119,8 +178,8 @@ export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {
   lines.push(`${bold('toolkit:')} ${toolLog.app?.name ?? '-'}`);
   lines.push(`${bold('Connection ID:')} ${toolLog.connection?.id ?? '-'}`);
   lines.push(`${bold('Entity:')} ${toolLog.connection?.entity ?? '-'}`);
-  lines.push(`${bold('Start Time:')} ${formatEpoch(toolLog.startTime)}`);
-  lines.push(`${bold('End Time:')} ${formatEpoch(toolLog.endTime)}`);
+  lines.push(`${bold('Start Time:')} ${formatCreatedAt(toolLog.startTime)}`);
+  lines.push(`${bold('End Time:')} ${formatCreatedAt(toolLog.endTime)}`);
   lines.push(`${bold('Total Duration:')} ${toolLog.totalDuration}`);
   lines.push(`${bold('Version:')} ${toolLog.version}`);
   lines.push(`${bold('Steps:')} ${toolLog.steps?.length ?? 0}`);
