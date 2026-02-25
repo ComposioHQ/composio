@@ -147,9 +147,10 @@ describe('formatToolLogInfo', () => {
 
   it('[Given] null start/end time [Then] it renders dashes for timestamps', () => {
     const output = formatToolLogInfo(makeToolLogDetailed({ startTime: null, endTime: null }));
-    expect(output).toContain('Start Time: -');
-    expect(output).toContain('End Time: -');
-    expect(output).not.toContain('1970-01-01T00:00:00.000Z');
+    const plain = output.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('Start Time: -');
+    expect(plain).toContain('End Time: -');
+    expect(plain).not.toContain('1970-01-01T00:00:00.000Z');
   });
 });
 
@@ -183,11 +184,12 @@ describe('formatTriggerLogInfo', () => {
 
   it('[Given] missing fields [Then] it renders fallback dashes', () => {
     const output = formatTriggerLogInfo({});
-    expect(output).toContain('logId: -');
-    expect(output).toContain('triggerId: -');
-    expect(output).toContain('triggerNanoId: -');
-    expect(output).toContain('trigger: -');
-    expect(output).toContain('Created At: -');
+    const plain = output.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('logId: -');
+    expect(plain).toContain('triggerId: -');
+    expect(plain).toContain('triggerNanoId: -');
+    expect(plain).toContain('trigger: -');
+    expect(plain).toContain('Created At: -');
   });
 
   it('[Given] retrieve response wrapped under log [Then] it unwraps and renders values', () => {
