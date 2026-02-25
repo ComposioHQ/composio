@@ -201,7 +201,6 @@ export const browserLogin = (params: {
     );
 
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
-    console.dir({ linkedSession }, { depth: null });
 
     // e.g., "uak_b813ydmoEYdB_xBxGHeW"
     const uakApiKey = linkedSession.api_key;
@@ -216,8 +215,7 @@ export const browserLogin = (params: {
     // e.g., "k2OiqRLMdHyM"
     const xOrgId = uakSessionInfo.project.org.id;
 
-    yield* Effect.logDebug('UAK session info:', { xProjectId, xOrgId, uakApiKey });
-    console.dir({ uakSessionInfo }, { depth: null });
+    yield* Effect.logDebug('UAK session info:', { xProjectId, xOrgId });
 
     yield* storeCredentials({
       baseURL: ctx.data.baseURL,
