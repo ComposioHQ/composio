@@ -236,26 +236,6 @@ export const TestLayer = (input?: TestLiveInput) =>
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
 
-    const mockRawComposioClient = {
-      logs: {
-        tools: {
-          retrieve: async () => ({}),
-          list: async () => ({ data: [], nextCursor: null }),
-        },
-        triggers: {
-          retrieve: async () => ({ log: {} }),
-          list: async () => ({ data: [], nextCursor: null }),
-        },
-      },
-    };
-
-    const ComposioClientSingletonTest = Layer.succeed(
-      ComposioClientSingleton,
-      new ComposioClientSingleton({
-        get: () => Effect.succeed(mockRawComposioClient as never),
-      })
-    );
-
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
       new ComposioToolkitsRepository({
@@ -888,7 +868,6 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioClientSingletonTest,
       ComposioSessionRepositoryTest,
       TriggersRealtimeTest,
-      ComposioClientSingletonTest,
       ComposioToolkitsRepositoryTest,
       EnvLangDetector.Default,
       JsPackageManagerDetector.Default,
