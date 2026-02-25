@@ -117,7 +117,9 @@ if [[ $# = 0 ]]; then
     'Darwin'*)
         # BSD/MacOS: Use extended regex with -E
         version=$(git ls-remote --tags "$github_repo" \
-            | awk -F'/' '{print $3}' \
+            | awk '{print $2}' \
+            | sed 's#^refs/tags/##' \
+            | sed 's#\^{}$##' \
             | grep -E "^@composio/cli@\d+\.\d+\.\d+.*" \
             | sort -V \
             | tail -n1)
@@ -125,7 +127,9 @@ if [[ $# = 0 ]]; then
     *)
         # Unix/Linux: Use Perl-compatible regex with -P
         version=$(git ls-remote --tags "$github_repo" \
-            | awk -F'/' '{print $3}' \
+            | awk '{print $2}' \
+            | sed 's#^refs/tags/##' \
+            | sed 's#\^{}$##' \
             | grep -P "^@composio/cli@\d+\.\d+\.\d+.*" \
             | sort -V \
             | tail -n1)
