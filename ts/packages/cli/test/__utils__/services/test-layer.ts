@@ -1083,6 +1083,22 @@ function breakSymlinksInNodeModules(
       return;
     }
 
+    // Some fixtures can contain node_modules as a symlink (often broken in temp copies).
+    // Normalize it first so tests can safely create nested paths like node_modules/@scope/pkg.
+    const nodeModulesLink = yield* fs.readLink(nodeModulesPath).pipe(
+      Effect.map(() => true),
+      Effect.catchAll(() => Effect.succeed(false))
+    );
+
+    if (nodeModulesLink) {
+      yield* fs
+        .remove(nodeModulesPath, { recursive: true })
+        .pipe(Effect.catchAll(() => Effect.void));
+      yield* fs
+        .makeDirectory(nodeModulesPath, { recursive: true })
+        .pipe(Effect.catchAll(() => Effect.void));
+    }
+
     const isWindows = process.platform === 'win32';
 
     if (isWindows) {
