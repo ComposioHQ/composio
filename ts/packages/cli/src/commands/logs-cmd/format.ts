@@ -78,7 +78,7 @@ export const formatToolLogsTable = (logs: ReadonlyArray<ToolLog>): string => {
     // Keep log ids untruncated for copy/paste workflows.
     const id = (log.id ?? '-').padEnd(TOOL_LOG_TABLE.id);
     const createdAt = gray(
-      truncate(formatEpoch(log.createdAt), TOOL_LOG_TABLE.createdAt).padEnd(
+      truncate(formatCreatedAt(log.createdAt), TOOL_LOG_TABLE.createdAt).padEnd(
         TOOL_LOG_TABLE.createdAt
       )
     );
@@ -116,13 +116,13 @@ export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {
   lines.push(`${bold('logId:')} ${toolLog.actionLogId}`);
   lines.push(`${bold('toolSlug:')} ${toolLog.actionId}`);
   lines.push(`${bold('Status:')} ${toolLog.status}`);
-  lines.push(`${bold('toolkit:')} ${toolLog.app.name}`);
-  lines.push(`${bold('Connection ID:')} ${toolLog.connection.id}`);
-  lines.push(`${bold('Entity:')} ${toolLog.connection.entity}`);
+  lines.push(`${bold('toolkit:')} ${toolLog.app?.name ?? '-'}`);
+  lines.push(`${bold('Connection ID:')} ${toolLog.connection?.id ?? '-'}`);
+  lines.push(`${bold('Entity:')} ${toolLog.connection?.entity ?? '-'}`);
   lines.push(`${bold('Start Time:')} ${formatEpoch(toolLog.startTime)}`);
   lines.push(`${bold('End Time:')} ${formatEpoch(toolLog.endTime)}`);
   lines.push(`${bold('Total Duration:')} ${toolLog.totalDuration}`);
   lines.push(`${bold('Version:')} ${toolLog.version}`);
-  lines.push(`${bold('Steps:')} ${toolLog.steps.length}`);
+  lines.push(`${bold('Steps:')} ${toolLog.steps?.length ?? 0}`);
   return lines.join('\n');
 };

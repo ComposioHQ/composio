@@ -22,12 +22,6 @@ export const parseSearchParams = (values: ReadonlyArray<string>): Array<SearchPa
     ];
   });
 
-export const parseCsv = (value: string): string[] =>
-  value
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean);
-
 export const toSearchParam = (field: string, value: string): SearchParam => ({
   field,
   operation: 'eq',

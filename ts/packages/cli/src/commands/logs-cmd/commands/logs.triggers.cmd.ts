@@ -5,8 +5,9 @@ import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
+import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogsTable } from '../format';
-import { parseCsv, parseSearchParams, toSearchParam } from '../utils';
+import { parseSearchParams, toSearchParam } from '../utils';
 
 const cursor = Options.text('cursor').pipe(
   Options.withDescription('Cursor for pagination'),
