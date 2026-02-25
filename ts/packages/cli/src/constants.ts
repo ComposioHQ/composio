@@ -6,6 +6,18 @@ const { DEFAULT_BASE_URL, DEFAULT_WEB_URL } = constants;
 export { DEFAULT_BASE_URL, DEFAULT_WEB_URL };
 
 /**
+ * Staging base URL for the Composio API server (backend).
+ * Used when `COMPOSIO_ENVIRONMENT=staging`.
+ */
+export const STAGING_BASE_URL = 'https://staging-backend.composio.dev';
+
+/**
+ * Staging base URL for the Composio web app (frontend).
+ * Used when `COMPOSIO_ENVIRONMENT=staging`.
+ */
+export const STAGING_WEB_URL = 'https://staging-platform.composio.dev';
+
+/**
  * Prefix for user environment variable keys used by the Composio CLI.
  */
 export const APP_ENV_CONFIG_KEY_PREFIX = 'COMPOSIO_';
@@ -44,11 +56,6 @@ export const APP_VERSION = pkg.version;
  * Name of the Composio CLI application, read from `package.json` at build time.
  */
 export const APP_NAME = pkg.name;
-
-/**
- * Name of the global directory used to store the registry of known org+project pairs.
- */
-export const KEYS_DIR_NAME = '_keys';
 
 /**
  * Name of the per-directory project config file.

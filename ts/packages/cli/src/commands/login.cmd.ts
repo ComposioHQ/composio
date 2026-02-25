@@ -4,10 +4,10 @@ import open from 'open';
 import {
   ComposioSessionRepository,
   getSessionInfo,
+  getSessionInfoByUserApiKey,
   type SessionInfoResponse,
 } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
-import { ProjectKeyRegistry } from 'src/services/project-key-registry';
 import { TerminalUI } from 'src/services/terminal-ui';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
@@ -33,9 +33,9 @@ const projectIdOpt = Options.text('project-id').pipe(
 /**
  * Verifies credentials via session/info and stores them.
  *
- * Resolves TerminalUI, ComposioUserContext, and ProjectKeyRegistry from the
- * Effect context rather than accepting them as parameters -- this keeps the
- * signature focused on data and avoids hand-rolled structural types.
+ * Resolves TerminalUI and ComposioUserContext from the Effect context rather
+ * than accepting them as parameters -- this keeps the signature focused on
+ * data and avoids hand-rolled structural types.
  */
 const storeCredentials = (params: {
   baseURL: string;
@@ -53,7 +53,6 @@ const storeCredentials = (params: {
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    const registry = yield* ProjectKeyRegistry;
 
     const {
       baseURL,
@@ -108,19 +107,8 @@ const storeCredentials = (params: {
       }
     }
 
-    // Store UAK in user_data.json
-    yield* ctx.login(uakApiKey);
-
-    // Register org+project in global registry.
-    // The linked session's id IS the project ID, and account.id IS the org member ID.
-    // When session/info succeeds, we enrich with project/org names.
-    yield* registry.register({
-      orgId,
-      projectId,
-      projectName: Option.fromNullable(sessionInfo?.project.name ?? null),
-      orgName: Option.fromNullable(sessionInfo?.project.org.name ?? null),
-      email: Option.fromNullable(sessionInfo?.org_member.email ?? fallbackEmail ?? null),
-    });
+    // Store UAK + org/project IDs in user_data.json
+    yield* ctx.login(uakApiKey, orgId, projectId);
 
     const email = sessionInfo?.org_member.email ?? fallbackEmail;
     yield* ui.log.success(`Logged in with user account ${email}`);
@@ -138,6 +126,107 @@ const storeCredentials = (params: {
     );
 
     yield* ui.outro("You're all set!");
+  });
+
+/**
+ * Runs the browser-based login flow: creates a CLI session, opens the browser,
+ * polls until linked, enriches via session/info, and stores credentials.
+ *
+ * Shared by `composio login` (scope: 'user') and `composio init` (scope: 'project').
+ *
+ * Resolves TerminalUI, ComposioUserContext, and ComposioSessionRepository
+ * from the Effect context.
+ */
+export const browserLogin = (params: {
+  /** Session scope: 'user' for login, 'project' for init. */
+  scope: 'user' | 'project';
+  /** When true, don't open browser — just show the URL. */
+  noBrowser: boolean;
+}) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const ctx = yield* ComposioUserContext;
+    const client = yield* ComposioSessionRepository;
+
+    yield* Effect.logDebug(`Authenticating (scope: ${params.scope})...`);
+
+    const session = yield* client.createSession({ scope: params.scope });
+
+    yield* Effect.logDebug(`Created session: ${session.id}`);
+
+    const url = `${ctx.data.webURL}?cliKey=${session.id}`;
+
+    if (params.noBrowser) {
+      yield* ui.log.info('Please login using the following URL:');
+    } else {
+      yield* ui.log.step('Redirecting you to the login page');
+    }
+
+    yield* ui.note(url, 'Login URL');
+    yield* ui.output(url);
+
+    if (!params.noBrowser) {
+      yield* Effect.tryPromise(() => open(url, { wait: false })).pipe(
+        Effect.catchAll(error =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Failed to open browser:', error);
+            yield* ui.log.warn('Could not open the browser automatically.');
+            yield* ui.log.info(
+              `Tip: try using the \`--no-browser\` flag and open the URL manually.`
+            );
+          })
+        )
+      );
+    }
+
+    const linkedSession = yield* ui.useMakeSpinner('Waiting for login...', spinner =>
+      Effect.retry(
+        Effect.gen(function* () {
+          const currentSession = yield* client.getSession({ ...session });
+          if (currentSession.status === 'linked') {
+            return currentSession;
+          }
+          return yield* Effect.fail(
+            new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
+          );
+        }),
+        Schedule.exponential('0.3 seconds').pipe(
+          Schedule.intersect(Schedule.recurs(15)),
+          Schedule.intersect(Schedule.spaced('5 seconds'))
+        )
+      ).pipe(
+        Effect.tap(() => spinner.stop('Login successful')),
+        Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
+      )
+    );
+
+    yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
+    console.dir({ linkedSession }, { depth: null });
+
+    // e.g., "uak_b813ydmoEYdB_xBxGHeW"
+    const uakApiKey = linkedSession.api_key;
+
+    const uakSessionInfo = yield* getSessionInfoByUserApiKey({
+      baseURL: ctx.data.baseURL,
+      userApiKey: uakApiKey,
+    });
+
+    // e.g., "pr_xlSR6oN5jIlk"
+    const xProjectId = uakSessionInfo.project.nano_id;
+    // e.g., "k2OiqRLMdHyM"
+    const xOrgId = uakSessionInfo.project.org.id;
+
+    yield* Effect.logDebug('UAK session info:', { xProjectId, xOrgId, uakApiKey });
+    console.dir({ uakSessionInfo }, { depth: null });
+
+    yield* storeCredentials({
+      baseURL: ctx.data.baseURL,
+      uakApiKey,
+      initialOrgId: xOrgId,
+      initialProjectId: xProjectId,
+      fallbackEmail: linkedSession.account.email,
+      strictVerification: false,
+    });
   });
 
 /**
@@ -161,7 +250,6 @@ export const loginCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      const registry = yield* ProjectKeyRegistry;
 
       yield* ui.intro('composio login');
 
@@ -182,9 +270,8 @@ export const loginCmd = Command.make(
       }
 
       if (ctx.isLoggedIn()) {
-        // Allow re-login when no _keys/ registry exists (old CLI login without multi-project support)
-        const existingProfiles = yield* registry.listAll();
-        if (existingProfiles.length > 0) {
+        // Allow re-login when orgId/projectId are not yet set (old CLI login without multi-project support)
+        if (Option.isSome(ctx.data.orgId) && Option.isSome(ctx.data.projectId)) {
           yield* ui.log.warn(`You're already logged in!`);
           yield* ui.log.info(
             `If you want to log in with a different account, please run \`composio logout\` first.`
@@ -195,73 +282,6 @@ export const loginCmd = Command.make(
         yield* ui.log.step('Re-authenticating for multi-project support...');
       }
 
-      const client = yield* ComposioSessionRepository;
-
-      yield* Effect.logDebug('Authenticating...');
-
-      const session = yield* client.createSession({ scope: 'user' });
-
-      yield* Effect.logDebug(`Created session: ${session.id}`);
-
-      const url = `${ctx.data.webURL}?cliKey=${session.id}`;
-
-      if (noBrowser) {
-        yield* ui.log.info('Please login using the following URL:');
-      } else {
-        yield* ui.log.step('Redirecting you to the login page');
-      }
-
-      yield* ui.note(url, 'Login URL');
-      yield* ui.output(url);
-
-      if (!noBrowser) {
-        yield* Effect.tryPromise(() => open(url, { wait: false })).pipe(
-          Effect.catchAll(error =>
-            Effect.gen(function* () {
-              yield* Effect.logDebug('Failed to open browser:', error);
-              yield* ui.log.warn('Could not open the browser automatically.');
-              yield* ui.log.info(
-                `Tip: try using \`composio login --no-browser\` and open the URL manually.`
-              );
-            })
-          )
-        );
-      }
-
-      const linkedSession = yield* ui.useMakeSpinner('Waiting for login...', spinner =>
-        Effect.retry(
-          Effect.gen(function* () {
-            const currentSession = yield* client.getSession({ ...session });
-            if (currentSession.status === 'linked') {
-              return currentSession;
-            }
-            return yield* Effect.fail(
-              new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
-            );
-          }),
-          Schedule.exponential('0.3 seconds').pipe(
-            Schedule.intersect(Schedule.recurs(15)),
-            Schedule.intersect(Schedule.spaced('5 seconds'))
-          )
-        ).pipe(
-          Effect.tap(() => spinner.stop('Login successful')),
-          Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
-        )
-      );
-
-      yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
-
-      // The linked session contains the correct identifiers:
-      // - linkedSession.id → x-project-id (the session ID doubles as project ID)
-      // - linkedSession.account.id → x-org-id (the account ID is the org member ID)
-      // Non-strict: session/info errors are non-fatal since the session is already linked.
-      yield* storeCredentials({
-        baseURL: ctx.data.baseURL,
-        uakApiKey: linkedSession.api_key,
-        initialOrgId: linkedSession.account.id,
-        initialProjectId: linkedSession.id,
-        fallbackEmail: linkedSession.account.email,
-        strictVerification: false,
-      });
+      yield* browserLogin({ scope: 'user', noBrowser });
     })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

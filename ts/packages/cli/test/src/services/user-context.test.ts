@@ -33,6 +33,8 @@ describe('ComposioUserContext', () => {
             apiKey: Option.none(),
             baseURL: 'https://backend.composio.dev',
             webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), false);
@@ -61,6 +63,8 @@ describe('ComposioUserContext', () => {
             apiKey: Option.some('api_key'),
             baseURL: 'https://test.composio.localhost',
             webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), true);
@@ -87,6 +91,8 @@ describe('ComposioUserContext', () => {
             apiKey: Option.some('api_key'),
             baseURL: Option.some('https://test.composio.localhost'),
             webURL: Option.some('https://platform.composio.dev'),
+            orgId: Option.none(),
+            projectId: Option.none(),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
@@ -124,6 +130,8 @@ describe('ComposioUserContext', () => {
             apiKey: Option.some('api_key'),
             baseURL: Option.none(),
             webURL: Option.some('https://platform.composio.dev'),
+            orgId: Option.none(),
+            projectId: Option.none(),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 

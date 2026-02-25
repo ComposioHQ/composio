@@ -29,9 +29,13 @@ export class ComposioUserContext extends Context.Tag('ComposioUserData')<
     logout: Effect.Effect<void, ParseError | PlatformError, never>;
 
     /**
-     * Logs in the user by setting the API key.
+     * Logs in the user by setting the API key, and optionally org/project IDs.
      */
-    login: (apiKey: string) => Effect.Effect<void, ParseError | PlatformError, never>;
+    login: (
+      apiKey: string,
+      orgId?: string,
+      projectId?: string
+    ) => Effect.Effect<void, ParseError | PlatformError, never>;
 
     /**
      * Saves the user data to a persistent store, e.g., file or database.
@@ -58,15 +62,29 @@ export const ComposioUserContextLive = Layer.effect(
       apiKey,
       baseURL: Option.some(baseURL),
       webURL: Option.some(webURL),
+      orgId: Option.none(),
+      projectId: Option.none(),
     });
 
     const logout = Effect.gen(function* () {
-      yield* update({ apiKey: Option.none(), baseURL: Option.none(), webURL: Option.some(webURL) });
+      yield* update({
+        apiKey: Option.none(),
+        baseURL: Option.none(),
+        webURL: Option.some(webURL),
+        orgId: Option.none(),
+        projectId: Option.none(),
+      });
     });
 
-    const login = (apiKey: string) =>
+    const login = (apiKey: string, orgId?: string, projectId?: string) =>
       Effect.gen(function* () {
-        yield* update({ apiKey: Option.some(apiKey) });
+        yield* update({
+          apiKey: Option.some(apiKey),
+          baseURL: Option.some(baseURL),
+          webURL: Option.some(webURL),
+          orgId: Option.fromNullable(orgId),
+          projectId: Option.fromNullable(projectId),
+        });
       });
 
     /**
@@ -97,6 +115,8 @@ export const ComposioUserContextLive = Layer.effect(
         apiKey: apiKey.pipe(Option.orElse(() => parsedUserData.apiKey)),
         baseURL: Option.some(baseURL),
         webURL: Option.some(webURL),
+        orgId: parsedUserData.orgId,
+        projectId: parsedUserData.projectId,
       } satisfies UserData;
 
       yield* Effect.logDebug('User data (overridden from env vars):', overriddenUserData);
@@ -119,6 +139,8 @@ export const ComposioUserContextLive = Layer.effect(
       ...userData,
       baseURL: Option.getOrElse(userData.baseURL, () => baseURL),
       webURL: Option.getOrElse(userData.webURL, () => webURL),
+      orgId: userData.orgId,
+      projectId: userData.projectId,
     };
 
     return ComposioUserContext.of({

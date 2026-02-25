@@ -3,20 +3,20 @@ import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioUserContext } from 'src/services/user-context';
-import { ProjectKeyRegistry } from 'src/services/project-key-registry';
 import { NodeProcess } from 'src/services/node-process';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
 import { listOrgProjects, type OrgProject } from 'src/services/composio-clients';
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
 
 /**
  * `composio init` — Initialize a Composio project in the current directory.
  *
  * ## Current behavior
  *
- * 1. **Project selection** — picks from the `~/.composio/_keys/` registry
- *    (populated by `composio login`) or accepts explicit `--org-id`/`--project-id` flags.
+ * 1. **Project selection** — fetches projects from the API using the UAK
+ *    (stored by `composio login`) or accepts explicit `--org-id`/`--project-id` flags.
  * 2. **Usage mode** — asks "Native tools" vs "Composio MCP".
  * 3. **Framework** — if native, asks which agent framework (AI SDK, Mastra, etc.).
  * 4. **Coding-agent skills** — asks whether to install Composio skills.
@@ -28,7 +28,6 @@ import { TerminalUI } from 'src/services/terminal-ui';
  * The project picker fetches ALL projects for the user's org via
  * `GET /api/v3/org/owner/project/list` (using the UAK as `x-org-api-key`).
  * Projects are presented in the Clack `select` picker with human-readable names.
- * The selected project is also registered in the local `_keys/` registry.
  * Future: optionally create a new project-scoped session (`scope: 'project'`) to
  * obtain a project-level API key.
  *
@@ -88,7 +87,7 @@ const USAGE_MODE_OPTIONS: ReadonlyArray<{
   {
     value: 'native',
     label: 'Native tools',
-    hint: 'Use with Agent frameworks (AI SDK, Mastra, etc.)',
+    hint: 'Use with Agent frameworks: AI SDK, Mastra, etc.',
   },
   {
     value: 'mcp',
@@ -304,7 +303,7 @@ const profileHint = (p: ProjectKeys): string => Option.getOrElse(p.orgName, () =
  * plus `<cwd>/.composio/config.json` with usage mode, framework, and skill preferences.
  *
  * Supports two modes:
- * 1. Interactive: Reads from the global key registry and prompts for selection
+ * 1. Interactive: Fetches projects from the API and prompts for selection
  * 2. Non-interactive: Accepts --org-id and --project-id flags for agents/CI
  *
  * @example
@@ -315,12 +314,11 @@ const profileHint = (p: ProjectKeys): string => Option.getOrElse(p.orgName, () =
  */
 export const initCmd = Command.make(
   'init',
-  { orgId: orgIdOpt, projectId: projectIdOpt },
-  ({ orgId, projectId }) =>
+  { orgId: orgIdOpt, projectId: projectIdOpt, noBrowser: noBrowserOpt },
+  ({ orgId, projectId, noBrowser }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      const registry = yield* ProjectKeyRegistry;
       const proc = yield* NodeProcess;
 
       yield* ui.intro('composio init');
@@ -359,18 +357,20 @@ export const initCmd = Command.make(
         return;
       }
 
-      // 1. Ensure user is logged in
+      // 1. Ensure user is logged in — if not, run browser login with project scope
       if (!ctx.isLoggedIn()) {
-        yield* ui.log.warn('You must be logged in first.');
-        yield* ui.log.info('Run `composio login` to authenticate.');
-        yield* ui.outro('');
-        return;
+        yield* ui.log.step('No credentials found. Logging in...');
+        yield* browserLogin({ scope: 'project', noBrowser });
       }
 
       // 2. Fetch all projects available to the user's org via API
       const apiKey = Option.getOrUndefined(ctx.data.apiKey);
-      if (!apiKey) {
-        yield* ui.log.warn('No API key found. Run `composio login` to authenticate.');
+      const orgIdValue = Option.getOrUndefined(ctx.data.orgId);
+      const projectIdValue = Option.getOrUndefined(ctx.data.projectId);
+      if (!apiKey || !orgIdValue || !projectIdValue) {
+        yield* ui.log.warn(
+          'No API key, org ID, or project ID found. Please try `composio login` first.'
+        );
         yield* ui.outro('');
         return;
       }
@@ -378,6 +378,8 @@ export const initCmd = Command.make(
       const orgProjects = yield* listOrgProjects({
         baseURL: ctx.data.baseURL,
         apiKey,
+        orgId: orgIdValue,
+        projectId: projectIdValue,
       }).pipe(
         Effect.catchTag('services/HttpServerError', e =>
           Effect.gen(function* () {
@@ -403,10 +405,10 @@ export const initCmd = Command.make(
         )
       );
 
-      if (orgProjects.items.length === 0) {
+      if (orgProjects.data.length === 0) {
         yield* ui.log.warn('No projects found for your organization.');
         yield* ui.log.info(
-          'Create a project at https://app.composio.dev, then run `composio init` again.'
+          'Create a project at https://platform.composio.dev, then run `composio init` again.'
         );
         yield* ui.outro('');
         return;
@@ -422,27 +424,24 @@ export const initCmd = Command.make(
       });
 
       const selectedProject: OrgProject =
-        orgProjects.items.length === 1
-          ? orgProjects.items[0]
+        orgProjects.data.length === 1
+          ? orgProjects.data[0]
           : yield* ui.select<OrgProject>(
               'Select a project:',
-              orgProjects.items.map(p => ({
+              orgProjects.data.map(p => ({
                 value: p,
                 label: p.name,
-                hint: p.nano_id,
+                hint: p.id,
               }))
             );
 
       const selected = orgProjectToKeys(selectedProject);
       yield* ui.log.step(`Using project "${selectedProject.name}"`);
 
-      // 4. Register the selected project in the global _keys/ registry
-      yield* registry.register(selected);
-
-      // 5. Run the init wizard (usage mode → framework → install skills)
+      // 4. Run the init wizard (usage mode → framework → install skills)
       const config = yield* runInitWizard;
 
-      // 6. Write <cwd>/.composio/project.json + config.json + .gitignore
+      // 5. Write <cwd>/.composio/project.json + config.json + .gitignore
       yield* writeProjectConfig(composioDir, selected, config);
 
       // Future: if config.installSkills, run `npx skills add ComposioHQ/skills`
@@ -455,7 +454,7 @@ export const initCmd = Command.make(
 
       yield* ui.log.success(`Project initialized in ${composioDir}/`);
 
-      // 6. Emit structured JSON for piped/scripted consumption
+      // 6. Emit structured JSON for piped/scripted consumption (agent-native)
       yield* ui.output(
         JSON.stringify({
           org_id: selected.orgId,
