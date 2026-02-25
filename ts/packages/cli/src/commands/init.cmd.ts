@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { Command, Options } from '@effect/cli';
+import { Command as CliCommand, Options } from '@effect/cli';
+import { Command as PlatformCommand } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -9,57 +10,31 @@ import { listOrgProjects, type OrgProject } from 'src/services/composio-clients'
 import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
+import {
+  ProjectEnvironmentDetector,
+  type ProjectEnvironment,
+} from 'src/services/project-environment-detector';
+import { CommandRunner } from 'src/services/command-runner';
+import { resolveCoreDependencyState, type CoreDependencyPlan } from 'src/effects/core-dependency';
 
 /**
  * `composio init` — Initialize a Composio project in the current directory.
  *
- * ## Current behavior
+ * ## Behavior
  *
- * 1. **Project selection** — fetches projects from the API using the UAK
- *    (stored by `composio login`) or accepts explicit `--org-id`/`--project-id` flags.
+ * 1. **Project selection** — fetches projects from the API or accepts `--org-id`/`--project-id`.
  * 2. **Usage mode** — asks "Native tools" vs "Composio MCP".
- * 3. **Framework** — if native, asks which agent framework (AI SDK, Mastra, etc.).
+ * 3. **Framework** — if native, asks which agent framework.
  * 4. **Coding-agent skills** — asks whether to install Composio skills.
- * 5. **Writes config** — saves `<cwd>/.composio/project.json` and `<cwd>/.composio/config.json`.
+ * 5. **Environment detection** — detects language (TS/Python) and package manager.
+ * 6. **Dependency installation** — installs `@composio/core` or `composio` via detected PM.
+ * 7. **Writes config** — saves `<cwd>/.composio/project.json` and `<cwd>/.composio/config.json`.
  *
- * ## Planned improvements (future PRs)
+ * ## Flags
  *
- * ### Remote project selection ✅ (implemented)
- * The project picker fetches ALL projects for the user's org via
- * `GET /api/v3/org/owner/project/list` (using the UAK as `x-org-api-key`).
- * Projects are presented in the Clack `select` picker with human-readable names.
- * Future: optionally create a new project-scoped session (`scope: 'project'`) to
- * obtain a project-level API key.
- *
- * ### Project environment detection
- * After project selection, detect the kind of project in the current directory:
- * - **TypeScript monorepo** — pnpm/yarn/npm workspaces, `turbo.json`, `tsconfig.json`
- * - **TypeScript single-package** — `package.json` with `typescript` dep
- * - **Python flat repo** — `pyproject.toml` or `setup.py` with `uv` / `pip`
- * - **Python monorepo** — `uv` workspaces
- *
- * This detection should reuse or extend the existing `EnvLangDetector` and
- * `JsPackageManagerDetector` services. The detected environment determines
- * which Composio packages to install (e.g., `@composio/core` for TS,
- * `composio` for Python) and which provider package to add (e.g.,
- * `@composio/mastra`, `@composio/openai`, `composio[openai]`).
- *
- * ### Dependency installation
- * Based on the detected environment and chosen framework, automatically install
- * the appropriate Composio dependencies:
- * - **TypeScript (pnpm)**: `pnpm add @composio/core @composio/<framework>`
- * - **TypeScript (npm)**: `npm install @composio/core @composio/<framework>`
- * - **Python (uv)**: `uv add composio composio[<framework>]`
- * - **Python (pip)**: `pip install composio composio[<framework>]`
- *
- * ### Composio skills installation
- * When the user opts in to "Install Composio skills for your Coding Agent?",
- * run the skills installer for the detected coding agent:
- * - `npx skills add ComposioHQ/skills` (or the equivalent for the platform)
- *
- * This should be gated behind the `installSkills` flag in `InitConfig` and
- * only executed after the config files are written (so the skills can read
- * the project context from `.composio/`).
+ * - `--dry-run` — print install command without executing
+ * - `--force` — reinstall even if dependency is already present
+ * - `--yes` / `-y` — skip confirmation prompts
  */
 
 const orgIdOpt = Options.text('org-id').pipe(
@@ -70,6 +45,22 @@ const orgIdOpt = Options.text('org-id').pipe(
 const projectIdOpt = Options.text('project-id').pipe(
   Options.optional,
   Options.withDescription('Project ID (skip interactive picker)')
+);
+
+const dryRunOpt = Options.boolean('dry-run').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Print install command without executing it')
+);
+
+const forceOpt = Options.boolean('force').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Reinstall even if dependency appears installed')
+);
+
+const yesOpt = Options.boolean('yes').pipe(
+  Options.withAlias('y'),
+  Options.withDefault(false),
+  Options.withDescription('Skip confirmation prompts')
 );
 
 // ---------------------------------------------------------------------------
@@ -144,9 +135,17 @@ class InitConfigBuilder<T extends Record<string, unknown> = Record<string, never
     return new InitConfigBuilder({ ...this.data, installSkills: install });
   }
 
-  // Future builder steps:
-  // withDetectedEnv(env: DetectedEnv): InitConfigBuilder<T & { detectedEnv: DetectedEnv }>
-  // withDependencies(deps: string[]): InitConfigBuilder<T & { dependencies: string[] }>
+  withDetectedEnv(
+    env: ProjectEnvironment | undefined
+  ): InitConfigBuilder<T & { detectedEnv: ProjectEnvironment | undefined }> {
+    return new InitConfigBuilder({ ...this.data, detectedEnv: env });
+  }
+
+  withInstallPlan(
+    plan: CoreDependencyPlan | undefined
+  ): InitConfigBuilder<T & { installPlan: CoreDependencyPlan | undefined }> {
+    return new InitConfigBuilder({ ...this.data, installPlan: plan });
+  }
 
   /** Extract the final config. Only callable when all required fields are present. */
   build(
@@ -154,12 +153,16 @@ class InitConfigBuilder<T extends Record<string, unknown> = Record<string, never
       usageMode: UsageMode;
       framework: NativeFramework | undefined;
       installSkills: boolean;
+      detectedEnv: ProjectEnvironment | undefined;
+      installPlan: CoreDependencyPlan | undefined;
     }>
   ): InitConfig {
     return {
       usageMode: this.data.usageMode,
       framework: this.data.framework,
       installSkills: this.data.installSkills,
+      detectedEnv: this.data.detectedEnv,
+      installPlan: this.data.installPlan,
     };
   }
 
@@ -169,23 +172,46 @@ class InitConfigBuilder<T extends Record<string, unknown> = Record<string, never
   }
 }
 
-/**
- * The finalized init configuration, produced by `InitConfigBuilder.build()`.
- *
- * Future fields to add:
- * - `detectedEnv`: the detected project environment (TS monorepo, Python flat, etc.)
- * - `dependencies`: the list of packages to install
- * - `packageManager`: the detected package manager (pnpm, npm, yarn, uv, pip)
- */
 interface InitConfig {
   readonly usageMode: UsageMode;
   readonly framework: NativeFramework | undefined;
   readonly installSkills: boolean;
+  readonly detectedEnv: ProjectEnvironment | undefined;
+  readonly installPlan: CoreDependencyPlan | undefined;
 }
 
 // ---------------------------------------------------------------------------
 // Init wizard — collects all answers via the builder
 // ---------------------------------------------------------------------------
+
+/**
+ * Detect the project environment. Returns `undefined` if detection fails
+ * (logs a warning but does not abort the wizard).
+ */
+const detectEnvironment = (cwd: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const envDetector = yield* ProjectEnvironmentDetector;
+
+    return yield* envDetector.detectProjectEnvironment(cwd).pipe(
+      Effect.tap(env => ui.log.step(`Detected: ${env.language} (${env.packageManager})`)),
+      Effect.catchTag('services/ProjectEnvironmentDetectorError', e =>
+        Effect.gen(function* () {
+          yield* ui.log.warn(e.message);
+          if (e.details) yield* ui.log.info(e.details);
+          yield* ui.log.info('Skipping dependency installation.');
+          return undefined;
+        })
+      )
+    );
+  });
+
+/**
+ * Resolve the install plan for the detected environment.
+ * Returns `{ plan, installedVersion }` or `undefined` if detection was skipped.
+ */
+const resolveInstallPlan = (cwd: string) =>
+  resolveCoreDependencyState(cwd).pipe(Effect.catchAll(() => Effect.succeed(null)));
 
 /**
  * Runs the interactive init wizard.
@@ -194,47 +220,48 @@ interface InitConfig {
  * 1. Usage mode — "Native tools" or "Composio MCP"
  * 2. Framework — which agent framework (only if native)
  * 3. Install skills — whether to install Composio coding-agent skills
- *
- * Future steps (to be added before `build()`):
  * 4. Detect project environment (TS/Python, monorepo/flat, package manager)
- * 5. Confirm dependency installation
+ * 5. Resolve install plan
  *
  * Returns a fully-built `InitConfig`.
  */
-const runInitWizard = Effect.gen(function* () {
-  const ui = yield* TerminalUI;
+const runInitWizard = (cwd: string) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
 
-  // Step 1: Usage mode
-  const usageMode = yield* ui.select<UsageMode>(
-    'How would you like to use Composio?',
-    USAGE_MODE_OPTIONS
-  );
+    // Step 1: Usage mode
+    const usageMode = yield* ui.select<UsageMode>(
+      'How would you like to use Composio?',
+      USAGE_MODE_OPTIONS
+    );
 
-  // Step 2: Framework (only for native tools)
-  const framework: NativeFramework | undefined =
-    usageMode === 'native'
-      ? yield* ui
-          .select<NativeFramework>('Which framework do you use?', NATIVE_FRAMEWORK_OPTIONS)
-          .pipe(Effect.map(fw => (fw === 'skip' ? undefined : fw)))
-      : undefined;
+    // Step 2: Framework (only for native tools)
+    const framework: NativeFramework | undefined =
+      usageMode === 'native'
+        ? yield* ui
+            .select<NativeFramework>('Which framework do you use?', NATIVE_FRAMEWORK_OPTIONS)
+            .pipe(Effect.map(fw => (fw === 'skip' ? undefined : fw)))
+        : undefined;
 
-  // Step 3: Install Composio skills (always asked)
-  // Future: when installSkills is true, run `npx skills add ComposioHQ/skills`
-  // after writing config files (so the skills can read `.composio/` context).
-  const installSkills = yield* ui.confirm('Install Composio skills for your Coding Agent?', {
-    defaultValue: true,
+    // Step 3: Install Composio skills
+    const installSkills = yield* ui.confirm('Install Composio skills for your Coding Agent?', {
+      defaultValue: true,
+    });
+
+    // Step 4: Detect project environment
+    const detectedEnv = yield* detectEnvironment(cwd);
+
+    // Step 5: Resolve install plan
+    const installState = detectedEnv ? yield* resolveInstallPlan(cwd) : null;
+
+    return InitConfigBuilder.create()
+      .withUsageMode(usageMode)
+      .withFramework(framework)
+      .withInstallSkills(installSkills)
+      .withDetectedEnv(detectedEnv)
+      .withInstallPlan(installState?.plan)
+      .build();
   });
-
-  // Future steps would go here:
-  // Step 4: const detectedEnv = yield* detectProjectEnvironment;
-  // Step 5: const dependencies = yield* confirmDependencies(usageMode, framework, detectedEnv);
-
-  return InitConfigBuilder.create()
-    .withUsageMode(usageMode)
-    .withFramework(framework)
-    .withInstallSkills(installSkills)
-    .build();
-});
 
 // ---------------------------------------------------------------------------
 // File I/O helpers
@@ -251,16 +278,14 @@ const initConfigToJSON = (config: InitConfig): string => {
     payload.framework = config.framework;
   }
   payload.install_skills = config.installSkills;
+  if (config.detectedEnv) {
+    payload.detected_language = config.detectedEnv.language;
+    payload.package_manager = config.detectedEnv.packageManager;
+  }
   return JSON.stringify(payload, null, 2);
 };
 
-/**
- * Writes project keys + init config to `<cwd>/.composio/` and creates a `.gitignore`.
- *
- * Future: after writing config, this function (or a post-write hook) should:
- * - Run dependency installation based on `config.framework` and the detected env.
- * - Run `npx skills add ComposioHQ/skills` if `config.installSkills` is true.
- */
+/** Writes project keys + init config to `<cwd>/.composio/` and creates a `.gitignore`. */
 const writeProjectConfig = (composioDir: string, selected: ProjectKeys, config: InitConfig) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -286,6 +311,105 @@ const writeProjectConfig = (composioDir: string, selected: ProjectKeys, config: 
   });
 
 // ---------------------------------------------------------------------------
+// Install step — runs after wizard, before outro
+// ---------------------------------------------------------------------------
+
+/**
+ * Runs the dependency installation step based on the init config.
+ * Handles --dry-run, --force, --yes flags and already-installed detection.
+ */
+const runInstallStep = (params: {
+  config: InitConfig;
+  cwd: string;
+  dryRun: boolean;
+  force: boolean;
+  yes: boolean;
+}) =>
+  Effect.gen(function* () {
+    const { config, cwd, dryRun, force, yes } = params;
+    if (!config.installPlan) return;
+
+    const ui = yield* TerminalUI;
+    const runner = yield* CommandRunner;
+    const plan = config.installPlan;
+
+    // Check if already installed
+    const depState = yield* resolveCoreDependencyState(cwd).pipe(
+      Effect.catchAll(() => Effect.succeed({ plan, installedVersion: null }))
+    );
+
+    if (depState.installedVersion && !force) {
+      const detail =
+        depState.installedVersion.source === 'package.json'
+          ? `declared in package.json (${depState.installedVersion.version})`
+          : `${depState.installedVersion.version} (${depState.installedVersion.source})`;
+      yield* ui.log.info(`Found ${plan.dependency}: ${detail}`);
+      yield* ui.log.success('Dependency already installed.');
+      return;
+    }
+
+    if (depState.installedVersion && force) {
+      yield* ui.log.warn('Reinstalling due to --force.');
+    }
+
+    if (dryRun) {
+      yield* ui.note(plan.installCommand, 'Install Command');
+      yield* ui.log.info('Dry run complete.');
+      return;
+    }
+
+    const shouldInstall =
+      yes || (yield* ui.confirm(`Run: ${plan.installCommand}?`, { defaultValue: true }));
+    if (!shouldInstall) {
+      yield* ui.log.warn('Installation cancelled.');
+      return;
+    }
+
+    const [cmd, ...args] = plan.installCommand.split(' ');
+    const command = PlatformCommand.make(cmd!, ...args).pipe(
+      PlatformCommand.workingDirectory(plan.rootDir)
+    );
+
+    const install = Effect.gen(function* () {
+      const exitCode = yield* runner.run(command);
+      if (exitCode !== 0) {
+        yield* Effect.fail(new Error(`Install command failed with exit code ${exitCode}`));
+      }
+    });
+
+    yield* ui
+      .withSpinner(`Installing ${plan.dependency}...`, install, {
+        successMessage: `Installed ${plan.dependency}.`,
+        errorMessage: `Failed to install ${plan.dependency}.`,
+      })
+      .pipe(
+        Effect.catchAll(e =>
+          Effect.gen(function* () {
+            yield* ui.log.error(`Install failed: ${e instanceof Error ? e.message : String(e)}`);
+            yield* ui.log.info(`You can install manually: ${plan.installCommand}`);
+          })
+        )
+      );
+  });
+
+// ---------------------------------------------------------------------------
+// Structured output helper
+// ---------------------------------------------------------------------------
+
+const makeOutputJson = (selected: ProjectKeys, config: InitConfig, composioDir: string) =>
+  JSON.stringify({
+    org_id: selected.orgId,
+    project_id: selected.projectId,
+    usage_mode: config.usageMode,
+    framework: config.framework ?? null,
+    install_skills: config.installSkills,
+    detected_language: config.detectedEnv?.language ?? null,
+    package_manager: config.detectedEnv?.packageManager ?? null,
+    install_command: config.installPlan?.installCommand ?? null,
+    path: composioDir,
+  });
+
+// ---------------------------------------------------------------------------
 // Command
 // ---------------------------------------------------------------------------
 
@@ -305,10 +429,17 @@ const writeProjectConfig = (composioDir: string, selected: ProjectKeys, config: 
  * composio init --org-id <org> --project-id <project>
  * ```
  */
-export const initCmd = Command.make(
+export const initCmd = CliCommand.make(
   'init',
-  { orgId: orgIdOpt, projectId: projectIdOpt, noBrowser: noBrowserOpt },
-  ({ orgId, projectId, noBrowser }) =>
+  {
+    orgId: orgIdOpt,
+    projectId: projectIdOpt,
+    noBrowser: noBrowserOpt,
+    dryRun: dryRunOpt,
+    force: forceOpt,
+    yes: yesOpt,
+  },
+  ({ orgId, projectId, noBrowser, dryRun, force, yes }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
@@ -328,137 +459,120 @@ export const initCmd = Command.make(
           email: Option.none(),
         };
 
-        const config = yield* runInitWizard;
-
+        const config = yield* runInitWizard(proc.cwd);
         yield* writeProjectConfig(composioDir, selected, config);
-
-        // Future: if config.installSkills, run `npx skills add ComposioHQ/skills`
-        // Future: install Composio dependencies based on config.framework + detected env
+        yield* runInstallStep({ config, cwd: proc.cwd, dryRun, force, yes });
 
         yield* ui.log.success(`Project initialized in ${composioDir}/`);
-        yield* ui.output(
-          JSON.stringify({
-            org_id: selected.orgId,
-            project_id: selected.projectId,
-            usage_mode: config.usageMode,
-            framework: config.framework ?? null,
-            install_skills: config.installSkills,
-            path: composioDir,
-          })
-        );
+        yield* ui.output(makeOutputJson(selected, config, composioDir));
         yield* ui.outro('');
         return;
       }
 
-      // 1. Ensure user is logged in — if not, run browser login with project scope
-      if (!ctx.isLoggedIn()) {
-        yield* ui.log.step('No credentials found. Logging in...');
-        yield* browserLogin({ scope: 'project', noBrowser });
-      }
-
-      // 2. Fetch all projects available to the user's org via API
-      const apiKey = Option.getOrUndefined(ctx.data.apiKey);
-      const orgIdValue = Option.getOrUndefined(ctx.data.orgId);
-      const projectIdValue = Option.getOrUndefined(ctx.data.projectId);
-      if (!apiKey || !orgIdValue || !projectIdValue) {
-        yield* ui.log.warn(
-          'No API key, org ID, or project ID found. Please try `composio login` first.'
-        );
-        yield* ui.outro('');
-        return;
-      }
-
-      const orgProjects = yield* listOrgProjects({
-        baseURL: ctx.data.baseURL,
-        apiKey,
-        orgId: orgIdValue,
-        projectId: projectIdValue,
-      }).pipe(
-        Effect.catchTag('services/HttpServerError', e =>
-          Effect.gen(function* () {
-            yield* Effect.logDebug('Failed to list org projects:', e);
-            yield* ui.log.warn('Could not fetch projects from the server.');
-            yield* ui.log.info(
-              'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
-            );
-            yield* ui.outro('');
-            return yield* Effect.fail(e);
-          })
-        ),
-        Effect.catchTag('services/HttpDecodingError', e =>
-          Effect.gen(function* () {
-            yield* Effect.logDebug('Failed to decode org projects response:', e);
-            yield* ui.log.warn('Unexpected response from the server.');
-            yield* ui.log.info(
-              'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
-            );
-            yield* ui.outro('');
-            return yield* Effect.fail(e);
-          })
-        )
-      );
-
-      if (orgProjects.data.length === 0) {
-        yield* ui.log.warn('No projects found for your organization.');
-        yield* ui.log.info(
-          'Create a project at https://platform.composio.dev, then run `composio init` again.'
-        );
-        yield* ui.outro('');
-        return;
-      }
-
-      // 3. Select a project from the org's project list
-      const orgProjectToKeys = (p: OrgProject): ProjectKeys => ({
-        orgId: p.org_id,
-        projectId: p.id,
-        projectName: Option.some(p.name),
-        orgName: Option.none(),
-        email: Option.some(p.email),
-      });
-
-      const selectedProject: OrgProject =
-        orgProjects.data.length === 1
-          ? orgProjects.data[0]
-          : yield* ui.select<OrgProject>(
-              'Select a project:',
-              orgProjects.data.map(p => ({
-                value: p,
-                label: p.name,
-                hint: p.id,
-              }))
-            );
-
-      const selected = orgProjectToKeys(selectedProject);
-      yield* ui.log.step(`Using project "${selectedProject.name}"`);
-
-      // 4. Run the init wizard (usage mode → framework → install skills)
-      const config = yield* runInitWizard;
-
-      // 5. Write <cwd>/.composio/project.json + config.json + .gitignore
-      yield* writeProjectConfig(composioDir, selected, config);
-
-      // Future: if config.installSkills, run `npx skills add ComposioHQ/skills`
-      // Future: detect project env (TS monorepo / Python flat / etc.) and install
-      //         the appropriate Composio packages:
-      //         - TS (pnpm): pnpm add @composio/core @composio/<framework>
-      //         - TS (npm):  npm install @composio/core @composio/<framework>
-      //         - Python (uv): uv add composio composio[<framework>]
-      //         - Python (pip): pip install composio composio[<framework>]
-
-      yield* ui.log.success(`Project initialized in ${composioDir}/`);
-
-      // 6. Emit structured JSON for piped/scripted consumption (agent-native)
-      yield* ui.output(
-        JSON.stringify({
-          org_id: selected.orgId,
-          project_id: selected.projectId,
-          usage_mode: config.usageMode,
-          framework: config.framework ?? null,
-          install_skills: config.installSkills,
-          path: composioDir,
-        })
-      );
-
-      yield* ui.outro('');
+      yield* initInteractiveFlow({ composioDir, noBrowser, dryRun, force, yes });
     })
-).pipe(Command.withDescription('Initialize a Composio project in the current directory.'));
+).pipe(CliCommand.withDescription('Initialize a Composio project in the current directory.'));
+
+/**
+ * Interactive init flow — handles login, project selection, wizard, install.
+ * Extracted to keep the main command handler under the line limit.
+ */
+const initInteractiveFlow = (params: {
+  composioDir: string;
+  noBrowser: boolean;
+  dryRun: boolean;
+  force: boolean;
+  yes: boolean;
+}) =>
+  Effect.gen(function* () {
+    const { composioDir, noBrowser, dryRun, force, yes } = params;
+    const ui = yield* TerminalUI;
+    const ctx = yield* ComposioUserContext;
+    const proc = yield* NodeProcess;
+
+    // 1. Ensure user is logged in
+    if (!ctx.isLoggedIn()) {
+      yield* ui.log.step('No credentials found. Logging in...');
+      yield* browserLogin({ scope: 'project', noBrowser });
+    }
+
+    // 2. Fetch projects
+    const apiKey = Option.getOrUndefined(ctx.data.apiKey);
+    const orgIdValue = Option.getOrUndefined(ctx.data.orgId);
+    const projectIdValue = Option.getOrUndefined(ctx.data.projectId);
+    if (!apiKey || !orgIdValue || !projectIdValue) {
+      yield* ui.log.warn(
+        'No API key, org ID, or project ID found. Please try `composio login` first.'
+      );
+      yield* ui.outro('');
+      return;
+    }
+
+    const orgProjects = yield* listOrgProjects({
+      baseURL: ctx.data.baseURL,
+      apiKey,
+      orgId: orgIdValue,
+      projectId: projectIdValue,
+    }).pipe(
+      Effect.catchTag('services/HttpServerError', e =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug('Failed to list org projects:', e);
+          yield* ui.log.warn('Could not fetch projects from the server.');
+          yield* ui.log.info(
+            'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
+          );
+          yield* ui.outro('');
+          return yield* Effect.fail(e);
+        })
+      ),
+      Effect.catchTag('services/HttpDecodingError', e =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug('Failed to decode org projects response:', e);
+          yield* ui.log.warn('Unexpected response from the server.');
+          yield* ui.log.info(
+            'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
+          );
+          yield* ui.outro('');
+          return yield* Effect.fail(e);
+        })
+      )
+    );
+
+    if (orgProjects.data.length === 0) {
+      yield* ui.log.warn('No projects found for your organization.');
+      yield* ui.log.info(
+        'Create a project at https://platform.composio.dev, then run `composio init` again.'
+      );
+      yield* ui.outro('');
+      return;
+    }
+
+    // 3. Select a project
+    const orgProjectToKeys = (p: OrgProject): ProjectKeys => ({
+      orgId: p.org_id,
+      projectId: p.id,
+      projectName: Option.some(p.name),
+      orgName: Option.none(),
+      email: Option.some(p.email),
+    });
+
+    const selectedProject: OrgProject =
+      orgProjects.data.length === 1
+        ? orgProjects.data[0]
+        : yield* ui.select<OrgProject>(
+            'Select a project:',
+            orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
+          );
+
+    const selected = orgProjectToKeys(selectedProject);
+    yield* ui.log.step(`Using project "${selectedProject.name}"`);
+
+    // 4. Run wizard + write config + install
+    const config = yield* runInitWizard(proc.cwd);
+    yield* writeProjectConfig(composioDir, selected, config);
+    yield* runInstallStep({ config, cwd: proc.cwd, dryRun, force, yes });
+
+    yield* ui.log.success(`Project initialized in ${composioDir}/`);
+    yield* ui.output(makeOutputJson(selected, config, composioDir));
+    yield* ui.outro('');
+  });
