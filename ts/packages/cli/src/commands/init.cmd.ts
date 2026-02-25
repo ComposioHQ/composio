@@ -15,7 +15,11 @@ import {
   type ProjectEnvironment,
 } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
-import { resolveCoreDependencyState, type CoreDependencyPlan } from 'src/effects/core-dependency';
+import {
+  detectCoreDependencyPlan,
+  resolveCoreDependencyState,
+  type CoreDependencyPlan,
+} from 'src/effects/core-dependency';
 
 /**
  * `composio init` — Initialize a Composio project in the current directory.
@@ -208,10 +212,11 @@ const detectEnvironment = (cwd: string) =>
 
 /**
  * Resolve the install plan for the detected environment.
- * Returns `{ plan, installedVersion }` or `undefined` if detection was skipped.
+ * Only determines WHAT to install (no version checking or shell commands).
+ * Version checking is deferred to `runInstallStep`.
  */
 const resolveInstallPlan = (cwd: string) =>
-  resolveCoreDependencyState(cwd).pipe(Effect.catchAll(() => Effect.succeed(null)));
+  detectCoreDependencyPlan(cwd).pipe(Effect.catchAll(() => Effect.succeed(null)));
 
 /**
  * Runs the interactive init wizard.
@@ -251,15 +256,15 @@ const runInitWizard = (cwd: string) =>
     // Step 4: Detect project environment
     const detectedEnv = yield* detectEnvironment(cwd);
 
-    // Step 5: Resolve install plan
-    const installState = detectedEnv ? yield* resolveInstallPlan(cwd) : null;
+    // Step 5: Resolve install plan (only determines WHAT to install, no shell commands)
+    const installPlan = detectedEnv ? yield* resolveInstallPlan(cwd) : null;
 
     return InitConfigBuilder.create()
       .withUsageMode(usageMode)
       .withFramework(framework)
       .withInstallSkills(installSkills)
       .withDetectedEnv(detectedEnv)
-      .withInstallPlan(installState?.plan)
+      .withInstallPlan(installPlan ?? undefined)
       .build();
   });
 
@@ -333,23 +338,25 @@ const runInstallStep = (params: {
     const runner = yield* CommandRunner;
     const plan = config.installPlan;
 
-    // Check if already installed
-    const depState = yield* resolveCoreDependencyState(cwd).pipe(
-      Effect.catchAll(() => Effect.succeed({ plan, installedVersion: null }))
-    );
+    // Check if already installed (only for JS — Python version check requires shell)
+    if (plan.kind === 'js') {
+      const depState = yield* resolveCoreDependencyState(cwd).pipe(
+        Effect.catchAll(() => Effect.succeed({ plan, installedVersion: null }))
+      );
 
-    if (depState.installedVersion && !force) {
-      const detail =
-        depState.installedVersion.source === 'package.json'
-          ? `declared in package.json (${depState.installedVersion.version})`
-          : `${depState.installedVersion.version} (${depState.installedVersion.source})`;
-      yield* ui.log.info(`Found ${plan.dependency}: ${detail}`);
-      yield* ui.log.success('Dependency already installed.');
-      return;
-    }
+      if (depState.installedVersion && !force) {
+        const detail =
+          depState.installedVersion.source === 'package.json'
+            ? `declared in package.json (${depState.installedVersion.version})`
+            : `${depState.installedVersion.version} (${depState.installedVersion.source})`;
+        yield* ui.log.info(`Found ${plan.dependency}: ${detail}`);
+        yield* ui.log.success('Dependency already installed.');
+        return;
+      }
 
-    if (depState.installedVersion && force) {
-      yield* ui.log.warn('Reinstalling due to --force.');
+      if (depState.installedVersion && force) {
+        yield* ui.log.warn('Reinstalling due to --force.');
+      }
     }
 
     if (dryRun) {
