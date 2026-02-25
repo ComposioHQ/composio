@@ -167,7 +167,6 @@ export const logsCmd$Triggers = Command.make(
         Effect.tryPromise(() =>
           client.logs.triggers.list({
             cursor: Option.getOrUndefined(cursor),
-            userId: Option.getOrUndefined(userId),
             from: Option.getOrUndefined(from),
             to: Option.getOrUndefined(to),
             limit: clampedLimit,
