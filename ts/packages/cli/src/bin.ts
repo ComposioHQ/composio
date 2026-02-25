@@ -10,6 +10,7 @@ import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import { BaseConfigProviderLive, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
+  ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
 } from 'src/services/composio-clients';
@@ -85,6 +86,9 @@ const layers = Layer.mergeAll(
   UpgradeBinaryLive,
   ComposioUserContextLive,
   ComposioSessionRepositoryLive,
+  ComposioClientSingleton.Default.pipe(
+    Layer.provide(Layer.mergeAll(BunFileSystem.layer, NodeOs.Default))
+  ),
   ComposioToolkitsRepositoryCachedLive, // Use the cached layer instead of the regular one
   ToolsExecutorLive,
   EnvLangDetector.Default,

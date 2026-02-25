@@ -1,10 +1,8 @@
-import { Composio } from '@composio/client';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import type { Logs } from '@composio/client/resources/logs/logs';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
@@ -110,19 +108,8 @@ export const logsCmd$Tools = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
-      const ctx = yield* ComposioUserContext;
-      const composio = new Composio({
-        apiKey: Option.getOrUndefined(ctx.data.apiKey),
-        baseURL: ctx.data.baseURL,
-      });
-      const logsClient = composio as unknown as {
-        logs: {
-          tools: {
-            retrieve: (id: string) => Promise<Logs.ToolRetrieveResponse>;
-            list: (body: Logs.ToolListParams) => Promise<Logs.ToolListResponse>;
-          };
-        };
-      };
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
       const clampedLimit = clampLimit(limit);
       const parsedSearchParams = parseSearchParams(query);
       const shorthandSearchParams = [
@@ -145,10 +132,7 @@ export const logsCmd$Tools = Command.make(
       if (toolLogId) {
         const toolLog = yield* ui.withSpinner(
           `Fetching tool log "${toolLogId}"...`,
-          Effect.tryPromise({
-            try: () => logsClient.logs.tools.retrieve(toolLogId),
-            catch: error => new Error(String(error)),
-          })
+          Effect.tryPromise(() => client.logs.tools.retrieve(toolLogId))
         );
 
         yield* ui.log.info(
@@ -160,18 +144,16 @@ export const logsCmd$Tools = Command.make(
 
       const response = yield* ui.withSpinner(
         'Fetching tool logs...',
-        Effect.tryPromise({
-          try: () =>
-            logsClient.logs.tools.list({
-              cursor: Option.getOrUndefined(cursor) ?? null,
-              from: Option.getOrUndefined(from),
-              to: Option.getOrUndefined(to),
-              limit: clampedLimit,
-              case_sensitive: caseSensitive,
-              search_params: combinedSearchParams.length > 0 ? combinedSearchParams : undefined,
-            }),
-          catch: error => new Error(String(error)),
-        })
+        Effect.tryPromise(() =>
+          client.logs.tools.list({
+            cursor: Option.getOrUndefined(cursor) ?? null,
+            from: Option.getOrUndefined(from),
+            to: Option.getOrUndefined(to),
+            limit: clampedLimit,
+            case_sensitive: caseSensitive,
+            search_params: combinedSearchParams.length > 0 ? combinedSearchParams : undefined,
+          })
+        )
       );
 
       const logs = response.data ?? [];

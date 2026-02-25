@@ -71,9 +71,10 @@ describe('formatToolLogsTable', () => {
 describe('formatToolLogInfo', () => {
   it('[Given] nullable app/connection/steps [Then] it renders fallback values', () => {
     const output = formatToolLogInfo(makeToolLogDetailed());
-    expect(output).toContain('toolkit: -');
-    expect(output).toContain('Connection ID: -');
-    expect(output).toContain('Entity: -');
-    expect(output).toContain('Steps: 0');
+    const plain = output.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('toolkit: -');
+    expect(plain).toContain('Connection ID: -');
+    expect(plain).toContain('Entity: -');
+    expect(plain).toContain('Steps: 0');
   });
 });

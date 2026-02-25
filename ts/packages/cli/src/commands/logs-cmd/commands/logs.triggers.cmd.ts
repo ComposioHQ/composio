@@ -1,9 +1,8 @@
-import { Composio } from '@composio/client';
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogsTable } from '../format';
@@ -136,11 +135,8 @@ export const logsCmd$Triggers = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
-      const ctx = yield* ComposioUserContext;
-      const composio = new Composio({
-        apiKey: Option.getOrUndefined(ctx.data.apiKey),
-        baseURL: ctx.data.baseURL,
-      });
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
       const clampedLimit = clampLimit(limit);
       const parsedSearchParams = parseSearchParams(query);
       const shorthandSearchParams = [
@@ -158,24 +154,22 @@ export const logsCmd$Triggers = Command.make(
 
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
-        Effect.tryPromise({
-          try: () =>
-            composio.logs.triggers.list({
-              cursor: Option.getOrUndefined(cursor),
-              entityId: Option.getOrUndefined(entityId),
-              integrationId: Option.getOrUndefined(integrationId),
-              userId: Option.getOrUndefined(userId),
-              from: Option.getOrUndefined(from),
-              to: Option.getOrUndefined(to),
-              limit: clampedLimit,
-              status: Option.getOrUndefined(status),
-              time: Option.getOrUndefined(time),
-              search: Option.getOrUndefined(search),
-              include_payload: includePayload,
-              search_params: combinedSearchParams.length > 0 ? combinedSearchParams : undefined,
-            }),
-          catch: error => new Error(String(error)),
-        })
+        Effect.tryPromise(() =>
+          client.logs.triggers.list({
+            cursor: Option.getOrUndefined(cursor),
+            entityId: Option.getOrUndefined(entityId),
+            integrationId: Option.getOrUndefined(integrationId),
+            userId: Option.getOrUndefined(userId),
+            from: Option.getOrUndefined(from),
+            to: Option.getOrUndefined(to),
+            limit: clampedLimit,
+            status: Option.getOrUndefined(status),
+            time: Option.getOrUndefined(time),
+            search: Option.getOrUndefined(search),
+            include_payload: includePayload,
+            search_params: combinedSearchParams.length > 0 ? combinedSearchParams : undefined,
+          })
+        )
       );
 
       const logs = response.data ?? [];

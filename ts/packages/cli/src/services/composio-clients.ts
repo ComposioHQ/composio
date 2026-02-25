@@ -792,7 +792,7 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
  * a raw (uneffectful, Promise-based) Composio client instance.
  */
-class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
+export class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
   'services/ComposioClientSingleton',
   {
     accessors: true,
