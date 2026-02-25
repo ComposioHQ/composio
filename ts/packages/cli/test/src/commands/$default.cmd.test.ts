@@ -15,7 +15,7 @@ describe('CLI: composio', () => {
         expect(result).toEqual(
           ValidationError.commandMismatch(
             HelpDoc.p(
-              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'generate', 'py', 'ts', 'toolkits', 'tools', 'auth-configs', 'connected-accounts', 'triggers'"
+              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'generate', 'py', 'ts', 'toolkits', 'tools', 'auth-configs', 'connected-accounts', 'triggers', 'logs'"
             )
           )
         );
@@ -56,91 +56,97 @@ describe('CLI: composio', () => {
 
           [0;1mCOMMANDS[0m
 
-            - version                                                                                                                                                                                             Display the current Composio CLI version.
+            - version                                                                                                                                                                                                                                                                                                                                          Display the current Composio CLI version.
 
-            - upgrade                                                                                                                                                                                             Upgrade your Composio CLI to the latest available version.
+            - upgrade                                                                                                                                                                                                                                                                                                                                          Upgrade your Composio CLI to the latest available version.
 
-            - whoami                                                                                                                                                                                              Display your account information.
+            - whoami                                                                                                                                                                                                                                                                                                                                           Display your account information.
 
-            - login [--no-browser]                                                                                                                                                                                Log in to the Composio SDK.
+            - login [--no-browser]                                                                                                                                                                                                                                                                                                                             Log in to the Composio SDK.
 
-            - logout                                                                                                                                                                                              Log out from the Composio SDK.
+            - logout                                                                                                                                                                                                                                                                                                                                           Log out from the Composio SDK.
 
-            - generate [(-o, --output-dir directory)] [--type-tools] --toolkits text...                                                                                                                           Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
+            - generate [(-o, --output-dir directory)] [--type-tools] --toolkits text...                                                                                                                                                                                                                                                                        Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
 
-            - py                                                                                                                                                                                                  Handle Python projects.
+            - py                                                                                                                                                                                                                                                                                                                                               Handle Python projects.
 
-            - py generate [(-o, --output-dir directory)] --toolkits text...                                                                                                                                       Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
-
-          Environment Variables:
-            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
-                                                Use "latest" or unset to use the latest version.
-
-            - ts                                                                                                                                                                                                  Handle TypeScript projects.
-
-            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...                                                                                             Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
+            - py generate [(-o, --output-dir directory)] --toolkits text...                                                                                                                                                                                                                                                                                    Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
 
           Environment Variables:
             COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
                                                 Use "latest" or unset to use the latest version.
 
-            - toolkits                                                                                                                                                                                            Discover and inspect Composio toolkits.
+            - ts                                                                                                                                                                                                                                                                                                                                               Handle TypeScript projects.
 
-            - toolkits list [--query text] [--limit integer]                                                                                                                                                      List available toolkits.
+            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...                                                                                                                                                                                                                                          Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
 
-            - toolkits info [<slug>]                                                                                                                                                                              View details of a specific toolkit.
+          Environment Variables:
+            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
+                                                Use "latest" or unset to use the latest version.
 
-            - toolkits search [--limit integer] <query>                                                                                                                                                           Search toolkits by use case.
+            - toolkits                                                                                                                                                                                                                                                                                                                                         Discover and inspect Composio toolkits.
 
-            - tools                                                                                                                                                                                               Discover and inspect Composio tools.
+            - toolkits list [--query text] [--limit integer]                                                                                                                                                                                                                                                                                                   List available toolkits.
 
-            - tools list [--query text] [--toolkits text] [--tags text] [--limit integer]                                                                                                                         List available tools.
+            - toolkits info [<slug>]                                                                                                                                                                                                                                                                                                                           View details of a specific toolkit.
 
-            - tools info [<slug>]                                                                                                                                                                                 View details of a specific tool.
+            - toolkits search [--limit integer] <query>                                                                                                                                                                                                                                                                                                        Search toolkits by use case.
 
-            - tools search [--toolkits text] [--limit integer] <query>                                                                                                                                            Search tools by use case.
+            - tools                                                                                                                                                                                                                                                                                                                                            Discover and inspect Composio tools.
 
-            - tools execute [(-d, --data text)] [--user-id text] [--connected-account-id text] [--toolkit-version text] <slug>                                                                                    Execute a tool by slug with JSON arguments.
+            - tools list [--query text] [--toolkits text] [--tags text] [--limit integer]                                                                                                                                                                                                                                                                      List available tools.
 
-            - auth-configs                                                                                                                                                                                        View and manage Composio auth configs.
+            - tools info [<slug>]                                                                                                                                                                                                                                                                                                                              View details of a specific tool.
 
-            - auth-configs list [--toolkits text] [--query text] [--limit integer]                                                                                                                                List auth configs.
+            - tools search [--toolkits text] [--limit integer] <query>                                                                                                                                                                                                                                                                                         Search tools by use case.
 
-            - auth-configs info [<id>]                                                                                                                                                                            View details of a specific auth config.
+            - tools execute [(-d, --data text)] [--user-id text] [--connected-account-id text] [--toolkit-version text] <slug>                                                                                                                                                                                                                                 Execute a tool by slug with JSON arguments.
 
-            - auth-configs create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credentials text] [<name>]                                                                                        Create a new auth config.
+            - auth-configs                                                                                                                                                                                                                                                                                                                                     View and manage Composio auth configs.
 
-            - auth-configs delete [(-y, --yes)] [<id>]                                                                                                                                                            Delete an auth config.
+            - auth-configs list [--toolkits text] [--query text] [--limit integer]                                                                                                                                                                                                                                                                             List auth configs.
 
-            - connected-accounts                                                                                                                                                                                  View and manage Composio connected accounts.
+            - auth-configs info [<id>]                                                                                                                                                                                                                                                                                                                         View details of a specific auth config.
 
-            - connected-accounts list [--toolkits text] [--user-id text] [--status INITIALIZING | INITIATED | ACTIVE | FAILED | EXPIRED | INACTIVE] [--limit integer]                                             List connected accounts.
+            - auth-configs create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credentials text] [<name>]                                                                                                                                                                                                                                     Create a new auth config.
 
-            - connected-accounts info [<id>]                                                                                                                                                                      View details of a specific connected account.
+            - auth-configs delete [(-y, --yes)] [<id>]                                                                                                                                                                                                                                                                                                         Delete an auth config.
 
-            - connected-accounts whoami [<id>]                                                                                                                                                                    Show the external account profile for a connected account.
+            - connected-accounts                                                                                                                                                                                                                                                                                                                               View and manage Composio connected accounts.
 
-            - connected-accounts delete [(-y, --yes)] [<id>]                                                                                                                                                      Delete a connected account.
+            - connected-accounts list [--toolkits text] [--user-id text] [--status INITIALIZING | INITIATED | ACTIVE | FAILED | EXPIRED | INACTIVE] [--limit integer]                                                                                                                                                                                          List connected accounts.
 
-            - connected-accounts link --auth-config text [--user-id text] [--no-browser]                                                                                                                          Link an external account via OAuth redirect.
+            - connected-accounts info [<id>]                                                                                                                                                                                                                                                                                                                   View details of a specific connected account.
 
-            - triggers                                                                                                                                                                                            Inspect and subscribe to trigger events.
+            - connected-accounts whoami [<id>]                                                                                                                                                                                                                                                                                                                 Show the external account profile for a connected account.
 
-            - triggers list [--toolkits text] [--limit integer]                                                                                                                                                   List available trigger types.
+            - connected-accounts delete [(-y, --yes)] [<id>]                                                                                                                                                                                                                                                                                                   Delete a connected account.
 
-            - triggers info [<slug>]                                                                                                                                                                              View details of a specific trigger type.
+            - connected-accounts link --auth-config text [--user-id text] [--no-browser]                                                                                                                                                                                                                                                                       Link an external account via OAuth redirect.
 
-            - triggers listen [--toolkits text] [--trigger-id text] [--connected-account-id text] [--trigger-slug text] [--user-id text] [--json] [--table] [--max-events integer] [--forward text] [--out text]  Listen to realtime trigger events for your project.
+            - triggers                                                                                                                                                                                                                                                                                                                                         Inspect and subscribe to trigger events.
 
-            - triggers status [--user-ids text] [--connected-account-ids text] [--toolkits text] [--trigger-ids text] [--trigger-names text] [--show-disabled] [--limit integer]                                  Show active triggers with optional filters.
+            - triggers list [--toolkits text] [--limit integer]                                                                                                                                                                                                                                                                                                List available trigger types.
 
-            - triggers create [--connected-account-id text] [--trigger-config text] [<trigger-name>]                                                                                                              Create a new trigger instance.
+            - triggers info [<slug>]                                                                                                                                                                                                                                                                                                                           View details of a specific trigger type.
 
-            - triggers enable [<id>]                                                                                                                                                                              Enable a trigger instance.
+            - triggers listen [--toolkits text] [--trigger-id text] [--connected-account-id text] [--trigger-slug text] [--user-id text] [--json] [--table] [--max-events integer] [--forward text] [--out text]                                                                                                                                               Listen to realtime trigger events for your project.
 
-            - triggers disable [<id>]                                                                                                                                                                             Disable a trigger instance.
+            - triggers status [--user-ids text] [--connected-account-ids text] [--toolkits text] [--trigger-ids text] [--trigger-names text] [--show-disabled] [--limit integer]                                                                                                                                                                               Show active triggers with optional filters.
 
-            - triggers delete [(-y, --yes)] [<id>]                                                                                                                                                                Delete a trigger instance.
+            - triggers create [--connected-account-id text] [--trigger-config text] [<trigger-name>]                                                                                                                                                                                                                                                           Create a new trigger instance.
+
+            - triggers enable [<id>]                                                                                                                                                                                                                                                                                                                           Enable a trigger instance.
+
+            - triggers disable [<id>]                                                                                                                                                                                                                                                                                                                          Disable a trigger instance.
+
+            - triggers delete [(-y, --yes)] [<id>]                                                                                                                                                                                                                                                                                                             Delete a trigger instance.
+
+            - logs                                                                                                                                                                                                                                                                                                                                             Inspect trigger and tool execution logs.
+
+            - logs triggers [--cursor text] [--entity-id text] [--integration-id text] [--user-id text] [--toolkits text] [--connected-accounts text] [--triggers text] [--from integer] [--to integer] [--limit integer] [--status all | success | error] [--time 5m | 30m | 6h | 1d | 1w | 1month | 1y] [--search text] [--include-payload] --query text...  List trigger logs.
+
+            - logs tools [--cursor integer] [--from integer] [--to integer] [--limit integer] [--case-sensitive] [--toolkits text] [--connected-accounts text] [--tools text] [--user-id text] --query text... [<log_id>]                                                                                                                                      List tool execution logs, or pass a log_id to fetch a specific log.
           "
         `);
       })

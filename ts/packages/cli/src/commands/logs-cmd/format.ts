@@ -1,0 +1,122 @@
+import type { Logs } from '@composio/client/resources/logs/logs';
+import { bold, gray } from 'src/ui/colors';
+import { truncate } from 'src/ui/truncate';
+
+type TriggerLog = Logs.TriggerListResponse.Data;
+type ToolLog = Logs.ToolListResponse.Data;
+type ToolLogDetailed = Logs.ToolRetrieveResponse;
+
+const TRIGGER_LOG_TABLE = {
+  createdAt: 24,
+  status: 8,
+  app: 12,
+  triggerName: 28,
+  userId: 16,
+  connectedAccountId: 20,
+} as const;
+
+const TOOL_LOG_TABLE = {
+  id: 18,
+  createdAt: 24,
+  status: 8,
+  app: 12,
+  actionKey: 28,
+  executionMs: 12,
+  connectedAccountId: 20,
+} as const;
+
+export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLog>): string => {
+  const header = [
+    bold('Created At'.padEnd(TRIGGER_LOG_TABLE.createdAt)),
+    bold('Status'.padEnd(TRIGGER_LOG_TABLE.status)),
+    bold('App'.padEnd(TRIGGER_LOG_TABLE.app)),
+    bold('Trigger'.padEnd(TRIGGER_LOG_TABLE.triggerName)),
+    bold('User Id'.padEnd(TRIGGER_LOG_TABLE.userId)),
+    bold('Connected Account'),
+  ].join(' ');
+
+  const rows = logs.map(log => {
+    const createdAt = gray(
+      truncate(log.createdAt ?? '-', TRIGGER_LOG_TABLE.createdAt).padEnd(
+        TRIGGER_LOG_TABLE.createdAt
+      )
+    );
+    const status = truncate(log.status ?? '-', TRIGGER_LOG_TABLE.status).padEnd(
+      TRIGGER_LOG_TABLE.status
+    );
+    const app = truncate(log.appName ?? '-', TRIGGER_LOG_TABLE.app).padEnd(TRIGGER_LOG_TABLE.app);
+    const triggerName = truncate(
+      log.meta?.triggerName ?? '-',
+      TRIGGER_LOG_TABLE.triggerName
+    ).padEnd(TRIGGER_LOG_TABLE.triggerName);
+    const userId = truncate(log.entityId ?? '-', TRIGGER_LOG_TABLE.userId).padEnd(
+      TRIGGER_LOG_TABLE.userId
+    );
+    const connectedAccountId = truncate(
+      log.connectionId ?? '-',
+      TRIGGER_LOG_TABLE.connectedAccountId
+    );
+
+    return [createdAt, status, app, triggerName, userId, connectedAccountId].join(' ');
+  });
+
+  return [header, ...rows].join('\n');
+};
+
+export const formatToolLogsTable = (logs: ReadonlyArray<ToolLog>): string => {
+  const header = [
+    bold('Log Id'.padEnd(TOOL_LOG_TABLE.id)),
+    bold('Created At'.padEnd(TOOL_LOG_TABLE.createdAt)),
+    bold('Status'.padEnd(TOOL_LOG_TABLE.status)),
+    bold('App'.padEnd(TOOL_LOG_TABLE.app)),
+    bold('Action'.padEnd(TOOL_LOG_TABLE.actionKey)),
+    bold('Exec Time'.padEnd(TOOL_LOG_TABLE.executionMs)),
+    bold('Connected Account'),
+  ].join(' ');
+
+  const rows = logs.map(log => {
+    // Keep log ids untruncated for copy/paste workflows.
+    const id = (log.id ?? '-').padEnd(TOOL_LOG_TABLE.id);
+    const createdAt = gray(
+      truncate(formatEpoch(log.createdAt), TOOL_LOG_TABLE.createdAt).padEnd(
+        TOOL_LOG_TABLE.createdAt
+      )
+    );
+    const status = truncate(log.status ?? '-', TOOL_LOG_TABLE.status).padEnd(TOOL_LOG_TABLE.status);
+    const app = truncate(log.app?.name ?? '-', TOOL_LOG_TABLE.app).padEnd(TOOL_LOG_TABLE.app);
+    const actionKey = truncate(log.actionKey ?? '-', TOOL_LOG_TABLE.actionKey).padEnd(
+      TOOL_LOG_TABLE.actionKey
+    );
+    const executionMs = `${log.executionTime ?? 0}ms`.padEnd(TOOL_LOG_TABLE.executionMs);
+    const connectedAccountId = truncate(
+      log.connectedAccountId ?? '-',
+      TOOL_LOG_TABLE.connectedAccountId
+    );
+
+    return [id, createdAt, status, app, actionKey, executionMs, connectedAccountId].join(' ');
+  });
+
+  return [header, ...rows].join('\n');
+};
+
+const formatEpoch = (value: number): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toISOString();
+};
+
+export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {
+  const lines: string[] = [];
+  lines.push(`${bold('logId:')} ${toolLog.actionLogId}`);
+  lines.push(`${bold('toolSlug:')} ${toolLog.actionId}`);
+  lines.push(`${bold('Status:')} ${toolLog.status}`);
+  lines.push(`${bold('toolkit:')} ${toolLog.app.name}`);
+  lines.push(`${bold('Connection ID:')} ${toolLog.connection.id}`);
+  lines.push(`${bold('Entity:')} ${toolLog.connection.entity}`);
+  lines.push(`${bold('Start Time:')} ${formatEpoch(toolLog.startTime)}`);
+  lines.push(`${bold('End Time:')} ${formatEpoch(toolLog.endTime)}`);
+  lines.push(`${bold('Total Duration:')} ${toolLog.totalDuration}`);
+  lines.push(`${bold('Version:')} ${toolLog.version}`);
+  lines.push(`${bold('Steps:')} ${toolLog.steps.length}`);
+  return lines.join('\n');
+};
