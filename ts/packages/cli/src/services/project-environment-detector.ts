@@ -2,6 +2,7 @@ import { BunFileSystem } from '@effect/platform-bun';
 import { FileSystem } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
 import * as path from 'node:path';
+import process from 'node:process';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
@@ -40,7 +41,7 @@ export class ProjectEnvironmentDetectorError extends Data.TaggedError(
 
 const JS_LOCK_FILES: Record<JsPackageManager, string[]> = {
   pnpm: ['pnpm-lock.yaml', 'pnpm-workspace.yaml'],
-  bun: ['bun.lockb'],
+  bun: ['bun.lockb', 'bun.lock'],
   yarn: ['yarn.lock'],
   npm: ['package-lock.json', 'npm-shrinkwrap.json'],
   deno: ['deno.lock', 'deno.lock.json'],
@@ -177,6 +178,20 @@ const parsePackageManagerField = (pm: string) =>
     ),
     Match.orElse(() => null)
   );
+
+/**
+ * Detect package manager from the `npm_config_user_agent` env var.
+ * Set automatically when running via `npx`, `pnpm dlx`, `bunx`, etc.
+ * Inspired by https://github.com/prisma/create-prisma/blob/main/src/utils/package-manager.ts
+ */
+const parseUserAgent = (userAgent: string | undefined): JsPackageManager | null => {
+  if (!userAgent) return null;
+  if (userAgent.startsWith('pnpm')) return 'pnpm';
+  if (userAgent.startsWith('bun')) return 'bun';
+  if (userAgent.startsWith('yarn')) return 'yarn';
+  if (userAgent.startsWith('npm')) return 'npm';
+  return null;
+};
 
 // ---------------------------------------------------------------------------
 // FS helpers (take FileSystem as parameter)
@@ -469,6 +484,9 @@ const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
 
       if (fileSet.has('pnpm-workspace.yaml')) return 'pnpm' as const;
     }
+
+    const userAgent = parseUserAgent(process.env.npm_config_user_agent);
+    if (userAgent) return userAgent;
 
     return 'npm' as const;
   });

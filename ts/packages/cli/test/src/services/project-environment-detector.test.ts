@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import { describe, expect, layer } from '@effect/vitest';
+import { vi, afterEach } from 'vitest';
 import { Effect, Layer } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
@@ -77,6 +78,22 @@ describe('ProjectEnvironmentDetector', () => {
 
           yield* writeFile(fs, path.join(cwd, 'package.json'), JSON.stringify({ name: 'test' }));
           yield* writeFile(fs, path.join(cwd, 'bun.lockb'), '');
+
+          const result = yield* detector.detectProjectEnvironment(cwd);
+
+          expect(result.kind).toBe('js');
+          expect(result.packageManager).toBe('bun');
+        })
+      );
+
+      it.scoped('[Given] bun.lock (text format) [Then] detects bun', () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const detector = yield* ProjectEnvironmentDetector;
+          const cwd = tempy.temporaryDirectory();
+
+          yield* writeFile(fs, path.join(cwd, 'package.json'), JSON.stringify({ name: 'test' }));
+          yield* writeFile(fs, path.join(cwd, 'bun.lock'), '{}');
 
           const result = yield* detector.detectProjectEnvironment(cwd);
 
@@ -299,9 +316,61 @@ describe('ProjectEnvironmentDetector', () => {
           const detector = yield* ProjectEnvironmentDetector;
           const cwd = tempy.temporaryDirectory();
 
-          const result = yield* detector.detectJsPackageManager(cwd);
-          expect(result).toBe('npm');
+          const original = process.env.npm_config_user_agent;
+          delete process.env.npm_config_user_agent;
+          try {
+            const result = yield* detector.detectJsPackageManager(cwd);
+            expect(result).toBe('npm');
+          } finally {
+            if (original !== undefined) {
+              process.env.npm_config_user_agent = original;
+            }
+          }
         })
+      );
+
+      it.scoped(
+        '[Given] no lock file, no packageManager field, but npm_config_user_agent=pnpm [Then] detects pnpm',
+        () =>
+          Effect.gen(function* () {
+            const detector = yield* ProjectEnvironmentDetector;
+            const cwd = tempy.temporaryDirectory();
+
+            const original = process.env.npm_config_user_agent;
+            process.env.npm_config_user_agent = 'pnpm/9.15.0 npm/? node/v20.11.0';
+            try {
+              const result = yield* detector.detectJsPackageManager(cwd);
+              expect(result).toBe('pnpm');
+            } finally {
+              if (original === undefined) {
+                delete process.env.npm_config_user_agent;
+              } else {
+                process.env.npm_config_user_agent = original;
+              }
+            }
+          })
+      );
+
+      it.scoped(
+        '[Given] no lock file, no packageManager field, but npm_config_user_agent=bun [Then] detects bun',
+        () =>
+          Effect.gen(function* () {
+            const detector = yield* ProjectEnvironmentDetector;
+            const cwd = tempy.temporaryDirectory();
+
+            const original = process.env.npm_config_user_agent;
+            process.env.npm_config_user_agent = 'bun/1.1.0';
+            try {
+              const result = yield* detector.detectJsPackageManager(cwd);
+              expect(result).toBe('bun');
+            } finally {
+              if (original === undefined) {
+                delete process.env.npm_config_user_agent;
+              } else {
+                process.env.npm_config_user_agent = original;
+              }
+            }
+          })
       );
     });
   });

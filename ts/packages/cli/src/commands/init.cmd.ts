@@ -67,6 +67,11 @@ const yesOpt = Options.boolean('yes').pipe(
   Options.withDescription('Skip confirmation prompts')
 );
 
+const noSkillsOpt = Options.boolean('no-skills').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Skip Composio skills installation')
+);
+
 // ---------------------------------------------------------------------------
 // Init config types and options
 // ---------------------------------------------------------------------------
@@ -219,18 +224,40 @@ const resolveInstallPlan = (cwd: string) =>
   detectCoreDependencyPlan(cwd).pipe(Effect.catchAll(() => Effect.succeed(null)));
 
 /**
+ * After detecting the project environment and resolving an install plan,
+ * ask the user to confirm the detected package manager or skip installation.
+ * Returns the plan if confirmed, `undefined` if skipped.
+ */
+const confirmInstallPlan = (plan: CoreDependencyPlan) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+
+    type PmChoice = 'confirm' | 'skip';
+    const choice = yield* ui.select<PmChoice>(
+      `Install ${plan.dependency} using ${plan.packageManager}?`,
+      [
+        { value: 'confirm' as PmChoice, label: plan.packageManager, hint: plan.installCommand },
+        { value: 'skip' as PmChoice, label: 'Skip' },
+      ]
+    );
+
+    return choice === 'confirm' ? plan : undefined;
+  });
+
+/**
  * Runs the interactive init wizard.
  *
  * Steps:
  * 1. Usage mode — "Native tools" or "Composio MCP"
  * 2. Framework — which agent framework (only if native)
  * 3. Install skills — whether to install Composio coding-agent skills
- * 4. Detect project environment (TS/Python, monorepo/flat, package manager)
- * 5. Resolve install plan
+ * 4. Detect project environment (only if native)
+ * 5. Resolve + confirm install plan (only if native and environment detected)
  *
+ * All inputs are collected through the builder before any side effects run.
  * Returns a fully-built `InitConfig`.
  */
-const runInitWizard = (cwd: string) =>
+const runInitWizard = (cwd: string, params: { noSkills: boolean }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
 
@@ -248,23 +275,36 @@ const runInitWizard = (cwd: string) =>
             .pipe(Effect.map(fw => (fw === 'skip' ? undefined : fw)))
         : undefined;
 
-    // Step 3: Install Composio skills
-    const installSkills = yield* ui.confirm('Install Composio skills for your Coding Agent?', {
-      defaultValue: true,
-    });
+    // Step 3: Install Composio skills (skip prompt when --no-skills)
+    const installSkills = params.noSkills
+      ? false
+      : yield* ui.confirm('Install Composio skills for your Coding Agent?', {
+          defaultValue: true,
+        });
 
-    // Step 4: Detect project environment
-    const detectedEnv = yield* detectEnvironment(cwd);
+    // Steps 4+5: Detect environment + confirm install plan (only for native tools)
+    let detectedEnv: ProjectEnvironment | undefined;
+    let installPlan: CoreDependencyPlan | undefined;
 
-    // Step 5: Resolve install plan (only determines WHAT to install, no shell commands)
-    const installPlan = detectedEnv ? yield* resolveInstallPlan(cwd) : null;
+    if (usageMode === 'native') {
+      // Step 4: Detect project environment
+      detectedEnv = yield* detectEnvironment(cwd);
+
+      // Step 5: Resolve install plan and confirm package manager
+      if (detectedEnv) {
+        const plan = yield* resolveInstallPlan(cwd);
+        if (plan) {
+          installPlan = yield* confirmInstallPlan(plan);
+        }
+      }
+    }
 
     return InitConfigBuilder.create()
       .withUsageMode(usageMode)
       .withFramework(framework)
       .withInstallSkills(installSkills)
       .withDetectedEnv(detectedEnv)
-      .withInstallPlan(installPlan ?? undefined)
+      .withInstallPlan(installPlan)
       .build();
   });
 
@@ -400,6 +440,70 @@ const runInstallStep = (params: {
   });
 
 // ---------------------------------------------------------------------------
+// Skills install step — runs `npx skills add composiohq/skills`
+// ---------------------------------------------------------------------------
+
+const SKILLS_INSTALL_COMMAND = 'npx skills add composiohq/skills';
+
+/**
+ * Runs the Composio skills installation step.
+ * Uses `npx skills add composiohq/skills` to install coding-agent skills.
+ */
+const runSkillsInstallStep = (params: {
+  config: InitConfig;
+  cwd: string;
+  dryRun: boolean;
+  yes: boolean;
+}) =>
+  Effect.gen(function* () {
+    const { config, cwd, dryRun, yes } = params;
+    if (!config.installSkills) return;
+
+    const ui = yield* TerminalUI;
+    const runner = yield* CommandRunner;
+
+    if (dryRun) {
+      yield* ui.note(SKILLS_INSTALL_COMMAND, 'Skills Install Command');
+      return;
+    }
+
+    const shouldInstall =
+      yes || (yield* ui.confirm(`Run: ${SKILLS_INSTALL_COMMAND}?`, { defaultValue: true }));
+    if (!shouldInstall) {
+      yield* ui.log.warn('Skills installation cancelled.');
+      return;
+    }
+
+    const [cmd, ...args] = SKILLS_INSTALL_COMMAND.split(' ');
+    const command = PlatformCommand.make(cmd!, ...args).pipe(
+      PlatformCommand.workingDirectory(cwd)
+    );
+
+    const install = Effect.gen(function* () {
+      const exitCode = yield* runner.run(command);
+      if (exitCode !== 0) {
+        yield* Effect.fail(new Error(`Skills install command failed with exit code ${exitCode}`));
+      }
+    });
+
+    yield* ui
+      .withSpinner('Installing Composio skills...', install, {
+        successMessage: 'Installed Composio skills.',
+        errorMessage: 'Failed to install Composio skills.',
+      })
+      .pipe(
+        Effect.catchAll(e =>
+          Effect.gen(function* () {
+            yield* ui.log.error(
+              `Skills install failed: ${e instanceof Error ? e.message : String(e)}`
+            );
+            yield* ui.log.info(`You can install manually: ${SKILLS_INSTALL_COMMAND}`);
+          })
+        )
+      );
+  });
+
+// ---------------------------------------------------------------------------
 // Structured output helper
 // ---------------------------------------------------------------------------
 
@@ -445,8 +549,9 @@ export const initCmd = CliCommand.make(
     dryRun: dryRunOpt,
     force: forceOpt,
     yes: yesOpt,
+    noSkills: noSkillsOpt,
   },
-  ({ orgId, projectId, noBrowser, dryRun, force, yes }) =>
+  ({ orgId, projectId, noBrowser, dryRun, force, yes, noSkills }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
@@ -466,9 +571,10 @@ export const initCmd = CliCommand.make(
           email: Option.none(),
         };
 
-        const config = yield* runInitWizard(proc.cwd);
+        const config = yield* runInitWizard(proc.cwd, { noSkills });
         yield* writeProjectConfig(composioDir, selected, config);
         yield* runInstallStep({ config, cwd: proc.cwd, dryRun, force, yes });
+        yield* runSkillsInstallStep({ config, cwd: proc.cwd, dryRun, yes });
 
         yield* ui.log.success(`Project initialized in ${composioDir}/`);
         yield* ui.output(makeOutputJson(selected, config, composioDir));
@@ -476,7 +582,7 @@ export const initCmd = CliCommand.make(
         return;
       }
 
-      yield* initInteractiveFlow({ composioDir, noBrowser, dryRun, force, yes });
+      yield* initInteractiveFlow({ composioDir, noBrowser, dryRun, force, yes, noSkills });
     })
 ).pipe(CliCommand.withDescription('Initialize a Composio project in the current directory.'));
 
@@ -490,9 +596,10 @@ const initInteractiveFlow = (params: {
   dryRun: boolean;
   force: boolean;
   yes: boolean;
+  noSkills: boolean;
 }) =>
   Effect.gen(function* () {
-    const { composioDir, noBrowser, dryRun, force, yes } = params;
+    const { composioDir, noBrowser, dryRun, force, yes, noSkills } = params;
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
     const proc = yield* NodeProcess;
@@ -575,9 +682,10 @@ const initInteractiveFlow = (params: {
     yield* ui.log.step(`Using project "${selectedProject.name}"`);
 
     // 4. Run wizard + write config + install
-    const config = yield* runInitWizard(proc.cwd);
+    const config = yield* runInitWizard(proc.cwd, { noSkills });
     yield* writeProjectConfig(composioDir, selected, config);
     yield* runInstallStep({ config, cwd: proc.cwd, dryRun, force, yes });
+    yield* runSkillsInstallStep({ config, cwd: proc.cwd, dryRun, yes });
 
     yield* ui.log.success(`Project initialized in ${composioDir}/`);
     yield* ui.output(makeOutputJson(selected, config, composioDir));
