@@ -1,11 +1,12 @@
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option, Schedule } from 'effect';
 import open from 'open';
-import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { createToolRouterSession } from 'src/effects/create-tool-router-session';
+import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
+import { extractMessage } from 'src/utils/api-error-extraction';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -43,15 +44,29 @@ const waitForActiveConnection = (
     yield* ui.output(redirectUrl);
 
     if (!noBrowser) {
-      yield* Effect.tryPromise(() => open(redirectUrl, { wait: false })).pipe(
-        Effect.catchAll(error =>
-          Effect.gen(function* () {
-            yield* Effect.logDebug('Failed to open browser:', error);
-            yield* ui.log.warn('Could not open the browser automatically.');
-            yield* ui.log.info('Tip: try using `--no-browser` and open the URL manually.');
-          })
-        )
-      );
+      // Validate URL scheme before opening — prevent non-HTTPS redirects
+      let urlSchemeValid = false;
+      try {
+        const parsed = new URL(redirectUrl);
+        urlSchemeValid = parsed.protocol === 'https:' || parsed.protocol === 'http:';
+      } catch {
+        // Malformed URL — fall through to the warning below
+      }
+
+      if (!urlSchemeValid) {
+        yield* ui.log.warn(`Redirect URL has an unexpected scheme: ${redirectUrl}`);
+        yield* ui.log.info('Open the URL manually if you trust the source.');
+      } else {
+        yield* Effect.tryPromise(() => open(redirectUrl, { wait: false })).pipe(
+          Effect.catchAll(error =>
+            Effect.gen(function* () {
+              yield* Effect.logDebug('Failed to open browser:', error);
+              yield* ui.log.warn('Could not open the browser automatically.');
+              yield* ui.log.info('Tip: try using `--no-browser` and open the URL manually.');
+            })
+          )
+        );
+      }
     }
 
     // Poll until the connected account becomes ACTIVE
@@ -166,14 +181,12 @@ export const connectedAccountsCmd$Link = Command.make(
       } else {
         // Path B: Tool Router flow — toolkit is guaranteed Some (validated above)
         const toolkitSlug = Option.getOrThrow(toolkit);
-        const clientSingleton = yield* ComposioClientSingleton;
-        const client = yield* clientSingleton.get();
 
         const linkOpt = yield* ui
           .withSpinner(
             `Linking ${toolkitSlug}...`,
             Effect.gen(function* () {
-              const sessionId = yield* createToolRouterSession(client, userId, {
+              const { client, sessionId } = yield* resolveToolRouterSession(userId, {
                 manageConnections: true,
               });
               return yield* Effect.tryPromise(() =>
@@ -185,14 +198,8 @@ export const connectedAccountsCmd$Link = Command.make(
             Effect.asSome,
             Effect.catchAll(error =>
               Effect.gen(function* () {
-                // Surface the API error message when available
                 const message =
-                  error instanceof Error
-                    ? error.message
-                    : typeof error === 'object' && error !== null && 'message' in error
-                      ? String((error as { message: unknown }).message)
-                      : `Failed to create link for toolkit "${toolkitSlug}".`;
-
+                  extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`;
                 yield* ui.log.error(message);
                 yield* Effect.logDebug('Link error:', error);
                 yield* ui.log.step('Browse available toolkits:\n> composio toolkits list');
@@ -205,13 +212,16 @@ export const connectedAccountsCmd$Link = Command.make(
           return;
         }
 
-        yield* waitForActiveConnection(
-          ui,
-          repo,
-          linkOpt.value.connected_account_id,
-          linkOpt.value.redirect_url,
-          noBrowser
-        );
+        const { connected_account_id: connAccountId, redirect_url: redirectUrl } = linkOpt.value;
+        if (!connAccountId || !redirectUrl) {
+          yield* ui.log.error(
+            'The API returned an incomplete link response (missing connected_account_id or redirect_url).'
+          );
+          yield* Effect.logDebug('Link response:', linkOpt.value);
+          return;
+        }
+
+        yield* waitForActiveConnection(ui, repo, connAccountId, redirectUrl, noBrowser);
       }
     })
 ).pipe(Command.withDescription('Link an external account via OAuth redirect.'));

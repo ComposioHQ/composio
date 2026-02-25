@@ -7,6 +7,7 @@ import {
   type JsPackageManager,
   type PythonPackageManager,
 } from 'src/services/project-environment-detector';
+import { getAncestors } from 'src/utils/get-ancestors';
 
 export type CoreDependencyPlan =
   | {
@@ -29,23 +30,6 @@ export type CoreDependencyPlan =
 export type CoreDependencyVersion = {
   version: string;
   source: 'package.json' | 'node_modules' | 'python';
-};
-
-const getAncestors = (cwd: string) => {
-  const resolved = path.resolve(cwd);
-  const dirs = [resolved];
-  let current = resolved;
-
-  while (true) {
-    const parent = path.dirname(current);
-    if (parent === current) {
-      break;
-    }
-    dirs.push(parent);
-    current = parent;
-  }
-
-  return dirs;
 };
 
 export const getJsInstallCommand = (pm: JsPackageManager, dependency: string) =>

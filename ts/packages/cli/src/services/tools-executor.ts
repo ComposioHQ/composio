@@ -61,8 +61,12 @@ export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsEx
 
 /**
  * Meta tool slugs handled by `session.executeMeta` instead of `session.execute`.
+ *
+ * The `satisfies` constraint ensures this list stays in sync with the API's
+ * `SessionExecuteMetaParams['slug']` union — a compile error will surface if
+ * a slug is misspelled or if the API adds/removes a meta tool.
  */
-const META_TOOL_SLUGS: ReadonlySet<string> = new Set([
+const META_TOOL_SLUG_LIST = [
   'COMPOSIO_SEARCH_TOOLS',
   'COMPOSIO_MULTI_EXECUTE_TOOL',
   'COMPOSIO_MANAGE_CONNECTIONS',
@@ -72,7 +76,9 @@ const META_TOOL_SLUGS: ReadonlySet<string> = new Set([
   'COMPOSIO_GET_TOOL_SCHEMAS',
   'COMPOSIO_UPSERT_RECIPE',
   'COMPOSIO_GET_RECIPE',
-] as const);
+] as const satisfies ReadonlyArray<SessionExecuteMetaParams['slug']>;
+
+const META_TOOL_SLUGS: ReadonlySet<string> = new Set(META_TOOL_SLUG_LIST);
 
 const isMetaToolSlug = (slug: string): slug is SessionExecuteMetaParams['slug'] =>
   META_TOOL_SLUGS.has(slug);

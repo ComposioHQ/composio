@@ -3,6 +3,7 @@ import { FileSystem } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
 import * as path from 'node:path';
 import process from 'node:process';
+import { getAncestors } from 'src/utils/get-ancestors';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
@@ -92,21 +93,6 @@ type DirEvidence = {
 // ---------------------------------------------------------------------------
 // Pure helpers (no dependencies)
 // ---------------------------------------------------------------------------
-
-const getAncestors = (cwd: string) => {
-  const resolved = path.resolve(cwd);
-  const dirs = [resolved];
-  let current = resolved;
-
-  while (true) {
-    const parent = path.dirname(current);
-    if (parent === current) break;
-    dirs.push(parent);
-    current = parent;
-  }
-
-  return dirs;
-};
 
 const isTsConfig = (name: string) => {
   const lower = name.toLowerCase();

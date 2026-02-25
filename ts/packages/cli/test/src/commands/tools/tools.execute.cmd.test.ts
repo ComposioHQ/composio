@@ -316,6 +316,35 @@ describe('CLI: composio tools execute', () => {
     );
   });
 
+  // --- Meta tool error tests ---
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        failWith: new ActionExecuteConnectedAccountNotFoundError({
+          slug: 'ToolRouterV2_NoActiveConnection',
+          message: 'No active connection found for toolkit(s) in this session',
+        }),
+      },
+    })
+  )('[Given] meta tool NoActiveConnection error [Then] does not suggest "link composio"', it => {
+    it.scoped('omits connection tips for meta tool slugs', () =>
+      Effect.gen(function* () {
+        yield* cli(['tools', 'execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']).pipe(
+          Effect.catchAll(() => Effect.void)
+        );
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('No active connection');
+        // Should NOT produce a misleading tip like "link composio"
+        expect(output).not.toContain('link composio');
+      })
+    );
+  });
+
   // --- Edge case tests ---
 
   layer(

@@ -1,7 +1,7 @@
 /**
  * Environment variables to automatically pass through to Docker containers.
  */
-export const WELL_KNOWN_ENV_VARS = ['COMPOSIO_API_KEY', 'OPENAI_API_KEY'] as const;
+export const WELL_KNOWN_ENV_VARS = ['COMPOSIO_API_KEY', 'COMPOSIO_BASE_URL', 'OPENAI_API_KEY'] as const;
 
 /**
  * Node.js versions that are well-known to the CI matrix strategy.

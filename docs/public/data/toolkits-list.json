@@ -68,7 +68,7 @@
     "name": "Outlook",
     "logo": "https://logos.composio.dev/api/outlook",
     "category": "email",
-    "toolCount": 64,
+    "toolCount": 393,
     "triggerCount": 5
   },
   {
@@ -300,7 +300,7 @@
     "name": "Microsoft Teams",
     "logo": "https://logos.composio.dev/api/microsoft_teams",
     "category": "team chat",
-    "toolCount": 34,
+    "toolCount": 180,
     "triggerCount": 0
   },
   {
@@ -724,7 +724,7 @@
     "name": "Zendesk",
     "logo": "https://logos.composio.dev/api/zendesk",
     "category": "crm",
-    "toolCount": 18,
+    "toolCount": 19,
     "triggerCount": 2
   },
   {
@@ -748,7 +748,7 @@
     "name": "Meta Ads",
     "logo": "https://logos.composio.dev/api/metaads",
     "category": "ads & conversion",
-    "toolCount": 52,
+    "toolCount": 54,
     "triggerCount": 0
   },
   {
@@ -932,7 +932,7 @@
     "name": "SharePoint",
     "logo": "https://logos.composio.dev/api/share_point",
     "category": "documents",
-    "toolCount": 59,
+    "toolCount": 91,
     "triggerCount": 0
   },
   {
@@ -2128,6 +2128,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "apify_mcp",
+    "name": "Apify MCP",
+    "logo": "https://logos.composio.dev/api/apify_mcp",
+    "category": "model context protocol",
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
     "slug": "apilio",
     "name": "Apilio",
     "logo": "https://logos.composio.dev/api/apilio",
@@ -2525,6 +2533,14 @@
     "logo": "https://logos.composio.dev/api/brightdata",
     "category": "ai web scraping",
     "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "brightdata_mcp",
+    "name": "Bright Data MCP",
+    "logo": "https://logos.composio.dev/api/brightdata_mcp",
+    "category": "model context protocol",
+    "toolCount": 0,
     "triggerCount": 0
   },
   {
@@ -3240,6 +3256,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "deepwiki_mcp",
+    "name": "DeepWiki MCP",
+    "logo": "https://logos.composio.dev/api/deepwiki_mcp",
+    "category": "model context protocol",
+    "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
     "slug": "delighted",
     "name": "Delighted",
     "logo": "https://logos.composio.dev/api/delighted",
@@ -3269,6 +3293,14 @@
     "logo": "https://logos.composio.dev/api/detrack",
     "category": "internet of things",
     "toolCount": 21,
+    "triggerCount": 0
+  },
+  {
+    "slug": "devin_mcp",
+    "name": "Devin MCP",
+    "logo": "https://logos.composio.dev/api/devin_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -5520,6 +5552,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "notion_mcp_oauth",
+    "name": "Notion MCP",
+    "logo": "https://logos.composio.dev/api/notion_mcp_oauth",
+    "category": "model context protocol",
+    "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
     "slug": "nozbe_teams",
     "name": "Nozbe Teams",
     "logo": "https://logos.composio.dev/api/nozbe_teams",
@@ -6029,6 +6069,14 @@
     "logo": "https://logos.composio.dev/api/postgrid_verify",
     "category": "developer tools",
     "toolCount": 13,
+    "triggerCount": 0
+  },
+  {
+    "slug": "postiz_mcp",
+    "name": "Postiz",
+    "logo": "https://logos.composio.dev/postiz",
+    "category": "social media marketing",
+    "toolCount": 9,
     "triggerCount": 0
   },
   {
@@ -7365,6 +7413,14 @@
     "logo": "https://logos.composio.dev/api/timelink",
     "category": "time tracking software",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "tinyfish_mcp",
+    "name": "TinyFish MCP",
+    "logo": "https://logos.composio.dev/api/tinyfish_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {

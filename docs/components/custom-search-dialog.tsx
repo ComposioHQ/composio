@@ -94,7 +94,7 @@ export default function CustomSearchDialog({
             <BotMessageSquare className="size-3.5" />
             You can also Ask AI
           </button>
-          <div className="inline-flex gap-0.5">
+          <div className="hidden sm:inline-flex gap-0.5">
             <kbd className="rounded-md border bg-fd-background px-1.5 text-xs text-fd-muted-foreground">
               <MetaKey />
             </kbd>

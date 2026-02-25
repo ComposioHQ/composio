@@ -190,7 +190,7 @@ describe('CLI: composio toolkits info', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('Toolkit "gma" not found');
-          expect(output).toContain('composio toolkits list');
+          expect(output).toContain('composio toolkits info "gmail"');
         })
       );
     }

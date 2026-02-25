@@ -9,7 +9,6 @@ import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import {
   ActionExecuteConnectedAccountNotFoundError,
-  isNoConnectionSlug,
   ToolsExecutor,
 } from 'src/services/tools-executor';
 import type { ToolExecuteParams } from 'src/services/tools-executor';
@@ -83,14 +82,24 @@ const parseArguments = (raw: string) =>
 /**
  * Derive the toolkit slug from a tool slug.
  * e.g. "GMAIL_CREATE_EMAIL_DRAFT" → "gmail", "GITHUB_GET_REPOS" → "github"
+ *
+ * Returns `undefined` for meta tool slugs (COMPOSIO_*) since they don't map
+ * to a real toolkit and would produce misleading connection tips.
  */
-const toolkitFromToolSlug = (toolSlug: string): string => {
+const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
   const idx = toolSlug.indexOf('_');
-  return idx > 0 ? toolSlug.slice(0, idx).toLowerCase() : toolSlug.toLowerCase();
+  if (idx <= 0) return toolSlug.toLowerCase();
+  const prefix = toolSlug.slice(0, idx).toLowerCase();
+  // Meta tools (COMPOSIO_*) are internal and don't correspond to a real toolkit.
+  if (prefix === 'composio') return undefined;
+  return prefix;
 };
 
 const connectionTips = (toolSlug: string, userId: string) => {
   const toolkit = toolkitFromToolSlug(toolSlug);
+  if (!toolkit) {
+    return `Retry: ${bold(`composio tools execute ${toolSlug} ...`)}`;
+  }
   return [
     `Link the toolkit first: ${bold(`composio connected-accounts link ${toolkit} --user-id ${userId}`)}`,
     `Then retry:             ${bold(`composio tools execute ${toolSlug} ...`)}`,
@@ -200,8 +209,10 @@ const handleExecutionError = (
       yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
     }
 
-    // No-connection tips — show for both legacy and Tool Router error slugs
-    if (isNoConnectionSlug(slugValue)) {
+    // No-connection tips — the executor already classifies these into
+    // ActionExecuteConnectedAccountNotFoundError, so check the typed error
+    // instead of re-inspecting the slug.
+    if (normalized instanceof ActionExecuteConnectedAccountNotFoundError) {
       yield* ui.note(connectionTips(context.toolSlug, context.userId), 'Tips');
     }
 

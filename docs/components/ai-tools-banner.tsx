@@ -15,10 +15,10 @@ function CopyableCommand({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 2000);
       }}
       aria-label={`Copy command: ${text}`}
-      className="mb-3 flex w-full cursor-pointer items-center gap-2 rounded-lg border border-fd-border bg-fd-background dark:bg-fd-background/50 px-3.5 py-2.5 font-mono text-[13px] text-fd-foreground transition-colors hover:border-[var(--composio-orange)]/40"
+      className="mb-3 flex w-full cursor-pointer items-center gap-2 rounded-lg border border-fd-border bg-fd-background dark:bg-fd-background/50 px-2.5 py-2 sm:px-3.5 sm:py-2.5 font-mono text-[13px] text-fd-foreground transition-colors hover:border-[var(--composio-orange)]/40"
     >
       <span className="select-none text-fd-muted-foreground">$</span>
-      <span className="flex-1 text-left">{text}</span>
+      <span className="min-w-0 flex-1 overflow-x-auto text-left whitespace-nowrap">{text}</span>
       {copied ? (
         <Check className="h-3.5 w-3.5 shrink-0 text-green-500" />
       ) : (
@@ -32,7 +32,7 @@ export function AIToolsBanner() {
   const skillsCommand = 'npx skills add composiohq/skills';
 
   return (
-    <div className="not-prose relative mt-6 mb-6 overflow-hidden rounded-xl border border-fd-border bg-gradient-to-br from-fd-card via-fd-card to-fd-muted/50 dark:from-fd-muted/20 dark:via-fd-card dark:to-fd-muted/40">
+    <div className="not-prose relative mt-4 mb-4 sm:mt-6 sm:mb-6 overflow-hidden rounded-xl border border-fd-border bg-gradient-to-br from-fd-card via-fd-card to-fd-muted/50 dark:from-fd-muted/20 dark:via-fd-card dark:to-fd-muted/40">
       {/* Subtle grid pattern */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.02]"
@@ -42,9 +42,9 @@ export function AIToolsBanner() {
           backgroundSize: '24px 24px',
         }}
       />
-      <div className="relative p-5">
+      <div className="relative p-4 sm:p-5">
         {/* Header */}
-        <div className="mb-4 flex items-center gap-2.5">
+        <div className="mb-3 sm:mb-4 flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-fd-muted dark:bg-fd-muted/60">
             <Bot className="h-4 w-4 text-fd-muted-foreground" />
           </div>
@@ -57,7 +57,7 @@ export function AIToolsBanner() {
         <CopyableCommand text={skillsCommand} />
 
         {/* Skills links */}
-        <div className="mb-4 flex items-center gap-3 text-xs">
+        <div className="mb-3 sm:mb-4 flex items-center gap-3 text-xs">
           <Link
             href="https://skills.sh/composiohq/skills/composio"
             target="_blank"
@@ -79,7 +79,7 @@ export function AIToolsBanner() {
         </div>
 
         {/* Context files */}
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Link
             href="/llms.txt"
             className="group flex flex-1 items-center gap-2.5 rounded-lg border border-fd-border/80 bg-fd-card dark:bg-fd-background/30 px-3 py-2 transition-all hover:border-[var(--composio-orange)]/40"

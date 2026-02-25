@@ -63,7 +63,7 @@ export function Mermaid({ chart }: { chart: string }) {
   return (
     <div
       ref={containerRef}
-      className="my-4 flex justify-center max-w-lg mx-auto"
+      className="my-4 overflow-x-auto max-w-full mx-auto [&>svg]:mx-auto"
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

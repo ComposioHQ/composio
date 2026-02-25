@@ -1,6 +1,8 @@
 name: Docs - Update Data
 
 on:
+  schedule:
+    - cron: '0 */5 * * *'
   repository_dispatch:
     types: [apollo-production-deploy]
   workflow_dispatch:

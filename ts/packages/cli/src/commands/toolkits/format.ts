@@ -56,7 +56,7 @@ export function formatToolkitsJson(toolkits: ReadonlyArray<SessionToolkitItem>):
             status: t.connected_account.status,
             id: t.connected_account.id,
             auth_scheme: t.connected_account.auth_config?.auth_scheme ?? null,
-            is_composio_managed: t.connected_account.auth_config?.is_composio_managed ?? false,
+            is_composio_managed: t.connected_account.auth_config?.is_composio_managed ?? null,
           }
         : null,
       composio_managed_auth_schemes: t.composio_managed_auth_schemes,
@@ -103,6 +103,36 @@ export function formatToolkitInfo(toolkit: SessionToolkitItem): string {
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Format a single session toolkit as JSON for piped output.
+ * Produces a stable, curated schema — does not leak the raw API response.
+ */
+export function formatToolkitInfoJson(toolkit: SessionToolkitItem): string {
+  return JSON.stringify(
+    {
+      name: toolkit.name,
+      slug: toolkit.slug,
+      meta: {
+        description: toolkit.meta.description,
+        logo: toolkit.meta.logo,
+      },
+      is_no_auth: toolkit.is_no_auth,
+      enabled: toolkit.enabled,
+      connected_account: toolkit.connected_account
+        ? {
+            status: toolkit.connected_account.status,
+            id: toolkit.connected_account.id,
+            auth_scheme: toolkit.connected_account.auth_config?.auth_scheme ?? null,
+            is_composio_managed: toolkit.connected_account.auth_config?.is_composio_managed ?? null,
+          }
+        : null,
+      composio_managed_auth_schemes: toolkit.composio_managed_auth_schemes,
+    },
+    null,
+    2
+  );
 }
 
 // ---------- Legacy format functions (used by non-migrated commands) ----------

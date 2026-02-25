@@ -155,7 +155,7 @@ export function ToolkitsLanding() {
           </p>
           <PageActions path="/toolkits" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <a
             href="https://platform.composio.dev/auth?next_page=%2Ftool-router"
             target="_blank"

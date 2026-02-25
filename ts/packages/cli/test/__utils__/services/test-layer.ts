@@ -839,6 +839,10 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioClientSingleton,
       new ComposioClientSingleton({
         get: Effect.fn(function* () {
+          // Partial mock: only implements `toolRouter.session.*` methods used by
+          // CLI commands under test. The full Composio client interface is too
+          // large to mock completely for unit tests.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return mockComposioClient as any;
         }),
       })

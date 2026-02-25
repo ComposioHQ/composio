@@ -21,6 +21,7 @@ import { TemplateCard, TemplateGrid } from '@/components/template-card';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
+import { Glossary, GlossaryTerm } from '@/components/glossary';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -89,6 +90,8 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Mermaid,
     AIToolsBanner,
     StepTitle,
+    Glossary,
+    GlossaryTerm,
     // Lucide icons
     ShieldCheck,
     RouteIcon,
