@@ -234,6 +234,12 @@ export function mdxToCleanMarkdown(content: string): string {
     '- [$2]($1): $3'
   );
 
+  // Convert GlossaryTerm to heading + definition
+  result = result.replace(
+    /<GlossaryTerm[\s\S]*?name="([^"]*)"[\s\S]*?>([\s\S]*?)<\/GlossaryTerm>/g,
+    (_, name, content) => `### ${name}\n\n${content.trim()}`
+  );
+
   // Convert AIToolsBanner to plain text
   result = result.replace(
     /<AIToolsBanner\s*\/>/g,
@@ -248,7 +254,7 @@ export function mdxToCleanMarkdown(content: string): string {
 
   // Remove wrapper components (ProviderGrid, Tabs, Frame, div, QuickstartFlow, IntegrationTabs, Accordions, ToolTypeFlow, ToolkitsLanding, TemplateGrid, etc.)
   // Note: Cards wrapper is removed earlier (before Card conversion) to prevent regex conflicts
-  result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid)[^>]*>/g, '');
+  result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary)[^>]*>/g, '');
 
   // Remove remaining self-closing JSX tags (including those with JSX expressions)
   result = result.replace(/<[A-Z][a-zA-Z]*[\s\S]*?\/>/g, '');
@@ -386,7 +392,7 @@ ${page.data.description || ''}`;
   const cleanContent = mdxToCleanMarkdown(content);
 
   const footer = includeFooter
-    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Cookbooks](https://docs.composio.dev/llms.mdx/cookbooks) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
+    ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/docs/glossary) | [Cookbooks](https://docs.composio.dev/llms.mdx/cookbooks) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
     : '';
 
   const guardrails = includeGuardrails ? getGuardrails(page.data.llmGuardrails) : '';

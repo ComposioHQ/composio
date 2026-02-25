@@ -2128,6 +2128,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "apify_mcp",
+    "name": "Apify MCP",
+    "logo": "https://logos.composio.dev/api/apify_mcp",
+    "category": "model context protocol",
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
     "slug": "apilio",
     "name": "Apilio",
     "logo": "https://logos.composio.dev/api/apilio",
@@ -2525,6 +2533,14 @@
     "logo": "https://logos.composio.dev/api/brightdata",
     "category": "ai web scraping",
     "toolCount": 10,
+    "triggerCount": 0
+  },
+  {
+    "slug": "brightdata_mcp",
+    "name": "Bright Data MCP",
+    "logo": "https://logos.composio.dev/api/brightdata_mcp",
+    "category": "model context protocol",
+    "toolCount": 0,
     "triggerCount": 0
   },
   {
@@ -3237,6 +3253,14 @@
     "logo": "https://logos.composio.dev/api/deepseek",
     "category": "ai models",
     "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "deepwiki_mcp",
+    "name": "DeepWiki MCP",
+    "logo": "https://logos.composio.dev/api/deepwiki_mcp",
+    "category": "model context protocol",
+    "toolCount": 3,
     "triggerCount": 0
   },
   {
@@ -5528,6 +5552,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "notion_mcp_oauth",
+    "name": "Notion MCP",
+    "logo": "https://logos.composio.dev/api/notion_mcp_oauth",
+    "category": "model context protocol",
+    "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
     "slug": "nozbe_teams",
     "name": "Nozbe Teams",
     "logo": "https://logos.composio.dev/api/nozbe_teams",
@@ -7381,6 +7413,14 @@
     "logo": "https://logos.composio.dev/api/timelink",
     "category": "time tracking software",
     "toolCount": 1,
+    "triggerCount": 0
+  },
+  {
+    "slug": "tinyfish_mcp",
+    "name": "TinyFish MCP",
+    "logo": "https://logos.composio.dev/api/tinyfish_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
