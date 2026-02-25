@@ -1,6 +1,7 @@
 import type { Logs } from '@composio/client/resources/logs/logs';
 import { describe, expect, it } from 'vitest';
 import {
+  formatTriggerLogInfo,
   formatToolLogInfo,
   formatToolLogsTable,
   formatTriggerLogsTable,
@@ -149,5 +150,67 @@ describe('formatToolLogInfo', () => {
     expect(output).toContain('Start Time: -');
     expect(output).toContain('End Time: -');
     expect(output).not.toContain('1970-01-01T00:00:00.000Z');
+  });
+});
+
+describe('formatTriggerLogInfo', () => {
+  it('[Given] trigger detailed log [Then] it renders key fields', () => {
+    const output = formatTriggerLogInfo({
+      id: 'trigger_log_1',
+      createdAt: 0,
+      status: 'success',
+      appName: 'gmail',
+      meta: {
+        triggerId: 'trigger_123',
+        triggerNanoId: 'ti_123',
+        triggerName: 'NEW_GMAIL_MESSAGE',
+      },
+      entityId: 'user_123',
+      connectionId: 'conn_123',
+    });
+
+    expect(output).toContain('logId:');
+    expect(output).toContain('trigger_log_1');
+    expect(output).toContain('triggerId:');
+    expect(output).toContain('trigger_123');
+    expect(output).toContain('triggerNanoId:');
+    expect(output).toContain('ti_123');
+    expect(output).toContain('trigger:');
+    expect(output).toContain('NEW_GMAIL_MESSAGE');
+    expect(output).toContain('toolkit:');
+    expect(output).toContain('gmail');
+  });
+
+  it('[Given] missing fields [Then] it renders fallback dashes', () => {
+    const output = formatTriggerLogInfo({});
+    expect(output).toContain('logId: -');
+    expect(output).toContain('triggerId: -');
+    expect(output).toContain('triggerNanoId: -');
+    expect(output).toContain('trigger: -');
+    expect(output).toContain('Created At: -');
+  });
+
+  it('[Given] retrieve response wrapped under log [Then] it unwraps and renders values', () => {
+    const output = formatTriggerLogInfo({
+      log: {
+        id: 'log_QNzKGStH-ruD',
+        status: 'info',
+        appName: 'gmail',
+        createdAt: '2026-02-25T22:01:22.865Z',
+        entityId: 'pg-test-37ee710c-d5be-4775-91f2-a8e06b937d9b',
+        connectionId: 'ca_zkX9njO68E8A',
+        meta: {
+          triggerId: '77ac1dbf-6db0-4039-8dbe-e903b3f2057e',
+          triggerNanoId: 'ti_-nGUzD9N6JNf',
+          triggerName: 'GMAIL_NEW_GMAIL_MESSAGE',
+        },
+      },
+    });
+
+    expect(output).toContain('log_QNzKGStH-ruD');
+    expect(output).toContain('77ac1dbf-6db0-4039-8dbe-e903b3f2057e');
+    expect(output).toContain('ti_-nGUzD9N6JNf');
+    expect(output).toContain('GMAIL_NEW_GMAIL_MESSAGE');
+    expect(output).toContain('gmail');
   });
 });

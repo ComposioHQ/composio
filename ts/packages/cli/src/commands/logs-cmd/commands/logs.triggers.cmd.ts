@@ -1,11 +1,11 @@
-import { Command, Options } from '@effect/cli';
+import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
-import { formatTriggerLogsTable } from '../format';
+import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
 import { toSearchParam } from '../utils';
 
 const cursor = Options.text('cursor').pipe(
@@ -33,9 +33,14 @@ const triggerId = Options.text('trigger-id').pipe(
   Options.optional
 );
 
-const logId = Options.text('log-id').pipe(
+const logIdFilter = Options.text('log-id').pipe(
   Options.withDescription('Filter by log id'),
   Options.optional
+);
+
+const logId = Args.text({ name: 'log_id' }).pipe(
+  Args.withDescription('Trigger log ID'),
+  Args.optional
 );
 
 const from = Options.integer('from').pipe(
@@ -73,6 +78,7 @@ const includePayload = Options.boolean('include-payload').pipe(
  *
  * @example
  * ```bash
+ * composio logs triggers <log_id>
  * composio logs triggers --trigger GMAIL_NEW_GMAIL_MESSAGE
  * composio logs triggers --trigger-id 77ac1dbf-6db0-4039-8dbe-e903b3f2057e
  * composio logs triggers --connected-account-id ca_123 --user-id user_123
@@ -82,12 +88,13 @@ const includePayload = Options.boolean('include-payload').pipe(
 export const logsCmd$Triggers = Command.make(
   'triggers',
   {
+    logId,
     cursor,
     userId,
     connectedAccountId,
     trigger,
     triggerId,
-    logId,
+    logIdFilter,
     from,
     to,
     limit,
@@ -96,12 +103,13 @@ export const logsCmd$Triggers = Command.make(
     includePayload,
   },
   ({
+    logId,
     cursor,
     userId,
     connectedAccountId,
     trigger,
     triggerId,
-    logId,
+    logIdFilter,
     from,
     to,
     limit,
@@ -131,10 +139,28 @@ export const logsCmd$Triggers = Command.make(
               toSearchParam('connected_account_id', value)
             )
           : []),
-        ...(Option.isSome(logId)
-          ? parseCsv(logId.value).map(value => toSearchParam('log_id', value))
+        ...(Option.isSome(logIdFilter)
+          ? parseCsv(logIdFilter.value).map(value => toSearchParam('log_id', value))
           : []),
       ];
+      const triggerLogId = Option.getOrUndefined(logId);
+
+      if (triggerLogId) {
+        const triggerLog = yield* ui.withSpinner(
+          `Fetching trigger log "${triggerLogId}"...`,
+          Effect.tryPromise(() => client.logs.triggers.retrieve(triggerLogId))
+        );
+        const triggerLogData = triggerLog as unknown as Record<string, unknown>;
+        const normalizedLogData = getTriggerLogRecord(triggerLogData);
+        const payload = getTriggerPayload(normalizedLogData);
+        const response = getTriggerResponse(normalizedLogData);
+
+        yield* ui.log.info(
+          `${formatTriggerLogInfo(triggerLog)}\n\nPayload:\n${JSON.stringify(payload, null, 2)}\n\nResponse:\n${JSON.stringify(response, null, 2)}`
+        );
+        yield* ui.output(JSON.stringify(triggerLog, null, 2));
+        return;
+      }
 
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
@@ -165,6 +191,13 @@ export const logsCmd$Triggers = Command.make(
         `Listing ${logs.length} trigger log${logs.length === 1 ? '' : 's'}\n\n${formatTriggerLogsTable(logs)}`
       );
 
+      const firstLogId = logs[0]?.id;
+      if (firstLogId) {
+        yield* ui.log.step(
+          `To view full details for a log:\n> composio logs triggers "${firstLogId}"`
+        );
+      }
+
       if (response.nextCursor) {
         yield* ui.log.step(`Next cursor: ${response.nextCursor}`);
       }
@@ -172,3 +205,50 @@ export const logsCmd$Triggers = Command.make(
       yield* ui.output(JSON.stringify(response, null, 2));
     })
 ).pipe(Command.withDescription('List trigger logs.'));
+
+export const getTriggerLogRecord = (record: Record<string, unknown>): Record<string, unknown> => {
+  const log = record.log;
+  if (log && typeof log === 'object') return log as Record<string, unknown>;
+  return record;
+};
+
+export const getTriggerPayload = (record: Record<string, unknown>): unknown => {
+  const meta = record.meta;
+  const metaRecord = meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {};
+  const rawPayload =
+    metaRecord.triggerProviderPayload ??
+    metaRecord.triggerClientPayload ??
+    record.payloadReceived ??
+    record.payload ??
+    null;
+
+  return parseMaybeJson(rawPayload);
+};
+
+export const getTriggerResponse = (record: Record<string, unknown>): unknown => {
+  const meta = record.meta;
+  const metaRecord = meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {};
+  const rawResponse =
+    metaRecord.triggerClientResponse ??
+    metaRecord.triggerProviderResponse ??
+    record.response ??
+    null;
+
+  return parseMaybeJson(rawResponse);
+};
+
+export const parseMaybeJson = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  ) {
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};

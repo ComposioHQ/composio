@@ -185,3 +185,84 @@ export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {
   lines.push(`${bold('Steps:')} ${toolLog.steps?.length ?? 0}`);
   return lines.join('\n');
 };
+
+export const formatTriggerLogInfo = (triggerLog: unknown): string => {
+  const rawLog = triggerLog as Record<string, unknown>;
+  const logCandidate = rawLog.log;
+  const log =
+    logCandidate && typeof logCandidate === 'object'
+      ? (logCandidate as Record<string, unknown>)
+      : rawLog;
+  const lines: string[] = [];
+
+  lines.push(`${bold('logId:')} ${valueOrDash(getRecordString(log, ['id', 'logId', 'log_id']))}`);
+  lines.push(
+    `${bold('triggerId:')} ${valueOrDash(getRecordString(log, ['triggerId', 'trigger_id']))}`
+  );
+  lines.push(
+    `${bold('triggerNanoId:')} ${valueOrDash(
+      getRecordString(log, ['triggerNanoId', 'trigger_nano_id'])
+    )}`
+  );
+  lines.push(
+    `${bold('trigger:')} ${valueOrDash(getRecordString(log, ['triggerName', 'trigger_name']))}`
+  );
+  lines.push(`${bold('Status:')} ${valueOrDash(getRecordString(log, ['status']))}`);
+  lines.push(
+    `${bold('toolkit:')} ${valueOrDash(getRecordString(log, ['appName', 'toolkit', 'toolkit_key']))}`
+  );
+  lines.push(
+    `${bold('Connection ID:')} ${valueOrDash(
+      getRecordString(log, ['connectionId', 'connection_id', 'connectedAccountId'])
+    )}`
+  );
+  lines.push(
+    `${bold('Entity:')} ${valueOrDash(getRecordString(log, ['entityId', 'entity_id', 'userId']))}`
+  );
+  lines.push(
+    `${bold('Created At:')} ${formatCreatedAt(
+      getRecordNumberOrString(log, ['createdAt', 'created_at'])
+    )}`
+  );
+
+  return lines.join('\n');
+};
+
+const getRecordString = (record: Record<string, unknown>, keys: ReadonlyArray<string>) => {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'string') return value;
+  }
+
+  const meta = record.meta;
+  if (meta && typeof meta === 'object') {
+    const metaRecord = meta as Record<string, unknown>;
+    for (const key of keys) {
+      const value = metaRecord[key];
+      if (typeof value === 'string') return value;
+    }
+  }
+
+  return null;
+};
+
+const getRecordNumberOrString = (
+  record: Record<string, unknown>,
+  keys: ReadonlyArray<string>
+): number | string | null => {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'number' || typeof value === 'string') return value;
+  }
+
+  const meta = record.meta;
+  if (meta && typeof meta === 'object') {
+    const metaRecord = meta as Record<string, unknown>;
+    for (const key of keys) {
+      const value = metaRecord[key];
+      if (typeof value === 'number' || typeof value === 'string') return value;
+    }
+  }
+
+  return null;
+};
