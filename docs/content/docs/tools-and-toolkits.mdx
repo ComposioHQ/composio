@@ -50,6 +50,10 @@ Done. (For large results, agent can use REMOTE_WORKBENCH to process)
 - **Execution plan** - Recommended steps and common pitfalls for the task
 - **Related tools** - Prerequisites, alternatives, and follow-up tools
 
+<Callout type="warn">
+Deprecated tools are excluded from `COMPOSIO_SEARCH_TOOLS` results. If you need a specific deprecated tool, call it directly by slug. It will continue to work as long as the upstream API endpoint exists.
+</Callout>
+
 ### Processing large results
 
 For most tasks, `COMPOSIO_MULTI_EXECUTE_TOOL` returns results directly. But when dealing with large responses or bulk operations, your agent uses the workbench tools:
