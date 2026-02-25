@@ -127,7 +127,17 @@ export const ComposioUserContextLive = Layer.effect(
 
     if (yield* fs.exists(jsonUserConfigPath)) {
       yield* Effect.logDebug('User data file exists, loading it');
-      yield* load;
+      yield* load.pipe(
+        Effect.catchAll(error =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug(
+              'Failed to load user data file (empty or corrupted), resetting to defaults:',
+              error
+            );
+            yield* update(userData);
+          })
+        )
+      );
     } else {
       yield* Effect.logDebug('User data file does not exist, creating a new one');
       yield* update(userData);
