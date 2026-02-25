@@ -37,7 +37,7 @@ const frameworks: FrameworkOption[] = [
   },
   {
     id: 'vercel-ai',
-    name: 'Vercel AI SDK',
+    name: 'Vercel AI',
     logo: '/images/providers/vercel-logo.svg',
     logoDark: '/images/providers/vercel-logo-dark.svg',
   },
