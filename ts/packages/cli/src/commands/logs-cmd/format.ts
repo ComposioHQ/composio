@@ -37,7 +37,7 @@ export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLog>): string 
 
   const rows = logs.map(log => {
     const createdAt = gray(
-      truncate(log.createdAt ?? '-', TRIGGER_LOG_TABLE.createdAt).padEnd(
+      truncate(formatCreatedAt(log.createdAt), TRIGGER_LOG_TABLE.createdAt).padEnd(
         TRIGGER_LOG_TABLE.createdAt
       )
     );
@@ -103,6 +103,12 @@ const formatEpoch = (value: number): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
   return date.toISOString();
+};
+
+const formatCreatedAt = (value: number | string | null | undefined): string => {
+  if (typeof value === 'number') return formatEpoch(value);
+  if (typeof value === 'string') return value;
+  return '-';
 };
 
 export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {

@@ -6,6 +6,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { formatTriggerLogsTable } from '../format';
+import { parseCsv, parseSearchParams, toSearchParam } from '../utils';
 
 const cursor = Options.text('cursor').pipe(
   Options.withDescription('Cursor for pagination'),
@@ -81,38 +82,6 @@ const query = Options.text('query').pipe(
   Options.repeated,
   Options.withDescription('Advanced filter in "field:operation:value" format (repeatable)')
 );
-
-const parseSearchParams = (
-  values: ReadonlyArray<string>
-): Array<{ field?: string; operation?: string; value?: string }> =>
-  values.flatMap(value => {
-    const [field, operation, ...rest] = value.split(':');
-    const parsedValue = rest.join(':').trim();
-
-    if (!field?.trim() || !operation?.trim() || !parsedValue) {
-      return [];
-    }
-
-    return [
-      {
-        field: field.trim(),
-        operation: operation.trim(),
-        value: parsedValue,
-      },
-    ];
-  });
-
-const parseCsv = (value: string): string[] =>
-  value
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean);
-
-const toSearchParam = (field: string, value: string) => ({
-  field,
-  operation: 'eq',
-  value,
-});
 
 /**
  * List trigger logs with optional filters.
