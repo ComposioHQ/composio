@@ -55,8 +55,8 @@ export function formatToolkitsJson(toolkits: ReadonlyArray<SessionToolkitItem>):
         ? {
             status: t.connected_account.status,
             id: t.connected_account.id,
-            auth_scheme: t.connected_account.auth_config.auth_scheme,
-            is_composio_managed: t.connected_account.auth_config.is_composio_managed,
+            auth_scheme: t.connected_account.auth_config?.auth_scheme ?? null,
+            is_composio_managed: t.connected_account.auth_config?.is_composio_managed ?? false,
           }
         : null,
       composio_managed_auth_schemes: t.composio_managed_auth_schemes,
@@ -91,8 +91,10 @@ export function formatToolkitInfo(toolkit: SessionToolkitItem): string {
     const statusDisplay = ca.status === 'ACTIVE' ? green(ca.status) : dim(ca.status);
     lines.push(`${bold('Connection Status:')} ${statusDisplay}`);
     lines.push(`${bold('Connected Account ID:')} ${ca.id}`);
-    lines.push(`${bold('Auth Scheme:')} ${ca.auth_config.auth_scheme}`);
-    lines.push(`${bold('Composio Managed:')} ${ca.auth_config.is_composio_managed ? 'Yes' : 'No'}`);
+    lines.push(`${bold('Auth Scheme:')} ${ca.auth_config?.auth_scheme ?? '-'}`);
+    lines.push(
+      `${bold('Composio Managed:')} ${ca.auth_config?.is_composio_managed ? 'Yes' : 'No'}`
+    );
   } else if (!toolkit.is_no_auth) {
     lines.push(`${bold('Connection Status:')} ${dim('Not connected')}`);
     lines.push(

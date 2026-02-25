@@ -110,8 +110,8 @@ const storeCredentials = (params: {
     // Store UAK + org/project IDs in user_data.json
     yield* ctx.login(uakApiKey, orgId, projectId);
 
-    const email = sessionInfo?.org_member.email ?? fallbackEmail;
-    yield* ui.log.success(`Logged in with user account ${email}`);
+    const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
+    yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
     yield* ui.log.info('Run `composio init` in your project directory to set up project context.');
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
@@ -254,9 +254,33 @@ export const loginCmd = Command.make(
       yield* ui.intro('composio login');
 
       // Non-interactive path: --api-key, --org-id, --project-id flags skip browser flow.
+      // All three must be provided together; partial flags are an error.
+      const nonInteractiveFlags = [apiKey, orgId, projectId];
+      const anyProvided = nonInteractiveFlags.some(Option.isSome);
+      const allProvided = nonInteractiveFlags.every(Option.isSome);
+
+      if (anyProvided && !allProvided) {
+        const missing = [
+          Option.isNone(apiKey) && '--api-key',
+          Option.isNone(orgId) && '--org-id',
+          Option.isNone(projectId) && '--project-id',
+        ].filter(Boolean);
+        yield* ui.log.error(`Missing required flag(s): ${missing.join(', ')}`);
+        yield* ui.log.info(
+          'Non-interactive login requires all three: --api-key, --org-id, --project-id'
+        );
+        yield* ui.outro('');
+        return;
+      }
+
       // Strict verification: 400/401/403 from session/info are hard failures since
       // the user explicitly provided the IDs.
-      if (Option.isSome(apiKey) && Option.isSome(orgId) && Option.isSome(projectId)) {
+      if (
+        allProvided &&
+        Option.isSome(apiKey) &&
+        Option.isSome(orgId) &&
+        Option.isSome(projectId)
+      ) {
         yield* Effect.logDebug('Non-interactive login with provided credentials');
         yield* storeCredentials({
           baseURL: ctx.data.baseURL,

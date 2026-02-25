@@ -119,9 +119,22 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
               .readFileString(projectJsonPath)
               .pipe(Effect.catchAll(() => Effect.succeed('')));
             if (content) {
-              const keys = yield* projectKeysFromJSON(content);
-              yield* Effect.logDebug(`ProjectContext: resolved from ${projectJsonPath}`);
-              return Option.some(keys);
+              const keysOpt = yield* projectKeysFromJSON(content).pipe(
+                Effect.map(Option.some),
+                Effect.catchAll(error =>
+                  Effect.gen(function* () {
+                    yield* Effect.logDebug(
+                      `ProjectContext: corrupt project.json at ${projectJsonPath}, skipping:`,
+                      error
+                    );
+                    return Option.none();
+                  })
+                )
+              );
+              if (Option.isSome(keysOpt)) {
+                yield* Effect.logDebug(`ProjectContext: resolved from ${projectJsonPath}`);
+                return keysOpt;
+              }
             }
           }
 

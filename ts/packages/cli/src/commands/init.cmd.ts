@@ -285,13 +285,6 @@ const writeProjectConfig = (composioDir: string, selected: ProjectKeys, config: 
     }
   });
 
-/**
- * Helper to format a profile for display.
- */
-const profileLabel = (p: ProjectKeys): string => Option.getOrElse(p.projectName, () => p.projectId);
-
-const profileHint = (p: ProjectKeys): string => Option.getOrElse(p.orgName, () => p.orgId);
-
 // ---------------------------------------------------------------------------
 // Command
 // ---------------------------------------------------------------------------
