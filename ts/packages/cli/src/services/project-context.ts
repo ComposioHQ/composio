@@ -75,6 +75,7 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
             projectName: Option.none(),
             orgName: Option.none(),
             email: Option.none(),
+            testUserId: Option.none(),
           });
         }
 
@@ -105,6 +106,7 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
                 projectName: Option.none(),
                 orgName: Option.none(),
                 email: Option.none(),
+                testUserId: Option.none(),
               });
             }
           }

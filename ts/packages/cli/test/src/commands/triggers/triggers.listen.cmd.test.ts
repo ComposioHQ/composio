@@ -71,7 +71,7 @@ const startWebhookServer = async (): Promise<{
           webhookId: (req.headers['webhook-id'] as string | undefined) ?? '',
           webhookTimestamp: (req.headers['webhook-timestamp'] as string | undefined) ?? '',
           webhookSignature: (req.headers['webhook-signature'] as string | undefined) ?? '',
-          webhookVersion: (req.headers['x-composio-webhook-version'] as string | undefined) ?? '',
+          webhookVersion: (req.headers['webhook-version'] as string | undefined) ?? '',
         },
       });
       res.statusCode = 200;

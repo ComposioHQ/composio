@@ -48,7 +48,15 @@ describe('CLI: composio tools execute', () => {
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
     it.scoped('executes via Tool Router with defaults', () =>
       Effect.gen(function* () {
-        yield* cli(['tools', 'execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+        yield* cli([
+          'tools',
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--user-id',
+          'default',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
@@ -69,7 +77,7 @@ describe('CLI: composio tools execute', () => {
   )('[Given] stdin is piped [Then] reads input from stdin', it => {
     it.scoped('reads stdin input', () =>
       Effect.gen(function* () {
-        yield* cli(['tools', 'execute', 'GITHUB_GET_REPOS']);
+        yield* cli(['tools', 'execute', 'GITHUB_GET_REPOS', '--user-id', 'default']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
@@ -98,6 +106,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
+          '--user-id',
+          'default',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
         ]).pipe(Effect.catchAll(() => Effect.void));
@@ -138,6 +148,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
+          '--user-id',
+          'default',
           '-d',
           '{"recipient":"to@example.com"}',
         ]).pipe(Effect.catchAll(() => Effect.void));
@@ -170,6 +182,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GITHUB_STAR_REPO',
+          '--user-id',
+          'default',
           '-d',
           '{"owner":"composio","repo":"composio"}',
         ]);
@@ -203,6 +217,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
+          '--user-id',
+          'default',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
         ]).pipe(Effect.catchAll(() => Effect.void));
@@ -229,6 +245,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
+          '--user-id',
+          'default',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
         ]).pipe(Effect.catchAll(() => Effect.void));
@@ -264,6 +282,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
+          '--user-id',
+          'default',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
         ]).pipe(Effect.catchAll(() => Effect.void));
@@ -300,6 +320,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
+          '--user-id',
+          'default',
           '-d',
           '{\"recipient\":\"to@example.com\"}',
         ]).pipe(Effect.catchAll(() => Effect.void));
@@ -332,9 +354,15 @@ describe('CLI: composio tools execute', () => {
   )('[Given] meta tool NoActiveConnection error [Then] does not suggest "link composio"', it => {
     it.scoped('omits connection tips for meta tool slugs', () =>
       Effect.gen(function* () {
-        yield* cli(['tools', 'execute', 'COMPOSIO_SEARCH_TOOLS', '-d', '{"query":"email"}']).pipe(
-          Effect.catchAll(() => Effect.void)
-        );
+        yield* cli([
+          'tools',
+          'execute',
+          'COMPOSIO_SEARCH_TOOLS',
+          '--user-id',
+          'default',
+          '-d',
+          '{"query":"email"}',
+        ]).pipe(Effect.catchAll(() => Effect.void));
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -359,6 +387,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
+          '--user-id',
+          'default',
           '-d',
           'not-valid-json',
         ]).pipe(Effect.catchAll(e => Effect.succeed(e)));
@@ -379,9 +409,15 @@ describe('CLI: composio tools execute', () => {
   )('[Given] -d with JSON array [Then] fails with expected-object error', it => {
     it.scoped('fails with expected object error', () =>
       Effect.gen(function* () {
-        const result = yield* cli(['tools', 'execute', 'GMAIL_SEND_EMAIL', '-d', '[1,2,3]']).pipe(
-          Effect.catchAll(e => Effect.succeed(e))
-        );
+        const result = yield* cli([
+          'tools',
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--user-id',
+          'default',
+          '-d',
+          '[1,2,3]',
+        ]).pipe(Effect.catchAll(e => Effect.succeed(e)));
 
         expect(result).toBeDefined();
         expect(result instanceof Error ? result.message : String(result)).toContain(
@@ -403,6 +439,8 @@ describe('CLI: composio tools execute', () => {
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
+          '--user-id',
+          'default',
           '-d',
           '"just a string"',
         ]).pipe(Effect.catchAll(e => Effect.succeed(e)));
@@ -423,9 +461,13 @@ describe('CLI: composio tools execute', () => {
   )('[Given] no -d and TTY stdin [Then] fails with missing input error', it => {
     it.scoped('fails with missing input error', () =>
       Effect.gen(function* () {
-        const result = yield* cli(['tools', 'execute', 'GMAIL_SEND_EMAIL']).pipe(
-          Effect.catchAll(e => Effect.succeed(e))
-        );
+        const result = yield* cli([
+          'tools',
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--user-id',
+          'default',
+        ]).pipe(Effect.catchAll(e => Effect.succeed(e)));
 
         expect(result).toBeDefined();
         expect(result instanceof Error ? result.message : String(result)).toContain(
@@ -443,9 +485,13 @@ describe('CLI: composio tools execute', () => {
   )('[Given] empty piped stdin [Then] fails with parse error', it => {
     it.scoped('fails with error for empty stdin', () =>
       Effect.gen(function* () {
-        const result = yield* cli(['tools', 'execute', 'GMAIL_SEND_EMAIL']).pipe(
-          Effect.catchAll(e => Effect.succeed(e))
-        );
+        const result = yield* cli([
+          'tools',
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--user-id',
+          'default',
+        ]).pipe(Effect.catchAll(e => Effect.succeed(e)));
 
         expect(result).toBeDefined();
         expect(result instanceof Error ? result.message : String(result)).toContain(
@@ -489,6 +535,8 @@ describe('CLI: composio tools execute', () => {
             'tools',
             'execute',
             'GMAIL_SEND_EMAIL',
+            '--user-id',
+            'default',
             '-d',
             '{"recipient_email":"to@example.com"}',
           ]);

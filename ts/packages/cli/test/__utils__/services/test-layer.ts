@@ -49,11 +49,13 @@ import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
   SessionLinkResponse,
+  SessionSearchResponse,
   SessionToolkitsResponse,
   SessionCreateParams,
   SessionExecuteParams,
   SessionExecuteMetaParams,
   SessionLinkParams,
+  SessionSearchParams,
   SessionToolkitsParams,
 } from '@composio/client/resources/tool-router';
 import { Stdin } from 'src/services/stdin';
@@ -163,6 +165,8 @@ export interface TestLiveInput {
     ) => Promise<SessionExecuteMetaResponse>;
     /** Override `session.link`. Receives sessionId and params. */
     link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
+    /** Override `session.search`. Receives sessionId and params. */
+    search?: (sessionId: string, params: SessionSearchParams) => Promise<SessionSearchResponse>;
     /** Override `session.toolkits`. Receives sessionId and optional params. */
     toolkits?: (
       sessionId: string,
@@ -795,6 +799,72 @@ export const TestLayer = (input?: TestLiveInput) =>
       };
     };
 
+    const defaultSearchHandler = async (
+      _sessionId: string,
+      params: SessionSearchParams
+    ): Promise<SessionSearchResponse> => {
+      const queryUseCase = params.queries[0]?.use_case ?? '';
+      const normalizedQuery = queryUseCase.toLowerCase();
+      const matchedTools = toolkitsData.tools.filter(
+        tool =>
+          tool.name.toLowerCase().includes(normalizedQuery) ||
+          tool.slug.toLowerCase().includes(normalizedQuery) ||
+          tool.description.toLowerCase().includes(normalizedQuery)
+      );
+
+      const primaryToolSlugs = matchedTools.map(tool => tool.slug);
+      const toolSchemas = Object.fromEntries(
+        matchedTools.map(tool => [
+          tool.slug,
+          {
+            tool_slug: tool.slug,
+            toolkit: tool.slug.split('_')[0]?.toLowerCase() ?? '',
+            description: tool.description,
+            hasFullSchema: true,
+            input_schema: tool.input_parameters,
+            output_schema: tool.output_parameters,
+          },
+        ])
+      );
+      const toolkitConnectionStatuses = Array.from(
+        new Set(
+          matchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
+        )
+      ).map(toolkitSlug => ({
+        toolkit: toolkitSlug,
+        description: `${toolkitSlug} toolkit`,
+        has_active_connection: false,
+        status_message: 'No active connection',
+      }));
+
+      return {
+        success: true,
+        error: null,
+        results: [
+          {
+            index: 1,
+            use_case: queryUseCase,
+            primary_tool_slugs: primaryToolSlugs,
+            related_tool_slugs: [],
+            toolkits: toolkitConnectionStatuses.map(t => t.toolkit),
+          },
+        ],
+        tool_schemas: toolSchemas,
+        toolkit_connection_statuses: toolkitConnectionStatuses,
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_test_session',
+          generate_id: false,
+          instructions: 'Reuse this session id for follow-up calls.',
+        },
+        time_info: {
+          current_time_utc: '2026-01-01T00:00:00.000Z',
+          current_time_utc_epoch_seconds: 1767225600,
+          message: 'UTC time',
+        },
+      };
+    };
+
     const mockComposioClient = {
       toolRouter: {
         session: {
@@ -827,6 +897,7 @@ export const TestLayer = (input?: TestLiveInput) =>
               link_token: 'lt_test_token',
               redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
             })),
+          search: toolRouterOverrides?.search ?? defaultSearchHandler,
           toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,
           tools: async () => ({
             items: [],

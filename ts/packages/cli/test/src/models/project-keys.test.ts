@@ -14,6 +14,7 @@ describe('ProjectKeys', () => {
       expect(Option.isNone(result.projectName)).toBe(true);
       expect(Option.isNone(result.orgName)).toBe(true);
       expect(Option.isNone(result.email)).toBe(true);
+      expect(Option.isNone(result.testUserId)).toBe(true);
     });
 
     it('decodes valid JSON with all fields', () => {
@@ -23,6 +24,7 @@ describe('ProjectKeys', () => {
         project_name: 'My Project',
         org_name: 'My Org',
         email: 'test@test.com',
+        test_user_id: 'pg-test-user-123',
       });
 
       const result = Effect.runSync(projectKeysFromJSON(json));
@@ -32,6 +34,7 @@ describe('ProjectKeys', () => {
       expect(Option.getOrUndefined(result.projectName)).toBe('My Project');
       expect(Option.getOrUndefined(result.orgName)).toBe('My Org');
       expect(Option.getOrUndefined(result.email)).toBe('test@test.com');
+      expect(Option.getOrUndefined(result.testUserId)).toBe('pg-test-user-123');
     });
 
     it('decodes null optional fields as Option.none()', () => {
@@ -41,6 +44,7 @@ describe('ProjectKeys', () => {
         project_name: null,
         org_name: null,
         email: null,
+        test_user_id: null,
       });
 
       const result = Effect.runSync(projectKeysFromJSON(json));
@@ -50,6 +54,7 @@ describe('ProjectKeys', () => {
       expect(Option.isNone(result.projectName)).toBe(true);
       expect(Option.isNone(result.orgName)).toBe(true);
       expect(Option.isNone(result.email)).toBe(true);
+      expect(Option.isNone(result.testUserId)).toBe(true);
     });
 
     it('ignores extra keys in decoded JSON', () => {
@@ -105,6 +110,7 @@ describe('ProjectKeys', () => {
         projectName: Option.some('My Project'),
         orgName: Option.some('My Org'),
         email: Option.some('test@test.com'),
+        testUserId: Option.some('pg-test-user-123'),
       };
 
       const json = Effect.runSync(projectKeysToJSON(keys));
@@ -115,6 +121,7 @@ describe('ProjectKeys', () => {
       expect(parsed.project_name).toBe('My Project');
       expect(parsed.org_name).toBe('My Org');
       expect(parsed.email).toBe('test@test.com');
+      expect(parsed.test_user_id).toBe('pg-test-user-123');
     });
 
     it('encodes None optional fields as null', () => {
@@ -124,6 +131,7 @@ describe('ProjectKeys', () => {
         projectName: Option.none(),
         orgName: Option.none(),
         email: Option.none(),
+        testUserId: Option.none(),
       };
 
       const json = Effect.runSync(projectKeysToJSON(keys));
@@ -134,6 +142,7 @@ describe('ProjectKeys', () => {
       expect(parsed.project_name).toBeNull();
       expect(parsed.org_name).toBeNull();
       expect(parsed.email).toBeNull();
+      expect(parsed.test_user_id).toBeNull();
     });
   });
 
@@ -145,6 +154,7 @@ describe('ProjectKeys', () => {
         projectName: Option.some('Test Project'),
         orgName: Option.some('Test Org'),
         email: Option.some('user@example.com'),
+        testUserId: Option.some('pg-test-user-123'),
       };
 
       const json = Effect.runSync(projectKeysToJSON(original));
@@ -157,6 +167,9 @@ describe('ProjectKeys', () => {
       );
       expect(Option.getOrUndefined(decoded.orgName)).toBe(Option.getOrUndefined(original.orgName));
       expect(Option.getOrUndefined(decoded.email)).toBe(Option.getOrUndefined(original.email));
+      expect(Option.getOrUndefined(decoded.testUserId)).toBe(
+        Option.getOrUndefined(original.testUserId)
+      );
     });
 
     it('encode then decode preserves None values', () => {
@@ -166,6 +179,7 @@ describe('ProjectKeys', () => {
         projectName: Option.none(),
         orgName: Option.none(),
         email: Option.none(),
+        testUserId: Option.none(),
       };
 
       const json = Effect.runSync(projectKeysToJSON(original));
@@ -176,6 +190,7 @@ describe('ProjectKeys', () => {
       expect(Option.isNone(decoded.projectName)).toBe(true);
       expect(Option.isNone(decoded.orgName)).toBe(true);
       expect(Option.isNone(decoded.email)).toBe(true);
+      expect(Option.isNone(decoded.testUserId)).toBe(true);
     });
   });
 });

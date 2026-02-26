@@ -59,15 +59,17 @@ describe('CLI: composio connected-accounts link', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
-    '[Given] valid --auth-config with default user-id [Then] creates link',
+    '[Given] valid --auth-config with explicit --user-id [Then] creates link',
     it => {
-      it.scoped('uses default user-id', () =>
+      it.scoped('uses explicit user-id', () =>
         Effect.gen(function* () {
           yield* cli([
             'connected-accounts',
             'link',
             '--auth-config',
             'ac_gmail_oauth',
+            '--user-id',
+            'default',
             '--no-browser',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

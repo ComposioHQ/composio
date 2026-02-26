@@ -298,7 +298,7 @@ export const triggersCmd$Listen = Command.make(
                         'webhook-id': webhookId,
                         'webhook-timestamp': webhookTimestamp,
                         'webhook-signature': webhookSignature,
-                        'x-composio-webhook-version': webhookVersion,
+                        'webhook-version': webhookVersion,
                       },
                       body: payloadForForwarding,
                     });

@@ -5,6 +5,8 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
   readonly manageConnections?: boolean;
+  /** Restrict session to these toolkit slugs. */
+  readonly toolkits?: ReadonlyArray<string>;
 }
 
 /**
@@ -24,6 +26,10 @@ export const createToolRouterSession = (
     client.toolRouter.session.create({
       user_id: userId,
       manage_connections: { enable: options?.manageConnections ?? false },
+      toolkits:
+        options?.toolkits && options.toolkits.length > 0
+          ? { enable: [...options.toolkits] }
+          : undefined,
     })
   ).pipe(Effect.map(session => session.session_id));
 

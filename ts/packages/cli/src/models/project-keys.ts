@@ -38,6 +38,13 @@ export const ProjectKeys = Schema.Struct({
   email: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
     Schema.fromKey('email')
   ),
+
+  /**
+   * Optional test user identifier used by CLI/e2e flows.
+   */
+  testUserId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('test_user_id')
+  ),
 }).annotations({
   identifier: 'ProjectKeys',
   description: 'Organization and project identifiers for a CLI project profile',

@@ -12,6 +12,7 @@ import {
   ToolsExecutor,
 } from 'src/services/tools-executor';
 import type { ToolExecuteParams } from 'src/services/tools-executor';
+import { ProjectContext } from 'src/services/project-context';
 import {
   extractApiErrorDetails,
   extractMessage,
@@ -30,8 +31,8 @@ const data = Options.text('data').pipe(
 );
 
 const userId = Options.text('user-id').pipe(
-  Options.withDefault('default'),
-  Options.withDescription('User ID to execute the tool for (default: "default")')
+  Options.optional,
+  Options.withDescription('User ID to execute the tool for (falls back to project test_user_id)')
 );
 
 const resolveInput = (input: Option.Option<string>) =>
@@ -243,12 +244,27 @@ export const toolsCmd$Execute = Command.make(
 
       const ui = yield* TerminalUI;
       const executor = yield* ToolsExecutor;
+      const projectContext = yield* ProjectContext;
+      const resolvedProjectContext = yield* projectContext.resolve;
+      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const resolvedUserId = Option.match(userId, {
+        onSome: value => Option.some(value),
+        onNone: () => testUserId,
+      });
+      if (Option.isNone(resolvedUserId)) {
+        return yield* Effect.fail(
+          new Error('Missing user id. Provide --user-id or run composio init to set test_user_id.')
+        );
+      }
+      if (Option.isNone(userId) && Option.isSome(testUserId)) {
+        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+      }
 
       const input = yield* resolveInput(data);
       const args = yield* parseArguments(input);
 
       const params: ToolExecuteParams = {
-        userId,
+        userId: resolvedUserId.value,
         arguments: args,
       };
 
@@ -261,7 +277,7 @@ export const toolsCmd$Execute = Command.make(
             yield* spinner.error();
             const summary = yield* handleExecutionError(ui, resultEither.left, {
               toolSlug: slug,
-              userId,
+              userId: resolvedUserId.value,
             });
             yield* ui.output(
               JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
@@ -280,7 +296,7 @@ export const toolsCmd$Execute = Command.make(
 
             const summary = yield* handleExecutionError(ui, result.error ?? result, {
               toolSlug: slug,
-              userId,
+              userId: resolvedUserId.value,
             });
             yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
             return yield* Effect.fail(new ToolExecutionError(summary.error));
@@ -291,6 +307,7 @@ export const toolsCmd$Execute = Command.make(
             ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
             : '';
           yield* spinner.stop(`Execution successful${logId}`);
+          yield* ui.log.message(`Response\n${JSON.stringify(result, ciRedactReplacer, 2)}`);
           yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
         })
       );

@@ -7,6 +7,7 @@ import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
+import { ProjectContext } from 'src/services/project-context';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -19,8 +20,8 @@ const authConfig = Options.text('auth-config').pipe(
 );
 
 const userId = Options.text('user-id').pipe(
-  Options.withDescription('User ID for the connection'),
-  Options.withDefault('default')
+  Options.withDescription('User ID for the connection (falls back to project test_user_id)'),
+  Options.optional
 );
 
 const noBrowser = Options.boolean('no-browser').pipe(
@@ -125,6 +126,21 @@ export const connectedAccountsCmd$Link = Command.make(
 
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
+      const projectContext = yield* ProjectContext;
+      const resolvedProjectContext = yield* projectContext.resolve;
+      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const resolvedUserId = Option.match(userId, {
+        onSome: value => Option.some(value),
+        onNone: () => testUserId,
+      });
+      if (Option.isNone(resolvedUserId)) {
+        return yield* Effect.fail(
+          new Error('Missing user id. Provide --user-id or run composio init to set test_user_id.')
+        );
+      }
+      if (Option.isNone(userId) && Option.isSome(testUserId)) {
+        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+      }
 
       // Validate: exactly one of <toolkit> or --auth-config must be provided
       if (Option.isSome(toolkit) && Option.isSome(authConfig)) {
@@ -152,7 +168,7 @@ export const connectedAccountsCmd$Link = Command.make(
             'Creating link session...',
             repo.createConnectedAccountLink({
               auth_config_id: authConfig.value,
-              user_id: userId,
+              user_id: resolvedUserId.value,
             })
           )
           .pipe(
@@ -186,7 +202,7 @@ export const connectedAccountsCmd$Link = Command.make(
           .withSpinner(
             `Linking ${toolkitSlug}...`,
             Effect.gen(function* () {
-              const { client, sessionId } = yield* resolveToolRouterSession(userId, {
+              const { client, sessionId } = yield* resolveToolRouterSession(resolvedUserId.value, {
                 manageConnections: true,
               });
               return yield* Effect.tryPromise(() =>

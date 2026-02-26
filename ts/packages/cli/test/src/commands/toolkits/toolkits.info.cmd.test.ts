@@ -142,6 +142,11 @@ describe('CLI: composio toolkits info', () => {
           expect(output).toContain('Gmail');
           expect(output).toContain('gmail');
           expect(output).toContain('Email service to send and receive emails');
+          expect(output).toContain('Latest Version:');
+          expect(output).toContain('20250909');
+          expect(output).toContain('Tools Count: 36');
+          expect(output).toContain('Triggers Count: 2');
+          expect(output).toContain('Auth Modes: OAUTH2, BEARER_TOKEN');
           // Connection status
           expect(output).toContain('Not connected');
         })
@@ -159,7 +164,28 @@ describe('CLI: composio toolkits info', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('Code Interpreter');
+          expect(output).toContain('Execute code snippets');
+          expect(output).toContain('Tools Count: 5');
           expect(output).toContain('No authentication required');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] --all flag',
+    it => {
+      it.scoped('shows full auth config setup fields', () =>
+        Effect.gen(function* () {
+          yield* cli(['toolkits', 'info', 'gmail', '--all']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Auth Config Details:');
+          expect(output).toContain('auth_config_creation.required');
+          expect(output).toContain('connected_account_initiation.required');
+          expect(output).toContain('apiKey');
+          expect(output).toContain('API Key');
         })
       );
     }

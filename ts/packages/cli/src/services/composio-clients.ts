@@ -27,6 +27,7 @@ import {
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
+import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
 import { renderPrettyError } from './utils/pretty-error';
 
@@ -358,18 +359,27 @@ export const SessionInfoResponse = Schema.Struct({
   }),
   org_member: Schema.Struct({
     id: Schema.String,
+    user_id: Schema.optional(Schema.String),
     email: Schema.String,
     name: Schema.String,
     role: Schema.String,
   }),
-  api_key: Schema.Struct({
-    name: Schema.String,
-    project_id: Schema.String,
-    id: Schema.String,
-    org_member_id: Schema.String,
-  }),
+  api_key: Schema.NullOr(
+    Schema.Struct({
+      name: Schema.String,
+      project_id: Schema.String,
+      id: Schema.String,
+      org_member_id: Schema.String,
+      api_key: Schema.optional(Schema.String),
+      key: Schema.optional(Schema.String),
+    })
+  ),
 }).annotations({ identifier: 'SessionInfoResponse' });
 export type SessionInfoResponse = Schema.Schema.Type<typeof SessionInfoResponse>;
+
+const authHeaderForApiKey = (apiKey: string): Record<string, string> => ({
+  'x-user-api-key': apiKey,
+});
 
 export interface TriggerInstancesListActiveParams {
   user_ids?: string[];
@@ -708,8 +718,8 @@ export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListRes
  *
  * @param params.baseURL    - API base URL
  * @param params.apiKey     - UAK (sent as `x-user-api-key`)
- * @param params.orgId      - Organization ID (sent as `x-composio-org-id`)
- * @param params.projectId  - Project ID (sent as `x-composio-project-id`)
+ * @param params.orgId      - Organization ID (sent as `x-org-id`)
+ * @param params.projectId  - Project ID (sent as `x-project-id`)
  * @param params.limit      - Max projects to return (default 100)
  */
 export const listOrgProjects = (params: {
@@ -730,8 +740,8 @@ export const listOrgProjects = (params: {
             redirect: 'error',
             headers: {
               'x-user-api-key': params.apiKey,
-              'x-composio-org-id': params.orgId,
-              'x-composio-project-id': params.projectId,
+              'x-org-id': params.orgId,
+              'x-project-id': params.projectId,
               'User-Agent': '@composio/cli',
               Accept: 'application/json',
               'Content-Type': 'application/json',
@@ -777,7 +787,7 @@ export const getSessionInfo = (params: {
           method: 'GET',
           redirect: 'error',
           headers: {
-            'x-api-key': params.apiKey,
+            ...authHeaderForApiKey(params.apiKey),
             'x-org-id': params.orgId,
             'x-project-id': params.projectId,
             'User-Agent': '@composio/cli',
@@ -847,6 +857,82 @@ export const getSessionInfoByUserApiKey = (params: {
         });
       })
     );
+  });
+
+const getApiKeyFromPayload = (payload: unknown): string | undefined => {
+  const candidates = new Set<string>(['api_key', 'apiKey', 'key', 'token']);
+  const keyPrefixes = ['uak_', 'ak_'];
+  const queue: unknown[] = [payload];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== 'object') continue;
+
+    if (Array.isArray(current)) {
+      queue.push(...current);
+      continue;
+    }
+
+    const entries = Object.entries(current as Record<string, unknown>);
+    for (const [key, value] of entries) {
+      if (
+        typeof value === 'string' &&
+        candidates.has(key) &&
+        keyPrefixes.some(prefix => value.startsWith(prefix))
+      ) {
+        return value;
+      }
+      if (value && typeof value === 'object') {
+        queue.push(value);
+      }
+    }
+  }
+
+  return undefined;
+};
+
+export const createProjectApiKey = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  projectId: string;
+  name: string;
+}): Effect.Effect<string, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/project/${params.projectId}/api_keys/create`, {
+          method: 'POST',
+          redirect: 'error',
+          headers: {
+            ...authHeaderForApiKey(params.apiKey),
+            'x-org-id': params.orgId,
+            'x-project-id': params.projectId,
+            'User-Agent': '@composio/cli',
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: params.name }),
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+    const createdApiKey = getApiKeyFromPayload(json);
+
+    if (!createdApiKey) {
+      return yield* Effect.fail(
+        new HttpDecodingError({
+          cause: 'Create API key response did not contain an API key',
+        })
+      );
+    }
+
+    return createdApiKey;
   });
 
 // Utility function for calling the Composio API and decoding its response.
@@ -1006,6 +1092,7 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
     accessors: true,
     effect: Effect.gen(function* () {
       const ctx = yield* ComposioUserContext;
+      const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
       let ref = Option.none<_RawComposioClient>();
 
       return {
@@ -1017,9 +1104,26 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
           // Note: `api_key` is not required in every API request.
           const apiKey = ctx.data.apiKey.pipe(Option.getOrUndefined);
           const baseURL = ctx.data.baseURL;
+          const resolvedProjectContext = yield* Option.match(projectContextOpt, {
+            onNone: () => Effect.succeed(Option.none()),
+            onSome: projectContext =>
+              projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
+          });
+          const defaultHeaders = Option.match(resolvedProjectContext, {
+            onNone: () => undefined,
+            onSome: keys =>
+              ({
+                'x-org-id': keys.orgId,
+                'x-project-id': keys.projectId,
+              }) satisfies Record<string, string>,
+          });
 
           yield* Effect.logDebug('Creating raw Composio client...');
-          const client = new _RawComposioClient({ apiKey, baseURL });
+          const client = new _RawComposioClient({
+            apiKey,
+            baseURL,
+            defaultHeaders,
+          });
 
           ref = Option.some(client);
           return client;
