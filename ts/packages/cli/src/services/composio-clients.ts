@@ -377,6 +377,10 @@ export const SessionInfoResponse = Schema.Struct({
 }).annotations({ identifier: 'SessionInfoResponse' });
 export type SessionInfoResponse = Schema.Schema.Type<typeof SessionInfoResponse>;
 
+/** Extracts the project API key string from a session info response, or null if absent. */
+export const extractProjectApiKey = (sessionInfo: SessionInfoResponse): string | null =>
+  sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
+
 const authHeaderForApiKey = (apiKey: string): Record<string, string> => ({
   'x-user-api-key': apiKey,
 });
@@ -947,29 +951,25 @@ export const ensureProjectApiKey = (params: {
   userApiKey: string;
   orgId: string;
   projectId: string;
-}): Effect.Effect<string | undefined, HttpServerError | HttpDecodingError> =>
+}): Effect.Effect<string, HttpServerError | HttpDecodingError> =>
   Effect.gen(function* () {
     const sessionInfo = yield* getSessionInfoByUserApiKey({
       baseURL: params.baseURL,
       userApiKey: params.userApiKey,
     });
 
-    const existingKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
-
+    const existingKey = extractProjectApiKey(sessionInfo);
     if (existingKey) {
       return existingKey;
     }
 
-    const dateSuffix = new Date().toISOString().slice(0, 10);
-    const createdKey = yield* createProjectApiKey({
+    return yield* createProjectApiKey({
       baseURL: params.baseURL,
       apiKey: params.userApiKey,
       orgId: params.orgId,
       projectId: params.projectId,
-      name: `composio-cli-${dateSuffix}`,
+      name: `composio-cli-${new Date().toISOString().slice(0, 10)}`,
     });
-
-    return createdKey;
   });
 
 // Utility function for calling the Composio API and decoding its response.

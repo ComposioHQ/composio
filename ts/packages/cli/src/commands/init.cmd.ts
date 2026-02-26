@@ -9,6 +9,7 @@ import { userDataFromJSON } from 'src/models/user-data';
 import {
   createProjectApiKey,
   ensureProjectApiKey,
+  extractProjectApiKey,
   getSessionInfo,
   listOrgProjects,
   type OrgProject,
@@ -135,7 +136,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
       projectId: selected.projectId,
     });
 
-    let projectApiKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
+    let projectApiKey = extractProjectApiKey(sessionInfo);
     if (!projectApiKey && !hasProjectApiKey) {
       const dateSuffix = new Date().toISOString().slice(0, 10);
       projectApiKey = yield* createProjectApiKey({
@@ -317,47 +318,43 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       return;
     }
 
-    // 2a. Ensure a project API key exists on the server.
-    // The server rejects listOrgProjects with 401 when no project API key exists,
-    // even with a valid UAK. Creating one unblocks the request.
-    yield* ensureProjectApiKey({
-      baseURL: ctx.data.baseURL,
-      userApiKey: globalApiKey,
-      orgId: orgIdValue,
-      projectId: projectIdValue,
-    }).pipe(
-      Effect.tap(key => {
-        if (key) {
-          return Effect.logDebug('Ensured project API key exists');
-        }
-        return Effect.void;
-      }),
-      Effect.catchTag('services/HttpServerError', e =>
-        Effect.gen(function* () {
-          yield* Effect.logDebug('Failed to ensure project API key:', e);
-        })
-      ),
-      Effect.catchTag('services/HttpDecodingError', e =>
-        Effect.gen(function* () {
-          yield* Effect.logDebug('Failed to decode session info for API key check:', e);
-        })
-      )
-    );
-
-    // 2b. Fetch projects
-    const orgProjects = yield* listOrgProjects({
+    const fetchOrgProjects = listOrgProjects({
       baseURL: ctx.data.baseURL,
       apiKey: globalApiKey,
       orgId: orgIdValue,
       projectId: projectIdValue,
-    }).pipe(
+    });
+
+    // 2. Fetch projects — retry once on 401 by creating a project API key.
+    //    The server rejects listOrgProjects with 401 when no project API key
+    //    exists, even with a valid UAK. Creating one unblocks the request.
+    const orgProjects = yield* fetchOrgProjects.pipe(
+      Effect.catchTag('services/HttpServerError', firstError =>
+        firstError.status === 401
+          ? ensureProjectApiKey({
+              baseURL: ctx.data.baseURL,
+              userApiKey: globalApiKey,
+              orgId: orgIdValue,
+              projectId: projectIdValue,
+            }).pipe(
+              Effect.flatMap(() => fetchOrgProjects),
+              Effect.catchAll(() => Effect.fail(firstError))
+            )
+          : Effect.fail(firstError)
+      ),
       Effect.catchTag('services/HttpServerError', e =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Failed to list org projects:', e);
           yield* ui.log.warn('Could not fetch projects from the server.');
-          yield* ui.log.info(
-            'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
-          );
+          if (e.status === 401 || e.status === 403) {
+            yield* ui.log.info(
+              'Your session may have expired. Try `composio login` to re-authenticate.'
+            );
+          } else {
+            yield* ui.log.info(
+              'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
+            );
+          }
           yield* ui.outro('');
           return yield* Effect.fail(e);
         })
