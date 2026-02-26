@@ -6,7 +6,6 @@ import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { rootCommand, runWithConfig } from 'src/commands';
-import { showToolsExecuteInputHelp } from 'src/commands/tools/commands/tools.execute.cmd';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import { BaseConfigProviderLive, ConfigLive, extendConfigProvider } from 'src/services/config';
@@ -120,32 +119,11 @@ export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: n
   onExit(shouldFail ? errorCode : 0);
 };
 
-const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
-  const args = argv.slice(2);
-  if (args.length < 3) return undefined;
-  if (args[0] !== 'tools' || args[1] !== 'execute') return undefined;
-  const hasHelp = args.includes('--help') || args.includes('-h');
-  if (!hasHelp) return undefined;
-
-  const tail = args.slice(2);
-  const slug = tail.find(token => !token.startsWith('-'));
-  if (!slug) return undefined;
-  return slug;
-};
-
 const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) satisfies Effect.Effect<
   void,
   unknown,
   unknown
 >;
-
-const runWithExecuteHelpOverride = Effect.gen(function* () {
-  const executeHelpSlug = parseExecuteInputHelpSlug(process.argv);
-  if (!executeHelpSlug) {
-    return yield* runWithArgs;
-  }
-  return yield* showToolsExecuteInputHelp(executeHelpSlug);
-}) satisfies Effect.Effect<void, unknown, unknown>;
 
 const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
   switch (usage._tag) {
@@ -199,7 +177,7 @@ const valueOptionNames = (() => {
  * - runs the Effect runtime and sets up its runtime environment
  * - collects and displays errors
  */
-runWithExecuteHelpOverride.pipe(
+runWithArgs.pipe(
   Effect.scoped,
   // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
   // via its own printDocs before re-failing. Swallow the re-thrown error to avoid

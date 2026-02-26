@@ -1,4 +1,6 @@
 import { $ } from 'bun';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { getRepoRoot } from './config';
 
@@ -134,6 +136,22 @@ function labelsToArgs(labels: Record<string, string> = {}): string[] {
 }
 
 /**
+ * Adds a bind mount for host ~/.composio into container home.
+ * This allows E2E jobs to inject `user_data.json` once per job.
+ */
+function addHostComposioMount(dockerArgs: string[], containerComposioPath: string): void {
+  const hostComposioPath = resolve(homedir(), '.composio');
+  if (!existsSync(hostComposioPath)) {
+    return;
+  }
+
+  dockerArgs.push(
+    '--mount',
+    `type=bind,src=${hostComposioPath},dst=${containerComposioPath},readonly`
+  );
+}
+
+/**
  * Executes a command and captures stdout/stderr using Bun shell.
  */
 async function exec(cmd: string, args: string[], options: ExecOptions = {}): Promise<ExecResult> {
@@ -266,6 +284,8 @@ export async function runNodeContainer(options: RunNodeContainerOptions): Promis
     const containerCwd = cwd.startsWith('/') ? cwd : `/app/${cwd}`;
     dockerArgs.push('--workdir', containerCwd);
   }
+
+  addHostComposioMount(dockerArgs, '/root/.composio');
 
   // Pass environment variables to the container for runtime configuration.
   if (env) {
@@ -446,6 +466,8 @@ export async function runDenoContainer(options: RunDenoContainerOptions): Promis
     dockerArgs.push('--workdir', containerCwd);
   }
 
+  addHostComposioMount(dockerArgs, '/root/.composio');
+
   // Pass environment variables to the container for runtime configuration.
   if (env) {
     for (const [k, v] of Object.entries(env)) {
@@ -620,6 +642,8 @@ export async function runCliContainer(options: RunCliContainerOptions): Promise<
     const containerCwd = cwd.startsWith('/') ? cwd : `/app/${cwd}`;
     dockerArgs.push('--workdir', containerCwd);
   }
+
+  addHostComposioMount(dockerArgs, '/tmp/.composio');
 
   if (env) {
     for (const [k, v] of Object.entries(env)) {

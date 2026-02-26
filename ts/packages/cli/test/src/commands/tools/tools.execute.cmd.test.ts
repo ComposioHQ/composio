@@ -119,6 +119,51 @@ describe('CLI: composio tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email',
+            tags: ['email'],
+            available_versions: ['20260101_00'],
+            input_parameters: {
+              type: 'object',
+              required: ['recipient'],
+              properties: {
+                recipient: { type: 'string', description: 'Recipient email' },
+                subject: { type: 'string', description: 'Subject line' },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {
+                message_id: { type: 'string' },
+              },
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+      stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] execute-help with options before slug [Then] resolves correct slug', it => {
+    it.scoped('does not treat --user-id value as slug', () =>
+      Effect.gen(function* () {
+        yield* cli(['tools', 'execute', '--user-id', 'default', 'GMAIL_SEND_EMAIL', '--help']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Slug: GMAIL_SEND_EMAIL');
+        expect(output).toContain('Data Parameters:');
+        expect(output).toContain('recipient');
+        expect(output).not.toContain('default');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
       stdin: { isTTY: false, data: '{"owner":"composio"}' },
     })
   )('[Given] stdin is piped [Then] reads input from stdin', it => {
