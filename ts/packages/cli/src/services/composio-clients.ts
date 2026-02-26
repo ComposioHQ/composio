@@ -1110,9 +1110,15 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
               projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
           });
           const defaultHeaders = Option.match(resolvedProjectContext, {
-            onNone: () => undefined,
+            onNone: () =>
+              apiKey
+                ? ({
+                    'x-user-api-key': apiKey,
+                  } satisfies Record<string, string>)
+                : undefined,
             onSome: keys =>
               ({
+                ...(apiKey ? { 'x-user-api-key': apiKey } : {}),
                 'x-org-id': keys.orgId,
                 'x-project-id': keys.projectId,
               }) satisfies Record<string, string>,
@@ -1120,7 +1126,8 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
 
           yield* Effect.logDebug('Creating raw Composio client...');
           const client = new _RawComposioClient({
-            apiKey,
+            // Always use user-key header explicitly; avoid SDK default x-api-key auth header.
+            apiKey: undefined,
             baseURL,
             defaultHeaders,
           });
