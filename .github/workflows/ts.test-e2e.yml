@@ -25,7 +25,7 @@ jobs:
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY || secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
@@ -35,8 +35,8 @@ jobs:
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY:-$COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY:-$COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -49,7 +49,7 @@ jobs:
 
       - name: Seed Composio user_data.json for E2E
         run: |
-          USER_API_KEY="${COMPOSIO_USER_API_KEY:-$COMPOSIO_API_KEY}"
+          USER_API_KEY="${COMPOSIO_USER_API_KEY}"
           mkdir -p "$HOME/.composio"
           cat > "$HOME/.composio/user_data.json" <<EOF
           {"api_key":"${USER_API_KEY}","base_url":"https://backend.composio.dev","web_url":"https://platform.composio.dev","org_id":"ok_RdSIHzOTx-dJ","project_id":"pr_ZeUkovQ0gXyD"}
@@ -83,7 +83,7 @@ jobs:
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY || secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_DENO_VERSION: ${{ matrix.deno-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
@@ -93,8 +93,8 @@ jobs:
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY:-$COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY:-$COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -130,8 +130,8 @@ jobs:
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY:-$COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY:-$COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -144,7 +144,7 @@ jobs:
 
       - name: Seed Composio user_data.json for E2E
         run: |
-          USER_API_KEY="${COMPOSIO_USER_API_KEY:-$COMPOSIO_API_KEY}"
+          USER_API_KEY="${COMPOSIO_USER_API_KEY}"
           mkdir -p "$HOME/.composio"
           cat > "$HOME/.composio/user_data.json" <<EOF
           {"api_key":"${USER_API_KEY}","base_url":"https://backend.composio.dev","web_url":"https://platform.composio.dev","org_id":"ok_RdSIHzOTx-dJ","project_id":"pr_ZeUkovQ0gXyD"}
@@ -173,7 +173,7 @@ jobs:
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
-      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY || secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
@@ -182,8 +182,8 @@ jobs:
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY:-$COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY:-$COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -212,6 +212,6 @@ jobs:
       - name: Run Cloudflare Workers E2E Tests
         run: pnpm run test:e2e:cloudflare
         env:
-          COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY || secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
           COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
