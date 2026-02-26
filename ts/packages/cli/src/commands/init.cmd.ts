@@ -433,7 +433,8 @@ const runInitWizard = (cwd: string, params: { noSkills: boolean; yes: boolean })
           ? NATIVE_FRAMEWORK_OPTIONS.map(o => o.value)
           : yield* ui.multiSelect<NativeFramework>(
               'Which frameworks do you use?',
-              NATIVE_FRAMEWORK_OPTIONS
+              NATIVE_FRAMEWORK_OPTIONS,
+              { required: true }
             )
         : [];
 
