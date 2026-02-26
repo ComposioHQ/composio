@@ -2,7 +2,7 @@ import { Config, LogLevel, Option } from 'effect';
 import * as constants from 'src/constants';
 
 type APP_CONFIG = Config.Config.Wrap<{
-  API_KEY: Option.Option<string>;
+  USER_API_KEY: Option.Option<string>;
   ENVIRONMENT: Option.Option<string>;
   BASE_URL: string;
   WEB_URL: string;
@@ -35,7 +35,7 @@ const environmentBasedDefault = (
  */
 export const APP_CONFIG = {
   // The API key for the Composio API
-  API_KEY: Config.option(Config.string('API_KEY')),
+  USER_API_KEY: Config.option(Config.string('USER_API_KEY')),
 
   // The deployment environment ("production" | "staging"). Controls URL defaults.
   ENVIRONMENT: Config.option(Config.string('ENVIRONMENT')),

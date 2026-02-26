@@ -49,7 +49,7 @@ export const ComposioUserContextLive = Layer.effect(
   ComposioUserContext,
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const apiKey = yield* APP_CONFIG['API_KEY'];
+    const apiKey = yield* APP_CONFIG['USER_API_KEY'];
     const baseURL = yield* APP_CONFIG['BASE_URL'];
     const webURL = yield* APP_CONFIG['WEB_URL'];
 

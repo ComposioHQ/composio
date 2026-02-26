@@ -1110,7 +1110,7 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
             onSome: projectContext =>
               projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
           });
-          const defaultHeaders = Option.match(resolvedProjectContext, {
+          const projectContextHeaders = Option.match(resolvedProjectContext, {
             onNone: () =>
               globalOrgId && globalProjectId
                 ? ({
@@ -1124,12 +1124,20 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
                 'x-project-id': keys.projectId,
               }) satisfies Record<string, string>,
           });
+          const defaultHeaders = {
+            ...(apiKey ? ({ 'x-user-api-key': apiKey } satisfies Record<string, string>) : {}),
+            ...(projectContextHeaders ?? {}),
+          };
+          const normalizedDefaultHeaders =
+            Object.keys(defaultHeaders).length > 0 ? defaultHeaders : undefined;
 
           yield* Effect.logDebug('Creating raw Composio client...');
           const client = new _RawComposioClient({
-            apiKey,
+            // Disable @composio/client's built-in x-api-key auth header.
+            // CLI always authenticates with x-user-api-key instead.
+            apiKey: null,
             baseURL,
-            defaultHeaders,
+            defaultHeaders: normalizedDefaultHeaders,
           });
 
           ref = Option.some(client);

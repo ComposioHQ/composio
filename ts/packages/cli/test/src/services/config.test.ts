@@ -23,7 +23,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.none(),
             BASE_URL: 'https://backend.composio.dev',
             CACHE_DIR: Option.none(),
@@ -37,7 +37,7 @@ describe('Config', () => {
 
       it('[When] map entries are set without `COMPOSIO_` prefix', () => {
         const map = new Map([
-          ['API_KEY', 'api_key'],
+          ['USER_API_KEY', 'api_key'],
           ['BASE_URL', 'https://test.localhost'],
           ['CACHE_DIR', '~/.composio'],
           ['LOG_LEVEL', 'info'],
@@ -50,7 +50,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.none(),
             BASE_URL: 'https://backend.composio.dev',
             CACHE_DIR: Option.none(),
@@ -64,7 +64,7 @@ describe('Config', () => {
 
       it('[When] env variables are set with `COMPOSIO_` prefix', () => {
         const map = new Map([
-          ['COMPOSIO_API_KEY', 'api_key'],
+          ['COMPOSIO_USER_API_KEY', 'api_key'],
           ['COMPOSIO_BASE_URL', 'https://test.localhost'],
           ['COMPOSIO_WEB_URL', 'https://test.localhost'],
           ['COMPOSIO_CACHE_DIR', '~/.composio'],
@@ -78,7 +78,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.some('api_key'),
+            USER_API_KEY: Option.some('api_key'),
             ENVIRONMENT: Option.none(),
             BASE_URL: 'https://test.localhost',
             WEB_URL: 'https://test.localhost',
@@ -100,7 +100,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.some('production'),
             BASE_URL: constants.DEFAULT_BASE_URL,
             WEB_URL: constants.DEFAULT_WEB_URL,
@@ -122,7 +122,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.some('staging'),
             BASE_URL: constants.STAGING_BASE_URL,
             WEB_URL: constants.STAGING_WEB_URL,
@@ -147,7 +147,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.some('staging'),
             BASE_URL: 'https://custom-backend.localhost',
             WEB_URL: constants.STAGING_WEB_URL,
@@ -172,7 +172,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.some('staging'),
             BASE_URL: constants.STAGING_BASE_URL,
             WEB_URL: 'https://custom-web.localhost',
@@ -194,7 +194,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.some('unknown'),
             BASE_URL: constants.DEFAULT_BASE_URL,
             WEB_URL: constants.DEFAULT_WEB_URL,
@@ -304,7 +304,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.none(),
             BASE_URL: 'https://backend.composio.dev',
             WEB_URL: 'https://platform.composio.dev',
@@ -317,7 +317,7 @@ describe('Config', () => {
       });
 
       it('[When] env variables are set without `COMPOSIO_` prefix', () => {
-        vi.stubEnv('API_KEY', 'api_key');
+        vi.stubEnv('USER_API_KEY', 'api_key');
         vi.stubEnv('BASE_URL', 'https://test.localhost');
         vi.stubEnv('CACHE_DIR', '~/.composio');
         vi.stubEnv('LOG_LEVEL', 'info');
@@ -329,7 +329,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.none(),
             BASE_URL: 'https://backend.composio.dev',
             WEB_URL: 'https://platform.composio.dev',
@@ -342,7 +342,7 @@ describe('Config', () => {
       });
 
       it('[When] env variables are set with `COMPOSIO_` prefix', () => {
-        vi.stubEnv('COMPOSIO_API_KEY', 'api_key');
+        vi.stubEnv('COMPOSIO_USER_API_KEY', 'api_key');
         vi.stubEnv('COMPOSIO_BASE_URL', 'https://test.localhost');
         vi.stubEnv('COMPOSIO_WEB_URL', 'https://test.localhost');
         vi.stubEnv('COMPOSIO_CACHE_DIR', '~/.composio');
@@ -355,7 +355,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.some('api_key'),
+            USER_API_KEY: Option.some('api_key'),
             ENVIRONMENT: Option.none(),
             BASE_URL: 'https://test.localhost',
             WEB_URL: 'https://test.localhost',
@@ -377,7 +377,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.some('staging'),
             BASE_URL: constants.STAGING_BASE_URL,
             WEB_URL: constants.STAGING_WEB_URL,
@@ -401,7 +401,7 @@ describe('Config', () => {
         assertEquals(
           actual,
           Data.struct({
-            API_KEY: Option.none(),
+            USER_API_KEY: Option.none(),
             ENVIRONMENT: Option.some('staging'),
             BASE_URL: 'https://custom.localhost',
             WEB_URL: 'https://custom-web.localhost',

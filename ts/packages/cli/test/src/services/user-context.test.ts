@@ -47,7 +47,7 @@ describe('ComposioUserContext', () => {
       it.scoped('[Then] is logged in', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([
-          ['COMPOSIO_API_KEY', 'api_key'],
+          ['COMPOSIO_USER_API_KEY', 'api_key'],
           ['COMPOSIO_BASE_URL', 'https://test.composio.localhost'],
         ]) satisfies Map<string, string>;
 
@@ -70,6 +70,23 @@ describe('ComposioUserContext', () => {
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), true);
+        }).pipe(Effect.provide(ComposioUserContextTest));
+      });
+
+      it.scoped('[Then] COMPOSIO_API_KEY alone does not authenticate user context', () => {
+        const cwd = tempy.temporaryDirectory();
+        const map = new Map([['COMPOSIO_API_KEY', 'legacy_api_key']]) satisfies Map<string, string>;
+
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+        const ComposioUserContextTest = Layer.provideMerge(
+          ComposioUserContextLive,
+          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+        );
+
+        return Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          assertEquals(ctx.isLoggedIn(), false);
+          assertEquals(Option.getOrUndefined(ctx.data.apiKey), undefined);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
@@ -120,7 +137,7 @@ describe('ComposioUserContext', () => {
     describe('[When] dynamic `APP_CONFIG` is set', () => {
       it.scoped('[Then] it overrides the config file', () => {
         const cwd = tempy.temporaryDirectory();
-        const map = new Map([['COMPOSIO_API_KEY', 'api_key']]) satisfies Map<string, string>;
+        const map = new Map([['COMPOSIO_USER_API_KEY', 'api_key']]) satisfies Map<string, string>;
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
@@ -274,10 +291,13 @@ describe('ComposioUserContext', () => {
       });
     });
 
-    describe('[When] the file is corrupted but env API_KEY is set', () => {
-      it('[Then] it falls back to defaults but preserves env API_KEY', () => {
+    describe('[When] the file is corrupted but env USER_API_KEY is set', () => {
+      it('[Then] it falls back to defaults but preserves env USER_API_KEY', () => {
         const cwd = tempy.temporaryDirectory();
-        const map = new Map([['COMPOSIO_API_KEY', 'env_api_key']]) satisfies Map<string, string>;
+        const map = new Map([
+          ['COMPOSIO_USER_API_KEY', 'env_api_key'],
+          ['COMPOSIO_API_KEY', 'legacy_api_key_should_be_ignored'],
+        ]) satisfies Map<string, string>;
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
@@ -292,7 +312,7 @@ describe('ComposioUserContext', () => {
 
           const ctx = yield* ComposioUserContext;
 
-          // Despite corrupted file, env API_KEY should still work
+          // Despite corrupted file, env USER_API_KEY should still work
           assertEquals(ctx.isLoggedIn(), true);
           assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'env_api_key');
         }).pipe(Effect.provide(ComposioUserContextTest));
