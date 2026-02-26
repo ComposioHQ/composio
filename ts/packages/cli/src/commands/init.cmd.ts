@@ -607,6 +607,7 @@ const writeEnvLocal = (composioDir: string, envVars: ResolvedEnvVars) =>
 /** Tracks what succeeded and failed during Phase 3. */
 interface ExecutionOutcome {
   envVars: ResolvedEnvVars | null;
+  configWriteOk: boolean;
   depInstallOk: boolean;
   skillsInstallOk: boolean;
 }
@@ -898,6 +899,7 @@ const runConfirmExecuteOutro = (params: {
     // This ensures the safety net catchAll never masks failures as successes.
     const outcome: ExecutionOutcome = {
       envVars: null,
+      configWriteOk: false,
       depInstallOk: !config.installPlan,
       skillsInstallOk: !config.skillsConfig,
     };
@@ -934,6 +936,8 @@ const runConfirmExecuteOutro = (params: {
       if (outcome.envVars) {
         yield* writeEnvLocal(composioDir, outcome.envVars);
       }
+
+      outcome.configWriteOk = true;
 
       // Step 9: Install dependencies
       if (config.installPlan) {
@@ -997,9 +1001,15 @@ const runConfirmExecuteOutro = (params: {
       yield* ui.log.message(`  ${SKILLS_MANUAL_COMMAND}`);
     }
 
-    // Step 14: Success
-    yield* ui.log.success(`Project initialized in ${composioDir}/`);
-    yield* ui.output(makeOutputJson(selected, config, composioDir, outcome.envVars));
+    // Step 14: Final status
+    if (outcome.configWriteOk) {
+      yield* ui.log.success(`Project initialized in ${composioDir}/`);
+      yield* ui.output(makeOutputJson(selected, config, composioDir, outcome.envVars));
+    } else {
+      yield* ui.log.error(
+        `Initialization failed — config files could not be written to ${composioDir}/`
+      );
+    }
     yield* ui.outro('');
   });
 
