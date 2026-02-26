@@ -22,6 +22,7 @@ const TerminalUINoop = Layer.succeed(
       message: () => Effect.void,
     },
     note: () => Effect.void,
+    select: (_message, options) => Effect.succeed(options[0].value),
     confirm: () => Effect.succeed(true),
     withSpinner: (_message, effect) => effect,
     useMakeSpinner: (_message, use) =>
@@ -146,6 +147,41 @@ describe('UpgradeBinary', () => {
             throw error;
           }
           expect(error.message).toBe('Failed to parse GitHub release JSON response');
+        }
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('URL-encodes slash-containing tags in tagged release request path', async () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    let receivedPath = '';
+
+    try {
+      await withHttpServer(
+        (req, res) => {
+          receivedPath = req.url ?? '';
+          res.writeHead(500, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ message: 'forced failure' }));
+        },
+        async apiBaseUrl => {
+          const tag = '@composio/cli@0.1.24';
+          const error = await runUpgrade([
+            ['GITHUB_API_BASE_URL', apiBaseUrl],
+            ['GITHUB_OWNER', 'test-owner'],
+            ['GITHUB_REPO', 'test-repo'],
+            ['GITHUB_TAG', tag],
+          ]);
+
+          expect(error).toBeInstanceOf(UpgradeBinaryError);
+          if (!(error instanceof UpgradeBinaryError)) {
+            throw error;
+          }
+          expect(receivedPath).toBe(
+            `/repos/test-owner/test-repo/releases/tags/${encodeURIComponent(tag)}`
+          );
         }
       );
     } finally {

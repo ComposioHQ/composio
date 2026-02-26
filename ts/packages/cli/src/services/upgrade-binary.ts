@@ -164,7 +164,8 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             }),
             onSome: Effect.fn(function* (tag) {
               yield* Effect.logDebug(`Using tag: ${tag}`);
-              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${tag}`;
+              const encodedTag = encodeURIComponent(tag);
+              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
               const release = yield* fetchGitHubJson<GitHubRelease>({
                 url,
                 fetchErrorMessage: `Failed to fetch tags/${tag} release from GitHub`,
