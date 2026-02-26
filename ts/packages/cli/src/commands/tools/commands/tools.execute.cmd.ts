@@ -14,6 +14,7 @@ import {
 import type { ToolExecuteParams } from 'src/services/tools-executor';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioUserContext } from 'src/services/user-context';
 import {
   extractApiErrorDetails,
   extractMessage,
@@ -294,11 +295,13 @@ export const toolsCmd$Execute = Command.make(
       const ui = yield* TerminalUI;
       const executor = yield* ToolsExecutor;
       const projectContext = yield* ProjectContext;
+      const userContext = yield* ComposioUserContext;
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const globalTestUserId = userContext.data.testUserId;
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
-        onNone: () => testUserId,
+        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
       });
       if (Option.isNone(resolvedUserId)) {
         return yield* Effect.fail(
@@ -307,6 +310,8 @@ export const toolsCmd$Execute = Command.make(
       }
       if (Option.isNone(userId) && Option.isSome(testUserId)) {
         yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
       }
 
       const input = yield* resolveInput(data);

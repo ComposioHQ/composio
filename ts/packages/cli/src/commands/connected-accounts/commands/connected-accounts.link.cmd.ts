@@ -2,6 +2,7 @@ import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option, Schedule } from 'effect';
 import open from 'open';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
@@ -127,11 +128,13 @@ export const connectedAccountsCmd$Link = Command.make(
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
       const projectContext = yield* ProjectContext;
+      const userContext = yield* ComposioUserContext;
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const globalTestUserId = userContext.data.testUserId;
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
-        onNone: () => testUserId,
+        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
       });
       if (Option.isNone(resolvedUserId)) {
         return yield* Effect.fail(
@@ -140,6 +143,8 @@ export const connectedAccountsCmd$Link = Command.make(
       }
       if (Option.isNone(userId) && Option.isSome(testUserId)) {
         yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
       }
 
       // Validate: exactly one of <toolkit> or --auth-config must be provided

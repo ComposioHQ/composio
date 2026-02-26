@@ -74,6 +74,30 @@ describe('CLI: composio tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+    })
+  )(
+    '[Given] no --user-id and no project test_user_id [Then] falls back to global test_user_id',
+    it => {
+      it.scoped('uses global test user id from user_data.json', () =>
+        Effect.gen(function* () {
+          yield* cli(['tools', 'execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines);
+          const text = lines.join('\n');
+
+          expect(output.successful).toBe(true);
+          expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
+          expect(text).toContain('Using global test user id "global-default"');
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
       toolkitsData: {
         tools: [
           {
