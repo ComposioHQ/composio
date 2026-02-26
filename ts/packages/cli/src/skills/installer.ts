@@ -141,11 +141,14 @@ async function createSymlink(target: string, linkPath: string): Promise<boolean>
     const linkDir = dirname(linkPath);
     await mkdir(linkDir, { recursive: true });
 
-    const realLinkDir = await resolveParentSymlinks(linkDir);
-    const relativePath = relative(realLinkDir, target);
-    const symlinkType = platform() === 'win32' ? 'junction' : undefined;
+    const isWindows = platform() === 'win32';
+    const symlinkType = isWindows ? 'junction' : undefined;
+    // Windows junctions require absolute target paths; other platforms use relative.
+    const symlinkTarget = isWindows
+      ? resolvedTarget
+      : relative(await resolveParentSymlinks(linkDir), target);
 
-    await symlink(relativePath, linkPath, symlinkType);
+    await symlink(symlinkTarget, linkPath, symlinkType);
     return true;
   } catch {
     return false;
