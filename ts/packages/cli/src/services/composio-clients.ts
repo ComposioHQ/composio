@@ -935,6 +935,43 @@ export const createProjectApiKey = (params: {
     return createdApiKey;
   });
 
+/**
+ * Ensures a project API key exists for the given project.
+ * Checks session info first; if `api_key` is null, creates a new key.
+ *
+ * Uses `getSessionInfoByUserApiKey` (UAK-only) to avoid the 401 that
+ * `getSessionInfo` (with org/project headers) returns when no key exists.
+ */
+export const ensureProjectApiKey = (params: {
+  baseURL: string;
+  userApiKey: string;
+  orgId: string;
+  projectId: string;
+}): Effect.Effect<string | undefined, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const sessionInfo = yield* getSessionInfoByUserApiKey({
+      baseURL: params.baseURL,
+      userApiKey: params.userApiKey,
+    });
+
+    const existingKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
+
+    if (existingKey) {
+      return existingKey;
+    }
+
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    const createdKey = yield* createProjectApiKey({
+      baseURL: params.baseURL,
+      apiKey: params.userApiKey,
+      orgId: params.orgId,
+      projectId: params.projectId,
+      name: `composio-cli-${dateSuffix}`,
+    });
+
+    return createdKey;
+  });
+
 // Utility function for calling the Composio API and decoding its response.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const callClient = <T, S extends Schema.Schema<any, any>>(

@@ -8,6 +8,7 @@ import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
 import { userDataFromJSON } from 'src/models/user-data';
 import {
   createProjectApiKey,
+  ensureProjectApiKey,
   getSessionInfo,
   listOrgProjects,
   type OrgProject,
@@ -316,6 +317,34 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       return;
     }
 
+    // 2a. Ensure a project API key exists on the server.
+    // The server rejects listOrgProjects with 401 when no project API key exists,
+    // even with a valid UAK. Creating one unblocks the request.
+    yield* ensureProjectApiKey({
+      baseURL: ctx.data.baseURL,
+      userApiKey: globalApiKey,
+      orgId: orgIdValue,
+      projectId: projectIdValue,
+    }).pipe(
+      Effect.tap(key => {
+        if (key) {
+          return Effect.logDebug('Ensured project API key exists');
+        }
+        return Effect.void;
+      }),
+      Effect.catchTag('services/HttpServerError', e =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug('Failed to ensure project API key:', e);
+        })
+      ),
+      Effect.catchTag('services/HttpDecodingError', e =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug('Failed to decode session info for API key check:', e);
+        })
+      )
+    );
+
+    // 2b. Fetch projects
     const orgProjects = yield* listOrgProjects({
       baseURL: ctx.data.baseURL,
       apiKey: globalApiKey,
