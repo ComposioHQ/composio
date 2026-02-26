@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.26
+
+### Patch Changes
+
+- dfb07f2: BUmp cli version to enable new release flow
+
 ## 0.1.25
 
 ### Patch Changes
