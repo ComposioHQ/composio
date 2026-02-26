@@ -237,58 +237,63 @@ export async function searchMultiselect<T>(
     };
 
     const keypressHandler = (_str: string, key: readline.Key): void => {
-      if (!key) return;
+      try {
+        if (!key) return;
 
-      const filtered = getFiltered();
+        const filtered = getFiltered();
 
-      if (key.name === 'return') {
-        submit();
-        return;
-      }
-
-      if (key.name === 'escape' || (key.ctrl && key.name === 'c')) {
-        cancel();
-        return;
-      }
-
-      if (key.name === 'up') {
-        cursor = Math.max(0, cursor - 1);
-        render();
-        return;
-      }
-
-      if (key.name === 'down') {
-        cursor = Math.min(filtered.length - 1, cursor + 1);
-        render();
-        return;
-      }
-
-      if (key.name === 'space') {
-        const item = filtered[cursor];
-        if (item) {
-          if (selected.has(item.value)) {
-            selected.delete(item.value);
-          } else {
-            selected.add(item.value);
-          }
+        if (key.name === 'return') {
+          submit();
+          return;
         }
-        render();
-        return;
-      }
 
-      if (key.name === 'backspace') {
-        query = query.slice(0, -1);
-        cursor = 0;
-        render();
-        return;
-      }
+        if (key.name === 'escape' || (key.ctrl && key.name === 'c')) {
+          cancel();
+          return;
+        }
 
-      // Regular character input
-      if (key.sequence && !key.ctrl && !key.meta && key.sequence.length === 1) {
-        query += key.sequence;
-        cursor = 0;
-        render();
-        return;
+        if (key.name === 'up') {
+          cursor = Math.max(0, cursor - 1);
+          render();
+          return;
+        }
+
+        if (key.name === 'down') {
+          cursor = Math.min(filtered.length - 1, cursor + 1);
+          render();
+          return;
+        }
+
+        if (key.name === 'space') {
+          const item = filtered[cursor];
+          if (item) {
+            if (selected.has(item.value)) {
+              selected.delete(item.value);
+            } else {
+              selected.add(item.value);
+            }
+          }
+          render();
+          return;
+        }
+
+        if (key.name === 'backspace') {
+          query = query.slice(0, -1);
+          cursor = 0;
+          render();
+          return;
+        }
+
+        // Regular character input
+        if (key.sequence && !key.ctrl && !key.meta && key.sequence.length === 1) {
+          query += key.sequence;
+          cursor = 0;
+          render();
+          return;
+        }
+      } catch {
+        cleanup();
+        resolve(cancelSymbol);
       }
     };
 
