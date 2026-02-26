@@ -774,6 +774,7 @@ const resolveProjectEnvVars = (params: { selected: ProjectKeys }) =>
 
     const uakApiKey = yield* getGlobalUserApiKey();
     if (!uakApiKey) {
+      yield* Effect.logDebug('No global API key found; skipping .env.local creation.');
       return null;
     }
 
