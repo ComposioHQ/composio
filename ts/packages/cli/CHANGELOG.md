@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.28
+
+### Patch Changes
+
+- 2bd2db4: Update tool search and API key inference
+
 ## 0.1.27
 
 ### Patch Changes
