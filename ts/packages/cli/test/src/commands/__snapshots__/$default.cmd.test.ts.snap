@@ -35,7 +35,7 @@ Composio CLI - A tool for managing Python and TypeScript composio.dev projects.
 
   - logout                                                                                                                                                                                                                                                                                                   Log out from the Composio SDK.
 
-  - init [--org-id text] [--project-id text] [--no-browser] [--dry-run] [--force] [(-y, --yes)] [--no-skills]                                                                                                                                                                                                Initialize a Composio project in the current directory.
+  - init [--org-id text] [--project-id text] [--no-browser] [(-y, --yes)]                                                                                                                                                                                                                                    Initialize a Composio project in the current directory.
 
   - generate [(-o, --output-dir directory)] [--type-tools] --toolkits text...                                                                                                                                                                                                                                Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
 
@@ -59,7 +59,7 @@ Environment Variables:
 
   - toolkits list [--query text] [--limit integer] [--connected] [--user-id text]                                                                                                                                                                                                                            List available toolkits with connection status.
 
-  - toolkits info [--user-id text] [<slug>]                                                                                                                                                                                                                                                                  View details of a specific toolkit.
+  - toolkits info [--user-id text] [(-a, --all)] [<slug>]                                                                                                                                                                                                                                                    View details of a specific toolkit.
 
   - toolkits search [--limit integer] <query>                                                                                                                                                                                                                                                                Search toolkits by use case.
 
