@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Semver version to test (e.g., 1.0.0)'
+        description: 'Version to test (e.g., 1.0.0 or @composio/cli@1.0.0)'
         required: true
   workflow_call:
     inputs:
@@ -81,16 +81,20 @@ jobs:
             exit 0
           fi
 
-          # For manual runs, require semver input and build the release tag.
+          # For manual runs, accept a full package tag or semver and normalize to a package tag.
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            if [[ ! "$raw_input" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
-              echo "Invalid semver version: '$raw_input'"
-              echo "Expected format like: 1.2.3, 1.2.3-beta.1, 1.2.3+build.7"
-              exit 1
+            if [[ "$raw_input" =~ ^@composio/cli@ ]]; then
+              echo "use_latest=false" >> "$GITHUB_OUTPUT"
+              echo "release_tag=$raw_input" >> "$GITHUB_OUTPUT"
+              exit 0
+            elif [[ "$raw_input" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+              echo "use_latest=false" >> "$GITHUB_OUTPUT"
+              echo "release_tag=@composio/cli@$raw_input" >> "$GITHUB_OUTPUT"
+              exit 0
             fi
-            echo "use_latest=false" >> "$GITHUB_OUTPUT"
-            echo "release_tag=@composio/cli@$raw_input" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "Invalid version: '$raw_input'"
+            echo "Expected format like: 1.2.3, 1.2.3-beta.1, 1.2.3+build.7, or @composio/cli@1.2.3"
+            exit 1
           fi
 
           # For workflow_call / push, accept a full package tag, semver, or legacy v* tag.
@@ -103,6 +107,7 @@ jobs:
           else
             echo "use_latest=false" >> "$GITHUB_OUTPUT"
             echo "release_tag=$raw_input" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
       - name: Setup shell environment
