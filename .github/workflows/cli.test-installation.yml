@@ -50,20 +50,20 @@ jobs:
             shell: zsh
 
           # macOS versions
-          - os: macos-13
-            name: 'macOS 13 (Ventura)'
+          - os: macos-15-intel
+            name: 'macOS 15 (Intel)'
             shell: bash
-          - os: macos-13
-            name: 'macOS 13 (zsh)'
+          - os: macos-15-intel
+            name: 'macOS 15 (Intel, zsh)'
             shell: zsh
           - os: macos-14
             name: 'macOS 14 (Sonoma)'
             shell: bash
-          - os: macos-latest
-            name: 'macOS Latest'
+          - os: macos-15
+            name: 'macOS 15 (Apple Silicon)'
             shell: bash
-          - os: macos-latest
-            name: 'macOS Latest (zsh)'
+          - os: macos-15
+            name: 'macOS 15 (Apple Silicon, zsh)'
             shell: zsh
 
     steps:
@@ -354,7 +354,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-15]
         node-version: [18, 20, 22]
 
     steps:
@@ -393,10 +393,10 @@ jobs:
           - os: depot-ubuntu-24.04-arm
             arch: arm64
             expected: 'Linux ARM64'
-          - os: macos-13
+          - os: macos-15-intel
             arch: x64
             expected: 'macOS x64'
-          - os: macos-latest
+          - os: macos-15
             arch: arm64
             expected: 'macOS ARM64'
 
@@ -443,7 +443,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-15]
 
     steps:
       - name: Checkout
@@ -527,8 +527,8 @@ jobs:
           echo "**Test Matrix Coverage:**" >> $GITHUB_STEP_SUMMARY
           echo "- **Linux x64**: Ubuntu 22.04, Latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Linux ARM64**: Ubuntu 22.04, 24.04 (via Depot)" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS x64**: macOS 13, 14, Latest" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS ARM64**: macOS Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS x64**: macOS 15 (Intel)" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS ARM64**: macOS 14, macOS 15 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
           echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
           echo "- **Node.js**: 18, 20, 22 (npm fallback)" >> $GITHUB_STEP_SUMMARY
           echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY

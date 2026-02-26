@@ -28,10 +28,10 @@ jobs:
           - runner: depot-ubuntu-24.04-arm
             platform: linux-aarch64
             artifact: composio-linux-aarch64
-          - runner: macos-13 # Intel Mac
+          - runner: macos-15-intel # Intel Mac
             platform: darwin-x64
             artifact: composio-darwin-x64
-          - runner: macos-latest # Apple Silicon Mac
+          - runner: macos-15 # Apple Silicon Mac
             platform: darwin-aarch64
             artifact: composio-darwin-aarch64
 
