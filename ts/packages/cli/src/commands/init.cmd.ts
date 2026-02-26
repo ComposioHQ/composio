@@ -872,22 +872,22 @@ const runConfirmExecuteOutro = (params: {
     if (hasWork) {
       const summary = buildUnifiedSummary(projectDisplayName, config);
       yield* ui.note(summary, 'Installation Summary');
+    }
 
-      // Dry run: show summary and exit without writing anything
-      if (dryRun) {
-        yield* ui.log.info('Dry run complete — no changes made.');
+    // Dry run: show summary (if any) and exit without writing anything
+    if (dryRun) {
+      yield* ui.log.info('Dry run complete — no changes made.');
+      yield* ui.outro('');
+      return;
+    }
+
+    if (hasWork && !yes) {
+      // Confirm (skip when --yes)
+      const confirmed = yield* ui.confirm('Proceed with installation?', { defaultValue: true });
+      if (!confirmed) {
+        yield* ui.log.warn('Installation cancelled.');
         yield* ui.outro('');
         return;
-      }
-
-      // Confirm (skip when --yes)
-      if (!yes) {
-        const confirmed = yield* ui.confirm('Proceed with installation?', { defaultValue: true });
-        if (!confirmed) {
-          yield* ui.log.warn('Installation cancelled.');
-          yield* ui.outro('');
-          return;
-        }
       }
     }
 
