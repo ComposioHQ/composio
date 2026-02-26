@@ -101,7 +101,7 @@ describe('CLI: composio login', () => {
             const [url, init] = fetchSpy.mock.calls[0]!;
             expect(url).toContain('/api/v3/auth/session/info');
             expect((init as RequestInit).headers).toMatchObject({
-              'x-api-key': 'uak_test_key',
+              'x-user-api-key': 'uak_test_key',
               'x-org-id': 'org_initial',
               'x-project-id': 'proj_initial',
             });
