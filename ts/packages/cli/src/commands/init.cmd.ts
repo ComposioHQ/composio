@@ -218,27 +218,6 @@ const resolveInstallPlan = (cwd: string) =>
   detectCoreDependencyPlan(cwd).pipe(Effect.catchAll(() => Effect.succeed(null)));
 
 /**
- * After detecting the project environment and resolving an install plan,
- * ask the user to confirm the detected package manager or skip installation.
- * Returns the plan if confirmed, `undefined` if skipped.
- */
-const confirmInstallPlan = (plan: CoreDependencyPlan) =>
-  Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-
-    type PmChoice = 'confirm' | 'skip';
-    const choice = yield* ui.select<PmChoice>(
-      `Install ${plan.dependency} using ${plan.packageManager}?`,
-      [
-        { value: 'confirm' as PmChoice, label: plan.packageManager, hint: plan.installCommand },
-        { value: 'skip' as PmChoice, label: 'Skip' },
-      ]
-    );
-
-    return choice === 'confirm' ? plan : undefined;
-  });
-
-/**
  * Runs the interactive init wizard.
  *
  * Steps:
@@ -246,9 +225,10 @@ const confirmInstallPlan = (plan: CoreDependencyPlan) =>
  * 2. Framework — which agent framework (only if native)
  * 3. Install skills — whether to install Composio coding-agent skills
  * 4. Detect project environment (only if native)
- * 5. Resolve + confirm install plan (only if native and environment detected)
+ * 5. Resolve install plan (only if native and environment detected)
  *
  * All inputs are collected through the builder before any side effects run.
+ * Confirmation of the install plan is deferred to a unified prompt later.
  * Returns a fully-built `InitConfig`.
  */
 const runInitWizard = (cwd: string, params: { noSkills: boolean }) =>
@@ -277,7 +257,7 @@ const runInitWizard = (cwd: string, params: { noSkills: boolean }) =>
           defaultValue: true,
         });
 
-    // Steps 4+5: Detect environment + confirm install plan (only for native tools)
+    // Steps 4+5: Detect environment + resolve install plan (only for native tools)
     let detectedEnv: ProjectEnvironment | undefined;
     let installPlan: CoreDependencyPlan | undefined;
 
@@ -285,11 +265,11 @@ const runInitWizard = (cwd: string, params: { noSkills: boolean }) =>
       // Step 4: Detect project environment
       detectedEnv = yield* detectEnvironment(cwd);
 
-      // Step 5: Resolve install plan and confirm package manager
+      // Step 5: Resolve install plan (confirmation deferred to unified prompt)
       if (detectedEnv) {
         const plan = yield* resolveInstallPlan(cwd);
         if (plan) {
-          installPlan = yield* confirmInstallPlan(plan);
+          installPlan = plan;
         }
       }
     }
@@ -358,17 +338,17 @@ const writeProjectConfig = (composioDir: string, selected: ProjectKeys, config?:
 
 /**
  * Runs the dependency installation step based on the init config.
- * Handles --dry-run, --force, --yes flags and already-installed detection.
+ * Handles --dry-run, --force flags and already-installed detection.
+ * Confirmation is handled by the caller (`printEnvVarsAndInstall`).
  */
 const runInstallStep = (params: {
   config: InitConfig;
   cwd: string;
   dryRun: boolean;
   force: boolean;
-  yes: boolean;
 }) =>
   Effect.gen(function* () {
-    const { config, cwd, dryRun, force, yes } = params;
+    const { config, cwd, dryRun, force } = params;
     if (!config.installPlan) return;
 
     const ui = yield* TerminalUI;
@@ -399,13 +379,6 @@ const runInstallStep = (params: {
     if (dryRun) {
       yield* ui.note(plan.installCommand, 'Install Command');
       yield* ui.log.info('Dry run complete.');
-      return;
-    }
-
-    const shouldInstall =
-      yes || (yield* ui.confirm(`Run: ${plan.installCommand}?`, { defaultValue: true }));
-    if (!shouldInstall) {
-      yield* ui.log.warn('Installation cancelled.');
       return;
     }
 
@@ -446,14 +419,9 @@ const SKILLS_INSTALL_COMMAND = 'npx skills add composiohq/skills';
  * Runs the Composio skills installation step.
  * Uses `npx skills add composiohq/skills` to install coding-agent skills.
  */
-const runSkillsInstallStep = (params: {
-  config: InitConfig;
-  cwd: string;
-  dryRun: boolean;
-  yes: boolean;
-}) =>
+const runSkillsInstallStep = (params: { config: InitConfig; cwd: string; dryRun: boolean }) =>
   Effect.gen(function* () {
-    const { config, cwd, dryRun, yes } = params;
+    const { config, cwd, dryRun } = params;
     if (!config.installSkills) return;
 
     const ui = yield* TerminalUI;
@@ -461,13 +429,6 @@ const runSkillsInstallStep = (params: {
 
     if (dryRun) {
       yield* ui.note(SKILLS_INSTALL_COMMAND, 'Skills Install Command');
-      return;
-    }
-
-    const shouldInstall =
-      yes || (yield* ui.confirm(`Run: ${SKILLS_INSTALL_COMMAND}?`, { defaultValue: true }));
-    if (!shouldInstall) {
-      yield* ui.log.warn('Skills installation cancelled.');
       return;
     }
 
@@ -496,6 +457,58 @@ const runSkillsInstallStep = (params: {
           })
         )
       );
+  });
+
+// ---------------------------------------------------------------------------
+// Unified install confirmation — shows env vars, summary, then installs
+// ---------------------------------------------------------------------------
+
+/**
+ * Prints env vars (if available), shows an install summary, asks for a single
+ * confirmation, and runs both install steps. Skips the prompt entirely when
+ * there is nothing to install (no install plan AND no skills).
+ */
+const printEnvVarsAndInstall = (params: {
+  config: InitConfig;
+  envVars: ResolvedEnvVars | null;
+  cwd: string;
+  dryRun: boolean;
+  force: boolean;
+  yes: boolean;
+}) =>
+  Effect.gen(function* () {
+    const { config, envVars, cwd, dryRun, force, yes } = params;
+    const ui = yield* TerminalUI;
+
+    const hasWork = !!config.installPlan || config.installSkills;
+
+    // Always print env vars if available
+    if (envVars) {
+      yield* printEnvVars(envVars);
+    }
+
+    // Nothing to install — skip the confirmation prompt entirely
+    if (!hasWork) return;
+
+    // For non-dry-run: show install summary and ask for confirmation
+    if (!dryRun) {
+      const lines: string[] = [];
+      if (config.installPlan) lines.push(config.installPlan.installCommand);
+      if (config.installSkills) lines.push(SKILLS_INSTALL_COMMAND);
+      yield* ui.note(lines.join('\n'), 'Install commands');
+
+      if (!yes) {
+        const confirmed = yield* ui.confirm('Proceed with installation?', { defaultValue: true });
+        if (!confirmed) {
+          yield* ui.log.warn('Installation cancelled.');
+          return;
+        }
+      }
+    }
+
+    // Run install steps (dry-run is handled internally by each step)
+    yield* runInstallStep({ config, cwd, dryRun, force });
+    yield* runSkillsInstallStep({ config, cwd, dryRun });
   });
 
 // ---------------------------------------------------------------------------
@@ -715,11 +728,9 @@ export const initCmd = CliCommand.make(
             { ...selected, testUserId: Option.some(envVars.composioTestUserId) },
             config
           );
-          yield* printEnvVars(envVars);
         }
 
-        yield* runInstallStep({ config, cwd: proc.cwd, dryRun, force, yes });
-        yield* runSkillsInstallStep({ config, cwd: proc.cwd, dryRun, yes });
+        yield* printEnvVarsAndInstall({ config, envVars, cwd: proc.cwd, dryRun, force, yes });
 
         yield* ui.log.success(`Project initialized in ${composioDir}/`);
         yield* ui.output(makeOutputJson(selected, config, composioDir, envVars));
@@ -856,11 +867,9 @@ const initInteractiveFlow = (params: {
         { ...selected, testUserId: Option.some(envVars.composioTestUserId) },
         config
       );
-      yield* printEnvVars(envVars);
     }
 
-    yield* runInstallStep({ config, cwd: proc.cwd, dryRun, force, yes });
-    yield* runSkillsInstallStep({ config, cwd: proc.cwd, dryRun, yes });
+    yield* printEnvVarsAndInstall({ config, envVars, cwd: proc.cwd, dryRun, force, yes });
 
     yield* ui.log.success(`Project initialized in ${composioDir}/`);
     yield* ui.output(makeOutputJson(selected, config, composioDir, envVars));
