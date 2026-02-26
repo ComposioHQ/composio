@@ -19,6 +19,7 @@ describe('CLI: composio logout', () => {
             webURL: 'https://platform.composio.dev',
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
 
           expect(ctx.data).toMatchObject(expectedUserData);
@@ -55,6 +56,7 @@ describe('CLI: composio logout', () => {
               webURL: 'https://platform.composio.dev',
               orgId: Option.none(),
               projectId: Option.none(),
+              testUserId: Option.none(),
             })
           );
 

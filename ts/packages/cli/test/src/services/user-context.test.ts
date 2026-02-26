@@ -35,6 +35,7 @@ describe('ComposioUserContext', () => {
             webURL: 'https://platform.composio.dev',
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), false);
@@ -65,6 +66,7 @@ describe('ComposioUserContext', () => {
             webURL: 'https://platform.composio.dev',
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), true);
@@ -93,6 +95,7 @@ describe('ComposioUserContext', () => {
             webURL: Option.some('https://platform.composio.dev'),
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
@@ -132,6 +135,7 @@ describe('ComposioUserContext', () => {
             webURL: Option.some('https://platform.composio.dev'),
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
@@ -180,6 +184,7 @@ describe('ComposioUserContext', () => {
             webURL: 'https://platform.composio.dev',
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), false);
@@ -224,6 +229,7 @@ describe('ComposioUserContext', () => {
             webURL: 'https://platform.composio.dev',
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), false);
@@ -260,6 +266,7 @@ describe('ComposioUserContext', () => {
             webURL: 'https://platform.composio.dev',
             orgId: Option.none(),
             projectId: Option.none(),
+            testUserId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), false);

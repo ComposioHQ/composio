@@ -37,6 +37,13 @@ export const UserData = Schema.Struct({
   projectId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
     Schema.fromKey('project_id')
   ),
+
+  /**
+   * Optional global test user identifier used by CLI/e2e flows.
+   */
+  testUserId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('test_user_id')
+  ),
 }).annotations({
   identifier: 'UserData',
   description: 'User data storage for the Composio CLI',

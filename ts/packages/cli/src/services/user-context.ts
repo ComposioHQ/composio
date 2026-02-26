@@ -34,7 +34,8 @@ export class ComposioUserContext extends Context.Tag('ComposioUserData')<
     login: (
       apiKey: string,
       orgId?: string,
-      projectId?: string
+      projectId?: string,
+      testUserId?: string
     ) => Effect.Effect<void, ParseError | PlatformError, never>;
 
     /**
@@ -64,6 +65,7 @@ export const ComposioUserContextLive = Layer.effect(
       webURL: Option.some(webURL),
       orgId: Option.none(),
       projectId: Option.none(),
+      testUserId: Option.none(),
     });
 
     const logout = Effect.gen(function* () {
@@ -73,10 +75,11 @@ export const ComposioUserContextLive = Layer.effect(
         webURL: Option.some(webURL),
         orgId: Option.none(),
         projectId: Option.none(),
+        testUserId: Option.none(),
       });
     });
 
-    const login = (apiKey: string, orgId?: string, projectId?: string) =>
+    const login = (apiKey: string, orgId?: string, projectId?: string, testUserId?: string) =>
       Effect.gen(function* () {
         yield* update({
           apiKey: Option.some(apiKey),
@@ -84,6 +87,7 @@ export const ComposioUserContextLive = Layer.effect(
           webURL: Option.some(webURL),
           orgId: Option.fromNullable(orgId),
           projectId: Option.fromNullable(projectId),
+          testUserId: Option.fromNullable(testUserId),
         });
       });
 
@@ -117,6 +121,7 @@ export const ComposioUserContextLive = Layer.effect(
         webURL: Option.some(webURL),
         orgId: parsedUserData.orgId,
         projectId: parsedUserData.projectId,
+        testUserId: parsedUserData.testUserId,
       } satisfies UserData;
 
       yield* Effect.logDebug('User data (overridden from env vars):', overriddenUserData);
@@ -151,6 +156,7 @@ export const ComposioUserContextLive = Layer.effect(
       webURL: Option.getOrElse(userData.webURL, () => webURL),
       orgId: userData.orgId,
       projectId: userData.projectId,
+      testUserId: userData.testUserId,
     };
 
     return ComposioUserContext.of({
