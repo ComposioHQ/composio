@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.32
+
+### Patch Changes
+
+- 9ebaac5: Fallback to gloabl user_id if project user_id is not present
+
 ## 0.1.31
 
 ### Patch Changes
