@@ -41,14 +41,23 @@ const $cmd = $defaultCmd.pipe(
 
 export const rootCommand = $cmd;
 
+const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const args = argv.slice(2);
+  if (args.length === 1 && args[0] === '-v') {
+    return [...argv.slice(0, 2), '--version'];
+  }
+  return argv;
+};
+
 export const runWithConfig = Effect.gen(function* () {
   const version = yield* getVersion;
-
-  return Command.run($cmd, {
+  const run = Command.run($cmd, {
     name: 'composio',
     executable: 'composio',
     version,
   });
+
+  return (argv: ReadonlyArray<string>) => run(normalizeVersionShortFlag(argv));
 });
 
 export const run = Command.run($cmd, {

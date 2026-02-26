@@ -46,4 +46,16 @@ describe('CLI: composio', () => {
       })
     );
   });
+
+  layer(TestLive())(it => {
+    it.scoped("[Given] -v flag [Then] prints composio's version from package.json", () =>
+      Effect.gen(function* () {
+        const args = ['-v'];
+        yield* cli(args);
+        const lines = yield* MockConsole.getLines();
+        const output = lines.join('\n');
+        expect(output).toContain(pkg.version);
+      })
+    );
+  });
 });
