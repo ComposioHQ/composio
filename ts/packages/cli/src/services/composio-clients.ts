@@ -719,14 +719,12 @@ export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListRes
  * @param params.baseURL    - API base URL
  * @param params.apiKey     - UAK (sent as `x-user-api-key`)
  * @param params.orgId      - Organization ID (sent as `x-org-id`)
- * @param params.projectId  - Project ID (sent as `x-project-id`)
  * @param params.limit      - Max projects to return (default 100)
  */
 export const listOrgProjects = (params: {
   baseURL: string;
   apiKey: string;
   orgId: string;
-  projectId: string;
   limit?: number;
 }): Effect.Effect<OrgProjectListResponse, HttpServerError | HttpDecodingError> =>
   Effect.gen(function* () {
@@ -741,7 +739,6 @@ export const listOrgProjects = (params: {
             headers: {
               'x-user-api-key': params.apiKey,
               'x-org-id': params.orgId,
-              'x-project-id': params.projectId,
               'User-Agent': '@composio/cli',
               Accept: 'application/json',
               'Content-Type': 'application/json',
@@ -1102,7 +1099,9 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
           }
 
           // Note: `api_key` is not required in every API request.
-          const apiKey = ctx.data.apiKey.pipe(Option.getOrUndefined);
+          const rawApiKey = ctx.data.apiKey.pipe(Option.getOrUndefined);
+          const apiKey =
+            typeof rawApiKey === 'string' && rawApiKey.trim().length > 0 ? rawApiKey : undefined;
           const baseURL = ctx.data.baseURL;
           const resolvedProjectContext = yield* Option.match(projectContextOpt, {
             onNone: () => Effect.succeed(Option.none()),

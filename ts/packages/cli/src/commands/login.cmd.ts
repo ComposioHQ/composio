@@ -93,8 +93,8 @@ const storeCredentials = (params: {
     // Use session/info as the canonical source of org/project IDs when available.
     // The initial IDs come from the linked session response (which may use session-level
     // identifiers rather than the actual org/project IDs).
-    const orgId = sessionInfo?.org_member.id ?? initialOrgId;
-    const projectId = sessionInfo?.project.id ?? initialProjectId;
+    const orgId = sessionInfo?.project.org.id ?? initialOrgId;
+    const projectId = sessionInfo?.project.nano_id ?? initialProjectId;
 
     if (sessionInfo) {
       if (initialOrgId !== orgId) {
