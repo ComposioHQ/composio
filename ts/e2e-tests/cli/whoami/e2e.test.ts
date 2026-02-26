@@ -10,7 +10,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 declare module 'bun' {
   interface Env {
-    COMPOSIO_API_KEY: string;
+    COMPOSIO_USER_API_KEY: string;
   }
 }
 
@@ -19,10 +19,10 @@ e2e(import.meta.url, {
     cli: ['current'],
   },
   env: {
-    COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
+    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
-    const expectedApiKey = Bun.env.COMPOSIO_API_KEY.trim();
+    const expectedApiKey = Bun.env.COMPOSIO_USER_API_KEY.trim();
     let whoamiResult: E2ETestResult;
     let redirectedResult: E2ETestResultWithFiles<'out.txt'>;
 
