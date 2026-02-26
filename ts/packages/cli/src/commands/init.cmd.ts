@@ -990,16 +990,18 @@ const runConfirmExecuteOutro = (params: {
       yield* ui.note(envLines.join('\n'), 'Environment variables');
     }
 
-    // Step 12: If dep install failed → show manual command
-    if (!outcome.depInstallOk && config.installPlan) {
-      yield* ui.log.warn('Dependency installation failed. Install manually:');
-      yield* ui.log.message(`  ${config.installPlan.installCommand}`);
-    }
+    // Steps 12-13: Show manual commands only when Phase 3 actually reached the install steps
+    // (i.e. config writes succeeded). Otherwise these steps were never attempted.
+    if (outcome.configWriteOk) {
+      if (!outcome.depInstallOk && config.installPlan) {
+        yield* ui.log.warn('Dependency installation failed. Install manually:');
+        yield* ui.log.message(`  ${config.installPlan.installCommand}`);
+      }
 
-    // Step 13: If skills install failed → show manual command
-    if (!outcome.skillsInstallOk) {
-      yield* ui.log.warn('Skills installation failed. Install manually:');
-      yield* ui.log.message(`  ${SKILLS_MANUAL_COMMAND}`);
+      if (!outcome.skillsInstallOk) {
+        yield* ui.log.warn('Skills installation failed. Install manually:');
+        yield* ui.log.message(`  ${SKILLS_MANUAL_COMMAND}`);
+      }
     }
 
     // Step 14: Final status
