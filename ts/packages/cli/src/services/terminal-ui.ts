@@ -1,5 +1,8 @@
 import process from 'node:process';
+import type { Writable } from 'node:stream';
 import * as p from '@clack/prompts';
+import { MultiSelectPrompt } from '@clack/core';
+import pc from 'picocolors';
 import { Context, Effect, Exit, Layer } from 'effect';
 
 // ---------------------------------------------------------------------------
@@ -166,6 +169,124 @@ const silentSpinnerHandle: SpinnerHandle = {
   error: () => Effect.void,
 };
 
+// ---------------------------------------------------------------------------
+// Custom multiselect — adds a dimmed instruction hint that disappears on submit
+// ---------------------------------------------------------------------------
+
+// Clack symbols (matching @clack/prompts internals)
+const S_BAR_MS = '│';
+const S_BAR_END_MS = '└';
+const S_CHECKBOX_ACTIVE_MS = '◻';
+const S_CHECKBOX_SELECTED_MS = '◼';
+const S_CHECKBOX_INACTIVE_MS = '◻';
+
+interface MSOption<V> {
+  value: V;
+  label: string;
+  hint?: string;
+  disabled?: boolean;
+}
+
+function clackMultiselect<V>(opts: {
+  message: string;
+  options: MSOption<V>[];
+  required?: boolean;
+  output?: Writable;
+}): Promise<V[] | symbol> {
+  const output = (opts.output ?? process.stdout) as Writable;
+  const required = opts.required ?? true;
+  const hint = pc.dim('space select, enter confirm');
+
+  const sym = (state: string) => {
+    if (state === 'cancel') return pc.red('■');
+    if (state === 'submit') return pc.green('◇');
+    if (state === 'error') return pc.yellow('▲');
+    return pc.cyan('◆');
+  };
+  const bar = (state: string) => {
+    if (state === 'cancel') return pc.red(S_BAR_MS);
+    if (state === 'error') return pc.yellow(S_BAR_MS);
+    if (state === 'submit') return pc.green(S_BAR_MS);
+    return pc.cyan(S_BAR_MS);
+  };
+
+  const renderOpt = (o: MSOption<V>, mode: string) => {
+    const label = o.label ?? String(o.value);
+    const h = o.hint ? ` ${pc.dim(`(${o.hint})`)}` : '';
+    if (mode === 'active') return `${pc.cyan(S_CHECKBOX_ACTIVE_MS)} ${label}${h}`;
+    if (mode === 'selected') return `${pc.green(S_CHECKBOX_SELECTED_MS)} ${pc.dim(label)}${h}`;
+    if (mode === 'active-selected') return `${pc.green(S_CHECKBOX_SELECTED_MS)} ${label}${h}`;
+    if (mode === 'submitted') return pc.dim(label);
+    if (mode === 'cancelled') return pc.strikethrough(pc.dim(label));
+    return `${pc.dim(S_CHECKBOX_INACTIVE_MS)} ${pc.dim(label)}`;
+  };
+
+  return new MultiSelectPrompt({
+    options: opts.options,
+    input: process.stdin,
+    output,
+    required,
+    validate(selected: V[] | undefined) {
+      if (required && (!selected || selected.length === 0)) {
+        return `Please select at least one option.\n${pc.reset(
+          pc.dim(
+            `Press ${pc.gray(pc.bgWhite(pc.inverse(' space ')))} to select, ` +
+              `${pc.gray(pc.bgWhite(pc.inverse(' enter ')))} to submit`
+          )
+        )}`;
+      }
+      return undefined;
+    },
+    render() {
+      const value = this.value ?? [];
+      const title = `${pc.gray(S_BAR_MS)}\n${sym(this.state)}  ${pc.bold(opts.message)}\n`;
+
+      const style = (o: MSOption<V>, active: boolean) => {
+        if (o.disabled) return renderOpt(o, 'inactive');
+        const sel = value.includes(o.value);
+        if (active && sel) return renderOpt(o, 'active-selected');
+        if (sel) return renderOpt(o, 'selected');
+        return renderOpt(o, active ? 'active' : 'inactive');
+      };
+
+      switch (this.state) {
+        case 'submit': {
+          const text =
+            this.options
+              .filter(o => value.includes(o.value))
+              .map(o => renderOpt(o, 'submitted'))
+              .join(pc.dim(', ')) || pc.dim('none');
+          return `${title}${pc.gray(S_BAR_MS)}  ${text}`;
+        }
+        case 'cancel': {
+          const text = this.options
+            .filter(o => value.includes(o.value))
+            .map(o => renderOpt(o, 'cancelled'))
+            .join(pc.dim(', '));
+          if (!text.trim()) return `${title}${pc.gray(S_BAR_MS)}`;
+          return `${title}${pc.gray(S_BAR_MS)}  ${text}\n${pc.gray(S_BAR_MS)}`;
+        }
+        case 'error': {
+          const pfx = `${pc.yellow(S_BAR_MS)}  `;
+          const lines = this.options.map((o, i) => style(o, i === this.cursor));
+          const footer = this.error
+            .split('\n')
+            .map((ln: string, i: number) =>
+              i === 0 ? `${pc.yellow(S_BAR_END_MS)}  ${pc.yellow(ln)}` : `   ${ln}`
+            )
+            .join('\n');
+          return `${title}${pfx}${lines.join(`\n${pfx}`)}\n${footer}\n`;
+        }
+        default: {
+          const pfx = `${pc.cyan(S_BAR_MS)}  `;
+          const lines = this.options.map((o, i) => style(o, i === this.cursor));
+          return `${title}${bar(this.state)}  ${hint}\n${pfx}${lines.join(`\n${pfx}`)}\n${pc.cyan(S_BAR_END_MS)}\n`;
+        }
+      }
+    },
+  }).prompt() as Promise<V[] | symbol>;
+}
+
 const makeLive: TerminalUI = {
   output: data =>
     Effect.sync(() => {
@@ -222,14 +343,13 @@ const makeLive: TerminalUI = {
   ) =>
     isInteractive
       ? Effect.promise(async () => {
-          const result = await p.multiselect({
+          const result = await clackMultiselect({
             message,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            options: [...options] as any,
+            options: [...options],
             required: selectOptions?.required ?? false,
             output: process.stderr,
           });
-          // p.multiselect returns Value[] | symbol (symbol on cancel)
+          // multiselect returns Value[] | symbol (symbol on cancel)
           if (typeof result === 'symbol') return options.map(o => o.value);
           return result;
         })

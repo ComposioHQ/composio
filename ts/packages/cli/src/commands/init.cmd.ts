@@ -28,6 +28,25 @@ import {
   resolveCoreDependencyState,
   type CoreDependencyPlan,
 } from 'src/effects/core-dependency';
+import {
+  type AgentType,
+  type InstallMode,
+  type Skill,
+  agents,
+  cloneSkillsRepo,
+  cleanupTempDir,
+  SKILLS_MANUAL_COMMAND,
+  discoverSkills,
+  detectInstalledAgents,
+  ensureUniversalAgents,
+  selectAgentsInteractive,
+  cancelSymbol,
+  checkOverwrites,
+  buildInstallationSummary,
+  installAllSkills,
+  buildInstallationResultDisplay,
+  formatList,
+} from 'src/skills';
 
 /**
  * `composio init` — Initialize a Composio project in the current directory.
@@ -245,7 +264,7 @@ const runInitWizard = (cwd: string, params: { noSkills: boolean }) =>
     const frameworks: NativeFramework[] =
       usageMode === 'native'
         ? yield* ui.multiSelect<NativeFramework>(
-            'Which frameworks do you use? (Space to select, Enter to confirm)',
+            'Which frameworks do you use?',
             NATIVE_FRAMEWORK_OPTIONS
           )
         : [];
@@ -410,53 +429,189 @@ const runInstallStep = (params: {
   });
 
 // ---------------------------------------------------------------------------
-// Skills install step — runs `npx skills add composiohq/skills`
+// Skills install step — inline installation from composiohq/skills
 // ---------------------------------------------------------------------------
-
-const SKILLS_INSTALL_COMMAND = 'npx skills add composiohq/skills';
 
 /**
  * Runs the Composio skills installation step.
- * Uses `npx skills add composiohq/skills` to install coding-agent skills.
+ * Clones composiohq/skills, discovers skills, prompts for agents/scope/method,
+ * shows summary, confirms, and installs.
  */
-const runSkillsInstallStep = (params: { config: InitConfig; cwd: string; dryRun: boolean }) =>
+const runSkillsInstallStep = (params: {
+  config: InitConfig;
+  cwd: string;
+  dryRun: boolean;
+  yes: boolean;
+}) =>
   Effect.gen(function* () {
-    const { config, cwd, dryRun } = params;
+    const { config, cwd, dryRun, yes } = params;
     if (!config.installSkills) return;
 
     const ui = yield* TerminalUI;
-    const runner = yield* CommandRunner;
 
-    if (dryRun) {
-      yield* ui.note(SKILLS_INSTALL_COMMAND, 'Skills Install Command');
+    // 1. Clone composiohq/skills to temp dir
+    let tempDir: string;
+    try {
+      tempDir = yield* ui.withSpinner(
+        'Cloning Composio skills repository...',
+        Effect.tryPromise(() => cloneSkillsRepo()),
+        { successMessage: 'Skills repository cloned' }
+      );
+    } catch (e) {
+      yield* ui.log.error(
+        `Failed to clone skills repository: ${e instanceof Error ? e.message : String(e)}`
+      );
+      yield* ui.log.info(`You can install skills manually: ${SKILLS_MANUAL_COMMAND}`);
       return;
     }
 
-    const [cmd, ...args] = SKILLS_INSTALL_COMMAND.split(' ');
-    const command = PlatformCommand.make(cmd!, ...args).pipe(PlatformCommand.workingDirectory(cwd));
+    const doInstall = Effect.gen(function* () {
+      // 2. Discover skills
+      const skills = yield* ui.withSpinner(
+        'Discovering skills...',
+        Effect.tryPromise(() => discoverSkills(tempDir)),
+        { successMessage: (s: Skill[]) => `Found ${s.length} skill${s.length !== 1 ? 's' : ''}` }
+      );
 
-    const install = Effect.gen(function* () {
-      const exitCode = yield* runner.run(command);
-      if (exitCode !== 0) {
-        yield* Effect.fail(new Error(`Skills install command failed with exit code ${exitCode}`));
+      if (skills.length === 0) {
+        yield* ui.log.warn('No skills found in composiohq/skills.');
+        return;
+      }
+
+      // 3. Detect installed agents
+      const installedAgents = yield* Effect.tryPromise(() => detectInstalledAgents());
+
+      // 4. Agent selection
+      let targetAgents: AgentType[];
+      if (yes) {
+        targetAgents = ensureUniversalAgents(
+          installedAgents.length > 0 ? installedAgents : (Object.keys(agents) as AgentType[])
+        );
+        yield* ui.log.info(
+          `Installing to: ${targetAgents.map(a => agents[a].displayName).join(', ')}`
+        );
+      } else {
+        const selected = yield* Effect.tryPromise(() => selectAgentsInteractive({ global: false }));
+        if (selected === cancelSymbol) {
+          yield* ui.log.warn('Skills installation cancelled.');
+          return;
+        }
+        targetAgents = selected as AgentType[];
+      }
+
+      // 5. Scope selection
+      let installGlobally: boolean;
+      if (yes) {
+        installGlobally = false;
+      } else {
+        installGlobally = yield* ui.select<boolean>('Installation scope', [
+          {
+            value: false,
+            label: 'Project',
+            hint: 'Install in current directory (committed with your project)',
+          },
+          {
+            value: true,
+            label: 'Global',
+            hint: 'Install in home directory (available across all projects)',
+          },
+        ]);
+      }
+
+      // 6. Method selection
+      let installMode: InstallMode;
+      if (yes) {
+        installMode = 'symlink';
+      } else {
+        installMode = yield* ui.select<InstallMode>('Installation method', [
+          {
+            value: 'symlink',
+            label: 'Symlink (Recommended)',
+            hint: 'Single source of truth, easy updates',
+          },
+          {
+            value: 'copy',
+            label: 'Copy to all agents',
+            hint: 'Independent copies for each agent',
+          },
+        ]);
+      }
+
+      // 7. Check for overwrites + build summary
+      const overwriteStatus = yield* Effect.tryPromise(() =>
+        checkOverwrites(skills, targetAgents, { global: installGlobally })
+      );
+
+      const summaryLines = buildInstallationSummary(
+        skills,
+        targetAgents,
+        installMode,
+        installGlobally,
+        cwd,
+        overwriteStatus
+      );
+      yield* ui.note(summaryLines.join('\n'), 'Installation Summary');
+
+      // 8. Dry run — show summary and exit
+      if (dryRun) {
+        yield* ui.log.info('Dry run — no changes made.');
+        return;
+      }
+
+      // 9. Confirm
+      const confirmed =
+        yes || (yield* ui.confirm('Proceed with installation?', { defaultValue: true }));
+      if (!confirmed) {
+        yield* ui.log.warn('Skills installation cancelled.');
+        return;
+      }
+
+      // 10. Install skills
+      const results = yield* ui.withSpinner(
+        'Installing skills...',
+        Effect.tryPromise(() =>
+          installAllSkills(skills, targetAgents, {
+            global: installGlobally,
+            mode: installMode,
+            cwd,
+          })
+        ),
+        {
+          successMessage: 'Installation complete',
+          errorMessage: 'Failed to install skills',
+        }
+      );
+
+      // 11. Display results
+      const display = buildInstallationResultDisplay(results, targetAgents, cwd);
+
+      if (display.resultNoteLines.length > 0) {
+        yield* ui.note(display.resultNoteLines.join('\n'), display.resultNoteTitle);
+      }
+      if (display.symlinkWarning) {
+        yield* ui.log.warn(`Symlinks failed for: ${formatList(display.symlinkWarning.agents)}`);
+        yield* ui.log.message(
+          '  Files were copied instead. On Windows, enable Developer Mode for symlink support.'
+        );
+      }
+      for (const line of display.failedLines) {
+        yield* ui.log.error(line);
       }
     });
 
-    yield* ui
-      .withSpinner('Installing Composio skills...', install, {
-        successMessage: 'Installed Composio skills.',
-        errorMessage: 'Failed to install Composio skills.',
-      })
-      .pipe(
+    yield* Effect.ensuring(
+      doInstall.pipe(
         Effect.catchAll(e =>
           Effect.gen(function* () {
             yield* ui.log.error(
               `Skills install failed: ${e instanceof Error ? e.message : String(e)}`
             );
-            yield* ui.log.info(`You can install manually: ${SKILLS_INSTALL_COMMAND}`);
+            yield* ui.log.info(`You can install manually: ${SKILLS_MANUAL_COMMAND}`);
           })
         )
-      );
+      ),
+      Effect.tryPromise(() => cleanupTempDir(tempDir)).pipe(Effect.catchAll(() => Effect.void))
+    );
   });
 
 // ---------------------------------------------------------------------------
@@ -490,12 +645,9 @@ const printEnvVarsAndInstall = (params: {
     // Nothing to install — skip the confirmation prompt entirely
     if (!hasWork) return;
 
-    // For non-dry-run: show install summary and ask for confirmation
-    if (!dryRun) {
-      const lines: string[] = [];
-      if (config.installPlan) lines.push(config.installPlan.installCommand);
-      if (config.installSkills) lines.push(SKILLS_INSTALL_COMMAND);
-      yield* ui.note(lines.join('\n'), 'Install commands');
+    // For non-dry-run: show install summary and ask for confirmation (dep install only)
+    if (!dryRun && config.installPlan) {
+      yield* ui.note(config.installPlan.installCommand, 'Install commands');
 
       if (!yes) {
         const confirmed = yield* ui.confirm('Proceed with installation?', { defaultValue: true });
@@ -508,7 +660,8 @@ const printEnvVarsAndInstall = (params: {
 
     // Run install steps (dry-run is handled internally by each step)
     yield* runInstallStep({ config, cwd, dryRun, force });
-    yield* runSkillsInstallStep({ config, cwd, dryRun });
+    // Skills step has its own interactive prompts (agents, scope, method, confirm)
+    yield* runSkillsInstallStep({ config, cwd, dryRun, yes });
   });
 
 // ---------------------------------------------------------------------------

@@ -75,6 +75,7 @@
     "comment-json": "^4.2.5",
     "decompress": "^4.2.1",
     "effect": "catalog:",
+    "gray-matter": "^4.0.3",
     "indent-string": "^5.0.0",
     "open": "^10.2.0",
     "openapi-typescript": "^7.8.0",
