@@ -45,6 +45,12 @@ describe('CLI: composio init', () => {
           const configRaw = yield* fs.readFileString(configJsonPath, 'utf8');
           const config = JSON.parse(configRaw) as Record<string, unknown>;
           expect(config.usage_mode).toBe('native'); // first option selected by test TerminalUI
+          expect(config.frameworks).toEqual([
+            'ai-sdk',
+            'mastra',
+            'openai-agents',
+            'claude-agent-sdk',
+          ]); // multiSelect returns all options in test
           expect(config.install_skills).toBe(true); // confirm defaults to true
 
           // No .env.local was created (env vars are printed, not written)

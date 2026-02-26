@@ -86,7 +86,7 @@ const noSkillsOpt = Options.boolean('no-skills').pipe(
 // ---------------------------------------------------------------------------
 
 type UsageMode = 'native' | 'mcp';
-type NativeFramework = 'skip' | 'ai-sdk' | 'mastra' | 'openai-agents' | 'claude-agent-sdk';
+type NativeFramework = 'ai-sdk' | 'mastra' | 'openai-agents' | 'claude-agent-sdk';
 
 const USAGE_MODE_OPTIONS: ReadonlyArray<{
   value: UsageMode;
@@ -109,7 +109,6 @@ const NATIVE_FRAMEWORK_OPTIONS: ReadonlyArray<{
   value: NativeFramework;
   label: string;
 }> = [
-  { value: 'skip', label: 'Skip' },
   { value: 'ai-sdk', label: 'AI SDK' },
   { value: 'mastra', label: 'Mastra' },
   { value: 'openai-agents', label: 'OpenAI Agents' },
@@ -131,10 +130,8 @@ class InitConfigBuilder<T extends Record<string, unknown> = Record<string, never
     return new InitConfigBuilder({ ...this.data, usageMode: mode });
   }
 
-  withFramework(
-    fw: NativeFramework | undefined
-  ): InitConfigBuilder<T & { framework: NativeFramework | undefined }> {
-    return new InitConfigBuilder({ ...this.data, framework: fw });
+  withFrameworks(fws: NativeFramework[]): InitConfigBuilder<T & { frameworks: NativeFramework[] }> {
+    return new InitConfigBuilder({ ...this.data, frameworks: fws });
   }
 
   withInstallSkills(install: boolean): InitConfigBuilder<T & { installSkills: boolean }> {
@@ -157,7 +154,7 @@ class InitConfigBuilder<T extends Record<string, unknown> = Record<string, never
   build(
     this: InitConfigBuilder<{
       usageMode: UsageMode;
-      framework: NativeFramework | undefined;
+      frameworks: NativeFramework[];
       installSkills: boolean;
       detectedEnv: ProjectEnvironment | undefined;
       installPlan: CoreDependencyPlan | undefined;
@@ -165,7 +162,7 @@ class InitConfigBuilder<T extends Record<string, unknown> = Record<string, never
   ): InitConfig {
     return {
       usageMode: this.data.usageMode,
-      framework: this.data.framework,
+      frameworks: this.data.frameworks,
       installSkills: this.data.installSkills,
       detectedEnv: this.data.detectedEnv,
       installPlan: this.data.installPlan,
@@ -180,7 +177,7 @@ class InitConfigBuilder<T extends Record<string, unknown> = Record<string, never
 
 interface InitConfig {
   readonly usageMode: UsageMode;
-  readonly framework: NativeFramework | undefined;
+  readonly frameworks: NativeFramework[];
   readonly installSkills: boolean;
   readonly detectedEnv: ProjectEnvironment | undefined;
   readonly installPlan: CoreDependencyPlan | undefined;
@@ -264,13 +261,14 @@ const runInitWizard = (cwd: string, params: { noSkills: boolean }) =>
       USAGE_MODE_OPTIONS
     );
 
-    // Step 2: Framework (only for native tools)
-    const framework: NativeFramework | undefined =
+    // Step 2: Frameworks (only for native tools, multi-select)
+    const frameworks: NativeFramework[] =
       usageMode === 'native'
-        ? yield* ui
-            .select<NativeFramework>('Which framework do you use?', NATIVE_FRAMEWORK_OPTIONS)
-            .pipe(Effect.map(fw => (fw === 'skip' ? undefined : fw)))
-        : undefined;
+        ? yield* ui.multiSelect<NativeFramework>(
+            'Which frameworks do you use? (Space to select, Enter to confirm)',
+            NATIVE_FRAMEWORK_OPTIONS
+          )
+        : [];
 
     // Step 3: Install Composio skills (skip prompt when --no-skills)
     const installSkills = params.noSkills
@@ -298,7 +296,7 @@ const runInitWizard = (cwd: string, params: { noSkills: boolean }) =>
 
     return InitConfigBuilder.create()
       .withUsageMode(usageMode)
-      .withFramework(framework)
+      .withFrameworks(frameworks)
       .withInstallSkills(installSkills)
       .withDetectedEnv(detectedEnv)
       .withInstallPlan(installPlan)
@@ -316,8 +314,8 @@ const initConfigToJSON = (config: InitConfig): string => {
   const payload: Record<string, unknown> = {
     usage_mode: config.usageMode,
   };
-  if (config.framework) {
-    payload.framework = config.framework;
+  if (config.frameworks.length > 0) {
+    payload.frameworks = config.frameworks;
   }
   payload.install_skills = config.installSkills;
   if (config.detectedEnv) {
@@ -520,7 +518,7 @@ const makeOutputJson = (
     org_id: selected.orgId,
     project_id: selected.projectId,
     usage_mode: config.usageMode,
-    framework: config.framework ?? null,
+    frameworks: config.frameworks,
     install_skills: config.installSkills,
     detected_language: config.detectedEnv?.language ?? null,
     package_manager: config.detectedEnv?.packageManager ?? null,

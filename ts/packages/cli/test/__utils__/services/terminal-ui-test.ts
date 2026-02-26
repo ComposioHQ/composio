@@ -28,6 +28,8 @@ export const TerminalUITest = Layer.succeed(
 
     select: (_message, options) => Effect.succeed(options[0].value),
 
+    multiSelect: (_message, options) => Effect.succeed(options.map(o => o.value)),
+
     confirm: (_message, options) => Effect.succeed(options?.defaultValue ?? true),
 
     withSpinner: (message, effect, options) =>

@@ -92,6 +92,20 @@ export interface TerminalUI {
   ) => Effect.Effect<Value>;
 
   /**
+   * Present a multi-select list to the user.
+   * In non-interactive mode (piped), returns all option values.
+   */
+  readonly multiSelect: <Value>(
+    message: string,
+    options: ReadonlyArray<{
+      readonly value: Value;
+      readonly label: string;
+      readonly hint?: string;
+    }>,
+    selectOptions?: { readonly required?: boolean }
+  ) => Effect.Effect<Value[]>;
+
+  /**
    * Create a controllable spinner that is automatically stopped on error or interruption.
    * The `use` function receives a SpinnerHandle and must return an Effect.
    * On success: the caller should call `spinner.stop(...)` inside `use`.
@@ -200,6 +214,26 @@ const makeLive: TerminalUI = {
           return result;
         })
       : Effect.succeed(options[0].value)) as TerminalUI['select'],
+
+  multiSelect: ((
+    message: string,
+    options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>,
+    selectOptions?: { readonly required?: boolean }
+  ) =>
+    isInteractive
+      ? Effect.promise(async () => {
+          const result = await p.multiselect({
+            message,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            options: [...options] as any,
+            required: selectOptions?.required ?? false,
+            output: process.stderr,
+          });
+          // p.multiselect returns Value[] | symbol (symbol on cancel)
+          if (typeof result === 'symbol') return options.map(o => o.value);
+          return result;
+        })
+      : Effect.succeed(options.map(o => o.value))) as TerminalUI['multiSelect'],
 
   confirm: (message, options) =>
     isInteractive
