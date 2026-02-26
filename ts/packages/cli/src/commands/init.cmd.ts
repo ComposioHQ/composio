@@ -16,6 +16,7 @@ import * as constants from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { redact } from 'src/ui/redact';
 
 /**
  * `composio init` — Initialize a Composio project in the current directory.
@@ -76,11 +77,17 @@ const writeProjectConfig = (composioDir: string, selected: ProjectKeys) =>
 // Structured output helper
 // ---------------------------------------------------------------------------
 
-const makeOutputJson = (selected: ProjectKeys, composioDir: string) =>
+const makeOutputJson = (
+  selected: ProjectKeys,
+  composioDir: string,
+  envVars?: ResolvedEnvVars | null
+) =>
   JSON.stringify({
     org_id: selected.orgId,
     project_id: selected.projectId,
     path: composioDir,
+    ...(envVars?.composioApiKey ? { composio_api_key: envVars.composioApiKey } : {}),
+    ...(envVars ? { composio_test_user_id: envVars.composioTestUserId } : {}),
   });
 
 const getGlobalUserApiKey = () =>
@@ -98,33 +105,20 @@ const getGlobalUserApiKey = () =>
     return Option.getOrUndefined(parsed.value.apiKey);
   });
 
-const upsertEnvVar = (content: string, key: string, value: string): string => {
-  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const line = `${key}=${value}`;
-  const pattern = new RegExp(`^${escapedKey}=.*$`, 'm');
-  if (pattern.test(content)) {
-    return content.replace(pattern, line);
-  }
-  return content.trim().length ? `${content.trimEnd()}\n${line}\n` : `${line}\n`;
-};
+/** Resolved credentials to be printed and included in structured output. */
+interface ResolvedEnvVars {
+  readonly composioApiKey: string | null;
+  readonly composioTestUserId: string;
+}
 
-const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }) =>
+const resolveProjectEnvVars = (params: { selected: ProjectKeys }) =>
   Effect.gen(function* () {
-    const { cwd, selected } = params;
-    const ui = yield* TerminalUI;
-    const fs = yield* FileSystem.FileSystem;
+    const { selected } = params;
     const ctx = yield* ComposioUserContext;
-
-    const envPath = path.join(cwd, '.env.local');
-    const envExists = yield* fs.exists(envPath);
-    const existingEnvContent = envExists ? yield* fs.readFileString(envPath, 'utf8') : '';
-    const hasProjectApiKey = /^COMPOSIO_API_KEY=.*/m.test(existingEnvContent);
-    const hasTestUserId = /^COMPOSIO_TEST_USER_ID=.*/m.test(existingEnvContent);
 
     const uakApiKey = yield* getGlobalUserApiKey();
     if (!uakApiKey) {
-      yield* ui.log.warn('No global API key found; skipping .env.local creation.');
-      return;
+      return null;
     }
 
     const sessionInfo = yield* getSessionInfo({
@@ -135,7 +129,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     });
 
     let projectApiKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
-    if (!projectApiKey && !hasProjectApiKey) {
+    if (!projectApiKey) {
       const dateSuffix = new Date().toISOString().slice(0, 10);
       projectApiKey = yield* createProjectApiKey({
         baseURL: ctx.data.baseURL,
@@ -148,37 +142,32 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
 
     const sessionUserId = sessionInfo.org_member.user_id ?? sessionInfo.org_member.id;
     const composioTestUserId = `pg-test-${sessionUserId}`;
-    const composioDir = path.join(cwd, constants.PROJECT_COMPOSIO_DIR);
 
-    let nextEnvContent = existingEnvContent;
-    if (!hasProjectApiKey && projectApiKey) {
-      nextEnvContent = upsertEnvVar(nextEnvContent, 'COMPOSIO_API_KEY', projectApiKey);
-    }
-    if (!hasTestUserId) {
-      nextEnvContent = upsertEnvVar(nextEnvContent, 'COMPOSIO_TEST_USER_ID', composioTestUserId);
-    }
+    return { composioApiKey: projectApiKey, composioTestUserId };
+  });
 
-    if (nextEnvContent !== existingEnvContent) {
-      yield* fs.writeFileString(envPath, nextEnvContent);
-    }
-    yield* writeProjectConfig(composioDir, {
-      ...selected,
-      testUserId: Option.some(composioTestUserId),
-    });
-    if (nextEnvContent !== existingEnvContent) {
-      yield* ui.log.step(
-        envExists
-          ? 'Updated .env.local with Composio credentials'
-          : 'Created .env.local with Composio credentials'
+const printEnvVars = (envVars: ResolvedEnvVars) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+
+    const redactedLines: string[] = [];
+    if (envVars.composioApiKey) {
+      redactedLines.push(
+        `COMPOSIO_API_KEY=${redact({ value: envVars.composioApiKey, prefix: 'ak_' })}`
       );
     }
+    redactedLines.push(
+      `COMPOSIO_TEST_USER_ID=${redact({ value: envVars.composioTestUserId, prefix: 'pr_' })}`
+    );
+
+    yield* ui.note(redactedLines.join('\n'), 'Environment variables');
   });
 
 const logEnvCreationHttpError =
   (ui: TerminalUI) =>
   (e: { status?: number; details?: { message: string; suggestedFix: string }; cause?: unknown }) =>
     Effect.gen(function* () {
-      yield* ui.log.warn('Could not create .env.local from session info.');
+      yield* ui.log.warn('Could not resolve environment variables from session info.');
       if (e.status) {
         yield* ui.log.error(`HTTP ${e.status}`);
       }
@@ -192,7 +181,7 @@ const logEnvCreationHttpError =
 
 const logEnvCreationDecodingError = (ui: TerminalUI) => (e: { cause?: unknown }) =>
   Effect.gen(function* () {
-    yield* ui.log.warn('Could not decode API key response; skipping .env.local creation.');
+    yield* ui.log.warn('Could not decode API key response; skipping environment variable display.');
     if (e.cause) {
       yield* ui.log.error(String(e.cause));
     }
@@ -261,23 +250,33 @@ export const initCmd = CliCommand.make(
         };
 
         yield* writeProjectConfig(composioDir, selected);
-        yield* ensureProjectApiKeyInEnv({ cwd: proc.cwd, selected }).pipe(
+        const envVars = yield* resolveProjectEnvVars({ selected }).pipe(
           Effect.catchTag('services/HttpServerError', e =>
             Effect.gen(function* () {
               yield* Effect.logDebug('Failed to resolve project API key from session/info:', e);
               yield* logEnvCreationHttpError(ui)(e);
+              return null;
             })
           ),
           Effect.catchTag('services/HttpDecodingError', e =>
             Effect.gen(function* () {
               yield* Effect.logDebug('Failed to decode API key response:', e);
               yield* logEnvCreationDecodingError(ui)(e);
+              return null;
             })
           )
         );
 
+        if (envVars) {
+          yield* writeProjectConfig(composioDir, {
+            ...selected,
+            testUserId: Option.some(envVars.composioTestUserId),
+          });
+          yield* printEnvVars(envVars);
+        }
+
         yield* ui.log.success(`Project initialized in ${composioDir}/`);
-        yield* ui.output(makeOutputJson(selected, composioDir));
+        yield* ui.output(makeOutputJson(selected, composioDir, envVars));
         yield* ui.outro('');
         return;
       }
@@ -295,7 +294,6 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     const { composioDir, noBrowser, yes } = params;
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    const proc = yield* NodeProcess;
 
     // 1. Ensure global user API key exists (ignore local/project keys).
     let globalApiKey = yield* getGlobalUserApiKey();
@@ -379,22 +377,32 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
 
     // 4. Write project config
     yield* writeProjectConfig(composioDir, selected);
-    yield* ensureProjectApiKeyInEnv({ cwd: proc.cwd, selected }).pipe(
+    const envVars = yield* resolveProjectEnvVars({ selected }).pipe(
       Effect.catchTag('services/HttpServerError', e =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Failed to resolve project API key from session/info:', e);
           yield* logEnvCreationHttpError(ui)(e);
+          return null;
         })
       ),
       Effect.catchTag('services/HttpDecodingError', e =>
         Effect.gen(function* () {
           yield* Effect.logDebug('Failed to decode API key response:', e);
           yield* logEnvCreationDecodingError(ui)(e);
+          return null;
         })
       )
     );
 
+    if (envVars) {
+      yield* writeProjectConfig(composioDir, {
+        ...selected,
+        testUserId: Option.some(envVars.composioTestUserId),
+      });
+      yield* printEnvVars(envVars);
+    }
+
     yield* ui.log.success(`Project initialized in ${composioDir}/`);
-    yield* ui.output(makeOutputJson(selected, composioDir));
+    yield* ui.output(makeOutputJson(selected, composioDir, envVars));
     yield* ui.outro('');
   });

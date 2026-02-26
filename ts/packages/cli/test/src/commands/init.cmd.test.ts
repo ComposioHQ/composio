@@ -31,6 +31,11 @@ describe('CLI: composio init', () => {
           const projectConfig = JSON.parse(projectConfigRaw) as Record<string, unknown>;
           expect(projectConfig.org_id).toBe('org1');
           expect(projectConfig.project_id).toBe('proj1');
+
+          // Verify no .env.local was created (env vars are printed, not written)
+          const envLocalPath = path.join(proc.cwd, '.env.local');
+          const envLocalExists = yield* fs.exists(envLocalPath);
+          expect(envLocalExists).toBe(false);
         })
       );
     });
@@ -38,13 +43,24 @@ describe('CLI: composio init', () => {
 
   describe('[Given] explicit project ids but no global credentials', () => {
     layer(TestLive({ fixture: 'typescript-project' }))(it => {
-      it.scoped('[Then] it warns and skips .env.local creation', () =>
+      it.scoped('[Then] it warns and skips env var display', () =>
         Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const proc = yield* NodeProcess;
+
           yield* cli(['init', '--org-id', 'org1', '--project-id', 'proj1']);
 
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
-          expect(output).toContain('No global API key found; skipping .env.local creation.');
+
+          // Environment variables are not printed when there is no global API key
+          expect(output).not.toContain('Environment variables');
+          expect(output).not.toContain('COMPOSIO_API_KEY');
+
+          // Verify no .env.local was created
+          const envLocalPath = path.join(proc.cwd, '.env.local');
+          const envLocalExists = yield* fs.exists(envLocalPath);
+          expect(envLocalExists).toBe(false);
         })
       );
     });
