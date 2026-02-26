@@ -14,15 +14,20 @@ export const SKILLS_MANUAL_COMMAND = 'npx skills add composiohq/skills';
  */
 export async function cloneSkillsRepo(): Promise<string> {
   const tempDir = await mkdtemp(join(tmpdir(), 'composio-skills-'));
-  await new Promise<void>((resolve, reject) => {
-    execFile(
-      'git',
-      ['clone', '--depth', '1', SKILLS_REPO_URL, tempDir],
-      { timeout: 60_000 },
-      err => (err ? reject(err) : resolve())
-    );
-  });
-  return tempDir;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      execFile(
+        'git',
+        ['clone', '--depth', '1', SKILLS_REPO_URL, tempDir],
+        { timeout: 60_000 },
+        err => (err ? reject(err) : resolve())
+      );
+    });
+    return tempDir;
+  } catch (err) {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    throw err;
+  }
 }
 
 export async function cleanupTempDir(dir: string): Promise<void> {
