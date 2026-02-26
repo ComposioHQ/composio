@@ -350,7 +350,10 @@ const makeLive: TerminalUI = {
             output: process.stderr,
           });
           // multiselect returns Value[] | symbol (symbol on cancel)
-          if (typeof result === 'symbol') return [];
+          if (typeof result === 'symbol') {
+            p.cancel('Operation cancelled.');
+            process.exit(0);
+          }
           return result;
         })
       : Effect.succeed(options.map(o => o.value))) as TerminalUI['multiSelect'],
