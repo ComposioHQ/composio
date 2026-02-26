@@ -47,15 +47,6 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
-      - name: Seed Composio user_data.json for E2E
-        run: |
-          USER_API_KEY="${COMPOSIO_USER_API_KEY}"
-          mkdir -p "$HOME/.composio"
-          cat > "$HOME/.composio/user_data.json" <<EOF
-          {"api_key":"${USER_API_KEY}","base_url":"https://backend.composio.dev","web_url":"https://platform.composio.dev","org_id":"ok_RdSIHzOTx-dJ","project_id":"pr_ZeUkovQ0gXyD"}
-          EOF
-          chmod 600 "$HOME/.composio/user_data.json"
-
       - name: Pre-build Docker image for e2e tests
         run: |
           docker build -f ts/e2e-tests/_utils/Dockerfile.node \
@@ -141,15 +132,6 @@ jobs:
 
       - name: Build
         run: pnpm run build:packages
-
-      - name: Seed Composio user_data.json for E2E
-        run: |
-          USER_API_KEY="${COMPOSIO_USER_API_KEY}"
-          mkdir -p "$HOME/.composio"
-          cat > "$HOME/.composio/user_data.json" <<EOF
-          {"api_key":"${USER_API_KEY}","base_url":"https://backend.composio.dev","web_url":"https://platform.composio.dev","org_id":"ok_RdSIHzOTx-dJ","project_id":"pr_ZeUkovQ0gXyD"}
-          EOF
-          chmod 600 "$HOME/.composio/user_data.json"
 
       - name: Pre-build Docker image for CLI e2e tests
         run: |
