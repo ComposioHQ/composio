@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.30
+
+### Patch Changes
+
+- 5015210: Fallback to global context if project apikeys not found
+
 ## 0.1.29
 
 ### Patch Changes
