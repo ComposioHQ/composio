@@ -96,7 +96,9 @@ const storeCredentials = (params: {
     const orgId = sessionInfo?.project.org.id ?? initialOrgId;
     const projectId = sessionInfo?.project.nano_id ?? initialProjectId;
     const sessionUserId = sessionInfo?.org_member.user_id ?? sessionInfo?.org_member.id;
-    const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
+    const testUserId = sessionUserId
+      ? `pg-test-${sessionUserId}`
+      : Option.getOrUndefined(ctx.data.testUserId);
 
     if (sessionInfo) {
       if (initialOrgId !== orgId) {
