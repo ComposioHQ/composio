@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.27
+
+### Patch Changes
+
+- 25a3898: Fix test installation
+
 ## 0.1.26
 
 ### Patch Changes
