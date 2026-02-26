@@ -983,7 +983,7 @@ const runConfirmExecuteOutro = (params: {
         );
       }
       envLines.push(
-        `COMPOSIO_TEST_USER_ID=${redact({ value: outcome.envVars.composioTestUserId, prefix: 'pr_' })}`
+        `COMPOSIO_TEST_USER_ID=${redact({ value: outcome.envVars.composioTestUserId, prefix: 'pg-test-' })}`
       );
       envLines.push('');
       envLines.push(`Saved to ${composioDir}/.env.local`);
