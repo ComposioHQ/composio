@@ -12,6 +12,8 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
  */
 const makeSessionInfoBody = (overrides?: {
   orgId?: string;
+  orgNanoId?: string;
+  orgMemberId?: string;
   orgName?: string;
   projectId?: string;
   projectNanoId?: string;
@@ -29,12 +31,12 @@ const makeSessionInfoBody = (overrides?: {
     updated_at: '2026-01-01T00:00:00.000Z',
     org: {
       name: overrides?.orgName ?? 'Test Org',
-      id: overrides?.orgId ?? 'org_test_456',
+      id: overrides?.orgNanoId ?? 'org_nano_456',
       plan: 'free',
     },
   },
   org_member: {
-    id: overrides?.orgId ?? 'org_test_456',
+    id: overrides?.orgMemberId ?? 'org_member_uuid_456',
     email: overrides?.email ?? 'test@composio.dev',
     name: overrides?.memberName ?? 'Test User',
     role: 'admin',
@@ -77,8 +79,11 @@ describe('CLI: composio login', () => {
             const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
               mockFetchResponse(
                 makeSessionInfoBody({
-                  orgId: 'org_verified',
-                  projectId: 'proj_verified',
+                  orgId: 'org_verified_uuid',
+                  orgNanoId: 'org_verified_nano',
+                  orgMemberId: 'org_member_verified_uuid',
+                  projectId: 'proj_verified_uuid',
+                  projectNanoId: 'proj_verified_nano',
                   email: 'verified@composio.dev',
                   projectName: 'Verified Project',
                   orgName: 'Verified Org',
@@ -113,6 +118,8 @@ describe('CLI: composio login', () => {
             const lines = yield* MockConsole.getLines();
             const output = lines.join('\n');
             expect(output).toContain('verified@composio.dev');
+            expect(output).toContain('"org_id":"org_verified_nano"');
+            expect(output).toContain('"project_id":"proj_verified_nano"');
             expect(output).toContain("You're all set!");
           })
         );

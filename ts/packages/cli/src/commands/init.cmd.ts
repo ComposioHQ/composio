@@ -201,7 +201,7 @@ const logEnvCreationDecodingError = (ui: TerminalUI) => (e: { cause?: unknown })
 const selectDefaultProject = (params: {
   projects: ReadonlyArray<OrgProject>;
   defaultOrgId: string;
-  defaultProjectId: string;
+  defaultProjectId?: string;
 }): OrgProject | undefined => {
   const { projects, defaultOrgId, defaultProjectId } = params;
   const exactMatch = projects.find(p => p.org_id === defaultOrgId && p.id === defaultProjectId);
@@ -308,10 +308,8 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     // 2. Fetch projects
     const orgIdValue = Option.getOrUndefined(ctx.data.orgId);
     const projectIdValue = Option.getOrUndefined(ctx.data.projectId);
-    if (!globalApiKey || !orgIdValue || !projectIdValue) {
-      yield* ui.log.warn(
-        'No global API key, org ID, or project ID found. Please try `composio login` first.'
-      );
+    if (!globalApiKey || !orgIdValue) {
+      yield* ui.log.warn('No global API key or org ID found. Please try `composio login` first.');
       yield* ui.outro('');
       return;
     }
@@ -320,7 +318,6 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       baseURL: ctx.data.baseURL,
       apiKey: globalApiKey,
       orgId: orgIdValue,
-      projectId: projectIdValue,
     }).pipe(
       Effect.catchTag('services/HttpServerError', e =>
         Effect.gen(function* () {

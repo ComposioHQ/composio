@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.29
+
+### Patch Changes
+
+- 7b47f35: Fix cli login command
+
 ## 0.1.28
 
 ### Patch Changes
