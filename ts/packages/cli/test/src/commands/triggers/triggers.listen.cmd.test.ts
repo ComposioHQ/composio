@@ -6,7 +6,7 @@ import { createServer, type IncomingMessage } from 'node:http';
 import { Composio } from '@composio/core';
 
 const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_API_KEY', 'test_api_key']])
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
 const mockV3TriggerEvent = {

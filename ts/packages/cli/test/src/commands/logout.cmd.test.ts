@@ -41,7 +41,7 @@ describe('CLI: composio logout', () => {
 
   describe('[When] logged in', () => {
     const testConfigProvider = ConfigProvider.fromMap(
-      new Map([['COMPOSIO_API_KEY', 'api_key_already_logged_in']])
+      new Map([['COMPOSIO_USER_API_KEY', 'api_key_already_logged_in']])
     ).pipe(extendConfigProvider);
 
     layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {

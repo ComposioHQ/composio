@@ -7,7 +7,7 @@ import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 
 const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_API_KEY', 'test_api_key']])
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
 const parseLastJson = (lines: ReadonlyArray<string>) => {

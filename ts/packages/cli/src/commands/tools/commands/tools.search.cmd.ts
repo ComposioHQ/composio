@@ -8,7 +8,9 @@ import { formatToolsTable } from '../format';
 import type { Tool } from 'src/models/tools';
 
 const query = Args.text({ name: 'query' }).pipe(
-  Args.withDescription('Search query (e.g. "send emails")')
+  Args.withDescription(
+    'Semantic use-case query (e.g. "onboard a new GitHub repo and notify Slack").'
+  )
 );
 
 const toolkits = Options.text('toolkits').pipe(
@@ -22,7 +24,11 @@ const limit = Options.integer('limit').pipe(
 );
 
 /**
- * Search tools by use case.
+ * Search tools semantically by use case.
+ *
+ * The query is interpreted semantically (not exact keyword matching), so you can
+ * describe an outcome or workflow. The command returns the most relevant tools
+ * for that use case and includes recommended guidance/plan steps to help execute it.
  *
  * @example
  * ```bash
@@ -135,4 +141,8 @@ export const toolsCmd$Search = Command.make(
       // For machine-readable output (e.g. piping to jq), expose the full API payload.
       yield* ui.output(JSON.stringify(searchResponse, null, 2));
     })
-).pipe(Command.withDescription('Search tools by use case.'));
+).pipe(
+  Command.withDescription(
+    'Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.'
+  )
+);

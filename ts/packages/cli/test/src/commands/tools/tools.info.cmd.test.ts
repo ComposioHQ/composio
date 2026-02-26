@@ -46,7 +46,7 @@ const toolkitsData = {
 } satisfies TestLiveInput['toolkitsData'];
 
 const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_API_KEY', 'test_api_key']])
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
 describe('CLI: composio tools info', () => {
