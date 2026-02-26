@@ -40,7 +40,6 @@ import {
   detectInstalledAgents,
   ensureUniversalAgents,
   selectAgentsInteractive,
-  cancelSymbol,
   checkOverwrites,
   installAllSkills,
   buildInstallationResultDisplay,
@@ -77,7 +76,7 @@ import {
  *
  * - `--dry-run` — show summary without executing
  * - `--force` — reinstall even if dependency is already present
- * - `--yes` / `-y` — auto-select defaults, skip confirmation
+ * - `--yes` / `-y` — bypass all prompts with sensible defaults
  * - `--no-skills` — skip Composio skills installation
  */
 
@@ -104,7 +103,9 @@ const forceOpt = Options.boolean('force').pipe(
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
-  Options.withDescription('Auto-select default org/project, else first project')
+  Options.withDescription(
+    'Skip all prompts, use defaults (native mode, all frameworks, install skills)'
+  )
 );
 
 const noSkillsOpt = Options.boolean('no-skills').pipe(
@@ -263,55 +264,67 @@ const detectEnvironment = (cwd: string) =>
 const resolveInstallPlan = (cwd: string) =>
   detectCoreDependencyPlan(cwd).pipe(Effect.catchAll(() => Effect.succeed(null)));
 
+/** Best-effort cleanup of a temp directory. */
+const safeCleanupTempDir = (dir: string) =>
+  Effect.tryPromise(() => cleanupTempDir(dir)).pipe(Effect.catchAll(() => Effect.void));
+
 /**
  * Collects skills configuration interactively: clone repo, discover skills,
  * prompt for agents, scope, and method. Returns `undefined` if the user cancels
  * or if cloning/discovery fails.
+ *
+ * The cloned temp directory is registered with the current Effect `Scope` via
+ * `acquireRelease` — it is automatically cleaned up when the scope closes
+ * (on success, failure, cancellation, or interruption). Callers must wrap
+ * this in `Effect.scoped` to provide the scope.
  */
 const collectSkillsConfig = (params: { yes: boolean }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const { yes } = params;
 
-    // 1. Clone composiohq/skills to temp dir
-    let tempDir: string;
-    try {
-      tempDir = yield* ui.withSpinner(
+    // 1. Clone composiohq/skills to temp dir (scoped — auto-cleaned when scope closes)
+    const tempDir = yield* Effect.acquireRelease(
+      ui.withSpinner(
         'Cloning Composio skills repository...',
         Effect.tryPromise(() => cloneSkillsRepo()),
         { successMessage: 'Skills repository cloned' }
-      );
-    } catch (e) {
-      yield* ui.log.error(
-        `Failed to clone skills repository: ${e instanceof Error ? e.message : String(e)}`
-      );
-      yield* ui.log.info(`You can install skills manually: ${SKILLS_MANUAL_COMMAND}`);
-      return undefined;
-    }
+      ),
+      dir => safeCleanupTempDir(dir)
+    ).pipe(
+      Effect.catchAll(e =>
+        Effect.gen(function* () {
+          yield* ui.log.error(
+            `Failed to clone skills repository: ${e instanceof Error ? e.message : String(e)}`
+          );
+          yield* ui.log.info(`You can install skills manually: ${SKILLS_MANUAL_COMMAND}`);
+          return undefined as string | undefined;
+        })
+      )
+    );
+    if (!tempDir) return undefined;
 
     // 2. Discover skills
-    let skills: Skill[];
-    try {
-      skills = yield* ui.withSpinner(
+    const skills = yield* ui
+      .withSpinner(
         'Discovering skills...',
         Effect.tryPromise(() => discoverSkills(tempDir)),
         { successMessage: (s: Skill[]) => `Found ${s.length} skill${s.length !== 1 ? 's' : ''}` }
+      )
+      .pipe(
+        Effect.catchAll(e =>
+          Effect.gen(function* () {
+            yield* ui.log.error(
+              `Failed to discover skills: ${e instanceof Error ? e.message : String(e)}`
+            );
+            return undefined as Skill[] | undefined;
+          })
+        )
       );
-    } catch (e) {
-      yield* ui.log.error(
-        `Failed to discover skills: ${e instanceof Error ? e.message : String(e)}`
-      );
-      yield* Effect.tryPromise(() => cleanupTempDir(tempDir)).pipe(
-        Effect.catchAll(() => Effect.void)
-      );
-      return undefined;
-    }
+    if (!skills) return undefined;
 
     if (skills.length === 0) {
       yield* ui.log.warn('No skills found in composiohq/skills.');
-      yield* Effect.tryPromise(() => cleanupTempDir(tempDir)).pipe(
-        Effect.catchAll(() => Effect.void)
-      );
       return undefined;
     }
 
@@ -328,15 +341,14 @@ const collectSkillsConfig = (params: { yes: boolean }) =>
         `Installing to: ${targetAgents.map(a => agents[a].displayName).join(', ')}`
       );
     } else {
-      const selected = yield* Effect.tryPromise(() => selectAgentsInteractive({ global: false }));
-      if (selected === cancelSymbol) {
+      const agentResult = yield* Effect.tryPromise(() =>
+        selectAgentsInteractive({ global: false })
+      );
+      if (!Array.isArray(agentResult)) {
         yield* ui.log.warn('Skills installation cancelled.');
-        yield* Effect.tryPromise(() => cleanupTempDir(tempDir)).pipe(
-          Effect.catchAll(() => Effect.void)
-        );
         return undefined;
       }
-      targetAgents = selected as AgentType[];
+      targetAgents = agentResult;
     }
 
     // 5. Scope selection
@@ -410,26 +422,29 @@ const runInitWizard = (cwd: string, params: { noSkills: boolean; yes: boolean })
     const ui = yield* TerminalUI;
 
     // Step 1: Usage mode
-    const usageMode = yield* ui.select<UsageMode>(
-      'How would you like to use Composio?',
-      USAGE_MODE_OPTIONS
-    );
+    const usageMode: UsageMode = params.yes
+      ? 'native'
+      : yield* ui.select<UsageMode>('How would you like to use Composio?', USAGE_MODE_OPTIONS);
 
     // Step 2: Frameworks (only for native tools, multi-select)
     const frameworks: NativeFramework[] =
       usageMode === 'native'
-        ? yield* ui.multiSelect<NativeFramework>(
-            'Which frameworks do you use?',
-            NATIVE_FRAMEWORK_OPTIONS
-          )
+        ? params.yes
+          ? NATIVE_FRAMEWORK_OPTIONS.map(o => o.value)
+          : yield* ui.multiSelect<NativeFramework>(
+              'Which frameworks do you use?',
+              NATIVE_FRAMEWORK_OPTIONS
+            )
         : [];
 
     // Step 3: Skills sub-wizard (skip entirely when --no-skills)
     let skillsConfig: SkillsConfig | undefined;
     if (!params.noSkills) {
-      const wantSkills = yield* ui.confirm('Install Composio skills for your Coding Agent?', {
-        defaultValue: true,
-      });
+      const wantSkills = params.yes
+        ? true
+        : yield* ui.confirm('Install Composio skills for your Coding Agent?', {
+            defaultValue: true,
+          });
       if (wantSkills) {
         skillsConfig = yield* collectSkillsConfig({ yes: params.yes });
       }
@@ -516,17 +531,25 @@ const buildUnifiedSummary = (projectName: string, config: InitConfig): string =>
 // File I/O helpers
 // ---------------------------------------------------------------------------
 
+interface InitConfigPayload {
+  usage_mode: UsageMode;
+  frameworks?: NativeFramework[];
+  install_skills: boolean;
+  detected_language?: string;
+  package_manager?: string;
+}
+
 /**
  * Serializes an `InitConfig` to the JSON payload written to `.composio/config.json`.
  */
 const initConfigToJSON = (config: InitConfig): string => {
-  const payload: Record<string, unknown> = {
+  const payload: InitConfigPayload = {
     usage_mode: config.usageMode,
+    install_skills: !!config.skillsConfig,
   };
   if (config.frameworks.length > 0) {
     payload.frameworks = config.frameworks;
   }
-  payload.install_skills = !!config.skillsConfig;
   if (config.detectedEnv) {
     payload.detected_language = config.detectedEnv.language;
     payload.package_manager = config.detectedEnv.packageManager;
@@ -571,7 +594,9 @@ const writeEnvLocal = (composioDir: string, envVars: ResolvedEnvVars) =>
     }
     lines.push(`COMPOSIO_TEST_USER_ID=${envVars.composioTestUserId}`);
     lines.push(''); // trailing newline
-    yield* fs.writeFileString(path.join(composioDir, '.env.local'), lines.join('\n'));
+    const envLocalPath = path.join(composioDir, '.env.local');
+    yield* fs.writeFileString(envLocalPath, lines.join('\n'));
+    yield* fs.chmod(envLocalPath, 0o600);
   });
 
 // ---------------------------------------------------------------------------
@@ -632,22 +657,20 @@ const runInstallStep = (params: { config: InitConfig; cwd: string; force: boolea
       }
     });
 
-    let ok = true;
-    yield* ui
+    return yield* ui
       .withSpinner(`Installing ${plan.dependency}...`, install, {
         successMessage: `Installed ${plan.dependency}.`,
         errorMessage: `Failed to install ${plan.dependency}.`,
       })
       .pipe(
+        Effect.map(() => true),
         Effect.catchAll(e =>
           Effect.gen(function* () {
             yield* ui.log.error(`Install failed: ${e instanceof Error ? e.message : String(e)}`);
-            ok = false;
+            return false;
           })
         )
       );
-
-    return ok;
   });
 
 /**
@@ -853,11 +876,6 @@ const runConfirmExecuteOutro = (params: {
       // Dry run: show summary and exit without writing anything
       if (dryRun) {
         yield* ui.log.info('Dry run complete — no changes made.');
-        if (config.skillsConfig) {
-          yield* Effect.tryPromise(() => cleanupTempDir(config.skillsConfig!.tempDir)).pipe(
-            Effect.catchAll(() => Effect.void)
-          );
-        }
         yield* ui.outro('');
         return;
       }
@@ -866,11 +884,6 @@ const runConfirmExecuteOutro = (params: {
       if (!yes) {
         const confirmed = yield* ui.confirm('Proceed with installation?', { defaultValue: true });
         if (!confirmed) {
-          if (config.skillsConfig) {
-            yield* Effect.tryPromise(() => cleanupTempDir(config.skillsConfig!.tempDir)).pipe(
-              Effect.catchAll(() => Effect.void)
-            );
-          }
           yield* ui.log.warn('Installation cancelled.');
           yield* ui.outro('');
           return;
@@ -880,79 +893,77 @@ const runConfirmExecuteOutro = (params: {
 
     // ── Phase 3: EXECUTE ──────────────────────────────────────────────
 
+    // Pessimistic defaults — flipped to true only on success.
+    // This ensures the safety net catchAll never masks failures as successes.
     const outcome: ExecutionOutcome = {
       envVars: null,
-      depInstallOk: true,
-      skillsInstallOk: true,
+      depInstallOk: !config.installPlan,
+      skillsInstallOk: !config.skillsConfig,
     };
 
-    // Ensure skills tempDir is cleaned up regardless of success/failure
-    const skillsTempDir = config.skillsConfig?.tempDir;
-    const cleanupSkills = skillsTempDir
-      ? Effect.tryPromise(() => cleanupTempDir(skillsTempDir)).pipe(
-          Effect.catchAll(() => Effect.void)
-        )
-      : Effect.void;
+    // Skills tempDir cleanup is handled by Effect.acquireRelease in collectSkillsConfig —
+    // it runs automatically when the surrounding Effect.scoped closes.
 
-    yield* Effect.ensuring(
-      Effect.gen(function* () {
-        // Step 6: Resolve API keys (lazy — first network call after confirmation)
-        outcome.envVars = yield* resolveProjectEnvVars({ selected }).pipe(
-          Effect.catchTag('services/HttpServerError', e =>
+    yield* Effect.gen(function* () {
+      // Step 6: Resolve API keys (lazy — first network call after confirmation)
+      outcome.envVars = yield* resolveProjectEnvVars({ selected }).pipe(
+        Effect.catchTag('services/HttpServerError', e =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Failed to resolve project API key:', e);
+            yield* logEnvCreationHttpError(ui)(e);
+            return null;
+          })
+        ),
+        Effect.catchTag('services/HttpDecodingError', e =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Failed to decode API key response:', e);
+            yield* logEnvCreationDecodingError(ui)(e);
+            return null;
+          })
+        )
+      );
+
+      // Step 7: Write project config (once, with testUserId if available)
+      const projectKeys = outcome.envVars
+        ? { ...selected, testUserId: Option.some(outcome.envVars.composioTestUserId) }
+        : selected;
+      yield* writeProjectConfig(composioDir, projectKeys, config);
+
+      // Step 8: Write .composio/.env.local
+      if (outcome.envVars) {
+        yield* writeEnvLocal(composioDir, outcome.envVars);
+      }
+
+      // Step 9: Install dependencies
+      if (config.installPlan) {
+        outcome.depInstallOk = yield* runInstallStep({ config, cwd, force }).pipe(
+          Effect.catchAll(() => Effect.succeed(false))
+        );
+      }
+
+      // Step 10: Install skills
+      if (config.skillsConfig) {
+        outcome.skillsInstallOk = yield* runSkillsExecuteStep({
+          skillsConfig: config.skillsConfig,
+          cwd,
+        }).pipe(
+          Effect.catchAll(e =>
             Effect.gen(function* () {
-              yield* Effect.logDebug('Failed to resolve project API key:', e);
-              yield* logEnvCreationHttpError(ui)(e);
-              return null;
-            })
-          ),
-          Effect.catchTag('services/HttpDecodingError', e =>
-            Effect.gen(function* () {
-              yield* Effect.logDebug('Failed to decode API key response:', e);
-              yield* logEnvCreationDecodingError(ui)(e);
-              return null;
+              yield* ui.log.error(
+                `Skills install failed: ${e instanceof Error ? e.message : String(e)}`
+              );
+              return false;
             })
           )
         );
-
-        // Step 7: Write project config (once, with testUserId if available)
-        const projectKeys = outcome.envVars
-          ? { ...selected, testUserId: Option.some(outcome.envVars.composioTestUserId) }
-          : selected;
-        yield* writeProjectConfig(composioDir, projectKeys, config);
-
-        // Step 8: Write .composio/.env.local
-        if (outcome.envVars) {
-          yield* writeEnvLocal(composioDir, outcome.envVars);
-        }
-
-        // Step 9: Install dependencies
-        if (config.installPlan) {
-          outcome.depInstallOk = yield* runInstallStep({ config, cwd, force }).pipe(
-            Effect.catchAll(() => Effect.succeed(false))
-          );
-        }
-
-        // Step 10: Install skills
-        if (config.skillsConfig) {
-          outcome.skillsInstallOk = yield* runSkillsExecuteStep({
-            skillsConfig: config.skillsConfig,
-            cwd,
-          }).pipe(
-            Effect.catchAll(e =>
-              Effect.gen(function* () {
-                yield* ui.log.error(
-                  `Skills install failed: ${e instanceof Error ? e.message : String(e)}`
-                );
-                return false;
-              })
-            )
-          );
-        }
-      }).pipe(
-        // Safety net: if anything unexpected escapes individual error handling
-        Effect.catchAll(() => Effect.void)
-      ),
-      cleanupSkills
+      }
+    }).pipe(
+      // Safety net: log if anything unexpected escapes individual error handling
+      Effect.catchAll(e =>
+        Effect.logWarning(
+          `Unexpected error during init execution: ${e instanceof Error ? e.message : String(e)}`
+        )
+      )
     );
 
     // ── Phase 4: OUTRO (always runs) ──────────────────────────────────
@@ -1043,20 +1054,22 @@ export const initCmd = CliCommand.make(
           testUserId: Option.none(),
         };
 
-        // Phase 1: COLLECT
-        const config = yield* runInitWizard(proc.cwd, { noSkills, yes });
-
-        // Phases 2-4: CONFIRM → EXECUTE → OUTRO
-        yield* runConfirmExecuteOutro({
-          selected,
-          projectDisplayName: projectId.value,
-          config,
-          composioDir,
-          cwd: proc.cwd,
-          dryRun,
-          force,
-          yes,
-        });
+        // Scope manages the skills tempDir lifetime (acquireRelease in collectSkillsConfig)
+        yield* Effect.scoped(
+          Effect.gen(function* () {
+            const config = yield* runInitWizard(proc.cwd, { noSkills, yes });
+            yield* runConfirmExecuteOutro({
+              selected,
+              projectDisplayName: projectId.value,
+              config,
+              composioDir,
+              cwd: proc.cwd,
+              dryRun,
+              force,
+              yes,
+            });
+          })
+        );
         return;
       }
 
@@ -1162,18 +1175,20 @@ const initInteractiveFlow = (params: {
     const selected = orgProjectToKeys(selectedProject);
     yield* ui.log.step(`Using project "${selectedProject.name}"`);
 
-    // Phase 1: COLLECT (wizard)
-    const config = yield* runInitWizard(proc.cwd, { noSkills, yes });
-
-    // Phases 2-4: CONFIRM → EXECUTE → OUTRO
-    yield* runConfirmExecuteOutro({
-      selected,
-      projectDisplayName: selectedProject.name,
-      config,
-      composioDir,
-      cwd: proc.cwd,
-      dryRun,
-      force,
-      yes,
-    });
+    // Scope manages the skills tempDir lifetime (acquireRelease in collectSkillsConfig)
+    yield* Effect.scoped(
+      Effect.gen(function* () {
+        const config = yield* runInitWizard(proc.cwd, { noSkills, yes });
+        yield* runConfirmExecuteOutro({
+          selected,
+          projectDisplayName: selectedProject.name,
+          config,
+          composioDir,
+          cwd: proc.cwd,
+          dryRun,
+          force,
+          yes,
+        });
+      })
+    );
   });

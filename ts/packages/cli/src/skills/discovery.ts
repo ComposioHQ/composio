@@ -19,10 +19,7 @@ async function hasSkillMd(dir: string): Promise<boolean> {
   }
 }
 
-export async function parseSkillMd(
-  skillMdPath: string,
-  options?: { includeInternal?: boolean }
-): Promise<Skill | null> {
+export async function parseSkillMd(skillMdPath: string): Promise<Skill | null> {
   try {
     const content = await readFile(skillMdPath, 'utf-8');
     const { data } = matter(content);
@@ -36,9 +33,8 @@ export async function parseSkillMd(
       return null;
     }
 
-    // Skip internal skills unless includeInternal option is true
-    const isInternal = data.metadata?.internal === true;
-    if (isInternal && !options?.includeInternal) {
+    // Skip internal skills
+    if (data.metadata?.internal === true) {
       return null;
     }
 
@@ -78,32 +74,18 @@ async function findSkillDirs(dir: string, depth = 0, maxDepth = 5): Promise<stri
   }
 }
 
-export interface DiscoverSkillsOptions {
-  /** Include internal skills (e.g., when user explicitly requests a skill by name) */
-  includeInternal?: boolean;
-  /** Search all subdirectories even when a root SKILL.md exists */
-  fullDepth?: boolean;
-}
-
-export async function discoverSkills(
-  basePath: string,
-  subpath?: string,
-  options?: DiscoverSkillsOptions
-): Promise<Skill[]> {
+export async function discoverSkills(basePath: string): Promise<Skill[]> {
   const skills: Skill[] = [];
   const seenNames = new Set<string>();
-  const searchPath = subpath ? join(basePath, subpath) : basePath;
+  const searchPath = basePath;
 
-  // If pointing directly at a skill, add it (and return early unless fullDepth is set)
+  // If pointing directly at a skill, return it immediately
   if (await hasSkillMd(searchPath)) {
-    const skill = await parseSkillMd(join(searchPath, 'SKILL.md'), options);
+    const skill = await parseSkillMd(join(searchPath, 'SKILL.md'));
     if (skill) {
       skills.push(skill);
       seenNames.add(skill.name);
-      // Only return early if fullDepth is not set
-      if (!options?.fullDepth) {
-        return skills;
-      }
+      return skills;
     }
   }
 
@@ -148,7 +130,7 @@ export async function discoverSkills(
         if (entry.isDirectory()) {
           const skillDir = join(dir, entry.name);
           if (await hasSkillMd(skillDir)) {
-            const skill = await parseSkillMd(join(skillDir, 'SKILL.md'), options);
+            const skill = await parseSkillMd(join(skillDir, 'SKILL.md'));
             if (skill && !seenNames.has(skill.name)) {
               skills.push(skill);
               seenNames.add(skill.name);
@@ -161,12 +143,12 @@ export async function discoverSkills(
     }
   }
 
-  // Fall back to recursive search if nothing found, or if fullDepth is set
-  if (skills.length === 0 || options?.fullDepth) {
+  // Fall back to recursive search if nothing found in priority dirs
+  if (skills.length === 0) {
     const allSkillDirs = await findSkillDirs(searchPath);
 
     for (const skillDir of allSkillDirs) {
-      const skill = await parseSkillMd(join(skillDir, 'SKILL.md'), options);
+      const skill = await parseSkillMd(join(skillDir, 'SKILL.md'));
       if (skill && !seenNames.has(skill.name)) {
         skills.push(skill);
         seenNames.add(skill.name);

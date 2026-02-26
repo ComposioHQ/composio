@@ -318,21 +318,3 @@ export async function isSkillInstalled(
     return false;
   }
 }
-
-/**
- * Gets the canonical .agents/skills/<skill> path
- */
-export function getCanonicalPath(
-  skillName: string,
-  options: { global?: boolean; cwd?: string } = {}
-): string {
-  const sanitized = sanitizeName(skillName);
-  const canonicalBase = getCanonicalSkillsDir(options.global ?? false, options.cwd);
-  const canonicalPath = join(canonicalBase, sanitized);
-
-  if (!isPathSafe(canonicalBase, canonicalPath)) {
-    throw new Error('Invalid skill name: potential path traversal detected');
-  }
-
-  return canonicalPath;
-}

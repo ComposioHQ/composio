@@ -6,7 +6,7 @@ import { sep } from 'path';
 import pc from 'picocolors';
 import type { AgentType, InstallMode, InstallResult, Skill } from './types';
 import { agents, isUniversalAgent } from './agents';
-import { getCanonicalPath, isSkillInstalled } from './installer';
+import { isSkillInstalled } from './installer';
 import { getSkillDisplayName } from './discovery';
 
 /**
@@ -55,32 +55,6 @@ export function splitAgentsByType(agentTypes: AgentType[]): {
   }
 
   return { universal, symlinked };
-}
-
-/**
- * Builds summary lines showing universal vs symlinked agents
- */
-export function buildAgentSummaryLines(
-  targetAgents: AgentType[],
-  installMode: InstallMode
-): string[] {
-  const lines: string[] = [];
-  const { universal, symlinked } = splitAgentsByType(targetAgents);
-
-  if (installMode === 'symlink') {
-    if (universal.length > 0) {
-      lines.push(`  ${pc.green('universal:')} ${formatList(universal)}`);
-    }
-    if (symlinked.length > 0) {
-      lines.push(`  ${pc.dim('symlink →')} ${formatList(symlinked)}`);
-    }
-  } else {
-    // Copy mode - all agents get copies
-    const allNames = targetAgents.map(a => agents[a].displayName);
-    lines.push(`  ${pc.dim('copy →')} ${formatList(allNames)}`);
-  }
-
-  return lines;
 }
 
 /**
@@ -157,38 +131,6 @@ export async function checkOverwrites(
     status.get(skillName)!.set(agent, installed);
   }
   return status;
-}
-
-/**
- * Builds the pre-installation summary lines (skills, agents, overwrites).
- */
-export function buildInstallationSummary(
-  skills: Skill[],
-  targetAgents: AgentType[],
-  installMode: InstallMode,
-  installGlobally: boolean,
-  cwd: string,
-  overwriteStatus: Map<string, Map<string, boolean>>
-): string[] {
-  const summaryLines: string[] = [];
-  for (const skill of skills) {
-    if (summaryLines.length > 0) summaryLines.push('');
-
-    const canonicalPath = getCanonicalPath(skill.name, { global: installGlobally, cwd });
-    const shortCanonical = shortenPath(canonicalPath, cwd);
-    summaryLines.push(shortCanonical);
-    summaryLines.push(...buildAgentSummaryLines(targetAgents, installMode));
-
-    const skillOverwrites = overwriteStatus.get(skill.name);
-    const overwriteAgents = targetAgents
-      .filter(a => skillOverwrites?.get(a))
-      .map(a => agents[a].displayName);
-
-    if (overwriteAgents.length > 0) {
-      summaryLines.push(`  ${pc.yellow('overwrites:')} ${formatList(overwriteAgents)}`);
-    }
-  }
-  return summaryLines;
 }
 
 /**

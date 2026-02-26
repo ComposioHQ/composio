@@ -3,7 +3,7 @@
 import { mkdtemp, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { execSync } from 'child_process';
+import { execFile } from 'child_process';
 
 export const SKILLS_REPO_URL = 'https://github.com/composiohq/skills.git';
 export const SKILLS_MANUAL_COMMAND = 'npx skills add composiohq/skills';
@@ -14,9 +14,13 @@ export const SKILLS_MANUAL_COMMAND = 'npx skills add composiohq/skills';
  */
 export async function cloneSkillsRepo(): Promise<string> {
   const tempDir = await mkdtemp(join(tmpdir(), 'composio-skills-'));
-  execSync(`git clone --depth 1 ${SKILLS_REPO_URL} "${tempDir}"`, {
-    stdio: 'pipe',
-    timeout: 60_000,
+  await new Promise<void>((resolve, reject) => {
+    execFile(
+      'git',
+      ['clone', '--depth', '1', SKILLS_REPO_URL, tempDir],
+      { timeout: 60_000 },
+      err => (err ? reject(err) : resolve())
+    );
   });
   return tempDir;
 }
