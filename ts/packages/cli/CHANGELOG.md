@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.31
+
+### Patch Changes
+
+- 6db8463: Skip user api key from env
+
 ## 0.1.30
 
 ### Patch Changes
