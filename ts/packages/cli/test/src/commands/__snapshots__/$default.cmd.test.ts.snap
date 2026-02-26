@@ -69,7 +69,7 @@ Environment Variables:
 
   - tools info [<slug>]                                                                                                                                                                                                                                                                                      View details of a specific tool.
 
-  - tools search [--toolkits text] [--limit integer] <query>                                                                                                                                                                                                                                                 Search tools by use case.
+  - tools search [--toolkits text] [--limit integer] <query>                                                                                                                                                                                                                                                 Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.
 
   - tools execute [(-d, --data text)] [--user-id text] <slug>                                                                                                                                                                                                                                                Execute a tool by slug with JSON arguments.
 
