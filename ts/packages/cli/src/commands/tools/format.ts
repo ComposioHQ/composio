@@ -59,6 +59,39 @@ function formatSchemaProperties(schema: Record<string, unknown>): string {
 }
 
 /**
+ * Format JSON Schema properties using a detailed field layout, similar to trigger info.
+ */
+function formatSchemaPropertiesDetailed(schema: Record<string, unknown>): string {
+  const entries = extractSchemaProperties(schema);
+  if (entries.length === 0) {
+    return '  (none)';
+  }
+
+  const typeWidth = Math.max(...entries.map(e => e.type.length));
+  const labelWidth = Math.max(...entries.map(e => e.label.length));
+  const metadataLabels = ['description:', 'type:', 'required:', 'default:'] as const;
+  const metadataLabelWidth = Math.max(...metadataLabels.map(label => label.length));
+
+  return entries
+    .map(e => {
+      const lines: string[] = [];
+      lines.push(`  ${bold(e.name)}`);
+      lines.push(
+        `    ${'description:'.padEnd(metadataLabelWidth)} ${e.description ? gray(truncate(e.description, 70)) : '-'}`
+      );
+      lines.push(`    ${'type:'.padEnd(metadataLabelWidth)} ${e.type.padEnd(typeWidth)}`);
+      lines.push(`    ${'required:'.padEnd(metadataLabelWidth)} ${e.label.padEnd(labelWidth)}`);
+      if (e.hasDefault) {
+        lines.push(
+          `    ${'default:'.padEnd(metadataLabelWidth)} ${gray(truncate(JSON.stringify(e.defaultValue), 40))}`
+        );
+      }
+      return lines.join('\n');
+    })
+    .join('\n\n');
+}
+
+/**
  * Format a detailed tool for interactive display.
  */
 export function formatToolInfo(tool: ToolDetailedResponse): string {
@@ -91,5 +124,25 @@ export function formatToolInfo(tool: ToolDetailedResponse): string {
   lines.push(bold('Output Parameters:'));
   lines.push(formatSchemaProperties(tool.output_parameters as Record<string, unknown>));
 
+  return lines.join('\n');
+}
+
+/**
+ * Format only tool input parameters for execute-help flows.
+ */
+export function formatToolInputParameters(tool: ToolDetailedResponse): string {
+  const lines: string[] = [];
+  lines.push(`${bold('Name:')} ${tool.name}`);
+  lines.push(`${bold('Slug:')} ${tool.slug}`);
+  lines.push(`${bold('Description:')} ${tool.description || '(none)'}`);
+
+  if (tool.toolkit.slug) {
+    lines.push(`${bold('Toolkit:')} ${tool.toolkit.name} (${tool.toolkit.slug})`);
+  }
+
+  lines.push('');
+  lines.push(gray('------------------------------'));
+  lines.push(bold('Data Parameters:'));
+  lines.push(formatSchemaPropertiesDetailed(tool.input_parameters as Record<string, unknown>));
   return lines.join('\n');
 }

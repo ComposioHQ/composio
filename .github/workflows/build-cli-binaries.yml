@@ -76,6 +76,7 @@ jobs:
         working-directory: ts/packages/cli
         env:
           COMPOSIO_API_KEY: test-dummy-api-key-for-ci
+          COMPOSIO_USER_API_KEY: test-dummy-api-key-for-ci
         run: |
           ./dist/binaries/${{ matrix.artifact }} --version
           ./dist/binaries/${{ matrix.artifact }} --help | head -5

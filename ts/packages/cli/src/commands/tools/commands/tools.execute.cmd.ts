@@ -13,12 +13,15 @@ import {
 } from 'src/services/tools-executor';
 import type { ToolExecuteParams } from 'src/services/tools-executor';
 import { ProjectContext } from 'src/services/project-context';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import {
   extractApiErrorDetails,
   extractMessage,
   extractSlug,
 } from 'src/utils/api-error-extraction';
 import { bold } from 'src/ui/colors';
+import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { formatToolInputParameters } from '../format';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -168,6 +171,52 @@ const normalizeError = (error: unknown): unknown => {
 
   return current;
 };
+
+/**
+ * Show execute-focused help for a specific tool slug.
+ * This prints only input parameters (data payload schema).
+ */
+export const showToolsExecuteInputHelp = (toolSlug: string) =>
+  Effect.gen(function* () {
+    if (!(yield* requireAuth)) return;
+
+    const ui = yield* TerminalUI;
+    const repo = yield* ComposioToolkitsRepository;
+
+    const toolOpt = yield* ui
+      .withSpinner(`Fetching input parameters for "${toolSlug}"...`, repo.getToolDetailed(toolSlug))
+      .pipe(
+        Effect.asSome,
+        Effect.catchTag(
+          'services/HttpServerError',
+          handleHttpServerError(ui, {
+            fallbackMessage: `Tool "${toolSlug}" not found.`,
+            hint: 'Browse available tools:\n> composio tools list',
+            fallbackValue: Option.none(),
+            searchForSuggestions: () =>
+              repo.searchTools({ search: toolSlug, limit: 3 }).pipe(
+                Effect.map(r =>
+                  r.items.map(s => ({
+                    label: `${s.slug} — ${s.description}`,
+                    command: `> composio tools execute "${s.slug}" --help`,
+                  }))
+                )
+              ),
+          })
+        )
+      );
+
+    if (Option.isNone(toolOpt)) return;
+    const tool = toolOpt.value;
+
+    yield* ui.note(formatToolInputParameters(tool), `Execute Help: ${tool.slug}`);
+    yield* ui.log.step(
+      `Run:\n> composio tools execute "${tool.slug}" --user-id "<user-id>" -d '{"key":"value"}'`
+    );
+    yield* ui.output(
+      JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
+    );
+  });
 
 /**
  * Display a user-friendly error message for tool execution failures.
