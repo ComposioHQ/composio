@@ -5,6 +5,8 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
+import { ProjectContext } from 'src/services/project-context';
+import { ComposioUserContext } from 'src/services/user-context';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -13,8 +15,10 @@ const slug = Args.text({ name: 'slug' }).pipe(
 );
 
 const userId = Options.text('user-id').pipe(
-  Options.withDefault('default'),
-  Options.withDescription('User ID for connection status (default: "default")')
+  Options.optional,
+  Options.withDescription(
+    'User ID for connection status (falls back to project/global test_user_id, then "default")'
+  )
 );
 
 const allDetails = Options.boolean('all').pipe(
@@ -40,6 +44,8 @@ export const toolkitsCmd$Info = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
+      const projectContext = yield* ProjectContext;
+      const userContext = yield* ComposioUserContext;
 
       // Missing slug guard
       if (Option.isNone(slug)) {
@@ -52,22 +58,56 @@ export const toolkitsCmd$Info = Command.make(
 
       const slugValue = slug.value;
       const repo = yield* ComposioToolkitsRepository;
+      const resolvedProjectContext = yield* projectContext.resolve;
+      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const globalTestUserId = userContext.data.testUserId;
+      const resolvedUserId = Option.match(userId, {
+        onSome: value => Option.some(value),
+        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
+      });
+
+      if (Option.isNone(userId) && Option.isSome(testUserId)) {
+        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
+      } else if (Option.isNone(userId)) {
+        yield* ui.log.info(
+          'No test user id found; showing toolkit details without connection status.'
+        );
+      }
 
       const resultOpt = yield* ui
         .withSpinner(
           `Fetching toolkit "${slugValue}"...`,
           Effect.gen(function* () {
-            const [{ client, sessionId }, detailedToolkitOpt] = yield* Effect.all(
-              [
-                resolveToolRouterSession(userId),
-                repo.getToolkitDetailed(slugValue).pipe(Effect.option),
-              ],
-              { concurrency: 'unbounded' }
-            );
-            const sessionToolkits = yield* Effect.tryPromise(() =>
-              client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
-            );
-            return { sessionToolkits, detailedToolkitOpt };
+            const detailedToolkitOpt = yield* repo
+              .getToolkitDetailed(slugValue)
+              .pipe(Effect.option);
+
+            if (Option.isSome(resolvedUserId)) {
+              const { client, sessionId } = yield* resolveToolRouterSession(resolvedUserId.value);
+              const sessionToolkits = yield* Effect.tryPromise(() =>
+                client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
+              );
+              return { toolkit: sessionToolkits.items[0], detailedToolkitOpt };
+            }
+
+            const toolkit = Option.match(detailedToolkitOpt, {
+              onNone: () => undefined,
+              onSome: detailed => ({
+                slug: detailed.slug,
+                name: detailed.name,
+                meta: {
+                  description: detailed.meta.description,
+                  logo: '',
+                },
+                is_no_auth: detailed.no_auth,
+                enabled: true,
+                connected_account: null,
+                composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
+              }),
+            });
+            return { toolkit, detailedToolkitOpt };
           })
         )
         .pipe(
@@ -88,7 +128,7 @@ export const toolkitsCmd$Info = Command.make(
       }
 
       const result = resultOpt.value;
-      const toolkit = result.sessionToolkits.items[0];
+      const toolkit = result.toolkit;
       const detailedToolkit = Option.getOrUndefined(result.detailedToolkitOpt);
 
       if (!toolkit) {

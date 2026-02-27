@@ -90,6 +90,28 @@ describe('CLI: composio toolkits list', () => {
     }
   );
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )(
+    '[Given] no --user-id and no project test_user_id [Then] falls back to global test_user_id',
+    it => {
+      it.scoped('shows connected column with global test user id', () =>
+        Effect.gen(function* () {
+          yield* cli(['toolkits', 'list']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Connected');
+          expect(output).toContain('Using global test user id "global-default"');
+        })
+      );
+    }
+  );
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] explicit --user-id [Then] shows connected status column',
     it => {

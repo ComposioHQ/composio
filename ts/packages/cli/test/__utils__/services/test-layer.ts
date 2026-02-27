@@ -866,6 +866,38 @@ export const TestLayer = (input?: TestLiveInput) =>
     };
 
     const mockComposioClient = {
+      toolkits: {
+        retrieve: async (slug: string) => {
+          const detailed = toolkitsData.detailedToolkits.find(
+            t => t.slug.toLowerCase() === slug.toLowerCase()
+          );
+          if (detailed) {
+            return {
+              name: detailed.name,
+              slug: detailed.slug,
+              is_local_toolkit: detailed.is_local_toolkit,
+              composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
+              no_auth: detailed.no_auth,
+              meta: detailed.meta,
+            };
+          }
+
+          const found = toolkitsData.toolkits.find(
+            t => t.slug.toLowerCase() === slug.toLowerCase()
+          );
+          if (!found) {
+            throw new Error(`Toolkit "${slug}" not found`);
+          }
+          return {
+            name: found.name,
+            slug: found.slug,
+            is_local_toolkit: found.is_local_toolkit,
+            composio_managed_auth_schemes: [...found.composio_managed_auth_schemes],
+            no_auth: found.no_auth,
+            meta: found.meta,
+          };
+        },
+      },
       toolRouter: {
         session: {
           create:

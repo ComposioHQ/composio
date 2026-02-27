@@ -154,6 +154,28 @@ describe('CLI: composio toolkits info', () => {
     }
   );
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )(
+    '[Given] no --user-id and no project test_user_id [Then] falls back to global test_user_id',
+    it => {
+      it.scoped('uses global test user id for toolkit info', () =>
+        Effect.gen(function* () {
+          yield* cli(['toolkits', 'info', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Using global test user id "global-default"');
+          expect(output).toContain('Gmail');
+        })
+      );
+    }
+  );
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit with no_auth=true',
     it => {

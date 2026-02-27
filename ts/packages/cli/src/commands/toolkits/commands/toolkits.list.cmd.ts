@@ -5,6 +5,7 @@ import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
+import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 import {
   formatLegacyToolkitsJson,
@@ -30,7 +31,9 @@ const connected = Options.boolean('connected').pipe(
 
 const userId = Options.text('user-id').pipe(
   Options.optional,
-  Options.withDescription('User ID for connection status (defaults to project test_user_id)')
+  Options.withDescription(
+    'User ID for connection status (falls back to project/global test_user_id)'
+  )
 );
 
 /**
@@ -54,15 +57,25 @@ export const toolkitsCmd$List = Command.make(
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
       const projectContext = yield* ProjectContext;
+      const userContext = yield* ComposioUserContext;
 
       const clampedLimit = clampLimit(limit);
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
-      const resolvedUserId = Option.orElse(userId, () => testUserId);
-      const usingDefaultTestUserId = Option.isNone(userId) && Option.isSome(testUserId);
+      const globalTestUserId = userContext.data.testUserId;
+      const resolvedUserId = Option.match(userId, {
+        onSome: value => Option.some(value),
+        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
+      });
+      const usingProjectTestUserId = Option.isNone(userId) && Option.isSome(testUserId);
+      const usingGlobalTestUserId =
+        Option.isNone(userId) && Option.isNone(testUserId) && Option.isSome(globalTestUserId);
 
-      if (usingDefaultTestUserId && Option.isSome(testUserId)) {
-        yield* ui.log.info(`Showing connection status for user id "${testUserId.value}"`);
+      if (usingProjectTestUserId && Option.isSome(testUserId)) {
+        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+        yield* ui.log.message('To show status for a specific user, use `--user-id`.');
+      } else if (usingGlobalTestUserId && Option.isSome(globalTestUserId)) {
+        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
         yield* ui.log.message('To show status for a specific user, use `--user-id`.');
       }
 
