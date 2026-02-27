@@ -63,6 +63,8 @@ Environment Variables:
 
   - toolkits search [--limit integer] <query>                                                                                                                                                                                                                                                                Search toolkits by use case.
 
+  - toolkits version <slug>                                                                                                                                                                                                                                                                                  Show latest and recent versions for a toolkit.
+
   - tools                                                                                                                                                                                                                                                                                                    Discover and inspect Composio tools.
 
   - tools list [--query text] [--toolkits text] [--tags text] [--limit integer]                                                                                                                                                                                                                              List available tools.
