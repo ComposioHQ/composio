@@ -18,6 +18,8 @@ import { authConfigsCmd } from './auth-configs/auth-configs.cmd';
 import { connectedAccountsCmd } from './connected-accounts/connected-accounts.cmd';
 import { triggersCmd } from './triggers/triggers.cmd';
 import { logsCmd } from './logs-cmd/logs.cmd';
+import { orgsCmd } from './orgs/orgs.cmd';
+import { projectsCmd } from './projects/projects.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
 
 const $cmd = $defaultCmd.pipe(
@@ -37,6 +39,8 @@ const $cmd = $defaultCmd.pipe(
     connectedAccountsCmd,
     triggersCmd,
     logsCmd,
+    orgsCmd,
+    projectsCmd,
   ])
 );
 

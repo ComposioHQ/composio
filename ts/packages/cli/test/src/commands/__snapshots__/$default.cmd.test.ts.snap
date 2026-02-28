@@ -63,6 +63,8 @@ Environment Variables:
 
   - toolkits search [--limit integer] <query>                                                                                                                                                                                                                                                                Search toolkits by use case.
 
+  - toolkits version <slug>                                                                                                                                                                                                                                                                                  Show latest and recent versions for a toolkit.
+
   - tools                                                                                                                                                                                                                                                                                                    Discover and inspect Composio tools.
 
   - tools list [--query text] [--toolkits text] [--tags text] [--limit integer]                                                                                                                                                                                                                              List available tools.
@@ -118,5 +120,17 @@ Environment Variables:
   - logs triggers [--cursor text] [--user-id text] [--connected-account-id text] [--trigger text] [--trigger-id text] [--log-id text] [--from integer] [--to integer] [--limit integer] [--time 5m | 30m | 6h | 1d | 1w | 1month | 1y] [--search text] [--include-payload] [<log_id>]                        List trigger logs.
 
   - logs tools [--cursor integer] [--from integer] [--to integer] [--limit integer] [--case-sensitive] [--toolkit text] [--tool text] [--connected-account-id text] [--auth-config-id text] [--status text] [--user-id text] [--log-id text] [--tool-router-session-id text] [--session-id text] [<log_id>]  List tool execution logs, or pass a log_id to fetch a specific log.
+
+  - orgs                                                                                                                                                                                                                                                                                                     Manage default global organization/project context.
+
+  - orgs list [--limit integer]                                                                                                                                                                                                                                                                              List organizations and show current global selection.
+
+  - orgs switch [--org-id text] [--project-id text] [--limit integer]                                                                                                                                                                                                                                        Switch default global organization/project context.
+
+  - projects                                                                                                                                                                                                                                                                                                 Manage default global project context.
+
+  - projects list [--org-id text] [--limit integer]                                                                                                                                                                                                                                                          List projects and show current global selection.
+
+  - projects switch [--org-id text] [--project-id text] [--limit integer]                                                                                                                                                                                                                                    Switch default global project context.
 "
 `;

@@ -712,6 +712,159 @@ export const OrgProjectListResponse = Schema.Struct({
 }).annotations({ identifier: 'OrgProjectListResponse' });
 export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListResponse>;
 
+export interface OrganizationSummary {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface OrganizationListResponse {
+  readonly data: ReadonlyArray<OrganizationSummary>;
+  readonly total_items: number;
+}
+
+export interface OrganizationProjectSummary {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface OrganizationProjectListResponse {
+  readonly data: ReadonlyArray<OrganizationProjectSummary>;
+  readonly total_items: number;
+}
+
+const extractArrayPayload = (json: unknown): ReadonlyArray<unknown> => {
+  if (Array.isArray(json)) return json;
+  if (json && typeof json === 'object') {
+    const record = json as Record<string, unknown>;
+    if (Array.isArray(record.organizations)) return record.organizations;
+    if (Array.isArray(record.projects)) return record.projects;
+    if (Array.isArray(record.data)) return record.data;
+    if (Array.isArray(record.items)) return record.items;
+    if (record.data && typeof record.data === 'object') {
+      const nested = record.data as Record<string, unknown>;
+      if (Array.isArray(nested.organizations)) return nested.organizations;
+      if (Array.isArray(nested.projects)) return nested.projects;
+      if (Array.isArray(nested.items)) return nested.items;
+      if (Array.isArray(nested.data)) return nested.data;
+    }
+  }
+  return [];
+};
+
+const readIdFromItem = (item: unknown): string | undefined => {
+  if (!item || typeof item !== 'object') return undefined;
+  const record = item as Record<string, unknown>;
+  if (typeof record.id === 'string') return record.id;
+  if (typeof record.nano_id === 'string') return record.nano_id;
+  if (typeof record.org_id === 'string') return record.org_id;
+  if (typeof record.project_id === 'string') return record.project_id;
+  return undefined;
+};
+
+const readNameFromItem = (item: unknown): string | undefined => {
+  if (!item || typeof item !== 'object') return undefined;
+  const record = item as Record<string, unknown>;
+  if (typeof record.name === 'string' && record.name.trim().length > 0) return record.name;
+  if (typeof record.slug === 'string' && record.slug.trim().length > 0) return record.slug;
+  return undefined;
+};
+
+/**
+ * Lists organizations available to the current user API key.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ */
+export const listOrganizations = (params: {
+  baseURL: string;
+  apiKey: string;
+  limit?: number;
+}): Effect.Effect<OrganizationListResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const limit = params.limit ?? 50;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/list?limit=${limit}`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.apiKey,
+            'User-Agent': '@composio/cli',
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+    const items = extractArrayPayload(json);
+    const organizations = items
+      .map(item => {
+        const id = readIdFromItem(item);
+        const name = readNameFromItem(item);
+        if (!id || !name) return undefined;
+        return { id, name } satisfies OrganizationSummary;
+      })
+      .filter((value): value is OrganizationSummary => value !== undefined);
+
+    return {
+      data: organizations,
+      total_items: organizations.length,
+    };
+  });
+
+/**
+ * Lists projects for a specific organization.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ */
+export const listOrganizationProjects = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  limit?: number;
+}): Effect.Effect<OrganizationProjectListResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const limit = params.limit ?? 50;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/project/list?limit=${limit}`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.apiKey,
+            'x-org-id': params.orgId,
+            'User-Agent': '@composio/cli',
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+    const items = extractArrayPayload(json);
+    const projects = items
+      .map(item => {
+        const id = readIdFromItem(item);
+        const name = readNameFromItem(item);
+        if (!id || !name) return undefined;
+        return { id, name } satisfies OrganizationProjectSummary;
+      })
+      .filter((value): value is OrganizationProjectSummary => value !== undefined);
+
+    return {
+      data: projects,
+      total_items: projects.length,
+    };
+  });
+
 /**
  * Lists all projects for the logged-in user's organization.
  * Uses plain fetch since this endpoint is not available in @composio/client.
@@ -719,7 +872,7 @@ export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListRes
  * @param params.baseURL    - API base URL
  * @param params.apiKey     - UAK (sent as `x-user-api-key`)
  * @param params.orgId      - Organization ID (sent as `x-org-id`)
- * @param params.limit      - Max projects to return (default 100)
+ * @param params.limit      - Max projects to return (default 50)
  */
 export const listOrgProjects = (params: {
   baseURL: string;
@@ -728,7 +881,7 @@ export const listOrgProjects = (params: {
   limit?: number;
 }): Effect.Effect<OrgProjectListResponse, HttpServerError | HttpDecodingError> =>
   Effect.gen(function* () {
-    const limit = params.limit ?? 100;
+    const limit = params.limit ?? 50;
     const response = yield* Effect.tryPromise({
       try: () =>
         fetch(
