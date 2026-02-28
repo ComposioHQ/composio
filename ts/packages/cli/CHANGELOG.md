@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.33
+
+### Patch Changes
+
+- 5890693: Add a new commands for CLI org switching and project switching
+
 ## 0.1.32
 
 ### Patch Changes
