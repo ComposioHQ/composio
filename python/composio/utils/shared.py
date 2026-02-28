@@ -37,6 +37,22 @@ __all__ = [
 reserved_names = ["validate"]
 
 
+def _sanitize_param_name(name: str) -> str:
+    """Sanitize a parameter name to be a valid Python identifier.
+
+    Replaces characters that are not valid in Python identifiers (e.g.
+    brackets from flattened JSON schemas like ``parameters[date]``) with
+    underscores so that :class:`inspect.Parameter` accepts them.
+    """
+    if name.isidentifier():
+        return name
+    sanitized = "".join(c if c.isalnum() or c == "_" else "_" for c in name)
+    if sanitized and sanitized[0].isdigit():
+        sanitized = f"_{sanitized}"
+    return sanitized or "_"
+
+
+
 def _coerce_default_value(
     default: t.Any,
     json_schema: t.Dict[str, t.Any],
@@ -358,7 +374,7 @@ def get_signature_format_from_schema_params(
             default = Parameter.empty
 
         parameter = Parameter(
-            name=param_name,
+            name=_sanitize_param_name(param_name),
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=annotation,
             default=default,
@@ -404,7 +420,7 @@ def get_pydantic_signature_format_from_schema_params(
     field_definitions = json_schema_to_fields_dict(schema_params)
     for param_name, (param_dtype, parame_field) in field_definitions.items():
         param = Parameter(
-            name=param_name,
+            name=_sanitize_param_name(param_name),
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=param_dtype,
             default=Parameter.empty if skip_default else parame_field.default,
