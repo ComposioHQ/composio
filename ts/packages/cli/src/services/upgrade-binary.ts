@@ -179,6 +179,102 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         return release;
       });
 
+    const getBinaryAssetName = (platformArch: PlatformArch): string =>
+      `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
+
+    const hasBinaryAssetForPlatform = (
+      release: GitHubRelease,
+      platformArch: PlatformArch
+    ): boolean => {
+      const binaryName = getBinaryAssetName(platformArch);
+      return release.assets.some(asset => asset.name === binaryName);
+    };
+
+    const fetchLatestReleaseWithRequiredAssets = (
+      platformArch: PlatformArch
+    ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+      Effect.gen(function* () {
+        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
+        const releases = yield* fetchGitHubJson<unknown>({
+          url,
+          fetchErrorMessage: 'Failed to fetch releases from GitHub',
+          parseErrorMessage: 'Failed to parse GitHub releases JSON response',
+        });
+
+        if (!Array.isArray(releases)) {
+          return yield* Effect.fail(
+            new UpgradeBinaryError({
+              cause: new Error('GitHub releases response was not an array'),
+              message: 'Unexpected response while resolving latest CLI release',
+            })
+          );
+        }
+
+        const cliReleases = releases.filter(
+          (release): release is GitHubRelease =>
+            typeof release === 'object' &&
+            release !== null &&
+            'tag_name' in release &&
+            typeof release.tag_name === 'string' &&
+            ('prerelease' in release ? release.prerelease === false : true) &&
+            ('draft' in release ? release.draft === false : true) &&
+            CLI_RELEASE_TAG_PATTERN.test(release.tag_name)
+        );
+
+        if (cliReleases.length === 0) {
+          return yield* Effect.fail(
+            new UpgradeBinaryError({
+              cause: new Error('No package-scoped CLI releases found'),
+              message: 'Failed to determine latest CLI release from @composio/cli tags on GitHub',
+            })
+          );
+        }
+
+        const sortedReleases = [...cliReleases];
+        for (let i = 0; i < sortedReleases.length; i += 1) {
+          for (let j = i + 1; j < sortedReleases.length; j += 1) {
+            const comparison = yield* semverComparator(
+              sortedReleases[i]!.tag_name,
+              sortedReleases[j]!.tag_name
+            ).pipe(
+              Effect.mapError(
+                error =>
+                  new UpgradeBinaryError({
+                    cause: error,
+                    message: 'Failed to compare CLI release versions',
+                  })
+              )
+            );
+
+            if (comparison < 0) {
+              const tmp = sortedReleases[i]!;
+              sortedReleases[i] = sortedReleases[j]!;
+              sortedReleases[j] = tmp;
+            }
+          }
+        }
+
+        const release = sortedReleases.find(candidate =>
+          hasBinaryAssetForPlatform(candidate, platformArch)
+        );
+
+        if (!release) {
+          return yield* Effect.fail(
+            new UpgradeBinaryError({
+              cause: new Error(
+                `No @composio/cli release contains ${getBinaryAssetName(platformArch)} asset`
+              ),
+              message: `No binary available for ${platformArch.platform}-${platformArch.arch}`,
+            })
+          );
+        }
+
+        yield* Effect.logDebug(
+          `Resolved latest CLI release with required assets: ${release.tag_name}`
+        );
+        return release;
+      });
+
     /**
      * Check if update is available
      */
@@ -405,9 +501,15 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           return;
         }
 
+        const platformArch = yield* detectPlatform;
         const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
           Effect.gen(function* () {
-            const release = yield* fetchLatestRelease();
+            const release = yield* githubConfig.TAG.pipe(
+              Option.match({
+                onNone: () => fetchLatestReleaseWithRequiredAssets(platformArch),
+                onSome: () => fetchLatestRelease(),
+              })
+            );
             const updateAvailable = yield* isUpdateAvailable(release);
             if (!updateAvailable) {
               yield* spinner.stop('You are already running the latest version!');
@@ -418,7 +520,6 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               `New version available: ${release.tag_name} (current: ${APP_VERSION}). Downloading...`
             );
 
-            const platformArch = yield* detectPlatform;
             const { name, data } = yield* downloadBinary(release, platformArch);
 
             yield* spinner.message('Extracting...');
