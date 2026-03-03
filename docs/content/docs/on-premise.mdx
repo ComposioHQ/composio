@@ -4,55 +4,35 @@ description: Deploy Composio on your own infrastructure using Helm charts on Kub
 keywords: [on-premise, self-hosted, helm, kubernetes, enterprise, deployment]
 ---
 
-Composio supports on-premise deployments for organizations that need to host Composio within their own infrastructure. On-premise deployments use [Helm charts](https://helm.sh/) on Kubernetes, providing a standardized and reproducible deployment process.
+Composio supports on-premise deployments using [Helm charts](https://helm.sh/) on Kubernetes.
 
 <Callout type="info">
-On-premise deployments are available as part of the Composio enterprise offering. Contact our sales team at [composio.dev/contact](https://composio.dev/contact) to get access.
+On-premise deployments are available on the Composio Enterprise plan. Contact sales at [composio.dev/contact](https://composio.dev/contact) to get access.
 </Callout>
 
 ## Architecture
 
-The Composio platform consists of the following core services:
+| Service | Port | Description |
+|---------|------|-------------|
+| **Apollo** | 9900 | API server — OAuth, business logic, database operations |
+| **Thermos** | 8180 | Workflow execution and tools management |
+| **Mercury** | 8080 | Tool execution runtime (Knative serverless) |
+| **MCP** | 3000 | Management portal |
+| **Redis** | 6379 | Caching |
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| **Apollo** | 9900 | Main API server — handles OAuth callbacks, business logic, database operations, and storage |
-| **Thermos** | 8180 | Workflow execution engine and tools management with Redis caching |
-| **Mercury** | 8080 | Function and tool execution runtime (supports Knative for serverless) |
-| **Frontend** | 3000 | Next.js web dashboard |
-| **Temporal** | 7233 | Workflow engine for auth token refresh and triggers (optional) |
-| **Redis** | 6379 | Caching layer |
-| **Weaviate** | 8080 | Vector database for tool search |
-
-## Compute requirements
-
-Minimum resources required to run the platform:
-
-| Component | CPU Request | CPU Limit | Memory Request | Memory Limit |
-|-----------|-------------|-----------|----------------|--------------|
-| Apollo | 1 core | 1 core | 5 GiB | 6 GiB |
-| Apollo DB-Init | 1 core | 1 core | 5 GiB | 6 GiB |
-| Thermos | 2 cores | 2 cores | 4 GiB | 5 GiB |
-| Thermos DB-Init | 2 cores | 2 cores | 4 GiB | 5 GiB |
-| Mercury | 1 core | 2 cores | 2 GiB | 4 GiB |
-| Frontend | 1 core | 1 core | 2 GiB | 3 GiB |
-| Redis | 2 cores | 2 cores | 4 GiB | 4 GiB |
-| Weaviate | 1 core | 2 cores | 2 GiB | 4 GiB |
-| **Total** | **11 cores** | **13 cores** | **28 GiB** | **37 GiB** |
+Mercury connects to Apollo for backend operations. Thermos connects to both Apollo and Mercury for workflow execution. All services share a PostgreSQL database (via external secret) and Redis for caching.
 
 ## Prerequisites
 
-Before installing, ensure you have:
+1. Kubernetes cluster (11+ CPU cores, 28+ GiB memory)
+2. [Helm](https://helm.sh/) v3
+3. PostgreSQL database (v17+ recommended)
+4. [Knative Serving](https://knative.dev/) installed on the cluster (auto-installed by the chart via a pre-install hook)
+5. Access to the [Composio enterprise portal](https://enterprise.composio.io/composio-rodent)
 
-1. A Kubernetes cluster with sufficient compute resources (11+ CPU cores, 28+ GiB memory)
-2. [Helm](https://helm.sh/) v3 installed
-3. A self-hosted **PostgreSQL** database instance (version 17+ recommended)
-4. A Kubernetes namespace for the deployment
-5. Access to the Composio enterprise portal at [enterprise.composio.io](https://enterprise.composio.io/composio-rodent)
+## Database Setup
 
-## Database setup
-
-Initialize your PostgreSQL instance with the required databases. Use the appropriate SQL for your cloud provider:
+Create the required databases in your PostgreSQL instance.
 
 <Tabs groupId="cloud-provider">
 <Tab value="AWS">
@@ -112,55 +92,54 @@ GRANT ALL PRIVILEGES ON DATABASE thermosdb TO composio;
 </Tab>
 </Tabs>
 
-## Create Kubernetes secrets
+## Kubernetes Secrets
 
-Create a secret containing all required credentials:
+Create the PostgreSQL connection secret:
 
 ```bash
-kubectl create secret generic composio-composio-secrets \
-  --from-literal=COMPOSIO_ADMIN_TOKEN=<RANDOM_ADMIN_TOKEN> \
-  --from-literal=ENCRYPTION_KEY=<ENCRYPTION_KEY_FOR_DATABASE> \
-  --from-literal=TEMPORAL_TRIGGER_ENCRYPTION_KEY=<ENCRYPTION_KEY_FOR_TEMPORAL> \
-  --from-literal=JWT_SECRET=<RANDOM_JWT_SECRET> \
-  --from-literal=POSTGRES_URL="postgresql://<USER>:<PASSWORD>@<HOST>:5432/composiodb?sslmode=require" \
-  --from-literal=THERMOS_DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:5432/thermosdb?sslmode=require" \
-  --from-literal=password="<DATABASE_PASSWORD>" \
+kubectl create secret generic external-postgres-secret \
+  --from-literal=url="postgresql://<USER>:<PASSWORD>@<HOST>:5432/composiodb?sslmode=require" \
   -n <NAMESPACE>
 ```
 
+All other secrets (admin token, encryption keys, API keys, Redis URL) are auto-generated by the chart on first install and persisted across upgrades. To set them explicitly, use the `secrets` section in `values.yaml`:
+
+```yaml
+secrets:
+  adminToken: ""              # Auto-generated 32-char token if empty
+  encryptionKey: ""           # Auto-generated 32-char key if empty
+  temporalEncryptionKey: ""   # Auto-generated 32-char key if empty
+  bootstrapApiKey: ""         # Auto-generated 32-char key if empty
+```
+
 <Callout type="warn">
-Store these keys securely. `ENCRYPTION_KEY` and `JWT_SECRET` are critical — losing them can make existing data unrecoverable.
+Store your `encryptionKey` securely. Losing it makes existing encrypted data unrecoverable.
 </Callout>
 
-| Key | Description |
-|-----|-------------|
-| `COMPOSIO_ADMIN_TOKEN` | Admin API token for management operations |
-| `ENCRYPTION_KEY` | Encryption key for sensitive database fields |
-| `TEMPORAL_TRIGGER_ENCRYPTION_KEY` | Encryption key for Temporal (only needed if triggers/auth refresh are enabled) |
-| `JWT_SECRET` | Secret used to sign JWT tokens |
-| `POSTGRES_URL` | PostgreSQL connection string for the Apollo service |
-| `THERMOS_DATABASE_URL` | PostgreSQL connection string for the Thermos service |
-| `password` | Database password used during migrations |
+To retrieve auto-generated secrets after install:
+
+```bash
+kubectl get secret composio-composio-secrets -o jsonpath="{.data.APOLLO_ADMIN_TOKEN}" | base64 -d
+kubectl get secret composio-composio-secrets -o jsonpath="{.data.ENCRYPTION_KEY}" | base64 -d
+kubectl get secret composio-composio-secrets -o jsonpath="{.data.COMPOSIO_API_KEY}" | base64 -d
+```
 
 ## Installation
 
-### Add the Helm repository
+### Option 1: Helm repository
 
 ```bash
 helm repo add composio https://composiohq.github.io/helm-charts
 helm repo update
-```
 
-### Install with Helm
-
-```bash
 helm install composio composio/composio \
   -f values.yaml \
   -n <NAMESPACE> \
-  --create-namespace
+  --create-namespace \
+  --timeout 15m
 ```
 
-### Install via Replicated (enterprise)
+### Option 2: Replicated OCI registry (enterprise)
 
 ```bash
 helm upgrade --install composio \
@@ -171,42 +150,85 @@ helm upgrade --install composio \
   --timeout 15m
 ```
 
-## Configuration
+## Configuration Reference
 
-Create a `values.yaml` file to customize your deployment. Below are the key configuration sections.
+All configuration is set through `values.yaml`. Below is the complete reference organized by section.
 
-### Domain and environment
+### Global
 
 ```yaml
 global:
-  environment: production
-  domain: composio.your-company.com
+  environment: production       # "development" or "production"
+  domain: composio.example.com  # Domain used for Knative serving and ingress
+  imagePullSecrets:
+    - name: ecr-secret          # Required for pulling images from private registries
 ```
 
-### Database migration
+### External PostgreSQL
+
+The chart expects a PostgreSQL connection string via a Kubernetes secret. This is the recommended setup for production.
 
 ```yaml
-databaseMigration:
+externalPostgreSQL:
   enabled: true
-  host: "<DATABASE_HOST>"
-  port: "5432"
-  user: "postgres"
-  password:
-    key: "password"
+  urlSecret:
+    name: "external-postgres-secret"   # K8s secret name
+    key: "url"                         # Key containing the connection string
 ```
 
-### Feature flags
+All services (Apollo, MCP, Thermos, DB init) read `DATABASE_URL` from this secret.
+
+To use the bundled PostgreSQL instead (development only):
 
 ```yaml
-features:
-  temporal: false  # Enable for auth token refresh and triggers
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres123"
+    username: "composio"
+    password: "composio123"
+    database: "composio"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests: { memory: "4Gi", cpu: "2" }
+      limits: { memory: "4Gi", cpu: "2" }
 ```
 
-### External Redis (recommended for production)
+### Redis
+
+Bundled Redis is enabled by default via the Bitnami subchart.
 
 ```yaml
 redis:
-  enabled: false  # Disable the bundled Redis
+  auth:
+    enabled: true
+    password: "redis123"        # Change in production
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests: { memory: "4Gi", cpu: "2" }
+      limits: { memory: "4Gi", cpu: "2" }
+  replica:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests: { memory: "4Gi", cpu: "2" }
+      limits: { memory: "4Gi", cpu: "2" }
+```
+
+The chart auto-generates the `REDIS_URL` secret in the format `redis://:<password>@<release>-redis-master:6379` and passes it to Apollo.
+
+To use an external Redis instead:
+
+```yaml
+redis:
+  enabled: false
 
 externalRedis:
   enabled: true
@@ -214,18 +236,38 @@ externalRedis:
   key: "REDIS_URL"
 ```
 
-### Frontend
+### Apollo (API Server)
+
+Main API service handling OAuth, business logic, and storage.
 
 ```yaml
-frontend:
-  enabled: true
-  env:
-    NEXT_PUBLIC_DISABLE_SOCIAL_LOGIN: "true"
-    NEXT_PUBLIC_SELF_HOSTED: "true"
-    OVERRIDE_BACKEND_URL: "http://composio-apollo:9900"
+apollo:
+  replicaCount: 1
+  image:
+    repository: composio/apollo
+    tag: "v1.7"
+    pullPolicy: Always
+  service:
+    type: NodePort              # NodePort, ClusterIP, or LoadBalancer
+    port: 9900
+    nodePort: 30900             # Only used with type: NodePort
+  baseUrl: "http://composio-apollo:9900"
+  resources:
+    requests: { memory: "4Gi", cpu: "2" }
+    limits: { memory: "4Gi", cpu: "2" }
+  database:
+    urlSecret:
+      name: "external-postgres-secret"
+      key: "url"
 ```
 
-### SMTP (required for frontend magic link login)
+The following environment variables are set automatically by the template:
+- `SELF_HOSTED=true`
+- `THERMOS_URL` — points to the Thermos service
+- `MCP_BASE_URL` — points to the MCP service
+- `REDIS_URL`, `ENCRYPTION_KEY`, `APOLLO_ADMIN_TOKEN` — from the auto-generated secrets
+
+#### SMTP (for magic link login)
 
 ```yaml
 apollo:
@@ -234,17 +276,17 @@ apollo:
     smtpAuthorEmail: "noreply@your-company.com"
 ```
 
-Then add the SMTP connection string to your Kubernetes secret:
+Add the SMTP connection string as a secret:
 
 ```bash
 kubectl create secret generic composio-smtp-secret \
-  --from-literal=SMTP_CONNECTION_STRING="smtp://<username>:<password>@<host>:<port>" \
+  --from-literal=SMTP_CONNECTION_STRING="smtp://<user>:<pass>@<host>:<port>" \
   -n <NAMESPACE>
 ```
 
-### Object storage (optional)
+#### Object Storage
 
-Object storage is only needed for file-related toolkit operations.
+Only needed for file-related toolkit operations.
 
 <Tabs groupId="storage-provider">
 <Tab value="S3 / GCS">
@@ -257,7 +299,7 @@ apollo:
       region: "us-east-1"
 ```
 
-For AWS, use [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) annotations on the Apollo service account. For GCP, use Workload Identity with HMAC credentials for S3-compatible access.
+For AWS, use [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). For GCP, use Workload Identity with HMAC credentials.
 </Tab>
 <Tab value="Azure Blob Storage">
 ```yaml
@@ -269,17 +311,15 @@ apollo:
       permanentContainerName: "composio-permanent"
 ```
 
-Add the Azure connection string to your secrets:
-
 ```bash
 kubectl create secret generic composio-azure-secret \
-  --from-literal=AZURE_CONNECTION_STRING="<your-connection-string>" \
+  --from-literal=AZURE_CONNECTION_STRING="<connection-string>" \
   -n <NAMESPACE>
 ```
 </Tab>
 </Tabs>
 
-### Ingress
+#### Ingress
 
 ```yaml
 apollo:
@@ -291,19 +331,9 @@ apollo:
         paths:
           - path: /
             pathType: Prefix
-
-frontend:
-  ingress:
-    enabled: true
-    className: nginx
-    hosts:
-      - host: composio.your-company.com
-        paths:
-          - path: /
-            pathType: Prefix
 ```
 
-### Autoscaling
+#### Autoscaling
 
 ```yaml
 apollo:
@@ -311,13 +341,144 @@ apollo:
     enabled: true
     minReplicas: 2
     maxReplicas: 5
+```
 
+### Thermos (Workflow Engine)
+
+Executes workflows, manages tools, and communicates with Mercury for tool execution via HTTP.
+
+```yaml
+thermos:
+  replicaCount: 1
+  image:
+    repository: composio/thermos
+    tag: "endpoint"
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8180
+  baseUrl: "http://composio-thermos:8180"
+  resources:
+    requests: { memory: "4Gi", cpu: "2" }
+    limits: { memory: "4Gi", cpu: "2" }
+```
+
+Thermos automatically connects to:
+- Apollo via `APOLLO_ENDPOINT`
+- Mercury via `LAMBDA_USE_HTTP_ENDPOINT` (Knative internal URL)
+- Temporal at `temporal-stack-frontend:7233`
+- PostgreSQL via `DATABASE_URL` and `THERMOS_DATABASE_URL` (from the external-postgres-secret)
+
+#### Autoscaling
+
+```yaml
 thermos:
   autoscaling:
     enabled: true
     minReplicas: 2
     maxReplicas: 5
 ```
+
+### MCP (Management Portal)
+
+Web-based management interface.
+
+```yaml
+mcp:
+  replicaCount: 1
+  image:
+    repository: composio/mcp-server
+    tag: "v1.7"
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 3000
+  baseUrl: "http://composio-mcp:3000"
+  resources:
+    requests: { memory: "4Gi", cpu: "2" }
+    limits: { memory: "4Gi", cpu: "2" }
+  database:
+    urlSecret:
+      name: "external-postgres-secret"
+      key: "url"
+```
+
+MCP receives `AUTH_SECRET`, `COMPOSIO_API_KEY`, and `DATABASE_URL` automatically from the chart secrets.
+
+### Mercury (Tool Execution Runtime)
+
+Runs as a Knative service for serverless autoscaling. Mercury executes the actual tools and connects back to Apollo for context.
+
+```yaml
+mercury:
+  enabled: true
+  image:
+    repository: composio/mercury
+    tag: "latest"
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests: { memory: "8Gi", cpu: "4" }
+    limits: { memory: "16Gi", cpu: "8" }
+  containerConcurrency: 0      # 0 = unlimited concurrent requests per container
+  timeoutSeconds: 300           # Max request duration in seconds
+  autoscaling:
+    minScale: 1                 # Minimum running instances
+    maxScale: 10                # Maximum instances
+    target: 80                  # CPU utilization target (%)
+  knative:
+    minReplicas: 3
+    replicas: 10
+    maxReplicas: 20
+```
+
+#### Mercury Ingress
+
+```yaml
+mercury:
+  ingress:
+    enabled: true
+    className: nginx
+    host: mercury.composio.your-company.com
+    tls: []
+```
+
+### Database Init Job
+
+Runs as a Helm pre-install/pre-upgrade hook to run database migrations.
+
+```yaml
+dbInit:
+  image:
+    repository: composio/init
+    tag: "v1.6"
+    pullPolicy: Always
+  adminEmail: "admin@your-company.com"   # Initial admin account email
+  database:
+    urlSecret:
+      name: "external-postgres-secret"
+      key: "url"
+```
+
+### AWS Configuration
+
+Used by Mercury and Thermos for S3-compatible object storage (backed by the internal MinIO instance).
+
+```yaml
+aws:
+  region: us-east-1
+  s3:
+    lambdaBucketName: "tools"           # Bucket for tool artifacts
+  lambda:
+    functionName: "mercury"
+    image: "composio/mercury:latest"
+```
+
+### Knative
+
+The chart installs Knative Serving v1.15.0 with Kourier networking automatically via a pre-install hook. The Knative serving domain is set from `global.domain`.
 
 ### Observability (OpenTelemetry)
 
@@ -336,9 +497,107 @@ otel:
     enabled: true
 ```
 
+### Security Context
+
+All pods run with restricted security by default (GKE Autopilot compatible):
+
+```yaml
+global:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+```
+
+Each service also accepts `podSecurityContext` and `securityContext` overrides individually.
+
+## Minimal Production values.yaml
+
+A starting point for production:
+
+```yaml
+global:
+  environment: production
+  domain: composio.your-company.com
+  imagePullSecrets:
+    - name: ecr-secret
+
+externalPostgreSQL:
+  enabled: true
+  urlSecret:
+    name: "external-postgres-secret"
+    key: "url"
+
+postgresql:
+  enabled: false
+
+redis:
+  auth:
+    enabled: true
+    password: "<STRONG_PASSWORD>"
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+
+apollo:
+  replicaCount: 2
+  service:
+    type: ClusterIP
+    port: 9900
+  resources:
+    requests: { memory: "4Gi", cpu: "2" }
+    limits: { memory: "4Gi", cpu: "2" }
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: api.composio.your-company.com
+        paths:
+          - path: /
+            pathType: Prefix
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+thermos:
+  replicaCount: 2
+  resources:
+    requests: { memory: "4Gi", cpu: "2" }
+    limits: { memory: "4Gi", cpu: "2" }
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+
+mercury:
+  enabled: true
+  resources:
+    requests: { memory: "8Gi", cpu: "4" }
+    limits: { memory: "16Gi", cpu: "8" }
+  knative:
+    minReplicas: 3
+    maxReplicas: 20
+
+mcp:
+  replicaCount: 1
+  resources:
+    requests: { memory: "4Gi", cpu: "2" }
+    limits: { memory: "4Gi", cpu: "2" }
+```
+
 ## Upgrading
 
-Check the [Composio Enterprise portal](https://enterprise.composio.io/composio-rodent/update) for the latest stable chart version, then run:
+Check the [enterprise portal](https://enterprise.composio.io/composio-rodent/update) for the latest chart version.
 
 ```bash
 helm upgrade composio composio/composio \
@@ -348,43 +607,46 @@ helm upgrade composio composio/composio \
 ```
 
 <Callout type="warn">
-**Upgrading from chart version 1.47 or below:** The default `redis.auth.password` changed from `"redis123"` to `""`. If using the bundled Redis, either set `redis.auth.password` explicitly in your values file, or delete the Redis secret and restart the Redis pod after upgrading.
+**Upgrading from chart version 1.47 or below:** The default `redis.auth.password` changed from `"redis123"` to `""`. If using bundled Redis, set `redis.auth.password` explicitly or delete the Redis secret and restart the pod.
 </Callout>
 
 ## Troubleshooting
 
-### Verify services are running
+### Check pod status
 
 ```bash
 kubectl get pods -n <NAMESPACE>
 ```
 
-All pods should be in `Running` or `Completed` state. DB-init jobs will show `Completed` after successful migration.
+All pods should be `Running` or `Completed`. DB-init jobs show `Completed` after migration.
 
-### Check service logs
+### View logs
 
 ```bash
 kubectl logs -f deployment/composio-apollo -n <NAMESPACE>
 kubectl logs -f deployment/composio-thermos -n <NAMESPACE>
 kubectl logs -f deployment/composio-mercury -n <NAMESPACE>
+kubectl logs -f deployment/composio-mcp -n <NAMESPACE>
 ```
 
-### Port forwarding for debugging
-
-Forward the Apollo API locally for testing:
+### Port forward for debugging
 
 ```bash
 kubectl port-forward svc/composio-apollo 9900:9900 -n <NAMESPACE>
 curl http://localhost:9900/health
+
+kubectl port-forward svc/composio-mcp 3000:3000 -n <NAMESPACE>
 ```
 
 ### Common issues
 
-- **DB-init pods in CrashLoopBackOff** — Verify your `POSTGRES_URL` and `THERMOS_DATABASE_URL` connection strings, and ensure the database user has the required permissions.
-- **Mercury pods failing** — Check that `mercury.securityContext` settings are compatible with your cluster's pod security policies.
-- **Frontend not connecting to API** — Ensure `frontend.env.OVERRIDE_BACKEND_URL` points to the correct Apollo service address.
-- **Redis connection errors after upgrade** — If upgrading from chart version &le;1.47, see the upgrade note above about the Redis password change.
+| Issue | Fix |
+|-------|-----|
+| DB-init pods in CrashLoopBackOff | Verify `url` in your `external-postgres-secret` and database user permissions |
+| Mercury pods failing | Check `securityContext` compatibility with your cluster's pod security policies |
+| Thermos can't reach Mercury | Verify Knative serving is running: `kubectl get ksvc -n composio` |
+| Redis errors after upgrade | See upgrade note above about password change in chart v1.47 |
 
 ## Support
 
-For installation support, configuration guidance, or issues with your on-premise deployment, contact the Composio enterprise team at [composio.dev/contact](https://composio.dev/contact).
+Contact the Composio enterprise team at [composio.dev/contact](https://composio.dev/contact).
