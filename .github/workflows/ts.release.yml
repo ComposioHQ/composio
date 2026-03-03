@@ -48,10 +48,11 @@ jobs:
 
       - name: Send Slack Notification
         if: steps.changesets.outputs.published == 'true'
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
           payload: |
             {
               "text": "🚀 New SDK version published!\n*Repository:* ${{ github.repository }}\n*Versions:*\n${{ env.SLACK_VERSIONS }}\n*Commit:* ${{ github.sha }}"
             }
-          slack-message: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}  # Migrated from env var
+          webhook: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
