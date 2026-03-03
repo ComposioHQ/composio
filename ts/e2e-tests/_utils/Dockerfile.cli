@@ -3,7 +3,7 @@
 # Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 -t test-name .
 
 ARG NODE_VERSION=20.19.0
-ARG BUN_VERSION=1.3.8
+ARG BUN_VERSION=1.3.10
 ARG CLI_VERSION=0.0.0
 
 FROM oven/bun:${BUN_VERSION} AS bun

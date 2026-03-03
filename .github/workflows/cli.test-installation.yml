@@ -3,17 +3,18 @@ name: Test Installation
 on:
   push:
     tags:
+      # Temporary compatibility window: support both legacy v* and package-scoped CLI tags.
       - 'v*'
+      - '@composio/cli@*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to test (e.g., v1.0.0)'
-        required: false
-        default: 'latest'
+        description: 'Version to test (e.g., 1.0.0 or @composio/cli@1.0.0)'
+        required: true
   workflow_call:
     inputs:
       version:
-        description: 'Version to test'
+        description: 'Release tag or semver version to test'
         required: false
         default: 'latest'
         type: string
@@ -49,25 +50,65 @@ jobs:
             shell: zsh
 
           # macOS versions
-          - os: macos-13
-            name: 'macOS 13 (Ventura)'
+          - os: macos-15-intel
+            name: 'macOS 15 (Intel)'
             shell: bash
-          - os: macos-13
-            name: 'macOS 13 (zsh)'
+          - os: macos-15-intel
+            name: 'macOS 15 (Intel, zsh)'
             shell: zsh
           - os: macos-14
             name: 'macOS 14 (Sonoma)'
             shell: bash
-          - os: macos-latest
-            name: 'macOS Latest'
+          - os: macos-15
+            name: 'macOS 15 (Apple Silicon)'
             shell: bash
-          - os: macos-latest
-            name: 'macOS Latest (zsh)'
+          - os: macos-15
+            name: 'macOS 15 (Apple Silicon, zsh)'
             shell: zsh
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Resolve and validate target release
+        id: release_target
+        shell: bash
+        run: |
+          raw_input="${{ inputs.version }}"
+          if [[ -z "$raw_input" || "$raw_input" == "latest" ]]; then
+            echo "use_latest=true" >> "$GITHUB_OUTPUT"
+            echo "release_tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # For manual runs, accept a full package tag or semver and normalize to a package tag.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "$raw_input" =~ ^@composio/cli@ ]]; then
+              echo "use_latest=false" >> "$GITHUB_OUTPUT"
+              echo "release_tag=$raw_input" >> "$GITHUB_OUTPUT"
+              exit 0
+            elif [[ "$raw_input" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+              echo "use_latest=false" >> "$GITHUB_OUTPUT"
+              echo "release_tag=@composio/cli@$raw_input" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Invalid version: '$raw_input'"
+            echo "Expected format like: 1.2.3, 1.2.3-beta.1, 1.2.3+build.7, or @composio/cli@1.2.3"
+            exit 1
+          fi
+
+          # For workflow_call / push, accept a full package tag, semver, or legacy v* tag.
+          if [[ "$raw_input" =~ ^@composio/cli@ ]]; then
+            echo "use_latest=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=$raw_input" >> "$GITHUB_OUTPUT"
+          elif [[ "$raw_input" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "use_latest=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=@composio/cli@$raw_input" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_latest=false" >> "$GITHUB_OUTPUT"
+            echo "release_tag=$raw_input" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
       - name: Setup shell environment
         run: |
@@ -97,7 +138,7 @@ jobs:
           fi
 
       - name: Test install script (latest version)
-        if: inputs.version == 'latest' || inputs.version == ''
+        if: steps.release_target.outputs.use_latest == 'true'
         shell: bash
         run: |
           echo "Testing installation with auto-detected latest CLI version..."
@@ -127,13 +168,14 @@ jobs:
           fi
 
       - name: Test install script (specific version)
-        if: inputs.version != 'latest' && inputs.version != ''
+        if: steps.release_target.outputs.use_latest != 'true'
         shell: bash
         run: |
-          echo "Testing installation with version: ${{ inputs.version }}"
+          RELEASE_TAG="${{ steps.release_target.outputs.release_tag }}"
+          echo "Testing installation with version: ${RELEASE_TAG}"
 
           # Test the install script with specific version
-          bash install.sh ${{ inputs.version }}
+          bash install.sh "${RELEASE_TAG}"
 
           # Verify installation
           source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
@@ -259,7 +301,12 @@ jobs:
 
           # Test with custom directory using the same version as the workflow
           export COMPOSIO_INSTALL="/tmp/custom-composio"
-          bash install.sh ${{ inputs.version || 'cli@0.1.24-2' }}
+          if [[ "${{ steps.release_target.outputs.use_latest }}" == "true" ]]; then
+            bash install.sh
+          else
+            RELEASE_TAG="${{ steps.release_target.outputs.release_tag }}"
+            bash install.sh "${RELEASE_TAG}"
+          fi
 
           # Verify custom installation
           if [[ -f "/tmp/custom-composio/bin/composio" ]]; then
@@ -312,7 +359,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-15]
         node-version: [18, 20, 22]
 
     steps:
@@ -351,10 +398,10 @@ jobs:
           - os: depot-ubuntu-24.04-arm
             arch: arm64
             expected: 'Linux ARM64'
-          - os: macos-13
+          - os: macos-15-intel
             arch: x64
             expected: 'macOS x64'
-          - os: macos-latest
+          - os: macos-15
             arch: arm64
             expected: 'macOS ARM64'
 
@@ -401,7 +448,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-15]
 
     steps:
       - name: Checkout
@@ -485,8 +532,8 @@ jobs:
           echo "**Test Matrix Coverage:**" >> $GITHUB_STEP_SUMMARY
           echo "- **Linux x64**: Ubuntu 22.04, Latest" >> $GITHUB_STEP_SUMMARY
           echo "- **Linux ARM64**: Ubuntu 22.04, 24.04 (via Depot)" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS x64**: macOS 13, 14, Latest" >> $GITHUB_STEP_SUMMARY
-          echo "- **macOS ARM64**: macOS Latest" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS x64**: macOS 15 (Intel)" >> $GITHUB_STEP_SUMMARY
+          echo "- **macOS ARM64**: macOS 14, macOS 15 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
           echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
           echo "- **Node.js**: 18, 20, 22 (npm fallback)" >> $GITHUB_STEP_SUMMARY
           echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY

@@ -123,7 +123,7 @@ export function PageActions({ path }: PageActionsProps) {
         aria-label="View page as markdown (opens in new tab)"
       >
         <ExternalLink className="size-3.5" aria-hidden="true" />
-        <span className="hidden xs:inline">View </span>
+        <span className="hidden sm:inline">View </span>
         <span>Markdown</span>
       </a>
 

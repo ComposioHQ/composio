@@ -13,6 +13,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 declare module 'bun' {
   interface Env {
     COMPOSIO_API_KEY: string;
+    COMPOSIO_USER_API_KEY: string;
   }
 }
 
@@ -20,6 +21,7 @@ e2e(import.meta.url, {
   versions: { node: ['current'] },
   env: {
     COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
+    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runFixture }) => {
     let result: E2ETestResult;

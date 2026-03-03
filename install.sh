@@ -63,7 +63,7 @@ command -v curl >/dev/null ||
     error 'curl is required to install Composio CLI'
 
 if [[ $# -gt 1 ]]; then
-    error 'Too many arguments, only 1 is allowed. You can specify a specific version to install. (e.g. "v0.1.24")'
+    error 'Too many arguments, only 1 is allowed. You can specify a specific release tag to install. (e.g. "@composio/cli@0.1.24")'
 fi
 
 # Determine platform and architecture
@@ -117,16 +117,20 @@ if [[ $# = 0 ]]; then
     'Darwin'*)
         # BSD/MacOS: Use extended regex with -E
         version=$(git ls-remote --tags "$github_repo" \
-            | awk -F'/' '{print $3}' \
-            | grep -E "^v\d+\.\d+\.\d+.*" \
+            | awk '{print $2}' \
+            | sed 's#^refs/tags/##' \
+            | sed 's#\^{}$##' \
+            | grep -E "^@composio/cli@\d+\.\d+\.\d+.*" \
             | sort -V \
             | tail -n1)
         ;;
     *)
         # Unix/Linux: Use Perl-compatible regex with -P
         version=$(git ls-remote --tags "$github_repo" \
-            | awk -F'/' '{print $3}' \
-            | grep -P "^v\d+\.\d+\.\d+.*" \
+            | awk '{print $2}' \
+            | sed 's#^refs/tags/##' \
+            | sed 's#\^{}$##' \
+            | grep -P "^@composio/cli@\d+\.\d+\.\d+.*" \
             | sort -V \
             | tail -n1)
         ;;

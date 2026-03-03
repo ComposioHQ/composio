@@ -203,25 +203,25 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
             onClick={copySlug}
             className="inline-flex w-fit shrink-0 items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
           >
-            <span className="max-w-[200px] truncate sm:max-w-[300px]">{item.slug}</span>
+            <span className="max-w-[140px] truncate sm:max-w-[300px]">{item.slug}</span>
             {copied ? <Check className="h-3 w-3 shrink-0 text-green-500" /> : <Copy className="h-3 w-3 shrink-0" />}
           </span>
         </span>
       </button>
       {expanded && (
-        <div className="space-y-4 bg-fd-muted/20 px-4 py-3 pl-10">
+        <div className="space-y-4 bg-fd-muted/20 px-3 py-3 sm:px-4 sm:pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
 
           {/* Tool parameters */}
           {hasInputParams && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Input Parameters</h4>
               <TypeTable type={paramsToTypeTable(inputParams!)} />
             </div>
           )}
 
           {hasOutputParams && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Output</h4>
               <TypeTable type={paramsToTypeTable(outputParams!)} />
             </div>
@@ -229,14 +229,14 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
 
           {/* Trigger config/payload */}
           {hasConfig && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Configuration</h4>
               <TypeTable type={paramsToTypeTable(trigger.config!)} />
             </div>
           )}
 
           {hasPayload && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Payload</h4>
               <TypeTable type={paramsToTypeTable(trigger.payload!)} />
             </div>

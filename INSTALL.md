@@ -199,7 +199,7 @@ To build the CLI binary locally:
 ```bash
 cd ts/packages/cli
 pnpm install
-pnpm build:bin
+pnpm build:binary
 ```
 
 The binary will be created at `dist/composio`.

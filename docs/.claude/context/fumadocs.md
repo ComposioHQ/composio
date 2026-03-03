@@ -50,6 +50,7 @@ Available globally without imports:
 - `CapabilityCard`, `CapabilityList`
 - `ToolkitsLanding`
 - `StepTitle`
+- `Glossary`, `GlossaryTerm` — filterable glossary table (see `components/glossary.tsx`)
 - Lucide icons: `ShieldCheck`, `RouteIcon`, `Key`, `Wrench`, `Database`, `Zap`, `Rocket`, `Code`, `Blocks`, `Plug`, `Play`, `Terminal`, `Palette`, `BookOpen`
 
 ## Deployment

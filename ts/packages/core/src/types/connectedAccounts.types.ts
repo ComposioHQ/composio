@@ -1,5 +1,6 @@
 import { z } from 'zod/v3';
 import { ConnectionDataSchema } from './connectedAccountAuthStates.types';
+import { AuthSchemeEnum } from './authConfigs.types';
 
 /**
  * Connected Account create parameters
@@ -77,6 +78,8 @@ export type CreateConnectedAccountResponse = z.infer<typeof CreateConnectedAccou
 
 export const ConnectedAccountAuthConfigSchema = z.object({
   id: z.string(),
+  /** @deprecated use connectedAccount.state.authScheme instead */
+  authScheme: AuthSchemeEnum.optional(),
   isComposioManaged: z.boolean(),
   isDisabled: z.boolean(),
 });

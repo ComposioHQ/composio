@@ -72,3 +72,17 @@ export function formatConnectedAccountInfo(item: ConnectedAccountItem): string {
 
   return lines.join('\n');
 }
+
+/**
+ * Format a connected account for the whoami display (compact 6-field subset).
+ */
+export function formatConnectedAccountWhoami(item: ConnectedAccountItem): string {
+  const lines: string[] = [];
+  lines.push(`${bold('Id:')} ${redact({ value: item.id, prefix: 'con_' })}`);
+  lines.push(`${bold('Status:')} ${item.status === 'ACTIVE' ? item.status : gray(item.status)}`);
+  lines.push(`${bold('Toolkit:')} ${item.toolkit.slug}`);
+  lines.push(`${bold('User Id:')} ${item.user_id}`);
+  lines.push(`${bold('Auth Config:')} ${redact({ value: item.auth_config.id, prefix: 'ac_' })}`);
+  lines.push(`${bold('Auth Scheme:')} ${item.auth_config.auth_scheme}`);
+  return lines.join('\n');
+}

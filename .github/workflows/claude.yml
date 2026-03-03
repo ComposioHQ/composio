@@ -48,7 +48,7 @@ jobs:
           # https://code.claude.com/docs/en/cli-reference#cli-flags
           # -- model: "claude-opus-4-20250514"
           # claude_args: |
-          #   --allowedTools "Bash(pnpm install),Bash(pnpm build:packages),Bash(pnpm build:bin),Bash(pnpm test:*)"
+          #   --allowedTools "Bash(pnpm install),Bash(pnpm build:packages),Bash(pnpm build:binary),Bash(pnpm test:*)"
           #   --model: "claude-opus-4-20250514"
           #   --append-system-prompt: |
             #   Follow our coding standards

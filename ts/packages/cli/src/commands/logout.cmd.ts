@@ -22,6 +22,7 @@ export const logoutCmd = Command.make('logout', {}, () =>
     }
 
     yield* ctx.logout;
+
     yield* ui.log.success('Logged out successfully.');
   })
 ).pipe(Command.withDescription('Log out from the Composio SDK.'));

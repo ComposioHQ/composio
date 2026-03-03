@@ -79,6 +79,19 @@ export interface TerminalUI {
   ) => Effect.Effect<boolean>;
 
   /**
+   * Present a single-select list to the user.
+   * In non-interactive mode (piped), returns the first option's value.
+   */
+  readonly select: <Value>(
+    message: string,
+    options: ReadonlyArray<{
+      readonly value: Value;
+      readonly label: string;
+      readonly hint?: string;
+    }>
+  ) => Effect.Effect<Value>;
+
+  /**
    * Create a controllable spinner that is automatically stopped on error or interruption.
    * The `use` function receives a SpinnerHandle and must return an Effect.
    * On success: the caller should call `spinner.stop(...)` inside `use`.
@@ -169,6 +182,24 @@ const makeLive: TerminalUI = {
     Effect.sync(() =>
       decorate(() => p.note(message, title ?? '', { format: line => line, output: process.stderr }))
     ),
+
+  select: ((
+    message: string,
+    options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
+  ) =>
+    isInteractive
+      ? Effect.promise(async () => {
+          const result = await p.select({
+            message,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            options: [...options] as any,
+            output: process.stderr,
+          });
+          // p.select returns Value | symbol (symbol on cancel)
+          if (typeof result === 'symbol') return options[0].value;
+          return result;
+        })
+      : Effect.succeed(options[0].value)) as TerminalUI['select'],
 
   confirm: (message, options) =>
     isInteractive

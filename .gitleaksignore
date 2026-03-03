@@ -1,2 +1,8 @@
 # Decimal chat widget public config JWT (not a secret - contains allowed domains only)
 docs/app/layout.tsx:jwt
+
+# Documentation curl examples with placeholder API keys (not real secrets)
+cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/common-faq.mdx:curl-auth-header:99
+cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/troubleshooting/tools.mdx:curl-auth-header:43
+cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/tools-direct/toolkit-versioning.mdx:curl-auth-header:34
+cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/tools-direct/toolkit-versioning.mdx:curl-auth-header:38

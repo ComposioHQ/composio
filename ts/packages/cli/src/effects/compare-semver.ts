@@ -14,9 +14,10 @@ export const semverComparator = (
   version2: string
 ): Effect.Effect<number, CompareSemverError, never> =>
   Effect.gen(function* () {
-    // Remove 'v' or `cli@` prefix if present
-    const v1 = version1.replace(/^(v|cli@)/, '');
-    const v2 = version2.replace(/^(v|cli@)/, '');
+    // Remove known release tag prefixes before semver comparison.
+    const stripPrefix = (version: string) => version.replace(/^(@composio\/cli@|v|cli@)/, '');
+    const v1 = stripPrefix(version1);
+    const v2 = stripPrefix(version2);
 
     /**
      * Comparison result of `semver.compare(clean1, clean2)`.

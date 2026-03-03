@@ -28,6 +28,38 @@ If you don't have an agent, you can [execute tools directly](/docs/tools-direct/
 You can browse all toolkits on the [Toolkits page](/toolkits) in the docs or in the [Composio dashboard](https://platform.composio.dev?next_page=/marketplace). Both list every supported app along with available auth schemes and tools.
 </Accordion>
 
+<Accordion title="What toolkits are available by default in a session?">
+All toolkits in the Composio catalog are available by default. When you create a session without specifying a `toolkits` parameter, your agent can discover and use any toolkit through `COMPOSIO_SEARCH_TOOLS`.
+
+To restrict which toolkits are available, pass `toolkits` when creating the session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Only GitHub and Gmail
+session = composio.create(user_id="user_123", toolkits=["github", "gmail"])
+
+# Everything except Linear and Jira
+session = composio.create(user_id="user_123", toolkits={"disable": ["linear", "jira"]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Only GitHub and Gmail
+const session = await composio.create("user_123", { toolkits: ["github", "gmail"] });
+
+// Everything except Linear and Jira
+const session2 = await composio.create("user_123", { toolkits: { disable: ["linear", "jira"] } });
+```
+</Tab>
+</Tabs>
+
+You can also list the toolkits available in a session with `session.toolkits()`. See [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
+</Accordion>
+
 <Accordion title="The tool I need doesn't exist. How do I request one?">
 You can request new tools or toolkits on the [tool request board](https://request.composio.dev/boards/tool-requests). The team reviews requests regularly.
 </Accordion>
@@ -36,6 +68,18 @@ You can request new tools or toolkits on the [tool request board](https://reques
 The User ID is how Composio identifies your end users. It maps each user to their connected accounts and sessions. Use any unique identifier from your system, like an email, database ID, or UUID.
 
 When you create a session with `composio.create(user_id="user_123")`, all connected accounts and tool executions are scoped to that user. See [Users and sessions](/docs/users-and-sessions).
+</Accordion>
+
+<Accordion title="What is the difference between an auth config and an MCP config in the dashboard?">
+An **auth config** defines how users authenticate with a toolkit (OAuth credentials, scopes, API keys). You need one whenever you want users to connect to an app.
+
+An **MCP config** creates a hosted MCP server that exposes specific tools over the Model Context Protocol. It's only needed if you're connecting to Composio from an MCP client like Claude Desktop, Cursor, or OpenAI's Responses API via MCP.
+
+**If you're using the Composio SDK** (sessions or direct execution), you only need auth configs. The SDK handles tool delivery natively. You don't need to create an MCP config.
+
+**If you're using an MCP client**, you need both: an auth config (so users can authenticate) and an MCP config (so the client can discover and call tools over the MCP protocol).
+
+See [Native Tools vs MCP](/docs/native-tools-vs-mcp) for a full comparison.
 </Accordion>
 
 <Accordion title="What is an auth config?">
@@ -56,6 +100,19 @@ For toolkits with Composio-managed auth, you don't need to configure anything. F
 Composio toolkits are versioned using date-based identifiers (e.g., `20251027_00`). You can pin versions at SDK initialization or per tool execution to keep behavior consistent across deployments.
 
 This applies to direct tool execution only. Sessions with meta tools always use the latest version. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
+</Accordion>
+
+<Accordion title="Why does the API return fewer tools than the platform UI?">
+When calling the Get Tools API (`GET /api/v3/tools`) without specifying a `toolkit_versions` parameter, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. The platform UI shows tools from the latest version.
+
+To get all available tools, pass `toolkit_versions=latest`:
+
+```bash
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+  -H 'x-api-key: YOUR_API_KEY'
+```
+
+See [Toolkit versioning](/docs/tools-direct/toolkit-versioning) for more details.
 </Accordion>
 
 <Accordion title="Can a user connect multiple accounts for the same app?">

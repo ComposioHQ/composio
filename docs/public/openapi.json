@@ -108,7 +108,13 @@
         "type": "apiKey",
         "in": "header",
         "name": "x-api-key",
-        "description": "API key authentication"
+        "description": "Project API key authentication"
+      },
+      "UserApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-user-api-key",
+        "description": "User API key authentication"
       },
       "OrgApiKeyAuth": {
         "type": "apiKey",
@@ -305,6 +311,11 @@
               "automation",
               "devops"
             ]
+          },
+          "human_description": {
+            "type": "string",
+            "description": "Human-friendly description of the tool, if available",
+            "example": "Create a new issue in a GitHub repository"
           },
           "is_deprecated": {
             "type": "boolean",
@@ -562,6 +573,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -899,6 +913,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -1250,6 +1267,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1315,10 +1335,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Search auth configs by name"
+              "description": "Search auth configs by name or id"
             },
             "required": false,
-            "description": "Search auth configs by name",
+            "description": "Search auth configs by name or id",
             "name": "search",
             "in": "query"
           },
@@ -1634,6 +1654,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1912,6 +1935,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2190,6 +2216,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2272,6 +2301,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2367,6 +2399,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2774,7 +2809,7 @@
                           "status_reason": {
                             "type": "string",
                             "nullable": true,
-                            "description": "The reason the connection is disabled"
+                            "description": "The reason the connection status changed. Possible reasons: Connection initiation did not complete within 10 minutes, Permanent auth error during token refresh, Max auth failures reached, OAuth callback failed during token exchange, Connection status updated by user, Auth config is disabled"
                           },
                           "is_disabled": {
                             "type": "boolean",
@@ -2908,6 +2943,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -3409,6 +3447,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3690,7 +3731,7 @@
                     "status_reason": {
                       "type": "string",
                       "nullable": true,
-                      "description": "The reason the connection is disabled"
+                      "description": "The reason the connection status changed. Possible reasons: Connection initiation did not complete within 10 minutes, Permanent auth error during token refresh, Max auth failures reached, OAuth callback failed during token exchange, Connection status updated by user, Auth config is disabled"
                     },
                     "is_disabled": {
                       "type": "boolean",
@@ -3819,6 +3860,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3923,6 +3967,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4048,6 +4095,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4064,7 +4114,8 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uri"
             },
             "required": false,
             "name": "redirect_url",
@@ -4078,7 +4129,8 @@
                 "type": "object",
                 "properties": {
                   "redirect_url": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "uri"
                   },
                   "validate_credentials": {
                     "type": "boolean",
@@ -4210,6 +4262,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -4576,835 +4631,6 @@
         }
       }
     },
-    "/api/v3/internal/trigger/logs": {
-      "post": {
-        "summary": "Search and retrieve trigger event logs",
-        "description": "Search and retrieve trigger event logs with advanced filtering capabilities including search parameters",
-        "tags": [
-          "Logs"
-        ],
-        "operationId": "postInternalTriggerLogs",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "time": {
-                    "type": "string",
-                    "enum": [
-                      "5m",
-                      "30m",
-                      "6h",
-                      "1d",
-                      "1w",
-                      "1month",
-                      "1y"
-                    ],
-                    "description": "Return logs from the last N time units",
-                    "example": "5m"
-                  },
-                  "from": {
-                    "type": "number",
-                    "nullable": true,
-                    "description": "Start time for logs (epoch timestamp in milliseconds)"
-                  },
-                  "to": {
-                    "type": "number",
-                    "nullable": true,
-                    "description": "End time for logs (epoch timestamp in milliseconds)"
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "all",
-                      "success",
-                      "error"
-                    ],
-                    "description": "Filter logs by their status level",
-                    "example": "success"
-                  },
-                  "search": {
-                    "type": "string",
-                    "description": "Search term to filter logs"
-                  },
-                  "integrationId": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "entityId": {
-                    "type": "string"
-                  },
-                  "userId": {
-                    "type": "string",
-                    "description": "Filter logs by user ID"
-                  },
-                  "limit": {
-                    "type": "number",
-                    "nullable": true,
-                    "default": 20,
-                    "description": "The limit of trigger logs to return"
-                  },
-                  "cursor": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "search_params": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "field": {
-                          "type": "string"
-                        },
-                        "operation": {
-                          "type": "string"
-                        },
-                        "value": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "description": "Advanced search parameters for filtering logs"
-                  },
-                  "include_payload": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Whether to include payload fields in the response. Set to false for faster list views."
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved trigger logs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "nextCursor": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "connectionId": {
-                            "type": "string"
-                          },
-                          "clientId": {
-                            "type": "string"
-                          },
-                          "entityId": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string"
-                          },
-                          "appName": {
-                            "type": "string"
-                          },
-                          "createdAt": {
-                            "type": "string"
-                          },
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "trigger",
-                              "action"
-                            ],
-                            "description": "Log entity type (trigger or action)",
-                            "example": "trigger"
-                          },
-                          "meta": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "type": {
-                                "type": "string",
-                                "enum": [
-                                  "trigger",
-                                  "action"
-                                ],
-                                "description": "Log entity type (trigger or action)",
-                                "example": "trigger"
-                              },
-                              "createdAt": {
-                                "type": "string"
-                              },
-                              "updatedAt": {
-                                "type": "string"
-                              },
-                              "provider": {
-                                "type": "string"
-                              },
-                              "clientId": {
-                                "type": "string"
-                              },
-                              "connectionId": {
-                                "type": "string"
-                              },
-                              "triggerProviderPayload": {
-                                "type": "string"
-                              },
-                              "triggerClientPayload": {
-                                "type": "string"
-                              },
-                              "triggerClientError": {
-                                "type": "string"
-                              },
-                              "triggerName": {
-                                "type": "string"
-                              },
-                              "triggerClientResponse": {
-                                "type": "string"
-                              },
-                              "triggerId": {
-                                "type": "string"
-                              },
-                              "triggerNanoId": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "type",
-                              "createdAt",
-                              "updatedAt",
-                              "provider",
-                              "clientId",
-                              "connectionId"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "connectionId",
-                          "clientId",
-                          "entityId",
-                          "status",
-                          "appName",
-                          "createdAt",
-                          "type",
-                          "meta"
-                        ]
-                      },
-                      "default": []
-                    }
-                  },
-                  "required": [
-                    "nextCursor"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v3/internal/action_execution/logs": {
-      "post": {
-        "summary": "Search and retrieve action execution logs",
-        "tags": [
-          "Logs"
-        ],
-        "operationId": "postInternalActionExecutionLogs",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "cursor": {
-                    "type": "number",
-                    "nullable": true,
-                    "description": "cursor_that_can_be_used_to_paginate_through_the_logs"
-                  },
-                  "limit": {
-                    "type": "number",
-                    "description": "number_of_logs_to_return"
-                  },
-                  "case_sensitive": {
-                    "type": "boolean",
-                    "nullable": true,
-                    "description": "whether_the_search_is_case_sensitive_or_not"
-                  },
-                  "from": {
-                    "type": "number",
-                    "description": "start_time_of_the_logs_in_epoch_time"
-                  },
-                  "to": {
-                    "type": "number",
-                    "description": "end_time_of_the_logs_in_epoch_time"
-                  },
-                  "search_params": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "field": {
-                          "type": "string"
-                        },
-                        "operation": {
-                          "type": "string"
-                        },
-                        "value": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  }
-                },
-                "required": [
-                  "cursor"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved action execution fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "actionKey": {
-                            "type": "string"
-                          },
-                          "appKey": {
-                            "type": "string"
-                          },
-                          "app": {
-                            "type": "object",
-                            "properties": {
-                              "icon": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "icon",
-                              "name"
-                            ]
-                          },
-                          "connectedAccountId": {
-                            "type": "string"
-                          },
-                          "entityId": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "success",
-                              "failed"
-                            ]
-                          },
-                          "executionTime": {
-                            "type": "number"
-                          },
-                          "minimalResponse": {
-                            "type": "string",
-                            "deprecated": true
-                          },
-                          "metadata": {
-                            "type": "object",
-                            "properties": {
-                              "recipe_id": {
-                                "type": "string"
-                              }
-                            }
-                          },
-                          "createdAt": {
-                            "type": "number"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "actionKey",
-                          "appKey",
-                          "app",
-                          "connectedAccountId",
-                          "entityId",
-                          "status",
-                          "executionTime",
-                          "minimalResponse",
-                          "createdAt"
-                        ]
-                      }
-                    },
-                    "nextCursor": {
-                      "type": "number",
-                      "nullable": true
-                    }
-                  },
-                  "required": [
-                    "data",
-                    "nextCursor"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v3/internal/action_execution/fields": {
-      "get": {
-        "summary": "Get action log fields for filtering",
-        "tags": [
-          "Logs"
-        ],
-        "operationId": "getInternalActionExecutionFields",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved action execution fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "fields": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "description": "The id of the field"
-                            },
-                            "displayName": {
-                              "type": "string",
-                              "description": "The display name of the field"
-                            },
-                            "type": {
-                              "type": "string",
-                              "description": "The type of the field"
-                            },
-                            "regex": {
-                              "type": "string",
-                              "description": "The regex of the field"
-                            }
-                          },
-                          "required": [
-                            "id",
-                            "displayName",
-                            "type"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  "required": [
-                    "fields"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v3/internal/action_execution/log/{id}": {
-      "get": {
-        "summary": "Get detailed execution log by ID",
-        "tags": [
-          "Logs"
-        ],
-        "operationId": "getInternalActionExecutionLogById",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved action execution log",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "actionLogId": {
-                      "type": "string"
-                    },
-                    "actionId": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "success",
-                        "error",
-                        "warning",
-                        "info"
-                      ]
-                    },
-                    "app": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string"
-                        },
-                        "uniqueId": {
-                          "type": "string"
-                        },
-                        "icon": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "name",
-                        "uniqueId",
-                        "icon"
-                      ]
-                    },
-                    "version": {
-                      "type": "string"
-                    },
-                    "connection": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "entity": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "entity"
-                      ]
-                    },
-                    "session": {
-                      "type": "object",
-                      "additionalProperties": {}
-                    },
-                    "executionMetadata": {
-                      "type": "object",
-                      "additionalProperties": {}
-                    },
-                    "steps": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "tool_execution",
-                              "fetch_connection_details"
-                            ]
-                          },
-                          "startTime": {
-                            "type": "number"
-                          },
-                          "endTime": {
-                            "type": "number"
-                          },
-                          "totalDuration": {
-                            "type": "number"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "success",
-                              "failure",
-                              "error"
-                            ]
-                          },
-                          "message": {
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "type": "object",
-                            "properties": {
-                              "encryption": {
-                                "type": "string"
-                              }
-                            }
-                          },
-                          "logs": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "type": {
-                                  "type": "string",
-                                  "enum": [
-                                    "network",
-                                    "system"
-                                  ]
-                                },
-                                "level": {
-                                  "type": "string"
-                                },
-                                "message": {
-                                  "type": "string"
-                                },
-                                "requestId": {
-                                  "type": "string",
-                                  "format": "uuid"
-                                },
-                                "time": {
-                                  "type": "number"
-                                },
-                                "request": {
-                                  "type": "object",
-                                  "properties": {
-                                    "method": {
-                                      "type": "string"
-                                    },
-                                    "url": {
-                                      "type": "string"
-                                    },
-                                    "headers": {
-                                      "type": "object",
-                                      "additionalProperties": {
-                                        "type": "string"
-                                      }
-                                    },
-                                    "params": {
-                                      "type": "object",
-                                      "additionalProperties": {}
-                                    },
-                                    "timeout": {
-                                      "type": "number"
-                                    },
-                                    "json": {
-                                      "type": "object",
-                                      "additionalProperties": {}
-                                    }
-                                  },
-                                  "required": [
-                                    "method",
-                                    "url"
-                                  ]
-                                },
-                                "response": {
-                                  "type": "object",
-                                  "properties": {
-                                    "status": {
-                                      "type": "number"
-                                    },
-                                    "time": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": [
-                                    "status",
-                                    "time"
-                                  ]
-                                }
-                              },
-                              "required": [
-                                "type",
-                                "level",
-                                "message",
-                                "requestId",
-                                "time",
-                                "request",
-                                "response"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "type",
-                          "startTime",
-                          "endTime",
-                          "totalDuration",
-                          "status",
-                          "message"
-                        ]
-                      }
-                    },
-                    "payloadReceived": {
-                      "type": "object",
-                      "additionalProperties": {}
-                    },
-                    "startTime": {
-                      "type": "number"
-                    },
-                    "endTime": {
-                      "type": "number"
-                    },
-                    "totalDuration": {
-                      "type": "string"
-                    },
-                    "response": {
-                      "type": "object",
-                      "additionalProperties": {}
-                    },
-                    "error": {
-                      "type": "object",
-                      "additionalProperties": {}
-                    }
-                  },
-                  "required": [
-                    "actionLogId",
-                    "actionId",
-                    "status",
-                    "app",
-                    "version",
-                    "connection",
-                    "session",
-                    "executionMetadata",
-                    "steps",
-                    "payloadReceived",
-                    "startTime",
-                    "endTime",
-                    "totalDuration",
-                    "response",
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v3/org/project/config": {
       "get": {
         "summary": "Get project configuration",
@@ -5416,6 +4642,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -5519,6 +4748,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -6491,6 +5723,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -6643,6 +5878,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -6796,6 +6034,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -6912,6 +6153,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7072,6 +6316,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7150,6 +6397,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7235,6 +6485,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -7320,6 +6573,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7644,6 +6900,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -7755,6 +7014,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -8257,6 +7519,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -8507,6 +7772,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -8588,6 +7856,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -8712,6 +7983,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -9004,6 +8278,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -9577,6 +8854,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -9729,6 +9009,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -10285,6 +9568,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -10517,6 +9803,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -10915,6 +10204,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11023,6 +10315,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11166,6 +10461,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -11237,6 +10535,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11465,6 +10766,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -11746,6 +11050,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -12089,6 +11396,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -12390,6 +11700,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -12629,6 +11942,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -12818,6 +12134,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13041,6 +12360,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13379,6 +12701,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13487,6 +12812,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13853,6 +13181,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14081,6 +13412,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14244,6 +13578,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14347,6 +13684,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14511,6 +13851,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -14754,6 +14097,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14881,6 +14227,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -15765,6 +15114,9 @@
             "ApiKeyAuth": []
           },
           {
+            "UserApiKeyAuth": []
+          },
+          {
             "workbench_access_key": []
           }
         ],
@@ -15917,6 +15269,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16076,6 +15431,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16414,6 +15772,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16555,6 +15916,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16703,6 +16067,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -16804,6 +16171,1035 @@
         }
       }
     },
+    "/api/v3/tool_router/session/{session_id}/search": {
+      "post": {
+        "summary": "Search for tools using a query",
+        "description": "Search for tools matching a given use case query within a tool router session. Returns matching tool slugs, full tool schemas, toolkit connection statuses, and workflow guidance in a predictable format.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "postToolRouterSessionBySessionIdSearch",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "toolRouterSessionId",
+              "description": "Tool router session ID (trs_*)",
+              "example": "trs_LX9uJKBinWWr"
+            },
+            "required": true,
+            "description": "Tool router session ID (trs_*)",
+            "name": "session_id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "queries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "use_case": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "The task or use case to search tools for. Provide a detailed description to get the best results.",
+                          "example": "Send an email to john@example.com with a summary of my last 5 slack messages"
+                        },
+                        "known_fields": {
+                          "type": "string",
+                          "description": "Known field hints as key:value pairs (e.g., \"channel_name:general, user_email:john@example.com\")",
+                          "example": "channel_name:general"
+                        }
+                      },
+                      "required": [
+                        "use_case"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 7,
+                    "description": "List of search queries to execute in parallel. Up to 7 queries supported.",
+                    "example": [
+                      {
+                        "use_case": "Send a slack message to a channel"
+                      }
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "Optional model hint for search/planning behavior (e.g., \"gpt-4o\"). Ignored if invalid.",
+                    "example": "gpt-4o"
+                  }
+                },
+                "required": [
+                  "queries"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully executed the search. Returns matching tool slugs, schemas, connection statuses, and guidance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether all searches completed successfully. False if any query failed."
+                    },
+                    "error": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Error message if any searches failed, null if all succeeded. Format: \"X out of Y searches failed, reasons: <details>\""
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "index": {
+                            "type": "number",
+                            "description": "1-based index of the query in the request"
+                          },
+                          "use_case": {
+                            "type": "string",
+                            "description": "The use case that was searched"
+                          },
+                          "execution_guidance": {
+                            "type": "string",
+                            "description": "Guidance message about the search results, particularly when a cached plan is available"
+                          },
+                          "difficulty": {
+                            "type": "string",
+                            "description": "Task difficulty assessment (e.g., \"easy - Simple single-tool operation with known parameters\")"
+                          },
+                          "recommended_plan_steps": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Workflow steps from cached plan (only present when cached plan is available)"
+                          },
+                          "known_pitfalls": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Common pitfalls and considerations (only present when cached plan is available)"
+                          },
+                          "reference_workbench_snippets": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "description": {
+                                  "type": "string",
+                                  "description": "Description of what the code snippet does"
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "description": "Python code snippet for the workbench"
+                                }
+                              },
+                              "required": [
+                                "description",
+                                "code"
+                              ]
+                            },
+                            "description": "Reference Python code snippets for processing tool responses in the workbench (only present when cached plan is available)"
+                          },
+                          "primary_tool_slugs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "List of main tool slugs matching the search criteria"
+                          },
+                          "related_tool_slugs": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "List of related tool slugs that might be useful"
+                          },
+                          "toolkits": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "List of unique toolkit slugs used by tools in this query"
+                          },
+                          "plan_id": {
+                            "type": "string",
+                            "description": "ID of cached plan if available"
+                          },
+                          "error": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Error message if the search for this query failed, null otherwise. Always present for failed queries."
+                          },
+                          "memory": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "description": "Memory data relevant to this query, grouped by app. Only present for non-cached search results."
+                          }
+                        },
+                        "required": [
+                          "index",
+                          "use_case",
+                          "primary_tool_slugs",
+                          "related_tool_slugs",
+                          "toolkits"
+                        ]
+                      },
+                      "description": "Per-query search results with tools, reasoning, and memory. One entry per query in request order."
+                    },
+                    "toolkit_connection_statuses": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "toolkit": {
+                            "type": "string",
+                            "description": "The toolkit slug identifier (e.g., \"gmail\", \"slack\")"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Description of what the toolkit does and its capabilities"
+                          },
+                          "has_active_connection": {
+                            "type": "boolean",
+                            "description": "Whether an active connection exists for this toolkit"
+                          },
+                          "connection_details": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Connection details including auth config and connected account IDs. Only present when has_active_connection is true."
+                          },
+                          "current_user_info": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Information about the currently connected user (email, name, etc.)"
+                          },
+                          "status_message": {
+                            "type": "string",
+                            "description": "Human-readable message about the connection status and next steps"
+                          }
+                        },
+                        "required": [
+                          "toolkit",
+                          "description",
+                          "has_active_connection",
+                          "status_message"
+                        ]
+                      },
+                      "description": "Connection status for all toolkits mentioned across all queries, with descriptions merged in."
+                    },
+                    "tool_schemas": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "toolkit": {
+                            "type": "string",
+                            "description": "The slug of the toolkit that provides this tool"
+                          },
+                          "tool_slug": {
+                            "type": "string",
+                            "description": "The slug of the tool"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Description of the tool"
+                          },
+                          "input_schema": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Input schema for the tool (only present when hasFullSchema is true)"
+                          },
+                          "output_schema": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "description": "Output/response schema for the tool"
+                          },
+                          "hasFullSchema": {
+                            "type": "boolean",
+                            "description": "Whether the full input_schema is included in this response"
+                          },
+                          "schemaRef": {
+                            "type": "object",
+                            "properties": {
+                              "tool": {
+                                "type": "string",
+                                "enum": [
+                                  "COMPOSIO_GET_TOOL_SCHEMAS"
+                                ],
+                                "description": "Tool to call"
+                              },
+                              "args": {
+                                "type": "object",
+                                "properties": {
+                                  "tool_slugs": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Tool slugs to fetch schemas for"
+                                  }
+                                },
+                                "required": [
+                                  "tool_slugs"
+                                ],
+                                "description": "Arguments to pass to the tool"
+                              },
+                              "message": {
+                                "type": "string",
+                                "description": "Instruction message for the LLM"
+                              }
+                            },
+                            "required": [
+                              "tool",
+                              "args",
+                              "message"
+                            ],
+                            "description": "Reference to fetch full schema when hasFullSchema is false"
+                          }
+                        },
+                        "required": [
+                          "toolkit",
+                          "tool_slug"
+                        ]
+                      },
+                      "description": "Deduplicated tool definitions keyed by tool_slug for O(1) lookup. Each tool appears once even if used in multiple queries."
+                    },
+                    "time_info": {
+                      "type": "object",
+                      "properties": {
+                        "current_time_utc": {
+                          "type": "string",
+                          "description": "Current time in ISO format (UTC)"
+                        },
+                        "current_time_utc_epoch_seconds": {
+                          "type": "number",
+                          "description": "Current time as Unix epoch timestamp in seconds"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Important message about time handling and timezone considerations"
+                        }
+                      },
+                      "required": [
+                        "current_time_utc",
+                        "current_time_utc_epoch_seconds",
+                        "message"
+                      ],
+                      "description": "Time information for the query"
+                    },
+                    "session": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Session identifier to be passed to subsequent meta tool calls as session_id."
+                        },
+                        "generate_id": {
+                          "type": "boolean",
+                          "description": "Whether a fresh session id was generated in this call."
+                        },
+                        "instructions": {
+                          "type": "string",
+                          "description": "LLM-facing guidance on how to reuse this session id"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "generate_id",
+                        "instructions"
+                      ],
+                      "description": "Session info for correlating meta tool calls"
+                    },
+                    "next_steps_guidance": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Combined workflow guidance covering connections, planner, and memory usage. Each element is a step instruction."
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                    "results",
+                    "toolkit_connection_statuses",
+                    "tool_schemas",
+                    "time_info",
+                    "session",
+                    "next_steps_guidance"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/items": {
+      "get": {
+        "summary": "List files in a session mount",
+        "description": "Lists files in a workbench session storage mount with cursor-based pagination. Use the download_url endpoint with the returned mount_relative_path to get a presigned download URL.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "getToolRouterSessionBySessionIdMountsByMountIdItems",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "toolRouterSessionId",
+              "description": "The unique identifier of the tool router session",
+              "example": "trs_123456789"
+            },
+            "required": true,
+            "description": "The unique identifier of the tool router session",
+            "name": "session_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "ID of the storage mount",
+              "example": "files"
+            },
+            "required": true,
+            "description": "ID of the storage mount",
+            "name": "mount_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Pagination cursor from the previous response next_cursor field"
+            },
+            "required": false,
+            "description": "Pagination cursor from the previous response next_cursor field",
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100,
+              "description": "Maximum number of files to return per page (1-500)"
+            },
+            "required": false,
+            "description": "Maximum number of files to return per page (1-500)",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Filter results to files under this mount-relative path prefix (e.g. \"data/\" lists only files in the data/ subdirectory)",
+              "example": "data/"
+            },
+            "required": false,
+            "description": "Relative path prefix within the mount for filtering",
+            "name": "mount_relative_prefix",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Files listed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mount_relative_path": {
+                            "type": "string",
+                            "description": "Relative file path within the mount (e.g. \"report.pdf\")"
+                          },
+                          "sandbox_mount_prefix": {
+                            "type": "string",
+                            "description": "Absolute mount path inside the sandbox (e.g. /mnt/files)"
+                          },
+                          "size": {
+                            "type": "number",
+                            "description": "File size in bytes"
+                          },
+                          "last_modified": {
+                            "type": "string",
+                            "description": "ISO 8601 timestamp of last modification"
+                          }
+                        },
+                        "required": [
+                          "mount_relative_path",
+                          "sandbox_mount_prefix",
+                          "size",
+                          "last_modified"
+                        ]
+                      },
+                      "description": "List of files in the mount"
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "description": "Cursor for the next page of results. If absent, there are no more pages."
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session or mount not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/download_url": {
+      "post": {
+        "summary": "Create a presigned download URL for a mount file",
+        "description": "Generates a presigned download URL for a file in a workbench session mount. Accepts a relative path within the mount.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "postToolRouterSessionBySessionIdMountsByMountIdDownloadUrl",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "toolRouterSessionId",
+              "description": "The unique identifier of the tool router session",
+              "example": "trs_123456789"
+            },
+            "required": true,
+            "description": "The unique identifier of the tool router session",
+            "name": "session_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "ID of the storage mount",
+              "example": "files"
+            },
+            "required": true,
+            "description": "ID of the storage mount",
+            "name": "mount_id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mount_relative_path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Relative file path within the mount",
+                    "example": "report.pdf"
+                  }
+                },
+                "required": [
+                  "mount_relative_path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Download URL created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "download_url": {
+                      "type": "string",
+                      "description": "Presigned download URL for the file"
+                    },
+                    "mount_relative_path": {
+                      "type": "string",
+                      "description": "Relative file path within the mount (e.g. \"report.pdf\")"
+                    },
+                    "sandbox_mount_prefix": {
+                      "type": "string",
+                      "description": "Absolute mount path inside the sandbox (e.g. /mnt/files)"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "description": "ISO 8601 timestamp when the download URL expires"
+                    }
+                  },
+                  "required": [
+                    "download_url",
+                    "mount_relative_path",
+                    "sandbox_mount_prefix",
+                    "expires_at"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session or mount not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/upload_url": {
+      "post": {
+        "summary": "Create a presigned upload URL for a mount file",
+        "description": "Generates a presigned upload URL for uploading a file to a workbench session mount. The caller should PUT the file content directly to the returned URL.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "postToolRouterSessionBySessionIdMountsByMountIdUploadUrl",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "toolRouterSessionId",
+              "description": "The unique identifier of the tool router session",
+              "example": "trs_123456789"
+            },
+            "required": true,
+            "description": "The unique identifier of the tool router session",
+            "name": "session_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "ID of the storage mount",
+              "example": "files"
+            },
+            "required": true,
+            "description": "ID of the storage mount",
+            "name": "mount_id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mount_relative_path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Supports subdirectories (e.g. \"data/output.csv\", \"images/charts/chart.png\")",
+                    "example": "report.pdf"
+                  },
+                  "mimetype": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "MIME type of the file being uploaded",
+                    "example": "application/pdf"
+                  }
+                },
+                "required": [
+                  "mount_relative_path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Upload URL created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "upload_url": {
+                      "type": "string",
+                      "description": "Presigned upload URL — PUT the file content here"
+                    },
+                    "mount_relative_path": {
+                      "type": "string",
+                      "description": "Relative file path within the mount (e.g. \"report.pdf\")"
+                    },
+                    "sandbox_mount_prefix": {
+                      "type": "string",
+                      "description": "Absolute mount path inside the sandbox (e.g. /mnt/files)"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "description": "ISO 8601 timestamp when the upload URL expires"
+                    }
+                  },
+                  "required": [
+                    "upload_url",
+                    "mount_relative_path",
+                    "sandbox_mount_prefix",
+                    "expires_at"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session or mount not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/delete": {
+      "post": {
+        "summary": "Delete a file from a session mount",
+        "description": "Deletes a file from a workbench session storage mount. S3 delete is idempotent — deleting a non-existent file succeeds silently.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "postToolRouterSessionBySessionIdMountsByMountIdDelete",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "toolRouterSessionId",
+              "description": "The unique identifier of the tool router session",
+              "example": "trs_123456789"
+            },
+            "required": true,
+            "description": "The unique identifier of the tool router session",
+            "name": "session_id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "ID of the storage mount",
+              "example": "files"
+            },
+            "required": true,
+            "description": "ID of the storage mount",
+            "name": "mount_id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mount_relative_path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Relative file path within the mount",
+                    "example": "report.pdf"
+                  }
+                },
+                "required": [
+                  "mount_relative_path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mount_relative_path": {
+                      "type": "string",
+                      "description": "Relative file path that was deleted"
+                    },
+                    "sandbox_mount_prefix": {
+                      "type": "string",
+                      "description": "Absolute mount path inside the sandbox (e.g. /mnt/files)"
+                    }
+                  },
+                  "required": [
+                    "mount_relative_path",
+                    "sandbox_mount_prefix"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session or mount not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v3/toolkits/changelog": {
       "get": {
         "summary": "Get toolkits changelog",
@@ -16815,6 +17211,9 @@
         "security": [
           {
             "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
           }
         ],
         "responses": {

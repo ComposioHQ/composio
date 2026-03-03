@@ -1,8 +1,9 @@
 {
   "name": "@composio/cli",
-  "version": "0.1.24",
+  "version": "0.1.33",
   "description": "Composio CLI",
   "main": "./dist/bin.mjs",
+  "private": true,
   "bin": {
     "composio": "./bin/composio.mjs"
   },
@@ -25,15 +26,15 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "cli": "bun run src/bin.ts",
-    "build:bin": "bun run ./scripts/build-binary.ts",
-    "install:bin": "bun run ./scripts/install-binary.ts ./dist/composio",
+    "build:binary": "bun run ./scripts/build-binary.ts",
+    "install:binary": "bun run ./scripts/install-binary.ts ./dist/composio",
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
     "build": "bun run --bun tsdown",
     "bin": "./dist/composio",
     "test": "vitest run",
-    "prepublishOnly": "pnpm run build && pnpm run build:bin",
+    "prepublishOnly": "pnpm run build && pnpm run build:binary",
     "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
     "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
@@ -78,6 +79,7 @@
     "open": "^10.2.0",
     "openapi-typescript": "^7.8.0",
     "picocolors": "^1.1.1",
+    "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
     "source-map-js": "^1.2.1",
     "superjson": "^2.2.2",

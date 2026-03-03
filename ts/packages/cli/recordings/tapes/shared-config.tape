@@ -1,5 +1,3 @@
-Require composio
-Env CI "true"
 Set Shell bash
 Set Width 1400
 Set FontSize 16
@@ -10,3 +8,5 @@ Set TypingSpeed 40ms
 Set Framerate 30
 Set CursorBlink false
 Set WindowBar Colorful
+Require composio
+Env CI "true"

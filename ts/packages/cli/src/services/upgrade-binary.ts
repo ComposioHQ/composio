@@ -25,11 +25,15 @@ export const CLI_BINARY_NAME = 'composio';
 
 type GitHubRelease = {
   tag_name: string;
+  prerelease?: boolean;
+  draft?: boolean;
   assets: Array<{
     name: string;
     browser_download_url: string;
   }>;
 };
+
+const CLI_RELEASE_TAG_PATTERN = /^@composio\/cli@\d+\.\d+\.\d+.*$/;
 
 // Service to manage CLI binary upgrades
 export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/UpgradeBinary', {
@@ -43,63 +47,136 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     /**
      * Fetch latest release from GitHub
      */
+    const fetchGitHubJson = <T>({
+      url,
+      fetchErrorMessage,
+      parseErrorMessage,
+    }: {
+      url: string;
+      fetchErrorMessage: string;
+      parseErrorMessage: string;
+    }): Effect.Effect<T, UpgradeBinaryError, never> =>
+      Effect.gen(function* () {
+        yield* Effect.logDebug(`GET ${url}`);
+
+        const response = yield* httpClient.get(url).pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: fetchErrorMessage,
+              })
+            )
+          )
+        );
+
+        if (response.status < 200 || response.status >= 300) {
+          const pretty = yield* response.json.pipe(
+            Effect.map(json => renderPrettyError(Object.entries(json as object))),
+            Effect.catchAll(() => Effect.succeed(''))
+          );
+
+          const cause = pretty ? `HTTP ${response.status}\n${pretty}` : `HTTP ${response.status}`;
+          return yield* Effect.fail(
+            new UpgradeBinaryError({
+              cause,
+              message: fetchErrorMessage,
+            })
+          );
+        }
+
+        return (yield* response.json.pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: parseErrorMessage,
+              })
+            )
+          )
+        )) as T;
+      });
+
     const fetchLatestRelease = (): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
-        const urlSuffix = yield* githubConfig.TAG.pipe(
+        const release = yield* githubConfig.TAG.pipe(
           Option.match({
             onNone: Effect.fn(function* () {
-              yield* Effect.logDebug('No tag specified, using latest release');
-              return 'latest';
+              yield* Effect.logDebug(
+                'No tag specified, resolving latest package-scoped CLI release'
+              );
+              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
+              const releases = yield* fetchGitHubJson<unknown>({
+                url,
+                fetchErrorMessage: 'Failed to fetch releases from GitHub',
+                parseErrorMessage: 'Failed to parse GitHub releases JSON response',
+              });
+
+              if (!Array.isArray(releases)) {
+                return yield* Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: new Error('GitHub releases response was not an array'),
+                    message: 'Unexpected response while resolving latest CLI release',
+                  })
+                );
+              }
+
+              const cliReleases = releases.filter(
+                (release): release is GitHubRelease =>
+                  typeof release === 'object' &&
+                  release !== null &&
+                  'tag_name' in release &&
+                  typeof release.tag_name === 'string' &&
+                  ('prerelease' in release ? release.prerelease === false : true) &&
+                  ('draft' in release ? release.draft === false : true) &&
+                  CLI_RELEASE_TAG_PATTERN.test(release.tag_name)
+              );
+
+              if (cliReleases.length === 0) {
+                return yield* Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: new Error('No package-scoped CLI releases found'),
+                    message:
+                      'Failed to determine latest CLI release from @composio/cli tags on GitHub',
+                  })
+                );
+              }
+
+              let latest = cliReleases[0];
+              for (const release of cliReleases.slice(1)) {
+                const comparison = yield* semverComparator(latest.tag_name, release.tag_name).pipe(
+                  Effect.mapError(
+                    error =>
+                      new UpgradeBinaryError({
+                        cause: error,
+                        message: 'Failed to compare CLI release versions',
+                      })
+                  )
+                );
+
+                if (comparison < 0) {
+                  latest = release;
+                }
+              }
+
+              yield* Effect.logDebug(`Resolved latest CLI release tag: ${latest.tag_name}`);
+              return latest;
             }),
             onSome: Effect.fn(function* (tag) {
               yield* Effect.logDebug(`Using tag: ${tag}`);
-              return `tags/${tag}`;
+              const encodedTag = encodeURIComponent(tag);
+              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
+              const release = yield* fetchGitHubJson<GitHubRelease>({
+                url,
+                fetchErrorMessage: `Failed to fetch tags/${tag} release from GitHub`,
+                parseErrorMessage: 'Failed to parse GitHub release JSON response',
+              });
+
+              return release as GitHubRelease;
             }),
           })
         );
-
-        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/${urlSuffix}`;
-        yield* Effect.logDebug(`GET ${url}`);
-
-        const response = yield* Effect.gen(function* () {
-          const resp = yield* httpClient.get(url);
-          if (resp.status < 200 || resp.status >= 300) {
-            const json = yield* resp.json;
-            const keyValues = Object.entries(json as object);
-            const pretty = renderPrettyError(keyValues);
-
-            return yield* Effect.fail(
-              new UpgradeBinaryError({
-                cause: `HTTP ${resp.status}\n${pretty}`,
-              })
-            );
-          }
-          return resp;
-        }).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
-              new UpgradeBinaryError({
-                cause: error,
-                message: `Failed to fetch ${urlSuffix} release from GitHub`,
-              })
-            )
-          )
-        );
-
-        const release = yield* Effect.gen(function* () {
-          return yield* response.json;
-        }).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
-              new UpgradeBinaryError({
-                cause: error,
-                message: 'Failed to parse GitHub release JSON response',
-              })
-            )
-          )
-        );
-
-        return release as GitHubRelease;
+        return release;
       });
 
     /**

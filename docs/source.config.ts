@@ -91,6 +91,9 @@ export const toolkits = defineDocs({
 export const changelog = defineCollections({
   type: 'doc',
   dir: 'content/changelog',
+  postprocess: {
+    includeProcessedMarkdown: true,
+  },
   schema: frontmatterSchema.extend({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
       message: 'Date must be in YYYY-MM-DD format (e.g., "2025-12-29")',
@@ -112,6 +115,12 @@ export default defineConfig({
           ? [
               transformerTwoslash({
                 explicitTrigger: false,
+                twoslashOptions: {
+                  compilerOptions: {
+                    jsx: 4, // JsxEmit.ReactJSX
+                    jsxImportSource: 'react',
+                  },
+                },
                 typesCache: createFileSystemTypesCache({
                   dir: '.next/cache/twoslash',
                 }),

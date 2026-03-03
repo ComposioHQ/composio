@@ -11,7 +11,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 declare module 'bun' {
   interface Env {
-    COMPOSIO_API_KEY: string;
+    COMPOSIO_USER_API_KEY: string;
   }
 }
 
@@ -20,7 +20,7 @@ e2e(import.meta.url, {
     cli: ['current'],
   },
   env: {
-    COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
+    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
     let exactResult: E2ETestResult;
@@ -57,9 +57,11 @@ e2e(import.meta.url, {
         const item = JSON.parse(sanitizeOutput(exactResult.stdout))[0];
         expect(item).toHaveProperty('name');
         expect(item).toHaveProperty('slug');
+        expect(item).toHaveProperty('description');
+        // `toolkits list` without user-id uses legacy listing output.
+        expect(item).toHaveProperty('latest_version');
         expect(item).toHaveProperty('tools_count');
         expect(item).toHaveProperty('triggers_count');
-        expect(item).toHaveProperty('description');
       });
     });
 
@@ -93,8 +95,8 @@ e2e(import.meta.url, {
         expect(noFuzzyResult.stderr).toBe('');
       });
 
-      it('stdout is empty (no results)', () => {
-        expect(sanitizeOutput(noFuzzyResult.stdout)).toBe('');
+      it('stdout is an empty JSON array (no results)', () => {
+        expect(sanitizeOutput(noFuzzyResult.stdout)).toBe('[]');
       });
     });
   },

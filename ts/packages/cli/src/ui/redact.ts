@@ -1,7 +1,5 @@
 import process from 'node:process';
 
-const CI = process.env.CI === 'true';
-
 /**
  * Redact a value when running in CI (e.g., CLI recordings).
  * Preserves a recognized prefix (e.g., "ac_" -> "ac_<REDACTED>").
@@ -14,6 +12,6 @@ export function redact<const Prefix extends string = string>({
   value: string;
   prefix?: Prefix;
 }): `${Prefix}${string}` {
-  if (!CI) return value as `${Prefix}${string}`;
+  if (process.env.CI !== 'true') return value as `${Prefix}${string}`;
   return `${prefix ?? ''}<REDACTED>` as `${Prefix}${string}`;
 }

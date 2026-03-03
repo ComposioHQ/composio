@@ -4,8 +4,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { bold, gray } from 'src/ui/colors';
-import { redact } from 'src/ui/redact';
+import { formatConnectedAccountWhoami } from '../format';
 
 const id = Args.text({ name: 'id' }).pipe(
   Args.withDescription('Connected account ID (nanoid)'),
@@ -67,18 +66,7 @@ export const connectedAccountsCmd$Whoami = Command.make('whoami', { id }, ({ id 
       yield* ui.log.warn(`This connected account has status ${item.status}.`);
     }
 
-    const redactedId = redact({ value: item.id, prefix: 'con_' });
-    const redactedAuthConfigId = redact({ value: item.auth_config.id, prefix: 'ac_' });
-
-    const lines: string[] = [];
-    lines.push(`${bold('Id:')} ${redactedId}`);
-    lines.push(`${bold('Toolkit:')} ${item.toolkit.slug}`);
-    lines.push(`${bold('User Id:')} ${item.user_id}`);
-    lines.push(`${bold('Status:')} ${item.status === 'ACTIVE' ? item.status : gray(item.status)}`);
-    lines.push(`${bold('Auth Config:')} ${redactedAuthConfigId}`);
-    lines.push(`${bold('Auth Scheme:')} ${item.auth_config.auth_scheme}`);
-
-    yield* ui.note(lines.join('\n'), `whoami: ${item.toolkit.slug}`);
+    yield* ui.note(formatConnectedAccountWhoami(item), `whoami: ${item.toolkit.slug}`);
 
     yield* ui.output(
       JSON.stringify(

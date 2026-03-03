@@ -1,15 +1,13 @@
 name: Build CLI Binaries
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g., v1.0.0)'
-        required: false
-        default: 'dev'
+        description: 'Semver version to release (e.g., 1.0.0)'
+        required: true
 
 permissions:
   contents: write
@@ -17,6 +15,7 @@ permissions:
 jobs:
   build-binaries:
     name: Build CLI Binaries
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, '@composio/cli@') || startsWith(github.event.release.tag_name, 'v')
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -27,16 +26,26 @@ jobs:
           - runner: depot-ubuntu-24.04-arm
             platform: linux-aarch64
             artifact: composio-linux-aarch64
-          - runner: macos-13 # Intel Mac
+          - runner: macos-15-intel # Intel Mac
             platform: darwin-x64
             artifact: composio-darwin-x64
-          - runner: macos-latest # Apple Silicon Mac
+          - runner: macos-15 # Apple Silicon Mac
             platform: darwin-aarch64
             artifact: composio-darwin-aarch64
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Validate manual version input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          version="${{ inputs.version }}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid semver version: '$version'"
+            echo "Expected format like: 1.2.3, 1.2.3-beta.1, 1.2.3+build.7"
+            exit 1
+          fi
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -50,8 +59,8 @@ jobs:
       - name: Build CLI binary
         working-directory: ts/packages/cli
         run: |
-          # Use the existing build:bin script which builds for current platform
-          pnpm build:bin
+          # Use the existing build:binary script which builds for current platform
+          pnpm build:binary
 
           # Create binaries directory and copy/rename the binary
           mkdir -p dist/binaries
@@ -66,7 +75,7 @@ jobs:
       - name: Test binary
         working-directory: ts/packages/cli
         env:
-          COMPOSIO_API_KEY: test-dummy-api-key-for-ci
+          COMPOSIO_USER_API_KEY: test-dummy-api-key-for-ci
         run: |
           ./dist/binaries/${{ matrix.artifact }} --version
           ./dist/binaries/${{ matrix.artifact }} --help | head -5
@@ -94,31 +103,31 @@ jobs:
           retention-days: 7
 
       - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI {0} (Manual Build)', inputs.version) || github.ref_name }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI @composio/cli@{0} (Manual Build)', inputs.version) || github.event.release.tag_name }}
           files: |
             ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
           draft: false
-          prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' || github.event.release.prerelease || contains(github.event.release.tag_name, 'alpha') || contains(github.event.release.tag_name, 'beta') || contains(github.event.release.tag_name, 'rc') }}
           generate_release_notes: true
           make_latest: ${{ github.event_name != 'workflow_dispatch' }}
           token: ${{ secrets.GITHUB_TOKEN }}  # Migrated from env var
   test-installation:
     name: Test Installation
     needs: build-binaries
-    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    if: always() && !cancelled() && (github.event_name == 'release' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/cli.test-installation.yml
     with:
-      version: ${{ inputs.version || github.ref_name }}
+      version: ${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}
 
   create-install-instructions:
     name: Create Install Instructions
     needs: build-binaries
     runs-on: ubuntu-latest
-    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    if: always() && !cancelled() && (github.event_name == 'release' || github.event_name == 'workflow_dispatch')
 
     steps:
       - name: Checkout
@@ -126,6 +135,7 @@ jobs:
 
       - name: Create installation README
         run: |
+          RELEASE_TAG="${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}"
           cat > INSTALL.md << 'EOF'
           # Composio CLI Installation
 
@@ -138,7 +148,7 @@ jobs:
 
           ### Install specific version
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- ${{ github.ref_name }}
+          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- RELEASE_TAG_PLACEHOLDER
           ```
 
           ## Manual Installation
@@ -173,6 +183,7 @@ jobs:
 
           Windows support coming soon!
           EOF
+          sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 
       - name: Upload install instructions
         uses: actions/upload-artifact@v6

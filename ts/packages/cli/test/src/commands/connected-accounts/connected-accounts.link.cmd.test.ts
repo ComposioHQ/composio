@@ -30,7 +30,7 @@ const connectedAccountsData = {
 } satisfies TestLiveInput['connectedAccountsData'];
 
 const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_API_KEY', 'test_api_key']])
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
 describe('CLI: composio connected-accounts link', () => {
@@ -59,9 +59,38 @@ describe('CLI: composio connected-accounts link', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
-    '[Given] valid --auth-config with default user-id [Then] creates link',
+    '[Given] valid --auth-config with explicit --user-id [Then] creates link',
     it => {
-      it.scoped('uses default user-id', () =>
+      it.scoped('uses explicit user-id', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'connected-accounts',
+            'link',
+            '--auth-config',
+            'ac_gmail_oauth',
+            '--user-id',
+            'default',
+            '--no-browser',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('https://app.composio.dev/link');
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData,
+      fixture: 'global-test-user-id',
+    })
+  )(
+    '[Given] no --user-id and no project test_user_id [Then] falls back to global test_user_id',
+    it => {
+      it.scoped('uses global test user id from user_data.json', () =>
         Effect.gen(function* () {
           yield* cli([
             'connected-accounts',
@@ -73,7 +102,8 @@ describe('CLI: composio connected-accounts link', () => {
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('https://app.composio.dev/link');
+          expect(output).toContain('Using global test user id "global-default"');
+          expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
         })
       );
     }

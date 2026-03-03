@@ -5,7 +5,7 @@ const S_CORNER_TOP_LEFT = unicodeOr('╭', '+');
 const S_CORNER_BOTTOM_LEFT = unicodeOr('╰', '+');
 
 export function renderPrettyError(errorLines: Array<[key: string, value: unknown]>): string {
-  return renderPrettyErrorGen(errorLines).toArray().join('\n');
+  return Array.from(renderPrettyErrorGen(errorLines)).join('\n');
 }
 
 function* renderPrettyErrorGen(

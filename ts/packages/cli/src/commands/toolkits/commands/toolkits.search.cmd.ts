@@ -4,7 +4,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
-import { formatToolkitsTable, formatToolkitsJson } from '../format';
+import { formatLegacyToolkitsTable, formatLegacyToolkitsJson } from '../format';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription('Search query (e.g. "send emails")')
@@ -14,6 +14,9 @@ const limit = Options.integer('limit').pipe(
   Options.withDefault(10),
   Options.withDescription('Number of results per page (1-1000)')
 );
+
+// TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
+// supports text search. Currently SessionToolsParams has no search capability.
 
 /**
  * Search toolkits by use case.
@@ -47,7 +50,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
     const total = result.total_items;
 
     yield* ui.log.info(
-      `Found ${showing} of ${total} toolkits\n\n${formatToolkitsTable(result.items)}`
+      `Found ${showing} of ${total} toolkits\n\n${formatLegacyToolkitsTable(result.items)}`
     );
 
     // Next step hint
@@ -56,6 +59,6 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
       yield* ui.log.step(`To view details:\n> composio toolkits info "${firstSlug}"`);
     }
 
-    yield* ui.output(formatToolkitsJson(result.items));
+    yield* ui.output(formatLegacyToolkitsJson(result.items));
   })
 ).pipe(Command.withDescription('Search toolkits by use case.'));

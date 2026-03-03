@@ -1,163 +1,169 @@
-import { Args, Command } from '@effect/cli';
+import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import type { ToolkitDetailed, AuthConfigDetail } from 'src/models/toolkits';
-import { bold, gray } from 'src/ui/colors';
+import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
+import { extractMessage } from 'src/utils/api-error-extraction';
+import { ProjectContext } from 'src/services/project-context';
+import { ComposioUserContext } from 'src/services/user-context';
+import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Toolkit slug (e.g. "gmail")'),
   Args.optional
 );
 
-/**
- * Format auth config fields for display.
- */
-function formatFields(fields: ReadonlyArray<AuthConfigDetail['fields']['auth_config_creation']>) {
-  const lines: string[] = [];
+const userId = Options.text('user-id').pipe(
+  Options.optional,
+  Options.withDescription(
+    'User ID for connection status (falls back to project/global test_user_id, then "default")'
+  )
+);
 
-  for (const group of fields) {
-    const allFields = [
-      ...group.required.map(f => ({ ...f, label: 'required' })),
-      ...group.optional.map(f => ({ ...f, label: 'optional' })),
-    ];
-
-    if (allFields.length === 0) {
-      lines.push('    (none)');
-    } else {
-      const nameWidth = Math.max(...allFields.map(f => f.name.length));
-      const labelWidth = Math.max(...allFields.map(f => f.label.length));
-      const typeWidth = Math.max(...allFields.map(f => f.type.length));
-
-      for (const field of allFields) {
-        const desc = field.description ? `  ${gray(`"${field.description}"`)}` : '';
-        lines.push(
-          `    ${field.name.padEnd(nameWidth)} ${field.label.padEnd(labelWidth)} ${field.type.padEnd(typeWidth)}${desc}`
-        );
-      }
-    }
-  }
-
-  return lines.join('\n');
-}
+const allDetails = Options.boolean('all').pipe(
+  Options.withAlias('a'),
+  Options.withDefault(false),
+  Options.withDescription('Show all available toolkit details, including auth config fields')
+);
 
 /**
- * Format a detailed toolkit for interactive display.
- */
-function formatToolkitInfo(toolkit: ToolkitDetailed): string {
-  const lines: string[] = [];
-
-  lines.push(`${bold('Name:')} ${toolkit.name}`);
-  lines.push(`${bold('Slug:')} ${toolkit.slug}`);
-  lines.push(`${bold('Description:')} ${toolkit.meta.description || '(none)'}`);
-
-  // Derive auth schemes from auth_config_details
-  const authSchemes = toolkit.auth_config_details.map(d => d.mode);
-  if (toolkit.no_auth) {
-    lines.push(`${bold('Auth:')} No authentication required`);
-  } else if (authSchemes.length > 0) {
-    lines.push(`${bold('Auth Schemes:')} ${authSchemes.join(', ')}`);
-    if (toolkit.composio_managed_auth_schemes.length > 0) {
-      lines.push(
-        `${bold('Composio Managed Auth Schemes:')} ${toolkit.composio_managed_auth_schemes.join(', ')}`
-      );
-    }
-  }
-
-  // Auth config creation fields
-  if (toolkit.auth_config_details.length > 0) {
-    lines.push('');
-    lines.push(bold('Fields Required for AuthConfig creation:'));
-    for (const detail of toolkit.auth_config_details) {
-      lines.push(`  ${detail.name} (${detail.mode}):`);
-      lines.push(formatFields([detail.fields.auth_config_creation]));
-    }
-
-    lines.push('');
-    lines.push(bold('Fields Required for Connected Account creation:'));
-    for (const detail of toolkit.auth_config_details) {
-      lines.push(`  ${detail.name} (${detail.mode}):`);
-      lines.push(formatFields([detail.fields.connected_account_initiation]));
-    }
-  }
-
-  return lines.join('\n');
-}
-
-/**
- * View details of a specific toolkit including auth schemes and required fields.
+ * View details of a specific toolkit including connection status.
  *
  * @example
  * ```bash
  * composio toolkits info "gmail"
+ * composio toolkits info "github" --user-id "alice"
  * ```
  */
-export const toolkitsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
-  Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
+export const toolkitsCmd$Info = Command.make(
+  'info',
+  { slug, userId, allDetails },
+  ({ slug, userId, allDetails }) =>
+    Effect.gen(function* () {
+      if (!(yield* requireAuth)) return;
 
-    const ui = yield* TerminalUI;
-    const repo = yield* ComposioToolkitsRepository;
+      const ui = yield* TerminalUI;
+      const projectContext = yield* ProjectContext;
+      const userContext = yield* ComposioUserContext;
 
-    // Missing slug guard
-    if (Option.isNone(slug)) {
-      yield* ui.log.warn('Missing required argument: <slug>');
-      yield* ui.log.step('Try specifying a toolkit slug, e.g.:\n> composio toolkits info "gmail"');
-      return;
-    }
+      // Missing slug guard
+      if (Option.isNone(slug)) {
+        yield* ui.log.warn('Missing required argument: <slug>');
+        yield* ui.log.step(
+          'Try specifying a toolkit slug, e.g.:\n> composio toolkits info "gmail"'
+        );
+        return;
+      }
 
-    const slugValue = slug.value;
+      const slugValue = slug.value;
+      const repo = yield* ComposioToolkitsRepository;
+      const resolvedProjectContext = yield* projectContext.resolve;
+      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const globalTestUserId = userContext.data.testUserId;
+      const resolvedUserId = Option.match(userId, {
+        onSome: value => Option.some(value),
+        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
+      });
 
-    const toolkitOpt = yield* ui
-      .withSpinner(`Fetching toolkit "${slugValue}"...`, repo.getToolkitDetailed(slugValue))
-      .pipe(
-        Effect.asSome,
-        Effect.catchTag('services/HttpServerError', (e: HttpServerError) =>
+      if (Option.isNone(userId) && Option.isSome(testUserId)) {
+        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
+      } else if (Option.isNone(userId)) {
+        yield* ui.log.info(
+          'No test user id found; showing toolkit details without connection status.'
+        );
+      }
+
+      const resultOpt = yield* ui
+        .withSpinner(
+          `Fetching toolkit "${slugValue}"...`,
           Effect.gen(function* () {
-            // Show structured error message and suggested fix from the API
-            if (e.details) {
-              yield* ui.log.error(e.details.message);
-              yield* ui.log.step(e.details.suggestedFix);
-            } else {
-              yield* ui.log.error(`Failed to fetch toolkit "${slugValue}".`);
-            }
+            const detailedToolkitOpt = yield* repo
+              .getToolkitDetailed(slugValue)
+              .pipe(Effect.option);
 
-            // Try to suggest similar toolkits
-            const suggestions = yield* repo.searchToolkits({ search: slugValue, limit: 3 }).pipe(
-              Effect.map(r => r.items),
-              Effect.catchAll(() => Effect.succeed([]))
-            );
-
-            if (suggestions.length > 0) {
-              const suggestionLines = suggestions
-                .map(s => `  ${s.slug} — ${s.meta.description}`)
-                .join('\n');
-              yield* ui.log.step(
-                `Did you mean?\n${suggestionLines}\n\n> composio toolkits info "${suggestions[0]!.slug}"`
+            if (Option.isSome(resolvedUserId)) {
+              const { client, sessionId } = yield* resolveToolRouterSession(resolvedUserId.value);
+              const sessionToolkits = yield* Effect.tryPromise(() =>
+                client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
               );
-            } else {
-              yield* ui.log.step('Browse available toolkits:\n> composio toolkits list');
+              return { toolkit: sessionToolkits.items[0], detailedToolkitOpt };
             }
 
-            return Option.none();
+            const toolkit = Option.match(detailedToolkitOpt, {
+              onNone: () => undefined,
+              onSome: detailed => ({
+                slug: detailed.slug,
+                name: detailed.name,
+                meta: {
+                  description: detailed.meta.description,
+                  logo: '',
+                },
+                is_no_auth: detailed.no_auth,
+                enabled: true,
+                connected_account: null,
+                composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
+              }),
+            });
+            return { toolkit, detailedToolkitOpt };
           })
         )
+        .pipe(
+          Effect.asSome,
+          Effect.catchAll(error =>
+            Effect.gen(function* () {
+              const message = extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
+              yield* ui.log.error(message);
+              yield* Effect.logDebug('Toolkit info error:', error);
+              yield* ui.log.step('Browse available toolkits:\n> composio toolkits list');
+              return Option.none();
+            })
+          )
+        );
+
+      if (Option.isNone(resultOpt)) {
+        return;
+      }
+
+      const result = resultOpt.value;
+      const toolkit = result.toolkit;
+      const detailedToolkit = Option.getOrUndefined(result.detailedToolkitOpt);
+
+      if (!toolkit) {
+        yield* ui.log.warn(`Toolkit "${slugValue}" not found.`);
+
+        // "Did you mean?" suggestions via legacy search
+        const suggestions = yield* repo.searchToolkits({ search: slugValue, limit: 3 }).pipe(
+          Effect.map(r =>
+            r.items.map(s => ({
+              label: `${s.slug} — ${s.meta.description}`,
+              command: `> composio toolkits info "${s.slug}"`,
+            }))
+          ),
+          Effect.catchAll(() => Effect.succeed([] as { label: string; command: string }[]))
+        );
+
+        const [first] = suggestions;
+        if (first) {
+          const lines = suggestions.map(s => `  ${s.label}`).join('\n');
+          yield* ui.log.step(`Did you mean?\n${lines}\n\n${first.command}`);
+        } else {
+          yield* ui.log.step('Browse available toolkits:\n> composio toolkits list');
+        }
+        return;
+      }
+
+      yield* ui.log.message(
+        `Toolkit: ${toolkit.name}\n\n${formatToolkitInfo(toolkit, detailedToolkit, allDetails)}`
       );
 
-    if (Option.isNone(toolkitOpt)) {
-      return;
-    }
+      // Next step hint
+      yield* ui.log.step(
+        `To list tools in this toolkit:\n> composio tools list --toolkits "${toolkit.slug}"`
+      );
 
-    const toolkit = toolkitOpt.value;
-
-    yield* ui.note(formatToolkitInfo(toolkit), `Toolkit: ${toolkit.name}`);
-
-    // Next step hint
-    yield* ui.log.step(
-      `To list tools in this toolkit:\n> composio tools list --toolkit "${toolkit.slug}"`
-    );
-
-    yield* ui.output(JSON.stringify(toolkit, null, 2));
-  })
+      yield* ui.output(formatToolkitInfoJson(toolkit, detailedToolkit, allDetails));
+    })
 ).pipe(Command.withDescription('View details of a specific toolkit.'));

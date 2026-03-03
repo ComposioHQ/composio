@@ -13,7 +13,7 @@ Verifies that `composio toolkits search <query>` returns matching toolkits as JS
 
 ## Requirements
 
-- `COMPOSIO_API_KEY` (**required**) — Composio API key passed to the container
+- `COMPOSIO_USER_API_KEY` (**required**) — Composio user API key passed to the container
 
 ## Running
 

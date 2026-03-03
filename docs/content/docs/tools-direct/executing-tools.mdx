@@ -6,7 +6,7 @@ llmGuardrails: "direct-execution"
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle tool fetching, authentication, and execution automatically.
+If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle tool fetching, authentication, and execution automatically. See the [quickstart](/docs/quickstart) to get started, or [Sessions vs Direct Execution](/docs/sessions-vs-direct-execution) to understand the tradeoffs.
 </Callout>
 
 LLMs on their own can only do generation. Tool calling changes that by letting them interact with external services. Instead of just drafting an email, the model can call `GMAIL_SEND_EMAIL` to actually send it. The tool's results feed back to the LLM, closing the loop so it can decide, act, observe, and adapt.
@@ -401,3 +401,11 @@ const fileData = await composio.files.upload({
   toolkitSlug: 'googledrive'
 });
 ```
+
+## What to read next
+
+<Cards>
+  <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Wrench />} title="Custom tools" href="/docs/tools-direct/custom-tools" description="Create your own standalone or toolkit-based tools" />
+</Cards>

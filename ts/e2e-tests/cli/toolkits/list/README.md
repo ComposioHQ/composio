@@ -12,7 +12,7 @@ Verifies that `composio toolkits list` returns toolkits as JSON in piped mode wi
 
 ## Requirements
 
-- `COMPOSIO_API_KEY` (**required**) — Composio API key passed to the container
+- `COMPOSIO_USER_API_KEY` (**required**) — Composio user API key passed to the container
 
 ## Running
 

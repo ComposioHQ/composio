@@ -37,6 +37,11 @@ const config = {
         destination: '/cookbooks',
         permanent: true,
       },
+      {
+        source: '/cookbooks/vercel-chat',
+        destination: '/cookbooks/chat-app',
+        permanent: true,
+      },
       // Specific /examples/ subroutes before the catch-all
       {
         source: '/examples/combined/:path*',

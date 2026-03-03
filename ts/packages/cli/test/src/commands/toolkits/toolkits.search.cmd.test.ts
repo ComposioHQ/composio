@@ -18,7 +18,7 @@ const testToolkits: Toolkits = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20250909'],
       tools_count: 36,
       triggers_count: 2,
     },
@@ -52,7 +52,7 @@ const testToolkits: Toolkits = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20250101', '20260101'],
       tools_count: 42,
       triggers_count: 5,
     },
@@ -64,7 +64,7 @@ const toolkitsData = {
 } satisfies TestLiveInput['toolkitsData'];
 
 const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_API_KEY', 'test_api_key']])
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
 describe('CLI: composio toolkits search', () => {

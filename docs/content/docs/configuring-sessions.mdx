@@ -22,6 +22,8 @@ const session = await composio.create("user_123");
 </Tab>
 </Tabs>
 
+By default, a session has access to **all toolkits** in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. Use the options below to restrict or customize what's available.
+
 ## Enabling toolkits
 
 Restrict the session to specific toolkits:
@@ -271,3 +273,12 @@ toolkits.items.forEach((toolkit) => {
 </Tabs>
 
 Returns the first 20 toolkits by default.
+
+## What to read next
+
+<Cards>
+  <Card icon={<MessageCircle />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication" description="Let the agent prompt users to connect accounts during conversation" />
+  <Card icon={<ShieldCheck />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating" description="Pre-authenticate users before chat using Connect Links and session.authorize()" />
+  <Card icon={<Wrench />} title="Enable & disable toolkits" href="/docs/toolkits/enable-and-disable-toolkits" description="Control which toolkits and individual tools are available in sessions" />
+  <Card icon={<Palette />} title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Use your own OAuth apps so users see your branding on consent screens" />
+</Cards>

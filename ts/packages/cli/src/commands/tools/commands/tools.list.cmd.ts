@@ -74,7 +74,7 @@ export const toolsCmd$List = Command.make(
       yield* ui.log.info(
         totalPages > 1
           ? `Listing ${showing} tools (page 1 of ${totalPages})\n\n${formatToolsTable(result.items)}`
-          : `Fetched ${showing} tools\n\n${formatToolsTable(result.items)}`
+          : `Listing ${showing} tools\n\n${formatToolsTable(result.items)}`
       );
 
       // Next step hint

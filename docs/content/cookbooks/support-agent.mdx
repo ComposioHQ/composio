@@ -1,0 +1,76 @@
+---
+title: Support Knowledge Agent
+description: Build an agentic RAG system that searches Notion, checks Datadog, and manages GitHub issues for support triage
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/support-agent)
+
+This cookbook builds an **agentic RAG** system: an interactive CLI agent that triages support issues by pulling context from Notion docs, Datadog monitors, and GitHub issues. It uses scoped sessions, multi-turn chat with streaming, and a structured system prompt.
+
+## Prerequisites
+
+* Python 3.10+
+* [UV](https://docs.astral.sh/uv/getting-started/installation/)
+* [Composio API key](https://platform.composio.dev/settings)
+* [OpenAI API key](https://platform.openai.com/api-keys)
+
+## Project setup
+
+Create a new project and install dependencies:
+
+```bash
+mkdir composio-support-agent && cd composio-support-agent
+uv init && uv add composio composio-openai-agents openai-agents
+```
+
+Add your API keys to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+## Setting up the client
+
+`Composio` takes an `OpenAIAgentsProvider` so that tools come back in the format the OpenAI Agents SDK expects. We also import the streaming event types we'll need for real-time output.
+
+<include>../../examples/support-agent/main.py#setup</include>
+
+## Defining the agent
+
+The system prompt tells the agent what tools it has and how to behave. It knows about Datadog, Notion, and GitHub, and decides on its own which to use based on the question.
+
+<include>../../examples/support-agent/main.py#agent</include>
+
+## Chat loop with streaming
+
+The chat loop creates a session scoped to three toolkits: `datadog`, `notion`, and `github`. The agent only sees tools from these services. `Runner.run_streamed` streams tokens as they arrive so you see the response in real time. Message history is tracked in a list for multi-turn context.
+
+<include>../../examples/support-agent/main.py#chat</include>
+
+<Callout>
+If a toolkit isn't connected yet, the agent will automatically return an authentication link in its response. The user can complete OAuth and then retry.
+</Callout>
+
+## Complete script
+
+Here's everything together:
+
+<include>../../examples/support-agent/main.py</include>
+
+## Running the agent
+
+```bash
+uv run --env-file .env python main.py
+```
+
+The agent starts an interactive chat. Type a message and watch the response stream in. Type `quit` to exit.
+
+```
+Support Knowledge Agent (type 'quit' to exit)
+--------------------------------------------------
+
+You: The payments service is returning 500 errors. Can you check what's going on?
+
+Agent: I checked Datadog and found an active alert on the payments-api monitor...
+```

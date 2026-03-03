@@ -1,0 +1,129 @@
+---
+title: Background Agent
+description: Build an autonomous agent that monitors GitHub, Gmail, and Slack and takes action while you sleep
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/background-agent)
+
+This cookbook builds a background agent that runs a "morning sweep" across your apps. It checks GitHub for PRs that need your review, finds unanswered emails in Gmail, and posts a summary to Slack. One script, three apps, zero human input.
+
+Run it manually, put it on a cron, or deploy it. The agent does the rest.
+
+## Prerequisites
+
+* Node.js 18+
+* [Composio API key](https://platform.composio.dev/settings)
+* [OpenAI API key](https://platform.openai.com/api-keys)
+
+## Project setup
+
+Create a new project and install dependencies:
+
+```bash
+mkdir composio-background-agent && cd composio-background-agent
+npm init -y
+npm install ai @ai-sdk/openai @composio/core @composio/vercel dotenv tsx
+```
+
+Add your API keys to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+## Initializing the clients
+
+`Composio` takes a `VercelProvider` so that tools come back as Vercel AI SDK tools with built-in execution. No manual tool-call loop needed.
+
+<include meta="no-twoslash">../../examples/background-agent/sweep.ts#setup</include>
+
+## The sweep
+
+The entire agent is one function. Create a session, get tools, and give the model a prompt describing what to do. `generateText` with `stopWhen: stepCountIs(15)` lets the model call as many tools as it needs, discovering available actions, authenticating with apps, and executing across GitHub, Gmail, and Slack, all in a single run.
+
+<include meta="no-twoslash">../../examples/background-agent/sweep.ts#sweep</include>
+
+That's it. The agent figures out which tools to call, handles pagination, formats the results, and posts to Slack. Composio's meta-tools handle tool discovery and auth inline. If an app isn't connected, the agent skips it gracefully.
+
+## Complete script
+
+<include meta='no-twoslash title="sweep.ts"'>../../examples/background-agent/sweep.ts</include>
+
+## Running the sweep
+
+```bash
+npx tsx sweep.ts
+```
+
+Example output:
+
+```
+### GitHub: PRs where your review is requested (3)
+- fix: robust platform detection (ComposioHQ/composio)
+  https://github.com/ComposioHQ/composio/pull/2712
+- docs: add retry to health check workflow (ComposioHQ/composio)
+  https://github.com/ComposioHQ/composio/pull/2711
+- chore(deps): bump next (ComposioHQ/composio)
+  https://github.com/ComposioHQ/composio/pull/2473
+
+### Gmail: Emails from last 24h you haven't replied to (1)
+- Stephanie M. - CoreWeave - We'd love to chat!
+
+### Slack: Digest posted to #morning-sweep
+```
+
+<Callout>
+If an app isn't connected yet, the agent will return an authentication link in the output. Open it in your browser to complete OAuth, then run the sweep again.
+</Callout>
+
+## Running on a schedule
+
+The agent runs once and exits, which makes it perfect for cron jobs. Pick whichever scheduler you prefer.
+
+### crontab (every day at 8am)
+
+```bash
+crontab -e
+```
+
+```
+0 8 * * * cd /path/to/composio-background-agent && npx tsx sweep.ts >> sweep.log 2>&1
+```
+
+### GitHub Actions
+
+```yaml title=".github/workflows/sweep.yml"
+name: Morning Sweep
+on:
+  schedule:
+    - cron: '0 8 * * *' # 8am UTC daily
+  workflow_dispatch: # manual trigger
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx tsx sweep.ts
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+## Take it further
+
+The prompt is the agent's brain. Change it to change what it does. Some ideas:
+
+- **Triage support tickets**: scan Zendesk for unassigned tickets, categorize them, assign to the right team in Linear
+- **Daily standup prep**: pull yesterday's commits from GitHub, completed tasks from Linear, and draft a standup summary
+- **Invoice follow-up**: check QuickBooks for overdue invoices, draft follow-up emails in Gmail
+
+<Cards>
+  <Card title="Hono Server" href="/cookbooks/hono" description="Wrap this agent in an HTTP server so multiple users can interact with it" />
+  <Card title="Vercel AI SDK Provider" href="/docs/providers/vercel" description="Learn more about how Composio tools work with the Vercel AI SDK" />
+</Cards>

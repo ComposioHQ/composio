@@ -24,6 +24,17 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Info with partial match
 >
@@ -51,22 +62,6 @@
 
 
 
-────────────────────────────────────────────────────────────────────────────────
-> # Info with partial match
-> composio toolkits info gmai
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -105,9 +100,69 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 ────────────────────────────────────────────────────────────────────────────────
 > # Info with partial match
 > composio toolkits info gmai
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Info with partial match
+> composio toolkits info gmai
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -142,18 +197,29 @@
 ■  Failed to fetch toolkit "gmai".
 │
 ◇  Did you mean?
-│    gmail — Gmail is Google’s email service, featuring spam protection, se
-arch functions, and seamless integration with other G Suite apps for produc
-tivity
-│    googletasks — Google Tasks provides a simple to-do list and task manag
-ement system integrated into Gmail and Google Calendar for quick and easy t
-racking
-│    googlesuper — Google Super App combines all Google services including
-Drive, Calendar, Gmail, Sheets, Analytics, Ads, and more, providing a unifi
-ed platform for seamless integration and management of your digital life.
+│    gmail — Gmail is Google’s email service, featuring spam protection, search fun
+ctions, and seamless integration with other G Suite apps for productivity
+│    googletasks — Google Tasks provides a simple to-do list and task management sy
+stem integrated into Gmail and Google Calendar for quick and easy tracking
+│    googlesuper — Google Super App combines all Google services including Drive, C
+alendar, Gmail, Sheets, Analytics, Ads, and more, providing a unified platform for
+seamless integration and management of your digital life.
 │
 │  > composio toolkits info "gmail"
 >
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

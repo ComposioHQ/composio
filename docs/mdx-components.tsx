@@ -20,6 +20,8 @@ import { CapabilityCard, CapabilityList } from '@/components/capability-card';
 import { TemplateCard, TemplateGrid } from '@/components/template-card';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { Mermaid } from '@/components/mermaid';
+import { AIToolsBanner } from '@/components/ai-tools-banner';
+import { Glossary, GlossaryTerm } from '@/components/glossary';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -35,6 +37,8 @@ import {
   Terminal,
   Palette,
   BookOpen,
+  Monitor,
+  MessageCircle,
 } from 'lucide-react';
 
 function slugify(text: string): string {
@@ -84,7 +88,10 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     TemplateGrid,
     ToolkitsLanding,
     Mermaid,
+    AIToolsBanner,
     StepTitle,
+    Glossary,
+    GlossaryTerm,
     // Lucide icons
     ShieldCheck,
     RouteIcon,
@@ -100,6 +107,8 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Terminal,
     Palette,
     BookOpen,
+    Monitor,
+    MessageCircle,
     ...components,
   };
 }

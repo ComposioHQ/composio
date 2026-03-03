@@ -6,7 +6,7 @@ llmGuardrails: "direct-execution"
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle tool fetching, authentication, and execution automatically.
+If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Tools and toolkits](/docs/tools-and-toolkits) for how sessions discover and execute tools automatically.
 </Callout>
 
 Custom tools allow you to create your own tools that can be used with Composio.
@@ -370,3 +370,11 @@ const result = await composio.tools.execute('TOOL_SLUG', {
 3. Toolkit-based tools require a valid connected account with the specified toolkit
 4. `executeToolRequest` can only execute tools from the same toolkit that the custom tool belongs to
 5. Each toolkit-based tool can only use one connected account at a time
+
+## What to read next
+
+<Cards>
+  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+  <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+</Cards>

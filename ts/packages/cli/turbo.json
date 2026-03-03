@@ -6,13 +6,13 @@
       "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
       "outputs": ["dist/bin.mjs", "dist/bin.d.mts"]
     },
-    "build:bin": {
+    "build:binary": {
       "dependsOn": ["build"],
       "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
       "outputs": ["dist/composio"]
     },
-    "install:bin": {
-      "dependsOn": ["build:bin"],
+    "install:binary": {
+      "dependsOn": ["build:binary"],
       "cache": false
     }
   }
