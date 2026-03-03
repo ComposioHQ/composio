@@ -97,86 +97,18 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         )) as T;
       });
 
-    const fetchLatestRelease = (): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+    const fetchLatestRelease = (
+      tag: string
+    ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
-        const release = yield* githubConfig.TAG.pipe(
-          Option.match({
-            onNone: Effect.fn(function* () {
-              yield* Effect.logDebug(
-                'No tag specified, resolving latest package-scoped CLI release'
-              );
-              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
-              const releases = yield* fetchGitHubJson<unknown>({
-                url,
-                fetchErrorMessage: 'Failed to fetch releases from GitHub',
-                parseErrorMessage: 'Failed to parse GitHub releases JSON response',
-              });
-
-              if (!Array.isArray(releases)) {
-                return yield* Effect.fail(
-                  new UpgradeBinaryError({
-                    cause: new Error('GitHub releases response was not an array'),
-                    message: 'Unexpected response while resolving latest CLI release',
-                  })
-                );
-              }
-
-              const cliReleases = releases.filter(
-                (release): release is GitHubRelease =>
-                  typeof release === 'object' &&
-                  release !== null &&
-                  'tag_name' in release &&
-                  typeof release.tag_name === 'string' &&
-                  ('prerelease' in release ? release.prerelease === false : true) &&
-                  ('draft' in release ? release.draft === false : true) &&
-                  CLI_RELEASE_TAG_PATTERN.test(release.tag_name)
-              );
-
-              if (cliReleases.length === 0) {
-                return yield* Effect.fail(
-                  new UpgradeBinaryError({
-                    cause: new Error('No package-scoped CLI releases found'),
-                    message:
-                      'Failed to determine latest CLI release from @composio/cli tags on GitHub',
-                  })
-                );
-              }
-
-              let latest = cliReleases[0];
-              for (const release of cliReleases.slice(1)) {
-                const comparison = yield* semverComparator(latest.tag_name, release.tag_name).pipe(
-                  Effect.mapError(
-                    error =>
-                      new UpgradeBinaryError({
-                        cause: error,
-                        message: 'Failed to compare CLI release versions',
-                      })
-                  )
-                );
-
-                if (comparison < 0) {
-                  latest = release;
-                }
-              }
-
-              yield* Effect.logDebug(`Resolved latest CLI release tag: ${latest.tag_name}`);
-              return latest;
-            }),
-            onSome: Effect.fn(function* (tag) {
-              yield* Effect.logDebug(`Using tag: ${tag}`);
-              const encodedTag = encodeURIComponent(tag);
-              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
-              const release = yield* fetchGitHubJson<GitHubRelease>({
-                url,
-                fetchErrorMessage: `Failed to fetch tags/${tag} release from GitHub`,
-                parseErrorMessage: 'Failed to parse GitHub release JSON response',
-              });
-
-              return release as GitHubRelease;
-            }),
-          })
-        );
-        return release;
+        yield* Effect.logDebug(`Using tag: ${tag}`);
+        const encodedTag = encodeURIComponent(tag);
+        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
+        return yield* fetchGitHubJson<GitHubRelease>({
+          url,
+          fetchErrorMessage: `Failed to fetch tags/${tag} release from GitHub`,
+          parseErrorMessage: 'Failed to parse GitHub release JSON response',
+        });
       });
 
     const getBinaryAssetName = (platformArch: PlatformArch): string =>
@@ -230,33 +162,28 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           );
         }
 
-        const sortedReleases = [...cliReleases];
-        for (let i = 0; i < sortedReleases.length; i += 1) {
-          for (let j = i + 1; j < sortedReleases.length; j += 1) {
-            const comparison = yield* semverComparator(
-              sortedReleases[i]!.tag_name,
-              sortedReleases[j]!.tag_name
-            ).pipe(
-              Effect.mapError(
-                error =>
-                  new UpgradeBinaryError({
-                    cause: error,
-                    message: 'Failed to compare CLI release versions',
-                  })
-              )
-            );
-
-            if (comparison < 0) {
-              const tmp = sortedReleases[i]!;
-              sortedReleases[i] = sortedReleases[j]!;
-              sortedReleases[j] = tmp;
-            }
+        let best: GitHubRelease | null = null;
+        for (const candidate of cliReleases) {
+          if (!hasBinaryAssetForPlatform(candidate, platformArch)) continue;
+          if (best === null) {
+            best = candidate;
+            continue;
+          }
+          const comparison = yield* semverComparator(best.tag_name, candidate.tag_name).pipe(
+            Effect.mapError(
+              error =>
+                new UpgradeBinaryError({
+                  cause: error,
+                  message: 'Failed to compare CLI release versions',
+                })
+            )
+          );
+          if (comparison < 0) {
+            best = candidate;
           }
         }
 
-        const release = sortedReleases.find(candidate =>
-          hasBinaryAssetForPlatform(candidate, platformArch)
-        );
+        const release = best;
 
         if (!release) {
           return yield* Effect.fail(
@@ -507,7 +434,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             const release = yield* githubConfig.TAG.pipe(
               Option.match({
                 onNone: () => fetchLatestReleaseWithRequiredAssets(platformArch),
-                onSome: () => fetchLatestRelease(),
+                onSome: tag => fetchLatestRelease(tag),
               })
             );
             const updateAvailable = yield* isUpdateAvailable(release);
