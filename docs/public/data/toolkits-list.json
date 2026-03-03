@@ -4,7 +4,7 @@
     "name": "Gmail",
     "logo": "https://logos.composio.dev/api/gmail",
     "category": "email",
-    "toolCount": 40,
+    "toolCount": 60,
     "triggerCount": 2
   },
   {
@@ -52,7 +52,7 @@
     "name": "Slack",
     "logo": "https://logos.composio.dev/api/slack",
     "category": "team chat",
-    "toolCount": 155,
+    "toolCount": 151,
     "triggerCount": 9
   },
   {
@@ -180,7 +180,7 @@
     "name": "Slackbot",
     "logo": "https://logos.composio.dev/api/slackbot",
     "category": "team chat",
-    "toolCount": 89,
+    "toolCount": 87,
     "triggerCount": 9
   },
   {
@@ -348,7 +348,7 @@
     "name": "OneDrive",
     "logo": "https://logos.composio.dev/api/one_drive",
     "category": "file management & storage",
-    "toolCount": 39,
+    "toolCount": 61,
     "triggerCount": 9
   },
   {
@@ -500,7 +500,7 @@
     "name": "Google Meet",
     "logo": "https://logos.composio.dev/api/googlemeet",
     "category": "video conferencing",
-    "toolCount": 13,
+    "toolCount": 18,
     "triggerCount": 0
   },
   {
@@ -532,7 +532,7 @@
     "name": "Dropbox",
     "logo": "https://logos.composio.dev/api/dropbox",
     "category": "file management & storage",
-    "toolCount": 109,
+    "toolCount": 189,
     "triggerCount": 0
   },
   {
@@ -764,7 +764,7 @@
     "name": "Google Super",
     "logo": "https://logos.composio.dev/api/googlesuper",
     "category": "file management & storage",
-    "toolCount": 441,
+    "toolCount": 479,
     "triggerCount": 20
   },
   {
@@ -972,7 +972,7 @@
     "name": "LaunchDarkly",
     "logo": "https://logos.composio.dev/api/launch_darkly",
     "category": "developer tools",
-    "toolCount": 7,
+    "toolCount": 258,
     "triggerCount": 0
   },
   {
@@ -1372,7 +1372,7 @@
     "name": "Google Analytics",
     "logo": "https://logos.composio.dev/api/google_analytics",
     "category": "analytics",
-    "toolCount": 62,
+    "toolCount": 75,
     "triggerCount": 0
   },
   {
@@ -2528,14 +2528,6 @@
     "triggerCount": 0
   },
   {
-    "slug": "brightdata_mcp",
-    "name": "Bright Data MCP",
-    "logo": "https://logos.composio.dev/api/brightdata_mcp",
-    "category": "model context protocol",
-    "toolCount": 0,
-    "triggerCount": 0
-  },
-  {
     "slug": "brilliant_directories",
     "name": "Brilliant Directories",
     "logo": "https://logos.composio.dev/api/brilliant_directories",
@@ -2869,6 +2861,14 @@
     "logo": "https://logos.composio.dev/api/cloudconvert",
     "category": "file management & storage",
     "toolCount": 9,
+    "triggerCount": 0
+  },
+  {
+    "slug": "cloudflare_api_key",
+    "name": "Cloudflare Api Key",
+    "logo": "https://www.cloudflare.com/img/logo-cloudflare.svg",
+    "category": "security & identity tools",
+    "toolCount": 25,
     "triggerCount": 0
   },
   {
@@ -3336,6 +3336,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "docnify",
+    "name": "Docnify",
+    "logo": "https://logos.composio.dev/api/docnify",
+    "category": "documents",
+    "toolCount": 13,
+    "triggerCount": 0
+  },
+  {
     "slug": "docparser",
     "name": "Docparser",
     "logo": "https://logos.composio.dev/api/docparser",
@@ -3565,6 +3573,14 @@
     "logo": "https://logos.composio.dev/api/elasticsearch",
     "category": "databases",
     "toolCount": 4,
+    "triggerCount": 0
+  },
+  {
+    "slug": "elevenreader",
+    "name": "Elevenreader",
+    "logo": "https://logos.composio.dev/api/elevenreader",
+    "category": "artificial intelligence",
+    "toolCount": 125,
     "triggerCount": 0
   },
   {
@@ -5472,14 +5488,6 @@
     "triggerCount": 0
   },
   {
-    "slug": "notion_mcp_oauth",
-    "name": "Notion MCP",
-    "logo": "https://logos.composio.dev/api/notion_mcp_oauth",
-    "category": "model context protocol",
-    "toolCount": 14,
-    "triggerCount": 0
-  },
-  {
     "slug": "nozbe_teams",
     "name": "Nozbe Teams",
     "logo": "https://logos.composio.dev/api/nozbe_teams",
@@ -5576,6 +5584,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "onesignal_user_auth",
+    "name": "OneSignal User Auth",
+    "logo": "https://logos.composio.dev/api/onesignal_user_auth",
+    "category": "notifications",
+    "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
     "slug": "openai",
     "name": "OpenAI",
     "logo": "https://logos.composio.dev/api/openai",
@@ -5613,6 +5629,14 @@
     "logo": "https://logos.composio.dev/api/openrouter",
     "category": "artificial intelligence",
     "toolCount": 14,
+    "triggerCount": 0
+  },
+  {
+    "slug": "openweather_api",
+    "name": "OpenWeather API",
+    "logo": "https://logos.composio.dev/api/openweather_api",
+    "category": "developer tools",
+    "toolCount": 21,
     "triggerCount": 0
   },
   {
@@ -5964,7 +5988,7 @@
     "name": "Postiz",
     "logo": "https://logos.composio.dev/api/postiz_mcp",
     "category": "social media marketing",
-    "toolCount": 9,
+    "toolCount": 0,
     "triggerCount": 0
   },
   {
@@ -6108,7 +6132,7 @@
     "name": "QuickBooks",
     "logo": "https://logos.composio.dev/api/quickbooks",
     "category": "accounting",
-    "toolCount": 18,
+    "toolCount": 105,
     "triggerCount": 0
   },
   {
@@ -6269,6 +6293,14 @@
     "logo": "https://logos.composio.dev/api/replicate",
     "category": "artificial intelligence",
     "toolCount": 31,
+    "triggerCount": 0
+  },
+  {
+    "slug": "reply",
+    "name": "Reply",
+    "logo": "https://logos.composio.dev/api/reply",
+    "category": "marketing automation",
+    "toolCount": 26,
     "triggerCount": 0
   },
   {
@@ -6461,6 +6493,14 @@
     "logo": "https://logos.composio.dev/api/scale_ai",
     "category": "artificial intelligence",
     "toolCount": 41,
+    "triggerCount": 0
+  },
+  {
+    "slug": "scheduleonce",
+    "name": "Scheduleonce",
+    "logo": "https://logos.composio.dev/api/scheduleonce",
+    "category": "scheduling & booking",
+    "toolCount": 27,
     "triggerCount": 0
   },
   {
@@ -7140,7 +7180,7 @@
     "name": "Tavily MCP",
     "logo": "https://logos.composio.dev/api/tavily_mcp",
     "category": "model context protocol",
-    "toolCount": 5,
+    "toolCount": 0,
     "triggerCount": 0
   },
   {
@@ -7284,7 +7324,7 @@
     "name": "TinyFish MCP",
     "logo": "https://logos.composio.dev/api/tinyfish_mcp",
     "category": "model context protocol",
-    "toolCount": 4,
+    "toolCount": 8,
     "triggerCount": 0
   },
   {

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ReactNode } from 'react';
 
@@ -25,7 +26,7 @@ interface IntegrationTabsProps {
 export function IntegrationTabs({ children, defaultValue, tabs = defaultTabs }: IntegrationTabsProps) {
   return (
     <Tabs defaultValue={defaultValue ?? tabs[0]?.value ?? 'native'} className="not-prose -mt-2">
-      <div className="mb-5 flex justify-start">
+      <div className="mb-5 flex items-center gap-3">
         <TabsList>
           {tabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
@@ -51,6 +52,9 @@ export function IntegrationTabs({ children, defaultValue, tabs = defaultTabs }: 
             </TabsTrigger>
           ))}
         </TabsList>
+        <Link href="/docs/native-tools-vs-mcp" className="text-xs text-fd-muted-foreground hover:text-fd-foreground transition-colors">
+          Which should I use?
+        </Link>
       </div>
       {children}
     </Tabs>

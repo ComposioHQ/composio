@@ -26,7 +26,7 @@ app.post("/chat", async (c) => {
 
   while (true) {
     const response = await openai.chat.completions.create({
-      model: "gpt-4.1",
+      model: "gpt-5.2",
       tools,
       messages,
     });

@@ -31,6 +31,21 @@ Verify the connected account has necessary permissions:
 - **Paid accounts**: Certain toolkits need paid subscriptions
   - Example: MS Teams requires Microsoft 365 account + Azure AD tenant
 
+## API returning fewer tools than expected
+
+If the Get Tools API (`GET /api/v3/tools`) returns fewer tools than what's shown on the [platform UI](https://platform.composio.dev), you likely need to specify a toolkit version.
+
+When `toolkit_versions` is not provided, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. Tools added in later versions won't appear.
+
+To get all available tools, pass `toolkit_versions=latest`:
+
+```bash
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+  -H 'x-api-key: YOUR_API_KEY'
+```
+
+See [Toolkit versioning](/docs/tools-direct/toolkit-versioning) for more details.
+
 ## Tool not working
 
 - Check [tool-specific documentation](/toolkits) for requirements

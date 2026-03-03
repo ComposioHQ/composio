@@ -25,9 +25,27 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onSome: apiKey =>
             Effect.gen(function* () {
               const redactedApiKey = redact({ value: apiKey, prefix: 'ak_' });
+              const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
+              const defaultProjectId = Option.getOrUndefined(ctx.data.projectId);
+              const testUserId = Option.getOrUndefined(ctx.data.testUserId);
 
-              yield* ui.note(redactedApiKey, 'API Key');
-              yield* ui.output(apiKey);
+              yield* ui.note(
+                [
+                  `Global User API Key: ${redactedApiKey}`,
+                  `Default Org ID: ${defaultOrgId ?? 'not set'}`,
+                  `Default Project ID: ${defaultProjectId ?? 'not set'}`,
+                  `Test User ID: ${testUserId ?? 'not set'}`,
+                ].join('\n'),
+                'Global User Context'
+              );
+              yield* ui.output(
+                JSON.stringify({
+                  global_user_api_key: apiKey,
+                  default_org_id: defaultOrgId ?? null,
+                  default_project_id: defaultProjectId ?? null,
+                  test_user_id: testUserId ?? null,
+                })
+              );
             }),
         })
       );

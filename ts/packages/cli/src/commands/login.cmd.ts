@@ -117,6 +117,9 @@ const storeCredentials = (params: {
     const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
     yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
     yield* ui.log.info('Run `composio init` in your project directory to set up project context.');
+    yield* ui.log.info(
+      'To switch your default global org/project later, run `composio orgs switch`.'
+    );
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
     yield* ui.output(

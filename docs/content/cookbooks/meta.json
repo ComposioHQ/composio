@@ -9,6 +9,7 @@
     "fast-api",
     "hono",
     "---Productivity & Automation---",
+    "background-agent",
     "support-agent",
     "gmail-labeler",
     "slack-summariser",

@@ -1,132 +1,140 @@
 ---
 title: CLI
-description: Generate type definitions and manage authentication
-keywords: [command line, generate types]
+description: Install the Composio CLI to manage toolkits, execute tools, handle authentication, and generate type-safe code from the terminal.
+keywords: [cli, command line, terminal, toolkits, tools, authentication, generate types]
 ---
 
-The Composio CLI helps you generate type-safe code and manage your Composio workspace.
+The Composio CLI lets you manage toolkits, execute tools, handle auth, inspect logs, and generate type-safe code from the terminal.
 
 ## Installation
-
-Install the Composio CLI using the installation script:
 
 ```bash
 curl -fsSL https://composio.dev/install | bash
 ```
 
-Or using wget:
-```bash
-wget -qO- https://composio.dev/install | bash
-```
-
-## Authentication
-
-Manage your Composio authentication directly from the terminal.
-
-### Login
-
-Authenticate with your Composio account:
+## Getting started
 
 ```bash
+# Authenticate with Composio
 composio login
-```
 
-This opens your browser to complete authentication and stores your API key locally.
+# Initialize a project in the current directory
+composio init
 
-To authenticate without opening a browser (useful for SSH/remote sessions):
-
-```bash
-composio login --no-browser
-```
-
-This displays a URL to manually open in your browser.
-
-### Check authentication status
-
-Verify your current authentication:
-
-```bash
+# Check your account
 composio whoami
 ```
 
-This displays your current API key or indicates if you're not authenticated.
-
-### Logout
-
-Remove stored authentication:
+## Search and execute a tool
 
 ```bash
-composio logout
+# Connect your GitHub account
+composio connected-accounts link github
+
+# Search for tools
+composio tools search "star a github repo"
+
+# Look up a tool's input schema
+composio tools info GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER
+
+# Execute a tool (star the Composio repo!)
+composio tools execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
 ```
+
+## Set up and listen to triggers
+
+```bash
+# Find your connected account ID
+composio connected-accounts list --toolkits github
+
+# Create a trigger for star events on your repo
+composio triggers create GITHUB_STAR_ADDED_EVENT --connected-account-id your-connected-account-id --trigger-config '{"owner":"your-username","repo":"your-repo"}'
+
+# Listen to all GitHub trigger events on your account in real time
+composio triggers listen --toolkits github --table
+```
+
+## Available commands
+
+Run `composio <command> --help` for detailed usage and flags.
+
+<div className="cli-commands">
+
+| Command | Subcommands | Description |
+| --- | --- | --- |
+| `composio login` | | Authenticate with your Composio account |
+| `composio logout` | | Remove stored authentication |
+| `composio whoami` | | Display your account information |
+| `composio init` | | Initialize a Composio project in the current directory |
+| `composio toolkits` | `list`, `search`, `info`, `version` | Discover and inspect toolkits |
+| `composio tools` | `list`, `search`, `info`, `execute` | Discover, inspect, and execute tools |
+| `composio connected-accounts` | `list`, `info`, `whoami`, `link`, `delete` | Manage connected accounts |
+| `composio auth-configs` | `list`, `info`, `create`, `delete` | Manage auth configurations |
+| `composio triggers` | `list`, `info`, `create`, `status`, `listen`, `enable`, `disable`, `delete` | Subscribe to events and manage trigger instances |
+| `composio logs` | `tools`, `triggers` | Inspect tool and trigger execution logs |
+| `composio generate` | | Generate type stubs (auto-detects language) |
+| `composio ts` | `generate` | Generate TypeScript type stubs |
+| `composio py` | `generate` | Generate Python type stubs |
+| `composio upgrade` | | Upgrade CLI to the latest version |
+| `composio version` | | Display the current CLI version |
+
+</div>
+
+## Global flags
+
+| Flag | Description |
+| --- | --- |
+| `--log-level <level>` | Set log level: `silent`, `error`, `warn`, `info`, `debug` |
+| `--help` | Show help for any command |
+
+## Environment variables
+
+| Variable | Description |
+| --- | --- |
+| `COMPOSIO_API_KEY` | Your Composio API key |
+| `COMPOSIO_BASE_URL` | Custom API base URL |
+| `COMPOSIO_LOG_LEVEL` | Logging level: `silent`, `error`, `warn`, `info`, `debug` |
+| `COMPOSIO_DISABLE_TELEMETRY` | Set to `"true"` to disable telemetry |
+| `COMPOSIO_TOOLKIT_VERSION_{TOOLKIT}` | Override toolkit version (e.g., `COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00`) |
+| `COMPOSIO_WEBHOOK_SECRET` | Signing secret for trigger webhook forwarding |
 
 ## Generate type definitions
 
-Generate TypeScript or Python type definitions for all Composio tools. These types provide type safety when using direct tool execution (`composio.tools.execute()`), helping you pass the correct parameters and catch errors early.
+<Callout type="info">
+Type generation is only useful if you're using [direct tool execution](/docs/tools-direct/executing-tools). If you're using sessions with meta tools, you don't need this.
+</Callout>
 
-### Auto-detect and generate
-
-The CLI auto-detects your project language.
-In your project directory:
+Generate TypeScript or Python type definitions for Composio tools. These types provide autocomplete and type safety when using direct tool execution (`composio.tools.execute()`).
 
 ```bash
 composio generate
 ```
 
-For TypeScript projects only, include individual tool types:
-```bash
-composio generate --type-tools
-```
-
-The CLI automatically:
-- Detects your project type (Python or TypeScript)
-- Generates appropriate type definitions
-
-### Specify output directory
-
-```bash
-composio generate --output-dir ./my-types
-```
-
-### Language-specific commands
-
-For explicit control, use language-specific commands:
+The CLI auto-detects your project language. For explicit control, use `composio ts generate` or `composio py generate`.
 
 <Tabs items={['TypeScript', 'Python']}>
   <Tab value="TypeScript">
-    Basic generation:
     ```bash
     composio ts generate
     ```
 
-    Generate as single file:
-    ```bash
-    composio ts generate --compact
-    ```
-
-    Include individual tool types:
-    ```bash
-    composio ts generate --type-tools
-    ```
-
-    Generate both .ts and .js files:
-    ```bash
-    composio ts generate --transpiled
-    ```
-
-    Custom output directory:
-    ```bash
-    composio ts generate --output-dir ./my-types
-    ```
+    | Flag | Description |
+    | --- | --- |
+    | `-o`, `--output-dir <dir>` | Output directory |
+    | `--compact` | Emit a single TypeScript file |
+    | `--transpiled` | Emit transpiled JavaScript alongside TypeScript |
+    | `--type-tools` | Generate typed schemas for each tool (slower) |
+    | `--toolkits <names>` | Only generate for specific toolkits (repeatable) |
   </Tab>
   <Tab value="Python">
-    Basic generation:
     ```bash
     composio py generate
     ```
 
-    Custom output directory:
-    ```bash
-    composio py generate --output-dir ./my_types
-    ```
+    | Flag | Description |
+    | --- | --- |
+    | `-o`, `--output-dir <dir>` | Output directory |
+    | `--toolkits <names>` | Only generate for specific toolkits (repeatable) |
   </Tab>
 </Tabs>
+

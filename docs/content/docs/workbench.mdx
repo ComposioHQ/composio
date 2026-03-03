@@ -4,15 +4,15 @@ description: A persistent Python sandbox for writing code, calling tools program
 keywords: [workbench, sandbox, remote execution, bulk operations, data processing]
 ---
 
-The workbench is a persistent Python sandbox where your agent can write and execute code. It has access to all Composio tools programmatically, plus helper functions for calling LLMs, uploading files, and making API requests. State persists across calls within a session. The `COMPOSIO_REMOTE_BASH_TOOL` meta tool also runs commands in the same sandbox.
+The workbench is a persistent Python sandbox where your agent can write and execute code. It has access to all Composio tools programmatically, plus helper functions for calling LLMs, uploading files, and making API requests. State persists across calls within a [session](/docs/users-and-sessions). The `COMPOSIO_REMOTE_BASH_TOOL` meta tool also runs commands in the same sandbox.
 
 <Callout>
-The workbench is part of the meta tools system. It's available when you create sessions, not when [executing tools directly](/docs/tools-direct/executing-tools).
+The workbench is part of the [meta tools](/docs/tools-and-toolkits#meta-tools) system. It's available when you create sessions, not when [executing tools directly](/docs/tools-direct/executing-tools).
 </Callout>
 
 ## Where it fits
 
-Your agent starts with `SEARCH_TOOLS` to find the right tools, then uses `MULTI_EXECUTE` for straightforward calls. When the task involves bulk operations, data transformations, or multi-step logic, the agent uses `COMPOSIO_REMOTE_WORKBENCH` instead.
+Your agent starts with [`SEARCH_TOOLS` to find the right tools, then uses `MULTI_EXECUTE`](/docs/tools-and-toolkits#meta-tools) for straightforward calls. When the task involves bulk operations, data transformations, or multi-step logic, the agent uses `COMPOSIO_REMOTE_WORKBENCH` instead.
 
 ```mermaid
 graph TD
@@ -72,7 +72,7 @@ The sandbox preserves variables and files across calls. The agent can paginate t
 ## What to read next
 
 <Cards>
-  <Card icon={<Zap />} title="Triggers" href="/docs/triggers" description="Event-driven payloads from connected apps" />
+  <Card icon={<Database />} title="Users & Sessions" href="/docs/users-and-sessions" description="How sessions scope tools, auth, and workbench state to a user" />
   <Card icon={<Wrench />} title="Tools and toolkits" href="/docs/tools-and-toolkits" description="How meta tools discover, authenticate, and execute tools at runtime" />
-  <Card icon={<Blocks />} title="Browse toolkits" href="/toolkits" description="Explore all available toolkits" />
+  <Card icon={<Zap />} title="Triggers" href="/docs/triggers" description="Event-driven payloads from connected apps" />
 </Cards>

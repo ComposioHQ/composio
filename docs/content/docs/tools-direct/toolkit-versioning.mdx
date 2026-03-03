@@ -21,6 +21,24 @@ You can also find the latest version for each toolkit on the [Toolkits](/toolkit
 Starting from Python SDK v0.9.0 and TypeScript SDK v0.2.0, specifying versions is required for manual tool execution.
 </Callout>
 
+## Default version behavior
+
+<Callout type="warn">
+When no version is specified, the API defaults to the base version (`00000000_00`), **not** the latest version. This means the response may contain fewer tools than what's shown on the [platform UI](https://platform.composio.dev). To get all available tools including ones added in newer versions, explicitly set `toolkit_versions` to `"latest"` or a specific version.
+</Callout>
+
+This applies to both the SDK and direct REST API calls:
+
+```bash
+# Without version — returns only tools from the base version
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive' \
+  -H 'x-api-key: YOUR_API_KEY'
+
+# With version=latest — returns all tools including newer ones
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+  -H 'x-api-key: YOUR_API_KEY'
+```
+
 ## Configuration methods
 
 Configure toolkit versions using one of three methods:
@@ -118,15 +136,15 @@ Versions follow the format `YYYYMMDD_NN`:
 - `NN`: Sequential release number
 
 ```python
-# Production
+# Production — pin to a specific version
 toolkit_versions = {"github": "20251027_00"}
 
-# Development
+# Development — always use the newest tools
 toolkit_versions = {"github": "latest"}
 ```
 
 <Callout type="warn">
-Never use `latest` in production. It can introduce breaking changes.
+Never use `latest` in production. It can introduce breaking changes. Pin to a specific version instead.
 </Callout>
 
 ## Version resolution order
@@ -166,3 +184,11 @@ console.log("Latest Version:", toolkit.meta.availableVersions?.[0]);
 ```
   </Tab>
 </Tabs>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />
+  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+  <Card icon={<Terminal />} title="CLI" href="/docs/cli" description="Generate type-safe code from tool schemas with the Composio CLI" />
+</Cards>

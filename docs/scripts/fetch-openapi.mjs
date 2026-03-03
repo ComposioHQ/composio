@@ -11,23 +11,13 @@ import { dirname, join } from 'node:path';
 
 const OPENAPI_URL = process.env.OPENAPI_SPEC_URL || 'https://backend.composio.dev/api/v3/openapi.json';
 
-// Endpoints to ignore (same as fern openapi-overrides.yml)
-const IGNORED_PATHS = [
-  '/api/v3/mcp/validate/{uuid}',
-  '/api/v3/labs/tool_router/session',
-  '/api/v3/cli/get-session',
-  '/api/v3/cli/create-session',
-  '/api/v3/auth/session/logout',
-  '/api/v3/cli/realtime/credentials',
-  '/api/v3/cli/realtime/auth',
-];
-
 // Tags to ignore (internal/admin)
 const IGNORED_TAGS = [
   'CLI',
   'Admin',
   'Profiling',
   'User',
+  'x-internal',
 ];
 
 async function fetchAndFilterSpec() {
@@ -45,12 +35,6 @@ async function fetchAndFilterSpec() {
   let removedCount = 0;
 
   for (const [path, methods] of Object.entries(spec.paths)) {
-    // Skip ignored paths
-    if (IGNORED_PATHS.includes(path)) {
-      removedCount++;
-      continue;
-    }
-
     const filteredMethods = {};
 
     for (const [method, operation] of Object.entries(methods)) {
@@ -63,8 +47,8 @@ async function fetchAndFilterSpec() {
         continue;
       }
 
-      // Skip if marked as internal
-      if (operation['x-internal'] === true) {
+      // Skip if marked as internal (property or tag)
+      if (operation['x-internal'] === true || tags.includes('x-internal')) {
         removedCount++;
         continue;
       }

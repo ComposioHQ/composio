@@ -8,7 +8,7 @@ keywords: [glossary, definitions, terminology]
 <Glossary>
 
 <GlossaryTerm name="Auth Config">
-A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a session when needed. You can create a custom one to use your own OAuth credentials or non-default scopes.
+A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a [session](/docs/users-and-sessions) when needed. You can [create a custom one](/docs/auth-configuration/custom-auth-configs) to use your own OAuth credentials or non-default scopes.
 </GlossaryTerm>
 
 <GlossaryTerm name="Auth Scheme">
@@ -28,11 +28,11 @@ The default mode where Composio provides its own OAuth app credentials for each 
 </GlossaryTerm>
 
 <GlossaryTerm name="Connect Link">
-A hosted page where a user authorizes access to a toolkit. Returned as a `redirect_url` from `session.authorize()` or `connectedAccounts.initiate()`. Composio manages the full OAuth flow.
+A hosted page where a user authorizes access to a toolkit. Returned as a `redirect_url` from `session.authorize()` or `connectedAccounts.initiate()`. Composio manages the full OAuth flow. See [Authentication](/docs/authentication).
 </GlossaryTerm>
 
 <GlossaryTerm name="Connected Account">
-Created when a user authenticates with a toolkit. Stores credentials (OAuth tokens or API keys) linked to a user ID. Composio automatically refreshes OAuth tokens. A user can have multiple connected accounts for the same toolkit. IDs are prefixed `ca_`.
+Created when a user authenticates with a toolkit. Stores credentials (OAuth tokens or API keys) linked to a user ID. Composio automatically refreshes OAuth tokens. A user can have [multiple connected accounts](/docs/managing-multiple-connected-accounts) for the same toolkit. IDs are prefixed `ca_`.
 </GlossaryTerm>
 
 <GlossaryTerm name="Connection Request">
@@ -40,11 +40,11 @@ The object returned when you initiate authentication. Contains the Connect Link 
 </GlossaryTerm>
 
 <GlossaryTerm name="Custom Tool">
-A user-defined tool used alongside Composio's built-in tools. Can be standalone (no auth) or toolkit-based (authenticated API requests). Stored in memory, must be recreated on restart.
+A user-defined tool used alongside Composio's built-in tools. Can be standalone (no auth) or toolkit-based (authenticated API requests). Stored in memory, must be recreated on restart. See [Creating custom tools](/docs/tools-direct/custom-tools).
 </GlossaryTerm>
 
 <GlossaryTerm name="In-Chat Authentication">
-A flow where the AI agent handles authentication by calling `COMPOSIO_MANAGE_CONNECTIONS` to generate a Connect Link and send it to the user in the conversation.
+A flow where the AI agent handles authentication by calling `COMPOSIO_MANAGE_CONNECTIONS` to generate a Connect Link and send it to the user in the conversation. See [In-chat authentication](/docs/authenticating-users/in-chat-authentication).
 </GlossaryTerm>
 
 <GlossaryTerm name="MCP (Model Context Protocol)">
@@ -52,15 +52,15 @@ An open protocol for connecting AI models to external tools. Every session expos
 </GlossaryTerm>
 
 <GlossaryTerm name="Manual Authentication">
-Authenticating users from your own code using `session.authorize()` or `connectedAccounts.initiate()`, as opposed to letting the AI agent handle it via in-chat authentication.
+Authenticating users from your own code using `session.authorize()` or `connectedAccounts.initiate()`, as opposed to letting the AI agent handle it via in-chat authentication. See [Manual authentication](/docs/authenticating-users/manually-authenticating).
 </GlossaryTerm>
 
 <GlossaryTerm name="Meta Tools">
-A set of tools included in every session, including `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, and `COMPOSIO_REMOTE_BASH_TOOL`. They let the agent discover tools, manage auth, execute in parallel, and run code without loading hundreds of tool definitions upfront.
+A set of tools included in every session, including `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, and `COMPOSIO_REMOTE_BASH_TOOL`. They let the agent discover tools, manage auth, execute in parallel, and run code without loading hundreds of tool definitions upfront. See [Tools and toolkits](/docs/tools-and-toolkits#meta-tools).
 </GlossaryTerm>
 
 <GlossaryTerm name="Modifiers">
-Middleware that transforms tool behavior: **schema modifiers** change a tool's schema before the agent sees it, **before-execution modifiers** modify arguments before a tool runs, **after-execution modifiers** transform the result.
+Middleware that transforms tool behavior: [schema modifiers](/docs/tools-direct/modify-tool-behavior/schema-modifiers) change a tool's schema before the agent sees it, [before-execution modifiers](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers) modify arguments before a tool runs, [after-execution modifiers](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers) transform the result.
 </GlossaryTerm>
 
 <GlossaryTerm name="Native Tools">
@@ -76,7 +76,7 @@ A key (`x-org-api-key`) for organization-level operations like creating and mana
 </GlossaryTerm>
 
 <GlossaryTerm name="Project">
-An isolated environment within an organization that scopes API keys, connected accounts, auth configs, and webhooks. Resources in one project are inaccessible from another. IDs are prefixed `proj_`.
+An isolated environment within an organization that scopes API keys, connected accounts, auth configs, and webhooks. Resources in one project are inaccessible from another. IDs are prefixed `proj_`. See [Projects](/docs/projects).
 </GlossaryTerm>
 
 <GlossaryTerm name="Proxy Execute">
@@ -84,11 +84,11 @@ Making authenticated HTTP requests through a toolkit's connected account without
 </GlossaryTerm>
 
 <GlossaryTerm name="Provider">
-An adapter package that transforms Composio tools into the format expected by an AI framework (OpenAI, Anthropic, LangChain, Vercel AI SDK, etc.).
+An adapter package that transforms Composio tools into the format expected by an AI framework (OpenAI, Anthropic, LangChain, Vercel AI SDK, etc.). See [Providers](/docs/providers).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session">
-An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`.
+An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`. See [Users and sessions](/docs/users-and-sessions).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session ID">
@@ -112,11 +112,11 @@ The lowercase identifier for a toolkit, e.g. `github`, `gmail`, `slack`. Used wh
 </GlossaryTerm>
 
 <GlossaryTerm name="Toolkit Versioning">
-Pinning a toolkit to a specific version so your integration uses a consistent set of tools even as Composio updates definitions.
+Pinning a toolkit to a specific version so your integration uses a consistent set of tools even as Composio updates definitions. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </GlossaryTerm>
 
 <GlossaryTerm name="Trigger">
-Sends structured payloads to your application when something happens in a connected app. Two delivery types: **webhook** (the app pushes events in real time, e.g. GitHub, Slack) and **polling** (Composio periodically checks for new data, e.g. Gmail).
+Sends structured payloads to your application when something happens in a connected app. Two delivery types: **webhook** (the app pushes events in real time, e.g. GitHub, Slack) and **polling** (Composio periodically checks for new data, e.g. Gmail). See [Triggers](/docs/triggers).
 </GlossaryTerm>
 
 <GlossaryTerm name="Trigger Instance">
@@ -124,15 +124,15 @@ A specific, active trigger scoped to a user's connected account.
 </GlossaryTerm>
 
 <GlossaryTerm name="User ID">
-An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs.
+An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs. See [Users and sessions](/docs/users-and-sessions).
 </GlossaryTerm>
 
 <GlossaryTerm name="White-Labeling">
-Customizing the auth experience so users see your brand during the OAuth flow. You provide your own OAuth credentials, redirect URIs, and branding.
+Customizing the auth experience so users see your brand during the OAuth flow. You provide your own OAuth credentials, redirect URIs, and branding. See [White-labeling authentication](/docs/white-labeling-authentication).
 </GlossaryTerm>
 
 <GlossaryTerm name="Workbench">
-A persistent Python sandbox via the `COMPOSIO_REMOTE_WORKBENCH` meta tool. State persists across calls within a session. Used for bulk operations, data transformations, and processing large tool responses.
+A persistent Python sandbox via the `COMPOSIO_REMOTE_WORKBENCH` meta tool. State persists across calls within a session. Used for bulk operations, data transformations, and processing large tool responses. See [Workbench](/docs/workbench).
 </GlossaryTerm>
 
 </Glossary>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Bot, FileText, Copy, Check, ExternalLink } from 'lucide-react';
+import { Bot, FileText, Terminal, Copy, Check, ExternalLink } from 'lucide-react';
 
 function CopyableCommand({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -30,9 +30,10 @@ function CopyableCommand({ text }: { text: string }) {
 
 export function AIToolsBanner() {
   const skillsCommand = 'npx skills add composiohq/skills';
+  const cliCommand = 'curl -fsSL https://composio.dev/install | bash';
 
   return (
-    <div className="not-prose relative mt-4 mb-4 sm:mt-6 sm:mb-6 overflow-hidden rounded-xl border border-fd-border bg-gradient-to-br from-fd-card via-fd-card to-fd-muted/50 dark:from-fd-muted/20 dark:via-fd-card dark:to-fd-muted/40">
+    <div className="not-prose relative mt-4 mb-4 sm:mt-6 sm:mb-6 overflow-hidden rounded-xl border border-[var(--composio-orange)]/30 shadow-[0_0_15px_rgba(255,100,0,0.08)] dark:shadow-[0_0_15px_rgba(255,100,0,0.12)] bg-gradient-to-br from-fd-card via-fd-card to-fd-muted/50 dark:from-fd-muted/20 dark:via-fd-card dark:to-fd-muted/40">
       {/* Subtle grid pattern */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.02]"
@@ -53,11 +54,10 @@ export function AIToolsBanner() {
           </span>
         </div>
 
-        {/* Skills command */}
+        {/* Skills */}
+        <div className="mb-1 text-xs font-medium text-[var(--composio-orange)] uppercase tracking-wider">Skills</div>
         <CopyableCommand text={skillsCommand} />
-
-        {/* Skills links */}
-        <div className="mb-3 sm:mb-4 flex items-center gap-3 text-xs">
+        <div className="mb-3 flex items-center gap-3 text-xs">
           <Link
             href="https://skills.sh/composiohq/skills/composio"
             target="_blank"
@@ -78,7 +78,21 @@ export function AIToolsBanner() {
           </Link>
         </div>
 
-        {/* Context files */}
+        {/* CLI */}
+        <div className="mb-1 text-xs font-medium text-[var(--composio-orange)] uppercase tracking-wider">CLI</div>
+        <CopyableCommand text={cliCommand} />
+        <div className="mb-3 flex items-center gap-3 text-xs">
+          <Link
+            href="/docs/cli"
+            className="inline-flex items-center gap-1 text-fd-muted-foreground hover:text-[var(--composio-orange)] transition-colors"
+          >
+            <Terminal className="h-3 w-3" />
+            CLI Reference
+          </Link>
+        </div>
+
+        {/* Context */}
+        <div className="mb-1 text-xs font-medium text-[var(--composio-orange)] uppercase tracking-wider">Context</div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
             href="/llms.txt"

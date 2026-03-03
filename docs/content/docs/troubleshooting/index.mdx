@@ -47,6 +47,12 @@ Go to the [dashboard](https://platform.composio.dev) and navigate to **Active Tr
 See [Troubleshooting triggers](/docs/troubleshooting/triggers#reporting-issues) for a screenshot.
 </Accordion>
 
+<Accordion title="Why does the API return fewer tools than the platform UI?">
+The Get Tools API defaults to the base toolkit version (`00000000_00`) when `toolkit_versions` is not specified. Pass `toolkit_versions=latest` to get all available tools.
+
+See [Troubleshooting tools](/docs/troubleshooting/tools#api-returning-fewer-tools-than-expected) for details.
+</Accordion>
+
 </Accordions>
 
 ## Quick links

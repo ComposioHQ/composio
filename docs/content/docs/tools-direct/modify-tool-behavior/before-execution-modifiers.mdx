@@ -5,7 +5,7 @@ llmGuardrails: "direct-execution"
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle tool fetching, authentication, and execution automatically.
+If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Tools and toolkits](/docs/tools-and-toolkits#meta-tools) for how sessions handle tool discovery and execution automatically.
 </Callout>
 
 Before execution modifiers are part of Composio SDK's powerful middleware capabilities that allow you to customize and extend the behavior of tools.
@@ -177,3 +177,11 @@ const agenticTools = await composio.tools.get(
 ```
   </Tab>
 </Tabs>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Wrench />} title="After execution modifiers" href="/docs/tools-direct/modify-tool-behavior/after-execution-modifiers" description="Transform tool results after execution" />
+  <Card icon={<Wrench />} title="Schema modifiers" href="/docs/tools-direct/modify-tool-behavior/schema-modifiers" description="Customize how tools appear to agents" />
+  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+</Cards>

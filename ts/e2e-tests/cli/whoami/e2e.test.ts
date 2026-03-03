@@ -23,6 +23,12 @@ e2e(import.meta.url, {
   },
   defineTests: ({ runCmd }) => {
     const expectedApiKey = Bun.env.COMPOSIO_USER_API_KEY.trim();
+    const expectedWhoamiJson = JSON.stringify({
+      global_user_api_key: expectedApiKey,
+      default_org_id: null,
+      default_project_id: null,
+      test_user_id: null,
+    });
     let whoamiResult: E2ETestResult;
     let redirectedResult: E2ETestResultWithFiles<'out.txt'>;
 
@@ -39,8 +45,8 @@ e2e(import.meta.url, {
         expect(whoamiResult.exitCode).toBe(0);
       });
 
-      it('stdout contains the API key', () => {
-        expect(sanitizeOutput(whoamiResult.stdout)).toBe(expectedApiKey);
+      it('stdout contains global user context JSON', () => {
+        expect(sanitizeOutput(whoamiResult.stdout)).toBe(expectedWhoamiJson);
       });
 
       it('stderr is empty', () => {
@@ -61,8 +67,8 @@ e2e(import.meta.url, {
         expect(redirectedResult.stderr).toBe('');
       });
 
-      it('out.txt contains the API key', () => {
-        expect(sanitizeOutput(redirectedResult.files['out.txt'])).toBe(expectedApiKey);
+      it('out.txt contains global user context JSON', () => {
+        expect(sanitizeOutput(redirectedResult.files['out.txt'])).toBe(expectedWhoamiJson);
       });
     });
   },

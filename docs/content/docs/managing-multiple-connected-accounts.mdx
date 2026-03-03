@@ -4,7 +4,7 @@ description: Handle users with multiple accounts for the same toolkit
 keywords: [multiple accounts, work personal, switch account]
 ---
 
-Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail accounts). This is useful when users need to manage different email accounts, GitHub organizations, or separate work and personal contexts. This guide explains how to connect, select, and manage multiple accounts.
+Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail accounts). This is useful when users need to manage different email accounts, GitHub organizations, or separate work and personal contexts. This guide explains how to connect, select, and manage multiple accounts. For background on how users, sessions, and connected accounts relate, see [Users & Sessions](/docs/users-and-sessions).
 
 ## Default account behavior
 
@@ -142,3 +142,11 @@ for (const toolkit of toolkits.items) {
 ```
 </Tab>
 </Tabs>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Pass connectedAccounts, auth configs, and toolkit restrictions to sessions" />
+  <Card icon={<ShieldCheck />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating" description="Pre-authenticate users with session.authorize() and Connect Links" />
+  <Card icon={<Key />} title="Authentication overview" href="/docs/authentication" description="Connect Links, OAuth, API keys, and how Composio manages auth" />
+</Cards>

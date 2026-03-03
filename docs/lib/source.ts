@@ -188,8 +188,13 @@ export function mdxToCleanMarkdown(content: string): string {
       while ((match = labelRegex.exec(tabsContent)) !== null) {
         tabLabelMap[match[1]] = match[2];
       }
-      return '';
+      return '\n> Which should I use? See [Native Tools vs MCP](/docs/native-tools-vs-mcp)\n';
     }
+  );
+  // Also handle IntegrationTabs without explicit tabs prop
+  result = result.replace(
+    /<IntegrationTabs(?![^>]*tabs=)[\s\S]*?>/g,
+    '\n> Which should I use? See [Native Tools vs MCP](/docs/native-tools-vs-mcp)\n'
   );
 
   // Convert IntegrationContent to labeled section
@@ -247,7 +252,10 @@ export function mdxToCleanMarkdown(content: string): string {
     '**Skills:**\n' +
     '```bash\nnpx skills add composiohq/skills\n```\n' +
     '[Skills.sh](https://skills.sh/composiohq/skills/composio) · [GitHub](https://github.com/composiohq/skills)\n\n' +
-    '**Context files:**\n' +
+    '**CLI:**\n' +
+    '```bash\ncurl -fsSL https://composio.dev/install | bash\n```\n' +
+    '[CLI Reference](/docs/cli)\n\n' +
+    '**Context:**\n' +
     '- [llms.txt](/llms.txt) — Documentation index with links\n' +
     '- [llms-full.txt](/llms-full.txt) — Complete documentation in one file'
   );

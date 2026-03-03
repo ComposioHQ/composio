@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const tools = await session.tools();
 
   const result = streamText({
-    model: openai("gpt-5"),
+    model: openai("gpt-5.2"),
     system: "You are a helpful assistant. Use Composio tools to help the user.",
     messages: await convertToModelMessages(messages),
     tools,
