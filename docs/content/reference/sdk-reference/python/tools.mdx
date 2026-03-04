@@ -11,7 +11,7 @@ Access this class through the `composio.tools` property:
 from composio import Composio
 
 composio = Composio(api_key="your-api-key")
-result = composio.tools.list()
+tools = composio.tools.get("user-id", toolkits=["github"])
 ```
 
 ## Methods

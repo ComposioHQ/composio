@@ -52,6 +52,16 @@ EXPECTED_CLASSES = {
     "MCP": "mcp",
 }
 
+# Usage examples for each class (shown in the "Usage" section)
+USAGE_EXAMPLES = {
+    "Tools": 'tools = composio.tools.get("user-id", toolkits=["github"])',
+    "Toolkits": "toolkits = composio.toolkits.list()",
+    "Triggers": "triggers = composio.triggers.list_active()",
+    "ConnectedAccounts": 'request = composio.connected_accounts.initiate("user-id", "auth-config-id")',
+    "AuthConfigs": "configs = composio.auth_configs.list()",
+    "MCP": "servers = composio.mcp.list()",
+}
+
 # Modules to search for classes
 CLASS_MODULES = [
     "core.models.tools",
@@ -268,6 +278,9 @@ def generate_class_mdx(
     # Usage section for non-Composio classes (accessed via composio.property)
     access = info.get("access")
     if access and info["name"] != "Composio":
+        example_line = USAGE_EXAMPLES.get(
+            info["name"], f"{access}  # => {info['name']}"
+        )
         lines.append("## Usage")
         lines.append("")
         lines.append(f"Access this class through the `{access}` property:")
@@ -276,7 +289,7 @@ def generate_class_mdx(
         lines.append("from composio import Composio")
         lines.append("")
         lines.append('composio = Composio(api_key="your-api-key")')
-        lines.append(f"result = {access}.list()")
+        lines.append(example_line)
         lines.append("```")
         lines.append("")
 
