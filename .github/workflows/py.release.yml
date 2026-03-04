@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: "Skip running tests"
+        description: 'Skip running tests'
         required: false
         type: boolean
         default: false
@@ -13,7 +13,7 @@ on:
 jobs:
   publish-core:
     name: Build and release SDK
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'py-v')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'py@')
     defaults:
       run:
         working-directory: ./python
@@ -27,8 +27,8 @@ jobs:
 
       - name: Build Artifacts
         run: |
-            make env
-            make build
+          make env
+          make build
 
       - name: Publish Artifacts
         if: github.event_name == 'release'
