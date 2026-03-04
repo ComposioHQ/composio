@@ -224,7 +224,6 @@ runWithArgs.pipe(
   ),
   Effect.provide(layers),
   Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  BunRuntime.runMain({
-    teardown,
-  })
+  effect =>
+    (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(effect)
 );
