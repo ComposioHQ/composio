@@ -146,23 +146,23 @@ def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp
 
 ```python
 # In a Flask webhook handler
-    @app.route('/webhook', methods=['POST'])
-    def webhook():
-        try:
-            result = composio.triggers.verify_webhook(
-                id=request.headers.get('webhook-id', ''),
-                payload=request.get_data(as_text=True),
-                signature=request.headers.get('webhook-signature', ''),
-                timestamp=request.headers.get('webhook-timestamp', ''),
-                secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
-            )
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        result = composio.triggers.verify_webhook(
+            id=request.headers.get('webhook-id', ''),
+            payload=request.get_data(as_text=True),
+            signature=request.headers.get('webhook-signature', ''),
+            timestamp=request.headers.get('webhook-timestamp', ''),
+            secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+        )
 
-            # Process the verified payload
-            print(f"Version: {result['version']}")
-            print(f"Received trigger: {result['payload']['trigger_slug']}")
-            return 'OK', 200
-        except WebhookSignatureVerificationError:
-            return 'Unauthorized', 401
+        # Process the verified payload
+        print(f"Version: {result['version']}")
+        print(f"Received trigger: {result['payload']['trigger_slug']}")
+        return 'OK', 200
+    except WebhookSignatureVerificationError:
+        return 'Unauthorized', 401
 ```
 
 ---

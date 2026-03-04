@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -127,6 +128,54 @@ def format_type(annotation: Any) -> str:
     return type_str
 
 
+def _clean_example(example: str) -> str:
+    """Clean a docstring example for MDX output.
+
+    Handles:
+    - Dedenting common leading whitespace (from docstring indentation)
+    - Stripping ```python / ``` code block wrappers
+    - Removing >>> and ... doctest markers
+    """
+    # Dedent before stripping (strip() would remove leading indent from
+    # line 1, making textwrap.dedent unable to detect common indent)
+    text = textwrap.dedent(example)
+
+    # Now strip surrounding whitespace
+    text = text.strip()
+
+    # Strip code block wrappers
+    if text.startswith("```python"):
+        text = text[len("```python") :]
+    elif text.startswith("```py"):
+        text = text[len("```py") :]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+
+    # Dedent again after stripping code block markers (content may be indented)
+    text = textwrap.dedent(text).strip()
+
+    # Strip doctest markers (>>> and ...)
+    cleaned_lines = []
+    for line in text.split("\n"):
+        stripped = line.lstrip()
+        if stripped.startswith(">>> "):
+            cleaned_lines.append(stripped[4:])
+        elif stripped.startswith(">>>"):
+            cleaned_lines.append(stripped[3:])
+        elif stripped.startswith("... "):
+            cleaned_lines.append(stripped[4:])
+        elif stripped.startswith("...") and (
+            len(stripped) == 3 or not stripped[3].isalpha()
+        ):
+            cleaned_lines.append(stripped[3:])
+        else:
+            cleaned_lines.append(line)
+
+    return textwrap.dedent("\n".join(cleaned_lines)).strip()
+
+
 def parse_docstring(docstring: str | None) -> dict[str, Any]:
     """Parse docstring into components."""
     if not docstring:
@@ -176,7 +225,7 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             example_lines.append(line)
 
     if example_lines:
-        examples.append("\n".join(example_lines).strip())
+        examples.append("\n".join(example_lines))
 
     return {
         "description": " ".join(description_lines).strip(),
@@ -380,21 +429,11 @@ def generate_class_mdx(
                 lines.append("**Example**")
                 lines.append("")
                 for ex in method["examples"]:
-                    # Strip existing code block wrappers from docstring examples
-                    clean_ex = ex.strip()
-                    if clean_ex.startswith("```python"):
-                        clean_ex = clean_ex[len("```python") :]
-                    elif clean_ex.startswith("```py"):
-                        clean_ex = clean_ex[len("```py") :]
-                    elif clean_ex.startswith("```"):
-                        clean_ex = clean_ex[3:]
-                    if clean_ex.endswith("```"):
-                        clean_ex = clean_ex[:-3]
-                    clean_ex = clean_ex.strip()
-
-                    lines.append("```python")
-                    lines.append(clean_ex)
-                    lines.append("```")
+                    clean_ex = _clean_example(ex)
+                    if clean_ex:
+                        lines.append("```python")
+                        lines.append(clean_ex)
+                        lines.append("```")
                 lines.append("")
 
             lines.append("---")

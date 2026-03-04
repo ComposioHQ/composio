@@ -64,24 +64,24 @@ def link(user_id: str, auth_config_id: str, callback_url: str | None = ...) -> C
 
 ```python
 # Create a connection request and redirect the user to the redirect url
-    connection_request = composio.connected_accounts.link('user_123', 'auth_config_123')
-    redirect_url = connection_request.redirect_url
-    print(f"Visit: {redirect_url} to authenticate your account")
+connection_request = composio.connected_accounts.link('user_123', 'auth_config_123')
+redirect_url = connection_request.redirect_url
+print(f"Visit: {redirect_url} to authenticate your account")
 
-    # Wait for the connection to be established
-    connected_account = connection_request.wait_for_connection()
+# Wait for the connection to be established
+connected_account = connection_request.wait_for_connection()
 
-    # Create a connection request with callback URL
-    connection_request = composio.connected_accounts.link(
-        'user_123',
-        'auth_config_123',
-        callback_url='https://your-app.com/callback'
-    )
-    redirect_url = connection_request.redirect_url
-    print(f"Visit: {redirect_url} to authenticate your account")
+# Create a connection request with callback URL
+connection_request = composio.connected_accounts.link(
+    'user_123',
+    'auth_config_123',
+    callback_url='https://your-app.com/callback'
+)
+redirect_url = connection_request.redirect_url
+print(f"Visit: {redirect_url} to authenticate your account")
 
-    # Wait for the connection to be established
-    connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
+# Wait for the connection to be established
+connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
 ```
 
 ---
