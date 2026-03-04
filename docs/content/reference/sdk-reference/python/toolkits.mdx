@@ -3,6 +3,17 @@ title: Toolkits
 description: "Toolkits are a collectiono of tools that can be used to perform various tasks. They're conceptualized as a set of tools. Ex: Github toolkit can per..."
 ---
 
+## Usage
+
+Access this class through the `composio.toolkits` property:
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+result = composio.toolkits.list()
+```
+
 ## Methods
 
 ### list()
@@ -68,10 +79,10 @@ def authorize(user_id: str, toolkit: str)
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `toolkit` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The ID of the user to authorize. |
+| `toolkit` | `str` | The slug of the toolkit to authorize. |
 
 ---
 

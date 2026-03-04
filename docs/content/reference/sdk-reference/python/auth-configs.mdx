@@ -3,6 +3,17 @@ title: AuthConfigs
 description: Manage authentication configurations.
 ---
 
+## Usage
+
+Access this class through the `composio.auth_configs` property:
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+result = composio.auth_configs.list()
+```
+
 ## Methods
 
 ### list()
@@ -35,10 +46,10 @@ def create(toolkit: str, options: auth_config_create_params.AuthConfig) -> auth_
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit` | `str` |
-| `options` | `auth_config_create_params.AuthConfig` |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit` | `str` | The toolkit to create the auth config for. |
+| `options` | `auth_config_create_params.AuthConfig` | The options to create the auth config with. |
 
 **Returns**
 
@@ -56,9 +67,9 @@ def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to retrieve. |
 
 **Returns**
 
@@ -76,10 +87,10 @@ def update(nanoid: str, options: auth_config_update_params.AuthConfigUpdateParam
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
-| `options` | `auth_config_update_params.AuthConfigUpdateParams` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to update. |
+| `options` | `auth_config_update_params.AuthConfigUpdateParams` | The options to update the auth config with. |
 
 **Returns**
 
@@ -97,9 +108,9 @@ def delete(nanoid: str) -> Dict
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to delete. |
 
 **Returns**
 
@@ -117,9 +128,9 @@ def enable(nanoid: str) -> Dict
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to enable. |
 
 **Returns**
 
@@ -137,9 +148,9 @@ def disable(nanoid: str) -> Dict
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `nanoid` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to disable. |
 
 **Returns**
 

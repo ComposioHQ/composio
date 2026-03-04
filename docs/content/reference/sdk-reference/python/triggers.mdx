@@ -3,6 +3,17 @@ title: Triggers
 description: Triggers (instance) class
 ---
 
+## Usage
+
+Access this class through the `composio.triggers` property:
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+result = composio.triggers.list()
+```
+
 ## Methods
 
 ### get_type()
@@ -15,9 +26,9 @@ def get_type(slug: str) -> TriggersTypeRetrieveResponse
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `slug` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `str` | The slug of the trigger type |
 
 **Returns**
 
@@ -35,15 +46,15 @@ def list_active(trigger_ids: list[str | None] = ..., trigger_names: list[str | N
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `trigger_ids?` | `list[str \| None]` |
-| `trigger_names?` | `list[str \| None]` |
-| `auth_config_ids?` | `list[str \| None]` |
-| `connected_account_ids?` | `list[str \| None]` |
-| `show_disabled?` | `bool \| None` |
-| `limit?` | `int \| None` |
-| `cursor?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `trigger_ids?` | `list[str \| None]` | List of trigger IDs to filter by |
+| `trigger_names?` | `list[str \| None]` | List of trigger names to filter by |
+| `auth_config_ids?` | `list[str \| None]` | List of auth config IDs to filter by |
+| `connected_account_ids?` | `list[str \| None]` | List of connected account IDs to filter by |
+| `show_disabled?` | `bool \| None` | Whether to show disabled triggers |
+| `limit?` | `int \| None` | Limit the number of triggers to return |
+| `cursor?` | `str \| None` | Cursor for pagination. Use the nextCursor from the response to get the next page. |
 
 ---
 
@@ -57,11 +68,11 @@ def list(cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `cursor?` | `str \| None` |
-| `limit?` | `int \| None` |
-| `toolkit_slugs?` | `list[str \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `cursor?` | `str \| None` | The cursor for pagination |
+| `limit?` | `int \| None` | The maximum number of trigger types to return |
+| `toolkit_slugs?` | `list[str \| None]` | Filter by toolkit slugs |
 
 ---
 
@@ -75,12 +86,12 @@ def create(slug: str, user_id: str | None = ..., connected_account_id: str | Non
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `slug` | `str` |
-| `user_id?` | `str \| None` |
-| `connected_account_id?` | `str \| None` |
-| `trigger_config?` | `Dict[str, Any \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `str` | The slug of the trigger |
+| `user_id?` | `str \| None` |  |
+| `connected_account_id?` | `str \| None` | The ID of the connected account |
+| `trigger_config?` | `Dict[str, Any \| None]` | The configuration of the trigger |
 
 **Returns**
 
@@ -98,9 +109,9 @@ def subscribe(timeout: float = ...) -> TriggerSubscription
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `timeout?` | `float` |
+| Name | Type | Description |
+|------|------|-------------|
+| `timeout?` | `float` | The timeout to wait for the subscription to be established. |
 
 **Returns**
 
@@ -118,14 +129,14 @@ def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `id` | `str` |
-| `payload` | `str` |
-| `secret` | `str` |
-| `signature` | `str` |
-| `timestamp` | `str` |
-| `tolerance?` | `int` |
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `str` | The webhook message ID from the 'webhook-id' header (format: 'msg_xxx') |
+| `payload` | `str` | The raw webhook payload as a string (request body) |
+| `secret` | `str` | The webhook secret used to sign the payload (from Composio dashboard) |
+| `signature` | `str` | The signature from the 'webhook-signature' header (format: 'v1,base64EncodedSignature') |
+| `timestamp` | `str` | The webhook timestamp from the 'webhook-timestamp' header (Unix seconds) |
+| `tolerance?` | `int` | Maximum allowed age of the webhook in seconds (default: 300 = 5 minutes). Set to 0 to disable timestamp validation. |
 
 **Returns**
 

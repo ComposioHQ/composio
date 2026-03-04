@@ -3,6 +3,17 @@ title: MCP
 description: MCP (Model Control Protocol) class. Provides enhanced MCP server operations  This matches the TypeScript ExperimentalMCP class functionality.
 ---
 
+## Usage
+
+Access this class through the `composio.mcp` property:
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+result = composio.mcp.list()
+```
+
 ## Methods
 
 ### create()
@@ -15,12 +26,12 @@ def create(name: str, toolkits: List[Union[ConfigToolkit, str]], manually_manage
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `name` | `str` |
-| `toolkits` | `List[Union[ConfigToolkit, str]]` |
-| `manually_manage_connections?` | `bool` |
-| `allowed_tools?` | `List[str \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `name` | `str` | Unique name for the MCP configuration |
+| `toolkits` | `List[Union[ConfigToolkit, str]]` | List of toolkit configurations. Can be either: - MCPToolkitConfig objects with detailed configuration - Strings representing toolkit names (for simple cases) |
+| `manually_manage_connections?` | `bool` | Whether to manually manage account connections (default: False) |
+| `allowed_tools?` | `List[str \| None]` | List of specific tools to enable across all toolkits (default: None for all tools) |
 
 **Returns**
 
@@ -76,15 +87,15 @@ def list(page_no: int | None = ..., limit: int | None = ..., toolkits: str | Non
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `page_no?` | `int \| None` |
-| `limit?` | `int \| None` |
-| `toolkits?` | `str \| None` |
-| `auth_config_ids?` | `str \| None` |
-| `name?` | `str \| None` |
-| `order_by?` | `Literal['created_at', 'updated_at' \| None]` |
-| `order_direction?` | `Literal['asc', 'desc' \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `page_no?` | `int \| None` | Page number for pagination (default: 1) |
+| `limit?` | `int \| None` | Maximum items per page (default: 10) |
+| `toolkits?` | `str \| None` | Filter by toolkit name (single string) |
+| `auth_config_ids?` | `str \| None` | Filter by auth configuration ID (single string) |
+| `name?` | `str \| None` | Filter by server name (partial match) |
+| `order_by?` | `Literal['created_at', 'updated_at' \| None]` | Order by field ('created_at' or 'updated_at') |
+| `order_direction?` | `Literal['asc', 'desc' \| None]` | Order direction ('asc' or 'desc') |
 
 **Returns**
 
@@ -115,9 +126,9 @@ def get(server_id: str)
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `server_id` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `server_id` | `str` | The unique identifier of the MCP server/config |
 
 **Example**
 
@@ -142,13 +153,13 @@ def update(server_id: str, name: str | None = ..., toolkits: List[Union[ConfigTo
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `server_id` | `str` |
-| `name?` | `str \| None` |
-| `toolkits?` | `List[Union[ConfigToolkit, str \| None]]` |
-| `manually_manage_connections?` | `bool \| None` |
-| `allowed_tools?` | `List[str \| None]` |
+| Name | Type | Description |
+|------|------|-------------|
+| `server_id` | `str` | The unique identifier of the MCP server to update |
+| `name?` | `str \| None` | Optional new name for the MCP server |
+| `toolkits?` | `List[Union[ConfigToolkit, str \| None]]` | Optional list of toolkit configurations (strings or objects) |
+| `manually_manage_connections?` | `bool \| None` | Optional flag for connection management |
+| `allowed_tools?` | `List[str \| None]` | Optional list of specific tools to enable across all toolkits |
 
 **Example**
 
@@ -190,9 +201,9 @@ def delete(server_id: str) -> Dict[str, Any]
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `server_id` | `str` |
+| Name | Type | Description |
+|------|------|-------------|
+| `server_id` | `str` | The unique identifier of the MCP server to delete |
 
 **Returns**
 
@@ -222,11 +233,11 @@ def generate(user_id: str, mcp_config_id: str, manually_manage_connections: bool
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `mcp_config_id` | `str` |
-| `manually_manage_connections?` | `bool \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | External user ID from your database |
+| `mcp_config_id` | `str` | MCP configuration ID |
+| `manually_manage_connections?` | `bool \| None` | Whether to manually manage connections (optional) |
 
 **Returns**
 

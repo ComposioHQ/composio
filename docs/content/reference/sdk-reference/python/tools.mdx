@@ -3,6 +3,17 @@ title: Tools
 description: Tools class definition  This class is used to manage tools in the Composio SDK. It provides methods to list, get, and execute tools.  Generic Param...
 ---
 
+## Usage
+
+Access this class through the `composio.tools` property:
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+result = composio.tools.list()
+```
+
 ## Methods
 
 ### get_raw_composio_tool_by_slug()
@@ -59,10 +70,10 @@ def get_raw_tool_router_meta_tools(session_id: str, modifiers: 'Modifiers' | Non
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `session_id` | `str` |
-| `modifiers?` | `'Modifiers' \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `session_id` | `str` | The session ID to get the meta tools for |
+| `modifiers?` | `'Modifiers' \| None` | Optional modifiers to apply to the tool schemas |
 
 **Returns**
 
@@ -71,8 +82,7 @@ def get_raw_tool_router_meta_tools(session_id: str, modifiers: 'Modifiers' | Non
 **Example**
 
 ```python
-```python
-    from composio import Composio
+from composio import Composio
 
     composio = Composio()
     tools_model = composio.tools
@@ -94,7 +104,6 @@ def get_raw_tool_router_meta_tools(session_id: str, modifiers: 'Modifiers' | Non
         "session_123",
         modifiers=[modify_schema]
     )
-    ```
 ```
 
 ---
@@ -109,16 +118,16 @@ def get(user_id: str, slug: str | None = ..., tools: list[str | None] = ..., sea
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `slug?` | `str \| None` |
-| `tools?` | `list[str \| None]` |
-| `search?` | `str \| None` |
-| `toolkits?` | `list[str \| None]` |
-| `scopes?` | `List[str \| None]` |
-| `modifiers?` | `Modifiers \| None` |
-| `limit?` | `int \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The user ID to get tools for. |
+| `slug?` | `str \| None` | Get a single tool by slug. |
+| `tools?` | `list[str \| None]` | Get tools by a list of tool slugs. |
+| `search?` | `str \| None` | Search tools by search term. |
+| `toolkits?` | `list[str \| None]` | Get tools from specific toolkits. |
+| `scopes?` | `List[str \| None]` | Filter by scopes. |
+| `modifiers?` | `Modifiers \| None` | Optional modifiers to apply. |
+| `limit?` | `int \| None` | Limit the number of tools returned. |
 
 **Returns**
 
@@ -136,18 +145,18 @@ def execute(slug: str, arguments: Dict, connected_account_id: str | None = ..., 
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `slug` | `str` |
-| `arguments` | `Dict` |
-| `connected_account_id?` | `str \| None` |
-| `custom_auth_params?` | `tool_execute_params.CustomAuthParams \| None` |
-| `custom_connection_data?` | `tool_execute_params.CustomConnectionData \| None` |
-| `user_id?` | `str \| None` |
-| `text?` | `str \| None` |
-| `version?` | `str \| None` |
-| `dangerously_skip_version_check?` | `bool \| None` |
-| `modifiers?` | `Modifiers \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `str` | The slug of the tool to execute. |
+| `arguments` | `Dict` | The arguments to pass to the tool. |
+| `connected_account_id?` | `str \| None` | The ID of the connected account to use for the tool. |
+| `custom_auth_params?` | `tool_execute_params.CustomAuthParams \| None` | The custom auth params to use for the tool. |
+| `custom_connection_data?` | `tool_execute_params.CustomConnectionData \| None` | The custom connection data to use for the tool, takes priority over custom_auth_params. |
+| `user_id?` | `str \| None` | The ID of the user to execute the tool for. |
+| `text?` | `str \| None` | The text to pass to the tool. |
+| `version?` | `str \| None` | The version of the tool to execute (overrides the SDK-level toolkit versions for this execution). |
+| `dangerously_skip_version_check?` | `bool \| None` | Skip the version check for 'latest' version. This might cause unexpected behavior when new versions are released. |
+| `modifiers?` | `Modifiers \| None` | The modifiers to apply to the tool. |
 
 **Returns**
 

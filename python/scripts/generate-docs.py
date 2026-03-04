@@ -265,6 +265,21 @@ def generate_class_mdx(
 
     source_link = info.get("source_link", "")
 
+    # Usage section for non-Composio classes (accessed via composio.property)
+    access = info.get("access")
+    if access and info["name"] != "Composio":
+        lines.append("## Usage")
+        lines.append("")
+        lines.append(f"Access this class through the `{access}` property:")
+        lines.append("")
+        lines.append("```python")
+        lines.append("from composio import Composio")
+        lines.append("")
+        lines.append('composio = Composio(api_key="your-api-key")')
+        lines.append(f"result = {access}.list()")
+        lines.append("```")
+        lines.append("")
+
     # Properties - as table for Composio class
     if prop_to_class:
         prop_rows = []
@@ -315,12 +330,25 @@ def generate_class_mdx(
             if method["parameters"]:
                 lines.append("**Parameters**")
                 lines.append("")
-                lines.append("| Name | Type |")
-                lines.append("|------|------|")
-                for p in method["parameters"]:
-                    opt = "?" if p["optional"] else ""
-                    safe_type = p["type"].replace("|", "\\|")
-                    lines.append(f"| `{p['name']}{opt}` | `{safe_type}` |")
+
+                # Check if any parameter has a description
+                has_descriptions = any(p["description"] for p in method["parameters"])
+
+                if has_descriptions:
+                    lines.append("| Name | Type | Description |")
+                    lines.append("|------|------|-------------|")
+                    for p in method["parameters"]:
+                        opt = "?" if p["optional"] else ""
+                        safe_type = p["type"].replace("|", "\\|")
+                        desc = p["description"] or ""
+                        lines.append(f"| `{p['name']}{opt}` | `{safe_type}` | {desc} |")
+                else:
+                    lines.append("| Name | Type |")
+                    lines.append("|------|------|")
+                    for p in method["parameters"]:
+                        opt = "?" if p["optional"] else ""
+                        safe_type = p["type"].replace("|", "\\|")
+                        lines.append(f"| `{p['name']}{opt}` | `{safe_type}` |")
                 lines.append("")
 
             # Returns
@@ -339,8 +367,20 @@ def generate_class_mdx(
                 lines.append("**Example**")
                 lines.append("")
                 for ex in method["examples"]:
+                    # Strip existing code block wrappers from docstring examples
+                    clean_ex = ex.strip()
+                    if clean_ex.startswith("```python"):
+                        clean_ex = clean_ex[len("```python") :]
+                    elif clean_ex.startswith("```py"):
+                        clean_ex = clean_ex[len("```py") :]
+                    elif clean_ex.startswith("```"):
+                        clean_ex = clean_ex[3:]
+                    if clean_ex.endswith("```"):
+                        clean_ex = clean_ex[:-3]
+                    clean_ex = clean_ex.strip()
+
                     lines.append("```python")
-                    lines.append(ex)
+                    lines.append(clean_ex)
                     lines.append("```")
                 lines.append("")
 

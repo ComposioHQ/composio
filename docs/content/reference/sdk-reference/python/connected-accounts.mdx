@@ -3,6 +3,17 @@ title: ConnectedAccounts
 description: Manage connected accounts.  This class is used to manage connected accounts in the Composio SDK. These are used to authenticate with third-party se...
 ---
 
+## Usage
+
+Access this class through the `composio.connected_accounts` property:
+
+```python
+from composio import Composio
+
+composio = Composio(api_key="your-api-key")
+result = composio.connected_accounts.list()
+```
+
 ## Methods
 
 ### initiate()
@@ -15,13 +26,13 @@ def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., 
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `auth_config_id` | `str` |
-| `callback_url?` | `str \| None` |
-| `allow_multiple?` | `bool` |
-| `config?` | `connected_account_create_params.ConnectionState \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The user ID to create the connected account for. |
+| `auth_config_id` | `str` | The auth config ID to create the connected account for. |
+| `callback_url?` | `str \| None` | Callback URL to use for OAuth apps. |
+| `allow_multiple?` | `bool` | Whether to allow multiple connected accounts for the same user and auth config. |
+| `config?` | `connected_account_create_params.ConnectionState \| None` | The configuration to create the connected account with. |
 
 **Returns**
 
@@ -39,11 +50,11 @@ def link(user_id: str, auth_config_id: str, callback_url: str | None = ...) -> C
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `user_id` | `str` |
-| `auth_config_id` | `str` |
-| `callback_url?` | `str \| None` |
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The external user ID to create the connected account for. |
+| `auth_config_id` | `str` | The auth config ID to create the connected account for. |
+| `callback_url?` | `str \| None` | The URL to redirect the user to post connecting their account. |
 
 **Returns**
 
