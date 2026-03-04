@@ -125,7 +125,7 @@ export class TelemetryTransport {
               props: {
                 fileName: instrumentedClassName,
                 method: name,
-                params: args,
+                params: {},
               },
               metadata: {
                 provider: this.telemetryMetadata?.provider ?? 'openai',
@@ -204,7 +204,7 @@ export class TelemetryTransport {
       props: {
         fileName: instrumentedClassName,
         method: name,
-        params: args,
+        params: {},
       },
       metadata: {
         provider: this.telemetryMetadata?.provider ?? 'openai',

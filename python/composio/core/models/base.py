@@ -21,7 +21,7 @@ allow_tracking = contextvars.ContextVar[bool]("allow_tracking", default=True)
 _environment = os.getenv("ENVIRONMENT", "development")
 
 
-def trace_method(method: t.Callable, name: str, **attributes: t.Any) -> t.Callable:
+def trace_method(method: t.Callable, name: str) -> t.Callable:
     """Wrap a method to log the call."""
 
     # Check if the method is a class method
@@ -39,7 +39,7 @@ def trace_method(method: t.Callable, name: str, **attributes: t.Any) -> t.Callab
             type="metric",
             functionName=name,
             timestamp=time.time(),
-            props=attributes,
+            props={},
             source={
                 "environment": _environment,  # type: ignore
                 "language": "python",
