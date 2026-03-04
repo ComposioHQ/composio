@@ -21,6 +21,7 @@ import { logsCmd } from './logs-cmd/logs.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
 import { projectsCmd } from './projects/projects.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
+import { printRootHelp } from './root-help';
 
 const $cmd = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -99,6 +100,11 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
   return argv;
 };
 
+const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
+  const args = argv.slice(2);
+  return args.length === 1 && (args[0] === '--help' || args[0] === '-h');
+};
+
 export const runWithConfig = Effect.gen(function* () {
   const version = yield* getVersion;
   const run = Command.run($cmd, {
@@ -109,6 +115,9 @@ export const runWithConfig = Effect.gen(function* () {
 
   return (argv: ReadonlyArray<string>) => {
     const normalizedArgv = normalizeVersionShortFlag(argv);
+    if (isRootHelp(normalizedArgv)) {
+      return printRootHelp();
+    }
     const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
     if (executeHelpSlug) {
       return showToolsExecuteInputHelp(executeHelpSlug);

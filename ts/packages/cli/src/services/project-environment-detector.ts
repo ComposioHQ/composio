@@ -144,6 +144,26 @@ const pickBestWeak = (candidate: DirEvidence, depth: number) => {
   } as const;
 };
 
+/** Known system paths that must not be treated as project roots for weak detection. */
+const SYSTEM_ROOTS = new Set([
+  '/',
+  '/tmp',
+  '/var',
+  '/usr',
+  '/private',
+  '/private/tmp',
+  '/private/var',
+]);
+
+/** Reject system roots (/, /tmp, /var, /private/tmp, etc.) as project roots for weak detection. */
+const isSystemRoot = (dir: string): boolean => {
+  const resolved = path.resolve(dir);
+  if (SYSTEM_ROOTS.has(resolved)) return true;
+  const parent = path.dirname(resolved);
+  if (parent === resolved) return true; // root
+  return parent === path.resolve('/'); // direct child of root, e.g. /tmp, /var, /usr
+};
+
 const parsePackageManagerField = (pm: string) =>
   Match.value(pm).pipe(
     Match.when(
@@ -416,7 +436,7 @@ const detectLanguage = (fs: FileSystem.FileSystem, cwd: string) =>
         bestWeak = weakCandidate;
     }
 
-    if (bestWeak)
+    if (bestWeak && !isSystemRoot(bestWeak.dir))
       return {
         language: bestWeak.language,
         rootDir: bestWeak.dir,

@@ -251,10 +251,13 @@ describe('ProjectEnvironmentDetector', () => {
     layer(testLayer)('Edge cases', it => {
       it.scoped('[Given] empty directory [Then] fails with no-detection error', () =>
         Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
           const detector = yield* ProjectEnvironmentDetector;
-          const cwd = tempy.temporaryDirectory();
+          const tempRoot = tempy.temporaryDirectory();
+          const emptyDir = path.join(tempRoot, 'a', 'b', 'c');
+          yield* fs.makeDirectory(emptyDir, { recursive: true });
 
-          const result = yield* detector.detectProjectEnvironment(cwd).pipe(Effect.either);
+          const result = yield* detector.detectProjectEnvironment(emptyDir).pipe(Effect.either);
 
           assert(Either.isLeft(result));
           expect(result.left.message).toContain('No recognizable');

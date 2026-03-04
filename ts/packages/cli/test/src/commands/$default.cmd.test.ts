@@ -28,7 +28,7 @@ describe('CLI: composio', () => {
       Effect.gen(function* () {
         const args = ['--help'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
         expect(yield* sanitize(output)).toMatchSnapshot();
       })
