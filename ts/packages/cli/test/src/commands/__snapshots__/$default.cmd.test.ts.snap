@@ -2,7 +2,7 @@
 
 exports[`CLI: composio > [Given] --help flag [Then] prints help message 1`] = `
 "
-A tool for managing Python and TypeScript composio.dev projects.
+Connect AI agents to external tools. Link accounts, discover tools, and execute them.
 
 USAGE
   composio <command> [options]

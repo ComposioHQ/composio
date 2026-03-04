@@ -56,7 +56,7 @@ export function printRootHelp(subcommands: ReadonlyArray<CliCommand>): Effect.Ef
 
   const lines: string[] = [
     '',
-    'A tool for managing Python and TypeScript composio.dev projects.',
+    'Connect AI agents to external tools. Link accounts, discover tools, and execute them.',
     '',
     bold('USAGE'),
     `  ${name} <command> [options]`,
