@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.1.34
+
+### Patch Changes
+
+- 3d74f52: Added compact gh-style root help for composio --help and fixed the project environment detector empty-directory test on macOS. Updated root help copy (tagline, login/logout, generate) and resolved the CI typecheck failure in bin.ts.
+
 ## 0.1.33
 
 ### Patch Changes
