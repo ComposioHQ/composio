@@ -9,10 +9,14 @@ const ROOT_COMMANDS: ReadonlyArray<{ name: string; description: string }> = [
   { name: 'version', description: 'Display the current Composio CLI version.' },
   { name: 'upgrade', description: 'Upgrade your Composio CLI to the latest available version.' },
   { name: 'whoami', description: 'Display your account information.' },
-  { name: 'login', description: 'Log in to the Composio SDK.' },
-  { name: 'logout', description: 'Log out from the Composio SDK.' },
+  { name: 'login', description: 'Log in to the Composio CLI session.' },
+  { name: 'logout', description: 'Log out from the Composio CLI session.' },
   { name: 'init', description: 'Initialize a Composio project in the current directory.' },
-  { name: 'generate', description: 'Generate type stubs for toolkits, tools, and triggers.' },
+  {
+    name: 'generate',
+    description:
+      'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)',
+  },
   { name: 'py', description: 'Handle Python projects.' },
   { name: 'ts', description: 'Handle TypeScript projects.' },
   { name: 'toolkits', description: 'Discover and inspect Composio toolkits.' },
@@ -35,7 +39,7 @@ export function printRootHelp(): Effect.Effect<void> {
 
   const lines: string[] = [
     '',
-    'A tool for managing Python and TypeScript composio.dev projects.',
+    'Connect AI agents to external tools. Link accounts, discover tools, and execute them.',
     '',
     bold('USAGE'),
     `  ${name} <command> [options]`,

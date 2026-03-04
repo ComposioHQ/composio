@@ -11,8 +11,8 @@ COMMANDS
   version             Display the current Composio CLI version.
   upgrade             Upgrade your Composio CLI to the latest available version.
   whoami              Display your account information.
-  login               Log in to the Composio SDK.
-  logout              Log out from the Composio SDK.
+  login               Log in to the Composio CLI session.
+  logout              Log out from the Composio CLI session.
   init                Initialize a Composio project in the current directory.
   generate            Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
   py                  Handle Python projects.
