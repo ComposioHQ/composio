@@ -1,6 +1,6 @@
 import { Command, Options } from '@effect/cli';
 import { Effect, Option, Schedule } from 'effect';
-import open from 'open';
+import { openUrl } from 'src/utils/open-url';
 import {
   ComposioSessionRepository,
   getSessionInfo,
@@ -173,7 +173,7 @@ export const browserLogin = (params: {
     yield* ui.output(url);
 
     if (!params.noBrowser) {
-      yield* Effect.tryPromise(() => open(url, { wait: false })).pipe(
+      yield* openUrl(url).pipe(
         Effect.catchAll(error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Failed to open browser:', error);

@@ -1,6 +1,6 @@
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option, Schedule } from 'effect';
-import open from 'open';
+import { openUrl } from 'src/utils/open-url';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -59,7 +59,7 @@ const waitForActiveConnection = (
         yield* ui.log.warn(`Redirect URL has an unexpected scheme: ${redirectUrl}`);
         yield* ui.log.info('Open the URL manually if you trust the source.');
       } else {
-        yield* Effect.tryPromise(() => open(redirectUrl, { wait: false })).pipe(
+        yield* openUrl(redirectUrl).pipe(
           Effect.catchAll(error =>
             Effect.gen(function* () {
               yield* Effect.logDebug('Failed to open browser:', error);
