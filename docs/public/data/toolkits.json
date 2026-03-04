@@ -7613,7 +7613,7 @@
       {
         "slug": "OUTLOOK_CALENDAR_CREATE_EVENT",
         "name": "Create Calendar Event",
-        "description": "Creates a new Outlook calendar event, ensuring `start_datetime` is chronologically before `end_datetime`."
+        "description": "Creates a new Outlook calendar event in the default (primary) calendar, ensuring `start_datetime` is chronologically before `end_datetime`. To create an event in a non-primary or secondary calendar, use `OUTLOOK_CREATE_CALENDAR_EVENT` with a `calendar_id` instead."
       },
       {
         "slug": "OUTLOOK_CANCEL_CALENDAR_EVENT",
@@ -7698,7 +7698,7 @@
       {
         "slug": "OUTLOOK_CREATE_CALENDAR_EVENT",
         "name": "Create Event in Calendar",
-        "description": "Tool to create a new event in a specific Outlook calendar. Use when you need to add an event to a particular calendar by its ID."
+        "description": "Tool to create a new event in a specific Outlook calendar by `calendar_id`, routing to `/me/calendars/{calendarId}/events` on Microsoft Graph. Use when you need to add an event to a non-primary or secondary calendar. For the default (primary) calendar with start/end validation, use `OUTLOOK_CALENDAR_CREATE_EVENT` instead."
       },
       {
         "slug": "OUTLOOK_CREATE_CALENDAR_EVENT_ATTACHMENT",
