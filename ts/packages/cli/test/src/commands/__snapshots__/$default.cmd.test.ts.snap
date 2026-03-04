@@ -14,7 +14,7 @@ COMMANDS
   login               Log in to the Composio SDK.
   logout              Log out from the Composio SDK.
   init                Initialize a Composio project in the current directory.
-  generate            Generate type stubs for toolkits, tools, and triggers.
+  generate            Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
   py                  Handle Python projects.
   ts                  Handle TypeScript projects.
   toolkits            Discover and inspect Composio toolkits.

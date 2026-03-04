@@ -23,26 +23,29 @@ import { projectsCmd } from './projects/projects.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
 import { printRootHelp } from './root-help';
 
+/** Subcommands in display order. Single source of truth for root help. */
+const subcommands = [
+  versionCmd,
+  upgradeCmd,
+  whoamiCmd,
+  loginCmd,
+  logoutCmd,
+  initCmd,
+  generateCmd,
+  pyCmd,
+  tsCmd,
+  toolkitsCmd,
+  toolsCmd,
+  authConfigsCmd,
+  connectedAccountsCmd,
+  triggersCmd,
+  logsCmd,
+  orgsCmd,
+  projectsCmd,
+];
+
 const $cmd = $defaultCmd.pipe(
-  Command.withSubcommands([
-    versionCmd,
-    upgradeCmd,
-    whoamiCmd,
-    loginCmd,
-    logoutCmd,
-    initCmd,
-    generateCmd,
-    pyCmd,
-    tsCmd,
-    toolkitsCmd,
-    toolsCmd,
-    authConfigsCmd,
-    connectedAccountsCmd,
-    triggersCmd,
-    logsCmd,
-    orgsCmd,
-    projectsCmd,
-  ])
+  Command.withSubcommands(subcommands as unknown as Parameters<typeof Command.withSubcommands>[1])
 );
 
 export const rootCommand = $cmd;
@@ -116,7 +119,7 @@ export const runWithConfig = Effect.gen(function* () {
   return (argv: ReadonlyArray<string>) => {
     const normalizedArgv = normalizeVersionShortFlag(argv);
     if (isRootHelp(normalizedArgv)) {
-      return printRootHelp();
+      return printRootHelp(subcommands as Parameters<typeof printRootHelp>[0]);
     }
     const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
     if (executeHelpSlug) {
