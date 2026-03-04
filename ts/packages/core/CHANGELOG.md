@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.6.4
+
+### Patch Changes
+
+- e3f1f6c: Remove telemetry payload
+
 ## 0.6.3
 
 ### Patch Changes
