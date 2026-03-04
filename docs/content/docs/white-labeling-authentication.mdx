@@ -10,7 +10,7 @@ There are three places where Composio branding shows up during authentication:
 |-------|---------------|------------|
 | [**Connect Link page**](#customizing-the-connect-link) | Composio logo and name on the hosted auth page | Change logo + app title in dashboard |
 | [**OAuth consent screen**](#using-your-own-oauth-apps) | "Composio wants to access your account" on Google, GitHub, etc. | Use your own OAuth app |
-| [**Browser address bar**](#custom-redirect-domain) | `backend.composio.dev` flashes during OAuth redirect | Proxy the redirect through your domain |
+| [**Browser address bar**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes during OAuth redirect-back | Proxy the redirect through your domain |
 
 ## Customizing the Connect Link
 
@@ -120,7 +120,7 @@ Now when users connect GitHub or Slack, they'll see your app name on the consent
 
 For development and testing, Composio's managed auth works fine. No OAuth app setup required.
 
-## Custom redirect domain
+## Routing the callback through your domain
 
 During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token. Some toolkits also display this URL on the consent screen.
 

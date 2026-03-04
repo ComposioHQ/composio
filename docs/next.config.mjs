@@ -774,6 +774,12 @@ const config = {
         destination: '/reference/api-reference',
         permanent: true,
       },
+      // White-labeling direct execution page redirect
+      {
+        source: '/docs/white-labeling',
+        destination: '/docs/white-labeling-authentication',
+        permanent: true,
+      },
     ];
   },
 };

@@ -9,13 +9,14 @@ llmGuardrails: "direct-execution"
 If you're building an agent with sessions, see [White-labeling authentication](/docs/white-labeling-authentication) instead.
 </Callout>
 
-There are three places where Composio branding shows up during authentication:
+There are four places where Composio branding shows up during authentication:
 
 | Where | What users see | How to fix |
 |-------|---------------|------------|
 | [**Connect Link page**](#customizing-the-connect-link) | Composio logo and name on the hosted auth page | Change logo + app title in dashboard |
 | [**OAuth consent screen**](#using-your-own-oauth-apps) | "Composio wants to access your account" on Google, GitHub, etc. | Use your own OAuth app |
-| [**Browser address bar**](#custom-redirect-domain) | `backend.composio.dev` flashes during OAuth redirect | Proxy the redirect through your domain |
+| [**Outgoing redirect**](#sending-users-directly-to-the-oauth-provider) | `backend.composio.dev` in browser before reaching OAuth provider | Use `long_redirect_url` option |
+| [**Return redirect**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes when OAuth provider redirects back | Proxy the redirect through your domain |
 
 ## Customizing the Connect Link
 
@@ -126,11 +127,57 @@ For toolkits you haven't white-labeled, use the auth config ID from **Authentica
 
 For development and testing, Composio's managed auth works fine. No OAuth app setup required.
 
-## Custom redirect domain
+## Sending users directly to the OAuth provider
 
-During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token. Some toolkits also display this URL on the consent screen.
+By default, when you initiate a connection, Composio returns a shortened redirect URL (`backend.composio.dev/api/v3/s/...`). The user's browser hits this URL first, then gets redirected to the OAuth provider. This means `backend.composio.dev` briefly appears in the browser.
 
-If you need to hide Composio's domain, you can proxy the redirect through your own domain instead.
+To skip this and send users directly to the OAuth provider, pass `long_redirect_url: true` when initiating the connection:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+
+github_conn = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_github_config",
+    config={
+        "auth_scheme": "OAUTH2",
+        "val": {"status": "INITIALIZING", "long_redirect_url": True},
+    },
+)
+print(f"Redirect to: {github_conn.redirect_url}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const githubConn = await composio.connectedAccounts.initiate(
+  "user_123",
+  "ac_your_github_config",
+  {
+    config: {
+      authScheme: "OAUTH2",
+      val: { status: "INITIALIZING", long_redirect_url: true },
+    },
+  },
+);
+console.log("Redirect to:", githubConn.redirectUrl);
+```
+</Tab>
+</Tabs>
+
+The redirect URL returned will point directly to the OAuth provider (e.g., `accounts.google.com/o/oauth2/auth?...`) instead of going through Composio first.
+
+## Routing the callback through your domain
+
+After the user authorizes, the OAuth provider redirects back through `backend.composio.dev` so Composio can capture the auth token. Some toolkits also display this URL on the consent screen.
+
+If you need to hide Composio's domain from this return redirect, you can proxy it through your own domain.
 
 <Steps>
 <Step>
