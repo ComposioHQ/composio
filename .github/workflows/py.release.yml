@@ -1,7 +1,8 @@
 name: Release Python Packages
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'py@*'
   workflow_dispatch:
     inputs:
       skip_tests:
@@ -13,7 +14,6 @@ on:
 jobs:
   publish-core:
     name: Build and release SDK
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'py@')
     defaults:
       run:
         working-directory: ./python
@@ -31,7 +31,7 @@ jobs:
           make build
 
       - name: Publish Artifacts
-        if: github.event_name == 'release'
+        if: github.event_name == 'push'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ./python/dist
