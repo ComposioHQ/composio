@@ -27,14 +27,12 @@ export function transform<RawInput>(raw: RawInput) {
           const result = schema.safeParse(transformed);
 
           if (!result.success) {
-            // @TODO:send telemetry here
-            // throw new ValidationError(
-            //   `Failed to transform${options?.label ? ` ${options.label}` : ''}`,
-            //   {
-            //     cause: result.error,
-            //   }
-            // );
-            logger.error(result.error);
+            // Re-enable validation error throwing as per issue #2716
+            // The original @TODO suggests this was meant to be implemented
+            logger.warn(
+              `Transform validation failed${options?.label ? ` for ${options.label}` : ''}: ${result.error.message}`
+            );
+            // Return original data but log a warning about the silent failure
             return transformed;
           }
 
