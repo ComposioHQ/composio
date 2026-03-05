@@ -158,15 +158,18 @@ def _clean_example(example: str) -> str:
 
     # Strip doctest markers (>>> and ...)
     cleaned_lines = []
+    in_doctest = False
     for line in text.split("\n"):
         stripped = line.lstrip()
         if stripped.startswith(">>> "):
+            in_doctest = True
             cleaned_lines.append(stripped[4:])
         elif stripped.startswith(">>>"):
+            in_doctest = True
             cleaned_lines.append(stripped[3:])
-        elif stripped.startswith("... "):
+        elif in_doctest and stripped.startswith("... "):
             cleaned_lines.append(stripped[4:])
-        elif stripped.startswith("...") and (
+        elif in_doctest and stripped.startswith("...") and (
             len(stripped) == 3 or not stripped[3].isalpha()
         ):
             cleaned_lines.append(stripped[3:])
