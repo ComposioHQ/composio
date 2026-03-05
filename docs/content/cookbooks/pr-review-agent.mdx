@@ -1,0 +1,119 @@
+---
+title: PR review agent
+description: Build an AI PR review agent that reads your CLAUDE.md, reviews diffs, and posts feedback on every pull request
+---
+
+Build a PR review agent that runs on every pull request, reads your repo's `CLAUDE.md` or `AGENTS.md`, reviews the diff against those rules, and posts structured feedback as a comment. About 40 lines of Python and a 20-line GitHub Action.
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/pr-review-agent)
+
+## What you'll build
+
+- An AI reviewer that runs automatically on every PR via GitHub Actions
+- Reads `CLAUDE.md` or `AGENTS.md` from your repo to enforce project-specific rules
+- Posts structured reviews with categorized issues, security analysis, and test coverage checks
+
+## Prerequisites
+
+- Python 3.10+
+- [Composio API key](https://platform.composio.dev/settings)
+- [OpenAI API key](https://platform.openai.com/api-keys)
+- A GitHub repository where you have admin access (for adding secrets and workflows)
+
+**Stack:** Python, OpenAI Agents SDK, Composio, GitHub Actions
+
+## Set up the project
+
+Create a new directory and install dependencies:
+
+```bash
+mkdir pr-review-agent && cd pr-review-agent
+pip install composio composio-openai-agents openai-agents
+```
+
+<Callout type="info">
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
+</Callout>
+
+Set your API keys:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+## Build the agent
+
+Create `agent.py`:
+
+<include meta='title="agent.py"'>../../examples/pr-review-agent/agent.py</include>
+
+Here's what's happening:
+
+1. **Session creation**: `composio.create(user_id="user_123", toolkits=["github"])` creates a session with GitHub tools like `GITHUB_GET_A_PULL_REQUEST`, `GITHUB_LIST_PULL_REQUESTS_FILES`, and `GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST`.
+
+2. **CLAUDE.md / AGENTS.md as review rules**: The agent checks for either file in the repo root and uses it as its review checklist. Your existing project standards become the review guide with zero extra setup.
+
+3. **Focused review**: The agent only flags new code that could break something or mislead someone. It skips style preferences, pre-existing issues, and anything CI already catches.
+
+## Run it locally
+
+```bash
+python agent.py
+```
+
+If you haven't connected GitHub yet, the agent will prompt you with an auth link. Authorize and rerun.
+
+To review a specific PR:
+
+```bash
+GITHUB_REPO=owner/repo PR_NUMBER=42 python agent.py
+```
+
+## Run it on every PR with GitHub Actions
+
+Add `agent.py` to the root of your repo, then create `.github/workflows/review.yml`:
+
+<include meta='title=".github/workflows/review.yml"'>../../examples/pr-review-agent/review.yml</include>
+
+Your repo should look like this:
+
+```
+your-repo/
+├── agent.py
+├── .github/workflows/review.yml
+└── CLAUDE.md (optional)
+```
+
+Then add your secrets to the repo:
+
+1. Go to **Settings > Secrets and variables > Actions**
+2. Add `COMPOSIO_API_KEY` and `OPENAI_API_KEY` as repository secrets
+
+That's it. Every time a PR is opened or updated, the agent will review it and post a comment.
+
+## How it works
+
+When a PR is opened:
+
+1. GitHub Actions triggers the workflow and runs `agent.py`
+2. The agent creates a Composio session with GitHub tools
+3. It fetches the PR details and diffs using `GITHUB_GET_A_PULL_REQUEST` and `GITHUB_LIST_PULL_REQUESTS_FILES`
+4. It checks for `CLAUDE.md` or `AGENTS.md` in the repo root
+5. It reviews the diff and posts a structured comment using `GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST`
+
+Composio handles OAuth, tool discovery, and API execution. You don't write any GitHub API code.
+
+## Take it further
+
+<Cards>
+  <Card title="Build a Chat App" href="/cookbooks/chat-app">
+    Build a full chat interface with tool calling
+  </Card>
+  <Card title="Configuring sessions" href="/docs/configuring-sessions">
+    Lock down which toolkits and tools your agent can access
+  </Card>
+  <Card title="Authenticating users" href="/docs/authenticating-users/manually-authenticating">
+    Authenticate users ahead of time during onboarding
+  </Card>
+</Cards>
