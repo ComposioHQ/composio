@@ -20,6 +20,13 @@ Ensure your OAuth app is configured correctly:
 
 For setup guides by toolkit: [OAuth Configuration Guides](https://composio.dev/oauth)
 
+## Switching to a custom OAuth app
+
+If you're moving from Composio-managed auth to your own OAuth app, existing connections are not affected. New connections will use your custom auth config. To fully migrate users, delete their old connected accounts and have them re-authenticate.
+
+- **Sessions:** Pass `authConfigs` when calling `composio.create()`. See [Switching auth configs (sessions)](/docs/white-labeling-authentication#switching-from-composio-managed-to-your-own-oauth-app).
+- **Direct tool execution:** Pass the new `authConfigId` when calling `initiate()`. See [Switching auth configs (direct)](/docs/auth-configuration/white-labeling#switching-from-composio-managed-to-your-own-oauth-app).
+
 ## Common authentication issues
 
 - **Invalid redirect URI**: Check the callback URL matches exactly

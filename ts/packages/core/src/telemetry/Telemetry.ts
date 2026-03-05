@@ -125,7 +125,6 @@ export class TelemetryTransport {
               props: {
                 fileName: instrumentedClassName,
                 method: name,
-                params: args,
               },
               metadata: {
                 provider: this.telemetryMetadata?.provider ?? 'openai',
@@ -149,7 +148,6 @@ export class TelemetryTransport {
                   error,
                   instrumentedClassName,
                   name,
-                  args,
                   startTime,
                   durationMs
                 );
@@ -185,7 +183,6 @@ export class TelemetryTransport {
    * @param {unknown} error - The error to send.
    * @param {string} instrumentedClassName - The class name of the instrumented class.
    * @param {string} name - The name of the method that threw the error.
-   * @param {unknown[]} args - The arguments passed to the method.
    * @param {number} startTime - The start time of the method invocation in milliseconds.
    * @param {number} durationMs - The duration of the method invocation in milliseconds.
    */
@@ -193,7 +190,6 @@ export class TelemetryTransport {
     error: unknown,
     instrumentedClassName: string,
     name: string,
-    args: unknown[],
     startTime: number,
     durationMs: number
   ) {
@@ -204,7 +200,6 @@ export class TelemetryTransport {
       props: {
         fileName: instrumentedClassName,
         method: name,
-        params: args,
       },
       metadata: {
         provider: this.telemetryMetadata?.provider ?? 'openai',

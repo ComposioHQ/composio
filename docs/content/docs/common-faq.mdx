@@ -207,6 +207,18 @@ Create a new session when the config changes: different toolkits, different auth
 Some toolkits require your own OAuth credentials or API keys. Create an auth config in the dashboard by selecting the toolkit, choosing the auth scheme, and entering your credentials. Then pass the auth config ID when creating a session using the `auth_configs` (or `auth_config_id`) parameter so the session uses your developer credentials instead of Composio-managed auth. See [Using custom auth configuration](/docs/using-custom-auth-configuration).
 </Accordion>
 
+<Accordion title="What happens to existing connections when I switch to my own OAuth app?">
+Nothing — existing connected accounts are permanently tied to the auth config they were created with. Switching to a custom auth config only affects new connections.
+
+- **Existing connections keep working.** Tokens continue refreshing using the original auth config's credentials.
+- **New connections use your custom auth config.** Users who connect after the switch see your app name on the consent screen.
+- **To fully migrate a user**, delete their old connected account and have them re-authenticate through your OAuth app. There is no way to move an existing connection between auth configs without re-authentication.
+
+This applies whether you're using sessions or direct tool execution:
+- **Sessions:** Pass `authConfigs` when calling `composio.create()`. See [Switching auth configs (sessions)](/docs/white-labeling-authentication#switching-from-composio-managed-to-your-own-oauth-app).
+- **Direct tool execution:** Pass the new `authConfigId` when calling `initiate()`. See [Switching auth configs (direct)](/docs/auth-configuration/white-labeling#switching-from-composio-managed-to-your-own-oauth-app).
+</Accordion>
+
 <Accordion title="How do I check complete logs / API calls from the SDK?">
 Enable debug logging to view all API calls and network requests made by the SDK.
 

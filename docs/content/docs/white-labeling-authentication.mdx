@@ -10,7 +10,7 @@ There are three places where Composio branding shows up during authentication:
 |-------|---------------|------------|
 | [**Connect Link page**](#customizing-the-connect-link) | Composio logo and name on the hosted auth page | Change logo + app title in dashboard |
 | [**OAuth consent screen**](#using-your-own-oauth-apps) | "Composio wants to access your account" on Google, GitHub, etc. | Use your own OAuth app |
-| [**Browser address bar**](#custom-redirect-domain) | `backend.composio.dev` flashes during OAuth redirect | Proxy the redirect through your domain |
+| [**Browser address bar**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes during OAuth redirect-back | Proxy the redirect through your domain |
 
 ## Customizing the Connect Link
 
@@ -120,7 +120,48 @@ Now when users connect GitHub or Slack, they'll see your app name on the consent
 
 For development and testing, Composio's managed auth works fine. No OAuth app setup required.
 
-## Custom redirect domain
+### Switching from Composio-managed to your own OAuth app
+
+Existing connected accounts are permanently tied to the auth config they were created with. Switching to a custom auth config does not affect them. You have two options:
+
+**Keep existing users as-is.** Just pass `authConfigs` for the toolkits you want to white-label. Users who already have a connection keep using it. Users who need to connect for the first time go through your OAuth app:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",  # new connections use your OAuth app
+    },
+)
+# Existing GitHub connections for this user keep working as before.
+# Only new connections go through your custom OAuth app.
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  authConfigs: {
+    github: "ac_your_github_config",  // new connections use your OAuth app
+  },
+});
+// Existing GitHub connections for this user keep working as before.
+// Only new connections go through your custom OAuth app.
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+Existing users' connections continue using Composio's OAuth client credentials for token refresh until they re-authenticate.
+</Callout>
+
+**Fully migrate all users.** To move every user to your OAuth app, delete their old connected accounts and have them re-authenticate. There is no way to move an existing connection from one auth config to another without re-authentication.
+
+## Routing the callback through your domain
 
 During OAuth, the browser briefly redirects through `backend.composio.dev` so Composio can capture the auth token. Some toolkits also display this URL on the consent screen.
 
