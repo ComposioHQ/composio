@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- ecb455c: Fix CTAs and Link commands
+
 ## 0.2.0
 
 ### Minor Changes
