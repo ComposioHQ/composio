@@ -6017,9 +6017,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 151,
+    "toolCount": 153,
     "triggerCount": 9,
-    "version": "20260228_00",
+    "version": "20260306_00",
     "tools": [
       {
         "slug": "SLACK_ADD_AN_EMOJI_ALIAS_IN_SLACK",
@@ -6080,6 +6080,16 @@
         "slug": "SLACK_ARCHIVE_A_SLACK_CONVERSATION",
         "name": "Archive a Slack conversation",
         "description": "Archives a Slack conversation by its ID, rendering it read-only and hidden while retaining history, ideal for cleaning up inactive channels; be aware that some channels (like #general or certain DMs) cannot be archived and this may impact connected integrations."
+      },
+      {
+        "slug": "SLACK_ASSISTANT_SEARCH_CONTEXT",
+        "name": "Real-time search",
+        "description": "Real-time search across Slack messages, files, channels, and users. Supports semantic (natural language) and keyword search with contextual messages. Use `content_types` to search messages, files, channels, or users in a single call. Enable `include_context_messages` for surrounding conversation context."
+      },
+      {
+        "slug": "SLACK_ASSISTANT_SEARCH_INFO",
+        "name": "Check search capabilities",
+        "description": "Check if semantic (AI-powered) search is available on the Slack workspace. Returns whether natural language queries will trigger semantic search in assistant.search.context calls."
       },
       {
         "slug": "SLACK_CLEAR_STATUS",
@@ -14574,7 +14584,7 @@
     ],
     "toolCount": 87,
     "triggerCount": 9,
-    "version": "20260228_00",
+    "version": "20260306_00",
     "tools": [
       {
         "slug": "SLACKBOT_ADD_A_REMOTE_FILE_FROM_A_SERVICE",
@@ -55346,9 +55356,12 @@
       "OAUTH2",
       "GOOGLE_SERVICE_ACCOUNT"
     ],
+    "composioManagedAuthSchemes": [
+      "OAUTH2"
+    ],
     "toolCount": 65,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260306_00",
     "tools": [
       {
         "slug": "GOOGLEBIGQUERY_CANCEL_JOB",
@@ -55716,7 +55729,7 @@
                 "type": "string",
                 "description": "Scopes to request from the user, comma separated",
                 "required": false,
-                "default": "https://www.googleapis.com/auth/bigquery,https://www.googleapis.com/auth/userinfo.email"
+                "default": "https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/userinfo.email"
               }
             ]
           },
@@ -79960,9 +79973,6 @@
     "category": "signatures",
     "authSchemes": [
       "API_KEY",
-      "OAUTH2"
-    ],
-    "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
     "toolCount": 56,

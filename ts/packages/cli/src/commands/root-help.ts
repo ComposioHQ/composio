@@ -1,17 +1,110 @@
 import { Console, Effect } from 'effect';
 import { bold } from 'src/ui/colors';
 
-/**
- * Top-level commands for the root help output.
- * Order and descriptions must match the commands in index.ts.
- */
-const ROOT_COMMANDS: ReadonlyArray<{ name: string; description: string }> = [
-  { name: 'version', description: 'Display the current Composio CLI version.' },
-  { name: 'upgrade', description: 'Upgrade your Composio CLI to the latest available version.' },
-  { name: 'whoami', description: 'Display your account information.' },
-  { name: 'login', description: 'Log in to the Composio CLI session.' },
-  { name: 'logout', description: 'Log out from the Composio CLI session.' },
-  { name: 'init', description: 'Initialize a Composio project in the current directory.' },
+type BasicCommand = {
+  name: string;
+  description: string;
+  usage: string;
+  options?: ReadonlyArray<{ name: string; description: string }>;
+};
+
+const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
+  {
+    name: 'version',
+    description: 'Display the current Composio CLI version.',
+    usage: 'version',
+  },
+  {
+    name: 'upgrade',
+    description: 'Upgrade your Composio CLI to the latest available version.',
+    usage: 'upgrade',
+  },
+  {
+    name: 'whoami',
+    description: 'Display your account information.',
+    usage: 'whoami',
+  },
+  {
+    name: 'login',
+    description: 'Log in to the Composio CLI session.',
+    usage: 'login [--no-browser] [--api-key text] [--org-id text] [--project-id text]',
+    options: [
+      { name: '--no-browser', description: 'Login without browser interaction' },
+      { name: '--api-key', description: 'API key for non-interactive login (agents/CI)' },
+      { name: '--org-id', description: 'Organization ID for non-interactive login' },
+      { name: '--project-id', description: 'Project ID for non-interactive login' },
+    ],
+  },
+  {
+    name: 'logout',
+    description: 'Log out from the Composio CLI session.',
+    usage: 'logout',
+  },
+  {
+    name: 'init',
+    description: 'Initialize a Composio project in the current directory.',
+    usage: 'init [--org-id text] [--project-id text] [--no-browser] [-y, --yes]',
+    options: [
+      { name: '--org-id', description: 'Organization ID (skip interactive picker)' },
+      { name: '--project-id', description: 'Project ID (skip interactive picker)' },
+      { name: '--no-browser', description: 'Skip opening browser for auth' },
+      { name: '-y, --yes', description: 'Auto-select default org/project' },
+    ],
+  },
+  {
+    name: 'search',
+    description: 'Search tools by use case across toolkits/apps.',
+    usage: 'search <query> [--toolkits text] [--user-id text] [--limit integer]',
+    options: [
+      { name: '<query>', description: 'Semantic use-case query (e.g. "send emails")' },
+      { name: '--toolkits', description: 'Filter by toolkit slugs, comma-separated' },
+      { name: '--user-id', description: 'User ID (falls back to project/global test_user_id)' },
+      { name: '--limit', description: 'Number of results per page (1-1000)' },
+    ],
+  },
+  {
+    name: 'execute',
+    description: 'Execute a tool.',
+    usage: 'execute <slug> [-d, --data text] [--user-id text]',
+    options: [
+      { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
+      { name: '-d, --data', description: 'JSON arguments, @file, or - for stdin' },
+      { name: '--user-id', description: 'User ID (falls back to project test_user_id)' },
+    ],
+  },
+  {
+    name: 'link',
+    description: 'Connect a user account for a toolkit/app.',
+    usage: 'link [<toolkit>] [--auth-config text] [--user-id text] [--no-browser]',
+    options: [
+      { name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' },
+      { name: '--auth-config', description: 'Auth config ID (legacy flow)' },
+      { name: '--user-id', description: 'User ID for the connection' },
+      { name: '--no-browser', description: 'Skip auto-opening the browser' },
+    ],
+  },
+  {
+    name: 'listen',
+    description: 'Listen for trigger events.',
+    usage:
+      'listen [--toolkits text] [--trigger-id text] [--user-id text] [--max-events integer] [--forward text] [--out text]',
+    options: [
+      { name: '--toolkits', description: 'Filter by toolkit slugs, comma-separated' },
+      { name: '--trigger-id', description: 'Filter by trigger id' },
+      { name: '--user-id', description: 'Filter by user id' },
+      { name: '--max-events', description: 'Stop after N matching events' },
+      {
+        name: '--forward',
+        description: 'Forward events to URL (signed with COMPOSIO_WEBHOOK_SECRET)',
+      },
+      { name: '--out', description: 'Append events to file' },
+      { name: '--json', description: 'Show raw event payload as JSON' },
+      { name: '--table', description: 'Show compact table rows' },
+    ],
+  },
+];
+
+const ADVANCED_COMMANDS: ReadonlyArray<{ name: string; description: string }> = [
   {
     name: 'generate',
     description:
@@ -32,10 +125,29 @@ const ROOT_COMMANDS: ReadonlyArray<{ name: string; description: string }> = [
 /**
  * Prints the root-level help output in gh-style format.
  * Shows only top-level commands, not nested subcommands.
+ * Basic commands include full usage and options.
  */
 export function printRootHelp(): Effect.Effect<void> {
   const name = 'composio';
-  const maxNameLen = Math.max(...ROOT_COMMANDS.map(c => c.name.length), 10);
+  const allCommands = [
+    ...BASIC_COMMANDS.map(c => ({ name: c.name, description: c.description })),
+    ...ADVANCED_COMMANDS,
+  ];
+  const maxNameLen = Math.max(...allCommands.map(c => c.name.length), 10);
+
+  const basicLines: string[] = [];
+  for (const cmd of BASIC_COMMANDS) {
+    basicLines.push(`  ${cmd.name}`);
+    basicLines.push(`    ${cmd.description}`);
+    basicLines.push(`    Usage: ${name} ${cmd.usage}`);
+    if (cmd.options && cmd.options.length > 0) {
+      basicLines.push('    Options:');
+      for (const opt of cmd.options) {
+        basicLines.push(`      ${opt.name.padEnd(20)}  ${opt.description}`);
+      }
+    }
+    basicLines.push('');
+  }
 
   const lines: string[] = [
     '',
@@ -44,8 +156,10 @@ export function printRootHelp(): Effect.Effect<void> {
     bold('USAGE'),
     `  ${name} <command> [options]`,
     '',
-    bold('COMMANDS'),
-    ...ROOT_COMMANDS.map(cmd => `  ${cmd.name.padEnd(maxNameLen)}  ${cmd.description}`),
+    bold('BASIC COMMANDS'),
+    ...basicLines,
+    bold('ADVANCED COMMANDS'),
+    ...ADVANCED_COMMANDS.map(cmd => `  ${cmd.name.padEnd(maxNameLen)}  ${cmd.description}`),
     '',
     bold('FLAGS'),
     `  -h, --help     Show help for command`,

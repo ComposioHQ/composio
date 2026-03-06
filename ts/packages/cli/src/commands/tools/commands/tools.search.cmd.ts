@@ -4,8 +4,11 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
+import { buildMinimalPayloadFromSchema } from 'src/ui/build-minimal-payload';
 import { formatToolsTable } from '../format';
 import type { Tool } from 'src/models/tools';
+import { ProjectContext } from 'src/services/project-context';
+import { ComposioUserContext } from 'src/services/user-context';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription(
@@ -16,6 +19,11 @@ const query = Args.text({ name: 'query' }).pipe(
 const toolkits = Options.text('toolkits').pipe(
   Options.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,outlook")'),
   Options.optional
+);
+
+const userId = Options.text('user-id').pipe(
+  Options.optional,
+  Options.withDescription('User ID for the session (falls back to project/global test_user_id)')
 );
 
 const limit = Options.integer('limit').pipe(
@@ -39,12 +47,38 @@ const limit = Options.integer('limit').pipe(
  */
 export const toolsCmd$Search = Command.make(
   'search',
-  { query, toolkits, limit },
-  ({ query, toolkits, limit }) =>
+  { query, toolkits, userId, limit },
+  ({ query, toolkits, userId, limit }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
+      const projectContext = yield* ProjectContext;
+      const userContext = yield* ComposioUserContext;
+      const resolvedProjectContext = yield* projectContext.resolve.pipe(
+        Effect.catchAll(() => Effect.succeed(Option.none()))
+      );
+      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+      const globalTestUserId = userContext.data.testUserId;
+      const resolvedUserId = Option.match(userId, {
+        onSome: value => Option.some(value),
+        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
+      });
+
+      if (Option.isNone(resolvedUserId)) {
+        return yield* Effect.fail(
+          new Error(
+            'Missing user id. Provide --user-id or run composio init to set test_user_id, or composio login to set global test_user_id.'
+          )
+        );
+      }
+
+      if (Option.isNone(userId) && Option.isSome(testUserId)) {
+        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
+      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
+      }
+
       const clampedLimit = clampLimit(limit);
       const toolkitFilter = Option.getOrUndefined(toolkits);
       const toolkitList =
@@ -58,7 +92,7 @@ export const toolsCmd$Search = Command.make(
       const searchResponse = yield* ui.withSpinner(
         `Searching tools for "${query}"...`,
         Effect.gen(function* () {
-          const { client, sessionId } = yield* resolveToolRouterSession('default-cli', {
+          const { client, sessionId } = yield* resolveToolRouterSession(resolvedUserId.value, {
             toolkits: toolkitList,
           });
           return yield* Effect.tryPromise(() =>
@@ -138,8 +172,36 @@ export const toolsCmd$Search = Command.make(
         yield* ui.log.warn(searchResponse.error);
       }
 
-      // For machine-readable output (e.g. piping to jq), expose the full API payload.
-      yield* ui.output(JSON.stringify(searchResponse, null, 2));
+      // For machine-readable output (e.g. piping to jq), expose the full API payload with CTA.
+      const firstSchema =
+        firstSlug && searchResponse.tool_schemas[firstSlug]
+          ? searchResponse.tool_schemas[firstSlug]
+          : undefined;
+      const firstToolkit = firstSchema?.toolkit;
+
+      const cta: Array<{ action: string; command: string }> = [];
+      if (firstSlug) {
+        const payload = buildMinimalPayloadFromSchema(
+          firstSchema?.input_schema as Record<string, unknown>
+        );
+        const payloadJson = JSON.stringify(payload);
+        cta.push({
+          action: 'Execute a tool',
+          command: `composio execute "${firstSlug}" -d '${payloadJson}'`,
+        });
+      }
+      if (firstToolkit) {
+        cta.push({
+          action: 'Connect a user account',
+          command: `composio link ${String(firstToolkit).toLowerCase()}`,
+        });
+      }
+
+      const outputForJq = {
+        ...searchResponse,
+        CTA: cta,
+      };
+      yield* ui.output(JSON.stringify(outputForJq, null, 2));
     })
 ).pipe(
   Command.withDescription(

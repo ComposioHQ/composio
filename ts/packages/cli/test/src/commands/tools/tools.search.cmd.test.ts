@@ -47,26 +47,29 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
+const testLiveOptions = {
+  baseConfigProvider: testConfigProvider,
+  toolkitsData,
+  fixture: 'global-test-user-id' as const,
+};
+
 describe('CLI: composio tools search', () => {
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] query "send" [Then] returns matching tools',
-    it => {
-      it.scoped('returns matching tools', () =>
-        Effect.gen(function* () {
-          yield* cli(['tools', 'search', 'send']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+  layer(TestLive(testLiveOptions))('[Given] query "send" [Then] returns matching tools', it => {
+    it.scoped('returns matching tools', () =>
+      Effect.gen(function* () {
+        yield* cli(['tools', 'search', 'send']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
 
-          expect(output).toContain('GMAIL_SEND_EMAIL');
-          expect(output).toContain('SLACK_SEND_MESSAGE');
-          expect(output).not.toContain('GITHUB_CREATE_ISSUE');
-          expect(output).toContain('Found 2 tools');
-        })
-      );
-    }
-  );
+        expect(output).toContain('GMAIL_SEND_EMAIL');
+        expect(output).toContain('SLACK_SEND_MESSAGE');
+        expect(output).not.toContain('GITHUB_CREATE_ISSUE');
+        expect(output).toContain('Found 2 tools');
+      })
+    );
+  });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+  layer(TestLive(testLiveOptions))(
     '[Given] query with no results [Then] shows not found message',
     it => {
       it.scoped('shows not found message', () =>
@@ -81,7 +84,7 @@ describe('CLI: composio tools search', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+  layer(TestLive(testLiveOptions))(
     '[Given] query "send" --toolkits "gmail" [Then] scopes to toolkit',
     it => {
       it.scoped('scopes search to toolkit', () =>
@@ -99,10 +102,10 @@ describe('CLI: composio tools search', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] tools search [Then] JSON output includes full tool-router payload',
+  layer(TestLive(testLiveOptions))(
+    '[Given] tools search [Then] JSON output includes full tool-router payload and CTA',
     it => {
-      it.scoped('prints full search response for jq', () =>
+      it.scoped('prints full search response with CTA for jq', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -113,12 +116,70 @@ describe('CLI: composio tools search', () => {
           expect(output).toContain('"toolkit_connection_statuses"');
           expect(output).toContain('"session"');
           expect(output).toContain('"time_info"');
+          expect(output).toContain('"CTA"');
+          expect(output).toContain('"Execute a tool"');
+          expect(output).toContain('"Connect a user account"');
+          expect(output).toContain('composio execute');
+          expect(output).toContain('composio link gmail');
         })
       );
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] search with schema properties [Then] CTA has valid payload and lowercase link',
+    it => {
+      it.scoped('CTA uses valid payload from input_schema and lowercase toolkit', () =>
+        Effect.gen(function* () {
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            toolkitsData: {
+              tools: [
+                {
+                  name: 'Send Email',
+                  slug: 'GMAIL_SEND_EMAIL',
+                  description: 'Sends an email',
+                  tags: [],
+                  available_versions: [],
+                  input_parameters: {
+                    type: 'object',
+                    properties: {
+                      to: { type: 'string' },
+                      subject: { type: 'string' },
+                      body: { type: 'string' },
+                    },
+                    required: ['to'],
+                  },
+                  output_parameters: { type: 'object', properties: {} },
+                },
+              ],
+            },
+          });
+
+          yield* cli(['tools', 'search', 'send']).pipe(Effect.provide(live));
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          const ctaMatch = output.match(/"CTA":\s*\[([\s\S]*?)\]/);
+          expect(ctaMatch).toBeTruthy();
+          const ctaJson = `[${ctaMatch![1]}]`;
+          const cta = JSON.parse(ctaJson) as Array<{ action: string; command: string }>;
+
+          const executeCta = cta.find(c => c.action === 'Execute a tool');
+          expect(executeCta).toBeTruthy();
+          expect(executeCta!.command).toContain('composio execute "GMAIL_SEND_EMAIL"');
+          expect(executeCta!.command).toMatch(/-d '\{"to":"","subject":"","body":""\}'/);
+
+          const linkCta = cta.find(c => c.action === 'Connect a user account');
+          expect(linkCta).toBeTruthy();
+          expect(linkCta!.command).toBe('composio link gmail');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
     '[Given] --toolkits filter [Then] it is passed to session create as enabled toolkits',
     it => {
       it.scoped('passes toolkit filter into tool router session', () =>
@@ -129,6 +190,7 @@ describe('CLI: composio tools search', () => {
           const live = TestLive({
             baseConfigProvider: testConfigProvider,
             toolkitsData,
+            fixture: 'global-test-user-id',
             toolRouter: {
               create: async params => {
                 createParams = params;
@@ -198,7 +260,7 @@ describe('CLI: composio tools search', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+  layer(TestLive(testLiveOptions))(
     '[Given] search response with recommended plan [Then] it prints plan and execute hint',
     it => {
       it.scoped('prints plan and command hints', () =>
@@ -206,6 +268,7 @@ describe('CLI: composio tools search', () => {
           const live = TestLive({
             baseConfigProvider: testConfigProvider,
             toolkitsData,
+            fixture: 'global-test-user-id',
             toolRouter: {
               search: async (_sessionId, params) => ({
                 success: true,
@@ -280,4 +343,66 @@ describe('CLI: composio tools search', () => {
       })
     );
   });
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] explicit --user-id [Then] uses that user id for session',
+    it => {
+      it.scoped('passes user-id to session create', () =>
+        Effect.gen(function* () {
+          let createParams: SessionCreateParams | undefined;
+          const live = TestLive({
+            ...testLiveOptions,
+            toolRouter: {
+              create: async params => {
+                createParams = params;
+                return {
+                  session_id: 'trs_test_session',
+                  config: { user_id: params.user_id },
+                  mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
+                  tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
+                };
+              },
+            },
+          });
+
+          yield* cli(['tools', 'search', 'send', '--user-id', 'alice']).pipe(Effect.provide(live));
+
+          expect(createParams?.user_id).toBe('alice');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+    '[Given] no test_user_id and no --user-id [Then] fails with missing user id message',
+    it => {
+      it.scoped('fails when user id cannot be resolved', () =>
+        Effect.gen(function* () {
+          const err = yield* cli(['tools', 'search', 'send']).pipe(Effect.flip);
+          const message = err instanceof Error ? err.message : String(err);
+
+          expect(message).toContain('Missing user id');
+          expect(message).toContain('--user-id');
+          expect(message).toContain('composio init');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] composio search alias [Then] works like composio tools search',
+    it => {
+      it.scoped('alias expands to tools search', () =>
+        Effect.gen(function* () {
+          yield* cli(['search', 'send']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('GMAIL_SEND_EMAIL');
+          expect(output).toContain('SLACK_SEND_MESSAGE');
+          expect(output).toContain('Found 2 tools');
+        })
+      );
+    }
+  );
 });

@@ -7,13 +7,81 @@ Connect AI agents to external tools. Link accounts, discover tools, and execute 
 USAGE
   composio <command> [options]
 
-COMMANDS
-  version             Display the current Composio CLI version.
-  upgrade             Upgrade your Composio CLI to the latest available version.
-  whoami              Display your account information.
-  login               Log in to the Composio CLI session.
-  logout              Log out from the Composio CLI session.
-  init                Initialize a Composio project in the current directory.
+BASIC COMMANDS
+  version
+    Display the current Composio CLI version.
+    Usage: composio version
+
+  upgrade
+    Upgrade your Composio CLI to the latest available version.
+    Usage: composio upgrade
+
+  whoami
+    Display your account information.
+    Usage: composio whoami
+
+  login
+    Log in to the Composio CLI session.
+    Usage: composio login [--no-browser] [--api-key text] [--org-id text] [--project-id text]
+    Options:
+      --no-browser          Login without browser interaction
+      --api-key             API key for non-interactive login (agents/CI)
+      --org-id              Organization ID for non-interactive login
+      --project-id          Project ID for non-interactive login
+
+  logout
+    Log out from the Composio CLI session.
+    Usage: composio logout
+
+  init
+    Initialize a Composio project in the current directory.
+    Usage: composio init [--org-id text] [--project-id text] [--no-browser] [-y, --yes]
+    Options:
+      --org-id              Organization ID (skip interactive picker)
+      --project-id          Project ID (skip interactive picker)
+      --no-browser          Skip opening browser for auth
+      -y, --yes             Auto-select default org/project
+
+  search
+    Search tools by use case across toolkits/apps.
+    Usage: composio search <query> [--toolkits text] [--user-id text] [--limit integer]
+    Options:
+      <query>               Semantic use-case query (e.g. "send emails")
+      --toolkits            Filter by toolkit slugs, comma-separated
+      --user-id             User ID (falls back to project/global test_user_id)
+      --limit               Number of results per page (1-1000)
+
+  execute
+    Execute a tool.
+    Usage: composio execute <slug> [-d, --data text] [--user-id text]
+    Options:
+      <slug>                Tool slug (e.g. "GITHUB_CREATE_ISSUE")
+      -d, --data            JSON arguments, @file, or - for stdin
+      --user-id             User ID (falls back to project test_user_id)
+
+  link
+    Connect a user account for a toolkit/app.
+    Usage: composio link [<toolkit>] [--auth-config text] [--user-id text] [--no-browser]
+    Options:
+      <toolkit>             Toolkit slug to link (e.g. "github", "gmail")
+      --auth-config         Auth config ID (legacy flow)
+      --user-id             User ID for the connection
+      --no-browser          Skip auto-opening the browser
+
+  listen
+    Listen for trigger events.
+    Usage: composio listen [--toolkits text] [--trigger-id text] [--user-id text] [--max-events integer] [--forward text] [--out text]
+    Options:
+      --toolkits            Filter by toolkit slugs, comma-separated
+      --trigger-id          Filter by trigger id
+      --user-id             Filter by user id
+      --max-events          Stop after N matching events
+      --forward             Forward events to URL (signed with COMPOSIO_WEBHOOK_SECRET)
+      --out                 Append events to file
+      --json                Show raw event payload as JSON
+      --table               Show compact table rows
+
+ADVANCED COMMANDS
   generate            Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
   py                  Handle Python projects.
   ts                  Handle TypeScript projects.

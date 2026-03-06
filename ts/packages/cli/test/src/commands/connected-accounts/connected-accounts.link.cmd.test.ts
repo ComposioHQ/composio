@@ -120,4 +120,61 @@ describe('CLI: composio connected-accounts link', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
+    '[Given] composio link alias [Then] works like composio connected-accounts link',
+    it => {
+      it.scoped('alias expands to connected-accounts link', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'link',
+            '--auth-config',
+            'ac_gmail_oauth',
+            '--user-id',
+            'default',
+            '--no-browser',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
+          expect(output).toContain('ACTIVE');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
+    '[Given] successful link [Then] outputs valid JSON with success message for jq',
+    it => {
+      it.scoped(
+        'prints JSON with status, message, connected_account_id, toolkit, redirect_url',
+        () =>
+          Effect.gen(function* () {
+            yield* cli([
+              'connected-accounts',
+              'link',
+              '--auth-config',
+              'ac_gmail_oauth',
+              '--user-id',
+              'default',
+              '--no-browser',
+            ]);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            const output = lines.join('\n');
+
+            expect(output).toContain('"status"');
+            expect(output).toContain('"success"');
+            expect(output).toContain('"message"');
+            expect(output).toContain('ACTIVE');
+            expect(output).toContain('"connected_account_id"');
+            expect(output).toContain('con_test_link');
+            expect(output).toContain('"toolkit"');
+            expect(output).toContain('"gmail"');
+            expect(output).toContain('"redirect_url"');
+            expect(output).toContain('https://app.composio.dev/link');
+          })
+      );
+    }
+  );
 });

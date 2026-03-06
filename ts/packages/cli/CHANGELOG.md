@@ -1,5 +1,17 @@
 # @composio/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- ecb455c: Fix CTAs and Link commands
+
+## 0.2.0
+
+### Minor Changes
+
+- c35b38b: Add top-level command aliases, restructure root help with BASIC/ADVANCED sections, and show full usage/options for basic commands
+
 ## 0.1.35
 
 ### Patch Changes

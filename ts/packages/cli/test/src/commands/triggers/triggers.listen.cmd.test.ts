@@ -137,6 +137,27 @@ describe('CLI: composio triggers listen', () => {
         events: [mockV3TriggerEvent],
       },
     })
+  )('[Given] composio listen alias [Then] works like composio triggers listen', it => {
+    it.scoped('alias expands to triggers listen', () =>
+      Effect.gen(function* () {
+        yield* cli(['listen', '--max-events', '1']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Listening for realtime trigger events');
+        expect(output).toContain('GMAIL_NEW_GMAIL_MESSAGE');
+        expect(output).toContain('Stopped after receiving 1 matching events');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      realtimeData: {
+        events: [mockV3TriggerEvent],
+      },
+    })
   )('[Given] --table [Then] prints compact table rows', it => {
     it.scoped('prints table header and event row', () =>
       Effect.gen(function* () {

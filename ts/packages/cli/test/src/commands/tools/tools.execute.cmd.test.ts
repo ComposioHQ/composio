@@ -74,6 +74,32 @@ describe('CLI: composio tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] composio execute alias [Then] works like composio tools execute', it => {
+    it.scoped('alias expands to tools execute', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--user-id',
+          'default',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+
+        expect(output.successful).toBe(true);
+        expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
+        expect(output.data.arguments).toEqual({ recipient: 'a' });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
     })

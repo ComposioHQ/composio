@@ -337,7 +337,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Link
-                  href={`https://platform.composio.dev/auth?next_page=${encodeURIComponent(`/tool-router?toolkits=${toolkit.slug}`)}`}
+                  href={`https://platform.composio.dev/marketplace/${toolkit.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
