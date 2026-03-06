@@ -32,6 +32,7 @@ const noBrowser = Options.boolean('no-browser').pipe(
 
 /**
  * Open the browser and poll until the connected account becomes ACTIVE.
+ * On success, outputs valid JSON to stdout for piping (e.g. to jq).
  */
 const waitForActiveConnection = (
   ui: TerminalUI,
@@ -41,9 +42,8 @@ const waitForActiveConnection = (
   noBrowser: boolean
 ) =>
   Effect.gen(function* () {
-    // Display the redirect URL
+    // Display the redirect URL (interactive only)
     yield* ui.note(redirectUrl, 'Redirect URL');
-    yield* ui.output(redirectUrl);
 
     if (!noBrowser) {
       // Validate URL scheme before opening — prevent non-HTTPS redirects
@@ -92,10 +92,22 @@ const waitForActiveConnection = (
         )
       ).pipe(
         Effect.tap(account => {
+          const message = `Connected account "${account.id}" is now ACTIVE (toolkit: ${account.toolkit.slug}).`;
           return Effect.all([
             spinner.stop('Connection successful'),
-            ui.log.success(
-              `Connected account "${account.id}" is now ACTIVE (toolkit: ${account.toolkit.slug}).`
+            ui.log.success(message),
+            ui.output(
+              JSON.stringify(
+                {
+                  status: 'success',
+                  message,
+                  connected_account_id: account.id,
+                  toolkit: account.toolkit.slug,
+                  redirect_url: redirectUrl,
+                },
+                null,
+                2
+              )
             ),
           ]);
         }),

@@ -100,9 +100,9 @@ describe('CLI: composio tools search', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] tools search [Then] JSON output includes full tool-router payload',
+    '[Given] tools search [Then] JSON output includes full tool-router payload and CTA',
     it => {
-      it.scoped('prints full search response for jq', () =>
+      it.scoped('prints full search response with CTA for jq', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -113,6 +113,63 @@ describe('CLI: composio tools search', () => {
           expect(output).toContain('"toolkit_connection_statuses"');
           expect(output).toContain('"session"');
           expect(output).toContain('"time_info"');
+          expect(output).toContain('"CTA"');
+          expect(output).toContain('"Execute a tool"');
+          expect(output).toContain('"Connect a user account"');
+          expect(output).toContain('composio execute');
+          expect(output).toContain('composio link gmail');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+    '[Given] search with schema properties [Then] CTA has valid payload and lowercase link',
+    it => {
+      it.scoped('CTA uses valid payload from input_schema and lowercase toolkit', () =>
+        Effect.gen(function* () {
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            toolkitsData: {
+              tools: [
+                {
+                  name: 'Send Email',
+                  slug: 'GMAIL_SEND_EMAIL',
+                  description: 'Sends an email',
+                  tags: [],
+                  available_versions: [],
+                  input_parameters: {
+                    type: 'object',
+                    properties: {
+                      to: { type: 'string' },
+                      subject: { type: 'string' },
+                      body: { type: 'string' },
+                    },
+                    required: ['to'],
+                  },
+                  output_parameters: { type: 'object', properties: {} },
+                },
+              ],
+            },
+          });
+
+          yield* cli(['tools', 'search', 'send']).pipe(Effect.provide(live));
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          const ctaMatch = output.match(/"CTA":\s*\[([\s\S]*?)\]/);
+          expect(ctaMatch).toBeTruthy();
+          const ctaJson = `[${ctaMatch![1]}]`;
+          const cta = JSON.parse(ctaJson) as Array<{ action: string; command: string }>;
+
+          const executeCta = cta.find(c => c.action === 'Execute a tool');
+          expect(executeCta).toBeTruthy();
+          expect(executeCta!.command).toContain('composio execute "GMAIL_SEND_EMAIL"');
+          expect(executeCta!.command).toMatch(/-d '\{"to":"","subject":"","body":""\}'/);
+
+          const linkCta = cta.find(c => c.action === 'Connect a user account');
+          expect(linkCta).toBeTruthy();
+          expect(linkCta!.command).toBe('composio link gmail');
         })
       );
     }

@@ -4,6 +4,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
+import { buildMinimalPayloadFromSchema } from 'src/ui/build-minimal-payload';
 import { formatToolsTable } from '../format';
 import type { Tool } from 'src/models/tools';
 
@@ -138,8 +139,37 @@ export const toolsCmd$Search = Command.make(
         yield* ui.log.warn(searchResponse.error);
       }
 
-      // For machine-readable output (e.g. piping to jq), expose the full API payload.
-      yield* ui.output(JSON.stringify(searchResponse, null, 2));
+      // For machine-readable output (e.g. piping to jq), expose the full API payload with CTA.
+      const firstSlugForOutput = toolsList[0]?.slug;
+      const firstSchema =
+        firstSlugForOutput && searchResponse.tool_schemas[firstSlugForOutput]
+          ? searchResponse.tool_schemas[firstSlugForOutput]
+          : undefined;
+      const firstToolkit = firstSchema?.toolkit;
+
+      const cta: Array<{ action: string; command: string }> = [];
+      if (firstSlugForOutput) {
+        const payload = buildMinimalPayloadFromSchema(
+          firstSchema?.input_schema as Record<string, unknown>
+        );
+        const payloadJson = JSON.stringify(payload);
+        cta.push({
+          action: 'Execute a tool',
+          command: `composio execute "${firstSlugForOutput}" -d '${payloadJson}'`,
+        });
+      }
+      if (firstToolkit) {
+        cta.push({
+          action: 'Connect a user account',
+          command: `composio link ${String(firstToolkit).toLowerCase()}`,
+        });
+      }
+
+      const outputForJq = {
+        ...searchResponse,
+        CTA: cta,
+      };
+      yield* ui.output(JSON.stringify(outputForJq, null, 2));
     })
 ).pipe(
   Command.withDescription(
