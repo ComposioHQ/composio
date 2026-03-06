@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, ConfigProvider, Effect, Exit } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import type {
   SessionCreateParams,
   SessionSearchParams,
@@ -378,14 +378,9 @@ describe('CLI: composio tools search', () => {
     it => {
       it.scoped('fails when user id cannot be resolved', () =>
         Effect.gen(function* () {
-          const exit = yield* cli(['tools', 'search', 'send']).pipe(Effect.exit);
+          const err = yield* cli(['tools', 'search', 'send']).pipe(Effect.flip);
+          const message = err instanceof Error ? err.message : String(err);
 
-          expect(Exit.isFailure(exit)).toBe(true);
-          const failures = Cause.failures(exit.cause);
-          const defects = Cause.defects(exit.cause);
-          const err = failures[0] ?? defects[0];
-          const message =
-            err instanceof Error ? err.message : String(err ?? Cause.pretty(exit.cause));
           expect(message).toContain('Missing user id');
           expect(message).toContain('--user-id');
           expect(message).toContain('composio init');
