@@ -19,24 +19,30 @@ export function setWidgetOpen(open: boolean) {
   widgetOpen = open;
 }
 
+function safeSessionStorage(action: () => void) {
+  try { action(); } catch { /* sessionStorage unavailable */ }
+}
+
 export function toggleDecimalWidget() {
   const decimal = getDecimal();
   if (!decimal) {
     setTimeout(() => {
-      getDecimal()?.show();
+      const d = getDecimal();
+      if (!d) return;
+      d.show();
       widgetOpen = true;
-      sessionStorage.removeItem(DISMISSED_KEY);
+      safeSessionStorage(() => sessionStorage.removeItem(DISMISSED_KEY));
     }, 500);
     return;
   }
   if (widgetOpen) {
     decimal.hide();
     widgetOpen = false;
-    sessionStorage.setItem(DISMISSED_KEY, '1');
+    safeSessionStorage(() => sessionStorage.setItem(DISMISSED_KEY, '1'));
   } else {
     decimal.show();
     widgetOpen = true;
-    sessionStorage.removeItem(DISMISSED_KEY);
+    safeSessionStorage(() => sessionStorage.removeItem(DISMISSED_KEY));
   }
 }
 
