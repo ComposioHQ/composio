@@ -140,22 +140,21 @@ export const toolsCmd$Search = Command.make(
       }
 
       // For machine-readable output (e.g. piping to jq), expose the full API payload with CTA.
-      const firstSlugForOutput = toolsList[0]?.slug;
       const firstSchema =
-        firstSlugForOutput && searchResponse.tool_schemas[firstSlugForOutput]
-          ? searchResponse.tool_schemas[firstSlugForOutput]
+        firstSlug && searchResponse.tool_schemas[firstSlug]
+          ? searchResponse.tool_schemas[firstSlug]
           : undefined;
       const firstToolkit = firstSchema?.toolkit;
 
       const cta: Array<{ action: string; command: string }> = [];
-      if (firstSlugForOutput) {
+      if (firstSlug) {
         const payload = buildMinimalPayloadFromSchema(
           firstSchema?.input_schema as Record<string, unknown>
         );
         const payloadJson = JSON.stringify(payload);
         cta.push({
           action: 'Execute a tool',
-          command: `composio execute "${firstSlugForOutput}" -d '${payloadJson}'`,
+          command: `composio execute "${firstSlug}" -d '${payloadJson}'`,
         });
       }
       if (firstToolkit) {
