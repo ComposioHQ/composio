@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
+import { setWidgetOpen, wasWidgetDismissed } from './ask-ai-button';
 
 export type DecimalAPI = {
   show: () => void;
@@ -29,6 +30,9 @@ const LIGHT_THEME = {
   borderColor: '#e5e0df',
 };
 
+/** Minimum viewport width (px) to auto-open the AI sidebar */
+const AUTO_OPEN_MIN_WIDTH = 1440;
+
 export function DecimalWidget() {
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
@@ -45,16 +49,22 @@ export function DecimalWidget() {
 
     applyTheme();
 
-    const observer = new MutationObserver((mutations) => {
+    const themeObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.attributeName === 'class') {
           applyTheme();
         }
       }
     });
-    observer.observe(document.documentElement, { attributes: true });
+    themeObserver.observe(document.documentElement, { attributes: true });
 
-    return () => observer.disconnect();
+    // Auto-open on wide desktop screens unless user dismissed it this session
+    if (window.innerWidth >= AUTO_OPEN_MIN_WIDTH && !wasWidgetDismissed()) {
+      Decimal.show();
+      setWidgetOpen(true);
+    }
+
+    return () => themeObserver.disconnect();
   }, [scriptLoaded]);
 
   return (

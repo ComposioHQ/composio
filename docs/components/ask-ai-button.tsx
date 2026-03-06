@@ -7,11 +7,17 @@ import { useI18n } from '@fumadocs/ui/contexts/i18n';
 
 import type { DecimalAPI } from './decimal-widget';
 
+const DISMISSED_KEY = 'askai-dismissed';
+
 function getDecimal() {
   return (window as typeof window & { Decimal?: DecimalAPI }).Decimal;
 }
 
 let widgetOpen = false;
+
+export function setWidgetOpen(open: boolean) {
+  widgetOpen = open;
+}
 
 export function toggleDecimalWidget() {
   const decimal = getDecimal();
@@ -19,11 +25,27 @@ export function toggleDecimalWidget() {
     setTimeout(() => {
       getDecimal()?.show();
       widgetOpen = true;
+      sessionStorage.removeItem(DISMISSED_KEY);
     }, 500);
     return;
   }
-  widgetOpen ? decimal.hide() : decimal.show();
-  widgetOpen = !widgetOpen;
+  if (widgetOpen) {
+    decimal.hide();
+    widgetOpen = false;
+    sessionStorage.setItem(DISMISSED_KEY, '1');
+  } else {
+    decimal.show();
+    widgetOpen = true;
+    sessionStorage.removeItem(DISMISSED_KEY);
+  }
+}
+
+export function wasWidgetDismissed() {
+  try {
+    return sessionStorage.getItem(DISMISSED_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 export function detectMac(): boolean {
