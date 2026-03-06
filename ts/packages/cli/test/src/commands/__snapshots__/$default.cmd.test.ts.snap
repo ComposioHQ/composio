@@ -44,10 +44,11 @@ BASIC COMMANDS
 
   search
     Search tools by use case across toolkits/apps.
-    Usage: composio search <query> [--toolkits text] [--limit integer]
+    Usage: composio search <query> [--toolkits text] [--user-id text] [--limit integer]
     Options:
       <query>               Semantic use-case query (e.g. "send emails")
       --toolkits            Filter by toolkit slugs, comma-separated
+      --user-id             User ID (falls back to project/global test_user_id)
       --limit               Number of results per page (1-1000)
 
   execute

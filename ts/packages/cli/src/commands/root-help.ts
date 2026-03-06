@@ -54,10 +54,11 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'search',
     description: 'Search tools by use case across toolkits/apps.',
-    usage: 'search <query> [--toolkits text] [--limit integer]',
+    usage: 'search <query> [--toolkits text] [--user-id text] [--limit integer]',
     options: [
       { name: '<query>', description: 'Semantic use-case query (e.g. "send emails")' },
       { name: '--toolkits', description: 'Filter by toolkit slugs, comma-separated' },
+      { name: '--user-id', description: 'User ID (falls back to project/global test_user_id)' },
       { name: '--limit', description: 'Number of results per page (1-1000)' },
     ],
   },
