@@ -120,4 +120,27 @@ describe('CLI: composio connected-accounts link', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
+    '[Given] composio link alias [Then] works like composio connected-accounts link',
+    it => {
+      it.scoped('alias expands to connected-accounts link', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'link',
+            '--auth-config',
+            'ac_gmail_oauth',
+            '--user-id',
+            'default',
+            '--no-browser',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
+          expect(output).toContain('ACTIVE');
+        })
+      );
+    }
+  );
 });

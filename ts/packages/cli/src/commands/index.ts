@@ -100,6 +100,22 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
   return argv;
 };
 
+const ALIAS_TO_PARENT: Record<string, string> = {
+  search: 'tools',
+  execute: 'tools',
+  link: 'connected-accounts',
+  listen: 'triggers',
+};
+
+const normalizeAliases = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const args = argv.slice(2);
+  if (args.length === 0) return argv;
+  const first = args[0];
+  const parent = first && ALIAS_TO_PARENT[first];
+  if (!parent) return argv;
+  return [...argv.slice(0, 2), parent, ...args];
+};
+
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
   return args.length === 1 && (args[0] === '--help' || args[0] === '-h');
@@ -114,7 +130,7 @@ export const runWithConfig = Effect.gen(function* () {
   });
 
   return (argv: ReadonlyArray<string>) => {
-    const normalizedArgv = normalizeVersionShortFlag(argv);
+    const normalizedArgv = normalizeAliases(normalizeVersionShortFlag(argv));
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp();
     }

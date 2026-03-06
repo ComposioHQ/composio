@@ -280,4 +280,21 @@ describe('CLI: composio tools search', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] composio search alias [Then] works like composio tools search',
+    it => {
+      it.scoped('alias expands to tools search', () =>
+        Effect.gen(function* () {
+          yield* cli(['search', 'send']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('GMAIL_SEND_EMAIL');
+          expect(output).toContain('SLACK_SEND_MESSAGE');
+          expect(output).toContain('Found 2 tools');
+        })
+      );
+    }
+  );
 });
