@@ -31,7 +31,7 @@ const LIGHT_THEME = {
 };
 
 /** Minimum viewport width (px) to auto-open the AI sidebar */
-const AUTO_OPEN_MIN_WIDTH = 1440;
+const AUTO_OPEN_MIN_WIDTH = 1024;
 
 export function DecimalWidget() {
   const [scriptLoaded, setScriptLoaded] = useState(false);
