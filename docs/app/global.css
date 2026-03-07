@@ -562,12 +562,14 @@ p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
    right-side Table of Contents and letting content reflow.
    ========================================================================== */
 
-html[data-askai-open] #nd-toc {
+html[data-askai-open] #nd-toc,
+html[data-askai-open] #nd-sidebar {
   display: none;
 }
 
 html[data-askai-open] #nd-docs-layout {
   --fd-toc-width: 0px;
+  --fd-sidebar-width: 0px;
 }
 
 @layer base {
