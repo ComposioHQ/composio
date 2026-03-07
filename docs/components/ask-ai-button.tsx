@@ -17,6 +17,11 @@ let widgetOpen = false;
 
 export function setWidgetOpen(open: boolean) {
   widgetOpen = open;
+  if (open) {
+    document.documentElement.setAttribute('data-askai-open', '');
+  } else {
+    document.documentElement.removeAttribute('data-askai-open');
+  }
 }
 
 function safeSessionStorage(action: () => void) {
@@ -30,18 +35,18 @@ export function toggleDecimalWidget() {
       const d = getDecimal();
       if (!d) return;
       d.show();
-      widgetOpen = true;
+      setWidgetOpen(true);
       safeSessionStorage(() => sessionStorage.removeItem(DISMISSED_KEY));
     }, 500);
     return;
   }
   if (widgetOpen) {
     decimal.hide();
-    widgetOpen = false;
+    setWidgetOpen(false);
     safeSessionStorage(() => sessionStorage.setItem(DISMISSED_KEY, '1'));
   } else {
     decimal.show();
-    widgetOpen = true;
+    setWidgetOpen(true);
     safeSessionStorage(() => sessionStorage.removeItem(DISMISSED_KEY));
   }
 }
