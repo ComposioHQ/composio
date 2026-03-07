@@ -17,11 +17,6 @@ let widgetOpen = false;
 
 export function setWidgetOpen(open: boolean) {
   widgetOpen = open;
-  if (open) {
-    document.documentElement.setAttribute('data-askai-open', '');
-  } else {
-    document.documentElement.removeAttribute('data-askai-open');
-  }
 }
 
 function safeSessionStorage(action: () => void) {
