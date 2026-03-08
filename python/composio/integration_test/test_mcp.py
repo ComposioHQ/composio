@@ -520,9 +520,6 @@ class TestMCPRealWorldScenarios:
 
         print("✅ API compatibility verified with TypeScript patterns")
 
-    @pytest.mark.skip(
-        reason="MCP update bug with 'custom_tools' argument - TypeError in McpResource.update()"
-    )
     def test_full_crud_cycle(self, composio_client):
         """Test complete CRUD cycle: create -> get -> update -> get with assertions at each step."""
         test_name = generate_unique_name("pytest-crud")

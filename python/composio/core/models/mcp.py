@@ -370,7 +370,7 @@ class MCP(Resource):
                 update_params["auth_config_ids"] = auth_config_ids
 
             if allowed_tools is not None:
-                update_params["custom_tools"] = allowed_tools
+                update_params["allowed_tools"] = allowed_tools
 
             if manually_manage_connections is not None:
                 update_params[
