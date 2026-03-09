@@ -15,8 +15,3 @@ def generate_short_id() -> str:
     Returns the first 8 characters of a UUID with dashes removed.
     """
     return generate_uuid()[:8].replace("-", "")
-
-
-def get_random_short_id() -> str:
-    """Alias for generate_short_id (matches TypeScript SDK naming)."""
-    return generate_short_id()

@@ -678,6 +678,13 @@ class TestToolRouter:
         with pytest.raises(ValueError, match="Provider is required for tool router"):
             tool_router.create(user_id="user_123")
 
+    def test_use_session_raises_error_without_provider(self, mock_client):
+        """Test that use() raises when provider is None."""
+        tool_router = ToolRouter(client=mock_client, provider=None)
+
+        with pytest.raises(ValueError, match="Provider is required for tool router"):
+            tool_router.use(session_id="session_123")
+
     def test_use_session(self, tool_router, mock_client):
         """Test retrieving an existing session."""
         session = tool_router.use(session_id="session_123")

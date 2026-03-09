@@ -24,7 +24,7 @@ from composio_client.types.tool_router.session.file_list_response import (
 from composio.client import HttpClient
 from composio.exceptions import RemoteFileDownloadError, ValidationError
 from composio.utils.mimetypes import get_extension_from_mime_type
-from composio.utils.uuid import get_random_short_id
+from composio.utils.uuid import generate_short_id
 
 DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID = "files"
 COMPOSIO_DIR = ".composio"
@@ -224,7 +224,7 @@ class ToolRouterSessionFilesMount:
                 filename = segments[-1] if segments else ""
                 if not filename or "." not in filename:
                     ext = get_extension_from_mime_type(mime)
-                    filename = f"{get_random_short_id()}.{ext}"
+                    filename = f"{generate_short_id()}.{ext}"
                 rpath = remote_path or filename
                 return content, rpath, mime
             # Local file
@@ -248,7 +248,7 @@ class ToolRouterSessionFilesMount:
                 )
             mime = mimetype or "application/octet-stream"
             ext = get_extension_from_mime_type(mime)
-            rpath = remote_path or f"upload-{get_random_short_id()}.{ext}"
+            rpath = remote_path or f"upload-{generate_short_id()}.{ext}"
             return buffer, rpath, mime
 
         raise ValidationError(

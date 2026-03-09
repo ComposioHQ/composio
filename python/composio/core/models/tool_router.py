@@ -737,6 +737,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             toolkit_states = session.toolkits()
             ```
         """
+        if self._provider is None:
+            raise ValueError(
+                "Provider is required for tool router. "
+                "Please initialize ToolRouter with a provider."
+            )
+
         # Retrieve the session from the API
         session = self._client.tool_router.session.retrieve(session_id)
 

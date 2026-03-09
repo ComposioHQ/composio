@@ -67,7 +67,6 @@ def mock_tool():
         available_versions=["v1.0.0"],
         version="v1.0.0",
         scopes=[],
-        status="active",
         toolkit=tool_list_response.ItemToolkit(
             name="Test Toolkit", slug="test_toolkit", logo=""
         ),

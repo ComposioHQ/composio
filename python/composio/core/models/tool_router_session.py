@@ -242,5 +242,5 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         return self._client.tool_router.session.execute(
             session_id=self.session_id,
             tool_slug=tool_slug,
-            arguments=arguments if arguments else omit,
+            arguments=arguments if arguments is not None else omit,
         )
