@@ -117,32 +117,15 @@ session.files.upload(
 
 | Option    | Type   | Default | Description |
 | --------- | ------ | ------- | ----------- |
-| `remotePath` | string | - | Remote path/filename on the mount. Required when passing a buffer if you want a specific name. |
+| `remotePath` | string | - | Remote path/filename on the mount. Required when passing a buffer (provides filename; mimetype defaults to `application/octet-stream`). |
 | `mountId` | string | `"files"` | The file mount ID. |
-| `mimetype` | string | - | MIME type. Used when passing a buffer; ignored when passing `File` (uses `file.type`). |
+| `mimetype` | string | - | MIME type. Required when passing a buffer unless `remotePath` is provided. Ignored when passing `File` (uses `file.type`). |
 
 ### How It Works
 
-1. **Path (string)** – If the path starts with `http`, the file is fetched from the URL. Otherwise it is read from the local filesystem. The filename is derived from the path or URL.
+1. **Path (string)** – If the path starts with `http://` or `https://`, the file is fetched from the URL. Otherwise it is read from the local filesystem. The filename is derived from the path or URL.
 2. **File** – Used directly. Filename comes from `file.name` unless `remotePath` is provided.
-3. **Buffer** – Wrapped in a `File` object. When `remotePath` is omitted, a name is generated (`upload-{id}.{ext}`). When `mimetype` is omitted, it is detected from magic bytes (file signatures) for common formats (PNG, JPEG, PDF, ZIP, etc.).
-
-### Mimetype Detection (Buffers)
-
-When uploading a buffer without `mimetype`, the SDK inspects the first bytes (magic bytes) to detect the format. Supported formats include:
-
-- Images: PNG, JPEG, GIF, WebP, BMP
-- Documents: PDF
-- Archives: ZIP, GZIP
-- XML, SVG
-
-Use `detectMimeTypeFromBuffer` from `@composio/core` for standalone detection:
-
-```typescript
-import { detectMimeTypeFromBuffer } from '@composio/core';
-
-const mime = detectMimeTypeFromBuffer(buffer); // 'image/png' | null
-```
+3. **Buffer** – Wrapped in a `File` object. **Either `mimetype` or `remotePath` must be provided.** If only `remotePath` is given, mimetype defaults to `application/octet-stream`. If only `mimetype` is given, a filename is generated from the extension (`upload-{id}.{ext}`).
 
 ### Examples
 
@@ -163,10 +146,12 @@ const file = await session.files.upload(buffer, {
   mimetype: 'application/json',
 });
 
-// From buffer – mimetype and filename auto-detected
+// From buffer – mimetype or remotePath required
 const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, ...]);
-const file = await session.files.upload(pngBytes);
-// → upload-xxx.png, mimetype: image/png
+const file = await session.files.upload(pngBytes, {
+  remotePath: 'screenshot.png',
+  mimetype: 'image/png',
+});
 ```
 
 ## Download Files
@@ -301,7 +286,6 @@ The following are exported from `@composio/core`:
 - `FileListResponse` – List response type
 - `ToolRouterSessionFilesMountListOptions` – List options type
 - `RemoteFile` – File class with `buffer`, `text`, `blob`, `save`
-- `detectMimeTypeFromBuffer` – Detect MIME type from buffer content
 - `getExtensionFromMimeType` – Map MIME type to file extension
 
 ## Platform Support

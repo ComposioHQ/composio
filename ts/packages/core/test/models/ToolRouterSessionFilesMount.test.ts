@@ -373,38 +373,15 @@ describe('ToolRouterSessionFilesMount', () => {
       expect(result.mountRelativePath).toBe('upload-7949b409.jpg');
     });
 
-    it('should detect mimetype from buffer when not provided', async () => {
-      const pngSignature = new Uint8Array([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
-      ]);
+    it('should throw when buffer is provided without mimetype or remotePath', async () => {
+      const buffer = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
-      mockClient.toolRouter.session.files.createUploadURL.mockImplementation((_, params) =>
-        Promise.resolve({
-          ...createUploadURLResponse,
-          mount_relative_path: params.mount_relative_path,
-        })
+      await expect(filesMount.upload(buffer)).rejects.toThrow(
+        'When passing a buffer, either mimetype or remotePath (filename) is required'
       );
-      mockClient.toolRouter.session.files.createDownloadURL.mockImplementation((_, params) =>
-        Promise.resolve({
-          ...createDownloadURLResponse,
-          mount_relative_path: params.mount_relative_path,
-        })
-      );
-
-      const result = await filesMount.upload(pngSignature);
-
-      expect(mockClient.toolRouter.session.files.createUploadURL).toHaveBeenCalledWith(
-        DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID,
-        expect.objectContaining({
-          session_id: sessionId,
-          mimetype: 'image/png',
-          mount_relative_path: expect.stringMatching(/^upload-.+\.png$/),
-        })
-      );
-      expect(result.mountRelativePath).toMatch(/^upload-.+\.png$/);
     });
 
-    it('should upload ArrayBuffer with generated filename when remotePath omitted', async () => {
+    it('should upload ArrayBuffer with mimetype when remotePath omitted', async () => {
       const buffer = new ArrayBuffer(8);
       new DataView(buffer).setUint32(0, 0xdeadbeef);
 
@@ -421,17 +398,17 @@ describe('ToolRouterSessionFilesMount', () => {
         })
       );
 
-      const result = await filesMount.upload(buffer);
+      const result = await filesMount.upload(buffer, { mimetype: 'application/octet-stream' });
 
       expect(mockClient.toolRouter.session.files.createUploadURL).toHaveBeenCalledWith(
         DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID,
         expect.objectContaining({
           session_id: sessionId,
           mimetype: 'application/octet-stream',
-          mount_relative_path: expect.stringMatching(/^upload-.+\..+$/),
+          mount_relative_path: expect.stringMatching(/^upload-.+\.bin$/),
         })
       );
-      expect(result.mountRelativePath).toMatch(/^upload-.+\..+$/);
+      expect(result.mountRelativePath).toMatch(/^upload-.+\.bin$/);
     });
   });
 });

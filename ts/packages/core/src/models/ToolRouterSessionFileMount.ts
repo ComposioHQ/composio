@@ -18,7 +18,7 @@ import {
 import { RemoteFile } from './RemoteFile';
 import { ValidationError } from '../errors';
 import { platform } from '#platform';
-import { detectMimeTypeFromBuffer, getExtensionFromMimeType } from '../utils/mime';
+import { getExtensionFromMimeType } from '../utils/mime';
 import { getRandomShortId } from '../utils/uuid';
 
 export class ToolRouterSessionFilesMount {
@@ -132,8 +132,7 @@ export class ToolRouterSessionFilesMount {
           ? new Uint8Array(content)
           : new TextEncoder().encode(content as string);
       const filename = platform.basename(input);
-      const mimetype =
-        options.mimetype ?? detectMimeTypeFromBuffer(buffer) ?? 'application/octet-stream';
+      const mimetype = options.mimetype ?? 'application/octet-stream';
       const file = new File([buffer], filename, { type: mimetype });
       return {
         fileToUpload: file,
@@ -151,8 +150,13 @@ export class ToolRouterSessionFilesMount {
     }
 
     const buffer = input instanceof ArrayBuffer ? new Uint8Array(input) : input;
-    const mimetype =
-      options.mimetype ?? detectMimeTypeFromBuffer(buffer) ?? 'application/octet-stream';
+    if (!options.mimetype && !options.remotePath) {
+      throw new Error(
+        'When passing a buffer, either mimetype or remotePath (filename) is required. ' +
+          'Example: files.upload(buffer, { remotePath: "data.json", mimetype: "application/json" })'
+      );
+    }
+    const mimetype = options.mimetype ?? 'application/octet-stream';
     const ext = getExtensionFromMimeType(mimetype);
     const remotePath = options.remotePath ?? `upload-${getRandomShortId()}.${ext}`;
     const file = new File([buffer as BlobPart], remotePath, { type: mimetype });

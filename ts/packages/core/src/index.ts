@@ -5,7 +5,7 @@ export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseNonAgenticProvider, BaseAgenticProvider } from './provider/BaseProvider';
 export type { BaseComposioProvider } from './provider/BaseProvider';
 export { jsonSchemaToZodSchema, removeNonRequiredProperties } from './utils/jsonSchema';
-export { detectMimeTypeFromBuffer, getExtensionFromMimeType } from './utils/mime';
+export { getExtensionFromMimeType } from './utils/mime';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
 export { RemoteFile } from './models/RemoteFile';

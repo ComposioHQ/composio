@@ -39,10 +39,10 @@ export const FileListResponseSchema = z
 export type FileListResponse = z.infer<typeof FileListResponseSchema>;
 
 export const ToolRouterSessionFilesMountUploadOptionsSchema = z.object({
-  /** Remote path/filename on the mount. Required when passing a buffer. */
+  /** Remote path/filename on the mount. When passing a buffer, either mimetype or remotePath is required. */
   remotePath: z.string().optional(),
   mountId: z.string().default(DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID),
-  /** MIME type. Used when passing a buffer; ignored when passing File (uses file.type). */
+  /** MIME type. When passing a buffer, either mimetype or remotePath is required. Ignored when passing File (uses file.type). */
   mimetype: z.string().optional(),
 });
 
