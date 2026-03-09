@@ -69,9 +69,18 @@ export class ToolRouterSessionFilesMount {
       });
     }
 
+    // API requires: no leading slash, min 1 char when provided. Omit for root.
+    const rawPath = listOptions.data.path;
+    const mountRelativePrefix =
+      rawPath === undefined || rawPath === '' || rawPath === '/'
+        ? undefined
+        : rawPath.startsWith('/')
+          ? rawPath.slice(1)
+          : rawPath;
+
     const response = await this.client.toolRouter.session.files.list(listOptions.data.mountId, {
       session_id: this.sessionId,
-      mount_relative_prefix: listOptions.data.path,
+      mount_relative_prefix: mountRelativePrefix,
       cursor: listOptions.data.cursor,
       limit: listOptions.data.limit,
     });

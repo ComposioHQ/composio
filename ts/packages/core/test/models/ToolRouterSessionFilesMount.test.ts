@@ -46,7 +46,7 @@ describe('ToolRouterSessionFilesMount', () => {
       expect(result).toEqual({ items: [], nextCursor: undefined });
     });
 
-    it('should call list with custom path and mountId', async () => {
+    it('should call list with custom path and mountId (strips leading slash for API)', async () => {
       mockClient.toolRouter.session.files.list.mockResolvedValueOnce({ items: [] });
 
       await filesMount.list({
@@ -56,7 +56,7 @@ describe('ToolRouterSessionFilesMount', () => {
 
       expect(mockClient.toolRouter.session.files.list).toHaveBeenCalledWith('custom-mount', {
         session_id: sessionId,
-        mount_relative_prefix: '/documents',
+        mount_relative_prefix: 'documents',
         cursor: undefined,
         limit: undefined,
       });
@@ -91,7 +91,7 @@ describe('ToolRouterSessionFilesMount', () => {
       });
     });
 
-    it('should pass cursor and limit for pagination', async () => {
+    it('should pass cursor and limit for pagination (path / omitted for root)', async () => {
       mockClient.toolRouter.session.files.list.mockResolvedValueOnce({ items: [] });
 
       await filesMount.list({
@@ -104,7 +104,7 @@ describe('ToolRouterSessionFilesMount', () => {
         DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID,
         {
           session_id: sessionId,
-          mount_relative_prefix: '/',
+          mount_relative_prefix: undefined,
           cursor: 'cursor_page2',
           limit: 25,
         }
@@ -214,7 +214,7 @@ describe('ToolRouterSessionFilesMount', () => {
           return Promise.resolve({ ok: true });
         }
         return Promise.reject(new Error('Unexpected fetch'));
-      });
+      }) as unknown as typeof fetch;
     });
 
     it('should upload local file and return RemoteFile', async () => {
