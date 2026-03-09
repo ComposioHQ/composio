@@ -34,7 +34,8 @@ export function detectMimeTypeFromBuffer(buffer: ArrayBuffer | Uint8Array): stri
     const matches = sig.every((b, i) => bytes[i] === b);
     if (!matches) continue;
 
-    if (mime === 'image/webp' && bytes.length >= 12) {
+    if (mime === 'image/webp') {
+      if (bytes.length < 12) continue;
       const webp = [0x57, 0x45, 0x42, 0x50];
       if (!webp.every((b, i) => bytes[8 + i] === b)) continue;
     }

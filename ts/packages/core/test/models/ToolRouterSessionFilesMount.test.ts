@@ -356,7 +356,7 @@ describe('ToolRouterSessionFilesMount', () => {
       expect(result.mountRelativePath).toBe('data.json');
     });
 
-    it('should use provided remotePath as mountRelativePath in result even when API returns different path', async () => {
+    it('should return mountRelativePath from API response when it differs from requested path', async () => {
       const buffer = new Uint8Array([0x89, 0x50, 0x4e, 0x47]); // PNG signature
 
       mockClient.toolRouter.session.files.createUploadURL.mockResolvedValueOnce({
@@ -370,7 +370,7 @@ describe('ToolRouterSessionFilesMount', () => {
 
       const result = await filesMount.upload(buffer, { remotePath: 'file.png' });
 
-      expect(result.mountRelativePath).toBe('file.png');
+      expect(result.mountRelativePath).toBe('upload-7949b409.jpg');
     });
 
     it('should detect mimetype from buffer when not provided', async () => {

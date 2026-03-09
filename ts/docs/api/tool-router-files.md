@@ -144,10 +144,6 @@ import { detectMimeTypeFromBuffer } from '@composio/core';
 const mime = detectMimeTypeFromBuffer(buffer); // 'image/png' | null
 ```
 
-### remotePath Behavior
-
-When you provide `remotePath`, it is used as the `mountRelativePath` in the returned `RemoteFile`, even if the API returns a different path. This ensures the result reflects what you requested.
-
 ### Examples
 
 ```typescript

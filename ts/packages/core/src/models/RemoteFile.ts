@@ -1,5 +1,11 @@
 import { platform } from '#platform';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from '../utils/constants';
+
+function getParentDir(filePath: string): string {
+  const lastSep = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+  if (lastSep <= 0) return '';
+  return filePath.slice(0, lastSep);
+}
 import { RemoteFileData, RemoteFileDataSchema } from '../types/ToolRouterSessionFilesMount.types';
 import { RemoteFileDownloadError, ValidationError } from '../errors';
 
@@ -152,8 +158,11 @@ export class RemoteFile {
     const savePath =
       path ?? platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME, this.filename);
 
-    const dir = platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
-    if (!platform.existsSync(dir)) {
+    const dir =
+      path != null
+        ? getParentDir(savePath)
+        : platform.joinPath(homeDir, COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME);
+    if (dir && !platform.existsSync(dir)) {
       platform.mkdirSync(dir);
     }
 
