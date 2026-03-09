@@ -17,41 +17,9 @@ from composio_client.types.tool_router import session_create_params
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
-from composio.core.models.connected_accounts import ConnectionRequest
+from composio.core.models.tool_router_session import ToolRouterSession
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
-
-if t.TYPE_CHECKING:
-    from composio.core.models._modifiers import Modifiers
-
-# Type aliases
-AuthorizeFn = t.Callable[..., ConnectionRequest]
-
-
-ToolkitsFn = t.Callable[
-    ...,
-    "ToolkitConnectionsDetails",
-]
-
-
-# Local type variable for ToolsFn protocol (covariant for return type)
-_TToolCollectionReturn = t.TypeVar("_TToolCollectionReturn", covariant=True)
-
-
-class ToolsFn(t.Protocol[_TToolCollectionReturn]):
-    """Protocol for the tools function that returns provider-wrapped tools.
-
-    The return type is generic to support provider-specific tool collections.
-    For example, AnthropicProvider returns list[ToolParam], OpenAIProvider
-    returns list[ChatCompletionToolParam], etc.
-    """
-
-    def __call__(
-        self, modifiers: t.Optional["Modifiers"] = None
-    ) -> _TToolCollectionReturn:
-        """Get provider-wrapped tools for execution with your AI framework."""
-        ...
-
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -320,36 +288,6 @@ class ToolRouterSessionExperimental:
     assistive_prompt: t.Optional[str] = None
 
 
-@dataclass
-class ToolRouterSession(t.Generic[TTool, TToolCollection]):
-    """
-    Tool router session containing session information and helper functions.
-
-    Generic Parameters:
-        TTool: The individual tool type returned by the provider.
-        TToolCollection: The collection type returned by tools().
-
-    Attributes:
-        session_id: Unique session identifier
-        mcp: MCP server configuration
-        tools: Function to get provider-wrapped tools
-        authorize: Function to authorize a toolkit
-        toolkits: Function to get toolkit connection states
-        experimental: Optional experimental features data from the session response
-
-    Note:
-        The `tools` function returns a provider-specific tool collection.
-        The return type is inferred from the provider's generic parameters.
-    """
-
-    session_id: str
-    mcp: ToolRouterMCPServerConfig
-    tools: "ToolsFn[TToolCollection]"
-    authorize: AuthorizeFn
-    toolkits: ToolkitsFn
-    experimental: t.Optional[ToolRouterSessionExperimental] = None
-
-
 class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
     """
     ToolRouter class for managing tool routing sessions.
@@ -414,335 +352,6 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 "x-api-key": self._client.api_key,
             },
         )
-
-    def _create_authorize_fn(self, session_id: str) -> AuthorizeFn:
-        """
-        Create an authorization function for the session.
-
-        :param session_id: The session ID
-        :return: Authorization function
-        """
-
-        def authorize_fn(
-            toolkit: str,
-            *,
-            callback_url: t.Optional[str] = None,
-        ) -> ConnectionRequest:
-            """
-            Authorize a toolkit for the user and get a connection request.
-
-            This method initiates the OAuth flow for a toolkit and returns a
-            ConnectionRequest object containing the redirect URL for user authorization.
-
-            Args:
-                toolkit: The toolkit slug to authorize (e.g., 'github', 'slack', 'gmail')
-                callback_url: Optional URL to redirect user after OAuth authorization completes.
-                    Use this to redirect users back to your application after they authorize.
-
-            Returns:
-                ConnectionRequest: Object containing:
-                    - id: The connected account ID
-                    - redirect_url: URL to redirect user for OAuth authorization
-                    - status: Connection status ('INITIATED')
-                    - wait_for_connection(): Method to poll until connection is active
-
-            Example:
-                ```python
-                # Basic authorization
-                connection = session.authorize('github')
-                print(f"Redirect user to: {connection.redirect_url}")
-
-                # With custom callback URL
-                connection = session.authorize(
-                    'slack',
-                    callback_url='https://myapp.com/oauth/callback'
-                )
-
-                # Wait for user to complete authorization
-                connected_account = connection.wait_for_connection(timeout=300)
-                print(f"Connected! Account ID: {connected_account.id}")
-                ```
-            """
-            response = self._client.tool_router.session.link(
-                session_id=session_id,
-                toolkit=toolkit,
-                callback_url=callback_url if callback_url else omit,
-            )
-
-            # Return connection request with redirect URL
-            return ConnectionRequest(
-                id=response.connected_account_id,
-                redirect_url=response.redirect_url,
-                status="INITIATED",
-                client=self._client,
-            )
-
-        return authorize_fn
-
-    def _create_toolkits_fn(self, session_id: str) -> ToolkitsFn:
-        """
-        Create a toolkits function for the session.
-
-        :param session_id: The session ID
-        :return: Toolkits function
-        """
-
-        def toolkits_fn(
-            *,
-            toolkits: t.Optional[t.List[str]] = None,
-            next_cursor: t.Optional[str] = None,
-            limit: t.Optional[int] = None,
-            is_connected: t.Optional[bool] = None,
-            search: t.Optional[str] = None,
-        ) -> ToolkitConnectionsDetails:
-            """
-            Get toolkit connection states for the session.
-
-            Retrieves information about toolkits available in this session, including
-            their connection status, auth configuration, and metadata.
-
-            Args:
-                toolkits: List of toolkit slugs to filter by (e.g., ['github', 'slack']).
-                    If None, returns all toolkits in the session.
-                next_cursor: Cursor for pagination to fetch the next page of results.
-                    Use the `next_cursor` from a previous response to get more results.
-                limit: Maximum number of toolkit items to return per page.
-                is_connected: Filter by connection status:
-                    - True: Only return toolkits with active connections
-                    - False: Only return toolkits without active connections
-                    - None: Return all toolkits regardless of connection status
-                search: Search term to filter toolkits by name.
-            Returns:
-                ToolkitConnectionsDetails: Object containing:
-                    - items: List of ToolkitConnectionState objects with:
-                        - slug: Toolkit identifier (e.g., 'github')
-                        - name: Display name (e.g., 'GitHub')
-                        - logo: URL to toolkit logo
-                        - is_no_auth: Whether toolkit requires no authentication
-                        - connection: Connection details (is_active, auth_config, connected_account)
-                    - next_cursor: Cursor for fetching next page (None if no more pages)
-                    - total_pages: Total number of pages available
-
-            Example:
-                ```python
-                # Get all toolkits in the session
-                result = session.toolkits()
-                for toolkit in result.items:
-                    status = "Connected" if toolkit.connection and toolkit.connection.is_active else "Not connected"
-                    print(f"{toolkit.name}: {status}")
-
-                # Filter by specific toolkits
-                result = session.toolkits(toolkits=['github', 'slack', 'gmail'])
-
-                # Get only connected toolkits
-                connected = session.toolkits(is_connected=True)
-                print(f"You have {len(connected.items)} connected toolkits")
-
-                # Get only disconnected toolkits (need authorization)
-                disconnected = session.toolkits(is_connected=False)
-                for toolkit in disconnected.items:
-                    print(f"Please connect: {toolkit.name}")
-
-                # Pagination example
-                result = session.toolkits(limit=10)
-                all_toolkits = list(result.items)
-                while result.next_cursor:
-                    result = session.toolkits(limit=10, next_cursor=result.next_cursor)
-                    all_toolkits.extend(result.items)
-                ```
-            """
-            toolkits_params: t.Dict[str, t.Any] = {}
-
-            if next_cursor is not None:
-                toolkits_params["cursor"] = next_cursor
-            if limit is not None:
-                toolkits_params["limit"] = limit
-            if toolkits is not None:
-                toolkits_params["toolkits"] = toolkits
-            if is_connected is not None:
-                toolkits_params["is_connected"] = is_connected
-            if search is not None:
-                toolkits_params["search"] = search
-
-            result = self._client.tool_router.session.toolkits(
-                session_id=session_id,
-                **toolkits_params,
-            )
-
-            # Transform the result to match the expected format
-            toolkit_states: t.List[ToolkitConnectionState] = []
-            for item in result.items:
-                connected_account = item.connected_account
-                auth_config: t.Optional[ToolkitConnectionAuthConfig] = None
-                connected_acc: t.Optional[ToolkitConnectedAccount] = None
-
-                if connected_account:
-                    if connected_account.auth_config:
-                        auth_config = ToolkitConnectionAuthConfig(
-                            id=connected_account.auth_config.id,
-                            mode=connected_account.auth_config.auth_scheme,
-                            is_composio_managed=connected_account.auth_config.is_composio_managed,
-                        )
-                    connected_acc = ToolkitConnectedAccount(
-                        id=connected_account.id,
-                        status=connected_account.status,
-                    )
-
-                connection = (
-                    None
-                    if item.is_no_auth
-                    else ToolkitConnection(
-                        is_active=(
-                            connected_account.status == "ACTIVE"
-                            if connected_account
-                            else False
-                        ),
-                        auth_config=auth_config,
-                        connected_account=connected_acc,
-                    )
-                )
-
-                toolkit_state = ToolkitConnectionState(
-                    slug=item.slug,
-                    name=item.name,
-                    logo=item.meta.logo if item.meta else None,
-                    is_no_auth=item.is_no_auth if item.is_no_auth else False,
-                    connection=connection,
-                )
-                toolkit_states.append(toolkit_state)
-
-            return ToolkitConnectionsDetails(
-                items=toolkit_states,
-                next_cursor=result.next_cursor,
-                total_pages=int(result.total_pages),
-            )
-
-        return toolkits_fn
-
-    def _create_tools_fn(
-        self,
-        session_id: str,
-    ) -> ToolsFn[TToolCollection]:
-        """
-        Create a tools function that wraps tools for the provider.
-
-        :param session_id: The session ID
-        :param tool_slugs: List of tool slugs to wrap (not used anymore, kept for backward compatibility)
-        :return: Function that returns provider-wrapped tools
-        """
-        from composio.core.models.tools import Tools as ToolsModel
-        from composio.core.provider import AgenticProvider, NonAgenticProvider
-
-        if self._provider is None:
-            raise ValueError(
-                "Provider is required for tool router. "
-                "Please initialize ToolRouter with a provider."
-            )
-
-        tools_model = ToolsModel(
-            client=self._client,
-            provider=self._provider,
-            auto_upload_download_files=self._auto_upload_download_files,
-        )
-
-        def tools_fn(modifiers: t.Optional[Modifiers] = None) -> TToolCollection:
-            """
-            Get provider-wrapped tools for execution with your AI framework.
-
-            Returns tools configured for this session, wrapped in the format expected
-            by your AI provider (OpenAI, Anthropic, LangChain, etc.). The tools are
-            ready to be passed directly to your AI model for function calling.
-
-            Args:
-                modifiers: Optional execution modifiers to customize tool behavior:
-                    - Custom pre/post processing hooks
-                    - Schema modifications
-                    - Execution callbacks
-
-            Returns:
-                Provider-wrapped tools in the format expected by your AI framework.
-                The exact type depends on the provider configured during initialization.
-
-            Example:
-                ```python
-                # Basic usage - get tools for your AI model
-                tools = session.tools()
-
-                # Use with OpenAI
-                from openai import OpenAI
-                client = OpenAI()
-
-                response = client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[{"role": "user", "content": "Star the composio repo"}],
-                    tools=tools,
-                )
-
-                # Use with Anthropic
-                from anthropic import Anthropic
-                client = Anthropic()
-
-                response = client.messages.create(
-                    model="claude-3-opus-20240229",
-                    messages=[{"role": "user", "content": "Send an email"}],
-                    tools=tools,
-                )
-
-                # With custom modifiers
-                from composio.core.models import schema_modifier
-
-                @schema_modifier
-                def modify_schema(tool: str, toolkit: str, schema):
-                    print(f"Executing {tool} from {toolkit}")
-                    return schema
-
-                tools = session.tools(modifiers=[modify_schema])
-                ```
-
-            Note:
-                The tools returned are specific to this session. They include
-                only the tools enabled for this session based on the configuration
-                provided during session creation.
-            """
-
-            # Get raw meta tools from the session (instead of using tool_slugs)
-            # This fetches tools directly from the tool router session
-            router_tools = tools_model.get_raw_tool_router_meta_tools(
-                session_id=session_id,
-                modifiers=modifiers,
-            )
-
-            # Always enhance schema descriptions (type hints and required notes)
-            for tool in router_tools:
-                tool.input_parameters = (
-                    tools_model._file_helper.enhance_schema_descriptions(
-                        schema=tool.input_parameters,
-                    )
-                )
-
-            # Wrap tools with provider
-            if issubclass(type(self._provider), NonAgenticProvider):
-                return t.cast(
-                    TToolCollection,
-                    t.cast(
-                        NonAgenticProvider[TTool, TToolCollection], self._provider
-                    ).wrap_tools(tools=router_tools),
-                )
-
-            return t.cast(
-                TToolCollection,
-                t.cast(
-                    AgenticProvider[TTool, TToolCollection], self._provider
-                ).wrap_tools(
-                    tools=router_tools,
-                    execute_tool=tools_model._wrap_execute_tool_for_tool_router(
-                        session_id=session_id,
-                        modifiers=modifiers,
-                    ),
-                ),
-            )
-
-        return tools_fn
 
     def _transform_tags_params(
         self, tags: t.Optional[ToolRouterConfigTags]
@@ -1075,6 +684,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                         }
                     }
 
+        if self._provider is None:
+            raise ValueError(
+                "Provider is required for tool router. "
+                "Please initialize ToolRouter with a provider."
+            )
+
         # Make API call to create session
         session = self._client.tool_router.session.create(**create_params)
 
@@ -1088,14 +703,14 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
         # Create and return the session
         return ToolRouterSession(
+            client=self._client,
+            provider=self._provider,
+            auto_upload_download_files=self._auto_upload_download_files,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
-            tools=self._create_tools_fn(session.session_id),
-            authorize=self._create_authorize_fn(session.session_id),
-            toolkits=self._create_toolkits_fn(session.session_id),
             experimental=experimental_response,
         )
 
@@ -1127,14 +742,14 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
         # Create and return the session
         return ToolRouterSession(
+            client=self._client,
+            provider=self._provider,
+            auto_upload_download_files=self._auto_upload_download_files,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
-            tools=self._create_tools_fn(session.session_id),
-            authorize=self._create_authorize_fn(session.session_id),
-            toolkits=self._create_toolkits_fn(session.session_id),
         )
 
 

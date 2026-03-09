@@ -1,4 +1,5 @@
 from .__version__ import __version__
+from .core.models.tool_router_session_files import RemoteFile
 from .core.models.tools import (
     after_execute,
     before_execute,
@@ -24,6 +25,7 @@ from .sdk import Composio
 
 __all__ = (
     "Composio",
+    "RemoteFile",
     "ConnectionExpiredEvent",
     "ConnectionState",
     "ConnectionStatusEnum",

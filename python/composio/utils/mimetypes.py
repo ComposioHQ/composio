@@ -508,3 +508,69 @@ _types = {
 
 def guess(file: t.Union[str, Path]) -> str:
     return _types.get(Path(file).suffix, _default)
+
+
+# MIME type -> extension (no leading dot). Used when deriving filenames from
+# content-type headers (e.g. for URLs without path segments).
+_MIME_TO_EXT: t.Dict[str, str] = {
+    "text/plain": "txt",
+    "text/html": "html",
+    "text/css": "css",
+    "text/javascript": "js",
+    "application/json": "json",
+    "application/xml": "xml",
+    "application/pdf": "pdf",
+    "application/zip": "zip",
+    "application/x-zip-compressed": "zip",
+    "application/gzip": "gz",
+    "application/octet-stream": "bin",
+    "application/x-tar": "tar",
+    "application/msword": "doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "application/vnd.ms-excel": "xls",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+    "application/vnd.ms-powerpoint": "ppt",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/svg+xml": "svg",
+    "image/webp": "webp",
+    "image/bmp": "bmp",
+    "image/tiff": "tiff",
+    "audio/mpeg": "mp3",
+    "audio/wav": "wav",
+    "audio/ogg": "ogg",
+    "video/mp4": "mp4",
+    "video/mpeg": "mpeg",
+    "video/quicktime": "mov",
+    "video/x-msvideo": "avi",
+    "video/webm": "webm",
+}
+
+
+def get_extension_from_mime_type(mime_type: str) -> str:
+    """Map MIME type to file extension (no leading dot).
+
+    Used when deriving filenames from content-type headers
+    (e.g. for URLs without path segments).
+    """
+    clean = mime_type.split(";")[0].lower().strip()
+    if clean in _MIME_TO_EXT:
+        return _MIME_TO_EXT[clean]
+    parts = clean.split("/")
+    if len(parts) == 2:
+        subtype = parts[1].lower()
+        if "+" in subtype:
+            plus_parts = subtype.split("+")
+            suffix = plus_parts[-1]
+            known_prefixes = ("svg", "atom", "rss")
+            if plus_parts[0] in known_prefixes:
+                return plus_parts[0]
+            structured_suffixes = ("json", "xml", "yaml", "zip", "gzip")
+            if suffix in structured_suffixes:
+                return suffix
+            return suffix
+        return subtype or "txt"
+    return "bin"

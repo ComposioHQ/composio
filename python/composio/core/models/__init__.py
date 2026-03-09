@@ -2,6 +2,8 @@ from .auth_configs import AuthConfigs
 from .connected_accounts import ConnectedAccounts
 from .mcp import MCP
 from .tool_router import ToolRouter
+from .tool_router_session import ToolRouterSession
+from .tool_router_session_files import RemoteFile, ToolRouterSessionFilesMount
 from .toolkits import Toolkits
 from .tools import Tools
 from .triggers import Triggers
@@ -23,8 +25,11 @@ __all__ = [
     "ConnectionState",
     "ConnectionStatusEnum",
     "MCP",
+    "RemoteFile",
     "SingleConnectedAccountDetailedResponse",
     "ToolRouter",
+    "ToolRouterSession",
+    "ToolRouterSessionFilesMount",
     "Toolkits",
     "Tools",
     "Triggers",
