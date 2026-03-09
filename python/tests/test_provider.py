@@ -38,7 +38,6 @@ def create_mock_tool(
         available_versions=[version],
         version=version,
         scopes=[],
-        status="active",
         toolkit=tool_list_response.ItemToolkit(
             name=toolkit_slug.title(), slug=toolkit_slug, logo=""
         ),
@@ -697,7 +696,6 @@ class TestLangchainReservedKeywords:
             available_versions=["12012025_00"],
             version="12012025_00",
             scopes=[],
-            status="active",
             toolkit=tool_list_response.ItemToolkit(name="Test", slug="test", logo=""),
             deprecated=tool_list_response.ItemDeprecated(
                 available_versions=["12012025_00"],

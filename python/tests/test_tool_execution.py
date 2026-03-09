@@ -33,7 +33,6 @@ class TestToolExecution:
             available_versions=["v1.0.0"],
             version="v1.0.0",
             scopes=[],
-            status="active",
             toolkit=tool_list_response.ItemToolkit(
                 name=toolkit_slug.title(), slug=toolkit_slug, logo=""
             ),
@@ -1064,7 +1063,6 @@ class TestSerializeArguments:
             available_versions=["v1.0.0"],
             version="v1.0.0",
             scopes=[],
-            status="active",
             toolkit=tool_list_response.ItemToolkit(
                 name="Notion", slug="notion", logo=""
             ),

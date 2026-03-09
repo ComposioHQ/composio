@@ -4,21 +4,22 @@ Example demonstrating the Tool Router session files API.
 Shows how to list, upload, download, and delete files in a tool router
 session's virtual filesystem. Also demonstrates search and execute.
 
-Requires COMPOSIO_API_KEY to be set.
+Requires COMPOSIO_API_KEY and OPENAI_API_KEY to be set.
 """
 
 import tempfile
 from pathlib import Path
 
 from composio import Composio
+from composio_openai import OpenAIProvider
 
 
 def main():
-    composio = Composio()
+    composio = Composio(provider=OpenAIProvider())
 
     # Create a session
     print("Creating tool router session...")
-    session = composio.create(user_id="demo_files_user")
+    session = composio.tool_router.create(user_id="demo_files_user")
     print(f"  Session ID: {session.session_id}")
 
     # Upload a file (from bytes)
