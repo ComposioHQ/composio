@@ -31,11 +31,11 @@ if (existsSync(GENERATED_DIR)) {
   rmSync(GENERATED_DIR, { recursive: true });
 }
 
-// Test 1: Run composio ts generate --toolkits entelligence --output-dir ./generated
-console.log('Test 1: Running composio ts generate --toolkits entelligence --output-dir ./generated...');
+// Test 1: Run composio ts generate --toolkits hackernews --output-dir ./generated
+console.log('Test 1: Running composio ts generate --toolkits hackernews --output-dir ./generated...');
 try {
   // Use the composio CLI binary built and installed to /usr/local/bin in the Dockerfile
-  execSync(`composio ts generate --toolkits entelligence --output-dir ${GENERATED_DIR}`, {
+  execSync(`composio ts generate --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
     cwd: __dirname,
     stdio: 'inherit',
     env: { ...process.env, FORCE_COLOR: '0' },

@@ -18,7 +18,7 @@ This causes `TS2307: Cannot find module './foo.mjs'` errors.
 
 | Test                   | Description                                                    |
 | ---------------------- | -------------------------------------------------------------- |
-| composio ts generate   | Runs CLI to generate TypeScript files for entelligence toolkit |
+| composio ts generate   | Runs CLI to generate TypeScript files for hackernews toolkit |
 | File existence         | Verifies generated .ts files exist                             |
 | TypeScript compilation | Runs `tsc --noEmit` to check import resolution                 |
 
@@ -33,7 +33,7 @@ fixtures/
 The fixture script:
 
 1. Cleans up any previous generated files
-2. Runs `composio ts generate --toolkits entelligence --output-dir ./generated`
+2. Runs `composio ts generate --toolkits hackernews --output-dir ./generated`
 3. Verifies generated `.ts` files exist
 4. Runs `npx tsc --noEmit` to check TypeScript compilation
 5. Fails if TS2307 errors occur (indicating `.mjs` import bug)

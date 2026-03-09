@@ -104,7 +104,7 @@ export class ToolRouterSessionFilesMount {
     options: { remotePath?: string; mimetype?: string }
   ): Promise<{ fileToUpload: File; remotePath: string; mimetype: string }> {
     if (typeof input === 'string') {
-      if (input.startsWith('http')) {
+      if (input.startsWith('http://') || input.startsWith('https://')) {
         const response = await fetch(input);
         if (!response.ok) {
           throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
@@ -216,7 +216,12 @@ export class ToolRouterSessionFilesMount {
       }
     );
 
-    const uploadResponse = await fetch(createUploadURLResponse.upload_url, {
+    const uploadURLData =
+      typeof createUploadURLResponse === 'object' && 'body' in createUploadURLResponse
+        ? (createUploadURLResponse as { body: unknown }).body
+        : createUploadURLResponse;
+
+    const uploadResponse = await fetch((uploadURLData as { upload_url: string }).upload_url, {
       method: 'PUT',
       body: await fileToUpload.arrayBuffer(),
       headers: {
@@ -232,7 +237,7 @@ export class ToolRouterSessionFilesMount {
       uploadOptions.data.mountId,
       {
         session_id: this.sessionId,
-        mount_relative_path: createUploadURLResponse.mount_relative_path,
+        mount_relative_path: (uploadURLData as { mount_relative_path: string }).mount_relative_path,
       }
     );
 
@@ -301,7 +306,12 @@ export class ToolRouterSessionFilesMount {
       }
     );
 
-    const parsed = RemoteFileDataSchema.safeParse(createDownloadURLResponse);
+    const downloadURLData =
+      typeof createDownloadURLResponse === 'object' && 'body' in createDownloadURLResponse
+        ? (createDownloadURLResponse as { body: unknown }).body
+        : createDownloadURLResponse;
+
+    const parsed = RemoteFileDataSchema.safeParse(downloadURLData);
     if (!parsed.success) {
       throw new ValidationError('Failed to parse remote file properties', {
         cause: parsed.error,
