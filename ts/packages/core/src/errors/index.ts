@@ -33,3 +33,6 @@ export * from './SDKErrors';
 
 // Trigger Errors
 export * from './TriggerErrors';
+
+// Remote File Errors
+export * from './RemoteFileErrors';

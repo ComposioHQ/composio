@@ -5,7 +5,7 @@ import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
-import { ToolRouterCreateSessionConfig, ToolRouterSession } from '../../src/types/toolRouter.types';
+import { ToolRouterCreateSessionConfig, Session } from '../../src/types/toolRouter.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -35,6 +35,8 @@ const createMockClient = () => ({
       link: vi.fn(),
       toolkits: vi.fn(),
       executeMeta: vi.fn(),
+      search: vi.fn(),
+      execute: vi.fn(),
     },
   },
   tools: {
@@ -1771,6 +1773,148 @@ describe('ToolRouter', () => {
           limit: 'invalid' as unknown as number, // Invalid type
         })
       ).rejects.toThrow();
+    });
+  });
+
+  describe('search function', () => {
+    const userId = 'user_123';
+    const sessionId = 'session_123';
+
+    const mockSearchResponse = {
+      success: true,
+      error: null,
+      results: [
+        {
+          index: 1,
+          use_case: 'send emails',
+          primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
+          related_tool_slugs: [],
+          toolkits: ['gmail'],
+        },
+      ],
+      tool_schemas: {
+        GMAIL_SEND_EMAIL: {
+          tool_slug: 'GMAIL_SEND_EMAIL',
+          toolkit: 'gmail',
+          description: 'Send an email',
+          hasFullSchema: true,
+          input_schema: {},
+          output_schema: {},
+        },
+      },
+      toolkit_connection_statuses: [
+        {
+          toolkit: 'gmail',
+          description: 'Gmail',
+          has_active_connection: false,
+          status_message: 'No connection',
+        },
+      ],
+      next_steps_guidance: ['Connect Gmail'],
+      session: {
+        id: 'trs_123',
+        generate_id: false,
+        instructions: 'Reuse session',
+      },
+      time_info: {
+        current_time_utc: '2025-03-09T12:00:00.000Z',
+        current_time_utc_epoch_seconds: 1741521600,
+        message: 'UTC',
+      },
+    };
+
+    it('should call search with correct params and return camelCase response', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.search.mockResolvedValueOnce(mockSearchResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.search({ query: 'send emails' });
+
+      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(sessionId, {
+        queries: [{ use_case: 'send emails' }],
+      });
+      expect(result.success).toBe(true);
+      expect(result.results[0].useCase).toBe('send emails');
+      expect(result.results[0].primaryToolSlugs).toEqual(['GMAIL_SEND_EMAIL']);
+      expect(result.toolSchemas.GMAIL_SEND_EMAIL.toolSlug).toBe('GMAIL_SEND_EMAIL');
+      expect(result.nextStepsGuidance).toEqual(['Connect Gmail']);
+      expect(result.session.generateId).toBe(false);
+      expect(result.timeInfo.currentTimeUtcEpochSeconds).toBe(1741521600);
+    });
+
+    it('should pass toolkits filter when provided', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.search.mockResolvedValueOnce(mockSearchResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.search({ query: 'send emails', toolkits: ['gmail', 'slack'] });
+
+      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(sessionId, {
+        queries: [{ use_case: 'send emails' }],
+        toolkits: ['gmail', 'slack'],
+      });
+    });
+
+    it('should propagate search API errors', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.search.mockRejectedValueOnce(new Error('Search failed'));
+
+      const session = await toolRouter.create(userId);
+
+      await expect(session.search({ query: 'send emails' })).rejects.toThrow('Search failed');
+    });
+  });
+
+  describe('execute function', () => {
+    const userId = 'user_123';
+    const sessionId = 'session_123';
+
+    const mockExecuteResponse = {
+      data: { tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' },
+      error: null,
+      log_id: 'log_abc',
+    };
+
+    it('should call execute with correct params and return camelCase response', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockResolvedValueOnce(mockExecuteResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.execute('GMAIL_SEND_EMAIL', {
+        to: 'user@example.com',
+        subject: 'Hi',
+        body: 'Hello',
+      });
+
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
+        tool_slug: 'GMAIL_SEND_EMAIL',
+        arguments: { to: 'user@example.com', subject: 'Hi', body: 'Hello' },
+      });
+      expect(result.data).toEqual({ tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' });
+      expect(result.error).toBeNull();
+      expect(result.logId).toBe('log_abc');
+    });
+
+    it('should propagate execute API errors', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockRejectedValueOnce(new Error('Execute failed'));
+
+      const session = await toolRouter.create(userId);
+
+      await expect(session.execute('GMAIL_SEND_EMAIL')).rejects.toThrow('Execute failed');
+    });
+
+    it('should default arguments to empty object when omitted', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockResolvedValueOnce(mockExecuteResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.execute('HACKERNEWS_GET_USER');
+
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
+        tool_slug: 'HACKERNEWS_GET_USER',
+        arguments: {},
+      });
     });
   });
 

@@ -18,3 +18,5 @@ export const COMPOSIO_LOG_LEVEL = getEnvVariable('COMPOSIO_LOG_LEVEL') as
   | undefined;
 
 export const IS_DEVELOPMENT_OR_CI = getEnvVariable('DEVELOPMENT') || getEnvVariable('CI') || false;
+
+export const DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID = 'files';

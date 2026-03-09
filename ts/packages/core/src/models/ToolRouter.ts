@@ -22,32 +22,14 @@ import { telemetry } from '../telemetry/Telemetry';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import { ComposioConfig } from '../composio';
 import {
-  ToolRouterAuthorizeFn,
-  ToolRouterToolkitsFn,
   ToolRouterCreateSessionConfig,
-  ToolRouterSession,
-  ToolRouterSessionExperimental,
-  ToolkitConnectionStateSchema,
-  ToolRouterToolkitsOptions,
-  ToolRouterToolkitsOptionsSchema,
+  Session,
+  SessionExperimental,
   MCPServerType,
   ToolRouterMCPServerConfig,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
-import { Tools } from './Tools';
-import {
-  ExecuteToolModifiers,
-  SessionExecuteMetaModifiers,
-  SessionMetaToolOptions,
-  ProviderOptions,
-  TransformToolSchemaModifier,
-} from '../types/modifiers.types';
-import { ConnectionRequest } from '../types/connectionRequest.types';
-import { createConnectionRequest } from './ConnectionRequest';
-import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
-import { transform } from '../utils/transform';
 import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
-import { ValidationError } from '../errors';
 import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
@@ -55,6 +37,7 @@ import {
   transformToolRouterWorkbenchParams,
   transformToolRouterToolkitsParams,
 } from '../lib/toolRouterParams';
+import { ToolRouterSession } from './ToolRouterSession';
 
 export class ToolRouter<
   TToolCollection,
@@ -68,157 +51,28 @@ export class ToolRouter<
     telemetry.instrument(this, 'ToolRouter');
   }
 
-  /**
-   * Creates a function that authorizes a toolkit for a user.
-   * @param sessionId {string} The session id to create the authorize function for
-   * @returns {ToolRouterAuthorizeFn} The authorize function
-   *
-   */
-  private createAuthorizeFn = (sessionId: string): ToolRouterAuthorizeFn => {
-    const authorizeFn = async (
-      toolkit: string,
-      options?: { callbackUrl?: string }
-    ): Promise<ConnectionRequest> => {
-      const response = await this.client.toolRouter.session.link(sessionId, {
-        ...(options?.callbackUrl ? { callback_url: options.callbackUrl } : {}),
-        toolkit,
-      });
-
-      return createConnectionRequest(
-        this.client,
-        response.connected_account_id,
-        ConnectedAccountStatuses.INITIATED,
-        response.redirect_url
-      );
-    };
-    return authorizeFn;
-  };
-
-  /**
-   *
-   * @param sessionId {string} The session id to create the toolkits function for
-   * @returns {ToolRouterToolkitsFn} The toolkits function
-   *
-   * @example
-   * ```typescript
-   * import { Composio } from '@composio/core';
-   *
-   * const composio = new Composio();
-   * const session = await composio.toolRouter.use('session_123');
-   *
-   * const toolkits = await session.toolkits();
-   * console.log(toolkits);
-   * ```
-   */
-  private createToolkitsFn = (sessionId: string): ToolRouterToolkitsFn => {
-    const connectionsFn = async (options?: ToolRouterToolkitsOptions) => {
-      const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(options ?? {});
-      if (!toolkitOptions.success) {
-        throw new ValidationError('Failed to parse toolkits options', {
-          cause: toolkitOptions.error,
-        });
-      }
-
-      const result = await this.client.toolRouter.session.toolkits(sessionId, {
-        cursor: toolkitOptions.data.nextCursor,
-        limit: toolkitOptions.data.limit,
-        toolkits: toolkitOptions.data.toolkits,
-        is_connected: toolkitOptions.data.isConnected,
-        search: toolkitOptions.data.search,
-      });
-
-      const toolkitConnectedStates = result.items.map(item => {
-        const connectedState = transform(item)
-          .with(ToolkitConnectionStateSchema)
-          .using(item => ({
-            slug: item.slug,
-            name: item.name,
-            logo: item.meta?.logo,
-            isNoAuth: item.is_no_auth,
-            connection: item.is_no_auth
-              ? undefined
-              : {
-                  isActive: item.connected_account?.status === 'ACTIVE',
-                  authConfig: item.connected_account && {
-                    id: item.connected_account?.auth_config.id,
-                    mode: item.connected_account?.auth_config.auth_scheme,
-                    isComposioManaged: item.connected_account?.auth_config.is_composio_managed,
-                  },
-                  connectedAccount: item.connected_account
-                    ? {
-                        id: item.connected_account.id,
-                        status: item.connected_account.status,
-                      }
-                    : undefined,
-                },
-          }));
-        return connectedState;
-      });
-
-      return {
-        items: toolkitConnectedStates,
-        nextCursor: result.next_cursor,
-        totalPages: result.total_pages,
-      };
-    };
-
-    return connectionsFn as ToolRouterToolkitsFn;
-  };
-
-  /**
-   * @internal
-   * Creates a function that wraps the tools based on the provider.
-   * The returned tools will be of the type the frameworks expects.
-   *
-   * @param sessionId - The session id to get the tools for
-   * @returns A function that wraps the tools based on the provider with session-specific modifiers.
-   */
-  private createToolsFn = (
-    sessionId: string
-  ): ((modifiers?: SessionMetaToolOptions) => Promise<ReturnType<TProvider['wrapTools']>>) => {
-    return async (modifiers?: SessionMetaToolOptions) => {
-      const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-      const tools = await ToolsModel.getRawToolRouterMetaTools(
-        sessionId,
-        modifiers?.modifySchema
-          ? {
-              modifySchema: modifiers?.modifySchema,
-            }
-          : undefined
-      );
-      const wrappedTools = ToolsModel.wrapToolsForToolRouter(sessionId, tools, modifiers);
-      return wrappedTools as ReturnType<TProvider['wrapTools']>;
-    };
-  };
-
-  /**
-   * Creates a MCP server config object.
-   * @param type {MCPServerType} The type of the MCP server
-   * @param url {string} The URL of the MCP server
-   * @returns {ToolRouterMCPServerConfig} The MCP server config object
-   */
-  private createMCPServerConfig = ({
+  private createMCPServerConfig({
     type,
     url,
   }: {
     type: MCPServerType;
     url: string;
-  }): ToolRouterMCPServerConfig => {
+  }): ToolRouterMCPServerConfig {
     return {
       type,
       url,
       headers: {
-        ...(this.config?.apiKey ? { 'x-api-key': this.config?.apiKey } : {}),
+        ...(this.config?.apiKey ? { 'x-api-key': this.config.apiKey } : {}),
       },
     };
-  };
+  }
 
   /**
    * Creates a new tool router session for a user.
    *
    * @param userId {string} The user id to create the session for
    * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
-   * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
+   * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    *
    * @example
    * ```typescript
@@ -251,7 +105,7 @@ export class ToolRouter<
   async create(
     userId: string,
     config?: ToolRouterCreateSessionConfig
-  ): Promise<ToolRouterSession<TToolCollection, TTool, TProvider>> {
+  ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
 
     const payload: SessionCreateParams = {
@@ -265,7 +119,6 @@ export class ToolRouter<
         routerConfig.manageConnections
       ),
       workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
-      // Map SDK's experimental.assistivePrompt.userTimezone to API's experimental.assistive_prompt_config.user_timezone
       experimental: routerConfig.experimental?.assistivePrompt?.userTimezone
         ? {
             assistive_prompt_config: {
@@ -277,27 +130,25 @@ export class ToolRouter<
 
     const session = await this.client.toolRouter.session.create(payload);
 
-    // Transform experimental response: API's assistive_prompt -> SDK's assistivePrompt
-    const experimental: ToolRouterSessionExperimental | undefined = session.experimental
+    const experimental: SessionExperimental | undefined = session.experimental
       ? {
           assistivePrompt: session.experimental.assistive_prompt,
         }
       : undefined;
 
-    return {
-      sessionId: session.session_id,
-      mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.session_id),
-      authorize: this.createAuthorizeFn(session.session_id),
-      toolkits: this.createToolkitsFn(session.session_id),
-      experimental,
-    };
+    return new ToolRouterSession<TToolCollection, TTool, TProvider>(
+      this.client,
+      this.config,
+      session.session_id,
+      this.createMCPServerConfig(session.mcp),
+      experimental
+    );
   }
 
   /**
    * Use an existing session
    * @param id {string} The id of the session to use
-   * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
+   * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    *
    * @example
    * ```typescript
@@ -311,16 +162,13 @@ export class ToolRouter<
    * console.log(session.mcp.headers);
    * ```
    */
-  async use(
-    id: string
-  ): Promise<Omit<ToolRouterSession<TToolCollection, TTool, TProvider>, 'experimental'>> {
+  async use(id: string): Promise<Omit<Session<TToolCollection, TTool, TProvider>, 'experimental'>> {
     const session = await this.client.toolRouter.session.retrieve(id);
-    return {
-      sessionId: session.session_id,
-      mcp: this.createMCPServerConfig(session.mcp),
-      tools: this.createToolsFn(session.session_id),
-      authorize: this.createAuthorizeFn(session.session_id),
-      toolkits: this.createToolkitsFn(session.session_id),
-    };
+    return new ToolRouterSession<TToolCollection, TTool, TProvider>(
+      this.client,
+      this.config,
+      session.session_id,
+      this.createMCPServerConfig(session.mcp)
+    );
   }
 }

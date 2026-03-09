@@ -1,7 +1,8 @@
 import z from 'zod/v3';
-import { BaseComposioProvider } from '../provider/BaseProvider';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
+import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
@@ -305,49 +306,129 @@ export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptions
 export type ToolRouterToolkitsFn = (
   options?: ToolRouterToolkitsOptions
 ) => Promise<ToolkitConnectionsDetails>;
+
+// --- Session search response schemas (camelCase) ---
+
+const ToolRouterSessionSearchResultReferenceWorkbenchSnippetSchema = z.object({
+  code: z.string(),
+  description: z.string(),
+});
+
+const ToolRouterSessionSearchResultSchema = z.object({
+  index: z.number(),
+  useCase: z.string(),
+  primaryToolSlugs: z.array(z.string()),
+  relatedToolSlugs: z.array(z.string()),
+  toolkits: z.array(z.string()),
+  difficulty: z.string().optional(),
+  error: z.string().nullable().optional(),
+  executionGuidance: z.string().optional(),
+  knownPitfalls: z.array(z.string()).optional(),
+  memory: z.record(z.string(), z.array(z.string())).optional(),
+  planId: z.string().optional(),
+  recommendedPlanSteps: z.array(z.string()).optional(),
+  referenceWorkbenchSnippets: z
+    .array(ToolRouterSessionSearchResultReferenceWorkbenchSnippetSchema)
+    .optional(),
+});
+
+const ToolRouterSessionSearchSessionSchema = z.object({
+  id: z.string(),
+  generateId: z.boolean(),
+  instructions: z.string(),
+});
+
+const ToolRouterSessionSearchTimeInfoSchema = z.object({
+  currentTimeUtc: z.string(),
+  currentTimeUtcEpochSeconds: z.number(),
+  message: z.string(),
+});
+
+const ToolRouterSessionSearchToolSchemasSchemaRefSchema = z.object({
+  args: z.object({ toolSlugs: z.array(z.string()) }),
+  message: z.string(),
+  tool: z.literal('COMPOSIO_GET_TOOL_SCHEMAS'),
+});
+
+const ToolRouterSessionSearchToolSchemaSchema = z.object({
+  toolSlug: z.string(),
+  toolkit: z.string(),
+  description: z.string().optional(),
+  hasFullSchema: z.boolean().optional(),
+  inputSchema: z.record(z.string(), z.unknown()).optional(),
+  outputSchema: z.record(z.string(), z.unknown()).optional(),
+  schemaRef: ToolRouterSessionSearchToolSchemasSchemaRefSchema.optional(),
+});
+
+const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
+  toolkit: z.string(),
+  description: z.string(),
+  hasActiveConnection: z.boolean(),
+  statusMessage: z.string(),
+  connectionDetails: z.record(z.string(), z.unknown()).optional(),
+  currentUserInfo: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const ToolRouterSessionSearchResponseSchema = z.object({
+  success: z.boolean(),
+  error: z.string().nullable(),
+  results: z.array(ToolRouterSessionSearchResultSchema),
+  toolSchemas: z.record(z.string(), ToolRouterSessionSearchToolSchemaSchema),
+  toolkitConnectionStatuses: z.array(ToolRouterSessionSearchToolkitConnectionStatusSchema),
+  nextStepsGuidance: z.array(z.string()),
+  session: ToolRouterSessionSearchSessionSchema,
+  timeInfo: ToolRouterSessionSearchTimeInfoSchema,
+});
+export type ToolRouterSessionSearchResponse = z.infer<typeof ToolRouterSessionSearchResponseSchema>;
+
+// --- Session execute response schema (camelCase) ---
+
+export const ToolRouterSessionExecuteResponseSchema = z.object({
+  data: z.record(z.string(), z.unknown()),
+  error: z.string().nullable(),
+  logId: z.string(),
+});
+export type ToolRouterSessionExecuteResponse = z.infer<
+  typeof ToolRouterSessionExecuteResponseSchema
+>;
+
 /**
  * Experimental features response from session creation.
  * Only returned on session creation, not on GET.
  */
-export interface ToolRouterSessionExperimental {
+export interface SessionExperimental {
   /**
    * The assistive system prompt to inject into your agent for optimal tool router usage.
    */
   assistivePrompt?: string;
 }
 
-export interface ToolRouterSession<
+export type ToolRouterSessionSearchFn = (params: {
+  query: string;
+  toolkits?: string[];
+}) => Promise<ToolRouterSessionSearchResponse>;
+
+export type ToolRouterSessionExecuteFn = (
+  toolSlug: string,
+  arguments_?: Record<string, unknown>
+) => Promise<ToolRouterSessionExecuteResponse>;
+
+/** Session type returned by ToolRouter.create() and ToolRouter.use() */
+export interface Session<
   TToolCollection,
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
-  /**
-   * The session id of the tool router session.
-   */
   sessionId: string;
-  /**
-   * The MCP server config of the tool router session.
-   * Contains the URL, type ('http' or 'sse'), and headers for authentication.
-   */
   mcp: ToolRouterMCPServerConfig;
-  /**
-   * Get the tools available in the session, formatted for your AI framework.
-   * Requires a provider to be configured in the Composio constructor.
-   */
   tools: ToolRouterToolsFn<TToolCollection, TTool, TProvider>;
-  /**
-   * Initiate an authorization flow for a toolkit.
-   * Returns a ConnectionRequest with a redirect URL for the user.
-   */
   authorize: ToolRouterAuthorizeFn;
-  /**
-   * Query the connection state of toolkits in the session.
-   * Supports pagination and filtering by toolkit slugs.
-   */
   toolkits: ToolRouterToolkitsFn;
-  /**
-   * Experimental features including the generated system prompt.
-   * Only returned on session creation, not on GET.
-   */
-  experimental?: ToolRouterSessionExperimental;
+  /** Search for tools by semantic use case */
+  search: ToolRouterSessionSearchFn;
+  /** Execute a tool within the session */
+  execute: ToolRouterSessionExecuteFn;
+  /** File mount operations (list, upload, download, delete) */
+  files: ToolRouterSessionFilesMount;
+  experimental?: SessionExperimental;
 }
