@@ -60,6 +60,7 @@ export function getExtensionFromMimeType(mimeType: string): string {
     'application/zip': 'zip',
     'application/x-zip-compressed': 'zip',
     'application/gzip': 'gz',
+    'application/octet-stream': 'bin',
     'application/x-tar': 'tar',
     'application/msword': 'doc',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',

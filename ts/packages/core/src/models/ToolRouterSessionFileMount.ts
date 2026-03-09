@@ -132,11 +132,13 @@ export class ToolRouterSessionFilesMount {
           ? new Uint8Array(content)
           : new TextEncoder().encode(content as string);
       const filename = platform.basename(input);
-      const file = new File([buffer], filename, { type: 'application/octet-stream' });
+      const mimetype =
+        options.mimetype ?? detectMimeTypeFromBuffer(buffer) ?? 'application/octet-stream';
+      const file = new File([buffer], filename, { type: mimetype });
       return {
         fileToUpload: file,
         remotePath: options.remotePath ?? filename,
-        mimetype: 'application/octet-stream',
+        mimetype,
       };
     }
 
