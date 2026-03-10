@@ -203,7 +203,7 @@ class ToolRouterSessionFilesMount:
             session_id=self._session_id,
             mount_relative_prefix=mount_relative_prefix_arg,
             cursor=cursor if cursor else omit,
-            limit=float(limit) if limit is not None else omit,
+            limit=int(limit) if limit is not None else omit,
         )
 
     def _normalize_upload_input(
