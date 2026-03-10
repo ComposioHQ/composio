@@ -20,6 +20,7 @@ import { Video } from '@/components/video';
 import { CapabilityCard, CapabilityList } from '@/components/capability-card';
 import { TemplateCard, TemplateGrid } from '@/components/template-card';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
+import { ManagedAuthList } from '@/components/toolkits/managed-auth-list';
 import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
@@ -92,6 +93,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     TemplateCard,
     TemplateGrid,
     ToolkitsLanding,
+    ManagedAuthList,
     Mermaid,
     AIToolsBanner,
     StepTitle,

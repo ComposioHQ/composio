@@ -99,7 +99,7 @@ An auth config is a blueprint that defines how authentication works for a toolki
 
 If you're using sessions with meta tools (`composio.create()`), you don't need to create auth configs yourself. When a user connects to a toolkit, Composio automatically uses a default auth config with managed credentials. The agent handles the entire flow through `COMPOSIO_MANAGE_CONNECTIONS`.
 
-You only need to create auth configs manually when you're [executing tools directly](/docs/tools-direct/authenticating-tools), want to [use your own OAuth app](/docs/white-labeling-authentication), need [custom scopes](/docs/auth-configuration/custom-auth-configs), or are working with a toolkit that doesn't have Composio-managed auth. See [Authentication](/docs/authentication) for the full overview.
+You only need to create auth configs manually when you're [executing tools directly](/docs/tools-direct/authenticating-tools), want to [use your own OAuth app](/docs/white-labeling-authentication), need [custom scopes](/docs/auth-configuration/custom-auth-configs), or are working with a toolkit that doesn't have Composio-managed auth. See [Authentication](/docs/authentication) for the full overview and [When to use your own developer credentials](/docs/custom-app-vs-managed-app) for help deciding.
 </Accordion>
 
 <Accordion title="What authentication types does Composio support?">
@@ -217,6 +217,30 @@ Create a new session when the config changes: different toolkits, different auth
 
 <Accordion title="How do I configure sessions with custom auth configs?">
 Some toolkits require your own OAuth credentials or API keys. Create an auth config in the dashboard by selecting the toolkit, choosing the auth scheme, and entering your credentials. Then pass the auth config ID when creating a session using the `auth_configs` (or `auth_config_id`) parameter so the session uses your developer credentials instead of Composio-managed auth. See [Using custom auth configuration](/docs/using-custom-auth-configuration).
+</Accordion>
+
+<Accordion title="When should I use my own developer credentials instead of Composio managed auth?">
+Use your own credentials when you're going to production and users will see OAuth consent screens, when you need custom scopes, when you're hitting shared rate limits, or when connecting to a self-hosted instance. For development and prototyping, Composio managed auth works out of the box with no setup. See [When to use your own developer credentials](/docs/custom-app-vs-managed-app).
+</Accordion>
+
+<Accordion title="How do I check if a toolkit has Composio managed auth?">
+Call the toolkits API and check the `composio_managed_auth_schemes` field:
+
+```bash
+curl 'https://backend.composio.dev/api/v3/toolkits/github' \
+  -H 'x-api-key: YOUR_API_KEY'
+```
+
+If the array is empty, you'll need to provide your own credentials.
+
+To fetch all toolkits and filter by managed auth availability, use the list endpoint:
+
+```bash
+curl 'https://backend.composio.dev/api/v3/toolkits' \
+  -H 'x-api-key: YOUR_API_KEY'
+```
+
+Each toolkit in the response includes `composio_managed_auth_schemes`. You can also browse the full list on the [managed auth page](/toolkits/managed-auth) or check individual toolkit pages on the [toolkits page](/toolkits).
 </Accordion>
 
 <Accordion title="What happens to existing connections when I switch to my own OAuth app?">

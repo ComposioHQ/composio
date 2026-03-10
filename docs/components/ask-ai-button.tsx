@@ -11,19 +11,20 @@ function getDecimal() {
   return (window as typeof window & { Decimal?: DecimalAPI }).Decimal;
 }
 
-let widgetOpen = false;
+function isWidgetVisible(): boolean {
+  const sidebar = document.querySelector('.decimal-widget-sidebar');
+  return sidebar?.classList.contains('open') ?? false;
+}
 
 export function toggleDecimalWidget() {
   const decimal = getDecimal();
   if (!decimal) {
     setTimeout(() => {
       getDecimal()?.show();
-      widgetOpen = true;
     }, 500);
     return;
   }
-  widgetOpen ? decimal.hide() : decimal.show();
-  widgetOpen = !widgetOpen;
+  isWidgetVisible() ? decimal.hide() : decimal.show();
 }
 
 export function detectMac(): boolean {

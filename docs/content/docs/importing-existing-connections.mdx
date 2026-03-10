@@ -1,0 +1,233 @@
+---
+title: Importing existing connections
+description: Pass existing OAuth tokens, API keys, or other credentials into Composio so your users don't need to re-authenticate
+keywords: [import connections, existing tokens, pass through credentials, bring your own tokens, no re-auth, pre-authenticated]
+---
+
+If your users have already authenticated with a service, say they connected their Google Drive through your app, or you already store their Slack OAuth tokens, you can pass those credentials directly into Composio. No re-authentication required.
+
+This is useful when:
+- Your app already has OAuth tokens for users (e.g., from a Slack or GitHub integration you built)
+- You're adopting Composio and want to onboard existing users without disrupting them
+- Another platform (like Airtable or Retool) already holds credentials for your users' accounts
+
+## How it works
+
+Instead of redirecting users through an OAuth flow, you pass their existing tokens to `connectedAccounts.initiate()` using the `AuthScheme` helpers. Composio creates a connected account directly from those credentials.
+
+```mermaid
+graph LR
+    A[Your existing tokens] --> B[connectedAccounts.initiate]
+    B --> C[Connected account in Composio]
+    C --> D[Execute tools immediately]
+```
+
+## Prerequisites
+
+1. **An auth config** for the toolkit you're importing into. See the note below on which type to use.
+2. **The existing credentials** for each user (access tokens, refresh tokens, API keys, etc.)
+3. **A user ID** for each user, any string that uniquely identifies them in your system
+
+<Callout type="warn">
+To import OAuth tokens, you must create a [custom auth config](/docs/using-custom-auth-configuration) using the same client ID and secret that originally issued them. You cannot import OAuth tokens into Composio's managed auth config. If you use managed auth, your users will need to re-authenticate through the standard OAuth flow. This does not apply to API keys, bearer tokens, or basic auth, which work with any auth config.
+</Callout>
+
+## OAuth2 tokens
+
+The most common case. You have access tokens (and ideally refresh tokens) from your existing OAuth integration.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio.types import auth_scheme
+
+composio = Composio(api_key="your-api-key")
+
+connection = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_auth_config",
+    config=auth_scheme.oauth2({
+        "access_token": "xoxb-existing-slack-token",
+        "refresh_token": "xoxr-existing-refresh-token",  # recommended
+        "expires_in": 3600,  # optional, seconds until expiry
+        "scope": "chat:write,channels:read",  # optional
+    }),
+)
+
+connected_account = connection.wait_for_connection()
+print(f"Connected: {connected_account.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, AuthScheme } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+
+const connection = await composio.connectedAccounts.initiate(
+  'user_123',
+  'ac_your_auth_config',
+  {
+    config: AuthScheme.OAuth2({
+      access_token: 'xoxb-existing-slack-token',
+      refresh_token: 'xoxr-existing-refresh-token',  // recommended
+      expires_in: 3600,  // optional, seconds until expiry
+      scope: 'chat:write,channels:read',  // optional
+    }),
+  }
+);
+
+const connectedAccount = await connection.waitForConnection();
+console.log('Connected:', connectedAccount.id);
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Always include a `refresh_token` when possible. Combined with your auth config's client ID and secret, Composio will automatically refresh tokens when they expire, so the imported connection stays alive long-term.
+</Callout>
+
+## API keys
+
+For services that use API key authentication (e.g., SendGrid, Tavily, PostHog):
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio.types import auth_scheme
+
+composio = Composio(api_key="your-api-key")
+
+connection = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_auth_config",
+    config=auth_scheme.api_key({
+        "api_key": "sg-existing-sendgrid-key",
+    }),
+)
+
+# API key connections are immediately active
+print(f"Connected: {connection.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, AuthScheme } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+
+const connection = await composio.connectedAccounts.initiate(
+  'user_123',
+  'ac_your_auth_config',
+  {
+    config: AuthScheme.APIKey({
+      api_key: 'sg-existing-sendgrid-key',
+    }),
+  }
+);
+
+// API key connections are immediately active
+console.log('Connected:', connection.id);
+```
+</Tab>
+</Tabs>
+
+## Bearer tokens
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio.types import auth_scheme
+
+composio = Composio(api_key="your-api-key")
+
+connection = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_auth_config",
+    config=auth_scheme.bearer_token({
+        "token": "existing-bearer-token",
+    }),
+)
+
+# Bearer token connections are immediately active
+print(f"Connected: {connection.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, AuthScheme } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+
+const connection = await composio.connectedAccounts.initiate(
+  'user_123',
+  'ac_your_auth_config',
+  {
+    config: AuthScheme.BearerToken({
+      token: 'existing-bearer-token',
+    }),
+  }
+);
+
+// Bearer token connections are immediately active
+console.log('Connected:', connection.id);
+```
+</Tab>
+</Tabs>
+
+## Basic auth
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio.types import auth_scheme
+
+composio = Composio(api_key="your-api-key")
+
+connection = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_auth_config",
+    config=auth_scheme.basic({
+        "username": "user@example.com",
+        "password": "existing-password",
+    }),
+)
+
+# Basic auth connections are immediately active
+print(f"Connected: {connection.id}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, AuthScheme } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+
+const connection = await composio.connectedAccounts.initiate(
+  'user_123',
+  'ac_your_auth_config',
+  {
+    config: AuthScheme.Basic({
+      username: 'user@example.com',
+      password: 'existing-password',
+    }),
+  }
+);
+
+// Basic auth connections are immediately active
+console.log('Connected:', connection.id);
+```
+</Tab>
+</Tabs>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Key />} title="Custom auth configs" href="/docs/using-custom-auth-configuration" description="Set up auth configs with your own OAuth credentials" />
+  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage connected accounts after importing" />
+  <Card icon={<Palette />} title="White-labeling" href="/docs/white-labeling-authentication" description="Use your own branding on OAuth consent screens" />
+</Cards>

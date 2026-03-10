@@ -706,6 +706,60 @@ function toolkitToMarkdown(toolkit: Toolkit, detailedTools?: Tool[], detailedTri
   return lines.join('\n');
 }
 
+// Generate markdown for /toolkits/managed-auth.md
+async function generateManagedAuthIndex(): Promise<string> {
+  const toolkits = await getAllToolkits();
+
+  // Only include OAuth toolkits
+  const oauthToolkits = toolkits.filter((t) =>
+    t.authSchemes?.some((s) => s.toUpperCase().includes('OAUTH'))
+  );
+
+  const managed = oauthToolkits
+    .filter((t) => t.composioManagedAuthSchemes && t.composioManagedAuthSchemes.length > 0)
+    .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
+
+  const unmanaged = oauthToolkits
+    .filter((t) => !t.composioManagedAuthSchemes || t.composioManagedAuthSchemes.length === 0)
+    .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
+
+  const lines: string[] = [
+    '# Composio Managed Auth',
+    '',
+    'Toolkits with managed auth work out of the box with no OAuth setup. For toolkits without managed auth, you need to provide your own credentials.',
+    '',
+    'You can also check programmatically whether a toolkit has managed auth:',
+    '',
+    '```bash',
+    "curl 'https://backend.composio.dev/api/v3/toolkits/posthog' \\",
+    "  -H 'x-api-key: YOUR_API_KEY'",
+    '```',
+    '',
+    'See [When to use your own developer credentials](/docs/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    '',
+    `## Composio Managed App Available (${managed.length})`,
+    '',
+    '| Toolkit | Slug |',
+    '|---------|------|',
+  ];
+
+  for (const t of managed) {
+    lines.push(`| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`);
+  }
+
+  lines.push('');
+  lines.push(`## Requires Your Own Credentials (${unmanaged.length})`);
+  lines.push('');
+  lines.push('| Toolkit | Slug |');
+  lines.push('|---------|------|');
+
+  for (const t of unmanaged) {
+    lines.push(`| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`);
+  }
+
+  return lines.join('\n');
+}
+
 // Generate a comprehensive toolkits index for /toolkits.md
 async function generateToolkitsIndex(): Promise<string> {
   const toolkits = await getAllToolkits();
@@ -719,6 +773,9 @@ async function generateToolkitsIndex(): Promise<string> {
     '# Toolkits',
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
+    '',
+    '- [Premium Tools](/toolkits/premium-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
     '',
     '## All Toolkits',
     '',
@@ -846,6 +903,16 @@ export async function GET(
     if (prefix === 'toolkits' && rest.length === 0) {
       const toolkitsIndex = await generateToolkitsIndex();
       return new Response(toolkitsIndex, {
+        headers: {
+          'Content-Type': 'text/markdown; charset=utf-8',
+        },
+      });
+    }
+
+    // Special handling for managed auth page - generate server-side list
+    if (prefix === 'toolkits' && rest.length === 1 && rest[0] === 'managed-auth') {
+      const managedAuthIndex = await generateManagedAuthIndex();
+      return new Response(managedAuthIndex, {
         headers: {
           'Content-Type': 'text/markdown; charset=utf-8',
         },

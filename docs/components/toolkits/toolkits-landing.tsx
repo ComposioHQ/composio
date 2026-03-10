@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
-import { Search, Sparkles, ArrowRight, Wrench, Zap, Copy, Check, ExternalLink, Grip } from 'lucide-react';
+import { Search, Sparkles, Wrench, Zap, Copy, Check, ExternalLink, Grip, ShieldCheck } from 'lucide-react';
+import { Card, Cards } from 'fumadocs-ui/components/card';
 import toolkitsData from '@/public/data/toolkits-list.json';
 import type { ToolkitSummary } from '@/types/toolkit';
 import { PageActions } from '@/components/page-actions';
@@ -178,18 +179,11 @@ export function ToolkitsLanding() {
         </div>
       </div>
 
-      {/* Premium Tools Card */}
-      <Link
-        href="/toolkits/premium-tools"
-        className="group flex items-center justify-between gap-3 rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 transition-all hover:border-orange-500/50 hover:bg-orange-500/10"
-      >
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Sparkles className="h-4 w-4 shrink-0 text-orange-500" />
-          <span className="text-sm font-medium text-fd-foreground">Premium Tools</span>
-          <span className="hidden text-sm text-fd-muted-foreground sm:inline">— Learn about pricing and limits</span>
-        </div>
-        <ArrowRight className="h-4 w-4 shrink-0 text-fd-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-orange-500" />
-      </Link>
+      {/* Cards */}
+      <Cards>
+        <Card icon={<ShieldCheck />} title="Composio Managed Auth" href="/toolkits/managed-auth" description="Check which toolkits have managed auth" />
+        <Card icon={<Sparkles />} title="Premium Tools" href="/toolkits/premium-tools" description="Learn about pricing and limits" />
+      </Cards>
 
       {/* Search */}
       <div className="relative">
