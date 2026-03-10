@@ -110,7 +110,8 @@ export class ToolRouterSessionFilesMount {
           throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
         }
         const arrayBuffer = await response.arrayBuffer();
-        const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+        const rawContentType = response.headers.get('content-type') || 'application/octet-stream';
+        const mimeType = rawContentType.split(';')[0].trim();
         const url = new URL(input);
         const pathname = url.pathname;
         const segments = pathname.split('/').filter(Boolean);
