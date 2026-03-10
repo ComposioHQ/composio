@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.6.5-alpha.0
+
+### Patch Changes
+
+- Add support for files
+
 ## 0.6.4
 
 ### Patch Changes

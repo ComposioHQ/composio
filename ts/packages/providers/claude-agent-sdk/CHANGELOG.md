@@ -1,5 +1,12 @@
 # @composio/claude-code-agents
 
+## 0.6.5-alpha.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.6.5-alpha.0
+
 ## 0.6.4
 
 ### Patch Changes
