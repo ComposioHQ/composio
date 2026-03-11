@@ -2,7 +2,6 @@ name: CLI Install Health Check
 
 on:
   schedule:
-    # Run every hour at minute 0
     - cron: '0 * * * *'
   workflow_dispatch:
 
@@ -11,35 +10,26 @@ jobs:
     name: Test CLI Installation
     runs-on: ubuntu-latest
     steps:
-      - name: Test install script from composio.dev
-        id: install
+      - name: Run install script
         run: |
-          if curl -fsSL https://composio.dev/install | bash; then
-            echo "success=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "success=false" >> "$GITHUB_OUTPUT"
-            exit 1
-          fi
+          set -euo pipefail
+          curl -fsSL https://composio.dev/install | bash
+          echo "$HOME/.composio/bin" >> "$GITHUB_PATH"
 
       - name: Verify installation
-        if: steps.install.outcome == 'success'
         run: |
-          source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
-          export PATH="$HOME/.composio/bin:$PATH"
-          if composio --version; then
-            echo "✅ CLI installation verified"
-          else
-            echo "❌ CLI binary failed to execute"
-            exit 1
-          fi
+          set -euo pipefail
+          ls -la "$HOME/.composio/bin" || true
+          which composio
+          composio --version
 
-      - name: Send Slack Notification (Failure)
-        if: failure()
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
-        with:
-          payload: |
-            {
-              "text": "⚠️ CLI Install Health Check Failed!\n*Repository:* ${{ github.repository }}\n*Workflow:* ${{ github.workflow }}\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n*Commit:* ${{ github.sha }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
+      # - name: Send Slack Notification (Failure)
+      #   if: failure()
+      #   uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "⚠️ CLI Install Health Check Failed!\n*Repository:* ${{ github.repository }}\n*Workflow:* ${{ github.workflow }}\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n*Commit:* ${{ github.sha }}"
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}
