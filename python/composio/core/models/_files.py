@@ -123,7 +123,11 @@ def upload(url: str, file: Path) -> bool:
         True if upload succeeded (HTTP 200), False otherwise
     """
     with file.open("rb") as data:
-        response = requests.put(url=url, data=data)
+        response = requests.put(
+            url=url,
+            data=data,
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
         return response.status_code == 200
 
 
@@ -360,6 +364,7 @@ def _upload_bytes_to_s3(
         url=s3meta.new_presigned_url,
         data=content,
         headers={"Content-Type": mimetype},
+        timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
     )
 
     if upload_response.status_code != 200:
@@ -477,7 +482,7 @@ class FileDownloadable(BaseModel):
     def download(self, outdir: Path, chunk_size: int = _DEFAULT_CHUNK_SIZE) -> Path:
         outfile = outdir / self.name
         outdir.mkdir(exist_ok=True, parents=True)
-        response = requests.get(url=self.s3url, stream=True)
+        response = requests.get(url=self.s3url, stream=True, timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT))
         if response.status_code != 200:
             raise ErrorDownloadingFile(f"Error downloading file: {self.s3url}")
 
