@@ -24,6 +24,7 @@ jobs:
       - name: Verify installation
         if: steps.install.outcome == 'success'
         run: |
+          source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
           export PATH="$HOME/.composio/bin:$PATH"
           if composio --version; then
             echo "✅ CLI installation verified"
