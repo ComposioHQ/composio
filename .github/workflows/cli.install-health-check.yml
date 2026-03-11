@@ -14,12 +14,12 @@ jobs:
         run: |
           set -euo pipefail
           curl -fsSL https://composio.dev/install | bash
-          echo "$HOME/.composio/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.composio" >> "$GITHUB_PATH"
 
       - name: Verify installation
         run: |
           set -euo pipefail
-          ls -la "$HOME/.composio/bin" || true
+          ls -la "$HOME/.composio" || true
           which composio
           composio --version
 
