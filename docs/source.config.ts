@@ -6,6 +6,7 @@ import {
   metaSchema,
   applyMdxPreset,
 } from 'fumadocs-mdx/config';
+import lastModified from 'fumadocs-mdx/plugins/last-modified';
 import { transformerTwoslash } from '@shikijs/twoslash';
 import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs';
 import { remarkMdxMermaid } from 'fumadocs-core/mdx-plugins';
@@ -108,6 +109,11 @@ export const changelog = defineCollections({
 });
 
 export default defineConfig({
+  plugins: [
+    lastModified({
+      filter: (collection) => ['docs', 'cookbooks'].includes(collection),
+    }),
+  ],
   mdxOptions: {
     remarkPlugins: [remarkMdxMermaid],
     rehypeCodeOptions: {
