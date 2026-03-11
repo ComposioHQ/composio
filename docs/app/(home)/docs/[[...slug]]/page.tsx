@@ -9,6 +9,7 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
+import { PageDate } from '@/components/page-date';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -22,6 +23,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   return (
     <DocsPage toc={data.toc} full={data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
       <DocsTitle>{data.title}</DocsTitle>
+      <PageDate createdAt={data.created_at} updatedAt={data.updated_at} />
       <PageActions path={page.url} />
       <DocsBody>
         <MDX

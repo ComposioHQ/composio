@@ -8,6 +8,7 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
+import { PageDate } from '@/components/page-date';
 import { getOgImageUrl } from '@/lib/source';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,6 +25,7 @@ export function createDocsPage(source: Source) {
     return (
       <DocsPage toc={page.data.toc} full={page.data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
         <DocsTitle>{page.data.title}</DocsTitle>
+        <PageDate createdAt={page.data.created_at} updatedAt={page.data.updated_at} />
         <PageActions path={page.url} />
         <DocsBody>
           <MDX

@@ -440,7 +440,12 @@ ${page.data.description || ''}`;
 
   const guardrails = includeGuardrails ? getGuardrails(page.data.llmGuardrails) : '';
 
-  return `# ${page.data.title} (${page.url})
+  const dateMeta: string[] = [];
+  if (page.data.created_at) dateMeta.push(`Created: ${page.data.created_at}`);
+  if (page.data.updated_at) dateMeta.push(`Updated: ${page.data.updated_at}`);
+  const dateHeader = dateMeta.length > 0 ? `\n${dateMeta.join(' | ')}\n` : '';
+
+  return `# ${page.data.title} (${page.url})${dateHeader}
 
 ${cleanContent}${footer}${guardrails}`;
 }

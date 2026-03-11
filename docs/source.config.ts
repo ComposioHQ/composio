@@ -14,6 +14,10 @@ import { z } from 'zod';
 // You can customise Zod schemas for frontmatter and `meta.json` here
 // see https://fumadocs.dev/docs/mdx/collections
 
+const dateField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+  message: 'Date must be in YYYY-MM-DD format (e.g., "2025-12-29")',
+}).optional();
+
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
@@ -22,6 +26,10 @@ const docsSchema = frontmatterSchema.extend({
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
    *  - "none" → no guardrails appended */
   llmGuardrails: z.enum(['direct-execution', 'none']).optional(),
+  /** When this page was first published (YYYY-MM-DD). */
+  created_at: dateField,
+  /** When this page was last meaningfully updated (YYYY-MM-DD). */
+  updated_at: dateField,
 });
 
 export const docs = defineDocs({
