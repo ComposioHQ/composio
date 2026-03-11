@@ -442,12 +442,42 @@ ${page.data.description || ''}`;
 
   const dateMeta: string[] = [];
   if (page.data.created_at) dateMeta.push(`Created: ${page.data.created_at}`);
-  if (page.data.updated_at) dateMeta.push(`Updated: ${page.data.updated_at}`);
+  const gitUpdated = await getGitLastModified(page.absolutePath);
+  if (gitUpdated) dateMeta.push(`Updated: ${gitUpdated}`);
   const dateHeader = dateMeta.length > 0 ? `\n${dateMeta.join(' | ')}\n` : '';
 
   return `# ${page.data.title} (${page.url})${dateHeader}
 
 ${cleanContent}${footer}${guardrails}`;
+}
+
+/**
+ * Get the last modified date of a file from git history.
+ * Returns YYYY-MM-DD or null if git is unavailable.
+ * Results are cached since git dates don't change during a build.
+ */
+const gitDateCache = new Map<string, string | null>();
+
+export async function getGitLastModified(filePath?: string): Promise<string | null> {
+  if (!filePath) return null;
+
+  const cached = gitDateCache.get(filePath);
+  if (cached !== undefined) return cached;
+
+  try {
+    const { execSync } = await import('child_process');
+    const date = execSync(`git log -1 --format=%ai -- "${filePath}"`, {
+      encoding: 'utf-8',
+      timeout: 5000,
+    }).trim().split(' ')[0];
+
+    const result = date || null;
+    gitDateCache.set(filePath, result);
+    return result;
+  } catch {
+    gitDateCache.set(filePath, null);
+    return null;
+  }
 }
 
 export function formatDate(dateStr: string): string {

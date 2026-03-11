@@ -26,10 +26,8 @@ const docsSchema = frontmatterSchema.extend({
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
    *  - "none" → no guardrails appended */
   llmGuardrails: z.enum(['direct-execution', 'none']).optional(),
-  /** When this page was first published (YYYY-MM-DD). */
+  /** When this page was first published (YYYY-MM-DD). Used for migration guides. */
   created_at: dateField,
-  /** When this page was last meaningfully updated (YYYY-MM-DD). */
-  updated_at: dateField,
 });
 
 export const docs = defineDocs({

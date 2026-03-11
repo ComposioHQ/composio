@@ -543,6 +543,7 @@ async function changelogToMarkdown(dateStr: string): Promise<string | null> {
   const formattedDate = formatDate(dateStr);
   const lines: string[] = [
     `# Changelog - ${formattedDate}`,
+    `Created: ${dateStr}`,
     '',
     `**Documentation:** https://docs.composio.dev/docs/changelog/${dateStr.replace(/-/g, '/')}`,
     '',
