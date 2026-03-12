@@ -1,7 +1,7 @@
 ---
 title: "Polling Trigger Interval Changes"
 description: "Default polling interval increasing from 1 minute to 15 minutes, with silent clamping during transition"
-date: "2026-03-03"
+date: "2026-03-11"
 ---
 
 We're updating **polling trigger intervals** to improve platform reliability and avoid rate limiting. This change affects how frequently polling triggers execute.
@@ -67,7 +67,7 @@ If you require polling intervals shorter than 15 minutes, you should **use your 
 
 ## Rollout Timeline
 
-- **March 3, 2026**: Silent clamping enabled — intervals below 15 minutes are automatically raised to 15 minutes
+- **March 11, 2026**: Silent clamping enabled — intervals below 15 minutes are automatically raised to 15 minutes
 - **April 15, 2026**: API enforcement — intervals below 15 minutes will return an error
 - **April 15, 2026**: Dashboard enforcement — the UI will prevent setting intervals below 15 minutes
 
