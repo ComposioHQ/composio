@@ -146,6 +146,77 @@ try:
 except Exception as e:
     print(f"Status: FAILED\nError: {e}")
 
+# --- LangChain direct ---
+from json_schema_to_pydantic import create_model as create_pydantic_model
+from langchain_core.tools import StructuredTool
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+
+print("\n=== LangChain Direct (non-strict) ===")
+try:
+    langchain_tool_calls = []
+    ArgsModel = create_pydantic_model(request_schema)
+
+    def get_compliance_lc(**kwargs) -> str:
+        langchain_tool_calls.append(kwargs)
+        return json.dumps({"status": "ok", "data": [{"Name": "Site A", "Rank": 7}]})
+
+    lc_tool = StructuredTool.from_function(
+        func=get_compliance_lc,
+        name="get_compliance",
+        description="Retrieve compliance data.",
+        args_schema=ArgsModel,
+    )
+
+    llm = ChatOpenAI(model="gpt-4.1", api_key=OPENAI_API_KEY)
+    llm_with_tools = llm.bind_tools([lc_tool])
+    resp = llm_with_tools.invoke(
+        [
+            HumanMessage(
+                content="Use get_compliance with $filter set to 'Rank gt 5'. Only set the $filter parameter, nothing else."
+            )
+        ]
+    )
+    if resp.tool_calls:
+        print("Status: OK")
+        print(f"Args: {json.dumps(resp.tool_calls[0]['args'])}")
+    else:
+        print("Status: FAILED (no tool call)")
+        print(f"Output: {resp.content[:200]}")
+except Exception as e:
+    print(f"Status: FAILED\nError: {e}")
+
+# --- CrewAI direct ---
+from crewai.tools import BaseTool as CrewAIBaseTool
+
+print("\n=== CrewAI Direct (non-strict) ===")
+try:
+    crewai_tool_calls = []
+
+    CrewAIArgsModel = create_pydantic_model(request_schema)
+
+    class GetComplianceCrewAI(CrewAIBaseTool):
+        name: str = "get_compliance"
+        description: str = "Retrieve compliance data."
+        args_schema: type = CrewAIArgsModel
+
+        def _run(self, **kwargs) -> str:
+            crewai_tool_calls.append(kwargs)
+            return json.dumps({"status": "ok", "data": [{"Name": "Site A", "Rank": 7}]})
+
+    crewai_tool = GetComplianceCrewAI()
+
+    # CrewAI uses LLM underneath; test schema acceptance by invoking tool directly
+    test_args = CrewAIArgsModel.model_validate({"$filter": "Rank gt 5"})
+    result = crewai_tool._run(**test_args.model_dump(exclude_none=True))
+    if crewai_tool_calls:
+        print("Status: OK")
+        print(f"Args: {json.dumps(crewai_tool_calls[0])}")
+    else:
+        print("Status: FAILED (tool was not called)")
+except Exception as e:
+    print(f"Status: FAILED\nError: {e}")
+
 # --- Google ADK direct ---
 
 print("\n=== Google ADK Direct (non-strict) ===")
