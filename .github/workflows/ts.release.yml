@@ -5,8 +5,9 @@ on:
   push:
     branches: [next]
 
-env:
-  GITHUB_ACCESS_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+permissions:
+  contents: read
+  id-token: write # required for npm provenance attestations
 
 jobs:
   release:
@@ -36,6 +37,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch' # only run on master merges
         env:
           GITHUB_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
+          GITHUB_ACCESS_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
         with:
           publish: pnpm changeset:release
           commit: 'Release: update version'
