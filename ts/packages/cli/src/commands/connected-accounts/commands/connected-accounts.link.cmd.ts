@@ -30,6 +30,11 @@ const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDescription('Skip auto-opening the browser')
 );
 
+const noWait = Options.boolean('no-wait').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Do not wait for authorization; only print link info')
+);
+
 /**
  * Open the browser and poll until the connected account becomes ACTIVE.
  * On success, outputs valid JSON to stdout for piping (e.g. to jq).
@@ -132,8 +137,8 @@ const waitForActiveConnection = (
  */
 export const connectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, authConfig, userId, noBrowser },
-  ({ toolkit, authConfig, userId, noBrowser }) =>
+  { toolkit, authConfig, userId, noBrowser, noWait },
+  ({ toolkit, authConfig, userId, noBrowser, noWait }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
@@ -204,13 +209,25 @@ export const connectedAccountsCmd$Link = Command.make(
           return;
         }
 
-        yield* waitForActiveConnection(
-          ui,
-          repo,
-          linkOpt.value.connected_account_id,
-          linkOpt.value.redirect_url,
-          noBrowser
-        );
+        const { connected_account_id: connId, redirect_url: redirectUrl } = linkOpt.value;
+
+        if (noWait) {
+          yield* ui.note(redirectUrl, 'Redirect URL');
+          yield* ui.output(
+            JSON.stringify(
+              {
+                status: 'pending',
+                message: 'Complete authorization by opening the URL',
+                connected_account_id: connId,
+                redirect_url: redirectUrl,
+              },
+              null,
+              2
+            )
+          );
+        } else {
+          yield* waitForActiveConnection(ui, repo, connId, redirectUrl, noBrowser);
+        }
       } else {
         // Path B: Tool Router flow — toolkit is guaranteed Some (validated above)
         const toolkitSlug = Option.getOrThrow(toolkit);
@@ -254,7 +271,24 @@ export const connectedAccountsCmd$Link = Command.make(
           return;
         }
 
-        yield* waitForActiveConnection(ui, repo, connAccountId, redirectUrl, noBrowser);
+        if (noWait) {
+          yield* ui.note(redirectUrl, 'Redirect URL');
+          yield* ui.output(
+            JSON.stringify(
+              {
+                status: 'pending',
+                message: 'Complete authorization by opening the URL',
+                connected_account_id: connAccountId,
+                redirect_url: redirectUrl,
+                toolkit: toolkitSlug,
+              },
+              null,
+              2
+            )
+          );
+        } else {
+          yield* waitForActiveConnection(ui, repo, connAccountId, redirectUrl, noBrowser);
+        }
       }
     })
 ).pipe(Command.withDescription('Link an external account via OAuth redirect.'));

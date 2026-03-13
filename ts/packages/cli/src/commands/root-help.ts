@@ -27,12 +27,10 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'login',
     description: 'Log in to the Composio CLI session.',
-    usage: 'login [--no-browser] [--api-key text] [--org-id text] [--project-id text]',
+    usage: 'login [--no-browser] [-y, --yes]',
     options: [
       { name: '--no-browser', description: 'Login without browser interaction' },
-      { name: '--api-key', description: 'API key for non-interactive login (agents/CI)' },
-      { name: '--org-id', description: 'Organization ID for non-interactive login' },
-      { name: '--project-id', description: 'Project ID for non-interactive login' },
+      { name: '-y, --yes', description: 'Skip org/project picker; use session defaults' },
     ],
   },
   {
@@ -43,10 +41,8 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'init',
     description: 'Initialize a Composio project in the current directory.',
-    usage: 'init [--org-id text] [--project-id text] [--no-browser] [-y, --yes]',
+    usage: 'init [--no-browser] [-y, --yes]',
     options: [
-      { name: '--org-id', description: 'Organization ID (skip interactive picker)' },
-      { name: '--project-id', description: 'Project ID (skip interactive picker)' },
       { name: '--no-browser', description: 'Skip opening browser for auth' },
       { name: '-y, --yes', description: 'Auto-select default org/project' },
     ],

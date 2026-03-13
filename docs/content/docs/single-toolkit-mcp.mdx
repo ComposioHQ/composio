@@ -168,7 +168,7 @@ mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?user_id=YOU
 mcp_headers = {"x-api-key": "YOUR_COMPOSIO_API_KEY"}
 
 response = client.beta.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1000,
     messages=[{"role": "user", "content": "What are my latest emails?"}],
     mcp_servers=[{
@@ -204,7 +204,7 @@ const agent = new Agent({
   id: "assistant",
   name: "Assistant",
   instructions: "You are a helpful assistant that can read and manage emails.",
-  model: openai("gpt-4-turbo"),
+  model: openai("gpt-5.4"),
   tools: await client.getTools()
 });
 

@@ -7,7 +7,7 @@ import { VercelProvider } from "@composio/vercel";
 // #region setup
 const composio = new Composio({ provider: new VercelProvider() });
 const userId = process.env.COMPOSIO_USER_ID ?? "default";
-const model = openai("gpt-5.2");
+const model = openai("gpt-5.4");
 // #endregion setup
 
 // #region sweep

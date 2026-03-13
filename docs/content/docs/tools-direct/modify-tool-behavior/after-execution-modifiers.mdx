@@ -49,7 +49,7 @@ tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_USER")
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.4",
     tools=tools,
     messages=messages,
 )
@@ -70,7 +70,7 @@ print(result)
 ```typescript
 // @noErrors
 const response = await openai.chat.completions.create({
-  model: "gpt-4o-mini",
+  model: "gpt-5.4",
   messages,
   tools,
   tool_choice: "auto",

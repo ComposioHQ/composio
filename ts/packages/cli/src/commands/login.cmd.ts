@@ -9,25 +9,17 @@ import {
 } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { runOrgProjectSelection } from 'src/effects/select-org-project';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
   Options.withDescription('Login without browser interaction')
 );
 
-const apiKeyOpt = Options.text('api-key').pipe(
-  Options.optional,
-  Options.withDescription('API key for non-interactive login (agents/CI)')
-);
-
-const orgIdOpt = Options.text('org-id').pipe(
-  Options.optional,
-  Options.withDescription('Organization ID for non-interactive login')
-);
-
-const projectIdOpt = Options.text('project-id').pipe(
-  Options.optional,
-  Options.withDescription('Project ID for non-interactive login')
+const yesOpt = Options.boolean('yes').pipe(
+  Options.withAlias('y'),
+  Options.withDefault(false),
+  Options.withDescription('Skip org/project picker; use session defaults')
 );
 
 /**
@@ -43,12 +35,10 @@ const storeCredentials = (params: {
   initialOrgId: string;
   initialProjectId: string;
   fallbackEmail: string;
-  /**
-   * When true, 400/401/403 from session/info will fail the login.
-   * Used for non-interactive login where the user provides explicit IDs.
-   * When false, all session/info errors are non-fatal (browser login).
-   */
-  strictVerification: boolean;
+  /** When true, skip the init/switch hints and outro (shown later after org/project picker). */
+  skipHints?: boolean;
+  /** When true, skip JSON output (emitted later after org/project picker with final selection). */
+  skipOutput?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -60,13 +50,12 @@ const storeCredentials = (params: {
       initialOrgId,
       initialProjectId,
       fallbackEmail,
-      strictVerification,
+      skipHints = false,
+      skipOutput = false,
     } = params;
 
     // Call session/info to enrich the login with org/project metadata.
-    // In strict mode (non-interactive login), 400/401/403 are hard failures.
-    // In non-strict mode (browser login), all errors are non-fatal since
-    // the linked session is already authenticated.
+    // All errors are non-fatal (browser login) since the linked session is already authenticated.
     const sessionInfo: SessionInfoResponse | undefined = yield* getSessionInfo({
       baseURL,
       apiKey: uakApiKey,
@@ -75,9 +64,6 @@ const storeCredentials = (params: {
     }).pipe(
       Effect.catchTag('services/HttpServerError', e =>
         Effect.gen(function* () {
-          if (strictVerification && e.status && e.status >= 400 && e.status < 500) {
-            return yield* Effect.fail(e);
-          }
           yield* Effect.logDebug(`Session info fetch failed (HTTP ${e.status ?? '?'}):`, e);
           return undefined;
         })
@@ -116,23 +102,31 @@ const storeCredentials = (params: {
 
     const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
     yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
-    yield* ui.log.info('Run `composio init` in your project directory to set up project context.');
-    yield* ui.log.info(
-      'To switch your default global org/project later, run `composio orgs switch`.'
-    );
+    if (!skipHints) {
+      yield* ui.log.info(
+        'Run `composio init` in your project directory to set up project context.'
+      );
+      yield* ui.log.info(
+        'To switch your default global org/project later, run `composio orgs switch`.'
+      );
+    }
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
-    yield* ui.output(
-      JSON.stringify({
-        email,
-        org_id: orgId,
-        project_id: projectId,
-        org_name: sessionInfo?.project.org.name ?? '',
-        project_name: sessionInfo?.project.name ?? '',
-      })
-    );
+    if (!skipOutput) {
+      yield* ui.output(
+        JSON.stringify({
+          email,
+          org_id: orgId,
+          project_id: projectId,
+          org_name: sessionInfo?.project.org.name ?? '',
+          project_name: sessionInfo?.project.name ?? '',
+        })
+      );
+    }
 
-    yield* ui.outro("You're all set!");
+    if (!skipHints) {
+      yield* ui.outro("You're all set!");
+    }
   });
 
 /**
@@ -149,6 +143,8 @@ export const browserLogin = (params: {
   scope: 'user' | 'project';
   /** When true, don't open browser — just show the URL. */
   noBrowser: boolean;
+  /** When true (login only), skip org/project picker and use session defaults. When false, prompt for org/project. */
+  skipOrgProjectPicker?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -224,93 +220,100 @@ export const browserLogin = (params: {
 
     yield* Effect.logDebug('UAK session info:', { xProjectId, xOrgId });
 
+    const willRunPicker = params.scope === 'user' && !params.skipOrgProjectPicker;
     yield* storeCredentials({
       baseURL: ctx.data.baseURL,
       uakApiKey,
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
-      strictVerification: false,
+      skipHints: willRunPicker,
+      skipOutput: willRunPicker,
     });
+
+    if (willRunPicker) {
+      const result = yield* runOrgProjectSelection({
+        apiKey: uakApiKey,
+        baseURL: ctx.data.baseURL,
+      }).pipe(
+        Effect.catchAll(error =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Org/project picker failed:', error);
+            yield* ui.log.warn('Could not load org/project list. Using session defaults.');
+            return undefined;
+          })
+        )
+      );
+      if (result) {
+        const sessionUserId = uakSessionInfo.org_member.user_id ?? uakSessionInfo.org_member.id;
+        const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
+        yield* ctx.login(
+          uakApiKey,
+          result.org.id,
+          result.project.id,
+          testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
+        );
+        yield* ui.log.success(
+          `Default org/project set to "${result.org.name}" / "${result.project.name}".`
+        );
+      }
+      // Emit JSON with final org/project (from picker or session) for piped/scripted consumption
+      const finalOrgId = result?.org.id ?? xOrgId;
+      const finalProjectId = result?.project.id ?? xProjectId;
+      const finalOrgName = result?.org.name ?? uakSessionInfo.project.org.name ?? '';
+      const finalProjectName = result?.project.name ?? uakSessionInfo.project.name ?? '';
+      yield* ui.output(
+        JSON.stringify({
+          email: linkedSession.account.email ?? undefined,
+          org_id: finalOrgId,
+          project_id: finalProjectId,
+          org_name: finalOrgName,
+          project_name: finalProjectName,
+        })
+      );
+      yield* ui.log.info(
+        'Run `composio init` in your project directory to set up project context.'
+      );
+      yield* ui.log.info(
+        'To switch your default global org/project later, run `composio orgs switch`.'
+      );
+      yield* ui.outro("You're all set!");
+    }
   });
 
 /**
  * CLI command to login using Composio's CLI session APIs.
  *
- * Supports two modes:
- * 1. Browser-based: Opens browser for OAuth flow (default)
- * 2. Non-interactive: Accepts --api-key, --org-id, --project-id flags for agents/CI
+ * Browser-based: Opens browser for OAuth flow (default).
+ * Use --no-browser to skip auto-opening the browser and print the URL instead.
+ * Use -y to skip org/project picker and use session defaults.
  *
  * @example
  * ```bash
  * composio login
  * composio login --no-browser
- * composio login --api-key uak_xxx --org-id org-id --project-id proj-id
+ * composio login -y
  * ```
  */
-export const loginCmd = Command.make(
-  'login',
-  { noBrowser, apiKey: apiKeyOpt, orgId: orgIdOpt, projectId: projectIdOpt },
-  ({ noBrowser, apiKey, orgId, projectId }) =>
-    Effect.gen(function* () {
-      const ui = yield* TerminalUI;
-      const ctx = yield* ComposioUserContext;
+export const loginCmd = Command.make('login', { noBrowser, yes: yesOpt }, ({ noBrowser, yes }) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const ctx = yield* ComposioUserContext;
 
-      yield* ui.intro('composio login');
+    yield* ui.intro('composio login');
 
-      // Non-interactive path: --api-key, --org-id, --project-id flags skip browser flow.
-      // All three must be provided together; partial flags are an error.
-      const nonInteractiveFlags = [apiKey, orgId, projectId];
-      const anyProvided = nonInteractiveFlags.some(Option.isSome);
-      const allProvided = nonInteractiveFlags.every(Option.isSome);
-
-      if (anyProvided && !allProvided) {
-        const missing = [
-          Option.isNone(apiKey) && '--api-key',
-          Option.isNone(orgId) && '--org-id',
-          Option.isNone(projectId) && '--project-id',
-        ].filter(Boolean);
-        yield* ui.log.error(`Missing required flag(s): ${missing.join(', ')}`);
-        yield* ui.log.info(
-          'Non-interactive login requires all three: --api-key, --org-id, --project-id'
+    if (ctx.isLoggedIn()) {
+      // Allow re-login when orgId/projectId are not yet set (old CLI login without multi-project support)
+      if (Option.isSome(ctx.data.orgId) && Option.isSome(ctx.data.projectId)) {
+        yield* ui.log.warn(`You're already logged in!`);
+        yield* ui.outro(
+          'If you want to log in with a different account, please run `composio logout` first.'
         );
-        yield* ui.outro('');
         return;
       }
+      yield* ui.log.step('Re-authenticating for multi-project support...');
+    }
 
-      // Strict verification: 400/401/403 from session/info are hard failures since
-      // the user explicitly provided the IDs.
-      if (
-        allProvided &&
-        Option.isSome(apiKey) &&
-        Option.isSome(orgId) &&
-        Option.isSome(projectId)
-      ) {
-        yield* Effect.logDebug('Non-interactive login with provided credentials');
-        yield* storeCredentials({
-          baseURL: ctx.data.baseURL,
-          uakApiKey: apiKey.value,
-          initialOrgId: orgId.value,
-          initialProjectId: projectId.value,
-          fallbackEmail: '',
-          strictVerification: true,
-        });
-        return;
-      }
-
-      if (ctx.isLoggedIn()) {
-        // Allow re-login when orgId/projectId are not yet set (old CLI login without multi-project support)
-        if (Option.isSome(ctx.data.orgId) && Option.isSome(ctx.data.projectId)) {
-          yield* ui.log.warn(`You're already logged in!`);
-          yield* ui.log.info(
-            `If you want to log in with a different account, please run \`composio logout\` first.`
-          );
-          yield* ui.outro('');
-          return;
-        }
-        yield* ui.log.step('Re-authenticating for multi-project support...');
-      }
-
-      yield* browserLogin({ scope: 'user', noBrowser });
-    })
+    yield* browserLogin({ scope: 'user', noBrowser, skipOrgProjectPicker: yes });
+  })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

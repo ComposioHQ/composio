@@ -6,3 +6,6 @@ cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/common-faq.mdx:curl-a
 cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/troubleshooting/tools.mdx:curl-auth-header:43
 cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/tools-direct/toolkit-versioning.mdx:curl-auth-header:34
 cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/tools-direct/toolkit-versioning.mdx:curl-auth-header:38
+
+# Test fixture dummy token for verifying Authorization header forwarding (not a real secret)
+694231f9ffcdb23ca5baf67509101355764d81dc:ts/packages/cli/test/src/services/update-check.test.ts:generic-api-key:296

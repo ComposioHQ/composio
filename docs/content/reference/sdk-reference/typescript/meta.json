@@ -5,7 +5,10 @@
     "auth-configs",
     "connected-accounts",
     "mcp",
+    "remote-file",
     "toolkits",
+    "tool-router-session",
+    "tool-router-session-files-mount",
     "tools",
     "triggers"
   ]

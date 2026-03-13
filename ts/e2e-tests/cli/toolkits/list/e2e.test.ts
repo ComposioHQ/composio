@@ -5,7 +5,7 @@
  * supports --query filtering (exact, prefix, no fuzzy), and respects --limit.
  */
 
-import { e2e, sanitizeOutput, type E2ETestResult } from '@e2e-tests/utils';
+import { e2e, sanitizeOutput, parseJsonStdout, type E2ETestResult } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
@@ -43,25 +43,27 @@ e2e(import.meta.url, {
       });
 
       it('stdout is a JSON array with 1 element', () => {
-        const items = JSON.parse(sanitizeOutput(exactResult.stdout));
+        const items = parseJsonStdout(exactResult);
         expect(Array.isArray(items)).toBe(true);
         expect(items).toHaveLength(1);
       });
 
       it('the element has slug "gmail"', () => {
-        const items = JSON.parse(sanitizeOutput(exactResult.stdout));
+        const items = parseJsonStdout(exactResult) as Array<{ slug: string }>;
         expect(items[0].slug).toBe('gmail');
       });
 
       it('the element has the expected shape', () => {
-        const item = JSON.parse(sanitizeOutput(exactResult.stdout))[0];
+        const item = (parseJsonStdout(exactResult) as Array<Record<string, unknown>>)[0];
         expect(item).toHaveProperty('name');
         expect(item).toHaveProperty('slug');
         expect(item).toHaveProperty('description');
-        // `toolkits list` without user-id uses legacy listing output.
         expect(item).toHaveProperty('latest_version');
         expect(item).toHaveProperty('tools_count');
         expect(item).toHaveProperty('triggers_count');
+        expect(item).toHaveProperty('is_no_auth');
+        expect(item).toHaveProperty('enabled');
+        expect(item).toHaveProperty('connected');
       });
     });
 
@@ -75,13 +77,13 @@ e2e(import.meta.url, {
       });
 
       it('stdout is a JSON array with 1 element', () => {
-        const items = JSON.parse(sanitizeOutput(prefixResult.stdout));
+        const items = parseJsonStdout(prefixResult);
         expect(Array.isArray(items)).toBe(true);
         expect(items).toHaveLength(1);
       });
 
       it('the element has slug "gmail"', () => {
-        const items = JSON.parse(sanitizeOutput(prefixResult.stdout));
+        const items = parseJsonStdout(prefixResult) as Array<{ slug: string }>;
         expect(items[0].slug).toBe('gmail');
       });
     });

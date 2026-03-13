@@ -13,7 +13,18 @@ from composio.core.models.connected_accounts import (
 
 
 class TestAuthScheme:
-    def test_oauth2_sets_initializing_status(self):
+    def test_oauth2_with_access_token_sets_active_status(self):
+        scheme = AuthScheme()
+        options = {"access_token": "test_token", "refresh_token": "test_refresh"}
+
+        state = scheme.oauth2(options)
+
+        assert state["auth_scheme"] == "OAUTH2"
+        assert state["val"]["access_token"] == "test_token"
+        assert state["val"]["refresh_token"] == "test_refresh"
+        assert state["val"]["status"] == "ACTIVE"
+
+    def test_oauth2_without_access_token_sets_initializing_status(self):
         scheme = AuthScheme()
         options = {"client_id": "id", "client_secret": "secret"}
 
@@ -22,6 +33,52 @@ class TestAuthScheme:
         assert state["auth_scheme"] == "OAUTH2"
         assert state["val"]["client_id"] == "id"
         assert state["val"]["client_secret"] == "secret"
+        assert state["val"]["status"] == "INITIALIZING"
+
+    def test_oauth2_with_empty_access_token_sets_initializing_status(self):
+        scheme = AuthScheme()
+        state = scheme.oauth2({"access_token": ""})
+
+        assert state["val"]["status"] == "INITIALIZING"
+
+    def test_oauth2_honors_explicit_status_override(self):
+        scheme = AuthScheme()
+        state = scheme.oauth2({"access_token": "test_token", "status": "INITIALIZING"})
+
+        assert state["val"]["status"] == "INITIALIZING"
+
+    def test_oauth1_with_both_tokens_sets_active_status(self):
+        scheme = AuthScheme()
+        state = scheme.oauth1({"oauth_token": "tok", "oauth_token_secret": "secret"})
+
+        assert state["auth_scheme"] == "OAUTH1"
+        assert state["val"]["oauth_token"] == "tok"
+        assert state["val"]["oauth_token_secret"] == "secret"
+        assert state["val"]["status"] == "ACTIVE"
+
+    def test_oauth1_without_secret_sets_initializing_status(self):
+        scheme = AuthScheme()
+        state = scheme.oauth1({"oauth_token": "tok"})
+
+        assert state["auth_scheme"] == "OAUTH1"
+        assert state["val"]["status"] == "INITIALIZING"
+
+    def test_oauth1_with_empty_token_sets_initializing_status(self):
+        scheme = AuthScheme()
+        state = scheme.oauth1({"oauth_token": "", "oauth_token_secret": "secret"})
+
+        assert state["val"]["status"] == "INITIALIZING"
+
+    def test_oauth1_honors_explicit_status_override(self):
+        scheme = AuthScheme()
+        state = scheme.oauth1(
+            {
+                "oauth_token": "tok",
+                "oauth_token_secret": "secret",
+                "status": "INITIALIZING",
+            }
+        )
+
         assert state["val"]["status"] == "INITIALIZING"
 
     @pytest.mark.parametrize(
@@ -287,6 +344,33 @@ class TestConnectedAccounts:
         assert call_kwargs["auth_config_id"] == "auth-1"
         assert call_kwargs["user_id"] == "user-1"
         assert "callback_url" not in call_kwargs
+
+    def test_initiate_with_oauth2_tokens_returns_active_connection_request(
+        self, connected_accounts, mock_client
+    ):
+        mock_accounts = Mock()
+        mock_accounts.items = []
+        mock_client.connected_accounts.list.return_value = mock_accounts
+
+        mock_response = Mock()
+        mock_response.id = "conn-active"
+        mock_response.connection_data.val.status = "ACTIVE"
+        mock_response.connection_data.val.redirect_url = None
+        mock_client.connected_accounts.create.return_value = mock_response
+
+        scheme = AuthScheme()
+        config = scheme.oauth2(
+            {"access_token": "tok", "refresh_token": "ref", "expires_in": 3600}
+        )
+
+        result = connected_accounts.initiate(
+            user_id="user-1", auth_config_id="auth-1", config=config
+        )
+
+        assert isinstance(result, ConnectionRequest)
+        assert result.id == "conn-active"
+        assert result.status == "ACTIVE"
+        assert result.redirect_url is None
 
     def test_wait_for_connection_delegates_to_connection_request(self, mock_client):
         connected_accounts = ConnectedAccounts(client=mock_client)

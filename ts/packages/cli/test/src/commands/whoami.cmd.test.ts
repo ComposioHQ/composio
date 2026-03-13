@@ -16,8 +16,8 @@ describe('CLI: composio whoami', () => {
 
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain(`api_key_from_test_config_provider`);
-        expect(output).toContain(`"global_user_api_key":"api_key_from_test_config_provider"`);
+        expect(output).not.toContain(`api_key_from_test_config_provider`);
+        expect(output).not.toContain(`global_user_api_key`);
         expect(output).toContain(`"default_org_id":null`);
         expect(output).toContain(`"default_project_id":null`);
         expect(output).toContain(`"test_user_id":null`);
@@ -33,8 +33,8 @@ describe('CLI: composio whoami', () => {
 
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain(`api_key_from_test_fixture`);
-        expect(output).toContain(`"global_user_api_key":"api_key_from_test_fixture"`);
+        expect(output).not.toContain(`api_key_from_test_fixture`);
+        expect(output).not.toContain(`global_user_api_key`);
         expect(output).toContain(`"default_org_id":null`);
         expect(output).toContain(`"default_project_id":null`);
         expect(output).toContain(`"test_user_id":null`);

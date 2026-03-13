@@ -2,14 +2,14 @@ import { Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { redact } from 'src/ui/redact';
 
 /**
  * CLI command to display your account information.
+ * Never prints or exposes API keys.
  *
  * @example
  * ```bash
- * composio whoami <command>
+ * composio whoami
  * ```
  */
 export const whoamiCmd = Command.make('whoami', {}).pipe(
@@ -22,25 +22,28 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
       yield* ctx.data.apiKey.pipe(
         Option.match({
           onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
-          onSome: apiKey =>
+          onSome: () =>
             Effect.gen(function* () {
-              const redactedApiKey = redact({ value: apiKey, prefix: 'ak_' });
               const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
               const defaultProjectId = Option.getOrUndefined(ctx.data.projectId);
               const testUserId = Option.getOrUndefined(ctx.data.testUserId);
 
               yield* ui.note(
                 [
-                  `Global User API Key: ${redactedApiKey}`,
                   `Default Org ID: ${defaultOrgId ?? 'not set'}`,
                   `Default Project ID: ${defaultProjectId ?? 'not set'}`,
                   `Test User ID: ${testUserId ?? 'not set'}`,
                 ].join('\n'),
                 'Global User Context'
               );
+              yield* ui.log.step(
+                [
+                  'To switch orgs:\n> composio orgs switch',
+                  'To get API keys:\n> composio init (in your project)',
+                ].join('\n\n')
+              );
               yield* ui.output(
                 JSON.stringify({
-                  global_user_api_key: apiKey,
                   default_org_id: defaultOrgId ?? null,
                   default_project_id: defaultProjectId ?? null,
                   test_user_id: testUserId ?? null,

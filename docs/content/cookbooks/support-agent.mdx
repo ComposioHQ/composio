@@ -74,3 +74,16 @@ You: The payments service is returning 500 errors. Can you check what's going on
 
 Agent: I checked Datadog and found an active alert on the payments-api monitor...
 ```
+
+## Take it further
+
+The agent's scope is defined by its toolkits and system prompt. Swap them to build different support workflows:
+
+- **Escalation bot**: add PagerDuty and Slack toolkits so the agent can page on-call engineers and post incident threads automatically
+- **Customer-facing KB**: replace Datadog with Zendesk, let the agent search help articles and draft replies to open tickets
+- **Incident timeline**: add Jira and Confluence toolkits so the agent can cross-reference tickets with runbook docs and build a timeline
+
+<Cards>
+  <Card title="Workplace Search" href="/cookbooks/workplace-search" description="Search across GitHub, Slack, Gmail, and Notion from a single agent" />
+  <Card title="Background Agent" href="/cookbooks/background-agent" description="Run a multi-app agent autonomously on a cron schedule" />
+</Cards>

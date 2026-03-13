@@ -93,14 +93,25 @@ class AuthScheme:
     ) -> connected_account_create_params.ConnectionState:
         """
         Create a new connected account using OAuth 1.0.
+
+        When both ``oauth_token`` and ``oauth_token_secret`` are provided,
+        status defaults to ACTIVE (token import). When either is omitted,
+        status defaults to INITIALIZING (redirect-based OAuth flow).
+        Pass an explicit ``status`` in options to override.
         """
+        has_tokens = bool(
+            options.get("oauth_token")  # type: ignore[union-attr]
+        ) and bool(
+            options.get("oauth_token_secret")  # type: ignore[union-attr]
+        )
+        status = "ACTIVE" if has_tokens else "INITIALIZING"
         return {
             "auth_scheme": "OAUTH1",
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember0Val,
                 {
+                    "status": status,
                     **options,
-                    "status": "INITIALIZING",
                 },
             ),
         }
@@ -109,15 +120,22 @@ class AuthScheme:
         self, options: connected_account_create_params.ConnectionStateUnionMember1Val
     ) -> connected_account_create_params.ConnectionState:
         """
-        Create a new connected account using OAuth 1.0.
+        Create a new connected account using OAuth 2.0.
+
+        When ``access_token`` is provided, status defaults to ACTIVE
+        (token import). When omitted, status defaults to INITIALIZING
+        (redirect-based OAuth flow). Pass an explicit ``status`` in
+        options to override.
         """
+        has_token = bool(options.get("access_token"))  # type: ignore[union-attr]
+        status = "ACTIVE" if has_token else "INITIALIZING"
         return {
             "auth_scheme": "OAUTH2",
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember1Val,
                 {
+                    "status": status,
                     **options,
-                    "status": "INITIALIZING",
                 },
             ),
         }
@@ -135,8 +153,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember2Val,
                     {
-                        **options,
                         "status": "INITIALIZING",
+                        **options,
                     },
                 ),
             },
@@ -155,8 +173,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember3Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -175,8 +193,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember4Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -195,8 +213,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember5Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -215,8 +233,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember6Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -233,8 +251,8 @@ class AuthScheme:
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember7Val,
                 {
-                    **options,
                     "status": "ACTIVE",
+                    **options,
                 },
             ),
         }
@@ -250,8 +268,8 @@ class AuthScheme:
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember8Val,
                 {
-                    **options,
                     "status": "ACTIVE",
+                    **options,
                 },
             ),
         }
@@ -269,8 +287,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember9Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -289,8 +307,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember10Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },

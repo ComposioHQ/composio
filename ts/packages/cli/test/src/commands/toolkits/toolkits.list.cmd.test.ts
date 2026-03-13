@@ -69,9 +69,9 @@ const testConfigProvider = ConfigProvider.fromMap(
 
 describe('CLI: composio toolkits list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] no flags [Then] lists all toolkits without connected status',
+    '[Given] no flags [Then] lists all toolkits with unified table',
     it => {
-      it.scoped('lists all toolkits without connected column', () =>
+      it.scoped('lists all toolkits with catalog and connection columns', () =>
         Effect.gen(function* () {
           yield* cli(['toolkits', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -81,8 +81,7 @@ describe('CLI: composio toolkits list', () => {
           expect(output).toContain('gmail');
           expect(output).toContain('Slack');
           expect(output).toContain('GitHub');
-          // Legacy table fallback removes connection status when no user id is available.
-          expect(output).not.toContain('Connected');
+          expect(output).toContain('Connected');
           expect(output).toContain('Version');
           expect(output).toContain('Listing 3 of 3 toolkits');
         })

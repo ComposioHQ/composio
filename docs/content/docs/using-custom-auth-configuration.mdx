@@ -9,6 +9,7 @@ You create a custom auth config when you need to provide your own credentials fo
 - **Toolkit has no managed auth**: PostHog, Tavily, Perplexity, etc. require your own credentials
 - **White-labeling**: Show your app name on OAuth consent screens instead of "Composio". See [White-labeling authentication](/docs/white-labeling-authentication)
 - **Rate limits**: Composio's default OAuth app shares quota across all users. Your own app gets a dedicated quota
+- **Faster polling triggers**: Composio managed auth enforces a 15-minute minimum polling interval. Your own OAuth app can use shorter polling intervals where supported
 - **Custom scopes**: You need permissions beyond what Composio's default app has approved
 - **Custom instance**: Connecting to a self-hosted or regional variant (e.g., custom Salesforce subdomain)
 

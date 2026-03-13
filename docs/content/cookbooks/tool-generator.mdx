@@ -79,3 +79,16 @@ Export raw tool schemas to a JSON file:
 ```bash
 uv run --env-file .env python main.py export gmail tools.json
 ```
+
+## Take it further
+
+Raw tool schemas are building blocks for platform features:
+
+- **Dynamic form builder**: use `input_parameters` JSON Schema to render forms for any tool — no hardcoded UI per integration
+- **Type generation pipeline**: feed exported JSON into `json-schema-to-typescript` or `datamodel-code-generator` in CI to keep types in sync
+- **Tool catalog UI**: combine `list-tools` and `toolkit-info` to build a searchable directory of available integrations and their auth requirements
+
+<Cards>
+  <Card title="App Connections Dashboard" href="/cookbooks/app-connections-dashboard" description="Build a UI for managing user connections" />
+  <Card title="Tool Type Generator source" href="https://github.com/ComposioHQ/composio/tree/next/docs/examples/tool-generator" description="View the full source on GitHub" />
+</Cards>

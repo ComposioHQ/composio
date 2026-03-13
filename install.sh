@@ -6,6 +6,24 @@ COMPOSIO_GITHUB_REPO=${COMPOSIO_GITHUB_REPO-"composio"}
 COMPOSIO_GITHUB_URL=${COMPOSIO_GITHUB_URL-"https://github.com"}
 COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-$HOME/.composio}
 
+# --- Input validation ---
+
+# Only allow HTTPS URLs for the download source.
+if [[ ! "$COMPOSIO_GITHUB_URL" =~ ^https:// ]]; then
+    echo "error: COMPOSIO_GITHUB_URL must start with https:// (got \"$COMPOSIO_GITHUB_URL\")" >&2
+    exit 1
+fi
+
+# Owner and repo must be safe identifiers (alphanumeric, hyphens, underscores, dots).
+if [[ ! "$COMPOSIO_GITHUB_OWNER" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+    echo "error: COMPOSIO_GITHUB_OWNER contains invalid characters (got \"$COMPOSIO_GITHUB_OWNER\")" >&2
+    exit 1
+fi
+if [[ ! "$COMPOSIO_GITHUB_REPO" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+    echo "error: COMPOSIO_GITHUB_REPO contains invalid characters (got \"$COMPOSIO_GITHUB_REPO\")" >&2
+    exit 1
+fi
+
 github_repo="$COMPOSIO_GITHUB_URL/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO"
 
 # --- Colors (only when interactive) ---
@@ -23,9 +41,9 @@ fi
 
 error()     { echo -e "${Red}error${Color_Off}:" "$@" >&2; exit 1; }
 warn()      { echo -e "${Red}warning${Color_Off}:" "$@" >&2; }
-info()      { echo -e "${Dim}$@${Color_Off}"; }
-info_bold() { echo -e "${Bold_White}$@${Color_Off}"; }
-success()   { echo -e "${Green}$@${Color_Off}"; }
+info()      { echo -e "${Dim}$*${Color_Off}"; }
+info_bold() { echo -e "${Bold_White}$*${Color_Off}"; }
+success()   { echo -e "${Green}$*${Color_Off}"; }
 
 tildify() {
     if [[ $1 = $HOME/* ]]; then
@@ -161,85 +179,115 @@ chmod +x "$exe" ||
 
 success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")"
 
-# --- Shell configuration ---
+# --- Shell integration (PATH + completions) ---
+
+# Delegate to the CLI's own install command, which handles:
+#   - Idempotent PATH setup in the correct rc file
+#   - Shell completions installation
+# If the binary can't run (e.g. missing runtime), fall back to inline setup.
 
 echo
 
-refresh_command=''
-quoted_install_dir=\"${COMPOSIO_INSTALL_DIR//\"/\\\"}\"
+install_err=$(mktemp)
+if COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" "$exe" install 2>"$install_err"; then
+    cat "$install_err" >&2  # Show CLI's TerminalUI output on success
+else
+    info "Setting up shell integration..."
 
-if [[ $quoted_install_dir = \"$HOME/* ]]; then
-    quoted_install_dir=${COMPOSIO_INSTALL_DIR/$HOME\//\$HOME/}
-fi
+    refresh_command=''
+    quoted_install_dir=\"${COMPOSIO_INSTALL_DIR//\"/\\\"}\"
 
-case $(basename "$SHELL") in
-fish)
-    commands=(
-        "set --export COMPOSIO_INSTALL_DIR $COMPOSIO_INSTALL_DIR"
-        "set --export PATH $COMPOSIO_INSTALL_DIR \$PATH"
-    )
-    fish_config=$HOME/.config/fish/config.fish
-    if [[ -w $fish_config ]]; then
-        { echo -e '\n# Composio CLI'; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$fish_config"
-        info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$fish_config")\""
-        refresh_command="source $(tildify "$fish_config")"
-    else
-        echo "Manually add the directory to $(tildify "$fish_config") (or similar):"
-        for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
+    if [[ $quoted_install_dir = \"$HOME/* ]]; then
+        quoted_install_dir=${COMPOSIO_INSTALL_DIR/$HOME\//\$HOME/}
     fi
-    ;;
-zsh)
-    commands=(
-        "export COMPOSIO_INSTALL_DIR=$COMPOSIO_INSTALL_DIR"
-        "export PATH=\"$COMPOSIO_INSTALL_DIR:\$PATH\""
-    )
-    zsh_config=$HOME/.zshrc
-    if [[ ! -f $zsh_config && -w $(dirname "$zsh_config") ]]; then touch "$zsh_config"; fi
-    if [[ -w $zsh_config ]]; then
-        { echo -e '\n# Composio CLI'; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$zsh_config"
-        info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$zsh_config")\""
-        refresh_command="exec $SHELL"
-    else
-        echo "Manually add the directory to $(tildify "$zsh_config") (or similar):"
-        for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
-    fi
-    ;;
-bash)
-    commands=(
-        "export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
-        "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
-    )
-    bash_configs=("$HOME/.bashrc" "$HOME/.bash_profile")
-    if [[ ${XDG_CONFIG_HOME:-} ]]; then
-        bash_configs+=("$XDG_CONFIG_HOME/.bash_profile" "$XDG_CONFIG_HOME/.bashrc" "$XDG_CONFIG_HOME/bash_profile" "$XDG_CONFIG_HOME/bashrc")
-    fi
-    set_manually=true
-    for bash_config in "${bash_configs[@]}"; do
-        if [[ -w $bash_config ]]; then
-            { echo -e '\n# Composio CLI'; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$bash_config"
-            info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$bash_config")\""
-            refresh_command="source $bash_config"
-            set_manually=false
-            break
+
+    shell_name=$(basename "${SHELL:-}")
+    marker='# Composio CLI'
+
+    case $shell_name in
+    fish)
+        commands=(
+            "set --export COMPOSIO_INSTALL_DIR \"$COMPOSIO_INSTALL_DIR\""
+            "set --export PATH \$COMPOSIO_INSTALL_DIR \$PATH"
+        )
+        fish_config=$HOME/.config/fish/config.fish
+        if [[ -w $fish_config ]] || [[ -w $(dirname "$fish_config") ]]; then
+            mkdir -p "$(dirname "$fish_config")"
+            if ! grep -qxF "$marker" "$fish_config" 2>/dev/null; then
+                { echo -e "\n$marker"; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$fish_config"
+                info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$fish_config")\""
+            else
+                info "PATH already configured in \"$(tildify "$fish_config")\""
+            fi
+            refresh_command="source $(tildify "$fish_config")"
+        else
+            echo "Manually add the directory to $(tildify "$fish_config") (or similar):"
+            for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
         fi
-    done
-    if [[ $set_manually = true ]]; then
-        echo "Manually add the directory to ~/.bashrc (or similar):"
-        for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
-    fi
-    ;;
-*)
-    echo 'Manually add the directory to ~/.bashrc (or similar):'
-    info_bold "  export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
-    info_bold "  export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
-    ;;
-esac
+        ;;
+    zsh)
+        commands=(
+            "export COMPOSIO_INSTALL_DIR=\"$COMPOSIO_INSTALL_DIR\""
+            "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
+        )
+        zsh_config=$HOME/.zshrc
+        if [[ ! -f $zsh_config && -w $(dirname "$zsh_config") ]]; then touch "$zsh_config"; fi
+        if [[ -w $zsh_config ]]; then
+            if ! grep -qxF "$marker" "$zsh_config" 2>/dev/null; then
+                { echo -e "\n$marker"; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$zsh_config"
+                info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$zsh_config")\""
+            else
+                info "PATH already configured in \"$(tildify "$zsh_config")\""
+            fi
+            refresh_command="exec $SHELL"
+        else
+            echo "Manually add the directory to $(tildify "$zsh_config") (or similar):"
+            for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
+        fi
+        ;;
+    bash)
+        commands=(
+            "export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
+            "export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
+        )
+        bash_configs=("$HOME/.bashrc" "$HOME/.bash_profile")
+        if [[ ${XDG_CONFIG_HOME:-} ]]; then
+            bash_configs+=("$XDG_CONFIG_HOME/.bash_profile" "$XDG_CONFIG_HOME/.bashrc" "$XDG_CONFIG_HOME/bash_profile" "$XDG_CONFIG_HOME/bashrc")
+        fi
+        set_manually=true
+        for bash_config in "${bash_configs[@]}"; do
+            if [[ -w $bash_config ]]; then
+                if ! grep -qxF "$marker" "$bash_config" 2>/dev/null; then
+                    { echo -e "\n$marker"; for cmd in "${commands[@]}"; do echo "$cmd"; done; } >>"$bash_config"
+                    info "Added \"$(tildify "$COMPOSIO_INSTALL_DIR")\" to \$PATH in \"$(tildify "$bash_config")\""
+                else
+                    info "PATH already configured in \"$(tildify "$bash_config")\""
+                fi
+                refresh_command="source $bash_config"
+                set_manually=false
+                break
+            fi
+        done
+        if [[ $set_manually = true ]]; then
+            echo "Manually add the directory to ~/.bashrc (or similar):"
+            for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
+        fi
+        ;;
+    *)
+        echo 'Manually add the directory to ~/.bashrc (or similar):'
+        info_bold "  export COMPOSIO_INSTALL_DIR=$quoted_install_dir"
+        info_bold "  export PATH=\"\$COMPOSIO_INSTALL_DIR:\$PATH\""
+        ;;
+    esac
+
+fi
+rm -f "$install_err"
 
 echo
 info "To get started, run:"
 echo
 
-if [[ $refresh_command ]]; then
+if [[ ${refresh_command:-} ]]; then
     info_bold "  $refresh_command"
 fi
 

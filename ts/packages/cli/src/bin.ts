@@ -27,6 +27,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
+import { showUpdateNotice, checkForUpdateInBackground } from 'src/services/update-check';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -173,6 +174,14 @@ const valueOptionNames = (() => {
 })();
 
 /**
+ * Upgrade hint — runs outside the Effect runtime, never blocks or throws.
+ * showUpdateNotice() reads a cached file (~1 ms) and prints to stderr.
+ * checkForUpdateInBackground() fires a non-blocking fetch to GitHub.
+ */
+showUpdateNotice();
+checkForUpdateInBackground();
+
+/**
  * CLI entrypoint, which:
  * - runs the Effect runtime and sets up its runtime environment
  * - collects and displays errors
@@ -219,6 +228,7 @@ runWithArgs.pipe(
         );
 
         yield* Console.error(message);
+        process.exitCode = 1;
       }
     })
   ),

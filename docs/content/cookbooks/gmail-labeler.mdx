@@ -81,3 +81,16 @@ uv run --env-file .env python main.py listen default
 ```
 
 Send yourself an email and watch the terminal. The agent will receive the event, inspect the email, and apply a label.
+
+## Take it further
+
+The trigger + agent pattern works for any event-driven workflow. Swap the prompt and toolkit to build:
+
+- **Auto-responder**: draft and send replies to common questions instead of just labeling
+- **Slack notifier**: add the Slack toolkit so the agent posts a summary of important emails to a channel
+- **Lead router**: connect Salesforce and have the agent tag inbound emails by deal stage and assign to reps
+
+<Cards>
+  <Card title="Slack Summarizer" href="/cookbooks/slack-summariser" description="Summarize Slack channels with a single command" />
+  <Card title="Background Agent" href="/cookbooks/background-agent" description="Run agents autonomously on a schedule" />
+</Cards>

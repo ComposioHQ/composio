@@ -97,9 +97,9 @@
 
 - [x] `chat-app` — Build a Chat App (PR #2728, branch: `docs/chat-app-1`)
 - [ ] `slack-bot` — Build a Slack Bot (Vercel AI SDK + Composio)
-- [ ] `pr-review-agent` — Build a PR Review Agent (GitHub)
-- [ ] `gmail-auto-labeler` — Build a Gmail Auto-Labeler (Gmail)
-- [ ] `slack-summarizer` — Build a Slack Channel Summarizer (Slack)
+- [x] `pr-review-agent` — PR review agent (PR #2832, branch: `docs/pr-review-agent-cookbook`, OpenAI Agents SDK, reads CLAUDE.md/AGENTS.md, includes GitHub Action)
+- [x] `gmail-auto-labeler` — Already exists as `gmail-labeler` cookbook
+- [x] `slack-summarizer` — Already exists as `slack-summariser` cookbook
 - [ ] `mcp-setup` — Connect Composio Tools via MCP
 - [ ] `research-agent` — Build a Research Agent (Web Search, Scraping)
 
@@ -184,7 +184,7 @@ Full-stack templates live as cloneable repos on GitHub. Docs pages describe what
 | 1.0 Rename Examples → Cookbooks | ✅ Done |
 | 1.1 Provider Pages | ✅ Done (except `langgraph.mdx`) |
 | 1.2–1.5 Structure & Index | Deferred |
-| 2 Use-Case Cookbooks | In progress (1 done, 17 remaining) |
+| 2 Use-Case Cookbooks | In progress (4 done, 14 remaining) |
 | 3 Framework Cookbooks | Not started (11 cookbooks) |
 | 4 Polish | Not started |
 | 5 Index Page Revamp | Not started |

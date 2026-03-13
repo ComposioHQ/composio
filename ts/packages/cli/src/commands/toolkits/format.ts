@@ -21,65 +21,118 @@ const formatAuthConfigField = (field: {
     `      description: ${field.description || '-'}`,
   ].join('\n');
 
-// ---------- Tool Router format functions ----------
+// ---------- Unified toolkit list format ----------
+
+const TOOLKITS_TABLE = {
+  name: 20,
+  slug: 20,
+  version: 12,
+  tools: 7,
+  triggers: 10,
+  connected: 16,
+  description: 50,
+} as const;
 
 /**
- * Derive connection status text and color from a session toolkit item.
- * Returns plain text + color function so callers can pad before coloring.
+ * Unified representation of a toolkit for list/search output.
+ * Catalog data is always present; connection data is optional (requires a user session).
  */
-function connectionStatusParts(item: SessionToolkitItem): {
+export interface UnifiedToolkit {
+  name: string;
+  slug: string;
+  description: string;
+  latest_version: string | null;
+  tools_count: number;
+  triggers_count: number;
+  is_no_auth: boolean;
+  enabled: boolean | null;
+  connected: {
+    status: string;
+    id: string;
+    auth_scheme: string | null;
+    is_composio_managed: boolean | null;
+  } | null;
+}
+
+/**
+ * Build unified toolkit items from catalog data, optionally enriched with
+ * session connection data (keyed by slug).
+ */
+export function mergeToolkitData(
+  catalogItems: ReadonlyArray<Toolkit>,
+  sessionItems?: ReadonlyArray<SessionToolkitItem>
+): UnifiedToolkit[] {
+  const sessionBySlug = new Map<string, SessionToolkitItem>();
+  if (sessionItems) {
+    for (const s of sessionItems) {
+      sessionBySlug.set(s.slug, s);
+    }
+  }
+
+  return catalogItems.map(t => {
+    const session = sessionBySlug.get(t.slug);
+    return {
+      name: t.name,
+      slug: t.slug,
+      description: t.meta.description,
+      latest_version: t.meta.available_versions.at(-1) ?? null,
+      tools_count: t.meta.tools_count,
+      triggers_count: t.meta.triggers_count,
+      is_no_auth: t.no_auth,
+      enabled: session?.enabled ?? null,
+      connected: session?.connected_account
+        ? {
+            status: session.connected_account.status,
+            id: session.connected_account.id,
+            auth_scheme: session.connected_account.auth_config?.auth_scheme ?? null,
+            is_composio_managed: session.connected_account.auth_config?.is_composio_managed ?? null,
+          }
+        : null,
+    };
+  });
+}
+
+/**
+ * Derive connection status text and color from a unified toolkit.
+ */
+function connectionStatusParts(item: UnifiedToolkit): {
   text: string;
   color: (s: string) => string;
 } {
   if (item.is_no_auth) return { text: 'no auth', color: dim };
-  if (item.connected_account?.status === 'ACTIVE') return { text: 'active', color: green };
+  if (item.connected?.status === 'ACTIVE') return { text: 'active', color: green };
+  if (item.connected === null && item.enabled === null) return { text: '-', color: dim };
   return { text: 'not connected', color: dim };
 }
 
 /**
- * Format a list of session toolkits as a human-readable table.
+ * Format a list of unified toolkits as a human-readable table.
  */
-export function formatToolkitsTable(toolkits: ReadonlyArray<SessionToolkitItem>): string {
-  const header = `${bold('Name'.padEnd(20))} ${bold('Slug'.padEnd(20))} ${bold('Connected'.padEnd(16))} ${bold('Auth Scheme'.padEnd(14))} ${bold('Description')}`;
+export function formatToolkitsTable(toolkits: ReadonlyArray<UnifiedToolkit>): string {
+  const header = `${bold('Name'.padEnd(TOOLKITS_TABLE.name))} ${bold('Slug'.padEnd(TOOLKITS_TABLE.slug))} ${bold('Version'.padEnd(TOOLKITS_TABLE.version))} ${bold('Tools'.padEnd(TOOLKITS_TABLE.tools))} ${bold('Triggers'.padEnd(TOOLKITS_TABLE.triggers))} ${bold('Connected'.padEnd(TOOLKITS_TABLE.connected))} ${bold('Description')}`;
 
   const rows = toolkits.map(t => {
-    const name = t.name.padEnd(20);
-    const slug = t.slug.padEnd(20);
-    // Pad plain text first, then apply color — ANSI escapes break padEnd.
+    const name = truncate(t.name, TOOLKITS_TABLE.name).padEnd(TOOLKITS_TABLE.name);
+    const slug = truncate(t.slug, TOOLKITS_TABLE.slug).padEnd(TOOLKITS_TABLE.slug);
+    const version = truncate(t.latest_version ?? '-', TOOLKITS_TABLE.version).padEnd(
+      TOOLKITS_TABLE.version
+    );
+    const tools = String(t.tools_count).padEnd(TOOLKITS_TABLE.tools);
+    const triggers = String(t.triggers_count).padEnd(TOOLKITS_TABLE.triggers);
     const { text: statusText, color: statusColor } = connectionStatusParts(t);
-    const status = statusColor(statusText.padEnd(16));
-    const authScheme = (t.connected_account?.auth_config?.auth_scheme ?? '-').padEnd(14);
-    const desc = gray(truncate(t.meta.description, 50));
-    return `${name} ${slug} ${status} ${authScheme} ${desc}`;
+    const status = statusColor(statusText.padEnd(TOOLKITS_TABLE.connected));
+    const desc = gray(truncate(t.description, TOOLKITS_TABLE.description));
+    return `${name} ${slug} ${version} ${tools} ${triggers} ${status} ${desc}`;
   });
 
   return [header, ...rows].join('\n');
 }
 
 /**
- * Format session toolkits as JSON for piped output.
+ * Format unified toolkits as JSON for piped output.
  */
-export function formatToolkitsJson(toolkits: ReadonlyArray<SessionToolkitItem>): string {
-  return JSON.stringify(
-    toolkits.map(t => ({
-      name: t.name,
-      slug: t.slug,
-      description: t.meta.description,
-      is_no_auth: t.is_no_auth,
-      enabled: t.enabled,
-      connected: t.connected_account
-        ? {
-            status: t.connected_account.status,
-            id: t.connected_account.id,
-            auth_scheme: t.connected_account.auth_config?.auth_scheme ?? null,
-            is_composio_managed: t.connected_account.auth_config?.is_composio_managed ?? null,
-          }
-        : null,
-      composio_managed_auth_schemes: t.composio_managed_auth_schemes,
-    })),
-    null,
-    2
-  );
+export function formatToolkitsJson(toolkits: ReadonlyArray<UnifiedToolkit>): string {
+  return JSON.stringify(toolkits, null, 2);
 }
 
 /**
@@ -234,45 +287,6 @@ export function formatToolkitInfoJson(
           }
         : {}),
     },
-    null,
-    2
-  );
-}
-
-// ---------- Legacy format functions (used by non-migrated commands) ----------
-
-/**
- * Format a list of toolkits as a human-readable table (legacy format).
- */
-export function formatLegacyToolkitsTable(toolkits: ReadonlyArray<Toolkit>): string {
-  const header = `${bold('Name'.padEnd(20))} ${bold('Slug'.padEnd(20))} ${bold('Version'.padEnd(12))} ${bold('Tools'.padEnd(7))} ${bold('Triggers'.padEnd(10))} ${bold('Description')}`;
-
-  const rows = toolkits.map(t => {
-    const name = t.name.padEnd(20);
-    const slug = t.slug.padEnd(20);
-    const version = (t.meta.available_versions.at(-1) ?? '-').padEnd(12);
-    const tools = String(t.meta.tools_count).padEnd(7);
-    const triggers = String(t.meta.triggers_count).padEnd(10);
-    const desc = gray(truncate(t.meta.description, 50));
-    return `${name} ${slug} ${version} ${tools} ${triggers} ${desc}`;
-  });
-
-  return [header, ...rows].join('\n');
-}
-
-/**
- * Format toolkits as JSON for piped output (legacy format).
- */
-export function formatLegacyToolkitsJson(toolkits: ReadonlyArray<Toolkit>): string {
-  return JSON.stringify(
-    toolkits.map(t => ({
-      name: t.name,
-      slug: t.slug,
-      latest_version: t.meta.available_versions.at(-1) ?? null,
-      tools_count: t.meta.tools_count,
-      triggers_count: t.meta.triggers_count,
-      description: t.meta.description,
-    })),
     null,
     2
   );

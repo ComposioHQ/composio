@@ -28,6 +28,20 @@ recordings:
       description: Show whoami subcommand help
       command: "composio whoami"
 
+  install:
+    - name: help
+      description: Show install subcommand help
+      command: "composio install --help"
+      height: dynamic
+
+    - name: basic
+      description: Run install with default options
+      command: "composio install"
+
+    - name: no-completions
+      description: Run install without completions
+      command: "composio install --no-completions"
+
   ts-generate:
     - name: help
       description: Show ts generate subcommand help

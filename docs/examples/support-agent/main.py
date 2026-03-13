@@ -18,7 +18,7 @@ SYSTEM_PROMPT = """You are a Support Knowledge Agent. Use your tools to help the
 def create_agent(tools) -> Agent:
     return Agent(
         name="Support Knowledge Agent",
-        model="gpt-5.2",
+        model="gpt-5.4",
         instructions=SYSTEM_PROMPT,
         tools=tools,
     )

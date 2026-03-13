@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { FetchHttpClient } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { withHttpServer } from 'test/__utils__/http-server';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
@@ -57,42 +57,6 @@ const runUpgrade = (configEntries: ReadonlyArray<[string, string]>) =>
     Effect.scoped,
     Effect.runPromise
   );
-
-const withHttpServer = async (
-  handler: (req: IncomingMessage, res: ServerResponse) => void,
-  run: (apiBaseUrl: string) => Promise<void>
-) => {
-  const server = createServer(handler);
-
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject);
-    server.listen({ port: 0, host: '127.0.0.1' }, () => {
-      server.off('error', reject);
-      resolve();
-    });
-  });
-
-  const address = server.address();
-  if (address === null || typeof address === 'string') {
-    throw new Error('Failed to bind test server to an ephemeral port');
-  }
-
-  const apiBaseUrl = `http://127.0.0.1:${address.port}`;
-
-  try {
-    await run(apiBaseUrl);
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close(error => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve();
-      });
-    });
-  }
-};
 
 describe('UpgradeBinary', () => {
   it('wraps non-2xx releases fetch failures with fetch context (no tag branch)', async () => {

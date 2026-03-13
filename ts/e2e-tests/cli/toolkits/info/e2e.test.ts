@@ -8,6 +8,7 @@
 import {
   e2e,
   sanitizeOutput,
+  parseJsonStdout,
   type E2ETestResult,
   type E2ETestResultWithFiles,
 } from '@e2e-tests/utils';
@@ -53,37 +54,37 @@ e2e(import.meta.url, {
       });
 
       it('stdout is a valid JSON object', () => {
-        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
+        const obj = parseJsonStdout(validResult);
         expect(typeof obj).toBe('object');
         expect(Array.isArray(obj)).toBe(false);
       });
 
       it('has the correct name and slug', () => {
-        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
         expect(obj.name).toBe('Gmail');
         expect(obj.slug).toBe('gmail');
       });
 
       it('has meta with description and logo', () => {
-        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
+        const obj = parseJsonStdout(validResult) as Record<string, Record<string, unknown>>;
         expect(obj.meta).toHaveProperty('description');
         expect(typeof obj.meta.description).toBe('string');
         expect(obj.meta).toHaveProperty('logo');
       });
 
       it('has is_no_auth and enabled', () => {
-        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
         expect(typeof obj.is_no_auth).toBe('boolean');
         expect(typeof obj.enabled).toBe('boolean');
       });
 
       it('has composio_managed_auth_schemes array', () => {
-        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
         expect(Array.isArray(obj.composio_managed_auth_schemes)).toBe(true);
       });
 
       it('has connected_account (object or null)', () => {
-        const obj = JSON.parse(sanitizeOutput(validResult.stdout));
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
         expect(obj).toHaveProperty('connected_account');
       });
     });

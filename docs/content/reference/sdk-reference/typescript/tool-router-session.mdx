@@ -1,0 +1,156 @@
+---
+title: ToolRouterSession
+description: ToolRouterSession class reference
+---
+
+## Usage
+
+Access this class through the `composio.toolRouterSession` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.toolRouterSession.list();
+```
+
+## Properties
+
+| Name | Type |
+|------|------|
+| `experimental` | `SessionExperimental` |
+| `files` | `ToolRouterSessionFilesMount` |
+| `mcp` | `object` |
+| `sessionId` | `string` |
+
+## Methods
+
+### authorize()
+
+Initiate an authorization flow for a toolkit.
+Returns a ConnectionRequest with a redirect URL for the user.
+
+```typescript
+async authorize(toolkit: string, options?: { callbackUrl?: string }): Promise<ConnectionRequest>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit` | `string` |
+| `options?` | `object` |
+
+**Returns**
+
+`Promise<ConnectionRequest>`
+
+---
+
+### execute()
+
+Execute a tool within the session.
+
+```typescript
+async execute(toolSlug: string, arguments_?: Record<string, unknown>): Promise<{ data: Record<string, unknown>; error: string | null; logId: string }>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolSlug` | `string` | The tool slug to execute (e.g. "GMAIL_SEND_EMAIL") |
+| `arguments_?` | `Record<string, unknown>` | Optional tool arguments. Defaults to empty object if omitted. |
+
+**Returns**
+
+`Promise<...>` — The tool execution result
+
+**Example**
+
+```typescript
+const session = await composio.toolRouter.use('session_123');
+const result = await session.execute('GMAIL_SEND_EMAIL', {
+  to: 'user@example.com',
+  subject: 'Hello',
+  body: 'Hi!',
+});
+```
+
+```typescript
+// Execute with no arguments
+const result = await session.execute('HACKERNEWS_GET_USER');
+```
+
+---
+
+### search()
+
+Search for tools by semantic use case.
+Returns relevant tools for the given query with schemas and guidance.
+
+```typescript
+async search(params: { query: string; toolkits?: string[] }): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `object` | Search parameters |
+
+**Returns**
+
+`Promise<...>` — Search results with matching tools and schemas
+
+**Example**
+
+```typescript
+const session = await composio.toolRouter.use('session_123');
+const results = await session.search({
+  query: 'send emails and notify Slack',
+  toolkits: ['gmail', 'slack'],
+});
+```
+
+---
+
+### toolkits()
+
+Query the connection state of toolkits in the session.
+Supports pagination and filtering by toolkit slugs.
+
+```typescript
+async toolkits(options?: { isConnected?: boolean; limit?: number; nextCursor?: string; search?: string; toolkits?: string[] }): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `options?` | `object` |
+
+**Returns**
+
+`Promise<...>`
+
+---
+
+### tools()
+
+Get the tools available in the session, formatted for your AI framework.
+Requires a provider to be configured in the Composio constructor.
+
+```typescript
+async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `modifiers?` | `SessionMetaToolOptions` |
+
+**Returns**
+
+`Promise<ReturnType>`
+
+---

@@ -24,6 +24,7 @@ Bring your own credentials when any of these apply:
 - **Your users see OAuth consent screens.** In production, users should see your app name, not "Composio." This is the most common reason to switch.
 - **You need custom scopes.** Composio's default scopes may not include everything you need (e.g., write access to a specific Google API).
 - **You're hitting rate limits.** Managed apps share quota across all Composio users. Your own app gets a dedicated quota.
+- **You need faster polling triggers.** Managed auth enforces a 15-minute minimum polling interval; your own app can use shorter polling intervals where supported.
 - **You're connecting to a custom instance.** Self-hosted or regional variants (e.g., a private Salesforce subdomain) need their own OAuth app.
 - **Enterprise customers require your branding end-to-end.**
 

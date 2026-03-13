@@ -80,3 +80,16 @@ you > What are the top 10 most recent orders?
 ```
 
 Type `exit` to quit.
+
+## Take it further
+
+The agent has full access to your Supabase projects via SQL. Some ideas:
+
+- **Scheduled reports**: wrap this in a cron job to generate daily metrics and post them to Slack using the Slack toolkit
+- **Admin dashboard backend**: pair with FastAPI to expose natural-language queries as an API for internal tools
+- **Data migration helper**: ask the agent to compare schemas across projects and generate migration SQL
+
+<Cards>
+  <Card title="FastAPI Server" href="/cookbooks/fast-api" description="Wrap an agent in an HTTP server with auth and connection management" />
+  <Card title="Background Agent" href="/cookbooks/background-agent" description="Run agents autonomously on a schedule" />
+</Cards>

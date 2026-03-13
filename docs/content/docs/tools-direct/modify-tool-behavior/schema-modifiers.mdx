@@ -121,7 +121,7 @@ tools = composio.tools.get(
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.4",
     tools=tools,
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
@@ -170,7 +170,7 @@ const tools = await composio.tools.get(
 console.log(JSON.stringify(tools, null, 2));
 
 const response = await openai.chat.completions.create({
-  model: 'gpt-4o-mini',
+  model: 'gpt-5.4',
   messages: [
     {
       role: 'system',

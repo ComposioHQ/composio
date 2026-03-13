@@ -8,6 +8,7 @@
 import {
   e2e,
   sanitizeOutput,
+  parseJsonStdout,
   type E2ETestResult,
   type E2ETestResultWithFiles,
 } from '@e2e-tests/utils';
@@ -53,18 +54,18 @@ e2e(import.meta.url, {
       });
 
       it('stdout is a JSON array with at least 1 element', () => {
-        const items = JSON.parse(sanitizeOutput(validResult.stdout));
+        const items = parseJsonStdout(validResult);
         expect(Array.isArray(items)).toBe(true);
-        expect(items.length).toBeGreaterThanOrEqual(1);
+        expect((items as Array<unknown>).length).toBeGreaterThanOrEqual(1);
       });
 
       it('first element has slug "gmail"', () => {
-        const items = JSON.parse(sanitizeOutput(validResult.stdout));
+        const items = parseJsonStdout(validResult) as Array<{ slug: string }>;
         expect(items[0].slug).toBe('gmail');
       });
 
       it('each element has the expected shape', () => {
-        const items = JSON.parse(sanitizeOutput(validResult.stdout));
+        const items = parseJsonStdout(validResult) as Array<Record<string, unknown>>;
         for (const item of items) {
           expect(item).toHaveProperty('name');
           expect(item).toHaveProperty('slug');
@@ -85,13 +86,13 @@ e2e(import.meta.url, {
       });
 
       it('stdout is a JSON array with exactly 1 element', () => {
-        const items = JSON.parse(sanitizeOutput(limitResult.stdout));
+        const items = parseJsonStdout(limitResult);
         expect(Array.isArray(items)).toBe(true);
-        expect(items).toHaveLength(1);
+        expect(items as Array<unknown>).toHaveLength(1);
       });
 
       it('the element has slug "gmail"', () => {
-        const items = JSON.parse(sanitizeOutput(limitResult.stdout));
+        const items = parseJsonStdout(limitResult) as Array<{ slug: string }>;
         expect(items[0].slug).toBe('gmail');
       });
     });
@@ -126,8 +127,8 @@ e2e(import.meta.url, {
         expect(noResultsResult.stderr).toBe('');
       });
 
-      it('stdout is empty (no results)', () => {
-        expect(sanitizeOutput(noResultsResult.stdout)).toBe('');
+      it('stdout is an empty JSON array (no results)', () => {
+        expect(sanitizeOutput(noResultsResult.stdout)).toBe('[]');
       });
     });
   },

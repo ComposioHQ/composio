@@ -46,7 +46,7 @@ tools = composio.tools.get(
 
 # Ask the LLM to check calendar
 result = openai.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.4",
     tools=tools,
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
@@ -84,7 +84,7 @@ const tools = await composio.tools.get(userId, {
 
 // Ask the LLM to check calendar
 const msg = await anthropic.messages.create({
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-sonnet-4-6',
   tools: tools,
   messages: [
     {
@@ -168,7 +168,7 @@ const tools = await composio.tools.get(userId, {
 
 // Generate text with tool use
 const { text } = await generateText({
-  model: anthropic('claude-sonnet-4-20250514'),
+  model: anthropic('claude-sonnet-4-6'),
   messages: [
     {
       role: 'user',
