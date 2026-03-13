@@ -68,6 +68,8 @@ export function buildBinaryCross() {
       'DEBUG_OVERRIDE_*',
       '--compile',
       '--production',
+      '--bytecode',
+      '--minify',
       '--target',
       target,
       '--outfile',

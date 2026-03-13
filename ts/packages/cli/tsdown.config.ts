@@ -9,6 +9,7 @@ export default defineConfig({
   banner: {
     js: '#!/usr/bin/env node',
   },
+  minify: true,
   external: undefined,
   publint: undefined,
   attw: undefined,

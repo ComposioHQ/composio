@@ -33,6 +33,16 @@ export function buildBinary() {
       '--production',
 
       /**
+       * Pre-compile JS to bytecode for ~2x faster startup.
+       */
+      '--bytecode',
+
+      /**
+       * Minify the embedded code to reduce binary size.
+       */
+      '--minify',
+
+      /**
        * Output file destination.
        */
       '--outfile',
