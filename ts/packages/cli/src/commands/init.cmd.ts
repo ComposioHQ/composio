@@ -22,23 +22,13 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
  *
  * ## Behavior
  *
- * 1. **Project selection** — fetches projects from the API or accepts `--org-id`/`--project-id`.
+ * 1. **Project selection** — fetches projects from the API and prompts for selection.
  * 2. **Writes config** — saves `<cwd>/.composio/project.json`.
  *
  * ## Flags
  *
  * - `--yes` / `-y` — auto-select the first project from the list
  */
-
-const orgIdOpt = Options.text('org-id').pipe(
-  Options.optional,
-  Options.withDescription('Organization ID (skip interactive picker)')
-);
-
-const projectIdOpt = Options.text('project-id').pipe(
-  Options.optional,
-  Options.withDescription('Project ID (skip interactive picker)')
-);
 
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
@@ -221,26 +211,21 @@ const selectDefaultProject = (params: {
  * CLI command to initialize a Composio project in the current directory.
  *
  * Creates `<cwd>/.composio/project.json` with org_id and project_id.
- *
- * Supports two modes:
- * 1. Interactive: Fetches projects from the API and prompts for selection
- * 2. Non-interactive: Accepts --org-id and --project-id flags for agents/CI
+ * Fetches projects from the API and prompts for selection.
  *
  * @example
  * ```bash
  * composio init
- * composio init --org-id <org> --project-id <project>
+ * composio init --yes
  * ```
  */
 export const initCmd = CliCommand.make(
   'init',
   {
-    orgId: orgIdOpt,
-    projectId: projectIdOpt,
     noBrowser: noBrowserOpt,
     yes: yesOpt,
   },
-  ({ orgId, projectId, noBrowser, yes }) =>
+  ({ noBrowser, yes }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const proc = yield* NodeProcess;
@@ -248,42 +233,6 @@ export const initCmd = CliCommand.make(
       yield* ui.intro('composio init');
 
       const composioDir = path.join(proc.cwd, constants.PROJECT_COMPOSIO_DIR);
-
-      // Agent-native path: --org-id and --project-id flags skip project picker
-      if (Option.isSome(orgId) && Option.isSome(projectId)) {
-        const selected: ProjectKeys = {
-          orgId: orgId.value,
-          projectId: projectId.value,
-          projectName: Option.none(),
-          orgName: Option.none(),
-          email: Option.none(),
-          testUserId: Option.none(),
-        };
-
-        yield* writeProjectConfig(composioDir, selected);
-        yield* ensureProjectApiKeyInEnv({ cwd: proc.cwd, selected }).pipe(
-          Effect.catchTag('services/HttpServerError', e =>
-            Effect.gen(function* () {
-              yield* Effect.logDebug('Failed to resolve project API key from session/info:', e);
-              yield* logEnvCreationHttpError(ui)(e);
-            })
-          ),
-          Effect.catchTag('services/HttpDecodingError', e =>
-            Effect.gen(function* () {
-              yield* Effect.logDebug('Failed to decode API key response:', e);
-              yield* logEnvCreationDecodingError(ui)(e);
-            })
-          )
-        );
-
-        yield* ui.log.success(`Project initialized in ${composioDir}/`);
-        yield* ui.log.info(
-          'To switch your default global org/project later, run `composio orgs switch`.'
-        );
-        yield* ui.output(makeOutputJson(selected, composioDir));
-        yield* ui.outro('');
-        return;
-      }
 
       yield* initInteractiveFlow({ composioDir, noBrowser, yes });
     })
@@ -327,7 +276,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           yield* Effect.logDebug('Failed to list org projects:', e);
           yield* ui.log.warn('Could not fetch projects from the server.');
           yield* ui.log.info(
-            'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
+            'Create a project at https://platform.composio.dev, then run `composio init` again.'
           );
           yield* ui.outro('');
           return yield* Effect.fail(e);
@@ -338,7 +287,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           yield* Effect.logDebug('Failed to decode org projects response:', e);
           yield* ui.log.warn('Unexpected response from the server.');
           yield* ui.log.info(
-            'Use `composio init --org-id <org> --project-id <project>` to set up manually.'
+            'Create a project at https://platform.composio.dev, then run `composio init` again.'
           );
           yield* ui.outro('');
           return yield* Effect.fail(e);
