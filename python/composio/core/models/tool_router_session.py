@@ -12,12 +12,12 @@ from composio_client import omit
 
 from composio.client import HttpClient
 from composio.core.models.connected_accounts import ConnectionRequest
-from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 
 if t.TYPE_CHECKING:
     from composio.core.models._modifiers import Modifiers
+    from composio.core.models.tool_router import ToolRouterSessionExperimental
 
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):

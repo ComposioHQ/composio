@@ -130,18 +130,15 @@ export class ToolRouter<
 
     const session = await this.client.toolRouter.session.create(payload);
 
-    const experimental: SessionExperimental | undefined = session.experimental
-      ? {
-          assistivePrompt: session.experimental.assistive_prompt,
-        }
-      : undefined;
+    const assistivePrompt =
+      session.experimental?.assistive_prompt;
 
     return new ToolRouterSession<TToolCollection, TTool, TProvider>(
       this.client,
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp),
-      { assistivePrompt: experimental?.assistivePrompt }
+      { assistivePrompt }
     );
   }
 
