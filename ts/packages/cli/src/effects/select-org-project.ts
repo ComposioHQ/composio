@@ -10,53 +10,35 @@ import { clampLimit } from 'src/ui/clamp-limit';
 
 const DEFAULT_LIMIT = 50;
 
-const selectOrganization = (params: {
-  organizations: ReadonlyArray<OrganizationSummary>;
-  selectedOrgId?: string;
-}) =>
+/** Prompts user to select an org, or auto-selects if only one. */
+const selectOrganization = (organizations: ReadonlyArray<OrganizationSummary>) =>
   Effect.gen(function* () {
-    const { organizations, selectedOrgId } = params;
     const ui = yield* TerminalUI;
     if (organizations.length === 0) return undefined;
-
-    if (selectedOrgId) {
-      const explicitMatch = organizations.find(org => org.id === selectedOrgId);
-      if (explicitMatch) return explicitMatch;
-    }
-
     if (organizations.length === 1) return organizations[0];
-
     return yield* ui.select('Select a default organization (global scope):', [
-      ...organizations.map(org => ({
-        value: org,
-        label: org.name,
-        hint: org.id,
-      })),
+      ...organizations.map(org => ({ value: org, label: org.name, hint: org.id })),
     ]);
   });
 
-const selectProject = (params: {
-  projects: ReadonlyArray<OrganizationProjectSummary>;
-  selectedProjectId?: string;
-}) =>
+/**
+ * Prompts user to select a project, or auto-selects if only one.
+ * When explicitProjectId is provided (e.g. from `orgs switch --project-id`), finds and returns it without prompting.
+ */
+const selectProject = (
+  projects: ReadonlyArray<OrganizationProjectSummary>,
+  explicitProjectId?: string
+) =>
   Effect.gen(function* () {
-    const { projects, selectedProjectId } = params;
     const ui = yield* TerminalUI;
     if (projects.length === 0) return undefined;
-
-    if (selectedProjectId) {
-      const explicitMatch = projects.find(project => project.id === selectedProjectId);
-      if (explicitMatch) return explicitMatch;
+    if (explicitProjectId) {
+      const match = projects.find(p => p.id === explicitProjectId);
+      if (match) return match;
     }
-
     if (projects.length === 1) return projects[0];
-
     return yield* ui.select('Select a default project (global scope):', [
-      ...projects.map(project => ({
-        value: project,
-        label: project.name,
-        hint: project.id,
-      })),
+      ...projects.map(project => ({ value: project, label: project.name, hint: project.id })),
     ]);
   });
 
@@ -95,9 +77,7 @@ export const runOrgProjectSelection = (params: {
             });
             yield* ui.log.info(`Loaded ${organizations.data.length} orgs`);
             if (organizations.data.length === 0) return undefined;
-            return yield* selectOrganization({
-              organizations: organizations.data,
-            });
+            return yield* selectOrganization(organizations.data);
           });
 
     if (!selectedOrganization) {
@@ -121,10 +101,7 @@ export const runOrgProjectSelection = (params: {
       return undefined;
     }
 
-    const selectedProject = yield* selectProject({
-      projects: projects.data,
-      selectedProjectId: explicitProjectId,
-    });
+    const selectedProject = yield* selectProject(projects.data, explicitProjectId);
 
     if (!selectedProject) {
       yield* ui.log.warn('No project selected.');
