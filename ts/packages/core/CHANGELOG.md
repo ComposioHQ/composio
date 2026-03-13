@@ -1,5 +1,12 @@
 # @composio/core
 
+## 0.6.5
+
+### Patch Changes
+
+- 476d451: Add support for files
+- Add session file support
+
 ## 0.6.5-alpha.0
 
 ### Patch Changes
