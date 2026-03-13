@@ -12,16 +12,20 @@ describe('CLI: composio login', () => {
 
   describe('login --help', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] shows --no-browser and -y/--yes (skip picker), no --api-key', () =>
-        Effect.gen(function* () {
-          yield* cli(['login', '--help']);
-          const lines = yield* MockConsole.getLines();
-          const output = lines.join('\n');
-          expect(output).toContain('--no-browser');
-          expect(output).toContain('--yes');
-          expect(output).toContain('-y');
-          expect(output).not.toContain('--api-key');
-        })
+      it.scoped(
+        '[Then] shows --no-browser, --no-wait, --key and -y/--yes (skip picker), no --api-key',
+        () =>
+          Effect.gen(function* () {
+            yield* cli(['login', '--help']);
+            const lines = yield* MockConsole.getLines();
+            const output = lines.join('\n');
+            expect(output).toContain('--no-browser');
+            expect(output).toContain('--no-wait');
+            expect(output).toContain('--key');
+            expect(output).toContain('--yes');
+            expect(output).toContain('-y');
+            expect(output).not.toContain('--api-key');
+          })
       );
     });
   });
