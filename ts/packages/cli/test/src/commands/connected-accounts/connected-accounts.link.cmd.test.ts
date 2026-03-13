@@ -35,9 +35,9 @@ const testConfigProvider = ConfigProvider.fromMap(
 
 describe('CLI: composio connected-accounts link', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
-    '[Given] valid --auth-config and --user-id [Then] creates link and shows URL',
+    '[Given] valid --auth-config and --user-id [Then] creates link and waits (default)',
     it => {
-      it.scoped('creates link and shows redirect URL', () =>
+      it.scoped('creates link and waits for ACTIVE', () =>
         Effect.gen(function* () {
           yield* cli([
             'connected-accounts',
@@ -145,10 +145,48 @@ describe('CLI: composio connected-accounts link', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
-    '[Given] successful link [Then] outputs valid JSON with success message for jq',
+    '[Given] --no-wait [Then] outputs valid JSON parseable by jq',
+    it => {
+      it.scoped('prints JSON with status pending, connected_account_id, redirect_url', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'connected-accounts',
+            'link',
+            '--auth-config',
+            'ac_gmail_oauth',
+            '--user-id',
+            'default',
+            '--no-browser',
+            '--no-wait',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('"status"');
+          expect(output).toContain('"pending"');
+          expect(output).toContain('"message"');
+          expect(output).toContain('"connected_account_id"');
+          expect(output).toContain('con_test_link');
+          expect(output).toContain('"redirect_url"');
+          expect(output).toContain('https://app.composio.dev/link');
+          // JSON is parseable
+          const jsonMatch = output.match(/\{[\s\S]*"status"[\s\S]*\}/);
+          expect(jsonMatch).toBeTruthy();
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            expect(parsed.status).toBe('pending');
+            expect(parsed.connected_account_id).toBe('con_test_link');
+          }
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
+    '[Given] default (wait) [Then] waits for ACTIVE and outputs success JSON for jq',
     it => {
       it.scoped(
-        'prints JSON with status, message, connected_account_id, toolkit, redirect_url',
+        'prints JSON with status success, message, connected_account_id, toolkit, redirect_url',
         () =>
           Effect.gen(function* () {
             yield* cli([
