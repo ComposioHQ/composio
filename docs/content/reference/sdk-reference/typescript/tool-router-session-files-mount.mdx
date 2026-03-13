@@ -40,12 +40,12 @@ async delete(remotePath: string, options?: { mountId?: string }): Promise<{ moun
 
 ```typescript
 const session = await composio.toolRouter.use('session_123');
-await session.files.delete('/temp/cache.json');
+await session.experimental.files.delete('/temp/cache.json');
 ```
 
 ```typescript
 // Delete from a custom mount
-await session.files.delete('/old-backup', {
+await session.experimental.files.delete('/old-backup', {
   mountId: 'custom-mount',
 });
 ```
@@ -78,12 +78,12 @@ async download(filePath: string, options?: { mountId?: string }): Promise<Remote
 
 ```typescript
 const session = await composio.toolRouter.use('session_123');
-const result = await session.files.download('/output/report.pdf');
+const result = await session.experimental.files.download('/output/report.pdf');
 ```
 
 ```typescript
 // Download from a custom mount
-await session.files.download('/exports/data.json', {
+await session.experimental.files.download('/exports/data.json', {
   mountId: 'custom-mount',
 });
 ```
@@ -116,14 +116,14 @@ async list(options?: { cursor?: string; limit?: number; mountId?: string; path?:
 
 ```typescript
 const session = await composio.toolRouter.use('session_123');
-const { items, nextCursor } = await session.files.list({ path: '/' });
+const { items, nextCursor } = await session.experimental.files.list({ path: '/' });
 ```
 
 ```typescript
 // Paginated listing
-let result = await session.files.list({ path: '/', limit: 10 });
+let result = await session.experimental.files.list({ path: '/', limit: 10 });
 while (result.nextCursor) {
-  result = await session.files.list({ path: '/', cursor: result.nextCursor, limit: 10 });
+  result = await session.experimental.files.list({ path: '/', cursor: result.nextCursor, limit: 10 });
 }
 ```
 
@@ -155,18 +155,18 @@ async upload(input: string | File | ArrayBuffer | Uint8Array<ArrayBufferLike>, o
 
 ```typescript
 // From file path (local or URL)
-await session.files.upload('/path/to/report.pdf');
-await session.files.upload('https://example.com/file.pdf');
+await session.experimental.files.upload('/path/to/report.pdf');
+await session.experimental.files.upload('https://example.com/file.pdf');
 ```
 
 ```typescript
 // From native File (e.g. from input[type=file])
-await session.files.upload(fileInput.files[0]);
+await session.experimental.files.upload(fileInput.files[0]);
 ```
 
 ```typescript
 // From raw buffer
-await session.files.upload(buffer, { remotePath: 'data.json', mimetype: 'application/json' });
+await session.experimental.files.upload(buffer, { remotePath: 'data.json', mimetype: 'application/json' });
 ```
 
 ---

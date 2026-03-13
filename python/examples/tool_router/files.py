@@ -24,7 +24,7 @@ def main():
 
     # Upload a file (from bytes)
     print("\nUploading file (bytes)...")
-    remote = session.files.upload(
+    remote = session.experimental.files.upload(
         b'{"hello": "world"}',
         remote_path="test_data.json",
         mimetype="application/json",
@@ -33,14 +33,14 @@ def main():
 
     # List files
     print("\nListing files...")
-    result = session.files.list(path="/")
+    result = session.experimental.files.list(path="/")
     print(f"  Items: {len(result.items)}")
     for item in result.items:
         print(f"    - {item.mount_relative_path} ({item.size} bytes)")
 
     # Download the file
     print("\nDownloading file...")
-    downloaded = session.files.download(remote.mount_relative_path)
+    downloaded = session.experimental.files.download(remote.mount_relative_path)
     content = downloaded.text()
     print(f"  Content: {content[:80]}...")
 
@@ -50,22 +50,22 @@ def main():
         local_path = f.name
     try:
         print("\nUploading from local path...")
-        remote2 = session.files.upload(local_path)
+        remote2 = session.experimental.files.upload(local_path)
         print(f"  Uploaded to: {remote2.mount_relative_path}")
     finally:
         Path(local_path).unlink(missing_ok=True)
 
     # List again
     print("\nListing files (after 2nd upload)...")
-    result2 = session.files.list(path="/")
+    result2 = session.experimental.files.list(path="/")
     print(f"  Items: {len(result2.items)}")
     for item in result2.items:
         print(f"    - {item.mount_relative_path} ({item.size} bytes)")
 
     # Delete
     print("\nDeleting test files...")
-    session.files.delete(remote.mount_relative_path)
-    session.files.delete(remote2.mount_relative_path)
+    session.experimental.files.delete(remote.mount_relative_path)
+    session.experimental.files.delete(remote2.mount_relative_path)
     print("  Deleted.")
 
     # Search for tools

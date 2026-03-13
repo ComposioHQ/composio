@@ -19,7 +19,7 @@ async function main() {
     manageConnections: false,
   });
 
-  const { files } = session;
+  const { files } = session.experimental;
   const testPath = 'e2e-test-upload.txt';
   const testContent = 'Hello from Tool Router files E2E test';
 

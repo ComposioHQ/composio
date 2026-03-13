@@ -31,8 +31,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     Attributes:
         session_id: Unique session identifier
         mcp: MCP server configuration
-        files: File mount for list, upload, download, delete
-        experimental: Optional experimental features data from the session response
+        experimental: Experimental features (files, assistive prompt, etc.)
     """
 
     def __init__(
@@ -43,14 +42,13 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         auto_upload_download_files: bool,
         session_id: str,
         mcp: t.Any,
-        experimental: t.Optional[t.Any] = None,
+        experimental: "ToolRouterSessionExperimental",
     ) -> None:
         self._client = client
         self._provider = provider
         self._auto_upload_download_files = auto_upload_download_files
         self.session_id = session_id
         self.mcp = mcp
-        self.files = ToolRouterSessionFilesMount(client, session_id)
         self.experimental = experimental
 
     def tools(self, modifiers: t.Optional["Modifiers"] = None) -> TToolCollection:

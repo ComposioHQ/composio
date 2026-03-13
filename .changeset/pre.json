@@ -1,8 +1,8 @@
 {
-  "mode": "pre",
+  "mode": "exit",
   "tag": "alpha",
   "initialVersions": {
-    "@composio/cli": "0.2.1",
+    "@composio/cli": "0.2.2",
     "@composio/core": "0.6.4",
     "@composio/json-schema-to-zod": "0.1.20",
     "@composio/anthropic": "0.6.4",
@@ -16,7 +16,5 @@
     "@composio/openai-agents": "0.6.4",
     "@composio/vercel": "0.6.4"
   },
-  "changesets": [
-    "few-kiwis-battle"
-  ]
+  "changesets": ["few-kiwis-battle"]
 }

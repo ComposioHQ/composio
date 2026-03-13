@@ -15,7 +15,7 @@ import { RemoteFileDownloadError, ValidationError } from '../errors';
  *
  * @example
  * ```typescript
- * const remoteFile = await session.files.download('/output/report.pdf');
+ * const remoteFile = await session.experimental.files.download('/output/report.pdf');
  * const buffer = await remoteFile.buffer();
  * await remoteFile.save('/tmp/report.pdf');
  * const text = await remoteFile.text();

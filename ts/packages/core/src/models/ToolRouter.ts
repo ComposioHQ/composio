@@ -141,7 +141,7 @@ export class ToolRouter<
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp),
-      experimental
+      { assistivePrompt: experimental?.assistivePrompt }
     );
   }
 
@@ -162,7 +162,7 @@ export class ToolRouter<
    * console.log(session.mcp.headers);
    * ```
    */
-  async use(id: string): Promise<Omit<Session<TToolCollection, TTool, TProvider>, 'experimental'>> {
+  async use(id: string): Promise<Session<TToolCollection, TTool, TProvider>> {
     const session = await this.client.toolRouter.session.retrieve(id);
     return new ToolRouterSession<TToolCollection, TTool, TProvider>(
       this.client,
