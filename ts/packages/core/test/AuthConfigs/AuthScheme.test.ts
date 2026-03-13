@@ -8,7 +8,7 @@ import {
 
 describe('AuthScheme', () => {
   describe('OAuth2', () => {
-    it('should create OAuth2 connection data with required fields', () => {
+    it('should set ACTIVE status when access_token is provided', () => {
       const params = {
         access_token: 'test_token',
         token_type: 'Bearer',
@@ -19,7 +19,7 @@ describe('AuthScheme', () => {
       expect(result).toEqual({
         authScheme: AuthSchemeTypes.OAUTH2,
         val: {
-          status: ConnectionStatuses.INITIALIZING,
+          status: ConnectionStatuses.ACTIVE,
           access_token: 'test_token',
           token_type: 'Bearer',
         },
@@ -29,7 +29,7 @@ describe('AuthScheme', () => {
       expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
     });
 
-    it('should create OAuth2 connection data with all optional fields', () => {
+    it('should set ACTIVE status with all optional fields when access_token is provided', () => {
       const params = {
         access_token: 'test_token',
         token_type: 'Bearer',
@@ -49,7 +49,7 @@ describe('AuthScheme', () => {
       expect(result).toEqual({
         authScheme: AuthSchemeTypes.OAUTH2,
         val: {
-          status: ConnectionStatuses.INITIALIZING,
+          status: ConnectionStatuses.ACTIVE,
           ...params,
         },
       });
@@ -57,10 +57,46 @@ describe('AuthScheme', () => {
       // Verify Zod schema validation
       expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
     });
+
+    it('should set INITIALIZING status when no access_token is provided', () => {
+      const result = AuthScheme.OAuth2({});
+
+      expect(result).toEqual({
+        authScheme: AuthSchemeTypes.OAUTH2,
+        val: {
+          status: ConnectionStatuses.INITIALIZING,
+        },
+      });
+
+      expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
+    });
+
+    it('should set INITIALIZING status when access_token is empty string', () => {
+      const result = AuthScheme.OAuth2({ access_token: '' });
+
+      expect(result).toEqual({
+        authScheme: AuthSchemeTypes.OAUTH2,
+        val: {
+          status: ConnectionStatuses.INITIALIZING,
+          access_token: '',
+        },
+      });
+
+      expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
+    });
+
+    it('should honor explicit status override from user', () => {
+      const result = AuthScheme.OAuth2({
+        access_token: 'test_token',
+        status: ConnectionStatuses.INITIALIZING,
+      });
+
+      expect(result.val.status).toBe(ConnectionStatuses.INITIALIZING);
+    });
   });
 
   describe('OAuth1', () => {
-    it('should create OAuth1 connection data with required fields', () => {
+    it('should set INITIALIZING status when only oauth_token is provided (no secret)', () => {
       const params = {
         oauth_token: 'test_token',
       };
@@ -79,7 +115,7 @@ describe('AuthScheme', () => {
       expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
     });
 
-    it('should create OAuth1 connection data with all optional fields', () => {
+    it('should set INITIALIZING status with optional fields but no oauth_token_secret', () => {
       const params = {
         oauth_token: 'test_token',
         consumer_key: 'consumer_key',
@@ -99,6 +135,45 @@ describe('AuthScheme', () => {
 
       // Verify Zod schema validation
       expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
+    });
+
+    it('should set ACTIVE status when both oauth_token and oauth_token_secret are provided', () => {
+      const params = {
+        oauth_token: 'test_token',
+        oauth_token_secret: 'test_secret',
+      };
+
+      const result = AuthScheme.OAuth1(params);
+
+      expect(result).toEqual({
+        authScheme: AuthSchemeTypes.OAUTH1,
+        val: {
+          status: ConnectionStatuses.ACTIVE,
+          oauth_token: 'test_token',
+          oauth_token_secret: 'test_secret',
+        },
+      });
+
+      expect(() => ConnectionDataSchema.parse(result)).not.toThrow();
+    });
+
+    it('should set INITIALIZING status when oauth_token is empty', () => {
+      const result = AuthScheme.OAuth1({
+        oauth_token: '',
+        oauth_token_secret: 'test_secret',
+      });
+
+      expect(result.val.status).toBe(ConnectionStatuses.INITIALIZING);
+    });
+
+    it('should honor explicit status override from user', () => {
+      const result = AuthScheme.OAuth1({
+        oauth_token: 'test_token',
+        oauth_token_secret: 'test_secret',
+        status: ConnectionStatuses.INITIALIZING,
+      });
+
+      expect(result.val.status).toBe(ConnectionStatuses.INITIALIZING);
     });
   });
 

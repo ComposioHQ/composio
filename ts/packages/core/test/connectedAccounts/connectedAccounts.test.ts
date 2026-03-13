@@ -355,13 +355,12 @@ describe('ConnectedAccounts', () => {
       expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
 
-    it('should create a new connected account with config and return a ConnectionRequest', async () => {
+    it('should create a connected account with OAuth2 token import and return ACTIVE ConnectionRequest', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
       const options = {
         callbackUrl: 'https://example.com/callback',
         config: AuthScheme.OAuth2({
-          status: ConnectionStatuses.ACTIVE,
           access_token: 'test_token',
           token_type: 'Bearer',
         }),
@@ -374,12 +373,12 @@ describe('ConnectedAccounts', () => {
         total_pages: 1,
       });
 
+      // When tokens are imported, the API should return ACTIVE with no redirectUrl
       const mockResponse = {
         id: 'conn_123',
         connectionData: {
           val: {
-            status: ConnectionStatuses.INITIALIZING,
-            redirectUrl: 'https://auth.example.com/connect',
+            status: ConnectionStatuses.ACTIVE,
           },
         },
       };
@@ -400,8 +399,38 @@ describe('ConnectedAccounts', () => {
       });
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
-      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.ACTIVE);
+      expect(connectionRequest).toHaveProperty('redirectUrl', null);
       expect(typeof connectionRequest.waitForConnection).toBe('function');
+    });
+
+    it('should return INITIATED status with redirectUrl when no tokens are provided', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_456',
+        connectionData: {
+          val: {
+            status: ConnectionStatuses.INITIATED,
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      const connectionRequest = await connectedAccounts.initiate(userId, authConfigId);
+
+      expect(connectionRequest).toHaveProperty('id', 'conn_456');
+      expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.INITIATED);
+      expect(connectionRequest).toHaveProperty('redirectUrl', 'https://auth.example.com/connect');
     });
   });
 
