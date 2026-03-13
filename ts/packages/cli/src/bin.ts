@@ -3,7 +3,7 @@ import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'ef
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
-import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
+import { PlatformContext, PlatformRuntime, PlatformFileSystem } from 'src/platform';
 import type { Teardown } from '@effect/platform/Runtime';
 import { rootCommand, runWithConfig } from 'src/commands';
 import * as constants from 'src/constants';
@@ -49,17 +49,17 @@ export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies Requir
 
 export const ComposioUserContextLive = Layer.provide(
   _ComposioUserContextLive,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioSessionRepositoryLive = Layer.provide(
   ComposioSessionRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
@@ -69,17 +69,17 @@ export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
 
 export const UpgradeBinaryLive = Layer.provide(
   UpgradeBinary.Default,
-  Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+  Layer.mergeAll(PlatformFileSystem.layer, FetchHttpClient.layer)
 ) satisfies RequiredLayer;
 
 export const TriggersRealtimeLive = Layer.provide(
   TriggersRealtime.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioClientSingletonLive = Layer.provide(
   ComposioClientSingleton.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ToolsExecutorLive = Layer.provide(
@@ -89,7 +89,7 @@ export const ToolsExecutorLive = Layer.provide(
 
 export const ProjectContextLive = Layer.provide(
   ProjectContext.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
+  Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default, NodeProcess.Default)
 ) satisfies RequiredLayer;
 
 const layers = Layer.mergeAll(
@@ -107,8 +107,8 @@ const layers = Layer.mergeAll(
   CommandRunner.Default,
   TriggersRealtimeLive,
   ProjectContextLive,
-  BunContext.layer,
-  BunFileSystem.layer,
+  PlatformContext.layer,
+  PlatformFileSystem.layer,
   StdinLive,
   TerminalUILive,
   Logger.pretty
@@ -235,5 +235,7 @@ runWithArgs.pipe(
   Effect.provide(layers),
   Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
   effect =>
-    (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(effect)
+    (PlatformRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(
+      effect
+    )
 );

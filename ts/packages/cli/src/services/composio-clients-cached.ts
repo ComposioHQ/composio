@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
 import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { PlatformFileSystem } from 'src/platform';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
 import { ComposioToolkitsRepository, InvalidToolkitsError } from './composio-clients';
@@ -107,7 +107,7 @@ function createCachedEffect<T, E, R>(
   // This ensures the returned effect has the same error type as the original computation
   // by providing all the required cache services
   return handledCacheEffect.pipe(
-    Effect.provide(Layer.mergeAll(BunFileSystem.layer, NodeOs.Default))
+    Effect.provide(Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default))
   ) as Effect.Effect<T, E, R>;
 }
 
@@ -271,5 +271,5 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
   })
 ).pipe(
   // Provide the required dependencies for the layer
-  Layer.provide(Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive))
+  Layer.provide(Layer.mergeAll(PlatformFileSystem.layer, NodeOs.Default, ConfigLive))
 );

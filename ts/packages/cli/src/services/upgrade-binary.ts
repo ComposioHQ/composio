@@ -1,5 +1,6 @@
 import { Data, Effect, Config, Option } from 'effect';
 import { HttpClient, FileSystem } from '@effect/platform';
+import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
@@ -424,14 +425,25 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
       // E.g., ~/.composio/composio
       const currentPath = process.execPath;
 
-      const runtimesPaths = [Bun.which('bun'), Bun.which('node')] as Array<string | null>;
+      const runtimesPaths = ['bun', 'node'].map(cmd => {
+        try {
+          const whichCmd = process.platform === 'win32' ? 'where.exe' : 'which';
+          return execFileSync(whichCmd, [cmd], { encoding: 'utf-8' }).trim() || null;
+        } catch {
+          return null;
+        }
+      });
 
       if (runtimesPaths.includes(currentPath)) {
         return yield* Effect.fail(
           new UpgradeBinaryError({
-            cause: new Error(`Currently using Composio CLI via Bun or Node.js runtime`),
+            cause: new Error(`Currently using Composio CLI via a runtime, not a standalone binary`),
             message:
-              'Cannot upgrade runtime binary. Please run the upgrade command from a self-contained Composio CLI binary.',
+              'You installed composio via npm or a JS runtime.\n' +
+              'To upgrade, run one of:\n' +
+              '  npm update -g @composio/cli\n' +
+              '  pnpm update -g @composio/cli\n' +
+              '  bun update -g @composio/cli',
           })
         );
       }

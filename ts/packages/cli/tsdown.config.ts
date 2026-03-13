@@ -7,7 +7,7 @@ export default defineConfig({
   format: ['esm'],
   tsconfig: './tsconfig.src.json',
   banner: {
-    js: '#!/usr/bin/env bun',
+    js: '#!/usr/bin/env node',
   },
   external: undefined,
   publint: undefined,

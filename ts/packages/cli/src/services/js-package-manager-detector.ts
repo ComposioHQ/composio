@@ -1,4 +1,4 @@
-import { BunFileSystem } from '@effect/platform-bun';
+import { PlatformFileSystem } from 'src/platform';
 import { Data, Effect, Option, Schema, pipe } from 'effect';
 import { FileSystem } from '@effect/platform';
 import * as path from 'path';
@@ -151,6 +151,6 @@ export class JsPackageManagerDetector extends Effect.Service<JsPackageManagerDet
         detectJsPackageManager,
       };
     }),
-    dependencies: [BunFileSystem.layer],
+    dependencies: [PlatformFileSystem.layer],
   }
 ) {}

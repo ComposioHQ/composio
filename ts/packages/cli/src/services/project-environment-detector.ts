@@ -1,4 +1,4 @@
-import { BunFileSystem } from '@effect/platform-bun';
+import { PlatformFileSystem } from 'src/platform';
 import { FileSystem } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
 import * as path from 'node:path';
@@ -579,6 +579,6 @@ export class ProjectEnvironmentDetector extends Effect.Service<ProjectEnvironmen
         detectPythonPackageManager: (cwd: string) => detectPythonPackageManager(fs, cwd),
       };
     }),
-    dependencies: [BunFileSystem.layer],
+    dependencies: [PlatformFileSystem.layer],
   }
 ) {}

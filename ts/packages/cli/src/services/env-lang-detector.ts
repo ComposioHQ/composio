@@ -1,4 +1,4 @@
-import { BunFileSystem } from '@effect/platform-bun';
+import { PlatformFileSystem } from 'src/platform';
 import { pipe, Data, Effect } from 'effect';
 import { FileSystem } from '@effect/platform';
 
@@ -217,5 +217,5 @@ export class EnvLangDetector extends Effect.Service<EnvLangDetector>()('services
         }),
     };
   }),
-  dependencies: [BunFileSystem.layer],
+  dependencies: [PlatformFileSystem.layer],
 }) {}
