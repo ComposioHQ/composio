@@ -1,0 +1,31 @@
+{
+  "name": "soulink-identity-example",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Example: Soulink agent identity verification as Composio custom tools",
+  "main": "src/index.ts",
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "composio",
+    "example",
+    "soulink",
+    "agent-identity"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.17.0",
+  "dependencies": {
+    "@composio/core": "workspace:*",
+    "dotenv": "^16.4.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.9",
+    "typescript": "catalog:"
+  }
+}
