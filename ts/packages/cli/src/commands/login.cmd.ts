@@ -1,5 +1,5 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option, Schedule } from 'effect';
+import { DateTime, Effect, Option, Schedule } from 'effect';
 import open from 'open';
 import {
   ComposioSessionRepository,
@@ -314,7 +314,7 @@ export const browserLogin = (params: {
         message: 'Complete login by opening the URL',
         login_url: url,
         cli_key: session.id,
-        expires_at: session.expiresAt,
+        expires_at: DateTime.formatIso(session.expiresAt),
       };
       yield* ui.note(JSON.stringify(loginInfo, null, 2), 'Login info');
       yield* ui.output(JSON.stringify(loginInfo, null, 2));
@@ -470,7 +470,7 @@ export const loginCmd = Command.make(
         yield* loginWithKey({
           key: key.value,
           noWait,
-          skipOrgProjectPicker: !yes,
+          skipOrgProjectPicker: true,
         });
         return;
       }
