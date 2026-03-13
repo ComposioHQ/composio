@@ -43,6 +43,8 @@ const storeCredentials = (params: {
   strictVerification: boolean;
   /** When true, skip the init/switch hints and outro (shown later after org/project picker). */
   skipHints?: boolean;
+  /** When true, skip JSON output (emitted later after org/project picker with final selection). */
+  skipOutput?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -56,6 +58,7 @@ const storeCredentials = (params: {
       fallbackEmail,
       strictVerification,
       skipHints = false,
+      skipOutput = false,
     } = params;
 
     // Call session/info to enrich the login with org/project metadata.
@@ -121,15 +124,17 @@ const storeCredentials = (params: {
     }
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
-    yield* ui.output(
-      JSON.stringify({
-        email,
-        org_id: orgId,
-        project_id: projectId,
-        org_name: sessionInfo?.project.org.name ?? '',
-        project_name: sessionInfo?.project.name ?? '',
-      })
-    );
+    if (!skipOutput) {
+      yield* ui.output(
+        JSON.stringify({
+          email,
+          org_id: orgId,
+          project_id: projectId,
+          org_name: sessionInfo?.project.org.name ?? '',
+          project_name: sessionInfo?.project.name ?? '',
+        })
+      );
+    }
 
     if (!skipHints) {
       yield* ui.outro("You're all set!");
@@ -227,6 +232,7 @@ export const browserLogin = (params: {
 
     yield* Effect.logDebug('UAK session info:', { xProjectId, xOrgId });
 
+    const willRunPicker = params.scope === 'user' && !params.skipOrgProjectPicker;
     yield* storeCredentials({
       baseURL: ctx.data.baseURL,
       uakApiKey,
@@ -234,10 +240,11 @@ export const browserLogin = (params: {
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
       strictVerification: false,
-      skipHints: params.scope === 'user' && !params.skipOrgProjectPicker,
+      skipHints: willRunPicker,
+      skipOutput: willRunPicker,
     });
 
-    if (params.scope === 'user' && !params.skipOrgProjectPicker) {
+    if (willRunPicker) {
       const result = yield* runOrgProjectSelection({
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
@@ -255,6 +262,20 @@ export const browserLogin = (params: {
           `Default org/project set to "${result.org.name}" / "${result.project.name}".`
         );
       }
+      // Emit JSON with final org/project (from picker or session) for piped/scripted consumption
+      const finalOrgId = result?.org.id ?? xOrgId;
+      const finalProjectId = result?.project.id ?? xProjectId;
+      const finalOrgName = result?.org.name ?? uakSessionInfo.project.org.name ?? '';
+      const finalProjectName = result?.project.name ?? uakSessionInfo.project.name ?? '';
+      yield* ui.output(
+        JSON.stringify({
+          email: linkedSession.account.email ?? undefined,
+          org_id: finalOrgId,
+          project_id: finalProjectId,
+          org_name: finalOrgName,
+          project_name: finalProjectName,
+        })
+      );
       yield* ui.log.info(
         'Run `composio init` in your project directory to set up project context.'
       );
