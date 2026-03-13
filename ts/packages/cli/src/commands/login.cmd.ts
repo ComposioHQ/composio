@@ -35,12 +35,6 @@ const storeCredentials = (params: {
   initialOrgId: string;
   initialProjectId: string;
   fallbackEmail: string;
-  /**
-   * When true, 400/401/403 from session/info will fail the login.
-   * Used for non-interactive login where the user provides explicit IDs.
-   * When false, all session/info errors are non-fatal (browser login).
-   */
-  strictVerification: boolean;
   /** When true, skip the init/switch hints and outro (shown later after org/project picker). */
   skipHints?: boolean;
   /** When true, skip JSON output (emitted later after org/project picker with final selection). */
@@ -56,15 +50,12 @@ const storeCredentials = (params: {
       initialOrgId,
       initialProjectId,
       fallbackEmail,
-      strictVerification,
       skipHints = false,
       skipOutput = false,
     } = params;
 
     // Call session/info to enrich the login with org/project metadata.
-    // In strict mode (non-interactive login), 400/401/403 are hard failures.
-    // In non-strict mode (browser login), all errors are non-fatal since
-    // the linked session is already authenticated.
+    // All errors are non-fatal (browser login) since the linked session is already authenticated.
     const sessionInfo: SessionInfoResponse | undefined = yield* getSessionInfo({
       baseURL,
       apiKey: uakApiKey,
@@ -73,9 +64,6 @@ const storeCredentials = (params: {
     }).pipe(
       Effect.catchTag('services/HttpServerError', e =>
         Effect.gen(function* () {
-          if (strictVerification && e.status && e.status >= 400 && e.status < 500) {
-            return yield* Effect.fail(e);
-          }
           yield* Effect.logDebug(`Session info fetch failed (HTTP ${e.status ?? '?'}):`, e);
           return undefined;
         })
@@ -239,7 +227,6 @@ export const browserLogin = (params: {
       initialOrgId: xOrgId,
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
-      strictVerification: false,
       skipHints: willRunPicker,
       skipOutput: willRunPicker,
     });
@@ -248,7 +235,15 @@ export const browserLogin = (params: {
       const result = yield* runOrgProjectSelection({
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
-      });
+      }).pipe(
+        Effect.catchAll(error =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Org/project picker failed:', error);
+            yield* ui.log.warn('Could not load org/project list. Using session defaults.');
+            return undefined;
+          })
+        )
+      );
       if (result) {
         const sessionUserId = uakSessionInfo.org_member.user_id ?? uakSessionInfo.org_member.id;
         const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
