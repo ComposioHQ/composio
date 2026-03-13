@@ -24,7 +24,7 @@ const SOULINK_API = 'https://soulink.dev/api/v1';
 await composio.tools.createCustomTool({
   slug: 'SOULINK_RESOLVE_AGENT',
   name: 'Resolve agent identity on Soulink',
-  toolkitSlug: 'soulink',
+  toolkitSlug: 'custom',
   description:
     'Look up an agent\'s verified on-chain identity by their .agent name. Returns wallet address, expiration, and registration status.',
   inputParams: z.object({
@@ -33,9 +33,9 @@ await composio.tools.createCustomTool({
   execute: async (input) => {
     const res = await fetch(`${SOULINK_API}/resolve/${encodeURIComponent(input.name)}`);
     if (!res.ok) {
-      return { success: false, error: `Agent ${input.name} not found` };
+      return { successful: false, data: null, error: `Agent ${input.name} not found` };
     }
-    return res.json();
+    return { successful: true, data: await res.json(), error: null };
   },
 });
 
@@ -45,7 +45,7 @@ await composio.tools.createCustomTool({
 await composio.tools.createCustomTool({
   slug: 'SOULINK_CHECK_CREDIT',
   name: 'Check agent credit score on Soulink',
-  toolkitSlug: 'soulink',
+  toolkitSlug: 'custom',
   description:
     'Check an agent\'s on-chain credit score (0-100) based on peer behavior reports. Use this before interacting with unknown agents.',
   inputParams: z.object({
@@ -54,9 +54,9 @@ await composio.tools.createCustomTool({
   execute: async (input) => {
     const res = await fetch(`${SOULINK_API}/credit/${encodeURIComponent(input.name)}`);
     if (!res.ok) {
-      return { success: false, error: `No credit data for ${input.name}` };
+      return { successful: false, data: null, error: `No credit data for ${input.name}` };
     }
-    return res.json();
+    return { successful: true, data: await res.json(), error: null };
   },
 });
 
@@ -66,7 +66,7 @@ await composio.tools.createCustomTool({
 await composio.tools.createCustomTool({
   slug: 'SOULINK_VERIFY_IDENTITY',
   name: 'Verify agent identity on Soulink',
-  toolkitSlug: 'soulink',
+  toolkitSlug: 'custom',
   description:
     'Verify that an agent owns the wallet associated with their .agent name by checking an EIP-191 signed message.',
   inputParams: z.object({
@@ -81,9 +81,9 @@ await composio.tools.createCustomTool({
       body: JSON.stringify(input),
     });
     if (!res.ok) {
-      return { success: false, error: `Verification failed for ${input.name}` };
+      return { successful: false, data: null, error: `Verification failed for ${input.name}` };
     }
-    return res.json();
+    return { successful: true, data: await res.json(), error: null };
   },
 });
 
