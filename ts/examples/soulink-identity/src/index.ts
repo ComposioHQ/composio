@@ -80,6 +80,9 @@ await composio.tools.createCustomTool({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     });
+    if (!res.ok) {
+      return { success: false, error: `Verification failed for ${input.name}` };
+    }
     return res.json();
   },
 });
