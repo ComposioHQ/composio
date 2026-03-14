@@ -1,5 +1,5 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option, Schedule } from 'effect';
+import { DateTime, Effect, Option, Schedule } from 'effect';
 import open from 'open';
 import {
   ComposioSessionRepository,
@@ -14,6 +14,18 @@ import { runOrgProjectSelection } from 'src/effects/select-org-project';
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
   Options.withDescription('Login without browser interaction')
+);
+
+const noWait = Options.boolean('no-wait').pipe(
+  Options.withDefault(false),
+  Options.withDescription(
+    'Print login URL and session info, then exit without opening browser or waiting'
+  )
+);
+
+const keyOpt = Options.text('key').pipe(
+  Options.withDescription('Complete login using session key from composio login --no-wait'),
+  Options.optional
 );
 
 const yesOpt = Options.boolean('yes').pipe(
@@ -130,6 +142,132 @@ const storeCredentials = (params: {
   });
 
 /**
+ * Completes login using an existing session key (from composio login --no-wait).
+ * Fetches the session, optionally polls until linked, then stores credentials.
+ *
+ * When noWait is false: polls until session is linked (same as browser flow).
+ * When noWait is true: checks once and fails if not linked.
+ */
+const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPicker: boolean }) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const ctx = yield* ComposioUserContext;
+    const client = yield* ComposioSessionRepository;
+
+    const getSessionEffect = client
+      .getSession({ id: params.key })
+      .pipe(
+        Effect.catchAll(() =>
+          Effect.fail(
+            new Error(
+              'Session not found or expired. Run `composio login --no-wait` to get a new session.'
+            )
+          )
+        )
+      );
+
+    let linkedSession;
+    if (params.noWait) {
+      const session = yield* getSessionEffect;
+      if (session.status !== 'linked') {
+        yield* ui.log.error('Login not complete. Open the URL and finish authentication.');
+        yield* ui.log.info('Then run `composio login --key <key>` again.');
+        return yield* Effect.fail(new Error('Session not yet linked'));
+      }
+      linkedSession = session;
+    } else {
+      linkedSession = yield* ui.useMakeSpinner('Waiting for login...', spinner =>
+        Effect.retry(
+          Effect.gen(function* () {
+            const currentSession = yield* getSessionEffect;
+            if (currentSession.status === 'linked') {
+              return currentSession;
+            }
+            return yield* Effect.fail(
+              new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
+            );
+          }),
+          Schedule.exponential('0.3 seconds').pipe(
+            Schedule.intersect(Schedule.recurs(15)),
+            Schedule.intersect(Schedule.spaced('5 seconds'))
+          )
+        ).pipe(
+          Effect.tap(() => spinner.stop('Login successful')),
+          Effect.tapError(() => spinner.error('Login timed out. Please try again.'))
+        )
+      );
+    }
+    const uakApiKey = linkedSession.api_key;
+
+    const uakSessionInfo = yield* getSessionInfoByUserApiKey({
+      baseURL: ctx.data.baseURL,
+      userApiKey: uakApiKey,
+    });
+
+    const xProjectId = uakSessionInfo.project.nano_id;
+    const xOrgId = uakSessionInfo.project.org.id;
+
+    const willRunPicker = !params.skipOrgProjectPicker;
+    yield* storeCredentials({
+      baseURL: ctx.data.baseURL,
+      uakApiKey,
+      initialOrgId: xOrgId,
+      initialProjectId: xProjectId,
+      fallbackEmail: linkedSession.account.email,
+      skipHints: willRunPicker,
+      skipOutput: willRunPicker,
+    });
+
+    if (willRunPicker) {
+      const result = yield* runOrgProjectSelection({
+        apiKey: uakApiKey,
+        baseURL: ctx.data.baseURL,
+      }).pipe(
+        Effect.catchAll(error =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Org/project picker failed:', error);
+            yield* ui.log.warn('Could not load org/project list. Using session defaults.');
+            return undefined;
+          })
+        )
+      );
+      if (result) {
+        const sessionUserId = uakSessionInfo.org_member.user_id ?? uakSessionInfo.org_member.id;
+        const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
+        yield* ctx.login(
+          uakApiKey,
+          result.org.id,
+          result.project.id,
+          testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
+        );
+        yield* ui.log.success(
+          `Default org/project set to "${result.org.name}" / "${result.project.name}".`
+        );
+      }
+      const finalOrgId = result?.org.id ?? xOrgId;
+      const finalProjectId = result?.project.id ?? xProjectId;
+      const finalOrgName = result?.org.name ?? uakSessionInfo.project.org.name ?? '';
+      const finalProjectName = result?.project.name ?? uakSessionInfo.project.name ?? '';
+      yield* ui.output(
+        JSON.stringify({
+          email: linkedSession.account.email ?? undefined,
+          org_id: finalOrgId,
+          project_id: finalProjectId,
+          org_name: finalOrgName,
+          project_name: finalProjectName,
+        })
+      );
+      yield* ui.log.info(
+        'Run `composio init` in your project directory to set up project context.'
+      );
+      yield* ui.log.info(
+        'To switch your default global org/project later, run `composio orgs switch`.'
+      );
+      yield* ui.outro("You're all set!");
+    }
+  });
+
+/**
  * Runs the browser-based login flow: creates a CLI session, opens the browser,
  * polls until linked, enriches via session/info, and stores credentials.
  *
@@ -143,6 +281,8 @@ export const browserLogin = (params: {
   scope: 'user' | 'project';
   /** When true, don't open browser — just show the URL. */
   noBrowser: boolean;
+  /** When true, print URL/session info and exit without waiting (implies noBrowser). */
+  noWait?: boolean;
   /** When true (login only), skip org/project picker and use session defaults. When false, prompt for org/project. */
   skipOrgProjectPicker?: boolean;
 }) =>
@@ -159,16 +299,31 @@ export const browserLogin = (params: {
 
     const url = `${ctx.data.webURL}?cliKey=${session.id}`;
 
-    if (params.noBrowser) {
+    const effectiveNoBrowser = params.noBrowser || params.noWait;
+    if (effectiveNoBrowser) {
       yield* ui.log.info('Please login using the following URL:');
     } else {
       yield* ui.log.step('Redirecting you to the login page');
     }
 
     yield* ui.note(url, 'Login URL');
+
+    if (params.noWait) {
+      const loginInfo = {
+        status: 'pending',
+        message: 'Complete login by opening the URL',
+        login_url: url,
+        cli_key: session.id,
+        expires_at: DateTime.formatIso(session.expiresAt),
+      };
+      yield* ui.note(JSON.stringify(loginInfo, null, 2), 'Login info');
+      yield* ui.output(JSON.stringify(loginInfo, null, 2));
+      return;
+    }
+
     yield* ui.output(url);
 
-    if (!params.noBrowser) {
+    if (!effectiveNoBrowser) {
       yield* Effect.tryPromise(() => open(url, { wait: false })).pipe(
         Effect.catchAll(error =>
           Effect.gen(function* () {
@@ -286,34 +441,57 @@ export const browserLogin = (params: {
  *
  * Browser-based: Opens browser for OAuth flow (default).
  * Use --no-browser to skip auto-opening the browser and print the URL instead.
+ * Use --no-wait to print login URL and session info (JSON) then exit without opening browser or waiting.
+ * Use --key to complete login with a session key from --no-wait. Without --no-wait, polls until linked;
+ * with --no-wait, checks once and fails if not linked.
  * Use -y to skip org/project picker and use session defaults.
  *
  * @example
  * ```bash
  * composio login
  * composio login --no-browser
+ * composio login --no-wait
+ * composio login --key <key>
+ * composio login --key <key> --no-wait
  * composio login -y
  * ```
  */
-export const loginCmd = Command.make('login', { noBrowser, yes: yesOpt }, ({ noBrowser, yes }) =>
-  Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    const ctx = yield* ComposioUserContext;
+export const loginCmd = Command.make(
+  'login',
+  { noBrowser, noWait, key: keyOpt, yes: yesOpt },
+  ({ noBrowser, noWait, key, yes }) =>
+    Effect.gen(function* () {
+      const ui = yield* TerminalUI;
+      const ctx = yield* ComposioUserContext;
 
-    yield* ui.intro('composio login');
+      yield* ui.intro('composio login');
 
-    if (ctx.isLoggedIn()) {
-      // Allow re-login when orgId/projectId are not yet set (old CLI login without multi-project support)
-      if (Option.isSome(ctx.data.orgId) && Option.isSome(ctx.data.projectId)) {
-        yield* ui.log.warn(`You're already logged in!`);
-        yield* ui.outro(
-          'If you want to log in with a different account, please run `composio logout` first.'
-        );
+      if (Option.isSome(key)) {
+        yield* loginWithKey({
+          key: key.value,
+          noWait,
+          skipOrgProjectPicker: true,
+        });
         return;
       }
-      yield* ui.log.step('Re-authenticating for multi-project support...');
-    }
 
-    yield* browserLogin({ scope: 'user', noBrowser, skipOrgProjectPicker: yes });
-  })
+      if (ctx.isLoggedIn()) {
+        // Allow re-login when orgId/projectId are not yet set (old CLI login without multi-project support)
+        if (Option.isSome(ctx.data.orgId) && Option.isSome(ctx.data.projectId)) {
+          yield* ui.log.warn(`You're already logged in!`);
+          yield* ui.outro(
+            'If you want to log in with a different account, please run `composio logout` first.'
+          );
+          return;
+        }
+        yield* ui.log.step('Re-authenticating for multi-project support...');
+      }
+
+      yield* browserLogin({
+        scope: 'user',
+        noBrowser,
+        noWait,
+        skipOrgProjectPicker: yes,
+      });
+    })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

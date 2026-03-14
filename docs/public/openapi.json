@@ -2671,7 +2671,8 @@
                                   "BASIC_WITH_JWT",
                                   "SERVICE_ACCOUNT",
                                   "SAML",
-                                  "DCR_OAUTH"
+                                  "DCR_OAUTH",
+                                  "S2S_OAUTH2"
                                 ]
                               },
                               "val": {
@@ -2989,7 +2990,8 @@
                               "BASIC_WITH_JWT",
                               "SERVICE_ACCOUNT",
                               "SAML",
-                              "DCR_OAUTH"
+                              "DCR_OAUTH",
+                              "S2S_OAUTH2"
                             ]
                           },
                           "val": {
@@ -3195,7 +3197,8 @@
                             "BASIC_WITH_JWT",
                             "SERVICE_ACCOUNT",
                             "SAML",
-                            "DCR_OAUTH"
+                            "DCR_OAUTH",
+                            "S2S_OAUTH2"
                           ]
                         },
                         "val": {
@@ -3593,7 +3596,8 @@
                             "BASIC_WITH_JWT",
                             "SERVICE_ACCOUNT",
                             "SAML",
-                            "DCR_OAUTH"
+                            "DCR_OAUTH",
+                            "S2S_OAUTH2"
                           ]
                         },
                         "val": {
@@ -4519,6 +4523,9 @@
                       },
                       "client_secret_expires_at": {
                         "type": "number"
+                      },
+                      "expires_at": {
+                        "type": "string"
                       }
                     },
                     "additionalProperties": true
@@ -8415,7 +8422,8 @@
                           "OAUTH1",
                           "NO_AUTH",
                           "SERVICE_ACCOUNT",
-                          "GOOGLE_SERVICE_ACCOUNT"
+                          "GOOGLE_SERVICE_ACCOUNT",
+                          "S2S_OAUTH2"
                         ]
                       },
                       "toolkitSlug": {
@@ -8621,6 +8629,9 @@
                             "type": "string"
                           },
                           "credentials_json": {
+                            "type": "string"
+                          },
+                          "expires_at": {
                             "type": "string"
                           }
                         },
@@ -9153,7 +9164,8 @@
                           "OAUTH1",
                           "NO_AUTH",
                           "SERVICE_ACCOUNT",
-                          "GOOGLE_SERVICE_ACCOUNT"
+                          "GOOGLE_SERVICE_ACCOUNT",
+                          "S2S_OAUTH2"
                         ]
                       },
                       "toolkitSlug": {
@@ -9359,6 +9371,9 @@
                             "type": "string"
                           },
                           "credentials_json": {
+                            "type": "string"
+                          },
+                          "expires_at": {
                             "type": "string"
                           }
                         },
@@ -10058,6 +10073,10 @@
                             "type": "string",
                             "description": "Additional data associated with the trigger instance"
                           },
+                          "version": {
+                            "type": "string",
+                            "description": "Version of the trigger instance"
+                          },
                           "trigger_config": {
                             "type": "object",
                             "additionalProperties": {},
@@ -10124,6 +10143,7 @@
                           "trigger_name",
                           "connected_account_uuid",
                           "user_id",
+                          "version",
                           "trigger_config",
                           "state",
                           "updated_at",
@@ -14560,6 +14580,67 @@
                     "additionalProperties": false,
                     "description": "Configuration for workbench behavior"
                   },
+                  "custom_tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "slug": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 58,
+                          "pattern": "^[a-zA-Z0-9_-]+$",
+                          "description": "Machine identifier for the tool (e.g. GET_USER_CONTEXT). Max 58 chars, alphanumeric + underscores/hyphens only. Used to generate the LOCAL_ prefixed tool name.",
+                          "example": "GET_CUSTOMER_ORDERS"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "description": "Human-readable display name for the tool (max 128 chars)",
+                          "example": "Get customer orders"
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 5120,
+                          "description": "Description of what this tool does (max 5KB). Used for BM25 search matching and shown to the LLM.",
+                          "example": "Fetch recent orders for a customer by their email address"
+                        },
+                        "input_schema": {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "description": "JSON schema describing the tool input parameters. Must have type: \"object\" and a properties field.",
+                          "example": {
+                            "type": "object",
+                            "properties": {
+                              "email": {
+                                "type": "string",
+                                "description": "Customer email"
+                              }
+                            },
+                            "required": [
+                              "email"
+                            ]
+                          }
+                        },
+                        "toolkit": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Associate this local tool with an existing toolkit. Connected toolkit tools get higher search priority. Omit for no-auth tools.",
+                          "example": "gmail"
+                        }
+                      },
+                      "required": [
+                        "slug",
+                        "name",
+                        "description",
+                        "input_schema"
+                      ]
+                    },
+                    "maxItems": 100,
+                    "description": "Custom tools to include in search. Each tool needs a name, description, and input_schema. Optionally specify a toolkit to inherit connection priority. These are searched via BM25 and merged with Composio tool results."
+                  },
                   "experimental": {
                     "type": "object",
                     "properties": {
@@ -15025,6 +15106,45 @@
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        },
+                        "custom_tools": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "slug": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 58,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              },
+                              "description": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 5120
+                              },
+                              "input_schema": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "toolkit": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "slug",
+                              "name",
+                              "description",
+                              "input_schema"
+                            ]
+                          },
+                          "description": "User-provided custom tools configured for this session"
                         }
                       },
                       "required": [
@@ -15700,6 +15820,45 @@
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        },
+                        "custom_tools": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "slug": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 58,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              },
+                              "description": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 5120
+                              },
+                              "input_schema": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "toolkit": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "slug",
+                              "name",
+                              "description",
+                              "input_schema"
+                            ]
+                          },
+                          "description": "User-provided custom tools configured for this session"
                         }
                       },
                       "required": [

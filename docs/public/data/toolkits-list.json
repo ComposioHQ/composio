@@ -1824,6 +1824,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "_1password",
+    "name": "1password",
+    "logo": "https://logos.composio.dev/api/onepassword",
+    "category": "security & identity tools",
+    "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
     "slug": "_21risk",
     "name": "21risk",
     "logo": "https://logos.composio.dev/api/_21risk",
@@ -2973,6 +2981,14 @@
     "logo": "https://logos.composio.dev/api/commcare",
     "category": "forms & surveys",
     "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
+    "slug": "companyenrich",
+    "name": "Companyenrich",
+    "logo": "https://logos.composio.dev/api/companyenrich",
+    "category": "developer tools",
+    "toolCount": 32,
     "triggerCount": 0
   },
   {
@@ -5141,6 +5157,14 @@
     "logo": "https://logos.composio.dev/api/loyverse",
     "category": "ecommerce",
     "toolCount": 59,
+    "triggerCount": 0
+  },
+  {
+    "slug": "lusha",
+    "name": "Lusha",
+    "logo": "https://logos.composio.dev/api/lusha",
+    "category": "sales & crm",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -7973,30 +7997,6 @@
     "logo": "https://logos.composio.dev/api/zep",
     "category": "artificial intelligence",
     "toolCount": 41,
-    "triggerCount": 0
-  },
-  {
-    "slug": "zeplin",
-    "name": "Zeplin",
-    "logo": "https://logos.composio.dev/api/zeplin",
-    "category": "images & design",
-    "toolCount": 24,
-    "triggerCount": 0
-  },
-  {
-    "slug": "zerobounce",
-    "name": "Zerobounce",
-    "logo": "https://logos.composio.dev/api/zerobounce",
-    "category": "email",
-    "toolCount": 20,
-    "triggerCount": 0
-  },
-  {
-    "slug": "zixflow",
-    "name": "Zixflow",
-    "logo": "https://logos.composio.dev/api/zixflow",
-    "category": "crm",
-    "toolCount": 7,
     "triggerCount": 0
   }
 ]

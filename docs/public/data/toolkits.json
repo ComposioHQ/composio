@@ -550,7 +550,7 @@
     ],
     "toolCount": 866,
     "triggerCount": 20,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "GITHUB_ABORT_REPOSITORY_MIGRATION",
@@ -5739,7 +5739,7 @@
     ],
     "toolCount": 46,
     "triggerCount": 16,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "GOOGLESHEETS_ADD_SHEET",
@@ -7712,7 +7712,7 @@
     ],
     "toolCount": 301,
     "triggerCount": 5,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "OUTLOOK_ADD_EVENT_ATTACHMENT",
@@ -9832,7 +9832,7 @@
     ],
     "toolCount": 89,
     "triggerCount": 7,
-    "version": "20260312_00",
+    "version": "20260313_01",
     "tools": [
       {
         "slug": "GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE",
@@ -23249,7 +23249,7 @@
     ],
     "toolCount": 164,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "MICROSOFT_TEAMS_ADD_CHAT_MEMBER",
@@ -27788,7 +27788,7 @@
     ],
     "toolCount": 61,
     "triggerCount": 9,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "ONE_DRIVE_CHECKIN_ITEM",
@@ -28205,7 +28205,7 @@
     ],
     "toolCount": 339,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "DOCUSIGN_ADD_CONTACTS_TO_CONTACTS_LIST",
@@ -34998,7 +34998,7 @@
     ],
     "toolCount": 110,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "NEON_ACCEPT_PROJECTS_TRANSFER_REQUESTS",
@@ -35631,7 +35631,7 @@
     ],
     "toolCount": 506,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "POSTHOG_ADD_DASHBOARD_COLLABORATORS_WITH_ACCESS_LEVEL",
@@ -42244,7 +42244,7 @@
     ],
     "toolCount": 225,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "KLAVIYO_ADD_PROFILE_TO_LIST",
@@ -50257,7 +50257,7 @@
     ],
     "toolCount": 50,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "MIXPANEL_ADD_UNIQUE_TO_PROFILE_LIST_PROPERTY",
@@ -58493,7 +58493,7 @@
     ],
     "toolCount": 41,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "BAMBOOHR_ATS_CREATE_CANDIDATE",
@@ -60037,7 +60037,7 @@
     ],
     "toolCount": 429,
     "triggerCount": 20,
-    "version": "20260312_00",
+    "version": "20260313_01",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -62372,7 +62372,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260309_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "BROWSER_TOOL_CREATE_TASK",
@@ -64528,7 +64528,7 @@
     ],
     "toolCount": 368,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_01",
     "tools": [
       {
         "slug": "PAGERDUTY_ADD_SERVICE_TO_INCIDENT_WORKFLOW_TRIGGER",
@@ -69871,7 +69871,7 @@
     ],
     "toolCount": 86,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "MAILERLITE_ADD_PRODUCT_TO_CATEGORY",
@@ -70346,7 +70346,7 @@
     ],
     "toolCount": 105,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "CONTENTFUL_ACTIVATE_CONTENT_TYPE",
@@ -75782,7 +75782,7 @@
     ],
     "toolCount": 101,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "DIGICERT_ADD_TAGS_TO_CERTIFICATE",
@@ -78939,7 +78939,7 @@
     ],
     "toolCount": 99,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "PRODUCTBOARD_ADD_NOTE_FOLLOWERS",
@@ -79615,6 +79615,9 @@
     "authSchemes": [
       "OAUTH2",
       "API_KEY"
+    ],
+    "composioManagedAuthSchemes": [
+      "OAUTH2"
     ],
     "toolCount": 52,
     "triggerCount": 0,
@@ -92530,7 +92533,7 @@
     ],
     "toolCount": 192,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "DIALPAD_ACCESS_CONTROL_POLICIES_LISTING",
@@ -94750,7 +94753,57 @@
         "description": "Tool to update a member's externalId. Use when assigning or syncing SCIM external IDs for existing organization members."
       }
     ],
-    "triggers": []
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "S2S_OAUTH2",
+        "name": "bitwarden_service_account",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "full",
+                "displayName": "Base URL",
+                "type": "string",
+                "description": "The API base URL for Bitwarden. For EU servers, use \"https://api.bitwarden.eu\".",
+                "required": true,
+                "default": "https://api.bitwarden.com"
+              },
+              {
+                "name": "tokenUrl",
+                "displayName": "Token URL",
+                "type": "string",
+                "description": "The token URL for Bitwarden. For EU servers, use \"https://identity.bitwarden.eu/connect/token\".",
+                "required": true,
+                "default": "https://identity.bitwarden.com/connect/token"
+              }
+            ],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client ID",
+                "type": "string",
+                "description": "The client ID for Bitwarden (organization or personal API key).",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client Secret",
+                "type": "string",
+                "description": "The client secret for Bitwarden.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
   },
   {
     "slug": "epic_games",
@@ -95891,7 +95944,7 @@
     ],
     "toolCount": 58,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "GONG_ADD_CALL_MEDIA_V2_CALLS_ID_MEDIA",
@@ -97936,6 +97989,9 @@
     "authSchemes": [
       "OAUTH2"
     ],
+    "composioManagedAuthSchemes": [
+      "OAUTH2"
+    ],
     "toolCount": 14,
     "triggerCount": 0,
     "version": "20260312_00",
@@ -98074,7 +98130,7 @@
     ],
     "toolCount": 298,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "ACTIVE_CAMPAIGN_ADD_BROWSE_SESSION_CART",
@@ -102307,7 +102363,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "ZENSERP_BING_SEARCH",
@@ -104518,6 +104574,110 @@
     ]
   },
   {
+    "slug": "_1password",
+    "name": "1password",
+    "logo": "https://logos.composio.dev/api/onepassword",
+    "description": "Password manager and digital vault for secure credential storage and team collaboration",
+    "category": "security & identity tools",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 11,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "_1PASSWORD_COUNT_COMPANIES",
+        "name": "Count Companies",
+        "description": "Returns the total count of companies matching the specified search criteria and filters. This endpoint accepts the same filtering parameters as the search endpoint but returns only the count. Useful for determining result set sizes before fetching actual company data."
+      },
+      {
+        "slug": "_1PASSWORD_CREATE_SEARCH_EXPORT_JOB",
+        "name": "Create Search Export Job",
+        "description": "Creates an asynchronous search export job for companies matching specified criteria. Returns a job ID that can be used to track the progress and retrieve results when complete. Use this action to export large datasets of company information matching your search filters."
+      },
+      {
+        "slug": "_1PASSWORD_FIND_SIMILAR_COMPANIES",
+        "name": "Find Similar Companies",
+        "description": "Finds companies similar to a specified company based on shared attributes and characteristics. Returns a list of similar companies with their details including name, domain, description, industry, and location. Use this action to discover companies with comparable business profiles for lead generation or competitive analysis."
+      },
+      {
+        "slug": "_1PASSWORD_GET_REGIONS",
+        "name": "Get Regions",
+        "description": "Returns all geographical regions available in CompanyEnrich. Each region includes its identifier, parent region (if applicable), name, and associated country codes. Use this action to discover available regions for filtering or geographical analysis."
+      },
+      {
+        "slug": "_1PASSWORD_LIST_BULK_ENRICHMENT_JOBS",
+        "name": "List Bulk Enrichment Jobs",
+        "description": "Lists all bulk enrichment jobs for the authenticated user. Returns a paginated list with optional filtering by job status. Supports pagination via page and pageSize parameters. No credits are deducted for this read-only operation."
+      },
+      {
+        "slug": "_1PASSWORD_LIST_GROUP_MEMBERS",
+        "name": "List group members",
+        "description": "Tool to list all members of a group in your Roam workspace. Use when you need to view who is in a specific group. Note: The group must be public in the user's Roam, or the app must be a member of the group."
+      },
+      {
+        "slug": "_1PASSWORD_LIST_MEETINGS",
+        "name": "List Roam Meetings",
+        "description": "Lists all meetings in your home Roam, filtered by date range. Supports pagination via cursor and limiting the number of results. Returns meeting details including meeting ID, room, time, and participants. Use this action to discover available meetings in your Roam workspace."
+      },
+      {
+        "slug": "_1PASSWORD_LIST_TRANSCRIPTS",
+        "name": "List Roam Transcripts",
+        "description": "Lists all transcripts in your Roam workspace, filtered by date range. Supports pagination via cursor and limiting the number of results. Returns transcript metadata (id, meetingId, start, end, participants) without full content. Use this action to discover available transcripts before retrieving detailed content."
+      },
+      {
+        "slug": "_1PASSWORD_REMOVE_GROUP_MEMBERS",
+        "name": "Remove group members",
+        "description": "Tool to remove one or more members from a group in your Roam workspace. Use when you need to remove users from a specific group. Note: The group must be public in the user's Roam, or the app must be a member of the group to remove members. Admin role members cannot be removed yet."
+      },
+      {
+        "slug": "_1PASSWORD_SEARCH_COMPANIES",
+        "name": "Search Companies",
+        "description": "Searches for companies based on a query string. Returns a list of companies with their details including name, domain, description, industry, and location. Use this action to discover companies matching specific criteria or to enrich company data."
+      },
+      {
+        "slug": "_1PASSWORD_SEARCH_STATES",
+        "name": "Search States",
+        "description": "Tool to search states by name or country codes. Returns up to 100 states per page. Use when you need to find states within a country or search states by name."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "onepassword_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "full",
+                "displayName": "Base URL",
+                "type": "string",
+                "description": "For Connect Server: your self-hosted server URL (e.g., https://connect.example.com). For Events API: https://events.1password.com, https://events.ent.1password.com, https://events.1password.ca, or https://events.1password.eu based on your account server.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_api_key",
+                "displayName": "Bearer Token",
+                "type": "string",
+                "description": "Service Account Token (ops_* prefix), Connect Server Access Token, or Events API Bearer Token. Get it from your 1Password account settings.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "_21risk",
     "name": "21risk",
     "logo": "https://logos.composio.dev/api/_21risk",
@@ -104528,7 +104688,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260309_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "_21RISK_GET_COMPLIANCE",
@@ -111629,7 +111789,7 @@
     ],
     "toolCount": 113,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "APIFY_ACT_BUILDS_POST",
@@ -121224,7 +121384,7 @@
     ],
     "toolCount": 49,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "BOOQABLE_CREATE_CUSTOMER",
@@ -125636,7 +125796,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "CAMPAYN_CREATE_CONTACT",
@@ -133900,7 +134060,7 @@
     ],
     "toolCount": 150,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "CLOUDCART_ADD_CATEGORY_PROPERTIES",
@@ -134699,7 +134859,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260309_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "CLOUDCONVERT_CREATE_EXPORT_GOOGLE_CLOUD_STORAGE_TASK",
@@ -136971,6 +137131,207 @@
     ]
   },
   {
+    "slug": "companyenrich",
+    "name": "Companyenrich",
+    "logo": "https://logos.composio.dev/api/companyenrich",
+    "description": "CompanyEnrich provides instant company data enrichment, search, and similar company discovery through API endpoints.",
+    "category": "developer tools",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 32,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "COMPANYENRICH_AUTOCOMPLETE_COMPANIES",
+        "name": "Autocomplete Companies",
+        "description": "Returns a list of companies matching the given partial domain name. This is useful for autocompleting domain names in your application. Up to 10 companies are returned per request. Cost: FREE - No credits deducted. Use when you need to autocomplete company domains in your application."
+      },
+      {
+        "slug": "COMPANYENRICH_AUTOCOMPLETE_KEYWORDS",
+        "name": "Autocomplete Keywords",
+        "description": "Lookup keywords for use in company search filters. This endpoint returns a list of keywords that match the provided query string. Use this action to discover valid keyword values before using them in company search filters. The results are sorted by relevance. Example: query=\"tech\" might return [\"Technology\", \"Tech\", \"Information Technology\", ...]"
+      },
+      {
+        "slug": "COMPANYENRICH_AUTOCOMPLETE_POSITIONS",
+        "name": "Autocomplete Positions",
+        "description": "Lookup positions/job titles for use in people search filters. This endpoint returns a list of job titles that match the provided query string. Use this action to discover valid position values before using them in people search filters. The results are sorted by relevance. Example: query=\"engineer\" might return [\"Software Engineer\", \"Data Engineer\", \"Sales Engineer\", ...]"
+      },
+      {
+        "slug": "COMPANYENRICH_AUTOCOMPLETE_TECHNOLOGIES",
+        "name": "Autocomplete Technologies",
+        "description": "Lookup technologies for use in company search filters. This endpoint returns a list of technology names that match the provided query string. Use this action to discover valid technology values before using them in company search filters. The results are sorted by relevance. Example: query=\"react\" might return [\"React\", \"React Native\", \"ReactJS\", ...]"
+      },
+      {
+        "slug": "COMPANYENRICH_COUNT_COMPANIES",
+        "name": "Count companies matching search criteria",
+        "description": "Returns the total count of companies matching the given search criteria without retrieving the actual results. Use this action to check how many companies match your filters before performing a full search. Cost: FREE - No credits deducted."
+      },
+      {
+        "slug": "COMPANYENRICH_COUNT_SIMILAR_COMPANIES",
+        "name": "Count Similar Companies",
+        "description": "Tool to count the total number of similar companies matching the given search criteria without retrieving the actual results. Use when you need to know how many similar companies exist before making a request to fetch them, or when you only need the count without the full company details. Cost: FREE - No credits deducted."
+      },
+      {
+        "slug": "COMPANYENRICH_CREATE_PEOPLE_SEARCH_EXPORT_JOB",
+        "name": "Create people search export job",
+        "description": "Creates an asynchronous search export job for up to 50,000 people. Use when you need to export large sets of people data that will be processed in the background. The job returns immediately with a job ID, and the webhook URL will be called with a notification when processing completes. Cost: 2 credits per person returned (charged on completion)."
+      },
+      {
+        "slug": "COMPANYENRICH_CREATE_SEARCH_EXPORT_JOB",
+        "name": "Create search export job",
+        "description": "Creates an asynchronous search export job for company data. Supports both standard company search and similar-company search. Returns a job ID immediately while processing happens in the background. The webhook URL (if provided) will be called with a notification when processing completes. Cost: 1 credit per company returned (charged on completion). Use this action when you need to export large datasets (up to 50,000 companies) that would take too long for a synchronous request. The job runs asynchronously and notifies you via webhook when complete."
+      },
+      {
+        "slug": "COMPANYENRICH_ENRICH_BY_DOMAIN",
+        "name": "Enrich company by domain",
+        "description": "Enriches a company using its domain name as lookup parameter. This is the preferred way to enrich a company as domain lookups are fast and reliable. Each domain maps to a unique company. Cost: 1 credit per call (5 credits if workforce expansion is requested)."
+      },
+      {
+        "slug": "COMPANYENRICH_ENRICH_BY_PROPERTIES",
+        "name": "Enrich company by properties",
+        "description": "Enriches a company using its properties. You must provide at least one of the following properties: name, linkedinUrl, linkedinId, twitterUrl, facebookUrl, instagramUrl. Best match is used to determine the company in case of ambiguity. Cost: 1 credit per call (5 credits if workforce expansion is requested)."
+      },
+      {
+        "slug": "COMPANYENRICH_ENRICH_COMPANIES",
+        "name": "Batch Enrich Companies",
+        "description": "Enriches a list of companies using their domain names. Use when you need to enrich multiple companies in a single request. Up to 50 domains can be provided. Each domain maps to a unique company. Cost: 1 credit per domain enriched (5 credits for workforce expansion)."
+      },
+      {
+        "slug": "COMPANYENRICH_FIND_SIMILAR_COMPANIES",
+        "name": "Find Similar Companies",
+        "description": "Tool to find similar companies to the given company by domain. Use when you need to find companies similar to a target company based on industry, size, or other characteristics. Returns up to 100 companies per request. Cost: 5 credits per company returned, 5 credits if no results found."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_BULK_ENRICHMENT_JOB_STATUS",
+        "name": "Get Bulk Enrichment Job Status",
+        "description": "Returns the current status of a bulk enrichment job. Once the job is completed, the response includes a results_url to download the enrichment results. Cost: FREE - No credits deducted. Use when you need to check the progress of a bulk enrichment job or get the results URL after the job completes."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_COMPANY_WORKFORCE",
+        "name": "Get Company Workforce",
+        "description": "Returns workforce insights for a single company. You must provide exactly one lookup parameter: id or domain. The response includes observed employee count, an employee range bucket, and headcounts grouped by root departments. Costs 5 credits per successful call. Use when you need to find workforce details (employee count, department breakdown) for a specific company given its domain or company ID."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_COUNTRY_BY_CODE",
+        "name": "Get Country by Code",
+        "description": "Tool to search for a country by its ISO 3166-1 alpha-2 code. Returns country information including name, coordinates, and country code. Use when you need to retrieve details about a specific country. Example: Get country details for US, GB, DE, etc."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_CURRENT_USER",
+        "name": "Get Current User",
+        "description": "Returns information about the authenticated user, including their API key, credit balance, and account capabilities. This endpoint requires authentication via an API key in the Authorization header. Cost: FREE - No credits deducted."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_JOB_DETAILS",
+        "name": "Get Job Details",
+        "description": "Returns details for a specific job by ID. Use when you need to check the status, progress, or result of an async enrichment job. Cost: FREE - No credits deducted."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_PEOPLE_SEARCH_EXPORT_JOB_STATUS",
+        "name": "Get People Search Export Job Status",
+        "description": "Returns the current status of a person search export job. Once completed, includes the results_url to download the export results. Use when: - Checking if an async person search export job has completed - Getting the download URL for completed exports - Monitoring job progress or checking for errors Cost: FREE - No credits deducted for status checks."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_REGIONS",
+        "name": "Get Regions",
+        "description": "Tool to get all available regions. Returns a list of all geographic regions supported by the API. Use when you need to retrieve region information for filtering or validation purposes."
+      },
+      {
+        "slug": "COMPANYENRICH_GET_SEARCH_EXPORT_JOB_STATUS",
+        "name": "Get search export job status",
+        "description": "Returns the current status of a search export job. Once the job is completed, the response will include a results_url that can be used to download the exported company data. This action is free - no credits are deducted. Use this action to: - Check if an export job has completed - Get the download URL for completed exports - Monitor job progress and troubleshoot failures"
+      },
+      {
+        "slug": "COMPANYENRICH_LIST_ALL_JOBS",
+        "name": "List all jobs",
+        "description": "Returns a paginated list of all jobs (bulk enrichment, etc.) for the authenticated user. Supports optional filtering by job status and type. Cost: FREE - No credits deducted. Use this action to: - View all your jobs - Check the status of jobs - Monitor job progress and completion - Filter jobs by status (pending, processing, completed, failed, etc.) - Filter jobs by type (bulk_enrichment, etc.)"
+      },
+      {
+        "slug": "COMPANYENRICH_LIST_BULK_ENRICHMENT_JOBS",
+        "name": "List bulk enrichment jobs",
+        "description": "Returns a paginated list of all bulk enrichment jobs for the authenticated user. Supports optional filtering by job status. This action is free - no credits are deducted. Use this action to: - View all your bulk enrichment jobs - Check the status of enrichment jobs - Monitor enrichment job progress and completion - Filter jobs by status (pending, processing, completing, completed, failed)"
+      },
+      {
+        "slug": "COMPANYENRICH_LIST_INDUSTRIES",
+        "name": "List Industries",
+        "description": "Obtain a list of all company industries. Returns all industry names along with their associated NAICS code prefixes. Use when you need to retrieve the complete list of industries for filtering or categorization."
+      },
+      {
+        "slug": "COMPANYENRICH_LIST_PEOPLE_SEARCH_EXPORT_JOBS",
+        "name": "List Person Search Export Jobs",
+        "description": "Returns a paginated list of all person search export jobs for the authenticated user. Supports optional filtering by job status. Use this to check the status of previously submitted export jobs, view progress, or retrieve export results. Cost: FREE - No credits deducted."
+      },
+      {
+        "slug": "COMPANYENRICH_LIST_SEARCH_EXPORT_JOBS",
+        "name": "List search export jobs",
+        "description": "Returns a paginated list of all search export jobs for the authenticated user. Supports optional filtering by job status. This action is free - no credits are deducted. Use this action to: - View all your search export jobs - Check the status of export jobs - Monitor export job progress and completion - Filter jobs by status (pending, processing, completed, failed, etc.)"
+      },
+      {
+        "slug": "COMPANYENRICH_LOOKUP_PERSON",
+        "name": "Lookup Person by Email",
+        "description": "Look up a person by email address. We resolve the company from the email domain first, then match the person by email local-part patterns. Returns the best deterministic match when found. Costs 5 credits per successful call. Use when you need to find person details (name, position, company, etc.) given an email address."
+      },
+      {
+        "slug": "COMPANYENRICH_SCROLL_PEOPLE_SEARCH",
+        "name": "Search people with cursor pagination",
+        "description": "Searches people based on given criteria using cursor-based pagination. Use when you need to find people at specific companies or with particular roles. You can request the next page of results by using the cursor parameter. Cost: 2 credits per person returned, 2 credits minimum if no results are found."
+      },
+      {
+        "slug": "COMPANYENRICH_SEARCH_CITIES",
+        "name": "Search cities by name or country",
+        "description": "Search for cities by name or country codes. Returns up to 100 cities per page. Use when you need to find cities matching a query string, optionally filtered by country codes."
+      },
+      {
+        "slug": "COMPANYENRICH_SEARCH_COMPANIES",
+        "name": "Search companies by criteria",
+        "description": "Searches companies based on given criteria. You can search by name, domain, industry, employees, revenue, founded year, and more. Up to 10,000 results can be returned from this endpoint (page * pageSize cannot exceed 10,000). For more results, use the scroll endpoint. Cost: 1 credit per company returned, 1 credit minimum if no results are found."
+      },
+      {
+        "slug": "COMPANYENRICH_SEARCH_COUNTRIES",
+        "name": "Search Countries",
+        "description": "Tool to search countries by name. Returns up to 100 countries per page. Use when you need to find country information including codes, names, and coordinates. Supports pagination and filtering by name query."
+      },
+      {
+        "slug": "COMPANYENRICH_SEARCH_PEOPLE",
+        "name": "Search People",
+        "description": "Searches people based on given criteria using page-based pagination. Up to 10,000 results can be returned from this endpoint (page * pageSize cannot exceed 10,000). For more results, use the scroll endpoint. Cost: 2 credits per person returned, 2 credits minimum if no results are found."
+      },
+      {
+        "slug": "COMPANYENRICH_SEARCH_STATES",
+        "name": "Search States",
+        "description": "Tool to search states by name or country codes. Returns up to 100 states per page. Use when you need to find states within a country or search states by name."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "companyenrich_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your CompanyEnrich API key from https://app.companyenrich.com/",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "connecteam",
     "name": "Connecteam",
     "logo": "https://logos.composio.dev/api/connecteam",
@@ -137769,6 +138130,9 @@
       "API_KEY",
       "OAUTH2"
     ],
+    "composioManagedAuthSchemes": [
+      "OAUTH2"
+    ],
     "toolCount": 19,
     "triggerCount": 0,
     "version": "00000000_00",
@@ -138536,7 +138900,7 @@
     ],
     "toolCount": 390,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "COUPA_ABANDON_AN_INVOICE",
@@ -153127,7 +153491,7 @@
     ],
     "toolCount": 51,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "DOVETAIL_CREATE_CHANNEL",
@@ -157469,7 +157833,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260217_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "EODHD_APIS_GET_EOD_YAHOO_STYLE",
@@ -159674,7 +160038,7 @@
     ],
     "toolCount": 52,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "EXCEL_ADD_CHART",
@@ -163582,7 +163946,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "FIRMAO_CREATE_INVOICE",
@@ -169189,7 +169553,7 @@
     ],
     "toolCount": 58,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "GITLAB_ARCHIVE_PROJECT",
@@ -176659,7 +177023,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "HELPDESK_LIST_AGENTS",
@@ -177009,7 +177373,7 @@
     ],
     "toolCount": 100,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "HERE_AUTOSUGGEST",
@@ -178238,7 +178602,7 @@
     ],
     "toolCount": 7,
     "triggerCount": 0,
-    "version": "20260307_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "HONEYBADGER_REPORT_CHECK_IN",
@@ -178290,9 +178654,9 @@
             "required": [
               {
                 "name": "generic_api_key",
-                "displayName": "Honeybadger Auth Token",
+                "displayName": "Personal Auth Token",
                 "type": "string",
-                "description": "Your personal authentication token from your Honeybadger profile page. Used for HTTP Basic Auth.",
+                "description": "Your personal authentication token from https://app.honeybadger.io/users/edit",
                 "required": true,
                 "default": null
               }
@@ -182267,7 +182631,7 @@
     ],
     "toolCount": 54,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "IMGIX_ADD_ASSET_FROM_ORIGIN",
@@ -188119,7 +188483,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "LAGROWTHMACHINE_ADD_RB2B_VISITOR_TO_AUDIENCE",
@@ -189444,7 +189808,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "LEMON_SQUEEZY_CREATE_CUSTOMER",
@@ -191304,6 +191668,82 @@
     ]
   },
   {
+    "slug": "lusha",
+    "name": "Lusha",
+    "logo": "https://logos.composio.dev/api/lusha",
+    "description": "B2B contact enrichment and prospecting platform providing verified email addresses, phone numbers, and company information",
+    "category": "sales & crm",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 7,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "LUSHA_CREATE_SUBSCRIPTION",
+        "name": "Create Subscription",
+        "description": "Tool to create one or more webhook subscriptions for real-time signal notifications. Use when you want to subscribe to Lusha signals (job changes, company updates, etc.) and receive real-time webhook notifications. Maximum 25 subscriptions per request. Example use case: Set up a webhook to notify your system whenever a contact gets a job title promotion or a company has a funding event."
+      },
+      {
+        "slug": "LUSHA_DELETE_SUBSCRIPTIONS",
+        "name": "Delete Subscriptions",
+        "description": "Delete one or more webhook subscriptions by their IDs. Use this action to remove webhook subscriptions from your Lusha account. The action supports batch deletion of up to 25 subscriptions per request. Returns a summary with success and failure counts for each subscription."
+      },
+      {
+        "slug": "LUSHA_GET_AUDIT_LOGS",
+        "name": "Get Audit Logs",
+        "description": "Retrieve audit logs for your account including API calls and webhook deliveries. Use when you need to review delivery status, errors, and performance metrics for webhooks and API requests in your Lusha account."
+      },
+      {
+        "slug": "LUSHA_GET_AUDIT_LOG_STATS",
+        "name": "Get Audit Log Stats",
+        "description": "Retrieve aggregated statistics for audit logs. Returns total count, successful count, failed count, and success rate percentage. Use this to monitor audit log activity and delivery success rates."
+      },
+      {
+        "slug": "LUSHA_GET_SUBSCRIPTION",
+        "name": "Get Subscription",
+        "description": "Tool to get details of a specific webhook subscription by ID. Use when you need to retrieve information about an existing webhook subscription including its status, configuration, and entity details."
+      },
+      {
+        "slug": "LUSHA_LIST_SUBSCRIPTIONS",
+        "name": "List Subscriptions",
+        "description": "List all webhook subscriptions for your account with pagination support. Use when you want to retrieve all configured webhook subscriptions to review their settings, check active status, or manage your webhook integrations. Example use case: Get a paginated list of all your webhook subscriptions to review which contacts or companies you're tracking."
+      },
+      {
+        "slug": "LUSHA_UPDATE_SUBSCRIPTION",
+        "name": "Update Subscription",
+        "description": "Update an existing webhook subscription configuration. Use this action to modify an existing webhook subscription's settings such as name, webhook URL, active status, and signal types. Optionally, you can regenerate the webhook secret for enhanced security."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "lusha_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your Lusha API key - generate at https://dashboard.lusha.com/enrich/api",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "magnetic",
     "name": "Magnetic",
     "logo": "https://logos.composio.dev/api/magnetic",
@@ -191648,7 +192088,7 @@
     ],
     "toolCount": 56,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "MAILCOACH_ADD_CAMPAIGN",
@@ -192688,7 +193128,7 @@
     ],
     "toolCount": 25,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "MAKE_CREATE_ORGANIZATIONS",
@@ -200445,7 +200885,7 @@
     ],
     "toolCount": 159,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "NEW_RELIC_ADD_NOTIFICATION_CHANNELS_TO_POLICY",
@@ -203027,7 +203467,7 @@
     ],
     "toolCount": 78,
     "triggerCount": 0,
-    "version": "20260212_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "NUTSHELL_CREATE_ACCOUNTS",
@@ -209242,7 +209682,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "PDFMONKEY_CREATE_DOCUMENT",
@@ -231946,7 +232386,7 @@
     ],
     "toolCount": 115,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "SEVDESK_BOOK_INVOICE_AMOUNT",
@@ -234624,7 +235064,7 @@
     ],
     "toolCount": 141,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "SIMLA_COM_ADD_CUSTOMER_INTERACTION_FAVORITE",
@@ -244676,7 +245116,7 @@
     ],
     "toolCount": 30,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "TELNYX_CREATE_NETWORK",
@@ -252518,7 +252958,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260225_00",
+    "version": "20260313_00",
     "tools": [
       {
         "slug": "VIRUSTOTAL_ADD_COMMENT",
@@ -255350,7 +255790,7 @@
     ],
     "toolCount": 85,
     "triggerCount": 13,
-    "version": "20260312_00",
+    "version": "20260313_01",
     "tools": [
       {
         "slug": "WORKDAY_CREATE_BUSINESS_TITLE_CHANGE",
@@ -255370,7 +255810,7 @@
       {
         "slug": "WORKDAY_CREATE_TIME_OFF_REQUEST",
         "name": "Create Time Off Request",
-        "description": "Creates a time off request for the specified worker and initiates the business process. Use Get Worker Eligible Absence Types to retrieve valid time off type IDs, and Get Current User to get the authenticated worker's ID."
+        "description": "Creates a time off request for the specified worker and initiates the business process. Use Get Worker Time Off Details to find valid time off type IDs (e.g., Vacation, Sick Leave) from the worker's existing time off entries, and Get Current User to get the authenticated worker's ID. Note: This endpoint works with time off types, not Leave of Absence types."
       },
       {
         "slug": "WORKDAY_GET_ABSENCE_BALANCE",
@@ -256769,444 +257209,6 @@
                 "displayName": "API Key",
                 "type": "string",
                 "description": "Your Zep API key. For Zep Cloud, create an API key in Project Settings under Project Keys. Keys starting with \"z_\" use Api-Key format, others use Bearer format.",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "zeplin",
-    "name": "Zeplin",
-    "logo": "https://logos.composio.dev/api/zeplin",
-    "description": "Zeplin is a design delivery platform that connects designers and developers, enabling access to design resources like projects, screens, components, and assets.",
-    "category": "images & design",
-    "authSchemes": [
-      "OAUTH2",
-      "API_KEY"
-    ],
-    "composioManagedAuthSchemes": [
-      "OAUTH2"
-    ],
-    "toolCount": 24,
-    "triggerCount": 0,
-    "version": "20260307_00",
-    "tools": [
-      {
-        "slug": "ZEPLIN_AUTH_O_AUTH_AUTHORIZE",
-        "name": "Start OAuth authorization (PKCE)",
-        "description": "Tool to start OAuth 2.0 authorization code flow for Zeplin apps. Use when initiating user authorization; call before exchanging the code."
-      },
-      {
-        "slug": "ZEPLIN_CONNECTED_COMPONENTS_PROJECT_LIST",
-        "name": "List Project Connected Components",
-        "description": "Tool to list connected components in a Zeplin project. Use when you have the project_id and need to retrieve connected components in a specific project."
-      },
-      {
-        "slug": "ZEPLIN_PROJECT_COLORS_LIST",
-        "name": "List Project Colors",
-        "description": "Tool to list colors in a Zeplin project. Use when you need to fetch defined color tokens at the project level after obtaining the project ID."
-      },
-      {
-        "slug": "ZEPLIN_PROJECT_COLOR_UPDATE",
-        "name": "Update Project Color",
-        "description": "Tool to update a color in a Zeplin project. Use when you need to modify RGBA channels or source ID of an existing color after confirming the project and color IDs."
-      },
-      {
-        "slug": "ZEPLIN_PROJECTS_GET",
-        "name": "Get Zeplin Project by ID",
-        "description": "Tool to get a Zeplin project by ID. Use when you need detailed info about a specific project after confirming its project_id."
-      },
-      {
-        "slug": "ZEPLIN_PROJECTS_MEMBERS_INVITE",
-        "name": "Invite Project Member",
-        "description": "Tool to invite a user to a Zeplin project. Use when you need to add a member by email or username to a project after obtaining the project ID."
-      },
-      {
-        "slug": "ZEPLIN_PROJECT_TEXT_STYLES_LIST",
-        "name": "List Project Text Styles",
-        "description": "Tool to list text styles in a Zeplin project. Use when you need to fetch typography tokens defined at the project level after obtaining the project ID."
-      },
-      {
-        "slug": "ZEPLIN_PROJECT_TEXT_STYLE_UPDATE",
-        "name": "Update Project Text Style",
-        "description": "Tool to update a text style in a Zeplin project. Use when you need to modify typography settings of an existing text style after confirming the project and text style IDs."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_ANNOTATION_DELETE",
-        "name": "Delete Screen Annotation",
-        "description": "Tool to delete a screen annotation in Zeplin. Use when you need to remove a specific annotation from a Zeplin screen given its IDs."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_ANNOTATION_GET",
-        "name": "Get Screen Annotation",
-        "description": "Tool to fetch a single screen annotation. Use when you know the screen_id and annotation_id and need the detailed annotation data."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_ANNOTATIONS_LIST",
-        "name": "List Screen Annotations",
-        "description": "Tool to list annotations for a Zeplin screen. Use when you have the screen_id and need its annotations."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_ANNOTATIONS_UPDATE",
-        "name": "Update Screen Annotation",
-        "description": "Tool to update a screen annotation's content, position, or type. Use after confirming screen_id and annotation_id."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_COMPONENTS_LIST",
-        "name": "List Screen Components",
-        "description": "Tool to list components in a Zeplin screen. Use when you have the screen_id and need to retrieve UI components in a specific screen."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_SECTION_GET",
-        "name": "Get Screen Section",
-        "description": "Tool to get a single screen section. Use when you need to fetch detailed information of a screen section by its ID after confirming the project and section IDs."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_SECTIONS_LIST",
-        "name": "List Screen Sections",
-        "description": "Tool to list screen sections in a Zeplin project. Use when you need a paginated list of screen sections after confirming the project ID."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_VERSION_GET",
-        "name": "Get Screen Version",
-        "description": "Tool to retrieve a specific screen version. Use after specifying both screen_id and version_id when you need detailed snapshot metadata."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_VERSIONS_CREATE",
-        "name": "Create Screen Version",
-        "description": "Tool to create a new version of a screen. Use when uploading a new design snapshot (PNG or JPEG image) as a screen version. Requires a valid project_id, screen_id, and an image file. Optionally include a commit_message."
-      },
-      {
-        "slug": "ZEPLIN_SCREEN_VERSIONS_LIST",
-        "name": "List Screen Versions",
-        "description": "Tool to list all versions of a screen. Use when you need to enumerate past screen snapshots after obtaining a screen ID."
-      },
-      {
-        "slug": "ZEPLIN_STYLEGUIDE_COLOR_CREATE",
-        "name": "Create Styleguide Color",
-        "description": "Tool to create a new styleguide color. Use after obtaining the styleguide ID to define custom color tokens."
-      },
-      {
-        "slug": "ZEPLIN_STYLEGUIDE_COLORS_LIST",
-        "name": "List Styleguide Colors",
-        "description": "Tool to list colors in a Zeplin styleguide. Use when you need to fetch defined color tokens after obtaining the styleguide ID."
-      },
-      {
-        "slug": "ZEPLIN_STYLEGUIDE_COLOR_UPDATE",
-        "name": "Update Styleguide Color",
-        "description": "Tool to update a color in a Zeplin styleguide. Use after obtaining the styleguide and color IDs."
-      },
-      {
-        "slug": "ZEPLIN_STYLEGUIDE_TEXT_STYLES_LIST",
-        "name": "List Styleguide Text Styles",
-        "description": "Tool to list text styles in a Zeplin styleguide. Use when you need to fetch defined typography tokens after obtaining the styleguide ID."
-      },
-      {
-        "slug": "ZEPLIN_STYLEGUIDE_TEXT_STYLE_UPDATE",
-        "name": "Update Styleguide Text Style",
-        "description": "Tool to update a text style in a Zeplin styleguide. Use when you need to modify typography settings of an existing text style after confirming the styleguide and text style IDs."
-      },
-      {
-        "slug": "ZEPLIN_USERS_GET_PERSONAL_PROJECTS",
-        "name": "List Personal Projects",
-        "description": "Tool to list personal projects. Use when you need to fetch all projects in the current user's personal workspace after authentication."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "OAUTH2",
-        "name": "zeplin_oauth2",
-        "fields": {
-          "auth_config_creation": {
-            "required": [
-              {
-                "name": "client_id",
-                "displayName": "Client id",
-                "type": "string",
-                "description": "Client id of the app",
-                "required": true,
-                "default": null
-              },
-              {
-                "name": "client_secret",
-                "displayName": "Client secret",
-                "type": "string",
-                "description": "Client secret of the app",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": [
-              {
-                "name": "oauth_redirect_uri",
-                "displayName": "Redirect URI",
-                "type": "string",
-                "description": "Add this Redirect URL to your app's OAuth allow list.",
-                "required": false,
-                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
-              },
-              {
-                "name": "scopes",
-                "displayName": "Scopes",
-                "type": "string",
-                "description": "Scopes to request from the user, comma separated",
-                "required": false,
-                "default": ""
-              }
-            ]
-          },
-          "connected_account_initiation": {
-            "required": [],
-            "optional": []
-          }
-        }
-      },
-      {
-        "mode": "API_KEY",
-        "name": "zeplin_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "Personal Access Token",
-                "type": "string",
-                "description": "Your Zeplin Personal Access Token. Generate it from your Zeplin profile under the Developer tab.",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "zerobounce",
-    "name": "Zerobounce",
-    "logo": "https://logos.composio.dev/api/zerobounce",
-    "description": "ZeroBounce is an email validation and deliverability platform that helps businesses improve email marketing performance by identifying and removing invalid or risky email addresses.",
-    "category": "email",
-    "authSchemes": [
-      "API_KEY"
-    ],
-    "toolCount": 20,
-    "triggerCount": 0,
-    "version": "20260312_00",
-    "tools": [
-      {
-        "slug": "ZEROBOUNCE_ACTIVITY_DATA",
-        "name": "Get Activity Data",
-        "description": "Tool to get activity data (opens, clicks, etc.) for a given email. Use after confirming the email address to gauge engagement recency."
-      },
-      {
-        "slug": "ZEROBOUNCE_AI_SCORING_SINGLE",
-        "name": "AI Scoring Single Email",
-        "description": "Tool to score a single email address using ZeroBounce AI. Use when you need real-time email lead quality feedback before outreach. Example prompt: \"Score the email mark@gmail.com.\""
-      },
-      {
-        "slug": "ZEROBOUNCE_ALLOW_BLOCK_LIST",
-        "name": "Allow or Block List",
-        "description": "Tool to manage allowlist and blocklist for email validation. Use when you need to programmatically add or modify custom filters before validating emails."
-      },
-      {
-        "slug": "ZEROBOUNCE_BATCH_VALIDATE_EMAILS",
-        "name": "Batch Validate Emails",
-        "description": "Tool to validate a batch of email addresses in real time. Use when you need to validate up to 200 emails at once with optional activity data."
-      },
-      {
-        "slug": "ZEROBOUNCE_DELETE_AI_SCORING_FILE",
-        "name": "Delete AI Scoring File",
-        "description": "Tool to remove a completed AI scoring file from ZeroBounce servers. Use when the file status is 'Complete' and you need to remove it."
-      },
-      {
-        "slug": "ZEROBOUNCE_DELETE_FILE",
-        "name": "Delete file",
-        "description": "Tool to delete a file that was submitted for bulk validation. Use when file status is 'Complete'."
-      },
-      {
-        "slug": "ZEROBOUNCE_DOMAIN_SEARCH_FILE_STATUS",
-        "name": "Domain Search File Status",
-        "description": "Tool to get the processing status of a file submitted for bulk domain search. Use after submitting the file to poll status."
-      },
-      {
-        "slug": "ZEROBOUNCE_DOMAIN_SEARCH_GET_FILE",
-        "name": "Domain Search Get File",
-        "description": "Tool to download the results file for a completed bulk domain search job. Use when you have the file_id and the job is complete."
-      },
-      {
-        "slug": "ZEROBOUNCE_DOMAIN_SEARCH_SEND_FILE",
-        "name": "Domain Search Send File",
-        "description": "Tool to upload a file for bulk domain search. Use when you have many domains in a CSV/TXT and need to lookup their details in bulk."
-      },
-      {
-        "slug": "ZEROBOUNCE_DOMAIN_SEARCH_SINGLE",
-        "name": "Domain Search Single",
-        "description": "Tool to identify common email address formats for a given domain. Use when you need to guess email patterns for a company based on its domain."
-      },
-      {
-        "slug": "ZEROBOUNCE_EMAIL_FINDER_DELETE_FILE",
-        "name": "Delete Email Finder File",
-        "description": "Tool to delete a file that was submitted for bulk email finding. Use when the file processing status is 'Complete' and you need to remove it."
-      },
-      {
-        "slug": "ZEROBOUNCE_EMAIL_FINDER_FILE_STATUS",
-        "name": "Email Finder File Status",
-        "description": "Tool to get the processing status of a file submitted for bulk email finding. Use when you need to poll the progress of a bulk email-finder file upload."
-      },
-      {
-        "slug": "ZEROBOUNCE_EMAIL_FINDER_SEND_FILE",
-        "name": "Email Finder Send File",
-        "description": "Tool to upload a file for bulk email finding. Use when you have lists of names and domains to find emails in bulk via CSV/TXT upload."
-      },
-      {
-        "slug": "ZEROBOUNCE_GET_API_USAGE",
-        "name": "Get API Usage",
-        "description": "Tool to retrieve API usage statistics for a given period. Use when you need usage metrics between two dates."
-      },
-      {
-        "slug": "ZEROBOUNCE_GET_CREDIT_BALANCE",
-        "name": "Get Credit Balance",
-        "description": "Tool to retrieve your current ZeroBounce email validation credit balance. Use when you need to monitor remaining credits to avoid service interruptions."
-      },
-      {
-        "slug": "ZEROBOUNCE_GET_EMAIL_FINDER_FILE",
-        "name": "Get Email Finder File",
-        "description": "Tool to download the results file for a completed bulk email finder job. Use when you have the file_id and the job is complete."
-      },
-      {
-        "slug": "ZEROBOUNCE_LIST_EVALUATOR",
-        "name": "List Evaluator",
-        "description": "Tool to evaluate the quality of an email list. Use when you have a list of emails and need a quick health check before full validation."
-      },
-      {
-        "slug": "ZEROBOUNCE_LIST_FILTERS",
-        "name": "List Filters",
-        "description": "Tool to retrieve all email addresses and domains in your allowlist and blocklist filters. Use when you need to view or audit current filter rules before validation."
-      },
-      {
-        "slug": "ZEROBOUNCE_SEND_FILE",
-        "name": "Send File",
-        "description": "Tool to upload a file for bulk email validation. Use when you need to validate large lists of emails via CSV or TXT file."
-      },
-      {
-        "slug": "ZEROBOUNCE_VALIDATE_EMAIL",
-        "name": "Validate Email",
-        "description": "Tool to validate a single email address in real time. Use when you need to confirm deliverability and domain details before sending emails."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "API_KEY",
-        "name": "zerobounce_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "full",
-                "displayName": "Base URL",
-                "type": "string",
-                "description": "The base URL for the ZeroBounce API.",
-                "required": true,
-                "default": "https://api.zerobounce.net/v2"
-              },
-              {
-                "name": "generic_api_key",
-                "displayName": "ZeroBounce API Key",
-                "type": "string",
-                "description": "Your API Key, found in your ZeroBounce account under API Keys & Info.",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "zixflow",
-    "name": "Zixflow",
-    "logo": "https://logos.composio.dev/api/zixflow",
-    "description": "AI-CRM and Messaging Across SMS, Email, and WhatsApp",
-    "category": "crm",
-    "authSchemes": [
-      "API_KEY"
-    ],
-    "toolCount": 7,
-    "triggerCount": 0,
-    "version": "00000000_00",
-    "tools": [
-      {
-        "slug": "ZIXFLOW_CREATE_ATTRIBUTE",
-        "name": "Create Attribute",
-        "description": "Tool to create a custom attribute for a Zixflow collection or list. Use when you need to add new fields to track specific data types (text, number, email, etc.). Attributes define the structure of your data. Common use cases: adding custom fields for contacts, creating status trackers, adding reference fields between collections."
-      },
-      {
-        "slug": "ZIXFLOW_GET_CAMPAIGN_REPORT_WHATSAPP",
-        "name": "Get WhatsApp Campaign Report",
-        "description": "Tool to retrieve WhatsApp campaign message report. Use when you need to check the delivery status and details of a WhatsApp message sent via campaign."
-      },
-      {
-        "slug": "ZIXFLOW_GET_EMAIL_REPORT",
-        "name": "Get Email Report",
-        "description": "Tool to retrieve email message delivery report from Zixflow. Use when you need to check the delivery status of a sent campaign email. The report includes delivery status (SENT, OPENED, CLICKED, BOUNCE, COMPLAINT, UNSUBSCRIBED), recipient information, and timestamps. Requires the message ID obtained when sending the campaign."
-      },
-      {
-        "slug": "ZIXFLOW_GET_SMS_REPORT",
-        "name": "Get SMS Report",
-        "description": "Tool to retrieve SMS message delivery report from Zixflow. Use when you need to check the delivery status, destination, and other details of a sent SMS campaign message."
-      },
-      {
-        "slug": "ZIXFLOW_GET_WHATSAPP_TEMPLATE_VARIABLES",
-        "name": "Get WhatsApp Template Variables",
-        "description": "Tool to retrieve template variable details for a WhatsApp template. Use when you need to understand what variables a specific WhatsApp template expects before sending a message."
-      },
-      {
-        "slug": "ZIXFLOW_LIST_ATTRIBUTES_OPTIONS",
-        "name": "List Attribute Options",
-        "description": "Tool to retrieve the list of options for select/multiselect attributes. Use when you need to get available options for a specific attribute in a collection or list."
-      },
-      {
-        "slug": "ZIXFLOW_LIST_ATTRIBUTES_STATUS",
-        "name": "List Attribute Status Options",
-        "description": "Tool to retrieve the list of options for status attributes in Zixflow. Use when you need to fetch available status configurations for a specific attribute within a collection or list."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "API_KEY",
-        "name": "zixflow_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "API Key",
-                "type": "string",
-                "description": "To get your API Key, sign in and click the workspace drop down on the top right, and go to \"Settings\" > \"Developer\" > \"API Keys\". Click \"Create an API\" to generate your token.",
                 "required": true,
                 "default": null
               }

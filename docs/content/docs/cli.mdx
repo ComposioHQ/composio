@@ -25,11 +25,18 @@ composio init
 composio whoami
 ```
 
+`composio login` opens a browser-based flow, then prompts you to choose your default organization and project. Use `composio login -y` to skip the picker and use session defaults for non-interactive runs.
+
+`composio whoami` shows account and workspace context, and does not include API keys in display or JSON output.
+
 ## Search and execute a tool
 
 ```bash
 # Connect your GitHub account
 composio connected-accounts link github
+
+# Print connect URL + JSON and exit immediately (no wait)
+composio connected-accounts link github --no-wait
 
 # Search for tools
 composio tools search "star a github repo"
@@ -62,9 +69,9 @@ Run `composio <command> --help` for detailed usage and flags.
 
 | Command | Subcommands | Description |
 | --- | --- | --- |
-| `composio login` | | Authenticate with your Composio account |
+| `composio login` | | Authenticate with your Composio account and select default org/project |
 | `composio logout` | | Remove stored authentication |
-| `composio whoami` | | Display your account information |
+| `composio whoami` | | Display your account and workspace information (without API keys) |
 | `composio init` | | Initialize a Composio project in the current directory |
 | `composio toolkits` | `list`, `search`, `info`, `version` | Discover and inspect toolkits |
 | `composio tools` | `list`, `search`, `info`, `execute` | Discover, inspect, and execute tools |
@@ -137,4 +144,3 @@ The CLI auto-detects your project language. For explicit control, use `composio 
     | `--toolkits <names>` | Only generate for specific toolkits (repeatable) |
   </Tab>
 </Tabs>
-

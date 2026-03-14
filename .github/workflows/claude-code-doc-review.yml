@@ -36,6 +36,7 @@ jobs:
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         track_progress: true # Forces tag mode with tracking comments
+        allowed_bots: "devin-ai-integration[bot]"
 
         # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
         # model: "claude-opus-4-20250514"

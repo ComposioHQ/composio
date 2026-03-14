@@ -48,15 +48,15 @@ export class ToolRouterSessionFilesMount {
    * @example
    * ```typescript
    * const session = await composio.toolRouter.use('session_123');
-   * const { items, nextCursor } = await session.files.list({ path: '/' });
+   * const { items, nextCursor } = await session.experimental.files.list({ path: '/' });
    * ```
    *
    * @example
    * ```typescript
    * // Paginated listing
-   * let result = await session.files.list({ path: '/', limit: 10 });
+   * let result = await session.experimental.files.list({ path: '/', limit: 10 });
    * while (result.nextCursor) {
-   *   result = await session.files.list({ path: '/', cursor: result.nextCursor, limit: 10 });
+   *   result = await session.experimental.files.list({ path: '/', cursor: result.nextCursor, limit: 10 });
    * }
    * ```
    */
@@ -181,20 +181,20 @@ export class ToolRouterSessionFilesMount {
    * @example
    * ```typescript
    * // From file path (local or URL)
-   * await session.files.upload('/path/to/report.pdf');
-   * await session.files.upload('https://example.com/file.pdf');
+   * await session.experimental.files.upload('/path/to/report.pdf');
+   * await session.experimental.files.upload('https://example.com/file.pdf');
    * ```
    *
    * @example
    * ```typescript
    * // From native File (e.g. from input[type=file])
-   * await session.files.upload(fileInput.files[0]);
+   * await session.experimental.files.upload(fileInput.files[0]);
    * ```
    *
    * @example
    * ```typescript
    * // From raw buffer
-   * await session.files.upload(buffer, { remotePath: 'data.json', mimetype: 'application/json' });
+   * await session.experimental.files.upload(buffer, { remotePath: 'data.json', mimetype: 'application/json' });
    * ```
    */
   async upload(
@@ -277,13 +277,13 @@ export class ToolRouterSessionFilesMount {
    * @example
    * ```typescript
    * const session = await composio.toolRouter.use('session_123');
-   * const result = await session.files.download('/output/report.pdf');
+   * const result = await session.experimental.files.download('/output/report.pdf');
    * ```
    *
    * @example
    * ```typescript
    * // Download from a custom mount
-   * await session.files.download('/exports/data.json', {
+   * await session.experimental.files.download('/exports/data.json', {
    *   mountId: 'custom-mount',
    * });
    * ```
@@ -341,13 +341,13 @@ export class ToolRouterSessionFilesMount {
    * @example
    * ```typescript
    * const session = await composio.toolRouter.use('session_123');
-   * await session.files.delete('/temp/cache.json');
+   * await session.experimental.files.delete('/temp/cache.json');
    * ```
    *
    * @example
    * ```typescript
    * // Delete from a custom mount
-   * await session.files.delete('/old-backup', {
+   * await session.experimental.files.delete('/old-backup', {
    *   mountId: 'custom-mount',
    * });
    * ```

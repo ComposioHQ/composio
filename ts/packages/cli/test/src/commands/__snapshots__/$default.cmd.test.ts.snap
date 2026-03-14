@@ -22,9 +22,11 @@ BASIC COMMANDS
 
   login
     Log in to the Composio CLI session.
-    Usage: composio login [--no-browser] [-y, --yes]
+    Usage: composio login [--no-browser] [--no-wait] [--key text] [-y, --yes]
     Options:
       --no-browser          Login without browser interaction
+      --no-wait             Print login URL and session info, then exit (no browser, no waiting)
+      --key                 Complete login using session key from --no-wait
       -y, --yes             Skip org/project picker; use session defaults
 
   logout

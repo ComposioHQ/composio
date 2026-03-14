@@ -1,5 +1,19 @@
 # @composio/cli
 
+## 0.2.4
+
+### Patch Changes
+
+- 67867ae: Add login flags for agent/auth flows: `--no-wait` (print URL/session info and exit), `--key` (complete login with session key; polls until linked unless `--no-wait` is also passed)
+
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [476d451]
+- Updated dependencies
+  - @composio/core@0.6.5
+
 ## 0.2.2
 
 ### Patch Changes

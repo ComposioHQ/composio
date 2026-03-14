@@ -12,12 +12,12 @@ from composio_client import omit
 
 from composio.client import HttpClient
 from composio.core.models.connected_accounts import ConnectionRequest
-from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 
 if t.TYPE_CHECKING:
     from composio.core.models._modifiers import Modifiers
+    from composio.core.models.tool_router import ToolRouterSessionExperimental
 
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
@@ -31,8 +31,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     Attributes:
         session_id: Unique session identifier
         mcp: MCP server configuration
-        files: File mount for list, upload, download, delete
-        experimental: Optional experimental features data from the session response
+        experimental: Experimental features (files, assistive prompt, etc.)
     """
 
     def __init__(
@@ -43,14 +42,13 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         auto_upload_download_files: bool,
         session_id: str,
         mcp: t.Any,
-        experimental: t.Optional[t.Any] = None,
+        experimental: "ToolRouterSessionExperimental",
     ) -> None:
         self._client = client
         self._provider = provider
         self._auto_upload_download_files = auto_upload_download_files
         self.session_id = session_id
         self.mcp = mcp
-        self.files = ToolRouterSessionFilesMount(client, session_id)
         self.experimental = experimental
 
     def tools(self, modifiers: t.Optional["Modifiers"] = None) -> TToolCollection:

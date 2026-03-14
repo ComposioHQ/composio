@@ -27,9 +27,17 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'login',
     description: 'Log in to the Composio CLI session.',
-    usage: 'login [--no-browser] [-y, --yes]',
+    usage: 'login [--no-browser] [--no-wait] [--key text] [-y, --yes]',
     options: [
       { name: '--no-browser', description: 'Login without browser interaction' },
+      {
+        name: '--no-wait',
+        description: 'Print login URL and session info, then exit (no browser, no waiting)',
+      },
+      {
+        name: '--key',
+        description: 'Complete login using session key from --no-wait',
+      },
       { name: '-y, --yes', description: 'Skip org/project picker; use session defaults' },
     ],
   },

@@ -18,6 +18,7 @@ from composio_client.types.tool_router import session_create_params
 from composio.client import HttpClient
 from composio.core.models.base import Resource
 from composio.core.models.tool_router_session import ToolRouterSession
+from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 
@@ -282,9 +283,11 @@ class ToolRouterSessionExperimental:
     Note: These features are experimental and may be modified or removed in future versions.
 
     Attributes:
+        files: File mount for list, upload, download, delete operations.
         assistive_prompt: The generated assistive system prompt based on the experimental config.
     """
 
+    files: "ToolRouterSessionFilesMount"
     assistive_prompt: t.Optional[str] = None
 
 
@@ -695,11 +698,14 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
         # Transform experimental response:
         # API's assistive_prompt -> SDK's assistive_prompt
-        experimental_response: t.Optional[ToolRouterSessionExperimental] = None
-        if session.experimental is not None:
-            experimental_response = ToolRouterSessionExperimental(
-                assistive_prompt=session.experimental.assistive_prompt,
-            )
+        # files mount is always present
+        files_mount = ToolRouterSessionFilesMount(self._client, session.session_id)
+        experimental_response = ToolRouterSessionExperimental(
+            files=files_mount,
+            assistive_prompt=(
+                session.experimental.assistive_prompt if session.experimental else None
+            ),
+        )
 
         # Create and return the session
         return ToolRouterSession(
@@ -746,6 +752,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         # Retrieve the session from the API
         session = self._client.tool_router.session.retrieve(session_id)
 
+        files_mount = ToolRouterSessionFilesMount(self._client, session.session_id)
+        experimental_response = ToolRouterSessionExperimental(
+            files=files_mount,
+            assistive_prompt=None,
+        )
+
         # Create and return the session
         return ToolRouterSession(
             client=self._client,
@@ -756,6 +768,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
+            experimental=experimental_response,
         )
 
 
