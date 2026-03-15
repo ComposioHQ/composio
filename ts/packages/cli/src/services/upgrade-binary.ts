@@ -428,7 +428,9 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
       const runtimesPaths = ['bun', 'node'].map(cmd => {
         try {
           const whichCmd = process.platform === 'win32' ? 'where.exe' : 'which';
-          return execFileSync(whichCmd, [cmd], { encoding: 'utf-8' }).trim() || null;
+          return (
+            execFileSync(whichCmd, [cmd], { encoding: 'utf-8' }).split(/\r?\n/)[0].trim() || null
+          );
         } catch {
           return null;
         }
