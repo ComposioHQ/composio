@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { FetchHttpClient } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { PlatformFileSystem } from 'src/platform';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
@@ -50,7 +50,7 @@ const runUpgrade = (configEntries: ReadonlyArray<[string, string]>) =>
   }).pipe(
     Effect.provide(UpgradeBinary.Default),
     Effect.provide(FetchHttpClient.layer),
-    Effect.provide(BunFileSystem.layer),
+    Effect.provide(PlatformFileSystem.layer),
     Effect.provide(TerminalUINoop),
     Effect.provide(NodeOsTest),
     Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
@@ -60,7 +60,12 @@ const runUpgrade = (configEntries: ReadonlyArray<[string, string]>) =>
 
 describe('UpgradeBinary', () => {
   it('wraps non-2xx releases fetch failures with fetch context (no tag branch)', async () => {
-    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    // Make process.execPath look like a standalone binary (not a runtime like bun/node)
+    const originalExecPath = process.execPath;
+    Object.defineProperty(process, 'execPath', {
+      value: '/tmp/.composio/composio',
+      writable: true,
+    });
 
     try {
       await withHttpServer(
@@ -84,13 +89,16 @@ describe('UpgradeBinary', () => {
         }
       );
     } finally {
-      vi.unstubAllGlobals();
-      vi.restoreAllMocks();
+      Object.defineProperty(process, 'execPath', { value: originalExecPath, writable: true });
     }
   });
 
   it('wraps tagged release JSON parse failures with parse context (tag branch)', async () => {
-    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    const originalExecPath = process.execPath;
+    Object.defineProperty(process, 'execPath', {
+      value: '/tmp/.composio/composio',
+      writable: true,
+    });
 
     try {
       await withHttpServer(
@@ -114,13 +122,16 @@ describe('UpgradeBinary', () => {
         }
       );
     } finally {
-      vi.unstubAllGlobals();
-      vi.restoreAllMocks();
+      Object.defineProperty(process, 'execPath', { value: originalExecPath, writable: true });
     }
   });
 
   it('URL-encodes slash-containing tags in tagged release request path', async () => {
-    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    const originalExecPath = process.execPath;
+    Object.defineProperty(process, 'execPath', {
+      value: '/tmp/.composio/composio',
+      writable: true,
+    });
     let receivedPath = '';
 
     try {
@@ -149,8 +160,7 @@ describe('UpgradeBinary', () => {
         }
       );
     } finally {
-      vi.unstubAllGlobals();
-      vi.restoreAllMocks();
+      Object.defineProperty(process, 'execPath', { value: originalExecPath, writable: true });
     }
   });
 });
