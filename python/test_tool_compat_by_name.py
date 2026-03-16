@@ -1,24 +1,33 @@
 # ruff: noqa: E402
 """
-Tool compatibility tester for direct AI providers.
+Tool compatibility tester for direct AI providers — by Composio tool name.
 
 Usage:
-    python test_tool_compat.py <path_to_action.py>
+    python test_tool_compat_by_name.py <TOOL_NAME>
 
-Tests a mercury Action's JSON schema against each provider's tool-calling API
-and reports which providers accept or reject it.
+Fetches the tool schema from Composio API, then tests it against each
+provider's tool-calling API directly (no Composio provider wrappers).
 """
 
 import json
 import os
 import sys
-from pathlib import Path
 
-from mercury.tools.base import Action
+from composio import Composio
 
 
-def load_action(path: str) -> Action:
-    return Action.from_file(Path(path).resolve())
+def fetch_schema(tool_name: str) -> dict:
+    """Fetch raw tool schema from Composio API."""
+    c = Composio()
+    tools = c.tools.get(user_id="default", tools=[tool_name])
+    if not tools:
+        raise RuntimeError(f"Tool {tool_name} not found")
+    tool = tools[0]
+    # Schema is nested under function.parameters (OpenAI tool format)
+    fn = tool.get("function", {})
+    schema = fn.get("parameters", {})
+    description = fn.get("description", f"Execute {tool_name}")
+    return schema, description
 
 
 def test_openai_direct(schema: dict, name: str, description: str) -> dict:
@@ -27,18 +36,14 @@ def test_openai_direct(schema: dict, name: str, description: str) -> dict:
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     tool_def = {
         "type": "function",
-        "function": {
-            "name": name,
-            "description": description,
-            "parameters": schema,
-        },
+        "function": {"name": name, "description": description, "parameters": schema},
     }
     resp = client.chat.completions.create(
         model="gpt-4.1",
         messages=[
             {
                 "role": "user",
-                "content": f"Call the {name} tool with reasonable default arguments.",
+                "content": f"Call the {name} tool with reasonable defaults.",
             }
         ],
         tools=[tool_def],
@@ -57,16 +62,10 @@ def test_anthropic_direct(schema: dict, name: str, description: str) -> dict:
         messages=[
             {
                 "role": "user",
-                "content": f"Call the {name} tool with reasonable default arguments.",
+                "content": f"Call the {name} tool with reasonable defaults.",
             }
         ],
-        tools=[
-            {
-                "name": name,
-                "description": description,
-                "input_schema": schema,
-            }
-        ],
+        tools=[{"name": name, "description": description, "input_schema": schema}],
     )
     tool_use = next(block for block in resp.content if block.type == "tool_use")
     return {"args": json.dumps(tool_use.input)}
@@ -80,15 +79,13 @@ def test_gemini_direct(schema: dict, name: str, description: str) -> dict:
     tool = types.Tool(
         function_declarations=[
             types.FunctionDeclaration(
-                name=name,
-                description=description,
-                parameters=schema,
+                name=name, description=description, parameters=schema
             )
         ]
     )
     resp = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=f"Call the {name} tool with reasonable default arguments.",
+        contents=f"Call the {name} tool with reasonable defaults.",
         config=types.GenerateContentConfig(tools=[tool]),
     )
     fc = resp.candidates[0].content.parts[0].function_call
@@ -113,15 +110,15 @@ def test_openai_agents_direct(schema: dict, name: str, description: str) -> dict
     )
     agent = Agent(
         name="test",
-        instructions=f"You MUST call the {name} tool with reasonable default arguments.",
+        instructions=f"You MUST call the {name} tool with reasonable defaults.",
         tools=[tool],
     )
     Runner.run_sync(
         starting_agent=agent,
-        input=f"Call the {name} tool with reasonable default arguments.",
+        input=f"Call the {name} tool with reasonable defaults.",
     )
     if not captured:
-        raise RuntimeError("Tool was not called by the agent")
+        raise RuntimeError("Tool was not called")
     return {"args": captured[0]}
 
 
@@ -137,18 +134,11 @@ def test_langchain_direct(schema: dict, name: str, description: str) -> dict:
         return json.dumps({"status": "ok"})
 
     tool = StructuredTool.from_function(
-        func=noop,
-        name=name,
-        description=description,
-        args_schema=args_model,
+        func=noop, name=name, description=description, args_schema=args_model
     )
     llm = ChatOpenAI(model="gpt-4.1", api_key=os.environ["OPENAI_API_KEY"])
     resp = llm.bind_tools([tool]).invoke(
-        [
-            HumanMessage(
-                content=f"Call the {name} tool with reasonable default arguments. Only use parameters with $ prefix if they exist."
-            )
-        ]
+        [HumanMessage(content=f"Call the {name} tool with reasonable defaults.")]
     )
     if not resp.tool_calls:
         raise RuntimeError("No tool call in response")
@@ -163,33 +153,26 @@ def test_crewai_direct(schema: dict, name: str, description: str) -> dict:
     from langchain_openai import ChatOpenAI
 
     args_model = create_pydantic_model(schema)
-    _name = name
-    _description = description
+    _name, _desc = name, description
 
     class DynamicTool(CrewAIBaseTool):
         name: str = _name
-        description: str = _description
+        description: str = _desc
         args_schema: type = args_model
 
         def _run(self, **kwargs) -> str:
             return json.dumps({"status": "ok"})
 
     crewai_tool = DynamicTool()
-    # CrewAI BaseTool is Pydantic-based, not LangChain-based.
-    # Wrap as LangChain StructuredTool to test LLM compatibility via bind_tools.
     lc_tool = StructuredTool.from_function(
-        func=lambda **kwargs: json.dumps({"status": "ok"}),
+        func=lambda **kw: json.dumps({"status": "ok"}),
         name=crewai_tool.name,
         description=crewai_tool.description,
         args_schema=crewai_tool.args_schema,
     )
     llm = ChatOpenAI(model="gpt-4.1", api_key=os.environ["OPENAI_API_KEY"])
     resp = llm.bind_tools([lc_tool]).invoke(
-        [
-            HumanMessage(
-                content=f"Call the {name} tool with reasonable default arguments."
-            )
-        ]
+        [HumanMessage(content=f"Call the {name} tool with reasonable defaults.")]
     )
     if not resp.tool_calls:
         raise RuntimeError("No tool call in response")
@@ -206,30 +189,33 @@ PROVIDERS = [
 ]
 
 
-def run_tests(action_path: str):
-    action = load_action(action_path)
-    schema = action.request.schema()
-    name = action.name
-    description = action.description or f"Execute {name}"
+def run_tests(tool_name: str):
+    schema, description = fetch_schema(tool_name)
+    # Sanitize name for providers (lowercase, <= 64 chars)
+    fn_name = tool_name.lower()[:64]
 
-    print(f"Tool: {action.slug} ({action_path})")
-    print(f"Schema properties: {list(schema.get('properties', {}).keys())}")
+    props = list(schema.get("properties", {}).keys())
+    print(f"Tool: {tool_name}")
+    print(
+        f"Schema properties ({len(props)}): {props[:10]}{'...' if len(props) > 10 else ''}"
+    )
     print()
 
     results = []
     for provider_name, test_fn in PROVIDERS:
         try:
-            result = test_fn(schema, name, description)
-            results.append((provider_name, "OK", result.get("args", "")))
+            result = test_fn(schema, fn_name, description)
+            detail = result.get("args") or result.get("output", "")
+            if isinstance(detail, str) and len(detail) > 120:
+                detail = detail[:117] + "..."
+            results.append((provider_name, "OK", detail))
         except Exception as e:
             error_str = str(e)
-            # Truncate long errors to first line
             first_line = error_str.split("\n")[0]
             if len(first_line) > 120:
                 first_line = first_line[:117] + "..."
             results.append((provider_name, "FAILED", first_line))
 
-    # Print table
     name_width = max(len(r[0]) for r in results)
     status_width = 6
     print(f"{'Provider':<{name_width}}  {'Status':<{status_width}}  Detail")
@@ -240,10 +226,9 @@ def run_tests(action_path: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <path_to_action.py>")
+        print(f"Usage: {sys.argv[0]} <TOOL_NAME>")
         sys.exit(1)
 
-    # Check env vars
     required = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]
     missing = [k for k in required if not os.environ.get(k)]
     if missing:

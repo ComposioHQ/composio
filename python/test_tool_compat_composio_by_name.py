@@ -1,35 +1,17 @@
 # ruff: noqa: E402
 """
-Tool compatibility tester for Composio providers.
+Tool compatibility tester for Composio providers — by tool name.
 
 Usage:
-    python test_tool_compat_composio.py <path_to_action.py>
+    python test_tool_compat_composio_by_name.py <TOOL_NAME>
 
-Tests a mercury Action via each Composio provider's tools.get() and reports
+Tests a tool via each Composio provider's tools.get() and reports
 which providers can successfully wrap and use the tool schema.
 """
 
 import json
 import os
 import sys
-from pathlib import Path
-
-from mercury.tools.base import Action
-
-
-def derive_tool_name(action_path: str) -> tuple[str, str, str]:
-    """Derive Composio tool name, action slug, and description from action path."""
-    p = Path(action_path)
-    # Find the 'actions' segment to get app name
-    parts = p.parts
-    actions_idx = parts.index("actions")
-    app_name = parts[actions_idx - 1].upper()
-
-    action = Action.from_file(p.resolve())
-    slug = action.slug
-    tool_name = f"{app_name}_{slug}"
-    description = action.description or f"Execute {slug}"
-    return tool_name, slug, description
 
 
 def test_openai_composio(tool_name: str) -> dict:
@@ -45,7 +27,7 @@ def test_openai_composio(tool_name: str) -> dict:
         messages=[
             {
                 "role": "user",
-                "content": f"Call the {tool_name} tool with reasonable default arguments.",
+                "content": f"Call the {tool_name} tool with reasonable defaults.",
             }
         ],
         tools=tools,
@@ -68,7 +50,7 @@ def test_anthropic_composio(tool_name: str) -> dict:
         messages=[
             {
                 "role": "user",
-                "content": f"Call the {tool_name} tool with reasonable default arguments.",
+                "content": f"Call the {tool_name} tool with reasonable defaults.",
             }
         ],
         tools=tools,
@@ -88,16 +70,13 @@ def test_gemini_composio(tool_name: str) -> dict:
     client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
     resp = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=f"Call the {tool_name} tool with reasonable default arguments.",
+        contents=f"Call the {tool_name} tool with reasonable defaults.",
         config=types.GenerateContentConfig(tools=tools),
     )
-    # Gemini provider uses AFC (automatic function calling) — it auto-executes tools
-    # and returns a text response. A text response means the tool was called and
-    # the schema was accepted. Check for function_call first, fall back to text.
+    # Gemini provider uses AFC — check for function_call, fall back to text
     for part in resp.candidates[0].content.parts:
         if part.function_call:
             return {"args": json.dumps(dict(part.function_call.args))}
-    # AFC executed the tool; text response means schema was accepted
     text = resp.candidates[0].content.parts[0].text or ""
     return {"output": f"(AFC) {text[:150]}"}
 
@@ -111,12 +90,12 @@ def test_openai_agents_composio(tool_name: str) -> dict:
     tools = composio.tools.get(user_id="default", tools=[tool_name])
     agent = Agent(
         name="test",
-        instructions=f"You MUST call the {tool_name} tool with reasonable default arguments.",
+        instructions=f"You MUST call the {tool_name} tool with reasonable defaults.",
         tools=tools,
     )
     result = Runner.run_sync(
         starting_agent=agent,
-        input=f"Call the {tool_name} tool with reasonable default arguments.",
+        input=f"Call the {tool_name} tool with reasonable defaults.",
     )
     return {"output": result.final_output[:200]}
 
@@ -131,11 +110,7 @@ def test_langchain_composio(tool_name: str) -> dict:
     tools = composio.tools.get(user_id="default", tools=[tool_name])
     llm = ChatOpenAI(model="gpt-4.1", api_key=os.environ["OPENAI_API_KEY"])
     resp = llm.bind_tools(tools).invoke(
-        [
-            HumanMessage(
-                content=f"Call the {tool_name} tool with reasonable default arguments."
-            )
-        ]
+        [HumanMessage(content=f"Call the {tool_name} tool with reasonable defaults.")]
     )
     if not resp.tool_calls:
         raise RuntimeError("No tool call in response")
@@ -145,25 +120,29 @@ def test_langchain_composio(tool_name: str) -> dict:
 def test_crewai_composio(tool_name: str) -> dict:
     from composio import Composio
     from composio_crewai import CrewAIProvider
-    from langchain_core.messages import HumanMessage
-    from langchain_openai import ChatOpenAI
+    from crewai import Agent, Crew, Task
 
     composio = Composio(provider=CrewAIProvider())
     tools = composio.tools.get(user_id="default", tools=[tool_name])
     if not tools:
         raise RuntimeError("No tools returned")
-    # CrewAI tools are BaseTool subclasses; use LangChain's bind_tools to test LLM compatibility
-    llm = ChatOpenAI(model="gpt-4.1", api_key=os.environ["OPENAI_API_KEY"])
-    resp = llm.bind_tools(tools).invoke(
-        [
-            HumanMessage(
-                content=f"Call the {tool_name} tool with reasonable default arguments."
-            )
-        ]
+
+    agent = Agent(
+        role="Tool Tester",
+        goal=f"Call the {tool_name} tool with reasonable default arguments.",
+        backstory="You are a QA agent that tests tools by calling them.",
+        tools=tools,
+        llm="gpt-4.1",
+        verbose=False,
     )
-    if not resp.tool_calls:
-        raise RuntimeError("No tool call in response")
-    return {"args": json.dumps(resp.tool_calls[0]["args"])}
+    task = Task(
+        description=f"Call the {tool_name} tool with reasonable default arguments. You MUST use the tool.",
+        expected_output="The result of calling the tool.",
+        agent=agent,
+    )
+    crew = Crew(agents=[agent], tasks=[task], verbose=False)
+    result = crew.kickoff()
+    return {"output": str(result)[:200]}
 
 
 PROVIDERS = [
@@ -176,11 +155,8 @@ PROVIDERS = [
 ]
 
 
-def run_tests(action_path: str):
-    tool_name, slug, description = derive_tool_name(action_path)
-
-    print(f"Tool: {tool_name} ({action_path})")
-    print(f"Composio tool name: {tool_name}")
+def run_tests(tool_name: str):
+    print(f"Tool: {tool_name}")
     print()
 
     results = []
@@ -188,6 +164,8 @@ def run_tests(action_path: str):
         try:
             result = test_fn(tool_name)
             detail = result.get("args") or result.get("output", "")
+            if isinstance(detail, str) and len(detail) > 120:
+                detail = detail[:117] + "..."
             results.append((provider_name, "OK", detail))
         except Exception as e:
             error_str = str(e)
@@ -196,7 +174,6 @@ def run_tests(action_path: str):
                 first_line = first_line[:117] + "..."
             results.append((provider_name, "FAILED", first_line))
 
-    # Print table
     name_width = max(len(r[0]) for r in results)
     status_width = 6
     print(f"{'Provider':<{name_width}}  {'Status':<{status_width}}  Detail")
@@ -207,7 +184,7 @@ def run_tests(action_path: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <path_to_action.py>")
+        print(f"Usage: {sys.argv[0]} <TOOL_NAME>")
         sys.exit(1)
 
     required = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]
