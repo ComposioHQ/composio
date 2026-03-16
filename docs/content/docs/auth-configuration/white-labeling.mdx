@@ -1,0 +1,269 @@
+---
+title: White-labeling (direct execution)
+description: Remove Composio branding from your auth flows
+keywords: [branding, own oauth, custom redirect, white label]
+llmGuardrails: "direct-execution"
+---
+
+<Callout type="info">
+If you're building an agent with sessions, see [White-labeling authentication](/docs/white-labeling-authentication) instead.
+</Callout>
+
+There are four places where Composio branding shows up during authentication:
+
+| Where | What users see | How to fix |
+|-------|---------------|------------|
+| [**Connect Link page**](#customizing-the-connect-link) | Composio logo and name on the hosted auth page | Change logo + app title in dashboard |
+| [**OAuth consent screen**](#using-your-own-oauth-apps) | "Composio wants to access your account" on Google, GitHub, etc. | Use your own OAuth app |
+| [**Outgoing redirect**](#sending-users-directly-to-the-oauth-provider) | `backend.composio.dev` in browser before reaching OAuth provider | Use `long_redirect_url` option |
+| [**Return redirect**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes when OAuth provider redirects back | Proxy the redirect through your domain |
+
+## Customizing the Connect Link
+
+The Connect Link is the hosted page your users see when connecting their accounts. By default it shows Composio branding.
+
+<Video src="/videos/connect-link-branding.mp4" autoPlay />
+
+To replace it with your own branding:
+
+1. Go to **Project Settings** → [**Auth Screen**](https://platform.composio.dev?next_page=/settings/auth-screen)
+2. Upload your **Logo** and set your **App Title**
+
+This applies to all Connect Link flows across all toolkits. Each project has one logo and app title, so if you need different branding per product, use separate projects.
+
+<Callout>
+Customizing the Connect Link only changes the Composio-hosted page. For OAuth toolkits like Gmail, Google Sheets, GitHub, and Slack, users still see a consent screen saying "Composio wants to access your account." To change that, and to remove the "Secured by Composio" badge, set up your own OAuth app as described [below](#using-your-own-oauth-apps).
+</Callout>
+
+<Callout type="warn" title="Troubleshooting">
+- **"Secured by Composio" badge won't go away:** This badge is removed when you use your own OAuth app. See [Using your own OAuth apps](#using-your-own-oauth-apps).
+- **Logo doesn't appear after uploading:** Clear browser cache or try incognito.
+- **Upload fails with "failed to fetch":** Retry or use a smaller image.
+</Callout>
+
+## Using your own OAuth apps
+
+OAuth toolkits like Google and GitHub show a consent screen that says which app is requesting access. By default this reads "Composio wants to connect to your account." To show your app name instead, register your own OAuth app and tell Composio to use it. This is done by creating a [custom auth config](/docs/auth-configuration/custom-auth-configs) with your own credentials. See [when to use your own OAuth apps](#when-to-use-your-own-oauth-apps).
+
+<Callout type="info" title="You don't need this for every toolkit">
+Only white-label toolkits where users see a consent screen (Google, GitHub, Slack, etc.). Toolkits that use API keys don't show consent screens, so there's nothing to white-label. You can mix and match freely.
+</Callout>
+
+<Steps>
+<Step>
+<StepTitle>Create an OAuth app in the toolkit's developer portal</StepTitle>
+
+Register a new OAuth app with the toolkit. Set the callback URL to:
+
+```
+https://backend.composio.dev/api/v3/toolkits/auth/callback
+```
+
+You'll get a **Client ID** and **Client Secret**.
+
+Step-by-step guides: [Google](https://composio.dev/auth/googleapps) | [Slack](https://composio.dev/auth/slack) | [HubSpot](https://composio.dev/auth/hubspot) | [All toolkits](https://composio.dev/auth)
+</Step>
+
+<Step>
+<StepTitle>Create an auth config in Composio</StepTitle>
+
+In the [Composio dashboard](https://platform.composio.dev):
+
+1. Go to **Authentication management** → **Create Auth Config**
+2. Select the toolkit (e.g., GitHub)
+3. Choose **OAuth2** scheme
+4. Toggle on **Use your own developer credentials**
+5. Enter your **Client ID** and **Client Secret**
+6. Click **Create**
+
+Copy the auth config ID (e.g., `ac_1234abcd`).
+
+</Step>
+
+<Step>
+<StepTitle>Pass the auth config ID when initiating a connection</StepTitle>
+
+Pass your custom auth config ID when initiating a connection:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+
+# White-labeled: users see your brand on the consent screen
+github_conn = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_github_config",
+)
+print(f"Redirect to: {github_conn.redirect_url}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// White-labeled: users see your brand on the consent screen
+const githubConn = await composio.connectedAccounts.initiate(
+  "user_123",
+  "ac_your_github_config",
+);
+console.log("Redirect to:", githubConn.redirectUrl);
+```
+</Tab>
+</Tabs>
+
+For toolkits you haven't white-labeled, use the auth config ID from **Authentication management** in your dashboard.
+</Step>
+</Steps>
+
+### When to use your own OAuth apps
+
+- **Production apps** where end users see consent screens. They should see your brand, not Composio's.
+- **Enterprise customers** who require your branding end-to-end.
+- **Toolkits where you need custom scopes** beyond what Composio's default app provides.
+
+For development and testing, Composio's managed auth works fine. No OAuth app setup required.
+
+### Switching from Composio-managed to your own OAuth app
+
+Existing connected accounts are permanently tied to the auth config they were created with. Switching to a custom auth config does not affect them.
+
+- Existing connections keep working. Tokens continue refreshing using the original auth config's credentials.
+- New connections use your custom auth config. Users who connect after the switch will see your app name on the consent screen.
+- To fully migrate a user, delete their old connected account and have them re-authenticate through your OAuth app.
+
+## Sending users directly to the OAuth provider
+
+By default, when you initiate a connection, Composio returns a shortened redirect URL (`backend.composio.dev/api/v3/s/...`). The user's browser hits this URL first, then gets redirected to the OAuth provider. This means `backend.composio.dev` briefly appears in the browser.
+
+To skip this and send users directly to the OAuth provider, pass `long_redirect_url: true` when initiating the connection:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+
+github_conn = composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_github_config",
+    config={
+        "auth_scheme": "OAUTH2",
+        "val": {"status": "INITIALIZING", "long_redirect_url": True},
+    },
+)
+print(f"Redirect to: {github_conn.redirect_url}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const githubConn = await composio.connectedAccounts.initiate(
+  "user_123",
+  "ac_your_github_config",
+  {
+    config: {
+      authScheme: "OAUTH2",
+      // val fields use snake_case — they're sent to the API as-is
+      val: { status: "INITIALIZING", long_redirect_url: true },
+    },
+  },
+);
+console.log("Redirect to:", githubConn.redirectUrl);
+```
+</Tab>
+</Tabs>
+
+The redirect URL returned will point directly to the OAuth provider (e.g., `accounts.google.com/o/oauth2/auth?...`) instead of going through Composio first.
+
+## Routing the callback through your domain
+
+After the user authorizes, the OAuth provider redirects back through `backend.composio.dev` so Composio can capture the auth token. Some toolkits also display this URL on the consent screen.
+
+If you need to hide Composio's domain from this return redirect, you can proxy it through your own domain.
+
+<Steps>
+<Step>
+<StepTitle>Set the redirect URI to your domain</StepTitle>
+
+In your OAuth app's settings, set the authorized redirect URI to your own endpoint:
+
+```
+https://yourdomain.com/api/composio-redirect
+```
+</Step>
+
+<Step>
+<StepTitle>Create a proxy endpoint</StepTitle>
+
+This endpoint receives the OAuth callback and immediately 302-redirects it to Composio:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+
+@app.get("/api/composio-redirect")
+def composio_redirect(request: Request):
+    composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
+    return RedirectResponse(url=f"{composio_url}?{request.url.query}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// pages/api/composio-redirect.ts (Next.js)
+import type { NextApiRequest, NextApiResponse } from "next";
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const composioUrl = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
+  const params = new URLSearchParams(req.query as Record<string, string>);
+  res.redirect(302, `${composioUrl}?${params.toString()}`);
+}
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+Your endpoint must return a **302 redirect**. Do not follow the redirect server-side or make a fetch call to Composio. The user's browser needs to be redirected so the OAuth flow completes correctly.
+</Callout>
+</Step>
+
+<Step>
+<StepTitle>Update your auth config</StepTitle>
+
+In the Composio dashboard, update your auth config to use your custom redirect URI.
+
+<Figure src="/images/custom-redirect-uri.png" alt="Auth Config Settings" caption="Setting the custom redirect URI in your auth config" size="sm" />
+</Step>
+</Steps>
+
+Here's how the redirect flow works. Your proxy just forwards the browser redirect to Composio. It never touches the authorization code or token.
+
+```mermaid
+flowchart TD
+    A[Your App] -->|User connects| B["OAuth toolkit (e.g. Google, GitHub)"]
+    B -->|Redirects user| C[yourdomain.com]
+    C -->|Forwards redirect| D[backend.composio.dev]
+    D -.->|Redirects back| A
+```
+
+<Callout type="info">
+For FAQs and setup guides for individual toolkits, browse the [toolkits page](/toolkits).
+</Callout>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
+  <Card icon={<Wrench />} title="Custom auth configs" href="/docs/auth-configuration/custom-auth-configs" description="Customize auth configs with your own OAuth apps" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+</Cards>

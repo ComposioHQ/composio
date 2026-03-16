@@ -1,0 +1,81 @@
+---
+title: Using custom auth configuration
+description: Set up auth configs for toolkits without Composio managed authentication
+keywords: [custom credentials, no managed auth]
+---
+
+You create a custom auth config when you need to provide your own credentials for a toolkit. Common reasons:
+
+- **Toolkit has no managed auth**: PostHog, Tavily, Perplexity, etc. require your own credentials
+- **White-labeling**: Show your app name on OAuth consent screens instead of "Composio". See [White-labeling authentication](/docs/white-labeling-authentication)
+- **Rate limits**: Composio's default OAuth app shares quota across all users. Your own app gets a dedicated quota
+- **Faster polling triggers**: Composio managed auth enforces a 15-minute minimum polling interval. Your own OAuth app can use shorter polling intervals where supported
+- **Custom scopes**: You need permissions beyond what Composio's default app has approved
+- **Custom instance**: Connecting to a self-hosted or regional variant (e.g., custom Salesforce subdomain)
+
+<Steps>
+<Step>
+<StepTitle>Check if a toolkit needs custom credentials</StepTitle>
+
+In the [Composio platform](https://platform.composio.dev), go to "All Toolkits" and select the toolkit. If it shows no Composio managed auth schemes, you'll need to create an auth config. You can also browse the full list on the [managed auth page](/toolkits/managed-auth).
+</Step>
+
+<Step>
+<StepTitle>Create an auth config</StepTitle>
+
+1. Go to **Authentication management** in the [dashboard](https://platform.composio.dev)
+2. Click **Create Auth Config**
+3. Select the toolkit
+4. Choose the auth scheme (OAuth2, API Key, etc.)
+5. Enter your credentials (client ID, client secret, API key, etc.)
+6. Click **Create**
+
+Copy the auth config ID (e.g., `ac_1234abcd`).
+
+<Callout type="info">
+Step-by-step guides for popular toolkits: [Google](https://composio.dev/auth/googleapps) | [GitHub](https://composio.dev/auth/github) | [Slack](https://composio.dev/auth/slack) | [HubSpot](https://composio.dev/auth/hubspot) | [All toolkits](https://composio.dev/auth)
+</Callout>
+</Step>
+
+<Step>
+<StepTitle>Use in your session</StepTitle>
+
+Pass your auth config ID when creating a session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    auth_configs={
+        "posthog": "ac_your_posthog_config"
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  authConfigs: {
+    posthog: "ac_your_posthog_config",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+Your session will now use this auth config when users connect to this toolkit.
+</Step>
+</Steps>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Key />} title="When to use your own developer credentials" href="/docs/custom-app-vs-managed-app" description="Decide when to use Composio managed auth and when to bring your own" />
+  <Card icon={<Palette />} title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Use your own OAuth apps so users see your branding on consent screens" />
+  <Card icon={<Key />} title="Authentication overview" href="/docs/authentication" description="Connect Links, OAuth, API keys, and how Composio manages auth" />
+  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Pass auth configs, connected accounts, and toolkit restrictions to sessions" />
+</Cards>

@@ -1,10 +1,10 @@
-// Inspired from https://github.com/Effect-TS/effect/blob/a2d57c9ac596445009ca12859b78e00e5d89b936/packages/cli/test/services/MockConsole.ts.
+// DO NOT MODIFY THIS FILE.
+// Adapted from https://github.com/Effect-TS/effect/blob/4f2107548fa64c21a8643b7b0efcd556cd16d4b9/packages/cli/test/services/MockConsole.ts
 
 import * as Array from 'effect/Array';
 import * as Console from 'effect/Console';
 import * as Context from 'effect/Context';
 import * as Effect from 'effect/Effect';
-import * as Layer from 'effect/Layer';
 import * as Ref from 'effect/Ref';
 
 export interface MockConsole extends Console.Console {
@@ -77,16 +77,9 @@ export const make = Effect.gen(function* () {
   });
 });
 
-export const effect = Effect.gen(function* () {
-  yield* Effect.addFinalizer(() => Console.clear);
-  return yield* make;
-});
-
-export const layer = Layer.scoped(MockConsole, effect);
-
 export const getLines = (
   params?: Partial<{
     readonly stripAnsi?: boolean;
   }>
 ): Effect.Effect<ReadonlyArray<string>> =>
-  Effect.consoleWith(_console => (_console as MockConsole).getLines(params));
+  Effect.consoleWith(console => (console as MockConsole).getLines(params));

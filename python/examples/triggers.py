@@ -53,6 +53,30 @@ print(enabled_instance)
 deleted_instance = composio.triggers.delete(trigger_id="123")
 print(deleted_instance)
 
+
+# Verify a webhook (example in Flask)
+# @app.route('/webhook', methods=['POST'])
+# def webhook():
+#     try:
+#         result = composio.triggers.verify_webhook(
+#             id=request.headers.get('webhook-id', ''),
+#             payload=request.get_data(as_text=True),
+#             signature=request.headers.get('webhook-signature', ''),
+#             timestamp=request.headers.get('webhook-timestamp', ''),
+#             secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+#         )
+#
+#         # Result contains:
+#         # - version: WebhookVersion (V1, V2, or V3)
+#         # - payload: Normalized TriggerEvent
+#         # - raw_payload: Original parsed payload
+#         print(f"Webhook version: {result['version']}")
+#         print(f"Trigger: {result['payload']['trigger_slug']}")
+#         return 'OK', 200
+#     except WebhookSignatureVerificationError:
+#         return 'Unauthorized', 401
+
+
 # Subscribe to a trigger
 subscription = composio.triggers.subscribe()
 

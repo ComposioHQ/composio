@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Close Stale Issues
-        uses: actions/stale@v10.0.0
+        uses: actions/stale@v10
         with:
           # General settings
           repo-token: ${{ secrets.GITHUB_TOKEN }}

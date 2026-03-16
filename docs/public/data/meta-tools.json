@@ -1,0 +1,1268 @@
+[
+  {
+    "slug": "COMPOSIO_GET_TOOL_SCHEMAS",
+    "name": "get_tool_schemas",
+    "displayName": "Get Tool Schemas",
+    "description": "Retrieve input schemas for tools by slug. Returns complete parameter definitions required to execute each tool. Make sure to call this tool whenever the response of COMPOSIO_SEARCH_TOOLS does not provide a complete schema for a tool - you must never invent or guess any input parameters.",
+    "tags": [
+      "readOnlyHint"
+    ],
+    "toolkit": {
+      "slug": "COMPOSIO",
+      "name": "composio",
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
+    },
+    "inputParameters": {
+      "properties": {
+        "tool_slugs": {
+          "description": "List of tool slugs to retrieve schemas for. Each slug MUST be a valid tool slug previously returned by COMPOSIO_SEARCH_TOOLS.",
+          "examples": [
+            [
+              "GMAIL_SEND_EMAIL"
+            ],
+            [
+              "GMAIL_SEND_EMAIL",
+              "SLACK_SEND_MESSAGE"
+            ]
+          ],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": "Tool Slugs"
+        },
+        "session_id": {
+          "description": "ALWAYS pass the session_id that was provided in the SEARCH_TOOLS response.",
+          "title": "Session ID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool_slugs"
+      ],
+      "title": "GetToolSchemasRequest",
+      "type": "object"
+    },
+    "responseSchema": {
+      "properties": {
+        "data": {
+          "additionalProperties": false,
+          "description": "Data from the action execution",
+          "properties": {
+            "success": {
+              "description": "Whether all requested tool schemas were found",
+              "type": "boolean"
+            },
+            "tool_schemas": {
+              "description": "Tool definitions keyed by tool_slug for O(1) lookup. Same format as tool_schemas in search response.",
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "toolkit": {
+                    "type": "string",
+                    "description": "The slug of the toolkit that provides this tool"
+                  },
+                  "tool_slug": {
+                    "type": "string",
+                    "description": "The slug of the tool"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the tool"
+                  },
+                  "input_schema": {
+                    "type": "object",
+                    "description": "Input schema for the tool"
+                  }
+                },
+                "required": [
+                  "toolkit",
+                  "tool_slug"
+                ]
+              }
+            },
+            "not_found": {
+              "description": "Tool slugs that were not found",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "session": {
+              "additionalProperties": false,
+              "description": "Session info echoed back to reinforce reuse: { id: string, instructions: string }",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "instructions": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "instructions"
+              ],
+              "title": "Session",
+              "type": "object"
+            }
+          },
+          "required": [
+            "success",
+            "tool_schemas"
+          ],
+          "title": "Data",
+          "type": "object"
+        },
+        "error": {
+          "default": null,
+          "description": "Error if any occurred during the execution of the action",
+          "nullable": true,
+          "title": "Error",
+          "type": "string"
+        },
+        "successful": {
+          "description": "Whether or not the action execution was successful or not",
+          "title": "Successful",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ],
+      "title": "GetToolSchemasResponseWrapper",
+      "type": "object"
+    }
+  },
+  {
+    "slug": "COMPOSIO_MANAGE_CONNECTIONS",
+    "name": "manage_connections",
+    "displayName": "Manage Connections",
+    "description": "\nCreate or manage connections to user's apps. Returns a branded authentication link that works for OAuth, API keys, and all other auth types.\n\nCall policy:\n- First call COMPOSIO_SEARCH_TOOLS for the user's query.\n- If COMPOSIO_SEARCH_TOOLS indicates there is no active connection for a toolkit, call COMPOSIO_MANAGE_CONNECTIONS with the exact toolkit name(s) returned.\n- Do not call COMPOSIO_MANAGE_CONNECTIONS if COMPOSIO_SEARCH_TOOLS returns no main tools and no related tools.\n- Toolkit names in toolkits must exactly match toolkit identifiers returned by COMPOSIO_SEARCH_TOOLS; never invent names.\n- NEVER execute any toolkit tool without an ACTIVE connection.\n\nTool Behavior:\n- If a connection is Active, the tool returns the connection details. Always use this to verify connection status and fetch metadata.\n- If a connection is not Active, returns a authentication link (redirect_url) to create new connection.\n- If reinitiate_all is true, the tool forces reconnections for all toolkits, even if they already have active connections.\n\nWorkflow after initiating connection:\n- Always show the returned redirect_url as a FORMATTED MARKDOWN LINK to the user, and ask them to click on the link to finish authentication.\n- Begin executing tools only after the connection for that toolkit is confirmed Active.\n    ",
+    "tags": [
+      "openWorldHint"
+    ],
+    "toolkit": {
+      "slug": "COMPOSIO",
+      "name": "composio",
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
+    },
+    "inputParameters": {
+      "properties": {
+        "toolkits": {
+          "description": "List of toolkits to check or connect. Should be a valid toolkit returned by SEARCH_TOOLS (never invent one). If a toolkit is not connected, will initiate connection. Example: ['gmail', 'exa', 'github', 'outlook', 'reddit', 'googlesheets', 'one_drive']",
+          "items": {
+            "properties": {},
+            "type": "string"
+          },
+          "title": "Toolkits",
+          "type": "array"
+        },
+        "reinitiate_all": {
+          "default": false,
+          "description": "Force reconnection for ALL toolkits in the toolkits list, even if they already have Active connections.\n              WHEN TO USE:\n              - You suspect existing connections are stale or broken.\n              - You want to refresh all connections with new credentials or settings.\n              - You're troubleshooting connection issues across multiple toolkits.\n              BEHAVIOR:\n              - Overrides any existing active connections for all specified toolkits and initiates new link-based authentication flows.\n              DEFAULT: false (preserve existing active connections)",
+          "title": "Reinitiate All",
+          "type": "boolean"
+        },
+        "session_id": {
+          "description": "ALWAYS pass the session_id that was provided in the SEARCH_TOOLS response.",
+          "title": "Session ID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "toolkits"
+      ],
+      "title": "ManageConnectionsRequest",
+      "type": "object"
+    },
+    "responseSchema": {
+      "properties": {
+        "data": {
+          "additionalProperties": false,
+          "description": "Data from the action execution",
+          "properties": {
+            "message": {
+              "description": "Overall status message",
+              "title": "Message",
+              "type": "string"
+            },
+            "results": {
+              "additionalProperties": {
+                "description": "Result for a single toolkit connection attempt",
+                "properties": {
+                  "has_active_connection": {
+                    "description": "Whether an active connection exists",
+                    "title": "Has Active Connection",
+                    "type": "boolean"
+                  },
+                  "auth_config_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Auth config ID when a new auth config is created or used",
+                    "title": "Auth Config Id"
+                  },
+                  "connected_account_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Connected account ID if available",
+                    "title": "Connected Account Id"
+                  },
+                  "created_at": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Creation time (ISO 8601) for the connection if available",
+                    "title": "Created At"
+                  },
+                  "current_user_info": {
+                    "additionalProperties": true,
+                    "default": null,
+                    "description": "Information about the currently connected user (email, name, etc.)",
+                    "nullable": true,
+                    "title": "Current User Info",
+                    "type": "object"
+                  },
+                  "error_message": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Error message if status is 'failed'",
+                    "title": "Error Message"
+                  },
+                  "instruction": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Instructions for user if status is 'initiated'",
+                    "title": "Instruction"
+                  },
+                  "redirect_url": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Authentication link URL if status is 'initiated'. Always show this as a formatted markdown link to the user.",
+                    "title": "Redirect Url"
+                  },
+                  "status": {
+                    "description": "Status of the connection attempt",
+                    "enum": [
+                      "active",
+                      "initiated",
+                      "failed"
+                    ],
+                    "title": "Status",
+                    "type": "string"
+                  },
+                  "toolkit": {
+                    "description": "Name of the toolkit",
+                    "title": "Toolkit",
+                    "type": "string"
+                  },
+                  "was_reinitiated": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Whether this connection was reinitiated (vs newly created)",
+                    "title": "Was Reinitiated"
+                  }
+                },
+                "required": [
+                  "toolkit",
+                  "status"
+                ],
+                "title": "ToolkitConnectionResult",
+                "type": "object"
+              },
+              "description": "Connection results for each toolkit",
+              "title": "Results",
+              "type": "object"
+            },
+            "summary": {
+              "additionalProperties": false,
+              "description": "Summary of results by status type",
+              "properties": {
+                "total_toolkits": {
+                  "type": "integer"
+                },
+                "active_connections": {
+                  "type": "integer"
+                },
+                "initiated_connections": {
+                  "type": "integer"
+                },
+                "failed_connections": {
+                  "type": "integer"
+                }
+              },
+              "required": [],
+              "title": "Summary",
+              "type": "object"
+            },
+            "session": {
+              "additionalProperties": false,
+              "description": "Session info echoed back to reinforce reuse: { id: string, instructions: string }",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "instructions": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "instructions"
+              ],
+              "title": "Session",
+              "type": "object"
+            }
+          },
+          "required": [
+            "message",
+            "results",
+            "summary"
+          ],
+          "title": "Data",
+          "type": "object"
+        },
+        "error": {
+          "default": null,
+          "description": "Error if any occurred during the execution of the action",
+          "nullable": true,
+          "title": "Error",
+          "type": "string"
+        },
+        "successful": {
+          "description": "Whether or not the action execution was successful or not",
+          "title": "Successful",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ],
+      "title": "ManageConnectionResponseWrapper",
+      "type": "object"
+    }
+  },
+  {
+    "slug": "COMPOSIO_MULTI_EXECUTE_TOOL",
+    "name": "multi_execute_tool",
+    "displayName": "Multi Execute Tool",
+    "description": "\n  Fast and parallel tool executor for tools and recipes discovered through COMPOSIO_SEARCH_TOOLS. Use this tool to execute up to 50 tools in parallel across apps. Response contains structured outputs ready for immediate analysis - avoid reprocessing them via remote bash/workbench tools.\n\nPrerequisites:\n- Always use valid tool slugs and their arguments discovered through COMPOSIO_SEARCH_TOOLS. NEVER invent tool slugs or argument fields. ALWAYS pass STRICTLY schema-compliant arguments with each tool execution.\n- Ensure an ACTIVE connection exists for the toolkits that are going to be executed. If none exists, MUST initiate one via COMPOSIO_MANAGE_CONNECTIONS before execution.\n- Only batch tools that are logically independent - no required ordering or dependencies between tools or their outputs. DO NOT pass dummy or placeholder values; always resolve required inputs using appropriate tools first.\n\nUsage guidelines:\n- Use this whenever a tool is discovered and has to be called, either as part of a multi-step workflow or as a standalone tool.\n- If COMPOSIO_SEARCH_TOOLS returns a tool that can perform the task, prefer calling it via this executor. Do not write custom API calls or ad-hoc scripts for tasks that can be completed by available Composio tools.\n- Prefer parallel execution: group independent tools into a single multi-execute call where possible.\n- Predictively set sync_response_to_workbench=true if the response may be large or needed for later scripting. It still shows response inline; if the actual response data turns out small and easy to handle, keep everything inline and SKIP workbench usage.\n- Responses contain structured outputs for each tool. RULE: Small data - process yourself inline; large data - process in the workbench.\n- ALWAYS include inline references/links to sources in MARKDOWN format directly next to the relevant text. Eg provide slack thread links alongside with summary, render document links instead of raw IDs.\n\nRestrictions: Some tools or toolkits may be disabled in this environment. If the response indicates a restriction, inform the user and STOP execution immediately. Do NOT attempt workarounds or speculative actions.\n\n\n",
+    "tags": [
+      "openWorldHint",
+      "destructiveHint",
+      "important"
+    ],
+    "toolkit": {
+      "slug": "COMPOSIO",
+      "name": "composio",
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
+    },
+    "inputParameters": {
+      "properties": {
+        "tools": {
+          "description": "List of tools to execute in parallel.",
+          "items": {
+            "properties": {
+              "tool_slug": {
+                "description": "The slug of the tool to execute - must be a valid slug from SEARCH_TOOLS response.",
+                "examples": [
+                  "GMAIL_SEND_EMAIL",
+                  "SLACK_SEND_MESSAGE",
+                  "GITHUB_CREATE_ISSUE"
+                ],
+                "minLength": 1,
+                "title": "Tool Slug",
+                "type": "string"
+              },
+              "arguments": {
+                "additionalProperties": true,
+                "description": "The arguments to pass to the tool. The argument schema is defined in the SEARCH_TOOLS response. Use exact field names and types; do not diverge from returned schemas.",
+                "examples": [
+                  {
+                    "body": "This is a test",
+                    "subject": "Hello",
+                    "to": "test@gmail.com"
+                  },
+                  {
+                    "channel": "#general",
+                    "text": "Hello from Composio!"
+                  },
+                  {
+                    "body": "Description of the issue",
+                    "labels": [
+                      "bug"
+                    ],
+                    "title": "Bug Report"
+                  }
+                ],
+                "title": "Arguments",
+                "type": "object"
+              }
+            },
+            "required": [
+              "tool_slug",
+              "arguments"
+            ],
+            "title": "MultiExecuteToolItem",
+            "type": "object"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Tools",
+          "type": "array"
+        },
+        "thought": {
+          "description": "One-sentence, concise, high-level rationale (no step-by-step).",
+          "title": "Thought",
+          "type": "string"
+        },
+        "sync_response_to_workbench": {
+          "description": "Syncs the response to the remote workbench (for later scripting/processing) while still viewable inline. Predictively set true if the output may be large or need scripting; if it turns out small/manageable, skip workbench and use inline only. Default: false",
+          "title": "Sync Response To Workbench",
+          "type": "boolean"
+        },
+        "session_id": {
+          "description": "ALWAYS pass the session_id that was provided in the SEARCH_TOOLS response.",
+          "title": "Session ID",
+          "type": "string"
+        },
+        "current_step": {
+          "description": "Short enum for current step of the workflow execution. Eg FETCHING_EMAILS, GENERATING_REPLIES. Always include to keep execution aligned with the workflow.",
+          "title": "Current Step",
+          "type": "string"
+        },
+        "current_step_metric": {
+          "description": "Progress metrics for the current step - use to track how far execution has advanced. Format as a string \"done/total units\" - example \"10/100 emails\", \"0/n messages\", \"3/10 pages\".",
+          "title": "Current Step Metric",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tools",
+        "sync_response_to_workbench"
+      ],
+      "title": "MultiExecuteToolRequest",
+      "type": "object"
+    },
+    "responseSchema": {
+      "properties": {
+        "data": {
+          "additionalProperties": false,
+          "description": "Data from the action execution",
+          "properties": {
+            "error_count": {
+              "description": "Number of failed tool executions",
+              "title": "Error Count",
+              "type": "integer"
+            },
+            "results": {
+              "description": "List of responses from executing the tools. Order matches the input order.",
+              "examples": [
+                [
+                  {
+                    "error": null,
+                    "index": 0,
+                    "response": {
+                      "data": {
+                        "response": {
+                          "data": {
+                            "id": "123",
+                            "title": "Issue created",
+                            "url": "https://github.com/org/repo/issues/123"
+                          }
+                        }
+                      },
+                      "error": null,
+                      "log_id": "log_XYZ789",
+                      "successful": true
+                    },
+                    "tool_slug": "GITHUB_CREATE_ISSUE"
+                  },
+                  {
+                    "error": "No active connected account found for toolkit: gmail",
+                    "index": 1,
+                    "response": null,
+                    "tool_slug": "GMAIL_SEND_EMAIL"
+                  }
+                ]
+              ],
+              "items": {
+                "properties": {
+                  "error": {
+                    "default": null,
+                    "description": "Error message if the tool execution failed",
+                    "nullable": true,
+                    "title": "Error",
+                    "type": "string"
+                  },
+                  "index": {
+                    "description": "Original index of the tool in the request",
+                    "title": "Index",
+                    "type": "integer"
+                  },
+                  "response": {
+                    "additionalProperties": true,
+                    "default": null,
+                    "description": "The response from executing the tool if successful",
+                    "nullable": true,
+                    "title": "Response",
+                    "type": "object"
+                  },
+                  "tool_slug": {
+                    "description": "The slug of the tool that was executed",
+                    "title": "Tool Slug",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "tool_slug",
+                  "index"
+                ],
+                "title": "MultiExecuteToolItemResponse",
+                "type": "object"
+              },
+              "title": "Results",
+              "type": "array"
+            },
+            "success_count": {
+              "description": "Number of successful tool executions",
+              "title": "Success Count",
+              "type": "integer"
+            },
+            "total_count": {
+              "description": "Total number of tools executed",
+              "title": "Total Count",
+              "type": "integer"
+            },
+            "session": {
+              "additionalProperties": false,
+              "default": null,
+              "description": "Session info echoed back to reinforce reuse: { id: string, instructions: string }",
+              "nullable": true,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "instructions": {
+                  "type": "string"
+                }
+              },
+              "title": "Session",
+              "type": "object"
+            },
+            "remote_file_info": {
+              "additionalProperties": true,
+              "default": null,
+              "description": "Information about the complete response saved to a remote file when response is too large or when sync_response_to_workbench is true",
+              "nullable": true,
+              "title": "Remote File Info",
+              "type": "object"
+            },
+            "next_steps": {
+              "default": null,
+              "description": "Next steps for the caller",
+              "nullable": true,
+              "title": "Next Steps",
+              "type": "string"
+            }
+          },
+          "required": [
+            "results",
+            "total_count",
+            "success_count",
+            "error_count"
+          ],
+          "title": "Data",
+          "type": "object"
+        },
+        "error": {
+          "default": null,
+          "description": "Error if any occurred during the execution of the action",
+          "nullable": true,
+          "title": "Error",
+          "type": "string"
+        },
+        "successful": {
+          "description": "Whether or not the action execution was successful or not",
+          "title": "Successful",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ],
+      "title": "MultiExecuteActionResponseWrapper",
+      "type": "object"
+    }
+  },
+  {
+    "slug": "COMPOSIO_REMOTE_BASH_TOOL",
+    "name": "remote_bash_tool",
+    "displayName": "Remote Bash Tool",
+    "description": "\n  Execute bash commands in a REMOTE sandbox for file operations, data processing, and system tasks. Essential for handling large tool responses saved to remote files.\n  PRIMARY USE CASES:\n- Process large tool responses saved by COMPOSIO_MULTI_EXECUTE_TOOL to remote sandbox\n- File system operations, extract specific information from JSON with shell tools like jq, awk, sed, grep, etc.\n- Commands run from /home/user directory by default\n    ",
+    "tags": [
+      "destructiveHint",
+      "openWorldHint"
+    ],
+    "toolkit": {
+      "slug": "COMPOSIO",
+      "name": "composio",
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
+    },
+    "inputParameters": {
+      "properties": {
+        "command": {
+          "description": "The bash command to execute",
+          "title": "Command",
+          "type": "string"
+        },
+        "session_id": {
+          "description": "ALWAYS pass the session_id that was provided in the SEARCH_TOOLS response.",
+          "title": "Session ID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "RemoteBashToolInput",
+      "type": "object"
+    },
+    "responseSchema": {
+      "properties": {
+        "data": {
+          "additionalProperties": false,
+          "description": "Data from the action execution",
+          "properties": {
+            "session": {
+              "description": "Session info echoed back to reinforce reuse: { id: string, instructions: string }",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "instructions": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "instructions"
+              ],
+              "title": "Session",
+              "type": "object"
+            },
+            "stderr": {
+              "description": "The standard error output from the command, possibly truncated for brevity.",
+              "title": "Stderr",
+              "type": "string"
+            },
+            "stderrLines": {
+              "description": "Total number of lines in original stderr, even if truncated",
+              "title": "Stderr Lines",
+              "type": "integer"
+            },
+            "stderr_file_path": {
+              "description": "Path to file containing full stderr if output was truncated",
+              "title": "Stderr File Path",
+              "type": "string"
+            },
+            "stdout": {
+              "description": "The standard output from the command, possibly truncated for brevity.",
+              "title": "Stdout",
+              "type": "string"
+            },
+            "stdoutLines": {
+              "description": "Total number of lines in original stdout, even if truncated",
+              "title": "Stdout Lines",
+              "type": "integer"
+            },
+            "stdout_file_path": {
+              "description": "Path to file containing full stdout if output was truncated",
+              "title": "Stdout File Path",
+              "type": "string"
+            },
+            "sandbox_id_suffix": {
+              "description": "Last 4 digits of the sandbox ID for easier reference",
+              "title": "Sandbox ID Suffix",
+              "type": "string"
+            }
+          },
+          "required": [
+            "stdout",
+            "stdoutLines",
+            "stderr",
+            "stderrLines"
+          ],
+          "title": "Data",
+          "type": "object"
+        },
+        "error": {
+          "default": null,
+          "description": "Error if any occurred during the execution of the action",
+          "nullable": true,
+          "title": "Error",
+          "type": "string"
+        },
+        "successful": {
+          "description": "Whether or not the action execution was successful or not",
+          "title": "Successful",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ],
+      "title": "RemoteBashToolOutputWrapper",
+      "type": "object"
+    }
+  },
+  {
+    "slug": "COMPOSIO_REMOTE_WORKBENCH",
+    "name": "remote_workbench",
+    "displayName": "Remote Workbench",
+    "description": "\n  Process **REMOTE FILES** or script BULK TOOL EXECUTIONS using Python code IN A REMOTE SANDBOX. If you can see the data in chat, DON'T USE THIS TOOL.\n**ONLY** use this when processing **data stored in a remote file** or when scripting bulk tool executions.\n\nDO NOT USE\n- When the complete response is already inline/in-memory, or you only need quick parsing, summarization, or basic math.\n\nUSE IF\n- To parse/analyze tool outputs saved to a remote file in the sandbox or to script multi-tool chains there.\n- For bulk or repeated executions of known Composio tools (e.g., add a label to 100 emails).\n- To call APIs via proxy_execute when no Composio tool exists for that API.\n\n\nOUTPUTS\n- Returns a compact result or, if too long, artifacts under `/home/user/.code_out`.\n\nIMPORTANT CODING RULES:\n  1. Stepwise Execution: Split work into small steps. Save intermediate outputs in variables or temporary file in `/tmp/`. Call COMPOSIO_REMOTE_WORKBENCH again for the next step. This improves composability and avoids timeouts.\n  2. Notebook Persistence: This is a persistent Jupyter notebook cell: variables, functions, imports, and in-memory state from previous and future code executions are preserved in the notebook's history and available for reuse. You also have a few helper functions available.\n  3. Parallelism & Timeout (CRITICAL): There is a hard timeout of 4 minutes so complete the code within that. Prioritize PARALLEL execution using ThreadPoolExecutor with suitable concurrency for bulk operations - e.g., call run_composio_tool or invoke_llm parallelly across rows to maximize efficiency.\n    3.1 If the data is large, split into smaller batches and call the workbench multiple times to avoid timeouts.\n  4. Checkpoints: Implement checkpoints (in memory or files) so that long runs can be resumed from the last completed step.\n  5. Schema Safety: Never assume the response schema for run_composio_tool if not known already from previous tools. To inspect schema, either run a simple request **outside** the workbench via COMPOSIO_MULTI_EXECUTE_TOOL or use invoke_llm helper.\n  6. LLM Helpers: Always use invoke_llm helper for summary, analysis, or field extraction on results. This is a smart LLM that will give much better results than any adhoc filtering.\n  7. Avoid Meta Loops: Do not use run_composio_tool to call COMPOSIO_MULTI_EXECUTE_TOOL or other COMPOSIO_* meta tools to avoid cycles. Only use it for app tools.\n  8. Pagination: Use when data spans multiple pages. Continue fetching pages with the returned next_page_token or cursor until none remains. Parallelize fetching pages if tool supports page_number.\n  9. No Hardcoding: Never hardcode data in code. Always load it from files or tool responses, iterating to construct intermediate or final inputs/outputs.\n  10. If the final output is in a workbench file, use upload_local_file to download it - never expose the raw workbench file path to the user. Prefer to download useful artifacts after task is complete.\n\n\nENV & HELPERS:\n- Home directory: `/home/user`.\n- NOTE: Helper functions already initialized in the workbench - DO NOT import or redeclare them:\n    - \n`run_composio_tool(tool_slug: str, arguments: dict) -> tuple[Dict[str, Any], str]`: Execute a known Composio **app** tool (from COMPOSIO_SEARCH_TOOLS). Do not invent names; match the tool's input schema. Suited for loops/parallel/bulk over datasets.\n      i) run_composio_tool returns JSON with top-level \"data\". Parse carefully—structure may be nested.\n    \n    - \n`invoke_llm(query: str) -> tuple[str, str]`: Invoke an LLM for semantic tasks. Pass MAX 200k characters in input.\n      i) NOTE Prompting guidance: When building prompts for invoke_llm, prefer f-strings (or concatenation) so literal braces stay intact. If using str.format, escape braces by doubling them ({{ }}).\n      ii) Define the exact JSON schema you want and batch items into smaller groups to stay within token limit.\n\n    - `upload_local_file(*file_paths) -> tuple[Dict[str, Any], str]`: Upload files in workbench to Composio S3/R2 storage. Use this to download any generated files/artifacts from the workbench.\n    - `proxy_execute(method, endpoint, toolkit, query_params=None, body=None, headers=None) -> tuple[Any, str]`: Call a toolkit API directly when no Composio tool exists. Only one toolkit can be invoked with proxy_execute per workbench call\n    - `web_search(query: str) -> tuple[str, str]`: Search the web for information.\n    - `smart_file_extract(sandbox_file_path: str, show_preview: bool = True) -> tuple[str, str]`: Extracts text from files in the sandbox (e.g., PDF, image).\n    - Workbench comes with comprehensive Image Processing (PIL/Pillow, OpenCV, scikit-image), PyTorch ML libraries, Document and Report handling tools (pandoc, python-docx, pdfplumber, reportlab), and standard Data Analysis tools (pandas, numpy, matplotlib) for advanced visual, analytical, and AI tasks.\n  All helper functions return a tuple (result, error). Always check error before using result.\n\n## Python Helper Functions for LLM Scripting\n\n\n### run_composio_tool(tool_slug, arguments)\nExecutes a known Composio tool via backend API. Do NOT call COMPOSIO_* meta tools to avoid cyclic calls.\n\n    def run_composio_tool(tool_slug: str, arguments: Dict[str, Any]) -> tuple[Dict[str, Any], str]\n    # Returns: (tool_response_dict, error_message)\n    #   Success: ({\"data\": {actual_data}}, \"\") - Note the top-level data\n    #   Error:   ({}, \"error_message\") or (response_data, \"error_message\")\n\n    result, error = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 1, \"user_id\": \"me\"})\n    if error:\n        print(\"GMAIL_FETCH_EMAILS error:\", error); return\n    email_data = result.get(\"data\", {})\n    print(\"Fetched:\", email_data)\n    \n\n\n### invoke_llm(query)\nCalls LLM for reasoning, analysis, and semantic tasks. Pass MAX 200k characters input.\n\n    def invoke_llm(query: str) -> tuple[str, str]\n    # Returns: (llm_response, error_message)\n\n    resp, error = invoke_llm(\"Summarize the key points from this data\")\n    if not error:\n      print(\"LLM:\", resp)\n\n    # Example: analyze tool response with LLM\n    tool_resp, err = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 5, \"user_id\": \"me\"})\n    if not err:\n      parsed = tool_resp.get(\"data\", {})\n      resp, err2 = invoke_llm(f\"Analyze these emails and summarize: {parsed}\")\n      if not err2:\n        print(\"LLM Gmail Summary:\", resp)\n    # TIP: batch prompts to reduce LLM calls.\n    \n\n\n### upload_local_file(*file_paths)\nUploads sandbox files to Composio S3/R2 storage. Single files upload directly, multiple files are auto-zipped.\nUse this when you need to upload/download any generated artifacts from the sandbox.\n\n    def upload_local_file(*file_paths) -> tuple[Dict[str, Any], str]\n    # Returns: (result_dict, error_string)\n    # Success: ({\"s3_url\": str, \"uploaded_file\": str, \"type\": str, \"id\": str, \"s3key\": str, \"message\": str}, \"\")\n    # Error: ({}, \"error_message\")\n\n    # Single file\n    result, error = upload_local_file(\"/path/to/report.pdf\")\n\n    # Multiple files (auto-zipped)\n    result, error = upload_local_file(\"/home/user/doc1.txt\", \"/home/user/doc2.txt\")\n\n    if not error:\n      print(\"Uploaded:\", result[\"s3_url\"])\n\n\n### proxy_execute(method, endpoint, toolkit, query_params=None, body=None, headers=None)\nDirect API call to a connected toolkit service.\n\n    def proxy_execute(\n        method: Literal[\"GET\",\"POST\",\"PUT\",\"DELETE\",\"PATCH\"],\n        endpoint: str,\n        toolkit: str,\n        query_params: Optional[Dict[str, str]] = None,\n        body: Optional[object] = None,\n        headers: Optional[Dict[str, str]] = None,\n    ) -> tuple[Any, str]\n    # Returns: (response_data, error_message)\n\n    # Example: GET request with query parameters\n    query_params = {\"q\": \"is:unread\", \"maxResults\": \"10\"}\n    data, error = proxy_execute(\"GET\", \"/gmail/v1/users/me/messages\", \"gmail\", query_params=query_params)\n    if not error:\n      print(\"Success:\", data)\n\n\n### web_search(query)\nSearches the web via Exa AI.\n\n    def web_search(query: str) -> tuple[str, str]\n    # Returns: (search_results_text, error_message)\n\n    results, error = web_search(\"latest developments in AI\")\n    if not error:\n        print(\"Results:\", results)\n\n## Best Practices\n\n\n### Error-first pattern and Defensive parsing (print keys while narrowing)\n    res, err = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 5})\n    if err:\n        print(\"error:\", err); return\n    if isinstance(res, dict):\n        print(\"res keys:\", list(res.keys()))\n        data = res.get(\"data\") or {}\n        print(\"data keys:\", list(data.keys()))\n        msgs = data.get(\"messages\") or []\n        print(\"messages count:\", len(msgs))\n        for m in msgs:\n            print(\"subject:\", m.get(\"subject\", \"<missing>\"))\n\n### Parallelize (4-min sandbox timeout)\nAdjust concurrency so all tasks finish within 4 minutes.\n\n    import concurrent.futures\n\n    MAX_CONCURRENCY = 10 # Adjust as needed\n\n    def send_bulk_emails(email_list):\n        def send_single(email):\n            result, error = run_composio_tool(\"GMAIL_SEND_EMAIL\", {\n                \"to\": email[\"recipient\"], \"subject\": email[\"subject\"], \"body\": email[\"body\"]\n            })\n            if error:\n                print(f\"Failed {email['recipient']}: {error}\")\n                return {\"status\": \"failed\", \"error\": error}\n            return {\"status\": \"sent\", \"data\": result}\n\n        results = []\n        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENCY) as ex:\n            futures = [ex.submit(send_single, e) for e in email_list]\n            for f in concurrent.futures.as_completed(futures):\n                results.append(f.result())\n        return results\n\n    email_list = [{\"recipient\": f\"user{i}@example.com\", \"subject\": \"Test\", \"body\": \"Hello\"} for i in range(1000)]\n    results = send_bulk_emails(email_list)\n    \n\n    ",
+    "tags": [
+      "destructiveHint",
+      "openWorldHint"
+    ],
+    "toolkit": {
+      "slug": "COMPOSIO",
+      "name": "composio",
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
+    },
+    "inputParameters": {
+      "description": "Remote Workbench — run analysis/orchestration in a persistent remote sandbox.\nUse only when working with remote artifacts or when you must script multiple Composio tool calls.\nAvoid if the needed data is already inline in the chat/context.",
+      "properties": {
+        "code_to_execute": {
+          "description": "Python to run inside the persistent **remote Jupyter sandbox**. State (imports, variables, files) is preserved across executions. Keep code concise to minimize tool call latency. Avoid unnecessary comments.",
+          "examples": [
+            "import json, glob\npaths = glob.glob(file_path)\n...",
+            "result, error = run_composio_tool(tool_slug='SLACK_SEARCH_MESSAGES', arguments={'query': 'Rube'})\nif error: return\nmessages = result.get('data', {}).get('messages', [])"
+          ],
+          "title": "Code To Execute",
+          "type": "string"
+        },
+        "thought": {
+          "description": "Concise objective and high-level plan (no private chain-of-thought). 1 sentence describing what the cell should achieve and why the sandbox is needed.",
+          "title": "Thought",
+          "type": "string"
+        },
+        "session_id": {
+          "description": "ALWAYS pass the session_id that was provided in the SEARCH_TOOLS response.",
+          "title": "Session ID",
+          "type": "string"
+        },
+        "current_step": {
+          "description": "Short enum for current step of the workflow execution. Eg FETCHING_EMAILS, GENERATING_REPLIES. Always include to keep execution aligned with the workflow.",
+          "title": "Current Step",
+          "type": "string"
+        },
+        "current_step_metric": {
+          "description": "Progress metrics for the current step - use to track how far execution has advanced. Format as a string \"done/total units\" - example \"10/100 emails\", \"0/n messages\", \"3/10 pages\".",
+          "title": "Current Step Metric",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code_to_execute"
+      ],
+      "title": "RemoteWorkbenchRequest",
+      "type": "object"
+    },
+    "responseSchema": {
+      "properties": {
+        "data": {
+          "additionalProperties": false,
+          "description": "Data from the action execution",
+          "properties": {
+            "error": {
+              "default": "",
+              "description": "Error message if any",
+              "title": "Error",
+              "type": "string"
+            },
+            "results": {
+              "description": "The results of the code execution",
+              "title": "Results",
+              "type": "string"
+            },
+            "results_file_path": {
+              "description": "Path to file containing full results if output was truncated",
+              "title": "Results File Path",
+              "type": "string"
+            },
+            "session": {
+              "description": "Session info echoed back to reinforce reuse: { id: string, instructions: string }",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "instructions": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "instructions"
+              ],
+              "title": "Session",
+              "type": "object"
+            },
+            "stderr": {
+              "description": "The standard error output from the command",
+              "title": "Stderr",
+              "type": "string"
+            },
+            "stderr_file_path": {
+              "description": "Path to file containing full stderr if output was truncated",
+              "title": "Stderr File Path",
+              "type": "string"
+            },
+            "stdout": {
+              "description": "The standard output from the command",
+              "title": "Stdout",
+              "type": "string"
+            },
+            "stdout_file_path": {
+              "description": "Path to file containing full stdout if output was truncated",
+              "title": "Stdout File Path",
+              "type": "string"
+            },
+            "sandbox_id_suffix": {
+              "description": "Last 4 digits of the sandbox ID for easier reference",
+              "title": "Sandbox ID Suffix",
+              "type": "string"
+            }
+          },
+          "required": [
+            "results",
+            "stdout",
+            "stderr"
+          ],
+          "title": "Data",
+          "type": "object"
+        },
+        "error": {
+          "default": null,
+          "description": "Error if any occurred during the execution of the action",
+          "nullable": true,
+          "title": "Error",
+          "type": "string"
+        },
+        "successful": {
+          "description": "Whether or not the action execution was successful or not",
+          "title": "Successful",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ],
+      "title": "RemoteWorkbenchResponseWrapper",
+      "type": "object"
+    }
+  },
+  {
+    "slug": "COMPOSIO_SEARCH_TOOLS",
+    "name": "search_tools",
+    "displayName": "Search Tools",
+    "description": "\n  MCP Server Info: COMPOSIO MCP connects 500+ apps—Slack, GitHub, Notion, Google Workspace (Gmail, Sheets, Drive, Calendar), Microsoft (Outlook, Teams), X/Twitter, Figma, Web Search / Deep research, Browser tool (scrape URLs, browser automation), Meta apps (Instagram, Meta Ads), TikTok, AI tools like Nano Banana & Veo3, and more—for seamless cross-app automation.\n  Use this MCP server to discover the right tools and the recommended step-by-step plan to execute reliably.\n  ALWAYS call this tool first whenever a user mentions or implies an external app, service, or workflow—never say \"I don't have access to X/Y app\" before calling it.\n\n  Tool Info: Extremely fast discovery tool that returns relevant MCP-callable tools along with a recommended execution plan and common pitfalls for reliable execution.\n\nUsage guidelines:\n  - Use this tool whenever kicking off a task. Re-run it when you need additional tools/plans due to missing details, errors, or a changed use case.\n  - If the user pivots to a different use case in same chat, you MUST call this tool again with the new use case and generate a new session_id.\n  - Specify the use_case with a normalized description of the problem, query, or task. Be clear and precise. Queries can be simple single-app actions or multiple linked queries for complex cross-app workflows.\n  - Pass known_fields along with use_case as a string of key–value hints (for example, \"channel_name: general\") to help the search resolve missing details such as IDs.\n  \n\nSplitting guidelines (Important):\n  1. Atomic queries: 1 query = 1 tool call. Include hidden prerequisites (e.g., add \"get Linear issue\" before \"update Linear issue\").\n  2. Include app names: If user names a toolkit, include it in every sub query so intent stays scoped (e.g., \"fetch Gmail emails\", \"reply to Gmail email\").\n  3. English input: Translate non-English prompts while preserving intent and identifiers.\n\n  Example:\n  User query: \"send an email to John welcoming him and create a meeting invite for tomorrow\"\n  Search call: queries: [\n    {use_case: \"send an email to someone\", known_fields: \"recipient_name: John\"},\n    {use_case: \"create a meeting invite\", known_fields: \"meeting_date: tomorrow\"}\n  ]\n\nPlan review checklist (Important):\n  - The response includes a detailed execution plan and common pitfalls. You MUST review this plan carefully, adapt it to your current context, and generate your own final step-by-step plan before execution. Execute the steps in order to ensure reliable and accurate execution. Skipping or ignoring required steps can lead to unexpected failures.\n  - Check the plan and pitfalls for input parameter nuances (required fields, IDs, formats, limits). Before executing any tool, you MUST review its COMPLETE input schema and provide STRICTLY schema-compliant arguments to avoid invalid-input errors.\n  - Determine whether pagination is needed; if a response returns a pagination token and completeness is implied, paginate until exhaustion and do not return partial results.\n\nResponse:\n  - Tools & Input Schemas: The response lists toolkits (apps) and tools suitable for the task, along with their tool_slug, description, input schema / schemaRef, and related tools for prerequisites, alternatives, or next steps.\n    - NOTE: Tools with schemaRef instead of input_schema require you to call COMPOSIO_GET_TOOL_SCHEMAS first to load their full input_schema before use.\n  - Connection Info: If a toolkit has an active connection, the response includes it along with any available current user information. If no active connection exists, you MUST initiate a new connection via COMPOSIO_MANAGE_CONNECTIONS with the correct toolkit name. DO NOT execute any toolkit tool without an ACTIVE connection.\n  - Time Info: The response includes the current UTC time for reference. You can reference UTC time from the response if needed.\n  - The tools returned to you through this are to be called via COMPOSIO_MULTI_EXECUTE_TOOL. Ensure each tool execution specifies the correct tool_slug and arguments exactly as defined by the tool's input schema.\n  \nSESSION: ALWAYS set this parameter, first for any workflow. Pass session: {generate_id: true} for new workflows OR session: {id: \"EXISTING_ID\"} to continue. ALWAYS use the returned session_id in ALL subsequent meta tool calls.\n    ",
+    "tags": [
+      "important",
+      "openWorldHint",
+      "readOnlyHint"
+    ],
+    "toolkit": {
+      "slug": "COMPOSIO",
+      "name": "composio",
+      "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/composio-logo.png"
+    },
+    "inputParameters": {
+      "properties": {
+        "queries": {
+          "type": "array",
+          "description": "List of structured search queries (in English) to process in parallel. Each query represents a specific use case or task. For multi-app or complex workflows, split them into smaller single-app, API-level actions for best accuracy, including implicit prerequisites (e.g., fetch the resource before updating it). Each query returns 5-10 tools.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "use_case": {
+                "description": "Provide a normalized English description of the complete use case to enable precise planning. Focus on the specific action and intended outcome. Include any specific apps if mentioned by user in each use_case. Do NOT include personal identifiers (names, emails, IDs) here — put those in known_fields.",
+                "examples": [
+                  "send an email to someone",
+                  "search issues with label in jira toolkit",
+                  "put issue details in a google sheet",
+                  "post a formatted message to slack channel"
+                ],
+                "title": "Use Case",
+                "type": "string"
+              },
+              "known_fields": {
+                "type": "string",
+                "description": "Provide known workflow inputs as a single English string of comma-separated key:value pairs (not an array). Keep 1-2 short, structured items - stable identifiers, names, emails, or settings only. Omit if not relevant. No free-form or long text (messages, notes, descriptions).",
+                "examples": [
+                  "channel_name:pod-sdk",
+                  "channel_id:123",
+                  "invitee_names:John,Maria, timezone:Asia/Kolkata"
+                ]
+              }
+            },
+            "required": [
+              "use_case"
+            ]
+          },
+          "minItems": 1,
+          "title": "Queries"
+        },
+        "session": {
+          "type": "object",
+          "description": "Session context for correlating meta tool calls within a workflow. Always pass this parameter. Use {generate_id: true} for new workflows or {id: \"EXISTING_ID\"} to continue existing workflows.",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Existing session identifier for the current workflow to reuse across calls.",
+              "title": "Session ID"
+            },
+            "generate_id": {
+              "type": "boolean",
+              "description": "Set to true for the first search call of a new usecase/workflow to generate a new session ID. When user pivots to a different task, set this true. If omitted or false with an existing session.id, the provided session ID will be reused.",
+              "title": "Generate ID"
+            }
+          }
+        },
+        "model": {
+          "type": "string",
+          "description": "Client LLM model name (recommended). Used to optimize planning/search behavior. Ignored if omitted or invalid.",
+          "examples": [
+            "gpt-5.2",
+            "claude-4.5-sonnet"
+          ],
+          "title": "Model"
+        }
+      },
+      "required": [
+        "queries"
+      ],
+      "title": "SearchToolsRequest",
+      "type": "object"
+    },
+    "responseSchema": {
+      "properties": {
+        "data": {
+          "additionalProperties": false,
+          "description": "Data from the action execution",
+          "properties": {
+            "results": {
+              "type": "array",
+              "description": "Per-query search results with tools, reasoning, and memory. One entry per query in request order.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "description": "1-based index of the query in the request"
+                  },
+                  "use_case": {
+                    "type": "string",
+                    "description": "The use case that was searched"
+                  },
+                  "primary_tool_slugs": {
+                    "type": "array",
+                    "description": "List of main tool slugs matching the search criteria",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "related_tool_slugs": {
+                    "type": "array",
+                    "description": "List of related tool slugs that might be useful",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "toolkits": {
+                    "type": "array",
+                    "description": "List of unique toolkit slugs used by tools in this query",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "reasoning": {
+                    "type": "string",
+                    "description": "Reasoning for the search results"
+                  },
+                  "task_difficulty": {
+                    "type": "string",
+                    "description": "Assessment of task difficulty for this specific query"
+                  },
+                  "recommended_plan_steps": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Workflow steps from cached plan (only present when cached plan is available)"
+                  },
+                  "known_pitfalls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Common pitfalls and considerations (only present when cached plan is available)"
+                  },
+                  "reference_workbench_snippets": {
+                    "type": "array",
+                    "description": "Reference Python code snippets for processing tool responses in the workbench (only present when cached plan is available)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "description": {
+                          "type": "string",
+                          "description": "Description of what the code snippet does"
+                        },
+                        "code": {
+                          "type": "string",
+                          "description": "Python code snippet for the workbench, wrapped in triple backticks"
+                        }
+                      },
+                      "required": [
+                        "description",
+                        "code"
+                      ]
+                    }
+                  },
+                  "error": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Error message if the search failed, null otherwise"
+                  }
+                },
+                "required": [
+                  "index",
+                  "use_case",
+                  "primary_tool_slugs",
+                  "related_tool_slugs",
+                  "toolkits",
+                  "reasoning",
+                  "task_difficulty"
+                ]
+              }
+            },
+            "tool_schemas": {
+              "type": "object",
+              "description": "Deduplicated tool definitions keyed by tool_slug for O(1) lookup. Each tool appears once even if used in multiple queries.",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "tool_slug": {
+                    "type": "string",
+                    "description": "The slug of the tool"
+                  },
+                  "toolkit": {
+                    "type": "string",
+                    "description": "The slug of the toolkit that provides this tool"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Description of the tool"
+                  },
+                  "input_schema": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Input schema for the tool",
+                    "additionalProperties": true
+                  },
+                  "usage_guidelines": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Practical usage notes and examples for the tool"
+                  }
+                }
+              }
+            },
+            "toolkit_connection_statuses": {
+              "type": "array",
+              "description": "Connection status for all toolkits mentioned across all queries, with descriptions merged in",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "toolkit": {
+                    "type": "string",
+                    "description": "The toolkit slug identifier (e.g., \"gmail\", \"slack\")"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of what the toolkit does and its capabilities"
+                  },
+                  "has_active_connection": {
+                    "type": "boolean",
+                    "description": "Whether an active connection exists for this toolkit"
+                  },
+                  "connection_details": {
+                    "type": "object",
+                    "description": "Connection details including auth config and connected account IDs",
+                    "additionalProperties": true
+                  },
+                  "current_user_info": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Information about the currently connected user (email, name, etc.)",
+                    "additionalProperties": true
+                  },
+                  "status_message": {
+                    "type": "string",
+                    "description": "Human-readable message about the connection status and next steps"
+                  }
+                },
+                "required": [
+                  "toolkit",
+                  "description",
+                  "has_active_connection",
+                  "connection_details",
+                  "status_message"
+                ]
+              }
+            },
+            "time_info": {
+              "type": "object",
+              "description": "Time information for the query",
+              "properties": {
+                "current_time_utc": {
+                  "type": "string",
+                  "description": "Current time in ISO format (UTC)"
+                },
+                "current_time_utc_epoch_seconds": {
+                  "type": "integer",
+                  "description": "Current time as Unix epoch timestamp in seconds"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Important message about time handling and timezone considerations"
+                }
+              },
+              "required": [
+                "current_time_utc",
+                "current_time_utc_epoch_seconds",
+                "message"
+              ]
+            },
+            "session": {
+              "type": "object",
+              "description": "Session info for correlating meta tool calls",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Session identifier to be passed to subsequent meta tool calls"
+                },
+                "generate_id": {
+                  "type": "boolean",
+                  "description": "Whether a fresh session id was generated in this call"
+                },
+                "instructions": {
+                  "type": "string",
+                  "description": "LLM-facing guidance on how to reuse this session id"
+                }
+              },
+              "required": [
+                "id",
+                "generate_id",
+                "instructions"
+              ]
+            },
+            "next_steps_guidance": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Combined workflow guidance covering connections, planner, and memory usage. Each element is a step instruction."
+            }
+          },
+          "required": [
+            "results",
+            "tool_schemas",
+            "toolkit_connection_statuses",
+            "time_info",
+            "session",
+            "next_steps_guidance"
+          ],
+          "title": "Data",
+          "type": "object"
+        },
+        "error": {
+          "default": null,
+          "description": "Error if any occurred during the execution. Format: \"X out of Y searches failed, reasons: <details>\"",
+          "nullable": true,
+          "title": "Error",
+          "type": "string"
+        },
+        "successful": {
+          "description": "Whether all searches completed successfully. False if any query failed",
+          "title": "Successful",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "data",
+        "successful"
+      ],
+      "title": "SearchToolsResponseWrapper",
+      "type": "object"
+    }
+  }
+]

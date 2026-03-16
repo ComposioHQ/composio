@@ -1,0 +1,79 @@
+# syntax=docker/dockerfile:1
+# Reusable Dockerfile for CLI e2e tests (debian runtime)
+# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 -t test-name .
+
+ARG NODE_VERSION=20.19.0
+ARG BUN_VERSION=1.3.10
+ARG CLI_VERSION=0.0.0
+
+FROM oven/bun:${BUN_VERSION} AS bun
+
+FROM node:${NODE_VERSION}-slim AS builder
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:/usr/local/bin:$PATH"
+
+WORKDIR /app
+
+# Bring in bun binary from the official image (no curl)
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
+
+# Install corepack (pnpm) without curl/git
+RUN corepack enable
+
+# Copy lockfile first for optimal layer caching
+COPY pnpm-lock.yaml ./
+
+# Copy workspace configuration files
+COPY package.json \
+     pnpm-workspace.yaml \
+     .pnpmfile.cjs \
+     tsconfig.base.json \
+     tsdown.config.base.ts \
+     .bun-version \
+     ./
+
+# Copy pre-install scripts (rarely change)
+COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
+COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
+
+# Copy all ts/packages (pre-built)
+COPY ts/packages/ ./ts/packages/
+
+# Install dependencies using pnpm
+# Note: We intentionally don't use --mount=type=cache for the pnpm store here
+# because it causes native binding issues across builds
+RUN pnpm install --frozen-lockfile
+
+# Build composio CLI binary
+WORKDIR /app/ts/packages/cli
+RUN bun build ./src/bin.ts \
+    --env DEBUG_OVERRIDE_* \
+    --compile \
+    --production \
+    --outfile /out/composio
+
+# Copy CLI e2e tests last (changes frequently)
+WORKDIR /app
+COPY ts/e2e-tests/cli/ /app/ts/e2e-tests/cli/
+
+# Pre-create Composio CLI cache directory to work around Bun issue #7967
+RUN mkdir -p /tmp/.composio
+
+FROM debian:bookworm-slim
+
+ENV PATH="/usr/local/bin:/bin"
+ENV HOME="/tmp"
+
+WORKDIR /app
+
+# CLI binary
+COPY --from=builder /out/composio /usr/local/bin/composio
+
+# CLI e2e tests
+COPY --from=builder /app/ts/e2e-tests/cli/ /app/ts/e2e-tests/cli/
+
+# CLI cache directory
+COPY --from=builder /tmp/.composio /tmp/.composio
+
+CMD ["/bin/sh"]

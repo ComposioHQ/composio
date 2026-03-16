@@ -1,0 +1,1 @@
+preload = ["./scripts/preload.ts"]

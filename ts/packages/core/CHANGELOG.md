@@ -1,5 +1,149 @@
 # @composio/core
 
+## 0.6.5
+
+### Patch Changes
+
+- 476d451: Add support for files
+- Add session file support
+
+## 0.6.5-alpha.0
+
+### Patch Changes
+
+- Add support for files
+
+## 0.6.4
+
+### Patch Changes
+
+- e3f1f6c: Remove telemetry payload
+
+## 0.6.3
+
+### Patch Changes
+
+- 087385d: Remove important tag auto apply when limit is set
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [eec8fd9]
+  - @composio/json-schema-to-zod@0.1.20
+
+## 0.6.1
+
+### Patch Changes
+
+- e746383: Fix issues with file upload corruption
+
+## 0.6.0
+
+### Minor Changes
+
+- **BREAKING**: Webhook verification now async with new signature
+  - `composio.triggers.verifyWebhook()` now requires `await`
+  - New required parameters: `id` (webhook-id header) and `timestamp` (webhook-timestamp header)
+  - Uses Web Crypto API for Cloudflare Workers compatibility
+  - Supports v1, v2, and v3 webhook formats
+- **BREAKING**: Mastra provider updated to v1 API
+  - Requires Mastra v1 and Node.js v22.13.0+
+  - New initialization pattern with Mastra instance
+  - E2E tests for Zod v3 and v4 compatibility
+
+- Platform-specific optimizations
+  - Separate file tool modifiers for Node.js and Cloudflare Workers
+  - Platform-specific config defaults (autoUploadDownloadFiles)
+  - Removed node:buffer usage, replaced with Uint8Array
+  - Removed node:crypto from triggers for edge runtime support
+
+- Bug fixes
+  - Fixed tool fetching with specific version constraints
+  - Improved type safety across the SDK
+
+## 0.5.5
+
+### Patch Changes
+
+- b132aad: Update client dependencies and introduce experimentatl tool router features
+
+## 0.5.4
+
+### Patch Changes
+
+- b3f5875: Fix multi connected account flag to check only active accounts
+
+## 0.5.3
+
+### Patch Changes
+
+- 498505d: Fix file upload and download in tools with anyOf schemas
+
+## 0.5.2
+
+### Patch Changes
+
+- 277f02b: Fix bundling issues with external providers
+
+## 0.5.1
+
+### Patch Changes
+
+- 3055048: Update client dependencies and auth config update params to be optional
+
+## 0.5.0
+
+### Minor Changes
+
+- ded64be: Add Cloudflare Workers compatibility for `@composio/core`, tested end-to-end.
+
+## 0.4.0
+
+### Minor Changes
+
+- c7e1217: Add support for dedicated tools for tool router
+
+## 0.3.4
+
+### Patch Changes
+
+- 019f54f: Fix method binding for top level tool router methods
+
+## 0.3.3
+
+### Patch Changes
+
+- a76b002: Add support for enable/disable tags and search toolkits in tool router
+
+## 0.3.2
+
+### Patch Changes
+
+- 69cfede: Update client version and add openWorldHintSupport in toolrouter tag filters. Removes isLocal param in toolkit fetching
+
+## 0.3.1
+
+### Patch Changes
+
+- 73db5f5: Fix callback url not working in toolrouter's session.authorize()
+
+## 0.3.0
+
+### Minor Changes
+
+- 07551cd: Add support for native tool execution in tool router
+- 9e002c5: Minor fixes
+- f0e67c4: Update API client and tool router types
+- 31521bd: Update typedocs and examples for toolkit versions
+- 9e002c5: Alpha release of tool router
+
+## 0.2.7-alpha.4
+
+### Patch Changes
+
+- 07551cd: Add support for native tool execution in tool router
+
 ## 0.2.7-alpha.3
 
 ### Patch Changes

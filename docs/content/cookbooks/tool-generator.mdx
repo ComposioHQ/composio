@@ -1,0 +1,94 @@
+---
+title: Tool Type Generator
+description: Build a platform on top of Composio using raw tool definitions and toolkit metadata
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/tool-generator)
+
+This cookbook shows how to access the raw tool definitions and toolkit metadata that Composio exposes. If you are building a platform on top of Composio, say a workflow builder or an IDE plugin, you will need to display tool schemas, auth requirements, and input/output parameters to your users. This is how you get that data.
+
+## Prerequisites
+
+* Python 3.10+
+* [UV](https://docs.astral.sh/uv/getting-started/installation/)
+* [Composio API key](https://platform.composio.dev/settings)
+
+## Project setup
+
+Create a new project and install dependencies:
+
+```bash
+mkdir composio-tool-generator && cd composio-tool-generator
+uv init && uv add composio
+```
+
+Add your API key to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+```
+
+## Setting up the client
+
+No provider is needed here. We are reading tool metadata directly from the Composio API, not passing tools to an AI framework.
+
+<include>../../examples/tool-generator/main.py#setup</include>
+
+## Raw tool definitions
+
+Composio has two internal representations for tools: **raw definitions** and **provider definitions**. Raw definitions are framework-agnostic JSON schemas with `input_parameters`, `output_parameters`, scopes, and tags. Provider definitions translate these into the format a specific framework expects (OpenAI, Anthropic, etc.).
+
+For building platform UIs, the raw definitions are what you want. `composio.tools.get_raw_composio_tools()` returns them for an entire toolkit. Each tool has a standard JSON Schema for its inputs and outputs, so you can render forms, validate user input, or generate types from it.
+
+<include>../../examples/tool-generator/main.py#list-tools</include>
+
+## Toolkit metadata
+
+A toolkit groups related tools under one integration. `composio.toolkits.get()` returns metadata about the toolkit itself, including its supported auth schemes. Each auth scheme lists the fields required for two stages: creating an auth config (platform setup) and initiating a connected account (end-user connection). This is useful if you need to build your own auth configuration UI.
+
+<include>../../examples/tool-generator/main.py#toolkit-info</include>
+
+## Exporting to JSON
+
+For code generation or static analysis, you can export the full raw schemas to a JSON file. Each entry includes the `input_parameters` and `output_parameters` as standard JSON Schema objects, which you can feed into tools like `json-schema-to-typescript` or `datamodel-code-generator` to produce typed interfaces.
+
+<include>../../examples/tool-generator/main.py#export</include>
+
+## Complete script
+
+Here is everything together:
+
+<include>../../examples/tool-generator/main.py</include>
+
+## Running the script
+
+List all tools in a toolkit:
+
+```bash
+uv run --env-file .env python main.py list-tools gmail
+```
+
+Inspect a toolkit's auth schemes:
+
+```bash
+uv run --env-file .env python main.py toolkit-info gmail
+```
+
+Export raw tool schemas to a JSON file:
+
+```bash
+uv run --env-file .env python main.py export gmail tools.json
+```
+
+## Take it further
+
+Raw tool schemas are building blocks for platform features:
+
+- **Dynamic form builder**: use `input_parameters` JSON Schema to render forms for any tool — no hardcoded UI per integration
+- **Type generation pipeline**: feed exported JSON into `json-schema-to-typescript` or `datamodel-code-generator` in CI to keep types in sync
+- **Tool catalog UI**: combine `list-tools` and `toolkit-info` to build a searchable directory of available integrations and their auth requirements
+
+<Cards>
+  <Card title="App Connections Dashboard" href="/cookbooks/app-connections-dashboard" description="Build a UI for managing user connections" />
+  <Card title="Tool Type Generator source" href="https://github.com/ComposioHQ/composio/tree/next/docs/examples/tool-generator" description="View the full source on GitHub" />
+</Cards>

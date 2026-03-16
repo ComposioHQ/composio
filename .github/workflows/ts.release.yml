@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [next]
-    
+
 env:
   GITHUB_ACCESS_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
 
@@ -14,16 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "20"
-          cache: "pnpm"
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -44,8 +38,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
         with:
           publish: pnpm changeset:release
-          commit: "Release: update version"
-          title: "Release: update version"
+          commit: 'Release: update version'
+          title: 'Release: update version'
 
       - name: Set Version Info
         if: steps.changesets.outputs.published == 'true'
@@ -55,11 +49,11 @@ jobs:
 
       - name: Send Slack Notification
         if: steps.changesets.outputs.published == 'true'
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
           payload: |
             {
               "text": "🚀 New SDK version published!\n*Repository:* ${{ github.repository }}\n*Versions:*\n${{ env.SLACK_VERSIONS }}\n*Commit:* ${{ github.sha }}"
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}

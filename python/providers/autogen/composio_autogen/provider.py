@@ -10,7 +10,11 @@ from autogen_core.tools import FunctionTool
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
-from composio.utils.shared import get_signature_format_from_schema_params
+from composio.utils.shared import (
+    get_signature_format_from_schema_params,
+    reinstate_reserved_python_keywords,
+    substitute_reserved_python_keywords,
+)
 
 
 class AutogenProvider(
@@ -65,9 +69,15 @@ class AutogenProvider(
         execute_tool: AgenticProviderExecuteFn,
     ) -> FunctionTool:
         """Wraps a composio tool as an Autogen FunctionTool."""
+        schema_params, keywords = substitute_reserved_python_keywords(
+            schema=tool.input_parameters
+        )
 
         def execute_action(**kwargs: t.Any) -> t.Dict:
             """Placeholder function for executing action."""
+            kwargs = reinstate_reserved_python_keywords(
+                request=kwargs, keywords=keywords
+            )
             return execute_tool(slug=tool.slug, arguments=kwargs)
 
         # Create function with proper signature
@@ -80,7 +90,7 @@ class AutogenProvider(
 
         # Set signature and annotations
         params = get_signature_format_from_schema_params(
-            schema_params=tool.input_parameters,
+            schema_params=schema_params,
         )
         function.__doc__ = tool.description
         setattr(function, "__signature__", Signature(parameters=params))

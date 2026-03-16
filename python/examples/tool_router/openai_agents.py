@@ -1,8 +1,9 @@
+from agents import Agent, HostedMCPTool, Runner
+
 from composio import Composio
-from agents import Agent, Runner, HostedMCPTool
 
 composio = Composio()
-session = composio.experimental.create(
+session = composio.create(
     user_id="user_123",
 )
 

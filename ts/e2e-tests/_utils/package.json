@@ -1,0 +1,30 @@
+{
+  "name": "@e2e-tests/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./src/index.ts",
+        "default": "./src/index.ts"
+      }
+    },
+    "./const": {
+      "import": {
+        "types": "./src/const.ts",
+        "default": "./src/const.ts"
+      }
+    }
+  },
+  "scripts": {
+    "docker:build": "bun run scripts/docker-build.ts",
+    "docker:clean": "bun run scripts/docker-clean.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

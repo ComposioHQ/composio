@@ -1,0 +1,228 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show ts generate subcommand help
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show ts generate subcommand help
+> composio ts generate --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show ts generate subcommand help
+> composio ts generate --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show ts generate subcommand help
+> composio ts generate --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show ts generate subcommand help
+> composio ts generate --help
+composio
+
+composio 0.1.24
+
+USAGE
+
+$ generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools]
+ --toolkits text...
+
+DESCRIPTION
+
+Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
+
+Environment Variables:
+  COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOL
+KIT_VERSION_GMAIL=20250901_00)
+                                      Use "latest" or unset to use the latest versi
+on.
+
+OPTIONS
+
+(-o, --output-dir directory)
+
+  A directory.
+
+  Output directory for the generated TypeScript type stubs.
+
+  This setting is optional.
+
+--compact
+
+  A true or false value.
+
+  Emit a single TypeScript file
+
+────────────────────────────────────────────────────────────────────────────────

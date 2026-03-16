@@ -1,0 +1,23 @@
+{
+  "title": "Cookbooks",
+  "root": true,
+  "pages": [
+    "---Getting Started---",
+    "templates",
+    "chat-app",
+    "app-connections-dashboard",
+    "fast-api",
+    "hono",
+    "---Productivity & Automation---",
+    "workplace-search",
+    "background-agent",
+    "support-agent",
+    "gmail-labeler",
+    "slack-summariser",
+    "supabase-sql-agent",
+    "---Developer Tools---",
+    "pr-review-agent",
+    "---Behind the Curtain---",
+    "tool-generator"
+  ]
+}

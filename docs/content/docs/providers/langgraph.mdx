@@ -1,0 +1,53 @@
+---
+title: LangGraph
+description: Build an agent with LangGraph and enable it to use 1000+ tools with Composio.
+keywords: [langgraph]
+---
+
+The LangGraph provider transforms Composio tools into LangChain's [StructuredTool](https://python.langchain.com/docs/how_to/custom_tools/) format for use with [LangGraph](https://langchain-ai.github.io/langgraph/) agents.
+
+<Steps>
+<Step>
+**Install**
+
+```bash
+pip install composio composio_langgraph langgraph langchain_openai
+```
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+```python
+from composio import Composio
+from composio_langgraph import LanggraphProvider
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+composio = Composio(provider=LanggraphProvider())
+llm = ChatOpenAI(model="gpt-5.2")
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+agent = create_agent(tools=tools, model=llm)
+result = agent.invoke({"messages": [("user", "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")]})
+
+print(result["messages"][-1].content)
+```
+</Step>
+</Steps>

@@ -8,7 +8,37 @@ This is the Composio SDK v3 repository containing both TypeScript and Python SDK
 
 ## Memories and Notes
 
-- For documentation tasks, refer to `fern/CLAUDE.md`
+- For documentation tasks, refer to `docs/CLAUDE.md`
+
+## Effect.ts Reference Source
+
+The CLI package (`@composio/cli`) is built on the Effect.ts ecosystem. A local copy of the Effect source code is available as a git submodule:
+
+- **Location:** `ts/vendor/effect/`
+- **Repo:** [Effect-TS/effect](https://github.com/Effect-TS/effect)
+- **Branch:** `main`
+
+When working on CLI code, reference the Effect source for accurate patterns:
+- `ts/vendor/effect/packages/effect/src/` — core Effect runtime
+- `ts/vendor/effect/packages/cli/src/` — @effect/cli (Command, Options, Args)
+- `ts/vendor/effect/packages/platform/src/` — @effect/platform (FileSystem, Terminal)
+
+**Important:** The submodule is for **read-only reference only**. Do not modify files in `ts/vendor/`. The CLI's actual dependencies come from npm via `pnpm install`.
+
+## Clack Reference Source
+
+The CLI uses [`@clack/prompts`](https://github.com/bombshell-dev/clack) for interactive terminal UI. A local copy of the Clack source code is available as a git submodule:
+
+- **Location:** `ts/vendor/clack/`
+- **Repo:** [bombshell-dev/clack](https://github.com/bombshell-dev/clack)
+
+When working on CLI prompts and terminal UI, reference the Clack source for accurate APIs:
+- `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (high-level API: text, select, confirm, spinner, etc.)
+- `ts/vendor/clack/packages/core/src/` — `@clack/core` (low-level primitives)
+
+See `ts/packages/cli/AGENTS.md` for detailed Clack usage guidelines.
+
+**Important:** The submodule is for **read-only reference only**. Do not modify files in `ts/vendor/`. The CLI's actual `@clack/prompts` dependency comes from npm via `pnpm install`.
 
 ## Common Development Commands
 
@@ -82,7 +112,7 @@ composio/
 │   │   └── ts-builders/   # TypeScript code generation utilities
 │   └── examples/          # Usage examples for different providers
 ├── python/                # Python SDK
-├── fern/                  # Documentation and API specs
+├── docs/                  # Documentation (Fumadocs)
 └── examples/              # Cross-platform examples
 ```
 
@@ -164,8 +194,19 @@ CI                       # CI environment flag
 - **Type Definitions**: `ts/packages/core/src/types/`
 - **Error Classes**: `ts/packages/core/src/errors/`
 - **Examples**: `ts/examples/` and `examples/`
-- **Documentation**: `ts/docs/` and `fern/`
-- **Build Configs**: `turbo.json`, `tsconfig.base.json`
+- **Documentation**: `docs/`
+- **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
+- **E2E Tests**: `ts/e2e-tests/`
+
+## Maintenance Tasks
+
+### When Updating GitHub Actions
+
+When modifying files in `.github/workflows/`, update the "Prerequisites" section in `ts/docs/internal/release.md` with the current tool versions:
+
+- **Node.js**: `cat .nvmrc`
+- **Bun**: `cat .bun-version`
+- **pnpm**: `cat package.json | jq -r .packageManager | cut -d'@' -f2`
 
 ## Testing Commands
 
@@ -179,6 +220,47 @@ cd ts/packages/core && pnpm test
 # Run tests with UI
 pnpm test:ui
 ```
+
+### TypeScript E2E Tests
+
+E2E tests for `@composio/core` are located in `ts/e2e-tests/` and test runtime compatibility across different JavaScript environments.
+
+```bash
+# Run all e2e tests (Node.js + Deno + Cloudflare)
+pnpm test:e2e
+
+# Run only Node.js e2e tests (CJS/ESM compatibility, runs in Docker)
+pnpm test:e2e:node
+
+# Run only Deno e2e tests (npm: specifier compatibility, runs in Docker)
+pnpm test:e2e:deno
+
+# Run only Cloudflare Workers e2e tests
+pnpm test:e2e:cloudflare
+
+# Run Node.js tests with a specific Node version
+COMPOSIO_E2E_NODE_VERSION=22.12.0 pnpm test:e2e:node
+
+# Run Deno tests with a specific Deno version
+COMPOSIO_E2E_DENO_VERSION=2.6.7 pnpm test:e2e:deno
+```
+
+**E2E Test Structure:**
+```
+ts/e2e-tests/
+├── _utils/                    # Shared Docker infrastructure
+├── runtimes/
+│   ├── node/                  # Node.js runtime tests
+│   │   ├── cjs-basic/         # CommonJS compatibility
+│   │   └── esm-basic/         # ESM compatibility
+│   ├── deno/                  # Deno runtime tests
+│   │   └── esm-basic/         # npm: specifier compatibility
+│   └── cloudflare/            # Cloudflare runtime tests
+│       └── cf-workers-basic/  # Cloudflare Workers tests
+└── README.md                  # E2E test documentation
+```
+
+> **Note:** When adding new e2e tests, update `ts/e2e-tests/README.md` with the new test information.
 
 ## Common Patterns
 

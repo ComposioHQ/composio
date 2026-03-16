@@ -40,6 +40,7 @@ export function transformAuthConfigRetrieveResponse(
         logo: authConfig.toolkit.logo,
         slug: authConfig.toolkit.slug,
       },
+      isEnabledForToolRouter: authConfig.is_enabled_for_tool_router,
       uuid: authConfig.uuid,
       authScheme: authConfig.auth_scheme,
       credentials: authConfig.credentials,

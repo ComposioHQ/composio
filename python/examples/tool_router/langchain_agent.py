@@ -1,11 +1,13 @@
-from composio import Composio
-from langchain_mcp_adapters.client import MultiServerMCPClient
-from langchain.agents import create_agent
-from langchain_openai.chat_models import ChatOpenAI
 import asyncio
 
+from langchain.agents import create_agent
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_openai.chat_models import ChatOpenAI
+
+from composio import Composio
+
 composio = Composio()
-session = composio.experimental.create(
+session = composio.create(
     user_id="user_123",
 )
 

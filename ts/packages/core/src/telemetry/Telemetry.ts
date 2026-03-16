@@ -42,6 +42,7 @@ export class TelemetryTransport {
   private readonly telemetrySourceName = 'typescript-sdk';
   private readonly telemetryServiceName = 'sdk';
   private readonly telemetryLanguage = 'typescript';
+  private exitHandlersRegistered = false;
 
   private batchProcessor = new BatchProcessor(200, 10, async (data: TelemetryMetricPayloadBody) => {
     logger.debug('Sending batch of telemetry metrics', data);
@@ -59,6 +60,9 @@ export class TelemetryTransport {
       platform: this.telemetryMetadata?.isBrowser ? 'browser' : 'node',
       environment: getEnvVariable('NODE_ENV', 'production') as TelemetryMetricSource['environment'],
     };
+    // Register exit handlers to automatically flush telemetry before process exit
+    this.registerExitHandlers();
+
     // send telemetry event for SDK initialization
     this.sendMetric([
       {
@@ -104,36 +108,49 @@ export class TelemetryTransport {
       ) => Promise<unknown>;
 
       (instance as unknown as Record<string, Function>)[name] = async (...args: unknown[]) => {
-        // Only collect telemetry if setup() has been called (telemetry is enabled)
-        if (this.shouldSendTelemetry()) {
-          const telemetryPayload: TelemetryPayload = {
-            functionName: `${instrumentedClassName}.${name}`,
-            durationMs: 0,
-            timestamp: Date.now() / 1000,
-            props: {
-              fileName: instrumentedClassName,
-              method: name,
-              params: args,
-            },
-            metadata: {
-              provider: this.telemetryMetadata?.provider ?? 'openai',
-            },
-            error: undefined,
-            source: this.telemetrySource,
-          };
-
-          this.batchProcessor.pushItem(telemetryPayload);
-        }
+        // Check telemetry status once at the start to ensure consistent behavior
+        const telemetryEnabled = this.shouldSendTelemetry();
+        const startTime = telemetryEnabled ? Date.now() : undefined;
 
         try {
-          return await originalMethod.apply(instance, args);
+          const result = await originalMethod.apply(instance, args);
+
+          // Only collect telemetry if setup() has been called (telemetry is enabled)
+          if (telemetryEnabled && startTime !== undefined) {
+            const durationMs = Date.now() - startTime;
+            const telemetryPayload: TelemetryPayload = {
+              functionName: `${instrumentedClassName}.${name}`,
+              durationMs,
+              timestamp: startTime / 1000,
+              props: {
+                fileName: instrumentedClassName,
+                method: name,
+              },
+              metadata: {
+                provider: this.telemetryMetadata?.provider ?? 'openai',
+              },
+              error: undefined,
+              source: this.telemetrySource,
+            };
+
+            this.batchProcessor.pushItem(telemetryPayload);
+          }
+
+          return result;
         } catch (error) {
           if (error instanceof Error) {
             if (!error.errorId) {
               error.errorId = getRandomUUID();
               // Only send error telemetry if telemetry is enabled
-              if (this.shouldSendTelemetry()) {
-                await this.prepareAndSendErrorTelemetry(error, instrumentedClassName, name, args);
+              if (telemetryEnabled && startTime !== undefined) {
+                const durationMs = Date.now() - startTime;
+                await this.prepareAndSendErrorTelemetry(
+                  error,
+                  instrumentedClassName,
+                  name,
+                  startTime,
+                  durationMs
+                );
               }
             }
           }
@@ -166,21 +183,23 @@ export class TelemetryTransport {
    * @param {unknown} error - The error to send.
    * @param {string} instrumentedClassName - The class name of the instrumented class.
    * @param {string} name - The name of the method that threw the error.
+   * @param {number} startTime - The start time of the method invocation in milliseconds.
+   * @param {number} durationMs - The duration of the method invocation in milliseconds.
    */
   private async prepareAndSendErrorTelemetry(
     error: unknown,
     instrumentedClassName: string,
     name: string,
-    args: unknown[]
+    startTime: number,
+    durationMs: number
   ) {
     const telemetryPayload: TelemetryPayload = {
       functionName: `${instrumentedClassName}.${name}`,
-      durationMs: 0,
-      timestamp: Date.now() / 1000,
+      durationMs,
+      timestamp: startTime / 1000,
       props: {
         fileName: instrumentedClassName,
         method: name,
-        params: args,
       },
       metadata: {
         provider: this.telemetryMetadata?.provider ?? 'openai',
@@ -244,6 +263,61 @@ export class TelemetryTransport {
     } catch (error) {
       logger.error('Error sending error telemetry', error);
     }
+  }
+
+  /**
+   * Flush any pending telemetry and wait for it to complete.
+   * This is automatically called on process exit in Node.js environments.
+   */
+  async flush(): Promise<void> {
+    await this.batchProcessor.flush();
+  }
+
+  /**
+   * Register process exit handlers to automatically flush telemetry.
+   * Only registers handlers in Node.js environments (not in browsers).
+   */
+  private registerExitHandlers(): void {
+    // Only register once and only in Node.js environments
+    if (this.exitHandlersRegistered || typeof process === 'undefined' || !process.on) {
+      return;
+    }
+
+    this.exitHandlersRegistered = true;
+
+    const flushSync = () => {
+      // Use a flag to track if we're already flushing to prevent double-flush
+      this.flush().catch(error => {
+        logger.debug('Error flushing telemetry on exit', error);
+      });
+    };
+
+    // beforeExit is emitted when Node.js empties its event loop and has nothing else to schedule
+    // This is the best place to flush async operations
+    process.on('beforeExit', () => {
+      flushSync();
+    });
+
+    // Handle SIGINT (Ctrl+C) and SIGTERM (kill command)
+    // Store handler references so they can be properly removed
+    const createSignalHandler = (signal: NodeJS.Signals) => {
+      const handler = () => {
+        logger.debug(`Received ${signal}, flushing telemetry...`);
+        this.flush()
+          .catch(error => {
+            logger.debug('Error flushing telemetry on signal', error);
+          })
+          .finally(() => {
+            // Remove the handler before re-emitting to prevent infinite loop
+            process.removeListener(signal, handler);
+            process.kill(process.pid, signal);
+          });
+      };
+      return handler;
+    };
+
+    process.on('SIGINT', createSignalHandler('SIGINT'));
+    process.on('SIGTERM', createSignalHandler('SIGTERM'));
   }
 }
 

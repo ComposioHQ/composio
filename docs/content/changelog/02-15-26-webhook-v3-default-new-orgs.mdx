@@ -1,0 +1,57 @@
+---
+title: "Webhook V3 Now Default for New Organizations"
+description: "All newly created organizations will now use Webhook Payload V3 by default"
+date: "2026-02-15"
+---
+
+As announced in our [Webhook Payload V3 lookahead](/docs/changelog/2025/12/30), **Webhook Payload V3 is now the default for all newly created organizations**.
+
+## What's Changed?
+
+Starting today, every new organization created on Composio will automatically use **Webhook Payload V3** for all webhook and Pusher deliveries. This means new organizations benefit from the improved webhook structure out of the box, with no additional configuration needed.
+
+### For New Organizations
+
+- Webhook payloads follow the [Standard Webhooks specification](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)
+- Trigger data is cleanly separated from Composio metadata via the `metadata` and `data` fields
+- The `x-composio-webhook-version: V3` header is included in all webhook deliveries
+
+### For Existing Organizations
+
+Nothing changes for existing organizations. If your organization was created before today:
+
+- You will continue to receive webhooks in your current format (V1 or V2)
+- You can opt-in to V3 at any time through your [project settings](https://platform.composio.dev)
+
+## V3 Payload Recap
+
+```json
+{
+  "id": "msg_a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "timestamp": "2026-02-15T12:00:00.000Z",
+  "type": "composio.trigger.message",
+  "metadata": {
+    "log_id": "log_TpxVOLXYnwXZ",
+    "trigger_slug": "GMAIL_NEW_GMAIL_MESSAGE",
+    "auth_config_id": "ac_aCYTppZ5RsRc",
+    "connected_account_id": "ca_cATYssZ5RrSc",
+    "trigger_id": "ti_JZFoTyYKbzhB",
+    "user_id": "your-user-id"
+  },
+  "data": {
+    // Clean trigger data without Composio metadata
+  }
+}
+```
+
+## How to Switch to V3 (Existing Organizations)
+
+1. Go to your project settings in the [Composio dashboard](https://platform.composio.dev)
+2. Navigate to the Webhooks section
+3. Select **Webhook Payload Version: V3**
+4. Update your webhook handlers using the [migration guide](/docs/changelog/2025/12/30#migration-guide)
+5. Test thoroughly before enabling in production
+
+<Callout type="info">
+We strongly recommend all organizations migrate to V3 for a better developer experience, standards compliance, and access to new features like [connection expiry events](/docs/changelog/2026/02/06#new-event-composioconnectedaccountexpired).
+</Callout>

@@ -12,15 +12,13 @@ const llm = new ChatOpenAI({
 })
 
 async function main() {
-  const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
+  const session = await composio.create('user_123', { toolkits: ['gmail'] });
 
   const client = new MultiServerMCPClient({  
       math: {
           transport: "http",  
           url: session.mcp.url,
-          headers: {
-              'x-api-key': process.env.COMPOSIO_API_KEY!,
-          }
+          headers: session.mcp.headers
       },
   });
 

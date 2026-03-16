@@ -1,0 +1,172 @@
+---
+title: Subscribing to connection expiry events
+description: Detect when OAuth connections expire and prompt users to re-authenticate
+keywords: [expired, connections, re-authenticate, webhook, oauth, refresh]
+---
+
+Composio automatically refreshes OAuth tokens before they expire. But when a refresh token is revoked or expires, the connection enters an `EXPIRED` state and the user must re-authenticate.
+
+You can detect this proactively using the `composio.connected_account.expired` webhook event instead of waiting for a tool execution to fail.
+
+<Callout>
+This event is only available with [V3 webhook payloads](/docs/webhook-verification#webhook-payload-versions). New organizations use V3 by default.
+</Callout>
+
+## Subscribe to expiry events
+
+Add `composio.connected_account.expired` to your webhook subscription's `enabled_events`:
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
+  -H "X-API-KEY: <your-composio-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "webhook_url": "https://example.com/webhook",
+    "enabled_events": [
+      "composio.trigger.message",
+      "composio.connected_account.expired"
+    ]
+  }'
+```
+
+## Handle the event
+
+When a connection expires, Composio sends a webhook with the connected account details:
+
+```json
+{
+  "id": "evt_847cdfcd-d219-4f18-a6dd-91acd42ca94a",
+  "type": "composio.connected_account.expired",
+  "metadata": {
+    "project_id": "pr_your-project-id",
+    "org_id": "ok_your-org-id"
+  },
+  "data": {
+    "id": "ca_your-connected-account-id",
+    "toolkit": { "slug": "gmail" },
+    "auth_config": {
+      "id": "ac_your-auth-config-id",
+      "auth_scheme": "OAUTH2"
+    },
+    "status": "EXPIRED",
+    "status_reason": "OAuth refresh token expired"
+  },
+  "timestamp": "2026-02-06T12:00:00.000Z"
+}
+```
+
+Route on `type` to handle expiry alongside trigger events:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio, WebhookEventType
+
+composio = Composio()
+
+@app.post("/webhook")
+async def webhook_handler(request: Request):
+    payload = await request.json()
+    event_type = payload.get("type")
+
+    if event_type == WebhookEventType.CONNECTION_EXPIRED:
+        account_id = payload["data"]["id"]
+        toolkit = payload["data"]["toolkit"]["slug"]
+
+        # Look up the user and send them a re-auth link
+        session = composio.create(user_id=lookup_user(account_id))
+        connection_request = session.authorize(toolkit)
+        notify_user(connection_request.redirect_url)
+
+    elif event_type == WebhookEventType.TRIGGER_MESSAGE:
+        # Handle trigger events
+        pass
+
+    return {"status": "ok"}
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+type NextApiRequest = { body: any };
+type NextApiResponse = { status: (code: number) => { json: (data: any) => void } };
+declare function lookupUser(accountId: string): string;
+declare function notifyUser(url: string): void;
+// ---cut---
+export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
+  const payload = req.body;
+
+  if (payload.type === 'composio.connected_account.expired') {
+    const accountId = payload.data.id;
+    const toolkit = payload.data.toolkit.slug;
+
+    // Look up the user and send them a re-auth link
+    const session = await composio.create(lookupUser(accountId));
+    const connectionRequest = await session.authorize(toolkit);
+    if (connectionRequest.redirectUrl) {
+      notifyUser(connectionRequest.redirectUrl);
+    }
+
+  } else if (payload.type === 'composio.trigger.message') {
+    // Handle trigger events
+  }
+
+  res.status(200).json({ status: 'ok' });
+}
+```
+  </Tab>
+</Tabs>
+
+## Re-authenticate the user
+
+Use `session.authorize()` to generate a new Connect Link for the expired toolkit. The user completes OAuth again, and the connected account returns to `ACTIVE` status.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+session = composio.create(user_id="user_123")
+connection_request = session.authorize("gmail")
+
+# Send this URL to the user (email, in-app notification, etc.)
+print(connection_request.redirect_url)
+
+# Optionally wait for completion
+connected_account = connection_request.wait_for_connection(60000)
+print(f"Re-connected: {connected_account.id}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const session = await composio.create("user_123");
+const connectionRequest = await session.authorize("gmail");
+
+// Send this URL to the user (email, in-app notification, etc.)
+console.log(connectionRequest.redirectUrl);
+
+// Optionally wait for completion
+const connectedAccount = await connectionRequest.waitForConnection(60000);
+console.log(`Re-connected: ${connectedAccount.id}`);
+```
+  </Tab>
+</Tabs>
+
+<Callout>
+Always [verify webhook signatures](/docs/webhook-verification) before processing events in production.
+</Callout>
+
+## What to read next
+
+<Cards>
+  <Card icon={<ShieldCheck />} title="Verifying webhooks" href="/docs/webhook-verification" description="Validate webhook signatures to ensure payloads are authentic" />
+  <Card icon={<Zap />} title="Subscribing to events" href="/docs/setting-up-triggers/subscribing-to-events" description="Set up webhooks and SDK subscriptions to receive trigger events" />
+  <Card icon={<Key />} title="Authentication overview" href="/docs/authentication" description="How Composio manages OAuth, token refresh, and connected accounts" />
+</Cards>

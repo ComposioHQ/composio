@@ -1,0 +1,85 @@
+---
+title: Troubleshooting
+description: Common issues and quick links
+---
+
+import { Bug, Brain, Sparkles, MessageCircle, MessageSquare, BookOpen, Mail, AlertCircle } from 'lucide-react';
+
+This section is designed to help you quickly identify and resolve common issues encountered with Composio.
+
+## Common queries
+
+<Accordions>
+
+<Accordion title="How do I find the log ID for a failed tool execution?">
+Every tool execution response includes a `log_id` field. You can also find it in the [dashboard logs](https://platform.composio.dev?next_page=/logs/tools) under **Logs > Tools**. Use this ID when reporting issues to support.
+
+See [Troubleshooting tools](/docs/troubleshooting/tools#reporting-tool-issues) for more details.
+</Accordion>
+
+<Accordion title="How do I find my auth config ID or connected account ID?">
+Go to the [dashboard](https://platform.composio.dev) and navigate to **Auth Configs** for your auth config ID, or **Connected Accounts** for the connected account ID. Both IDs are visible in the detail view of each entry.
+
+See [Troubleshooting authentication](/docs/troubleshooting/authentication#reporting-authentication-issues) for screenshots.
+</Accordion>
+
+<Accordion title="How do I find my MCP server ID?">
+Your MCP server ID is the UUID in the server URL (e.g., `https://backend.composio.dev/v3/mcp/<UUID>/mcp`). You can also find it in the [dashboard](https://platform.composio.dev) under your MCP server's detail page.
+
+See [Troubleshooting MCP](/docs/troubleshooting/mcp#reporting-mcp-issues) for a visual guide.
+</Accordion>
+
+<Accordion title="How do I get the request ID for API debugging?">
+Add an `x-request-id` header with a UUID to your API request. This lets support trace your exact request in server logs.
+
+```bash
+curl 'https://backend.composio.dev/api/v3/tools' \
+  -H 'x-api-key: YOUR_API_KEY' \
+  -H 'x-request-id: YOUR_UUID_HERE'
+```
+
+Generate a UUID at [uuidgenerator.net](https://www.uuidgenerator.net/). See [Troubleshooting API](/docs/troubleshooting/api#reporting-api-issues).
+</Accordion>
+
+<Accordion title="How do I find the trigger ID for a trigger instance?">
+Go to the [dashboard](https://platform.composio.dev) and navigate to **Active Triggers**. The trigger ID is shown for each trigger instance.
+
+See [Troubleshooting triggers](/docs/troubleshooting/triggers#reporting-issues) for a screenshot.
+</Accordion>
+
+<Accordion title="Why does the API return fewer tools than the platform UI?">
+The Get Tools API defaults to the base toolkit version (`00000000_00`) when `toolkit_versions` is not specified. Pass `toolkit_versions=latest` to get all available tools.
+
+See [Troubleshooting tools](/docs/troubleshooting/tools#api-returning-fewer-tools-than-expected) for details.
+</Accordion>
+
+</Accordions>
+
+## Quick links
+
+<Cards>
+  <Card title="Errors Reference" href="/reference/errors" icon={<AlertCircle />}>
+    HTTP status codes and how to resolve common errors.
+  </Card>
+  <Card title="Report issues" href="https://github.com/ComposioHQ/composio/issues/new?labels=bug" icon={<Bug />}>
+    Found a bug? Please create a Github issue!
+  </Card>
+  <Card title="Ask AI" href="https://deepwiki.com/ComposioHQ/composio" icon={<Brain />}>
+    Try to use Ask AI in the docs or deepwiki to get the fastest responses on features, types, and best practices.
+  </Card>
+  <Card title="Feature requests" href="https://github.com/ComposioHQ/composio/issues/new?labels=enhancement" icon={<Sparkles />}>
+    Have an idea for improving Composio? Share your feature suggestions with us and we will prioritise your requests
+  </Card>
+  <Card title="Ask the community" href="https://github.com/ComposioHQ/composio/discussions" icon={<MessageCircle />}>
+    Join our GitHub discussions to get help from the community
+  </Card>
+  <Card title="Discord community" href="https://discord.com/channels/1170785031560646836/1268871288156323901" icon={<MessageSquare />}>
+    Post support queries on our discord channel
+  </Card>
+  <Card title="Contact Support" href="mailto:support@composio.dev" icon={<Mail />}>
+    Reach out to support for account, billing, or escalations
+  </Card>
+  <Card title="Migration guides" href="/docs/migration-guide" icon={<RouteIcon />}>
+    Check out our migration guides to help you upgrade to the latest version.
+  </Card>
+</Cards>

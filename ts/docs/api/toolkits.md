@@ -252,6 +252,9 @@ interface ToolkitRetrieveResponse {
       baseUrl: string; // Base URL for proxied requests
     };
   }[];
+  baseUrl?: string; // Base URL for the toolkit API
+  getCurrentUserEndpoint?: string; // Endpoint to get the current user
+  getCurrentUserEndpointMethod?: string; // HTTP method for get current user endpoint (e.g., GET, POST)
 }
 ```
 

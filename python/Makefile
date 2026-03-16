@@ -57,6 +57,9 @@ snt:
 tst:
 	@nox -s tst
 
+type_inference:
+	@nox -s type_inference
+
 bump: clean-build
 	@uv run python scripts/bump.py
 

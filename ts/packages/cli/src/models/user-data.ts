@@ -23,6 +23,27 @@ export const UserData = Schema.Struct({
   webURL: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
     Schema.fromKey('web_url')
   ),
+
+  /**
+   * Organization ID for the current user.
+   */
+  orgId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('org_id')
+  ),
+
+  /**
+   * Project ID for the current user.
+   */
+  projectId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('project_id')
+  ),
+
+  /**
+   * Optional global test user identifier used by CLI/e2e flows.
+   */
+  testUserId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
+    Schema.fromKey('test_user_id')
+  ),
 }).annotations({
   identifier: 'UserData',
   description: 'User data storage for the Composio CLI',
@@ -35,6 +56,8 @@ export const UserDataWithDefaults = Schema.Struct({
 
   baseURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('base_url')),
   webURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('web_url')),
+
+  // orgId and projectId remain as Option<string> — they may not be set.
 }).annotations({
   identifier: 'UserDataWithDefaults',
   description: 'User data storage for the Composio CLI with defaults',

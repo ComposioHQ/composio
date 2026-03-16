@@ -1,0 +1,150 @@
+---
+title: Anthropic
+description: Build an agent with Claude and enable it to use 1000+ tools with Composio.
+keywords: [claude, messages api]
+---
+
+The Anthropic Provider transforms Composio tools into a format compatible with the [Claude Messages API](https://docs.anthropic.com/en/api/messages).
+
+<Callout type="info">
+Looking for the Claude Agent SDK? See the [Claude Agent SDK](/docs/providers/claude-agent-sdk) provider page.
+</Callout>
+
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```bash
+pip install composio composio_anthropic anthropic
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/anthropic @anthropic-ai/sdk
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+ANTHROPIC_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+import json
+import anthropic
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+composio = Composio(provider=AnthropicProvider())
+client = anthropic.Anthropic()
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+messages = [
+    {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+]
+
+response = client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=4096,
+    tools=tools,
+    messages=messages,
+)
+
+# Agentic loop — keep executing tool calls until the model responds with text
+while response.stop_reason == "tool_use":
+    tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
+    results = composio.provider.handle_tool_calls(user_id="user_123", response=response)
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({
+        "role": "user",
+        "content": [
+            {"type": "tool_result", "tool_use_id": tool_use_blocks[i].id, "content": json.dumps(result)}
+            for i, result in enumerate(results)
+        ]
+    })
+    response = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=4096,
+        tools=tools,
+        messages=messages,
+    )
+
+# Print final response
+for block in response.content:
+    if block.type == "text":
+        print(block.text)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import Anthropic from '@anthropic-ai/sdk';
+import { Composio } from '@composio/core';
+import { AnthropicProvider } from '@composio/anthropic';
+
+const composio = new Composio({
+    provider: new AnthropicProvider(),
+});
+const client = new Anthropic();
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const messages: Anthropic.MessageParam[] = [
+    {
+        role: "user",
+        content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+    },
+];
+
+let response = await client.messages.create({
+    model: "claude-opus-4-6",
+    max_tokens: 4096,
+    tools: tools,
+    messages: messages,
+});
+
+// Agentic loop — keep executing tool calls until the model responds with text
+while (response.stop_reason === "tool_use") {
+    const toolResults = await composio.provider.handleToolCalls("user_123", response);
+    messages.push({ role: "assistant", content: response.content });
+    messages.push(...toolResults);
+    response = await client.messages.create({
+        model: "claude-opus-4-6",
+        max_tokens: 4096,
+        tools: tools,
+        messages: messages,
+    });
+}
+
+// Print final response
+for (const block of response.content) {
+    if (block.type === "text") {
+        console.log(block.text);
+    }
+}
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>

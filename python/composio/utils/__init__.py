@@ -17,7 +17,7 @@ def deprecate(reason: str = "This function is deprecated"):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            raise DeprecationError(f"{func.__name__} is deprecatiod: `{reason}`")
+            raise DeprecationError(f"{func.__name__} is deprecated: `{reason}`")
 
         return wrapper
 

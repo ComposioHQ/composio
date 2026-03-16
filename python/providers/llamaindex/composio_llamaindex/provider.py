@@ -8,7 +8,11 @@ from llama_index.core.tools import FunctionTool
 
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
-from composio.utils.shared import get_signature_format_from_schema_params
+from composio.utils.shared import (
+    get_signature_format_from_schema_params,
+    reinstate_reserved_python_keywords,
+    substitute_reserved_python_keywords,
+)
 
 
 class LlamaIndexProvider(
@@ -27,9 +31,15 @@ class LlamaIndexProvider(
         """
         Wrap a tool into a LlamaIndex FunctionTool object.
         """
+        schema_params, keywords = substitute_reserved_python_keywords(
+            schema=tool.input_parameters
+        )
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
+            kwargs = reinstate_reserved_python_keywords(
+                request=kwargs, keywords=keywords
+            )
             return execute_tool(slug=tool.slug, arguments=kwargs)
 
         action_func = types.FunctionType(
@@ -40,7 +50,7 @@ class LlamaIndexProvider(
         )
         action_func.__signature__ = Signature(  # type: ignore
             parameters=get_signature_format_from_schema_params(
-                schema_params=tool.input_parameters,
+                schema_params=schema_params,
                 skip_default=self.skip_default,
             )
         )

@@ -86,6 +86,8 @@ const mockToolkitRetrieveResponse = {
       },
     },
   ],
+  get_current_user_endpoint: '/user',
+  get_current_user_endpoint_method: 'GET',
 };
 
 describe('Toolkits', () => {
@@ -169,8 +171,54 @@ describe('Toolkits', () => {
             },
           },
         ],
+        getCurrentUserEndpoint: '/user',
+        getCurrentUserEndpointMethod: 'GET',
       });
       expect(mockClient.toolkits.retrieve).toHaveBeenCalledWith('github');
+    });
+
+    it('should handle toolkit without getCurrentUserEndpointMethod', async () => {
+      const responseWithoutMethod = {
+        ...mockToolkitRetrieveResponse,
+        get_current_user_endpoint_method: undefined,
+      };
+      mockClient.toolkits.retrieve.mockResolvedValue(responseWithoutMethod);
+
+      const result = await toolkits.get('github');
+
+      expect(result).toEqual({
+        name: 'GitHub',
+        slug: 'github',
+        meta: {
+          createdAt: '2024-01-01',
+          updatedAt: '2024-01-02',
+          toolsCount: 10,
+          triggersCount: 5,
+        },
+        isLocalToolkit: false,
+        composioManagedAuthSchemes: ['oauth2'],
+        authConfigDetails: [
+          {
+            name: 'oauth2',
+            mode: 'oauth2',
+            fields: {
+              authConfigCreation: {
+                optional: [],
+                required: [],
+              },
+              connectedAccountInitiation: {
+                optional: [],
+                required: [],
+              },
+            },
+            proxy: {
+              baseUrl: 'https://api.github.com',
+            },
+          },
+        ],
+        getCurrentUserEndpoint: '/user',
+        getCurrentUserEndpointMethod: undefined,
+      });
     });
 
     it('should throw ValidationError for invalid list query', async () => {

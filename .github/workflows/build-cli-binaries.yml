@@ -1,56 +1,50 @@
 name: Build CLI Binaries
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build (e.g., v1.0.0)'
-        required: false
-        default: 'dev'
+        description: 'Semver version to release (e.g., 1.0.0)'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
-  build-binaries:
-    name: Build CLI Binaries
-    runs-on: ${{ matrix.runner }}
+  build:
+    name: Build ${{ matrix.artifact }}
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, '@composio/cli@') || startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - runner: ubuntu-latest
-            platform: linux-x64
+          - target: bun-linux-x64
             artifact: composio-linux-x64
-          - runner: depot-ubuntu-24.04-arm
-            platform: linux-aarch64
+          - target: bun-linux-arm64
             artifact: composio-linux-aarch64
-          - runner: macos-13 # Intel Mac
-            platform: darwin-x64
+          - target: bun-darwin-x64
             artifact: composio-darwin-x64
-          - runner: macos-latest # Apple Silicon Mac
-            platform: darwin-aarch64
+          - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - name: Validate manual version input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          version="${{ inputs.version }}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid semver version: '$version'"
+            echo "Expected format like: 1.2.3, 1.2.3-beta.1, 1.2.3+build.7"
+            exit 1
+          fi
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -58,15 +52,9 @@ jobs:
       - name: Build packages
         run: pnpm build:packages
 
-      - name: Build CLI binary
+      - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
-        run: |
-          # Use the existing build:bin script which builds for current platform
-          pnpm build:bin
-
-          # Create binaries directory and copy/rename the binary
-          mkdir -p dist/binaries
-          cp dist/composio dist/binaries/${{ matrix.artifact }}
+        run: pnpm build:binary:cross --target ${{ matrix.target }}
 
       - name: Verify binary
         working-directory: ts/packages/cli
@@ -75,9 +63,10 @@ jobs:
           file dist/binaries/${{ matrix.artifact }}
 
       - name: Test binary
+        if: matrix.target == 'bun-linux-x64'
         working-directory: ts/packages/cli
         env:
-          COMPOSIO_API_KEY: test-dummy-api-key-for-ci
+          COMPOSIO_USER_API_KEY: test-dummy-api-key-for-ci
         run: |
           ./dist/binaries/${{ matrix.artifact }} --version
           ./dist/binaries/${{ matrix.artifact }} --help | head -5
@@ -93,27 +82,53 @@ jobs:
           cp "${{ matrix.artifact }}" "$temp_dir/${{ matrix.artifact }}/composio"
           cd "$temp_dir" && zip -r "../${{ matrix.artifact }}.zip" "${{ matrix.artifact }}"
           cd .. && rm -r "$temp_dir"
-          ls -la
 
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
-          path: |
-            ts/packages/cli/dist/binaries/${{ matrix.artifact }}
-            ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
+          path: ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
           retention-days: 7
 
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: ts/packages/cli/dist/binaries
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: ts/packages/cli
+        run: bun run ./scripts/generate-checksums.ts
+
+      - name: Display checksums
+        run: cat ts/packages/cli/dist/binaries/checksums.txt
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI {0} (Manual Build)', inputs.version) || github.ref_name }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}
+          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI @composio/cli@{0} (Manual Build)', inputs.version) || github.event.release.tag_name }}
           files: |
-            ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
+            ts/packages/cli/dist/binaries/*.zip
+            ts/packages/cli/dist/binaries/checksums.txt
           draft: false
-          prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' || github.event.release.prerelease || contains(github.event.release.tag_name, 'alpha') || contains(github.event.release.tag_name, 'beta') || contains(github.event.release.tag_name, 'rc') }}
           generate_release_notes: true
           make_latest: ${{ github.event_name != 'workflow_dispatch' }}
         env:
@@ -121,24 +136,25 @@ jobs:
 
   test-installation:
     name: Test Installation
-    needs: build-binaries
-    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
-    uses: ./.github/workflows/test-installation.yml
+    needs: release
+    if: always() && !cancelled() && needs.release.result == 'success'
+    uses: ./.github/workflows/cli.test-installation.yml
     with:
-      version: ${{ inputs.version || github.ref_name }}
+      version: ${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}
 
   create-install-instructions:
     name: Create Install Instructions
-    needs: build-binaries
+    needs: release
     runs-on: ubuntu-latest
-    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    if: always() && !cancelled() && needs.release.result == 'success'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create installation README
         run: |
+          RELEASE_TAG="${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}"
           cat > INSTALL.md << 'EOF'
           # Composio CLI Installation
 
@@ -151,7 +167,7 @@ jobs:
 
           ### Install specific version
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- ${{ github.ref_name }}
+          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- RELEASE_TAG_PLACEHOLDER
           ```
 
           ## Manual Installation
@@ -180,15 +196,16 @@ jobs:
           ## Supported Platforms
 
           - Linux x64
-          - Linux ARM64  
+          - Linux ARM64
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
           Windows support coming soon!
           EOF
+          sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 
       - name: Upload install instructions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: install-instructions
           path: INSTALL.md

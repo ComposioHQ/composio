@@ -1,0 +1,12 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "composio-tool-router-ai-test",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-01-10",
+	
+	/**
+	 * Note: this is needed because `ts/packages/core/src/utils/constants.ts` is wrapped in a `__exportsAll` function by
+	 * the rolldown bundler, which imports `node:module` explicitly.
+	 */
+	"compatibility_flags": ["nodejs_compat"]
+}

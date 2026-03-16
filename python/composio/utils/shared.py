@@ -2,96 +2,183 @@
 Shared utils.
 """
 
+import copy
+import keyword
 import typing as t
 import uuid
-from functools import reduce
 from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
 from pydantic.fields import FieldInfo
 
 from composio.utils.logging import get as get_logger
+from composio.utils.schema_converter import (
+    CONTAINER_TYPE,
+    FALLBACK_VALUES,
+    PYDANTIC_TYPE_TO_PYTHON_TYPE,
+    json_schema_to_pydantic_type,
+)
 
 logger = get_logger(__name__)
 
-PYDANTIC_TYPE_TO_PYTHON_TYPE = {
-    "string": str,
-    "integer": int,
-    "number": float,
-    "boolean": bool,
-    "array": t.List,
-    "object": t.Dict,
-    "null": t.Optional[t.Any],
-}
-
-CONTAINER_TYPE = ("array", "object")
-
-# Should be deprecated,
-# required values will always be provided by users
-# Non-required values are nullable(None) if default value not provided.
-FALLBACK_VALUES = {
-    "string": "",
-    "number": 0.0,
-    "integer": 0,
-    "boolean": False,
-    "object": {},
-    "array": [],
-    "null": None,
-}
+# Re-export for backward compatibility
+__all__ = [
+    "json_schema_to_pydantic_type",
+    "PYDANTIC_TYPE_TO_PYTHON_TYPE",
+    "CONTAINER_TYPE",
+    "FALLBACK_VALUES",
+    "json_schema_to_pydantic_field",
+    "json_schema_to_fields_dict",
+    "json_schema_to_model",
+    "pydantic_model_from_param_schema",
+    "get_signature_format_from_schema_params",
+    "get_pydantic_signature_format_from_schema_params",
+    "generate_request_id",
+    "substitute_reserved_python_keywords",
+    "reinstate_reserved_python_keywords",
+]
 
 reserved_names = ["validate"]
 
+_OBJ_MARKER = "-_object_-"
 
-def json_schema_to_pydantic_type(
+
+def _make_safe_name(name: str) -> str:
+    """Append ``_rs`` to a Python keyword so it can be used as a parameter name."""
+    return f"{name}_rs"
+
+
+def substitute_reserved_python_keywords(
+    schema: t.Dict,
+) -> t.Tuple[dict, dict]:
+    """Replace Python reserved keywords in a JSON schema's property names.
+
+    Returns a ``(schema, keywords)`` tuple where *schema* has safe property
+    names and *keywords* maps each safe name back to the original.  Nested
+    object schemas are processed recursively.
+
+    The schema is deep-copied before any mutation so the caller's original
+    is never modified.
+    """
+    if "properties" not in schema:
+        return schema, {}
+
+    schema = copy.deepcopy(schema)
+
+    keywords: t.Dict[str, t.Any] = {}
+    for p_name in list(schema["properties"]):
+        if not keyword.iskeyword(p_name):
+            continue
+
+        _nested_kw: t.Dict[str, t.Any] = {}
+        p_val = schema["properties"].pop(p_name)
+        if p_val.get("type") == "object":
+            p_val, _nested_kw = substitute_reserved_python_keywords(schema=p_val)
+
+        safe = _make_safe_name(p_name)
+        schema["properties"][safe] = p_val
+        keywords[safe] = p_name
+        keywords[f"{safe}{_OBJ_MARKER}"] = _nested_kw
+
+    # Also rename entries in the ``required`` list.
+    if keywords and "required" in schema:
+        reverse = {v: k for k, v in keywords.items() if not k.endswith(_OBJ_MARKER)}
+        schema["required"] = [reverse.get(r, r) for r in schema["required"]]
+
+    return schema, keywords
+
+
+def reinstate_reserved_python_keywords(
+    request: dict,
+    keywords: dict,
+) -> dict:
+    """Reverse the substitution performed by :func:`substitute_reserved_python_keywords`.
+
+    Modifies *request* **in-place** and returns it.
+    """
+    for clean_key in sorted(list(keywords), reverse=True):
+        subkeys = None
+        if clean_key.endswith(_OBJ_MARKER):
+            subkeys = keywords[clean_key]
+            clean_key, _ = clean_key.split(_OBJ_MARKER, maxsplit=1)
+
+        if clean_key not in request:
+            continue
+
+        original_value = request.pop(clean_key)
+        if subkeys:
+            original_value = reinstate_reserved_python_keywords(
+                request=original_value,
+                keywords=subkeys,
+            )
+        request[keywords[clean_key]] = original_value
+    return request
+
+
+def _coerce_default_value(
+    default: t.Any,
     json_schema: t.Dict[str, t.Any],
-) -> t.Union[t.Type, t.Optional[t.Any]]:
+) -> t.Any:
     """
-    Converts a JSON schema type to a Pydantic type.
+    Coerce a default value to match the expected type from JSON schema.
 
-    :param json_schema: The JSON schema to convert.
-    :return: A Pydantic type.
+    Handles common mismatches where string defaults should be boolean/int/float.
+    This fixes issues where API returns stringified defaults like "true" instead of true.
+
+    Coercion precedence: boolean > integer > float. This means values like "1" and "0"
+    become booleans when both bool and int are expected types.
+
+    :param default: The default value from the JSON schema.
+    :param json_schema: The JSON schema property definition.
+    :return: The coerced default value, or original if no coercion possible.
     """
-    # Handle oneOf schemas first
-    if "oneOf" in json_schema:
-        one_of_options = json_schema["oneOf"]
-        pydantic_types = [
-            json_schema_to_pydantic_type(option) for option in one_of_options
-        ]
-        # Filter out None values and ensure we have valid types
-        valid_types = [ptype for ptype in pydantic_types if ptype is not None]
-        if len(valid_types) == 1:
-            return valid_types[0]
-        if len(valid_types) == 0:
-            return str  # fallback to string type
-        # Create Union with any number of types
-        # Cast all types and use functools.reduce to create proper Union
-        cast_types = [t.cast(t.Type, ptype) for ptype in valid_types]
-        # Use reduce to create Union[Type1, Type2, ...] properly
-        return reduce(lambda a, b: t.Union[a, b], cast_types)  # type: ignore
+    if default is None or not isinstance(default, str):
+        return default
 
-    # Add fallback type - string
-    if "type" not in json_schema:
-        json_schema["type"] = "string"
-    type_ = t.cast(str, json_schema.get("type"))
-    if type_ == "array":
-        items_schema = json_schema.get("items")
-        if items_schema:
-            ItemType = json_schema_to_pydantic_type(items_schema)
-            return t.List[t.cast(t.Type, ItemType)]  # type: ignore
-        return t.List
+    # Collect expected types from schema
+    expected_types: t.Set[t.Any] = set()
 
-    if type_ == "object":
-        properties = json_schema.get("properties")
-        if properties:
-            nested_model = json_schema_to_model(json_schema)
-            return nested_model
-        return t.Dict
+    if "type" in json_schema:
+        py_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(json_schema["type"])
+        if py_type is not None:
+            expected_types.add(py_type)
 
-    pytype = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_)
-    if pytype is not None:
-        return pytype
+    for combiner in ("anyOf", "oneOf", "allOf"):
+        for option in json_schema.get(combiner, []):
+            if isinstance(option, dict):
+                option_type = option.get("type")
+                if isinstance(option_type, str):
+                    py_type = PYDANTIC_TYPE_TO_PYTHON_TYPE.get(option_type)
+                    if py_type is not None:
+                        expected_types.add(py_type)
 
-    raise ValueError(f"Unsupported JSON schema type: {type_}")
+    # If string is expected, no coercion needed
+    if str in expected_types:
+        return default
+
+    # Boolean coercion (takes precedence over int for "1"/"0")
+    if bool in expected_types:
+        lower_default = default.lower()
+        if lower_default in ("true", "yes", "1"):
+            return True
+        if lower_default in ("false", "no", "0"):
+            return False
+
+    # Integer coercion
+    if int in expected_types:
+        try:
+            return int(default)
+        except ValueError:
+            pass
+
+    # Float coercion
+    if float in expected_types:
+        try:
+            return float(default)
+        except ValueError:
+            pass
+
+    return default
 
 
 def json_schema_to_pydantic_field(
@@ -117,6 +204,10 @@ def json_schema_to_pydantic_field(
 
     examples = json_schema.get("examples", [])
     default = json_schema.get("default")
+
+    # Coerce default value to match expected type from schema
+    if default is not None:
+        default = _coerce_default_value(default, json_schema)
 
     # Check if the field name is a reserved Pydantic name
     if name in reserved_names:

@@ -1,0 +1,199 @@
+name: E2E Test Typescript SDK
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - 'ts/**'
+  pull_request:
+    paths:
+      - 'ts/**'
+  workflow_dispatch:
+
+jobs:
+  # Node.js E2E tests, running in Docker to isolate environment
+  # Each test suite defines its own nodeVersions in e2e.test.ts
+  # Tests that don't support the matrix version are automatically skipped
+  test-e2e-node-docker:
+    name: E2E Test Node.js ${{ matrix.node-version }}
+    runs-on: ubuntu-24.04
+    permissions: read-all
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20.18.0', '20.19.0', '22.12.0']
+    env:
+      CI: 1
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
+      COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build:packages
+
+      - name: Pre-build Docker image for e2e tests
+        run: |
+          docker build -f ts/e2e-tests/_utils/Dockerfile.node \
+            --build-arg NODE_VERSION=${{ matrix.node-version }} \
+            --label composio.e2e=true \
+            --label composio.runtime=node \
+            --label "composio.node_version=${{ matrix.node-version }}" \
+            -t "composio-e2e-node:${{ matrix.node-version }}" \
+            .
+
+      - name: Run Node.js E2E Tests
+        run: pnpm run test:e2e:node
+
+  # Deno E2E tests, running in Docker to isolate environment
+  # Each test suite defines its own versions.deno in e2e.test.ts
+  # Tests that don't support the matrix version are automatically skipped
+  test-e2e-deno-docker:
+    name: E2E Test Deno ${{ matrix.deno-version }}
+    runs-on: ubuntu-24.04
+    permissions: read-all
+    strategy:
+      fail-fast: false
+      matrix:
+        deno-version: ['2.6.7']
+    env:
+      CI: 1
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
+      COMPOSIO_E2E_DENO_VERSION: ${{ matrix.deno-version }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ matrix.deno-version }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build:packages
+
+      - name: Run Deno E2E Tests
+        run: pnpm run test:e2e:deno
+
+  # CLI E2E tests, running in scratch Docker to isolate environment
+  test-e2e-cli-docker:
+    name: E2E Test CLI (scratch)
+    runs-on: ubuntu-24.04
+    permissions: read-all
+    env:
+      CI: 1
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build:packages
+
+      - name: Pre-build Docker image for CLI e2e tests
+        run: |
+          CLI_VERSION=$(node -p "require('./ts/packages/cli/package.json').version")
+          echo "COMPOSIO_E2E_CLI_VERSION=${CLI_VERSION}" >> "$GITHUB_ENV"
+          docker build -f ts/e2e-tests/_utils/Dockerfile.cli \
+            --build-arg CLI_VERSION="${CLI_VERSION}" \
+            --label composio.e2e=true \
+            --label composio.runtime=cli \
+            --label "composio.cli_version=${CLI_VERSION}" \
+            -t "composio-e2e-cli:${CLI_VERSION}" \
+            .
+
+      - name: Run CLI E2E Tests
+        run: pnpm run test:e2e:cli
+
+  # Cloudflare Workerd E2E tests
+  test-e2e-cloudflare:
+    name: E2E Test Cloudflare Workerd
+    runs-on: ubuntu-24.04
+    permissions: read-all
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          node-version: '22.12.0'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build:packages
+
+      - name: Verify API Key
+        run: |
+          if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "::error::COMPOSIO_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ COMPOSIO_API_KEY is configured"
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::OPENAI_API_KEY is not set"
+            exit 1
+          fi
+          echo "✅ OPENAI_API_KEY is configured"
+
+      - name: Run Cloudflare Workers E2E Tests
+        run: pnpm run test:e2e:cloudflare
+        env:
+          COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

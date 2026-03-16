@@ -1,0 +1,91 @@
+---
+title: CLI
+description: Troubleshooting CLI issues
+---
+
+## Command not found
+
+Verify the CLI is installed and in your PATH:
+
+```bash
+which composio
+```
+
+If not found, reinstall:
+
+```bash
+curl -fsSL https://composio.dev/install | bash
+```
+
+Or add to PATH:
+
+```bash
+echo 'export PATH="$HOME/.composio:$PATH"' >> ~/.bashrc && source ~/.bashrc
+```
+
+## Authentication errors
+
+Check current authentication:
+
+```bash
+composio whoami
+```
+
+Re-authenticate if needed:
+
+```bash
+composio logout
+composio login
+```
+
+For CI/CD, use environment variable:
+
+```bash
+export COMPOSIO_API_KEY="your-api-key"
+```
+
+## Type generation issues
+
+### Project type not detected
+
+Use language-specific commands:
+
+```bash
+composio ts generate  # TypeScript
+composio py generate  # Python
+```
+
+### Output directory missing
+
+Specify output directory explicitly:
+
+```bash
+composio generate --output-dir ./my-types
+```
+
+## Debug CLI issues
+
+Enable debug logging:
+
+```bash
+composio --log-level debug [command]
+```
+
+Check version compatibility:
+
+```bash
+composio version
+```
+
+## Common issues
+
+- **API key not found**: Run `composio login`
+- **Project type detection fails**: Use language-specific commands or ensure you're in project root
+- **Network timeout**: Check internet connection and proxy settings
+- **Permission denied**: Check directory write permissions
+
+## Getting help
+
+- **Email**: support@composio.dev
+- **Discord**: [#support-form](https://discord.com/channels/1170785031560646836/1268871288156323901)
+- **GitHub**: [Create an issue](https://github.com/ComposioHQ/composio/issues/new?labels=bug)

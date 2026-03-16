@@ -1,18 +1,8 @@
 import process from 'node:process';
-import {
-  Cause,
-  Config,
-  ConfigProvider,
-  Console,
-  Effect,
-  Exit,
-  Logger,
-  Layer,
-  LogLevel,
-} from 'effect';
+import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
 import { BunContext, BunFileSystem, BunRuntime } from '@effect/platform-bun';
 import { FileSystem } from '@effect/platform';
-import type { Teardown } from '@effect/platform/Runtime';
+import { teardown } from './_shared';
 import path from 'node:path';
 import { $ } from 'bun';
 import { CACHE_FILES } from '../src/services/composio-clients-cached';
@@ -58,12 +48,6 @@ export function copyMocksFromCache() {
     yield* Console.log('Cached responses successfully copied into mocks folder:', mocksDir);
   });
 }
-
-export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {
-  const shouldFail = Exit.isFailure(exit) && !Cause.isInterruptedOnly(exit.cause);
-  const errorCode = Number(process.exitCode ?? 1);
-  onExit(shouldFail ? errorCode : 0);
-};
 
 const ConfigLive = Effect.gen(function* () {
   const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(

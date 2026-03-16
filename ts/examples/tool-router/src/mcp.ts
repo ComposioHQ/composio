@@ -6,7 +6,15 @@ import ora from 'ora';
 
 const composio = new Composio();
 const trProgress = ora("Creating tool router session...").start();
-const { mcp } = await composio.experimental.create('dhawal', { toolkits: ['gmail'], manageConnections: true });
+const { mcp } = await composio.create('default', {
+  toolkits: ['gmail'], 
+  manageConnections: true,
+  tools: {
+    'gmail': {
+      enable: ['GMAIL_FETCH_EMAILS'],
+    }
+  }
+});
 trProgress.succeed(`Tool router session created: ${mcp.url}`);
 
 const mcpProgress = ora("Retrieving tools from MCP...").start();
@@ -14,9 +22,7 @@ const client = await createMCPClient({
   transport: {
     type: 'http',
     url: mcp.url,
-    headers: {
-      'x-api-key': process.env.COMPOSIO_API_KEY!,
-    }
+    headers: mcp.headers
   }
 });
 
@@ -26,7 +32,7 @@ mcpProgress.succeed(`${Object.values(tools).length} tools retrieved from MCP`);
 console.log(`🤖 Waiting for agent response...`);
 const stream = await streamText({
   model: openai('gpt-4o-mini'),
-  prompt: 'Find my last email from gmail?',
+  prompt: 'Summarize my latest received email from gmail.',
   stopWhen: stepCountIs(10),
   onStepFinish: (step) => {
     if (step.toolCalls.length > 0) {

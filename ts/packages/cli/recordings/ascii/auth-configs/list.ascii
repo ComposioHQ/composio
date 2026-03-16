@@ -1,0 +1,228 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all auth configs
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all auth configs
+> composio auth-configs list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all auth configs
+> composio auth-configs list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all auth configs
+> composio auth-configs list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all auth configs
+> composio auth-configs list
+│
+◒  Fetching auth configs...
+◇  Fetching auth configs...
+│
+●  Listing 3 of 3 auth configs
+│
+│  Name                     Id               Toolkit        Auth Scheme    Type
+   Conns   Status
+│  gmail-auth               ac_<REDACTED>    gmail          OAUTH2         default
+   1       ENABLED
+│  auth_config_github_17... ac_<REDACTED>    github         OAUTH2         default
+   5       ENABLED
+│  google calendar-jkomyno  ac_<REDACTED>    googlecalendar OAUTH2         default
+   1       ENABLED
+│
+◇  To view details of an auth config:
+│  > composio auth-configs info "ac_<REDACTED>"
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────

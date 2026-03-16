@@ -1,0 +1,86 @@
+---
+title: Slack Summarizer
+description: Build an agent that summarizes Slack channel messages using Composio
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/slack-summariser)
+
+This cookbook builds a standalone Python script that connects to a Slack workspace, fetches recent messages from a channel, and summarizes the key topics, decisions, and action items. We'll use **scoped sessions** to limit the agent to Slack tools only.
+
+## Prerequisites
+
+* Python 3.10+
+* [UV](https://docs.astral.sh/uv/getting-started/installation/)
+* [Composio API key](https://platform.composio.dev/settings)
+* [OpenAI API key](https://platform.openai.com/api-keys)
+
+## Project setup
+
+Create a new project and install dependencies:
+
+```bash
+mkdir composio-slack-summarizer && cd composio-slack-summarizer
+uv init && uv add composio composio-openai-agents openai-agents
+```
+
+Add your API keys to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+## Setting up the client
+
+`Composio` takes an `OpenAIAgentsProvider` so that tools come back in the format the OpenAI Agents SDK expects.
+
+<include>../../examples/slack-summariser/main.py#setup</include>
+
+## Connecting to Slack
+
+Before summarizing, we need to make sure the user has connected their Slack workspace. The `connect` function creates a scoped session with `toolkits=["slack"]` and checks the connection status via `session.toolkits()`. If Slack is not connected, `session.authorize("slack")` starts the OAuth flow and returns a URL for the user to visit. `wait_for_connection()` blocks until they complete it.
+
+<include>../../examples/slack-summariser/main.py#connect</include>
+
+## Summarizing a channel
+
+With Slack connected, the `summarize` function creates a session and grabs the tools. We hand them to an agent with focused summarization instructions. `Runner.run_sync` handles the agentic loop: the agent calls the Slack tool to fetch messages and produces a summary.
+
+<include>../../examples/slack-summariser/main.py#summarize</include>
+
+## Complete script
+
+Here is everything together:
+
+<include>../../examples/slack-summariser/main.py</include>
+
+## Running the script
+
+First, connect your Slack workspace:
+
+```bash
+uv run --env-file .env python main.py connect default
+```
+
+If Slack is not connected yet, you'll get an OAuth URL. Open it in your browser and authorize the app. If you've already connected, the script will print "Slack is already connected."
+
+Then run the summarizer:
+
+```bash
+uv run --env-file .env python main.py summarize default general
+```
+
+Replace `general` with any channel name you want to summarize.
+
+## Take it further
+
+The summarizer reads from one channel, but the same pattern scales to broader workflows:
+
+- **Cross-channel digest**: summarize multiple channels in one run and post a combined digest to a `#daily-summary` channel
+- **Trigger-based**: use a [Slack trigger](/docs/setting-up-triggers/creating-triggers) to auto-summarize whenever a channel hits 50+ unread messages
+- **Action items to Linear**: add the Linear toolkit and have the agent extract action items from the summary and create tickets
+
+<Cards>
+  <Card title="Gmail Labeler" href="/cookbooks/gmail-labeler" description="Event-driven agent that labels emails as they arrive" />
+  <Card title="Background Agent" href="/cookbooks/background-agent" description="Run agents autonomously on a schedule" />
+</Cards>

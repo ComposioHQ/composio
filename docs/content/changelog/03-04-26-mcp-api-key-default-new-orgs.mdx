@@ -1,0 +1,41 @@
+---
+title: "MCP API Key Authentication Enabled by Default for New Orgs"
+description: "Organizations created on or after March 5, 2026 will have require_mcp_api_key enabled by default"
+date: "2026-03-04"
+---
+
+As announced in our [Optional API Key Enforcement for MCP Servers](/docs/changelog/2026/01/08) entry, **MCP API key enforcement is now enabled by default for all newly created organizations**.
+
+### What's Changed
+
+From **March 5, 2026**, all projects in newly created organizations will have `require_mcp_api_key` set to `true` by default. Any MCP server request without a valid `x-api-key` header will be rejected with `401 Unauthorized`.
+
+| Setting | Previous Default | New Default (orgs created March 5+) |
+|---------|-----------------|--------------------------------------|
+| `require_mcp_api_key` | `false` | `true` |
+
+### For New Organizations
+
+- You can opt out by setting `require_mcp_api_key: false` in your project configuration
+
+### For Existing Organizations
+
+Nothing changes for existing organizations. If your organization was created before March 5, 2026:
+
+- Your current `require_mcp_api_key` setting remains unchanged
+- You can opt in at any time through your [project settings](https://platform.composio.dev) or via the API
+
+### Opting Out (New Organizations)
+
+If you need to disable API key enforcement, set `require_mcp_api_key: false` during project creation or update it afterward:
+
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3/org/project/config \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"require_mcp_api_key": false}'
+```
+
+<Callout type="info">
+We strongly recommend keeping MCP API key enforcement enabled to prevent unauthorized access to your MCP servers. See the [original announcement](/docs/changelog/2026/01/08) for setup details and usage examples.
+</Callout>

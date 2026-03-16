@@ -1,0 +1,34 @@
+---
+title: Triggers
+description: Troubleshooting trigger issues
+---
+
+## Unable to create trigger
+
+Check the error message — the connected account might not have sufficient permissions or the required OAuth scopes. Ensure the user has authenticated with the necessary scopes for the trigger.
+
+## Not receiving payloads
+
+- **Polling triggers** (e.g., Gmail): These check for new events on an interval you configure. For Composio managed auth, intervals below 15 minutes are not supported.
+- **Webhook URL**: Ensure your URL is publicly accessible and returns a `2xx` status code.
+- **Trigger status**: Verify the trigger is enabled, not disabled.
+- **Logs**: Check the [trigger logs](https://platform.composio.dev?next_page=/logs/triggers) in the dashboard for delivery attempts and errors.
+
+## Type errors with trigger payloads
+
+Use `getType()` / `get_type()` to inspect the exact payload schema for a trigger type. This shows you the fields and types you should expect.
+
+## Reporting issues
+
+When contacting support, include:
+
+- **Trigger ID** and **connected account ID** — find these under Active Triggers in the dashboard:
+
+  <Figure src="/images/troubleshooting/troubleshooting-trigger-id.png" alt="Trigger ID and connected account ID in the dashboard" size="lg" />
+
+- **Error message** and **reproduction steps**
+
+## Getting help
+
+- **Email**: support@composio.dev
+- **Discord**: [#support-form](https://discord.com/channels/1170785031560646836/1268871288156323901)

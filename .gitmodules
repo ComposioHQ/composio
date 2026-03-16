@@ -1,0 +1,7 @@
+[submodule "ts/vendor/effect"]
+	path = ts/vendor/effect
+	url = git@github.com:Effect-TS/effect.git
+	branch = main
+[submodule "ts/vendor/clack"]
+	path = ts/vendor/clack
+	url = https://github.com/bombshell-dev/clack.git

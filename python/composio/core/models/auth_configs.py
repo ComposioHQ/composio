@@ -95,6 +95,9 @@ class AuthConfigs(Resource):
                 nanoid=nanoid,
                 type=options["type"],  # type: ignore
                 credentials=options.get("credentials", self._client.not_given),
+                is_enabled_for_tool_router=options.get(
+                    "is_enabled_for_tool_router", self._client.not_given
+                ),
                 tool_access_config=options.get(
                     "tool_access_config", self._client.not_given
                 ),

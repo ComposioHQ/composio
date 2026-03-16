@@ -1,37 +1,28 @@
-import { Agent, run, hostedMcpTool } from '@openai/agents';
-import { Composio } from '@composio/core';
 
-const composio = new Composio();
+import { Composio } from "@composio/core";
+import { Agent, run, hostedMcpTool } from "@openai/agents";
+import { createInterface } from "node:readline/promises";
 
-const session = await composio.experimental.create('user_123', { toolkits: ['gmail'] });
-
-console.log(`Tool Router Session Created: ${session.sessionId}`);
-console.log(`Connecting to MCP server: ${session.mcp.url}`);
-
-const mcpTool = hostedMcpTool({
-  serverLabel: 'ComposioApps',
-  serverUrl: session.mcp.url,
-  headers: {
-    'x-api-key': process.env.COMPOSIO_API_KEY!,
-  }
-});
-
+const composio = await new Composio()
+const {mcp} = await composio.create("default");
 
 const agent = new Agent({
-  name: 'Gmail Assistant',
-  instructions: 'You are a helpful gmail assistant.',
-  tools: [mcpTool],
+  name: "Personal Assistant",
+  model: "gpt-5.1",
+  instructions: "You are a helpful personal assistant. Use Composio tools to execute tasks.",
+  tools: [
+    hostedMcpTool({ serverLabel: "composio", serverUrl: mcp.url, headers: {
+      'x-api-key': process.env.COMPOSIO_API_KEY!,
+    } }),
+  ],
 });
 
-const result = await run(agent, 'Summarize my last email from gmail', {
-  stream: true,
-});
+const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-
-const stream = result.toStream();
-
-for await (const event of stream) {
-  if (event.type === 'raw_model_stream_event' && event.data.delta) {
-    process.stdout.write(event.data.delta);
-  }
+for (let input: any = await rl.question("You: "); input !== "exit"; ) {
+  const result = await run(agent, input);
+  console.log(`Agent: ${result.finalOutput}\n`);
+  input = [...result.history, { role: "user" as const, content: await rl.question("You: ") }];
 }
+
+rl.close();

@@ -1,0 +1,56 @@
+---
+title: Authentication
+description: How to authenticate with Composio APIs using project and organization API keys
+keywords: [API authentication, API key, x-api-key, x-org-api-key, Composio authentication, authorization]
+---
+
+All Composio API endpoints require authentication via API key.
+
+## API Key Authentication
+
+Include your API key in the `x-api-key` header.
+
+### Getting Your API Key
+
+1. Sign in to [composio.dev](https://composio.dev)
+2. Navigate to **Settings**
+3. In **Project Settings**, copy the key from the **API Keys** section
+
+<Video src="/videos/fetch-project-key.mp4" autoPlay />
+
+## Organization API Key
+
+For organization-level access across multiple projects, use the `x-org-api-key` header instead.
+
+### Getting Your Organization API Key
+
+1. Sign in to [composio.dev](https://composio.dev)
+2. Navigate to **Organization Settings** → **General Settings**
+3. Copy the token under **Organization Access Tokens**
+
+<Video src="/videos/fetch-org-key.mp4" autoPlay />
+
+## Using the API Key
+
+Include your API key in the request header:
+
+```bash
+curl https://backend.composio.dev/api/v3/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+For organization-level endpoints:
+
+```bash
+curl https://backend.composio.dev/api/v3/org/projects \
+  -H "x-org-api-key: $COMPOSIO_ORG_API_KEY"
+```
+
+<Cards>
+  <Card title="Errors" href="/reference/errors">
+    Understanding API error responses
+  </Card>
+  <Card title="Rate Limits" href="/reference/rate-limits">
+    API rate limits by plan
+  </Card>
+</Cards>

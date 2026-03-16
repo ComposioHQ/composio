@@ -1,0 +1,28 @@
+name: Docs - Check Links
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Validate links
+        run: bun run lint:links

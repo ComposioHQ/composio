@@ -172,7 +172,50 @@ class ErrorDownloadingFile(FileError):
     pass
 
 
+class RemoteFileDownloadError(FileError):
+    """Raised when fetching a remote file from a tool router session mount fails.
+
+    Includes HTTP status, URL, and file path context for debugging.
+    """
+
+    def __init__(
+        self,
+        message: str = "Failed to download remote file",
+        *,
+        status_code: t.Optional[int] = None,
+        status_text: t.Optional[str] = None,
+        download_url: t.Optional[str] = None,
+        mount_relative_path: t.Optional[str] = None,
+        filename: t.Optional[str] = None,
+        **kwargs: t.Any,
+    ) -> None:
+        super().__init__(message, **kwargs)
+        self.status_code = status_code
+        self.status_text = status_text
+        self.download_url = download_url
+        self.mount_relative_path = mount_relative_path
+        self.filename = filename
+
+
+class ResponseTooLargeError(FileError):
+    """Raised when a response exceeds the maximum allowed size."""
+
+    pass
+
+
 class TriggerError(ToolkitError):
+    pass
+
+
+class WebhookSignatureVerificationError(TriggerError):
+    """Raised when webhook signature verification fails."""
+
+    pass
+
+
+class WebhookPayloadError(TriggerError):
+    """Raised when webhook payload is invalid."""
+
     pass
 
 

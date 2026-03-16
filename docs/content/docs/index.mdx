@@ -1,0 +1,102 @@
+---
+title: Welcome
+description: Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
+keywords: [getting started, introduction]
+---
+
+Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
+
+<Cards>
+  <Card
+    title="Tutorial: Build a chat app"
+    href="/cookbooks/chat-app"
+    description="Build a Next.js chat app where your agent can discover and use tools across 1000+ apps."
+  />
+  <Card
+    title="How Composio works"
+    href="/docs/how-composio-works"
+    description="See what happens under the hood when your agent searches, authenticates, and executes a tool."
+  />
+</Cards>
+
+## Get Started
+
+<AIToolsBanner />
+
+<Cards className="grid-cols-1">
+  <Card
+    icon={<Rocket />}
+    title="Quickstart"
+    href="/docs/quickstart"
+    description="Install the SDK, connect an app, and run your first tool call in 5 minutes."
+  />
+</Cards>
+
+## Explore
+
+<Cards>
+  <Card
+    icon={<Wrench />}
+    title="Toolkits"
+    href="/toolkits"
+    description="Browse 1000+ toolkits across GitHub, Gmail, Slack, Notion, and more."
+  />
+  <Card
+    icon={<Play />}
+    title="Playground"
+    href="https://platform.composio.dev/auth?next_page=%2Ftool-router"
+    description="Try Composio in your browser without writing any code."
+  />
+</Cards>
+
+## Providers
+
+Composio works with any AI framework. Pick your preferred SDK:
+
+<ProviderGrid>
+  <ProviderCard name="Claude Agent SDK" href="/docs/providers/claude-agent-sdk" logo="/images/providers/anthropic-logo.svg" logoDark="/images/providers/anthropic-logo-dark.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="Anthropic" href="/docs/providers/anthropic" logo="/images/providers/anthropic-logo.svg" logoDark="/images/providers/anthropic-logo-dark.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="OpenAI Agents" href="/docs/providers/openai-agents" logo="/images/providers/openai-logo.svg" logoDark="/images/providers/openai-logo-dark.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="OpenAI" href="/docs/providers/openai" logo="/images/providers/openai-logo.svg" logoDark="/images/providers/openai-logo-dark.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="Google Gemini" href="/docs/providers/google" logo="/images/providers/google-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="Vercel AI SDK" href="/docs/providers/vercel" logo="/images/providers/vercel-logo.svg" logoDark="/images/providers/vercel-logo-dark.svg" languages={["TypeScript"]} />
+  <ProviderCard name="LangChain" href="/docs/providers/langchain" logo="/images/providers/langchain-logo.svg" logoDark="/images/providers/langchain-logo-dark.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="LangGraph" href="/docs/providers/langgraph" logo="/images/providers/langgraph-logo.svg" languages={["Python"]} />
+  <ProviderCard name="CrewAI" href="/docs/providers/crewai" logo="/images/providers/crewai-logo.svg" languages={["Python"]} />
+  <ProviderCard name="LlamaIndex" href="/docs/providers/llamaindex" logo="/images/providers/llamaIndex-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard name="Mastra" href="/docs/providers/mastra" logo="/images/providers/mastra-logo.svg" logoDark="/images/providers/mastra-logo-dark.svg" languages={["TypeScript"]} />
+  <ProviderCard name="Build your own" href="/docs/providers/custom-providers" icon={<Blocks size={32} />} languages={["Python", "TypeScript"]} />
+</ProviderGrid>
+
+## Features
+
+<Cards>
+  <Card
+    icon={<Key />}
+    title="Authentication"
+    href="/docs/authentication"
+    description="OAuth, API keys, and custom auth flows"
+  />
+  <Card
+    icon={<Zap />}
+    title="Triggers"
+    href="/docs/triggers"
+    description="Subscribe to external events and trigger workflows"
+  />
+  <Card
+    icon={<Terminal />}
+    title="CLI"
+    href="/docs/cli"
+    description="Manage toolkits, execute tools, and generate type-safe code from the terminal"
+  />
+  <Card
+    icon={<Palette />}
+    title="White Labeling"
+    href="/docs/white-labeling-authentication"
+    description="Customize auth screens with your branding"
+  />
+</Cards>
+
+## Community
+
+Join our [Discord](https://discord.gg/composio) community!

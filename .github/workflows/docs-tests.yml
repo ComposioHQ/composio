@@ -1,0 +1,58 @@
+name: Docs - Tests
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run static tests
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+
+      - name: Start server and run integration tests
+        run: |
+          bun run start &
+          SERVER_PID=$!
+
+          echo "Waiting for server to start..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Server failed to start within 30 seconds"
+              kill $SERVER_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+          set +e
+          bun run test:integration
+          TEST_EXIT=$?
+          set -e
+
+          kill $SERVER_PID 2>/dev/null || true
+          exit $TEST_EXIT

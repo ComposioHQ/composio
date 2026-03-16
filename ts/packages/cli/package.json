@@ -1,10 +1,11 @@
 {
   "name": "@composio/cli",
-  "version": "0.1.24",
+  "version": "0.2.4",
   "description": "Composio CLI",
-  "main": "dist/bin.js",
+  "main": "./dist/bin.mjs",
+  "private": true,
   "bin": {
-    "composio": "./dist/composio"
+    "composio": "./bin/composio.mjs"
   },
   "type": "module",
   "repository": {
@@ -14,27 +15,34 @@
   },
   "publishConfig": {
     "access": "public",
-    "main": "dist/bin.js",
-    "types": "dist/bin.d.ts"
+    "main": "dist/bin.mjs",
+    "types": "dist/bin.d.mts"
   },
   "files": [
     "README.md",
+    "bin",
     "dist"
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "cli": "bun run src/bin.ts",
-    "build:bin": "bun run ./scripts/build-binary.ts",
-    "install:bin": "bun run ./scripts/install-binary.ts ./dist/composio",
+    "build:binary": "bun run ./scripts/build-binary.ts",
+    "build:binary:cross": "bun run ./scripts/build-binary-cross.ts",
+    "build:binary:all": "bun run ./scripts/build-all-binaries.ts",
+    "build:binary:package": "bun run ./scripts/package-binaries.ts",
+    "build:binary:checksums": "bun run ./scripts/generate-checksums.ts",
+    "install:binary": "bun run ./scripts/install-binary.ts ./dist/composio",
+    "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
-    "build": "tsup",
+    "build": "bun run --bun tsdown",
     "bin": "./dist/composio",
     "test": "vitest run",
-    "prepublishOnly": "pnpm run build && pnpm run build:bin",
+    "prepublishOnly": "pnpm run build && pnpm run build:binary",
     "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
-    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
+    "record": "bun run ./scripts/record.ts"
   },
   "keywords": [
     "composio",
@@ -43,41 +51,49 @@
   ],
   "author": "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "devDependencies": {
-    "@effect/eslint-plugin": "^0.3.2",
-    "@effect/language-service": "^0.27.1",
-    "@effect/platform": "^0.85.2",
-    "@effect/vitest": "^0.23.8",
+    "@effect/eslint-plugin": "catalog:",
+    "@effect/language-service": "catalog:",
+    "@effect/platform": "catalog:",
+    "@effect/vitest": "catalog:",
     "@types/bun": "^1.2.16",
     "@types/decompress": "^4.2.7",
     "@types/semver": "^7.7.0",
     "tempy": "^3.1.0",
-    "tsup": "catalog:",
+    "tsdown": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@clack/prompts": "1.0.0-alpha.1",
+    "@clack/core": "catalog:",
+    "@clack/prompts": "catalog:",
     "@composio/client": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/ts-builders": "workspace:*",
-    "@effect/cli": "^0.64.2",
-    "@effect/platform-bun": "^0.70.4",
-    "@effect/platform-node-shared": "^0.40.4",
+    "@effect/cli": "catalog:",
+    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node-shared": "catalog:",
     "ansis": "^4.1.0",
     "comment-json": "^4.2.5",
     "decompress": "^4.2.1",
-    "effect": "^3.16.16",
+    "effect": "catalog:",
     "indent-string": "^5.0.0",
     "open": "^10.2.0",
     "openapi-typescript": "^7.8.0",
     "picocolors": "^1.1.1",
+    "pusher-js": "^8.4.0",
     "semver": "^7.7.2",
     "source-map-js": "^1.2.1",
     "superjson": "^2.2.2",
     "ts-morph": "^26.0.0"
   },
-  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
+  "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",
+  "module": "./dist/bin.mjs",
+  "types": "./dist/bin.d.mts",
+  "exports": {
+    ".": "./dist/bin.mjs",
+    "./package.json": "./package.json"
+  }
 }

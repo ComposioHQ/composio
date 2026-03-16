@@ -9,8 +9,6 @@ members = [
     "python/providers/langchain",
     "python/providers/openai",
     "python/providers/openai_agents",
-    "fern/snippets/migration",
-    "fern"
 ]
 
 [tool.uv.sources]
@@ -24,8 +22,6 @@ composio-google-adk = { workspace = true }
 composio-openai = { workspace = true }
 composio-openai-agents = { workspace = true }
 
-# Fern packages
-fern = { workspace = true }
 composio = { workspace = true }
 
 [dependency-groups]

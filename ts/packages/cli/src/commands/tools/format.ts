@@ -1,0 +1,148 @@
+import type { Tool } from 'src/models/tools';
+import type { ToolDetailedResponse } from 'src/services/composio-clients';
+import { bold, gray } from 'src/ui/colors';
+import { truncate } from 'src/ui/truncate';
+import { extractSchemaProperties } from 'src/ui/extract-schema-properties';
+
+/**
+ * Format a list of tools as a human-readable table.
+ */
+export function formatToolsTable(tools: ReadonlyArray<Tool>): string {
+  const header = `${bold('Slug'.padEnd(35))} ${bold('Name'.padEnd(20))} ${bold('Description')}`;
+
+  const rows = tools.map(t => {
+    const slug = truncate(t.slug, 35).padEnd(35);
+    const name = truncate(t.name, 20).padEnd(20);
+    const desc = gray(truncate(t.description, 50));
+    return `${slug} ${name} ${desc}`;
+  });
+
+  return [header, ...rows].join('\n');
+}
+
+/**
+ * Format tools as JSON for piped output.
+ */
+export function formatToolsJson(tools: ReadonlyArray<Tool>): string {
+  return JSON.stringify(
+    tools.map(t => ({
+      slug: t.slug,
+      name: t.name,
+      description: t.description,
+      tags: t.tags,
+    })),
+    null,
+    2
+  );
+}
+
+/**
+ * Format JSON Schema properties as a human-readable parameter table.
+ * Extracts `properties` entries, cross-references `required` array.
+ */
+function formatSchemaProperties(schema: Record<string, unknown>): string {
+  const entries = extractSchemaProperties(schema);
+  if (entries.length === 0) {
+    return '  (none)';
+  }
+
+  const nameWidth = Math.max(...entries.map(e => e.name.length));
+  const typeWidth = Math.max(...entries.map(e => e.type.length));
+  const labelWidth = Math.max(...entries.map(e => e.label.length));
+
+  return entries
+    .map(e => {
+      const desc = e.description ? `  ${gray(`"${truncate(e.description, 50)}"`)}` : '';
+      return `  ${e.name.padEnd(nameWidth)} ${e.type.padEnd(typeWidth)} ${e.label.padEnd(labelWidth)}${desc}`;
+    })
+    .join('\n');
+}
+
+/**
+ * Format JSON Schema properties using a detailed field layout, similar to trigger info.
+ */
+function formatSchemaPropertiesDetailed(schema: Record<string, unknown>): string {
+  const entries = extractSchemaProperties(schema);
+  if (entries.length === 0) {
+    return '  (none)';
+  }
+
+  const typeWidth = Math.max(...entries.map(e => e.type.length));
+  const labelWidth = Math.max(...entries.map(e => e.label.length));
+  const metadataLabels = ['description:', 'type:', 'required:', 'default:'] as const;
+  const metadataLabelWidth = Math.max(...metadataLabels.map(label => label.length));
+
+  return entries
+    .map(e => {
+      const lines: string[] = [];
+      lines.push(`  ${bold(e.name)}`);
+      lines.push(
+        `    ${'description:'.padEnd(metadataLabelWidth)} ${e.description ? gray(truncate(e.description, 70)) : '-'}`
+      );
+      lines.push(`    ${'type:'.padEnd(metadataLabelWidth)} ${e.type.padEnd(typeWidth)}`);
+      lines.push(`    ${'required:'.padEnd(metadataLabelWidth)} ${e.label.padEnd(labelWidth)}`);
+      if (e.hasDefault) {
+        lines.push(
+          `    ${'default:'.padEnd(metadataLabelWidth)} ${gray(truncate(JSON.stringify(e.defaultValue), 40))}`
+        );
+      }
+      return lines.join('\n');
+    })
+    .join('\n\n');
+}
+
+/**
+ * Format a detailed tool for interactive display.
+ */
+export function formatToolInfo(tool: ToolDetailedResponse): string {
+  const lines: string[] = [];
+
+  lines.push(`${bold('Name:')} ${tool.name}`);
+  lines.push(`${bold('Slug:')} ${tool.slug}`);
+  lines.push(`${bold('Description:')} ${tool.description}`);
+  lines.push(`${bold('Tags:')} ${tool.tags.length > 0 ? tool.tags.join(', ') : '(none)'}`);
+
+  if (tool.toolkit.slug) {
+    lines.push(`${bold('Toolkit:')} ${tool.toolkit.name} (${tool.toolkit.slug})`);
+  }
+
+  if (tool.no_auth) {
+    lines.push(`${bold('Auth:')} No authentication required`);
+  }
+
+  if (tool.available_versions.length > 0) {
+    lines.push(`${bold('Versions:')} ${tool.available_versions.join(', ')}`);
+  }
+
+  // Input parameters
+  lines.push('');
+  lines.push(bold('Input Parameters:'));
+  lines.push(formatSchemaProperties(tool.input_parameters as Record<string, unknown>));
+
+  // Output parameters
+  lines.push('');
+  lines.push(bold('Output Parameters:'));
+  lines.push(formatSchemaProperties(tool.output_parameters as Record<string, unknown>));
+
+  return lines.join('\n');
+}
+
+/**
+ * Format only tool input parameters for execute-help flows.
+ */
+export function formatToolInputParameters(tool: ToolDetailedResponse): string {
+  const lines: string[] = [];
+  lines.push(`${bold('Name:')} ${tool.name}`);
+  lines.push(`${bold('Slug:')} ${tool.slug}`);
+  lines.push(`${bold('Description:')} ${tool.description || '(none)'}`);
+
+  if (tool.toolkit.slug) {
+    lines.push(`${bold('Toolkit:')} ${tool.toolkit.name} (${tool.toolkit.slug})`);
+  }
+
+  lines.push('');
+  lines.push(gray('------------------------------'));
+  lines.push(bold('Data Parameters:'));
+  lines.push(formatSchemaPropertiesDetailed(tool.input_parameters as Record<string, unknown>));
+  return lines.join('\n');
+}

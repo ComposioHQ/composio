@@ -1,0 +1,103 @@
+---
+title: OpenAI Agents SDK
+description: Build an agent with OpenAI Agents SDK and enable it to use 1000+ tools with Composio.
+keywords: [openai agents sdk, agents sdk]
+---
+
+The OpenAI Agents SDK provider transforms Composio tools into the [Agents SDK tool format](https://openai.github.io/openai-agents-python/) with built-in execution.
+
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```bash
+pip install composio composio-openai-agents openai-agents
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/openai-agents @openai/agents
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+import asyncio
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+from agents import Agent, Runner
+
+composio = Composio(provider=OpenAIAgentsProvider())
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+agent = Agent(
+    name="Email Agent",
+    instructions="You are a helpful assistant.",
+    tools=tools,
+)
+
+async def main():
+    result = await Runner.run(
+        starting_agent=agent,
+        input="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+    )
+    print(result.final_output)
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+import { OpenAIAgentsProvider } from "@composio/openai-agents";
+import { Agent, run } from "@openai/agents";
+
+const composio = new Composio({
+  provider: new OpenAIAgentsProvider(),
+});
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const agent = new Agent({
+  name: "Email Agent",
+  instructions: "You are a helpful assistant.",
+  tools,
+});
+
+const result = await run(
+  agent,
+  "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+);
+
+console.log(result.finalOutput);
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>

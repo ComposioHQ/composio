@@ -1,0 +1,114 @@
+---
+title: Basic Hono Server
+description: Build an AI agent with access to 1000+ tools using Composio and Hono.js
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/hono)
+
+This cookbook builds a Hono.js server where users can chat with an AI agent that has access to over 1000 tools like Gmail, GitHub, Slack, Notion, and more. Along the way we'll add endpoints to manage which apps a user has connected.
+
+## Prerequisites
+
+* Node.js 18+
+* [Composio API key](https://platform.composio.dev/settings)
+* [OpenAI API key](https://platform.openai.com/api-keys)
+
+## Project setup
+
+Create a new project and install dependencies:
+
+```bash
+mkdir composio-hono && cd composio-hono
+npm init -y
+npm install hono @hono/node-server openai @composio/core @composio/openai tsx dotenv
+```
+
+Add your API keys to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+## Initializing the clients
+
+`Composio` takes an `OpenAIProvider` so that when we ask for tools later, they come back in the format OpenAI expects.
+
+<include meta="no-twoslash">../../examples/hono/server.ts#setup</include>
+
+## Chat endpoint
+
+The core of the server is a `/chat` endpoint. A user sends a message, and the agent responds, using whatever tools it needs.
+
+`composio.create()` creates a **session** scoped to a user. Calling `session.tools()` returns a set of meta tools that let the agent discover tools across all apps, handle OAuth when needed, and execute actions. We pass these to OpenAI and loop until the model stops calling tools.
+
+<include meta="no-twoslash">../../examples/hono/server.ts#chat</include>
+
+<Callout>
+If the user hasn't connected the app they're trying to use, the agent will automatically
+return an authentication link in its response. The user can complete OAuth and then retry.
+</Callout>
+
+That's a working agent. But in most apps you'll also want to manage connections outside of chat, for example to show users what's connected or let them connect new apps from a settings page.
+
+## Checking connections
+
+`session.toolkits()` returns every toolkit in the session along with its connection status. We can expose this as a simple GET endpoint so your frontend can render a connections UI.
+
+<include meta="no-twoslash">../../examples/hono/server.ts#list-connections</include>
+
+If you just need to check a single toolkit, say before kicking off a workflow that requires Gmail, you can scope the session to that toolkit:
+
+<include meta="no-twoslash">../../examples/hono/server.ts#check-connection</include>
+
+## Connecting an app
+
+When a user wants to connect a new app, `session.authorize()` starts the OAuth flow and returns a redirect URL. Your frontend sends the user there, and once they complete auth, they're connected.
+
+<include meta="no-twoslash">../../examples/hono/server.ts#connect</include>
+
+## Complete app
+
+Here's everything together:
+
+<include meta='title="server.ts"'>../../examples/hono/server.ts</include>
+
+## Running the server
+
+```bash
+npx tsx server.ts
+```
+
+The server runs at `http://localhost:8000`.
+
+## Testing with cURL
+
+### Chat with the agent
+
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "user_123", "message": "Star the composiohq/composio repo on GitHub"}'
+```
+
+### List all connections
+
+```bash
+curl http://localhost:8000/connections/user_123
+```
+
+### Check a specific connection
+
+```bash
+curl http://localhost:8000/connections/user_123/gmail
+```
+
+### Connect an app
+
+```bash
+curl -X POST http://localhost:8000/connect/gmail \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "user_123"}'
+```
+
+Open the `redirectUrl` from the response in your browser to complete OAuth.

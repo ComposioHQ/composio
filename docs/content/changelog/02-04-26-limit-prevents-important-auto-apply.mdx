@@ -1,0 +1,150 @@
+---
+title: 'Limit Parameter Now Prevents Important Flag Auto-Apply'
+description: 'When fetching tools with a limit parameter, the important flag is no longer automatically applied, ensuring users get the exact number of tools requested'
+date: '2026-02-04'
+---
+
+## Version Information
+
+### TypeScript/JavaScript
+
+- Package: `@composio/core` and all provider packages
+- Version: `0.6.3`+
+- PR: [#2570](https://github.com/ComposioHQ/composio/pull/2570)
+
+The `important` flag auto-apply logic has been updated to respect the `limit` parameter. When you provide a `limit`, the SDK no longer automatically applies `important: true`, ensuring you get the exact number of tools you requested.
+
+## What Changed
+
+Previously, when querying tools by toolkit with both `toolkits` and `limit` parameters, the SDK would auto-apply `important: true`. This could result in returning fewer tools than the requested limit if the toolkit had limited important tools.
+
+**Before:**
+
+```typescript
+// @noErrors
+// Could return < 50 tools if only 10 important tools exist
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 50,
+});
+// Result: Only 10 tools (important ones only)
+```
+
+**After:**
+
+```typescript
+// @noErrors
+// Returns exactly 50 tools (or all available if < 50)
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 50,
+});
+// Result: 50 tools (including non-important)
+```
+
+## Auto-Apply Logic
+
+The `important` flag is now auto-applied **only when ALL** of these conditions are met:
+
+- `toolkits` is provided
+- `tools` is NOT provided
+- `tags` is NOT provided
+- `search` is NOT provided
+- **`limit` is NOT provided** ← NEW
+- `important` is NOT explicitly set to `false`
+
+## Examples
+
+### Auto-Applies Important (No Limit)
+
+```typescript
+// @noErrors
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+});
+// Returns: ~10-20 important tools
+```
+
+### Does NOT Auto-Apply (Limit Provided)
+
+```typescript
+// @noErrors
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 50,
+});
+// Returns: Exactly 50 tools (or all available)
+```
+
+### Explicit Important Overrides
+
+```typescript
+// @noErrors
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 50,
+  important: true,
+});
+// Returns: Up to 50 important tools
+```
+
+### Prevents Auto-Apply (Tags Provided)
+
+```typescript
+// @noErrors
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  tags: ['important'],
+});
+// Returns: GitHub tools with 'important' tag (no auto-apply)
+```
+
+### Prevents Auto-Apply (Search Provided)
+
+```typescript
+// @noErrors
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  search: 'repository',
+});
+// Returns: GitHub tools matching search (no auto-apply)
+```
+
+## Why This Matters
+
+When you provide a `limit`, you're explicitly requesting a specific number of tools. Auto-applying the `important` filter could prevent you from getting the requested number of tools. This change respects user intent and makes the SDK behavior more predictable.
+
+**Use cases:**
+
+1. **Pagination**: Get exactly N tools per page
+2. **Performance**: Limit tool count for faster responses
+3. **UI constraints**: Display a specific number of tools in your interface
+
+## Backward Compatibility
+
+This change is **backward compatible** with one caveat:
+
+- **No code changes needed** for most users
+- If you were relying on automatic `important` filtering with `limit`, you now need to explicitly pass `important: true`
+
+**Migration (if needed):**
+
+```typescript
+// @noErrors
+// Before (relied on auto-apply even with limit)
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 20,
+});
+
+// After (explicit important flag)
+const tools = await composio.tools.get('default', {
+  toolkits: ['github'],
+  limit: 20,
+  important: true, // Explicitly set if you want important tools
+});
+```
+
+## Documentation
+
+Full documentation with more examples is available in the [Tools API Reference](/reference/sdk-reference/typescript/tools).

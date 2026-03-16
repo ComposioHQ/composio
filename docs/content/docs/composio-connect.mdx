@@ -1,0 +1,472 @@
+---
+title: Composio Connect
+description: Add Composio tools to your AI agent via MCP
+keywords: [composio connect, mcp, claude code, cursor, vscode, windsurf, cline, chatgpt, notion, n8n, codex]
+---
+
+Give any AI agent the ability to act across 1000+ apps. Bring your agent to where you work.
+
+<ConnectFlow>
+
+<ConnectClientOption id="claude-code" name="Claude Code" description="Terminal-based AI with MCP tools" icon="/images/clients/claude.svg" category="popular">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Run the setup command</StepTitle>
+
+Run this in your terminal to add the Composio MCP server to Claude Code.
+
+```bash
+claude mcp add --scope user --transport http composio https://connect.composio.dev/mcp --header "x-consumer-api-key: YOUR_API_KEY"
+```
+
+</Step>
+<Step>
+<StepTitle>Verify the connection</StepTitle>
+
+Type `/mcp` in Claude Code to open the MCP server manager and confirm Composio appears and is enabled.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="codex" name="Codex" description="OpenAI's coding agent" icon="/images/clients/codex.png" category="popular">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Open your Codex config</StepTitle>
+
+Open `~/.codex/config.toml` in your editor. Create the file if it doesn't exist.
+
+</Step>
+<Step>
+<StepTitle>Add the Composio server</StepTitle>
+
+```toml title="~/.codex/config.toml"
+[mcp_servers.composio]
+url = "https://connect.composio.dev/mcp"
+http_headers = { "x-consumer-api-key" = "YOUR_API_KEY" }
+```
+
+</Step>
+<Step>
+<StepTitle>Verify the connection</StepTitle>
+
+Run `codex mcp list` to confirm Composio appears as a registered MCP server.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="openclaw" name="OpenClaw" description="Open-source personal AI assistant" icon="/images/clients/openclaw.svg" category="popular">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Add the MCP server via prompt</StepTitle>
+
+Copy this prompt and paste it into OpenClaw:
+
+```
+Add a new MCP server called "composio" with transport type HTTP.
+Use the URL https://connect.composio.dev/mcp and add the header
+"x-consumer-api-key: YOUR_API_KEY".
+```
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="claude-desktop" name="Claude Desktop" description="Anthropic's desktop app" icon="/images/clients/claude.svg" category="popular">
+
+
+<Steps>
+<Step>
+<StepTitle>Open Connectors settings</StepTitle>
+
+In Claude Desktop, go to **Settings**, then click **Connectors**.
+
+</Step>
+<Step>
+<StepTitle>Add the Composio MCP server</StepTitle>
+
+Click **Add custom connector** and paste the Composio MCP server URL.
+
+```
+https://connect.composio.dev/mcp
+```
+
+</Step>
+<Step>
+<StepTitle>Authorize in your browser</StepTitle>
+
+A browser window will open automatically. Sign in to authorize Claude Desktop to access your Composio account.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="chatgpt" name="ChatGPT" description="OpenAI's AI assistant" icon="/images/providers/openai-logo.svg" iconDark="/images/providers/openai-logo-dark.svg" category="other">
+
+
+<Steps>
+<Step>
+<StepTitle>Enable Developer Mode</StepTitle>
+
+In ChatGPT, go to **Settings > Apps > Advanced settings** and toggle on **Developer Mode**. Requires ChatGPT Plus, Pro, Business, Enterprise, or Edu.
+
+</Step>
+<Step>
+<StepTitle>Add the MCP server</StepTitle>
+
+Click **Create app** and paste the Composio MCP server URL.
+
+```
+https://connect.composio.dev/mcp
+```
+
+</Step>
+<Step>
+<StepTitle>Authorize in your browser</StepTitle>
+
+A browser window will open automatically. Sign in to authorize ChatGPT to access your Composio account.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="cursor" name="Cursor" description="AI-powered IDE" icon="/images/clients/cursor.svg" category="other">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Add the Composio server</StepTitle>
+
+Open `.cursor/mcp.json` in your project root (or `~/.cursor/mcp.json` for global config) and add:
+
+```json title=".cursor/mcp.json"
+{
+  "mcpServers": {
+    "composio": {
+      "url": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+</Step>
+<Step>
+<StepTitle>Restart Cursor</StepTitle>
+
+Restart Cursor. Composio tools are now available in Composer and Agent mode.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="notion" name="Notion" description="AI-powered workspace with custom agents" icon="/images/clients/notion.svg" iconDark="/images/clients/notion-dark.svg" category="other">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Create a custom agent</StepTitle>
+
+In Notion, open the AI agent builder and click **Create Blank** to start a new agent.
+
+</Step>
+<Step>
+<StepTitle>Add a connection</StepTitle>
+
+Click **Add Connection**, then select **Custom MCP**.
+
+</Step>
+<Step>
+<StepTitle>Configure the server</StepTitle>
+
+Enter the MCP server URL:
+
+```
+https://connect.composio.dev/mcp
+```
+
+Select **API Key** as the authentication type. Set the key to `x-consumer-api-key` and paste your API key as the value.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="vscode" name="VS Code" description="GitHub Copilot with MCP" icon="/images/clients/vscode.svg" category="ide">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Add the Composio server</StepTitle>
+
+Open or create `.vscode/mcp.json` in your project root and add the following. Requires VS Code 1.99+ with GitHub Copilot.
+
+```json title=".vscode/mcp.json"
+{
+  "servers": {
+    "composio": {
+      "type": "http",
+      "url": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Note: VS Code uses `"servers"` instead of `"mcpServers"`.
+
+</Step>
+<Step>
+<StepTitle>Open a Copilot chat</StepTitle>
+
+Open a GitHub Copilot chat. Composio tools are now available.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="windsurf" name="Windsurf" description="AI-powered IDE" icon="/images/clients/windsurf.svg" category="ide">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Open your MCP config</StepTitle>
+
+Open `~/.codeium/windsurf/mcp_config.json`, or go to **Windsurf > Settings > MCP Configuration**.
+
+</Step>
+<Step>
+<StepTitle>Add the Composio server</StepTitle>
+
+```json title="mcp_config.json"
+{
+  "mcpServers": {
+    "composio": {
+      "serverUrl": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+Note: Windsurf uses `"serverUrl"` instead of `"url"`.
+
+</Step>
+<Step>
+<StepTitle>Restart Windsurf</StepTitle>
+
+Restart Windsurf. Composio tools are now available in Cascade.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="cline" name="Cline" description="VS Code extension" icon="/images/clients/cline.svg" category="ide">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Open MCP settings</StepTitle>
+
+In VS Code with Cline installed, click the **MCP Servers** icon in the Cline navigation bar. Click the **Configure** tab, then click **Configure MCP Servers** to open the JSON config file.
+
+</Step>
+<Step>
+<StepTitle>Add the Composio server</StepTitle>
+
+```json title="cline_mcp_settings.json"
+{
+  "mcpServers": {
+    "composio": {
+      "url": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "YOUR_API_KEY"
+      },
+      "disabled": false
+    }
+  }
+}
+```
+
+</Step>
+<Step>
+<StepTitle>Save</StepTitle>
+
+Save the configuration. Composio tools are now available in Cline.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="agent-builder" name="Agent Builder" description="OpenAI Agent Builder" icon="/images/providers/openai-logo.svg" iconDark="/images/providers/openai-logo-dark.svg" category="other">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Create a new agent</StepTitle>
+
+Open the [OpenAI Agent Builder](https://platform.openai.com/agent-builder) and create a new agent.
+
+</Step>
+<Step>
+<StepTitle>Add MCP Server</StepTitle>
+
+Click **MCP** in the sidebar, then click **+ Server**. Paste the URL:
+
+```
+https://connect.composio.dev/mcp
+```
+
+Select **Custom headers**. Add a header with name `x-consumer-api-key` and paste your API key as the value.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="n8n" name="n8n" description="Workflow automation" icon="/images/clients/n8n.svg" category="other">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Add an MCP Client node</StepTitle>
+
+In your n8n workflow, add an **MCP Client** node or MCP Client Tool sub-node for AI agent chains.
+
+</Step>
+<Step>
+<StepTitle>Configure the connection</StepTitle>
+
+Set the connection type to **HTTP Streamable** and paste the server URL:
+
+```
+https://connect.composio.dev/mcp
+```
+
+Select **Header Auth** and create a new credential. Set the header name to `x-consumer-api-key` and paste your API key as the value.
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+<ConnectClientOption id="mcp-url" name="MCP URL" description="For any MCP client" icon="/images/clients/mcp.svg" iconDark="/images/clients/mcp-dark.svg" category="other">
+
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Add to your client config</StepTitle>
+
+Use this config with any MCP-compatible client:
+
+```json
+{
+  "mcpServers": {
+    "composio": {
+      "url": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+</Step>
+</Steps>
+
+</ConnectClientOption>
+
+</ConnectFlow>
+
+### Connect your apps
+
+Your agent will prompt you to connect apps when needed. If you want to connect apps ahead of time, open the [Composio dashboard](https://dashboard.composio.dev) and click **Connect Apps** in the sidebar.

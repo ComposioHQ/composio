@@ -671,6 +671,168 @@ class TestAgenticProviderFunctionality:
         assert wrapped[0]["has_executor"] is True
 
 
+class TestLangchainReservedKeywords:
+    """Regression tests for PLEN-1671: ValueError when tool schema has Python reserved keywords as parameter names.
+
+    Tools from some toolkits (e.g. Intercom) have parameters named 'from',
+    which is a Python reserved keyword. The LangchainProvider must substitute
+    these names before building function signatures and reinstate them when
+    executing the tool.
+    """
+
+    def _make_tool_with_params(self, properties: dict, required: list | None = None):
+        """Helper: create a mock Tool whose input_parameters use the given properties."""
+        return Tool(
+            name="Test Tool",
+            slug="TEST_TOOL",
+            description="A tool for testing reserved keyword handling",
+            input_parameters={
+                "type": "object",
+                "title": "TestToolRequest",
+                "properties": properties,
+                "required": required or [],
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(name="Test", slug="test", logo=""),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Test Tool",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def test_wrap_tool_with_from_parameter(self):
+        """PLEN-1671: 'from' parameter must not raise ValueError."""
+        from composio_langchain import LangchainProvider
+
+        provider = LangchainProvider()
+        tool = self._make_tool_with_params(
+            properties={
+                "from": {
+                    "type": "string",
+                    "description": "Starting point for listing",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max results",
+                    "default": 20,
+                },
+            },
+        )
+
+        captured = {}
+
+        def mock_execute(slug, arguments):
+            captured.update(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        # Must not raise ValueError: 'from' is not a valid parameter name
+        wrapped = provider.wrap_tool(tool, mock_execute)
+
+        assert wrapped.name == "TEST_TOOL"
+
+        # Invoke the tool and verify 'from' is reinstated in the arguments
+        wrapped.run({"from_rs": "2024-01-01", "limit": 10})
+        assert captured == {"from": "2024-01-01", "limit": 10}
+
+    def test_wrap_tool_with_multiple_reserved_keywords(self):
+        """All Python reserved keywords used as parameter names must be handled."""
+        from composio_langchain import LangchainProvider
+
+        provider = LangchainProvider()
+        tool = self._make_tool_with_params(
+            properties={
+                "from": {
+                    "type": "string",
+                    "description": "Start date",
+                },
+                "for": {
+                    "type": "string",
+                    "description": "Recipient",
+                },
+                "import": {
+                    "type": "string",
+                    "description": "Import source",
+                },
+                "class": {
+                    "type": "string",
+                    "description": "CSS class",
+                },
+                "async": {
+                    "type": "boolean",
+                    "description": "Async flag",
+                    "default": False,
+                },
+                "normal_param": {
+                    "type": "string",
+                    "description": "A normal parameter",
+                },
+            },
+        )
+
+        captured = {}
+
+        def mock_execute(slug, arguments):
+            captured.update(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = provider.wrap_tool(tool, mock_execute)
+        assert wrapped.name == "TEST_TOOL"
+
+        # Invoke with renamed parameters and verify originals are reinstated
+        wrapped.run(
+            {
+                "from_rs": "2024-01-01",
+                "for_rs": "user@example.com",
+                "import_rs": "csv",
+                "class_rs": "primary",
+                "async_rs": True,
+                "normal_param": "hello",
+            }
+        )
+        assert captured == {
+            "from": "2024-01-01",
+            "for": "user@example.com",
+            "import": "csv",
+            "class": "primary",
+            "async": True,
+            "normal_param": "hello",
+        }
+
+    def test_wrap_tool_with_required_reserved_keyword_param(self):
+        """Reserved keywords that are also required params must work."""
+        from composio_langchain import LangchainProvider
+
+        provider = LangchainProvider()
+        tool = self._make_tool_with_params(
+            properties={
+                "from": {
+                    "type": "string",
+                    "description": "Required start date",
+                },
+            },
+            required=["from"],
+        )
+
+        captured = {}
+
+        def mock_execute(slug, arguments):
+            captured.update(arguments)
+            return {"data": {}, "error": None, "successful": True}
+
+        wrapped = provider.wrap_tool(tool, mock_execute)
+        wrapped.run({"from_rs": "2024-01-01"})
+        assert captured == {"from": "2024-01-01"}
+
+
 class TestProviderEdgeCases:
     """Test edge cases and error handling for providers."""
 

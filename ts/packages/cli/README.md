@@ -6,7 +6,7 @@ This package defines the Composio CLI used to interact with the Composio Platfor
 
 ## Overview
 
-The CLI is build using:
+The CLI is built using:
 
 - [TypeScript](https://www.typescriptlang.org/)
 - [The Effect ecosystem](https://effect.website/docs)
@@ -25,18 +25,18 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 
 ## 🧭 Commands
 
-| Command                                                               | Description                                                                                     | Status                                                                       |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `composio version`                                                    | Display the current CLI version.                                                                | ✅                                                                           |
-| `composio whoami`                                                     | Show the currently logged-in user/account.                                                      | ✅ It displays the local API_KEY, or shows a message if no API_KEY is found. |
-| `composio login`                                                      | Log in to the Composio SDK.                                                                     | ✅                                                                           |
-| `composio logout`                                                     | Log out from the Composio SDK.                                                                  | ✅                                                                           |
-| `composio generate [-o, --output-dir <directory>]`                    | Auto-detect the project language (Python or TypeScript) and generate the latest app type stubs. | ✅                                                                           |
-| `composio py`                                                         | Python project-specific commands.                                                               |
-| `composio py generate [-o, --output-dir <directory>]`                 | Generate updated Python stubs with the latest app data.                                         | ✅                                                                           |
-| `composio ts`                                                         | TypeScript project-specific commands.                                                           | ✅                                                                           |
-| `composio ts generate [-o, --output-dir <directory>] [--single-file]` | Generate updated TypeScript stubs, optionally as a single file.                                 | ✅                                                                           |
-| `composio upgrade`                                                    | Self-update the Composio CLI if a new release is out.                                           | ✅ yet                                                                       |
+| Command                                                                                                                | Description                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `composio version`                                                                                                     | Display the current CLI version.                                                                                   |
+| `composio whoami`                                                                                                      | Show the currently logged-in user/account.                                                                         |
+| `composio login [--no-browser] [--no-wait] [--key text]`                                                               | Log in to the Composio SDK.                                                                                        |
+| `composio logout`                                                                                                      | Log out from the Composio SDK.                                                                                     |
+| `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`                               | Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers. |
+| `composio py`                                                                                                          | Python project-specific commands.                                                                                  |
+| `composio py generate [-o, --output-dir <directory>] [--toolkits <toolkit>]`                                           | Generate Python type stubs for toolkits, tools, and triggers from the Composio API.                                |
+| `composio ts`                                                                                                          | TypeScript project-specific commands.                                                                              |
+| `composio ts generate [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]` | Generate TypeScript types for toolkits, tools, and triggers from the Composio API.                                 |
+| `composio upgrade`                                                                                                     | Self-update the Composio CLI if a new release is out.                                                              |
 
 ## Configuration
 
@@ -66,16 +66,30 @@ Additionally, `composio upgrade` supports the following environment variables:
 | COMPOSIO_GITHUB_TAG          | The tag to use when fetching the Composio CLI binary from Github                                       | latest                 |
 | COMPOSIO_GITHUB_ACCESS_TOKEN | The access token for the GitHub API. Useful during development to avoid getting rate-limited by Github | None                   |
 
+### CLI binary release tags
+
+CLI binaries are published as GitHub release assets.
+
+- Current tag format: `@composio/cli@<semver>` (for example `@composio/cli@0.1.24`)
+- Temporary compatibility: legacy `v<semver>` tags are also supported during migration
+- `composio upgrade` and `install.sh` can resolve either format during the compatibility window
+
+If you pin upgrades with `COMPOSIO_GITHUB_TAG`, prefer the package-scoped tag format:
+
+```bash
+COMPOSIO_GITHUB_TAG='@composio/cli@0.1.24' composio upgrade
+```
+
 ## Caching
 
 The CLI implements a file-based caching system for improved performance and offline capabilities.
 
 ### Cache Features
 
-- **Cache-first reads**: When `FORCE_USE_CACHE=true`, the CLI first checks for cached data before making API calls
-- **Best-effort writes**: All successful API responses are automatically cached to disk for future use
-- **Graceful fallback**: If cache files are corrupted or missing, the CLI falls back to making API calls
-- **Parameter-aware caching**: Methods with parameters include those parameters in the cache key
+- **Cache-first reads**: When `FORCE_USE_CACHE=true`, the CLI first checks for cached data before making API calls. If you already ran `composio generate` before, it will work even if you're offline.
+- **Best-effort writes**: All successful API responses are automatically cached to disk for future use.
+- **Graceful fallback**: If cache files are corrupted or missing, the CLI falls back to making API calls.
+- **Parameter-aware caching**: Methods with parameters include those parameters in the cache key.
 
 ### Cache Structure
 
@@ -87,6 +101,7 @@ Cache files are stored in the directory specified by:
 The following files are cached:
 
 - `toolkits.json` - Results from toolkit listings
+- `tools-as-enums.json` - Results from tool enum listings
 - `tools.json` - Results from tool listings
 - `trigger-types-as-enums.json` - Results from trigger type enumerations
 - `trigger-types.json` - Results from paginated trigger types payloads
@@ -108,7 +123,7 @@ bun run build
 ### Build self-contained executable
 
 ```bash
-bun build:bin
+bun run build:binary
 ```
 
 or
@@ -120,7 +135,7 @@ bun run ./scripts/build-binary.ts
 ### Install self-contained executable
 
 ```bash
-bun install:bin
+bun run install:binary
 ```
 
 or

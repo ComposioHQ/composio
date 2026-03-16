@@ -1,0 +1,134 @@
+---
+title: "Type-Safe get_tools() for Python SDK"
+description: "The Python SDK now provides automatic type inference for tools.get() based on the provider"
+date: "2026-02-01"
+---
+
+The Python SDK's `Composio` class is now generic over the provider type. When you pass a provider to `Composio()`, the return type of `tools.get()` is automatically inferred based on that provider.
+
+### SDK Versions
+
+| SDK | Version |
+|-----|---------|
+| Python | v0.11.1+ |
+
+### What Changed
+
+**Before:** The return type of `tools.get()` was always untyped or required manual type annotations.
+
+**After:** Type checkers (mypy, Pyright) automatically infer the correct tool type from the provider you pass.
+
+**Before (untyped):**
+```python
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+composio = Composio(provider=AnthropicProvider())
+tools = composio.tools.get(user_id="user_123", toolkits=["github"])
+# tools: Unknown type - no inference
+```
+
+**After (type-safe):**
+```python
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
+composio = Composio(provider=AnthropicProvider())
+tools = composio.tools.get(user_id="user_123", toolkits=["github"])
+# tools: list[ToolParam] - automatically inferred!
+```
+
+### Automatic Type Inference
+
+The `Composio` class now uses Python generics to provide type-safe return values:
+
+```python
+from composio import Composio
+from composio_openai import OpenAIProvider
+from composio_anthropic import AnthropicProvider
+
+# OpenAI provider -> list[ChatCompletionToolParam]
+composio_openai = Composio(provider=OpenAIProvider())
+openai_tools = composio_openai.tools.get(user_id="user", toolkits=["github"])
+
+# Anthropic provider -> list[ToolParam]
+composio_anthropic = Composio(provider=AnthropicProvider())
+anthropic_tools = composio_anthropic.tools.get(user_id="user", toolkits=["github"])
+
+# Default (no provider) -> list[ChatCompletionToolParam] (OpenAI)
+composio_default = Composio()
+default_tools = composio_default.tools.get(user_id="user", toolkits=["github"])
+```
+
+### Custom Provider Support
+
+Custom providers automatically get proper type inference without requiring any changes to the Composio SDK:
+
+```python
+import typing as t
+from typing import Sequence
+
+from composio import Composio
+from composio.client.types import Tool
+from composio.core.provider import NonAgenticProvider
+
+
+class MyCustomTool(t.TypedDict):
+    """Your custom tool format."""
+    name: str
+    description: str
+    parameters: dict
+
+
+MyCustomToolCollection = t.List[MyCustomTool]
+
+
+class MyCustomProvider(
+    NonAgenticProvider[MyCustomTool, MyCustomToolCollection],
+    name="my-custom"
+):
+    def wrap_tool(self, tool: Tool) -> MyCustomTool:
+        return MyCustomTool(
+            name=tool.slug,
+            description=tool.description or "",
+            parameters=tool.input_parameters or {},
+        )
+
+    def wrap_tools(self, tools: Sequence[Tool]) -> MyCustomToolCollection:
+        return [self.wrap_tool(tool) for tool in tools]
+
+
+# Type inference works automatically!
+composio = Composio(provider=MyCustomProvider())
+tools = composio.tools.get(user_id="user", toolkits=["github"])
+# tools: list[MyCustomTool] - correctly inferred
+```
+
+### Supported Providers
+
+Type inference is supported for all built-in providers:
+
+| Provider | Tool Type |
+|----------|-----------|
+| OpenAI | `ChatCompletionToolParam` |
+| OpenAI Responses | `dict[str, Any]` |
+| Anthropic | `ToolParam` |
+| Google (GenAI) | `FunctionDeclaration` |
+| Gemini | `FunctionDeclaration` |
+| Google ADK | `Tool` |
+| LangChain | `StructuredTool` |
+| LangGraph | `StructuredTool` |
+| LlamaIndex | `FunctionTool` |
+| CrewAI | `Tool` |
+| AutoGen | `FunctionTool` |
+| OpenAI Agents | `FunctionTool` |
+| Claude Agent SDK | `Tool` |
+
+### Backward Compatibility
+
+This change is fully backward compatible:
+
+- Existing code continues to work without modifications
+- Type inference is opt-in via static type checkers
+- No runtime behavior changes
+- No migration required

@@ -31,6 +31,59 @@ describe('CLI: composio ts generate', () => {
     triggerTypesAsEnums: [...TRIGGER_TYPES_GMAIL.slice(0, 3).map(triggerType => triggerType.slug)],
   } satisfies TestLiveInput['toolkitsData'];
 
+  const setupMockComposioCorePackage = ({
+    cwd,
+    fs,
+    withGenerated = false,
+  }: {
+    cwd: string;
+    fs: FileSystem.FileSystem;
+    withGenerated?: boolean;
+  }) =>
+    Effect.gen(function* () {
+      const nodeModulesRoot = path.join(cwd, 'node_modules');
+      const nodeModulesDir = path.join(nodeModulesRoot, '@composio', 'core');
+
+      // Some fixtures may carry broken node_modules links after copying; reset to a real directory.
+      yield* fs
+        .remove(nodeModulesRoot, { recursive: true })
+        .pipe(Effect.catchAll(() => Effect.void));
+      yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
+
+      if (withGenerated) {
+        yield* fs.makeDirectory(path.join(nodeModulesDir, 'generated'), { recursive: true });
+      }
+
+      // Create a mock package.json to resolve @composio/core imports in transpilation paths.
+      yield* fs.writeFileString(
+        path.join(nodeModulesDir, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@composio/core',
+            type: 'module',
+            exports: {
+              '.': {
+                types: './index.d.ts',
+                default: './index.js',
+              },
+              './generated': {
+                types: './generated/index.d.ts',
+                default: './generated/index.js',
+              },
+            },
+          },
+          null,
+          2
+        )
+      );
+
+      yield* fs.writeFileString(
+        path.join(nodeModulesDir, 'index.d.ts'),
+        'export type TriggerEvent<T> = { payload: T };'
+      );
+      yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
+    });
+
   describe('[Given] valid fetched app data', () => {
     layer(
       TestLive({
@@ -47,11 +100,7 @@ describe('CLI: composio ts generate', () => {
               const cwd = process.cwd;
               const fs = yield* FileSystem.FileSystem;
 
-              // Create the @composio/core/generated directory structure as if installed
-              const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
-              const generatedDir = path.join(nodeModulesDir, 'generated');
-              yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
-              yield* fs.makeDirectory(generatedDir, { recursive: true });
+              yield* setupMockComposioCorePackage({ cwd, fs, withGenerated: true });
 
               const outputDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
               const args = ['ts', 'generate'];
@@ -231,7 +280,7 @@ describe('CLI: composio ts generate', () => {
                 },
               });
 
-              const testSourceCodePath = path.join(cwd, 'src', 'index.js');
+              const testSourceCodePath = path.join(cwd, 'src', 'index.mjs');
               const testSourceCode = yield* fs.readFileString(testSourceCodePath);
               expect(testSourceCode).toMatchInlineSnapshot(`
                 "import { Toolkits } from '@composio/core/generated';
@@ -256,11 +305,7 @@ describe('CLI: composio ts generate', () => {
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
 
-            // Create the @composio/core/generated directory structure as if installed
-            const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
-            const generatedDir = path.join(nodeModulesDir, 'generated');
-            yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
-            yield* fs.makeDirectory(generatedDir, { recursive: true });
+            yield* setupMockComposioCorePackage({ cwd, fs, withGenerated: true });
 
             const outputDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
             const args = ['ts', 'generate', '--type-tools'];
@@ -472,7 +517,7 @@ describe('CLI: composio ts generate', () => {
               },
             });
 
-            const testSourceCodePath = path.join(cwd, 'src', 'index.js');
+            const testSourceCodePath = path.join(cwd, 'src', 'index.mjs');
             const testSourceCode = yield* fs.readFileString(testSourceCodePath);
             expect(testSourceCode).toMatchInlineSnapshot(`
                 "import { Toolkits } from '@composio/core/generated';
@@ -707,12 +752,14 @@ describe('CLI: composio ts generate', () => {
           })
         );
 
-        it.scoped('[Given] --transpiled [Then] it generates both .ts and .js files', () =>
+        it.scoped('[Given] --transpiled [Then] it generates both .ts and .mjs files', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, 'generated-compiled');
+
+            yield* setupMockComposioCorePackage({ cwd, fs });
 
             const args = ['ts', 'generate', '--transpiled', '--output-dir', outputDir];
             yield* cli(args);
@@ -722,7 +769,9 @@ describe('CLI: composio ts generate', () => {
             const fileNames = files.map(file => path.basename(file));
 
             // Should have both .ts and .js files
-            const tsFiles = fileNames.filter(name => name.endsWith('.ts'));
+            const tsFiles = fileNames.filter(
+              name => name.endsWith('.ts') && !name.endsWith('.d.ts')
+            );
             const jsFiles = fileNames.filter(name => name.endsWith('.js'));
             const dtsFiles = fileNames.filter(name => name.endsWith('.d.ts'));
 
@@ -743,12 +792,9 @@ describe('CLI: composio ts generate', () => {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
+            const generatedDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
 
-            // Set up @composio/core/generated directory
-            const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
-            const generatedDir = path.join(nodeModulesDir, 'generated');
-            yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
-            yield* fs.makeDirectory(generatedDir, { recursive: true });
+            yield* setupMockComposioCorePackage({ cwd, fs, withGenerated: true });
 
             const args = ['ts', 'generate'];
             yield* cli(args);
@@ -758,7 +804,9 @@ describe('CLI: composio ts generate', () => {
             const fileNames = files.map(file => path.basename(file));
 
             // Should have both .ts and .js files since compiled is true by default for @composio/core/generated
-            const tsFiles = fileNames.filter(name => name.endsWith('.ts'));
+            const tsFiles = fileNames.filter(
+              name => name.endsWith('.ts') && !name.endsWith('.d.ts')
+            );
             const jsFiles = fileNames.filter(name => name.endsWith('.js'));
             const dtsFiles = fileNames.filter(name => name.endsWith('.d.ts'));
 
@@ -798,6 +846,7 @@ describe('CLI: composio ts generate', () => {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
+            yield* setupMockComposioCorePackage({ cwd, fs });
 
             // Run the command
             const args = ['ts', 'generate', '--compact'];
@@ -846,6 +895,296 @@ describe('CLI: composio ts generate', () => {
 
             assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
           })
+        );
+
+        it.scoped(
+          '[Given] --toolkits gmail [Then] it generates type stubs only for the gmail toolkit',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-filtered');
+
+              const args = ['ts', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts and index.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).toContain('index.ts');
+              expect(fileNames).not.toContain('slack.ts');
+
+              // Verify index only references gmail
+              const indexSourceCode = yield* fs.readFileString(path.join(outputDir, 'index.ts'));
+              expect(indexSourceCode).toContain('GMAIL');
+              expect(indexSourceCode).not.toContain('SLACK');
+
+              assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
+            })
+        );
+
+        it.scoped(
+          '[Given] --toolkits gmail --toolkits slack [Then] it generates type stubs for both toolkits',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-multi-filtered');
+
+              const args = [
+                'ts',
+                'generate',
+                '--toolkits',
+                'gmail',
+                '--toolkits',
+                'slack',
+                '--output-dir',
+                outputDir,
+              ];
+              yield* cli(args);
+
+              // Check generated files - both gmail.ts and slack.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).toContain('slack.ts');
+              expect(fileNames).toContain('index.ts');
+
+              // Verify index references both
+              const indexSourceCode = yield* fs.readFileString(path.join(outputDir, 'index.ts'));
+              expect(indexSourceCode).toContain('GMAIL');
+              expect(indexSourceCode).toContain('SLACK');
+
+              assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
+            })
+        );
+
+        it.scoped('[Given] --toolkits with invalid toolkit [Then] it fails with an error', () =>
+          Effect.gen(function* () {
+            const process = yield* NodeProcess;
+            const cwd = process.cwd;
+            const outputDir = path.join(cwd, 'generated-invalid');
+
+            const args = ['ts', 'generate', '--toolkits', 'nonexistent', '--output-dir', outputDir];
+            const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+
+            expect(result).toBeInstanceOf(Error);
+            expect((result as Error).message).toContain('Invalid toolkit(s): nonexistent');
+          })
+        );
+
+        it.scoped(
+          '[Given] --toolkits GMAIL (uppercase) [Then] it handles case-insensitive matching',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-uppercase');
+
+              const args = ['ts', 'generate', '--toolkits', 'GMAIL', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).not.toContain('slack.ts');
+            })
+        );
+      });
+    });
+
+    describe('[Given] COMPOSIO_TOOLKIT_VERSION_* env vars', () => {
+      layer(
+        TestLive({
+          fixture: 'typescript-project-with-composio-core',
+          toolkitsData: appClientData,
+        })
+      )(it => {
+        it.scoped(
+          '[Given] --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it adds version comment to generated file',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-version-override');
+
+              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check that gmail.ts contains the version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              // Check that slack.ts does NOT contain a version comment (no override for it)
+              const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.ts'));
+              expect(slackSourceCode).not.toContain('@toolkit-version');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --type-tools and multiple COMPOSIO_TOOLKIT_VERSION_* env vars [Then] it adds version comments to both generated files',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', '20250815_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-multi-version-override');
+
+              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check that gmail.ts contains the version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              // Check that slack.ts contains the version comment
+              const slackSourceCode = yield* fs.readFileString(path.join(outputDir, 'slack.ts'));
+              expect(slackSourceCode).toContain('@toolkit-version: 20250815_00');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL=latest [Then] it treats same as no override (no version comment)',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', 'latest');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-latest-version');
+
+              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Check that gmail.ts does NOT contain a version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).not.toContain('@toolkit-version');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_SLACK env var [Then] it ignores env var for non-requested toolkit',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              // Set env var for SLACK, but only request GMAIL toolkit
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_SLACK', '20250815_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-filtered-env-ignored');
+
+              const args = [
+                'ts',
+                'generate',
+                '--type-tools',
+                '--toolkits',
+                'gmail',
+                '--output-dir',
+                outputDir,
+              ];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).toContain('index.ts');
+              expect(fileNames).not.toContain('slack.ts');
+
+              // gmail.ts should NOT have version comment (no GMAIL override set)
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).not.toContain('@toolkit-version');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it applies version override to filtered toolkit',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-filtered-with-version');
+
+              const args = [
+                'ts',
+                'generate',
+                '--type-tools',
+                '--toolkits',
+                'gmail',
+                '--output-dir',
+                outputDir,
+              ];
+              yield* cli(args);
+
+              // Check generated files - only gmail.ts should exist
+              const files = yield* fs.readDirectory(outputDir);
+              const fileNames = files.map(file => path.basename(file));
+              expect(fileNames).toContain('gmail.ts');
+              expect(fileNames).not.toContain('slack.ts');
+
+              // gmail.ts should have version comment
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              vi.unstubAllEnvs();
+            })
+        );
+
+        it.scoped(
+          '[Given] no --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it still adds version comment for documentation purposes',
+          () =>
+            Effect.gen(function* () {
+              const { vi } = yield* Effect.promise(() => import('vitest'));
+              vi.stubEnv('COMPOSIO_TOOLKIT_VERSION_GMAIL', '20250901_00');
+
+              const process = yield* NodeProcess;
+              const cwd = process.cwd;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(cwd, 'generated-no-type-tools');
+
+              // Note: no --type-tools flag
+              const args = ['ts', 'generate', '--output-dir', outputDir];
+              yield* cli(args);
+
+              // Version comment is still added for documentation purposes,
+              // even though the version override only affects tool schema fetching with --type-tools
+              const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmailSourceCode).toContain('@toolkit-version: 20250901_00');
+
+              vi.unstubAllEnvs();
+            })
         );
       });
     });

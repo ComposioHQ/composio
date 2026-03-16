@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 864 316" width="864" height="316">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+
+  svg {
+    --bg: #faf8f6;
+    --surface: #ffffff;
+    --hdr: #f5f2ef;
+    --border: #e0dbd8;
+    --text: #171414;
+    --text-sec: #5c5858;
+    --text-muted: #8a8280;
+    --accent: #ea580c;
+    --accent-bg: #fef2ec;
+    --accent-border: #f5cdb8;
+    --accent-surface: #fef8f5;
+    --muted-line: #c4bdb5;
+    --muted-bg: #f3f1ee;
+    --dot: rgba(0,0,0,0.04);
+    --shadow-color: rgba(0,0,0,0.05);
+  }
+</style>
+<defs>
+  <!-- Shadows -->
+  <filter id="sh" x="-4%" y="-8%" width="108%" height="124%">
+    <feDropShadow dx="0" dy="1" stdDeviation="2.5" flood-color="var(--shadow-color)" flood-opacity="1" />
+  </filter>
+  <filter id="sh-sm" x="-4%" y="-8%" width="108%" height="124%">
+    <feDropShadow dx="0" dy="0.5" stdDeviation="1.5" flood-color="var(--shadow-color)" flood-opacity="1" />
+  </filter>
+  <!-- Arrow markers -->
+  <marker id="arr" markerWidth="8" markerHeight="5" refX="7.5" refY="2.5" orient="auto">
+    <path d="M0,0.5 L7,2.5 L0,4.5" fill="var(--accent)" stroke="none" />
+  </marker>
+  <marker id="arr-m" markerWidth="8" markerHeight="5" refX="7.5" refY="2.5" orient="auto">
+    <path d="M0,0.5 L7,2.5 L0,4.5" fill="var(--muted-line)" stroke="none" />
+  </marker>
+  <!-- Dot grid pattern -->
+  <pattern id="dots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+    <circle cx="8" cy="8" r="0.6" fill="var(--dot)" />
+  </pattern>
+</defs>
+
+<!-- Background -->
+<rect width="864" height="316" rx="12" fill="var(--bg)" />
+<rect width="864" height="316" rx="12" fill="url(#dots)" />
+
+<!-- ── Group: Connected Apps ── -->
+<g filter="url(#sh)">
+  <rect x="40" y="40" width="115" height="236" rx="8" fill="var(--surface)" stroke="var(--border)" stroke-width="1" />
+  <clipPath id="clip-apps"><rect x="40" y="40" width="115" height="30" rx="8" /></clipPath>
+  <rect x="40" y="40" width="115" height="42" clip-path="url(#clip-apps)" fill="var(--hdr)" />
+  <line x1="40" y1="70" x2="155" y2="70" stroke="var(--border)" stroke-width="0.5" />
+</g>
+<text x="97" y="55" text-anchor="middle" dy="0.35em" font-size="11" font-weight="600" letter-spacing="0.01em" fill="var(--text-sec)">Connected Apps</text>
+
+<!-- ── Group: Composio ── -->
+<g filter="url(#sh)">
+  <rect x="312" y="40" width="186" height="236" rx="8" fill="var(--surface)" stroke="var(--border)" stroke-width="1" />
+  <clipPath id="clip-comp"><rect x="312" y="40" width="186" height="30" rx="8" /></clipPath>
+  <rect x="312" y="40" width="186" height="42" clip-path="url(#clip-comp)" fill="var(--hdr)" />
+  <line x1="312" y1="70" x2="498" y2="70" stroke="var(--border)" stroke-width="0.5" />
+</g>
+<text x="405" y="55" text-anchor="middle" dy="0.35em" font-size="11" font-weight="600" letter-spacing="0.01em" fill="var(--text-sec)">Composio</text>
+
+<!-- ── Group: Your Application (aligned with other groups) ── -->
+<g filter="url(#sh)">
+  <rect x="637" y="40" width="187" height="236" rx="8" fill="var(--surface)" stroke="var(--border)" stroke-width="1" />
+  <clipPath id="clip-app"><rect x="637" y="40" width="187" height="30" rx="8" /></clipPath>
+  <rect x="637" y="40" width="187" height="42" clip-path="url(#clip-app)" fill="var(--hdr)" />
+  <line x1="637" y1="70" x2="824" y2="70" stroke="var(--border)" stroke-width="0.5" />
+</g>
+<text x="730" y="55" text-anchor="middle" dy="0.35em" font-size="11" font-weight="600" letter-spacing="0.01em" fill="var(--text-sec)">Your Application</text>
+
+<!-- ── Arrows: Apps → Composio (horizontal through labels, bend vertically in the gap) ── -->
+<polyline points="145,116 290,116 290,139 330,139" fill="none" stroke="var(--accent)" stroke-width="1.25" marker-end="url(#arr)" />
+<polyline points="145,176 290,176 290,153 330,153" fill="none" stroke="var(--accent)" stroke-width="1.25" marker-end="url(#arr)" />
+<!-- Polling: Composio polls Gmail (straight horizontal, right-to-left) -->
+<path d="M 365,236 H 145" fill="none" stroke="var(--muted-line)" stroke-width="1.25" stroke-dasharray="5 3" marker-end="url(#arr-m)" />
+
+<!-- ── Arrows: Composio → Your App (horizontal through labels, bend vertically in the gap) ── -->
+<polyline points="480,146 600,146 600,183 655,183" fill="none" stroke="var(--accent)" stroke-width="1.25" marker-end="url(#arr)" />
+<polyline points="445,236 600,236 600,199 655,199" fill="none" stroke="var(--accent)" stroke-width="1.25" marker-end="url(#arr)" />
+
+<!-- ── Edge labels (pill badges on horizontal sections) ── -->
+<rect x="181" y="103" width="78" height="26" rx="13" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+<text x="220" y="116" text-anchor="middle" dy="0.35em" font-size="10" font-weight="500" fill="var(--accent)">real-time</text>
+
+<rect x="181" y="163" width="78" height="26" rx="13" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+<text x="220" y="176" text-anchor="middle" dy="0.35em" font-size="10" font-weight="500" fill="var(--accent)">real-time</text>
+
+<rect x="176" y="223" width="88" height="26" rx="13" fill="var(--muted-bg)" stroke="var(--border)" stroke-width="0.5" />
+<text x="220" y="236" text-anchor="middle" dy="0.35em" font-size="10" font-weight="500" fill="var(--text-muted)">polls ~1 min</text>
+
+<rect x="511" y="133" width="76" height="26" rx="13" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+<text x="549" y="146" text-anchor="middle" dy="0.35em" font-size="10" font-weight="600" fill="var(--accent)">HTTP POST</text>
+
+<rect x="511" y="223" width="76" height="26" rx="13" fill="var(--accent-bg)" stroke="var(--accent-border)" stroke-width="0.5" />
+<text x="549" y="236" text-anchor="middle" dy="0.35em" font-size="10" font-weight="600" fill="var(--accent)">HTTP POST</text>
+
+<!-- ── App nodes (with icons) ── -->
+<rect x="49" y="98" width="96" height="36" rx="6" fill="var(--surface)" stroke="var(--border)" stroke-width="0.75" filter="url(#sh-sm)" />
+<rect x="49" y="158" width="96" height="36" rx="6" fill="var(--surface)" stroke="var(--border)" stroke-width="0.75" filter="url(#sh-sm)" />
+<rect x="49" y="218" width="96" height="36" rx="6" fill="var(--surface)" stroke="var(--border)" stroke-width="0.75" filter="url(#sh-sm)" />
+
+<!-- GitHub icon (14x14) -->
+<g transform="translate(60,109) scale(0.109375)">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M63.8093 1.30612C28.5244 1.30612 0 30.0408 0 65.5895C0 94.0055 18.2766 118.059 43.631 126.572C46.801 127.212 47.9621 125.189 47.9621 123.487C47.9621 121.997 47.8576 116.889 47.8576 111.566C30.1074 115.399 26.4111 103.903 26.4111 103.903C23.5585 96.4532 19.3319 94.5384 19.3319 94.5384C13.5223 90.6005 19.7551 90.6005 19.7551 90.6005C26.1995 91.0263 29.5811 97.199 29.5811 97.199C35.2849 106.99 44.4761 104.223 48.1737 102.52C48.7014 98.3693 50.3928 95.4958 52.1887 93.8997C38.0317 92.4095 23.1367 86.8754 23.1367 62.1832C23.1367 55.1589 25.6705 49.4119 29.6856 44.9424C29.0521 43.3463 26.833 36.7464 30.3203 27.9131C30.3203 27.9131 35.7081 26.21 47.8563 34.5117C53.0574 33.1045 58.4212 32.3887 63.8093 32.3827C69.1971 32.3827 74.6893 33.1285 79.761 34.5117C91.9105 26.21 97.2983 27.9131 97.2983 27.9131C100.786 36.7464 98.5652 43.3463 97.9318 44.9424C102.053 49.4119 104.482 55.1589 104.482 62.1832C104.482 86.8754 89.5869 92.3024 75.3241 93.8997C77.649 95.9216 79.6552 99.7525 79.6552 105.819C79.6552 114.44 79.5507 121.358 79.5507 123.486C79.5507 125.189 80.7132 127.212 83.8818 126.574C109.236 118.058 127.513 94.0055 127.513 65.5895C127.617 30.0408 98.9884 1.30612 63.8093 1.30612Z" fill="var(--text)"/>
+</g>
+<text x="79" y="116" text-anchor="start" dy="0.35em" font-size="13" font-weight="500" fill="var(--text)">GitHub</text>
+
+<!-- Slack icon (14x14) -->
+<g transform="translate(60,169) scale(0.109375)">
+  <path d="M26.8925 80.886C26.8925 88.2866 20.8469 94.3323 13.4463 94.3323C6.04561 94.3323 0 88.2866 0 80.886C0 73.4853 6.04561 67.4397 13.4463 67.4397H26.8925V80.886Z" fill="#E01E5A"/>
+  <path d="M33.6675 80.886C33.6675 73.4853 39.7131 67.4397 47.1137 67.4397C54.5144 67.4397 60.56 73.4853 60.56 80.886V114.554C60.56 121.954 54.5144 128 47.1137 128C39.7131 128 33.6675 121.954 33.6675 114.554V80.886Z" fill="#E01E5A"/>
+  <path d="M47.1137 26.8925C39.7131 26.8925 33.6675 20.8469 33.6675 13.4463C33.6675 6.0456 39.7131 0 47.1137 0C54.5144 0 60.56 6.0456 60.56 13.4463V26.8925H47.1137Z" fill="#36C5F0"/>
+  <path d="M47.114 33.6678C54.5147 33.6678 60.5603 39.7134 60.5603 47.114C60.5603 54.5147 54.5147 60.5603 47.114 60.5603H13.4463C6.0456 60.5603 0 54.5147 0 47.114C0 39.7134 6.0456 33.6678 13.4463 33.6678H47.114Z" fill="#36C5F0"/>
+  <path d="M101.107 47.114C101.107 39.7134 107.153 33.6678 114.554 33.6678C121.954 33.6678 128 39.7134 128 47.114C128 54.5147 121.954 60.5603 114.554 60.5603H101.107V47.114Z" fill="#2EB67D"/>
+  <path d="M94.3322 47.114C94.3322 54.5147 88.2866 60.5603 80.8859 60.5603C73.4853 60.5603 67.4397 54.5147 67.4397 47.114V13.4463C67.4397 6.0456 73.4853 0 80.8859 0C88.2866 0 94.3322 6.0456 94.3322 13.4463V47.114Z" fill="#2EB67D"/>
+  <path d="M80.8859 101.107C88.2866 101.107 94.3322 107.153 94.3322 114.554C94.3322 121.954 88.2866 128 80.8859 128C73.4853 128 67.4397 121.954 67.4397 114.554V101.107H80.8859Z" fill="#ECB22E"/>
+  <path d="M80.8859 94.3323C73.4853 94.3323 67.4397 88.2866 67.4397 80.886C67.4397 73.4853 73.4853 67.4397 80.8859 67.4397H114.554C121.954 67.4397 128 73.4853 128 80.886C128 88.2866 121.954 94.3323 114.554 94.3323H80.8859Z" fill="#ECB22E"/>
+</g>
+<text x="79" y="176" text-anchor="start" dy="0.35em" font-size="13" font-weight="500" fill="var(--text)">Slack</text>
+
+<!-- Gmail icon (14x14) -->
+<g transform="translate(60,229) scale(0.109375)">
+  <path d="M8.7275 113.854H29.091V64.4L0 42.5817V105.127C0 109.949 3.9055 113.855 8.7275 113.855V113.854Z" fill="#4285F4"/>
+  <path d="M98.909 113.854H119.273C124.095 113.854 128 109.949 128 105.127V42.5817L98.909 64.4V113.854Z" fill="#34A853"/>
+  <path d="M98.909 26.5817V64.4L128 42.5817V30.9455C128 20.16 115.687 14 107.054 20.4727L98.909 26.5817Z" fill="#FBBC04"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M29.091 64.4V26.5817L64 52.7638L98.909 26.5817V64.4L64 90.5817L29.091 64.4Z" fill="#EA4335"/>
+  <path d="M0 30.9455V42.5817L29.091 64.4V26.5817L20.9455 20.4727C12.3125 14 0 20.16 0 30.945V30.9455Z" fill="#C5221F"/>
+</g>
+<text x="79" y="236" text-anchor="start" dy="0.35em" font-size="13" font-weight="500" fill="var(--text)">Gmail</text>
+
+<!-- Accent nodes (Webhook Receiver, Poller, Webhook Endpoint) -->
+<rect x="330" y="128" width="150" height="36" rx="6" fill="var(--accent-surface)" stroke="var(--accent-border)" stroke-width="0.75" filter="url(#sh-sm)" />
+<rect x="365" y="218" width="80" height="36" rx="6" fill="var(--accent-surface)" stroke="var(--accent-border)" stroke-width="0.75" filter="url(#sh-sm)" />
+<rect x="655" y="173" width="150" height="36" rx="6" fill="var(--accent-surface)" stroke="var(--accent-border)" stroke-width="0.75" filter="url(#sh-sm)" />
+
+<!-- ── Composio + App node labels ── -->
+<text x="405" y="146" text-anchor="middle" dy="0.35em" font-size="12.5" font-weight="600" fill="var(--text)">Webhook Receiver</text>
+<text x="405" y="236" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--text)">Poller</text>
+<text x="730" y="191" text-anchor="middle" dy="0.35em" font-size="12.5" font-weight="600" fill="var(--text)">Webhook Endpoint</text>
+</svg>

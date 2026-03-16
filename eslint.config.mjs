@@ -19,6 +19,27 @@ export default [
   {
     rules: {
       // "@typescript-eslint/no-var-requires": "off",
+      'no-restricted-globals': ['error', 'Buffer'],
+      "no-restricted-imports": ["error", {
+        "paths": [
+          {
+            "name": "crypto",
+            "message": "Use Web Crypto API instead.",
+          },
+          {
+            "name": "node:crypto",
+            "message": "Use Web Crypto API instead.",
+          },
+          {
+            "name": "buffer",
+            "message": "Use Uint8Array instead.",
+          },
+          {
+            "name": "node:buffer",
+            "message": "Use Uint8Array instead.",
+          },
+        ],
+      }],
       '@typescript-eslint/no-require-imports': 'warn',
       '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-prototype-builtins': 'off',

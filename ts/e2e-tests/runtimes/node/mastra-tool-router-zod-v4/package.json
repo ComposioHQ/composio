@@ -1,0 +1,23 @@
+{
+  "name": "@e2e-tests/node-mastra-tool-router-zod-v4",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "bun test e2e.test.ts",
+    "test:e2e:node": "bun test e2e.test.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "catalog:",
+    "@composio/core": "workspace:*",
+    "@composio/mastra": "workspace:*",
+    "@mastra/core": "catalog:",
+    "@mastra/mcp": "^1.0.0",
+    "ai": "catalog:",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@e2e-tests/utils": "workspace:*"
+  }
+}

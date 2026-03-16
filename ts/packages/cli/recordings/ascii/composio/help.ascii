@@ -1,0 +1,228 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show composio command help
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show composio command help
+> composio --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show composio command help
+> composio --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show composio command help
+> composio --help
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show composio command help
+> composio --help
+composio
+
+composio 0.1.24
+
+USAGE
+
+$ composio [--log-level all | trace | debug | info | warning | error | fatal | none
+]
+
+DESCRIPTION
+
+Composio CLI - A tool for managing Python and TypeScript composio.dev projects.
+
+OPTIONS
+
+--log-level all | trace | debug | info | warning | error | fatal | none
+
+  One of the following: all, trace, debug, info, warning, error, fatal, none
+
+  Define log level
+
+  This setting is optional.
+
+COMMANDS
+
+  - version
+                                                                          Display t
+he current Composio CLI version.
+
+  - upgrade
+                                                                          Upgrade y
+our Composio CLI to the latest available version.
+
+  - whoami
+                                                                          Display y
+────────────────────────────────────────────────────────────────────────────────

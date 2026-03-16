@@ -1,0 +1,96 @@
+---
+title: Gmail Labeler
+description: Build a Python script that listens for new Gmail messages and labels them using Composio and the Claude Agent SDK
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/gmail-labeler)
+
+This cookbook builds a Python script that connects to Gmail, listens for new messages using Composio triggers, and uses Claude to label each email automatically. The agent is scoped to Gmail tools only using a **scoped session**.
+
+## Prerequisites
+
+* Python 3.10+
+* [UV](https://docs.astral.sh/uv/getting-started/installation/)
+* [Composio API key](https://platform.composio.dev/settings)
+* [Anthropic API key](https://console.anthropic.com/settings/keys)
+
+## Project setup
+
+Create a new project and install dependencies:
+
+```bash
+mkdir composio-gmail-labeler && cd composio-gmail-labeler
+uv init && uv add composio composio-claude-agent-sdk claude-agent-sdk
+```
+
+Add your API keys to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+## Setting up the client
+
+`Composio` takes a `ClaudeAgentSDKProvider` so that tools come back in the format the Claude Agent SDK expects.
+
+<include>../../examples/gmail-labeler/main.py#setup</include>
+
+## Connecting to Gmail
+
+Before labeling emails, the user needs to connect their Gmail account. The `connect` function creates a scoped session with `toolkits=["gmail"]` and checks the connection status with `session.toolkits()`. If Gmail is not connected, `session.authorize("gmail")` starts the OAuth flow and returns a URL for the user to visit. `wait_for_connection()` blocks until they complete it.
+
+<include>../../examples/gmail-labeler/main.py#connect</include>
+
+## Labeling with Claude
+
+For each incoming email, `label_email` fetches Gmail tools from `session.tools()`, wraps them in an MCP server using `create_sdk_mcp_server()`, and passes them to a Claude agent. The agent lists existing labels, picks the best fit or creates a new one, and applies it to the email.
+
+<include>../../examples/gmail-labeler/main.py#label</include>
+
+## Listening for emails
+
+The `listen` function creates a trigger for new Gmail messages and subscribes to events over WebSocket. When a new email arrives, the handler calls `label_email` to classify and label it.
+
+<include>../../examples/gmail-labeler/main.py#listen</include>
+
+<Callout>
+SDK subscriptions are ideal for local development and testing. For production, use [webhooks](/docs/setting-up-triggers/subscribing-to-events) to receive trigger events at a URL endpoint.
+</Callout>
+
+## Complete script
+
+Here is everything together:
+
+<include>../../examples/gmail-labeler/main.py</include>
+
+## Running the script
+
+First, connect your Gmail account:
+
+```bash
+uv run --env-file .env python main.py connect default
+```
+
+If Gmail is not connected yet, you will get an OAuth URL. Open it in your browser and authorize the app. If already connected, the script prints "Gmail is already connected."
+
+Then start the listener:
+
+```bash
+uv run --env-file .env python main.py listen default
+```
+
+Send yourself an email and watch the terminal. The agent will receive the event, inspect the email, and apply a label.
+
+## Take it further
+
+The trigger + agent pattern works for any event-driven workflow. Swap the prompt and toolkit to build:
+
+- **Auto-responder**: draft and send replies to common questions instead of just labeling
+- **Slack notifier**: add the Slack toolkit so the agent posts a summary of important emails to a channel
+- **Lead router**: connect Salesforce and have the agent tag inbound emails by deal stage and assign to reps
+
+<Cards>
+  <Card title="Slack Summarizer" href="/cookbooks/slack-summariser" description="Summarize Slack channels with a single command" />
+  <Card title="Background Agent" href="/cookbooks/background-agent" description="Run agents autonomously on a schedule" />
+</Cards>

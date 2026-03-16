@@ -1,0 +1,299 @@
+---
+title: OpenAI
+description: Build an agent with OpenAI and enable it to use 1000+ tools with Composio.
+keywords: [gpt, responses api, chat completions]
+---
+
+The OpenAI Provider is the default provider for the Composio SDK. It transforms Composio tools into a format compatible with OpenAI's function calling capabilities through both the Responses and Chat Completion APIs.
+
+<Callout type="info">
+Looking for the OpenAI Agents SDK? See the [OpenAI Agents SDK](/docs/providers/openai-agents) provider page.
+</Callout>
+
+<IntegrationTabs tabs={[
+  { value: "responses", label: "Responses API" },
+  { value: "chat", label: "Chat Completions" },
+]}>
+
+<IntegrationContent value="responses">
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```bash
+pip install composio composio_openai openai
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/openai openai
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+The [Responses API](https://platform.openai.com/docs/api-reference/responses) is the recommended way to build agentic flows with OpenAI.
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+import json
+from openai import OpenAI
+from composio import Composio
+from composio_openai import OpenAIResponsesProvider
+
+composio = Composio(provider=OpenAIResponsesProvider())
+client = OpenAI()
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+response = client.responses.create(
+    model="gpt-5.2",
+    tools=tools,
+    input=[
+        {
+            "role": "user",
+            "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+        }
+    ]
+)
+
+# Agentic loop — keep executing tool calls until the model responds with text
+while True:
+    tool_calls = [o for o in response.output if o.type == "function_call"]
+    if not tool_calls:
+        break
+    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    response = client.responses.create(
+        model="gpt-5.2",
+        tools=tools,
+        previous_response_id=response.id,
+        input=[
+            {"type": "function_call_output", "call_id": tool_calls[i].call_id, "output": json.dumps(result)}
+            for i, result in enumerate(results)
+        ]
+    )
+
+# Print final response
+for item in response.output:
+    if item.type == "message":
+        print(item.content[0].text)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import OpenAI from 'openai';
+import { Composio } from '@composio/core';
+import { OpenAIResponsesProvider } from '@composio/openai';
+
+const composio = new Composio({
+    provider: new OpenAIResponsesProvider(),
+});
+const client = new OpenAI();
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+let response = await client.responses.create({
+    model: "gpt-5.2",
+    tools: tools,
+    input: [
+        {
+            role: "user",
+            content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+        },
+    ],
+});
+
+// Agentic loop — keep executing tool calls until the model responds with text
+while (true) {
+    const toolCalls = response.output.filter((o) => o.type === "function_call");
+    if (toolCalls.length === 0) break;
+
+    const results = await composio.provider.handleToolCalls("user_123", response.output);
+    response = await client.responses.create({
+        model: "gpt-5.2",
+        tools: tools,
+        previous_response_id: response.id,
+        input: results.map((result, i) => ({
+            type: "function_call_output" as const,
+            call_id: toolCalls[i].call_id,
+            output: JSON.stringify(result),
+        })),
+    });
+}
+
+// Print final response
+for (const item of response.output) {
+    if (item.type === "message") {
+        const block = item.content[0];
+        if (block.type === "output_text") {
+            console.log(block.text);
+        }
+    }
+}
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+</IntegrationContent>
+
+<IntegrationContent value="chat">
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```bash
+pip install composio composio_openai openai
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/openai openai
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+The [Chat Completions API](https://platform.openai.com/docs/api-reference/chat) generates a model response from a list of messages.
+The `OpenAIProvider` (Chat Completions) is the default provider used by Composio SDK.
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+import json
+from openai import OpenAI
+from composio import Composio
+from composio_openai import OpenAIProvider
+
+composio = Composio(provider=OpenAIProvider())
+client = OpenAI()
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+messages = [
+    {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+]
+
+response = client.chat.completions.create(
+    model="gpt-5.2",
+    tools=tools,
+    messages=messages,
+)
+
+# Agentic loop — keep executing tool calls until the model responds with text
+while response.choices[0].message.tool_calls:
+    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    messages.append(response.choices[0].message)
+    for i, tc in enumerate(response.choices[0].message.tool_calls):
+        messages.append({
+            "role": "tool",
+            "tool_call_id": tc.id,
+            "content": json.dumps(results[i]),
+        })
+    response = client.chat.completions.create(
+        model="gpt-5.2",
+        tools=tools,
+        messages=messages,
+    )
+
+print(response.choices[0].message.content)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import OpenAI from 'openai';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+
+const composio = new Composio({
+    provider: new OpenAIProvider(),
+});
+const client = new OpenAI();
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    {
+        role: "user",
+        content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+    },
+];
+
+let response = await client.chat.completions.create({
+    model: "gpt-5.2",
+    tools: tools,
+    messages: messages,
+});
+
+// Agentic loop — keep executing tool calls until the model responds with text
+while (response.choices[0].message.tool_calls) {
+    const results = await composio.provider.handleToolCalls("user_123", response);
+    messages.push(response.choices[0].message);
+    for (const [i, tc] of response.choices[0].message.tool_calls.entries()) {
+        messages.push({
+            role: "tool",
+            tool_call_id: tc.id,
+            content: JSON.stringify(results[i]),
+        });
+    }
+    response = await client.chat.completions.create({
+        model: "gpt-5.2",
+        tools: tools,
+        messages: messages,
+    });
+}
+
+console.log(response.choices[0].message.content);
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+</IntegrationContent>
+
+</IntegrationTabs>

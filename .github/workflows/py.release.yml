@@ -1,11 +1,12 @@
 name: Release Python Packages
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'py@*'
   workflow_dispatch:
     inputs:
       skip_tests:
-        description: "Skip running tests"
+        description: 'Skip running tests'
         required: false
         type: boolean
         default: false
@@ -18,19 +19,19 @@ jobs:
         working-directory: ./python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
 
       - name: Build Artifacts
         run: |
-            pip install uv
-            make env
-            make build
+          make env
+          make build
 
       - name: Publish Artifacts
-        if: github.event_name == 'release'
+        if: github.event_name == 'push'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ./python/dist

@@ -14,7 +14,9 @@ describe('CLI: composio', () => {
 
         expect(result).toEqual(
           ValidationError.commandMismatch(
-            HelpDoc.p("Invalid subcommand for composio - use 'version'")
+            HelpDoc.p(
+              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'install', 'init', 'generate', 'py', 'ts', 'toolkits', 'tools', 'auth-configs', 'connected-accounts', 'triggers', 'logs', 'orgs', 'projects'"
+            )
           )
         );
       })
@@ -26,59 +28,9 @@ describe('CLI: composio', () => {
       Effect.gen(function* () {
         const args = ['--help'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-
-        expect(yield* sanitize(output)).toMatchInlineSnapshot(`
-          "[0;1m[0;37;1mcomposio[0;1m[0m
-
-          composio <VERSION>
-
-          [0;1mUSAGE[0m
-
-          $ composio [--log-level all | trace | debug | info | warning | error | fatal | none]
-
-          [0;1mDESCRIPTION[0m
-
-          Composio CLI - A tool for managing Python and TypeScript composio.dev projects.
-
-          [0;1mOPTIONS[0m
-
-          [0;1m--log-level all | trace | debug | info | warning | error | fatal | none[0m
-
-            One of the following: all, trace, debug, info, warning, error, fatal, none
-
-            Define log level
-
-            This setting is optional.
-
-          [0;1mCOMMANDS[0m
-
-            - version  Display your account information.
-
-          [0;1mCOMMANDS[0m
-
-            - version                                                                               Display your account information.
-
-            - upgrade                                                                               Upgrade your Composio CLI to the latest available version.
-
-            - whoami                                                                                Display your account information.
-
-            - login [--no-browser]                                                                  Log in to the Composio SDK.
-
-            - logout                                                                                Log out from the Composio SDK.
-
-            - generate [(-o, --output-dir directory)] [--type-tools]                                Updates the local type stubs with the latest app data, automatically detecting the language of the project in the current working directory (TypeScript | Python).
-
-            - py                                                                                    Handle Python projects.
-
-            - py generate [(-o, --output-dir directory)]                                            Updates the local type stubs with the latest app data.
-
-            - ts                                                                                    Handle TypeScript projects.
-
-            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools]  Updates the local type stubs with the latest app data.
-          "
-        `);
+        expect(yield* sanitize(output)).toMatchSnapshot();
       })
     );
   });
@@ -95,19 +47,15 @@ describe('CLI: composio', () => {
     );
   });
 
-  // layer(TestLive())(it => {
-  //   it.scoped('[Pressing] CTRL+C [Then] quit wizard mode', () =>
-  //     Effect.gen(function* () {
-  //       const args = ['--wizard'];
-
-  //       const fiber = yield* Effect.fork(cli(args));
-  //       yield* MockTerminal.inputKey('c', { ctrl: true });
-  //       yield* Fiber.join(fiber);
-
-  //       const lines = yield* MockConsole.getLines();
-  //       const output = lines.join('\n');
-  //       expect(output).toContain('Quitting wizard mode...');
-  //     })
-  //   );
-  // });
+  layer(TestLive())(it => {
+    it.scoped("[Given] -v flag [Then] prints composio's version from package.json", () =>
+      Effect.gen(function* () {
+        const args = ['-v'];
+        yield* cli(args);
+        const lines = yield* MockConsole.getLines();
+        const output = lines.join('\n');
+        expect(output).toContain(pkg.version);
+      })
+    );
+  });
 });

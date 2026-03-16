@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthConfigs } from '../../src/models/AuthConfigs';
 import ComposioClient from '@composio/client';
 import { ValidationError } from '../../src/errors/ValidationErrors';
-import { ZodError } from 'zod/v3';
 import {
   AuthConfigRetrieveResponse as ComposioAuthConfigRetrieveResponse,
   AuthConfigDeleteResponse,
@@ -397,6 +396,42 @@ describe('AuthConfigs', () => {
       mockClient.authConfigs.retrieve.mockRejectedValueOnce(apiError);
 
       await expect(authConfigs.get('nonexistent_auth')).rejects.toThrow('Auth config not found');
+    });
+
+    it('should retrieve auth config with isEnabledForToolRouter set to true', async () => {
+      const responseWithToolRouter = {
+        ...mockComposioAuthConfigResponse,
+        is_enabled_for_tool_router: true,
+      };
+      mockClient.authConfigs.retrieve.mockResolvedValueOnce(responseWithToolRouter);
+
+      const result = await authConfigs.get('auth_12345');
+
+      expect(result.isEnabledForToolRouter).toBe(true);
+    });
+
+    it('should retrieve auth config with isEnabledForToolRouter set to false', async () => {
+      const responseWithoutToolRouter = {
+        ...mockComposioAuthConfigResponse,
+        is_enabled_for_tool_router: false,
+      };
+      mockClient.authConfigs.retrieve.mockResolvedValueOnce(responseWithoutToolRouter);
+
+      const result = await authConfigs.get('auth_12345');
+
+      expect(result.isEnabledForToolRouter).toBe(false);
+    });
+
+    it('should retrieve auth config with isEnabledForToolRouter undefined', async () => {
+      const responseWithoutField = {
+        ...mockComposioAuthConfigResponse,
+        is_enabled_for_tool_router: undefined,
+      };
+      mockClient.authConfigs.retrieve.mockResolvedValueOnce(responseWithoutField);
+
+      const result = await authConfigs.get('auth_12345');
+
+      expect(result.isEnabledForToolRouter).toBeUndefined();
     });
   });
 

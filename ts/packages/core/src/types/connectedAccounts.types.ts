@@ -1,5 +1,6 @@
 import { z } from 'zod/v3';
 import { ConnectionDataSchema } from './connectedAccountAuthStates.types';
+import { AuthSchemeEnum } from './authConfigs.types';
 
 /**
  * Connected Account create parameters
@@ -77,6 +78,8 @@ export type CreateConnectedAccountResponse = z.infer<typeof CreateConnectedAccou
 
 export const ConnectedAccountAuthConfigSchema = z.object({
   id: z.string(),
+  /** @deprecated use connectedAccount.state.authScheme instead */
+  authScheme: AuthSchemeEnum.optional(),
   isComposioManaged: z.boolean(),
   isDisabled: z.boolean(),
 });
@@ -136,11 +139,6 @@ export const ConnectedAccountListParamsSchema = z.object({
     .optional()
     .describe('The auth config ids of the connected accounts'),
   cursor: z.string().nullish().describe('The cursor to paginate through the connected accounts'),
-  labels: z
-    .array(z.string())
-    .nullable()
-    .optional()
-    .describe('The labels of the connected accounts'),
   limit: z.number().nullable().optional().describe('The limit of the connected accounts to return'),
   orderBy: z
     .enum(['created_at', 'updated_at'])
@@ -196,3 +194,9 @@ export const CreateConnectedAccountLinkResponseSchema = z.object({
 export type CreateConnectedAccountLinkResponse = z.infer<
   typeof CreateConnectedAccountLinkResponseSchema
 >;
+
+export const ConnectedAccountRefreshOptionsSchema = z.object({
+  redirectUrl: z.string().optional(),
+  validateCredentials: z.boolean().optional(),
+});
+export type ConnectedAccountRefreshOptions = z.infer<typeof ConnectedAccountRefreshOptionsSchema>;

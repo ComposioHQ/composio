@@ -1,0 +1,95 @@
+---
+title: Supabase SQL Agent
+description: Build an agent that executes SQL queries on Supabase using natural language
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/supabase-sql-agent)
+
+This cookbook builds a CLI agent that connects to your Supabase account and lets you query your databases using natural language. The agent translates plain English into SQL, runs it against your project, and explains the results. We'll use **scoped sessions** to limit the agent to Supabase tools only.
+
+## Prerequisites
+
+* Python 3.10+
+* [UV](https://docs.astral.sh/uv/getting-started/installation/)
+* [Composio API key](https://platform.composio.dev/settings)
+* [OpenAI API key](https://platform.openai.com/api-keys)
+
+## Project setup
+
+Create a new project and install dependencies:
+
+```bash
+mkdir composio-supabase-agent && cd composio-supabase-agent
+uv init && uv add composio composio-openai-agents openai-agents
+```
+
+Add your API keys to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+## Setting up the client
+
+`Composio` takes an `OpenAIAgentsProvider` so that tools come back in the format the OpenAI Agents SDK expects.
+
+<include>../../examples/supabase-sql-agent/main.py#setup</include>
+
+## Connecting to Supabase
+
+Before running queries, the user needs to connect their Supabase account. The `connect` function creates a scoped session with `toolkits=["supabase"]` and checks the connection status via `session.toolkits()`. If Supabase is not connected, `session.authorize("supabase")` starts the OAuth flow and returns a URL for the user to visit. `wait_for_connection()` blocks until they complete it.
+
+<include>../../examples/supabase-sql-agent/main.py#connect</include>
+
+## Querying with natural language
+
+With Supabase connected, the `query` function creates a session scoped to `toolkits=["supabase"]` and grabs the tools. We hand them to an agent and run an interactive loop where the user types questions and the agent translates them into SQL.
+
+<include>../../examples/supabase-sql-agent/main.py#query</include>
+
+## Complete script
+
+Here is everything together:
+
+<include>../../examples/supabase-sql-agent/main.py</include>
+
+## Running the script
+
+First, connect your Supabase account:
+
+```bash
+uv run --env-file .env python main.py connect default
+```
+
+If Supabase is not connected yet, you'll get an OAuth URL. Open it in your browser and authorize the app.
+
+Then start the interactive query agent:
+
+```bash
+uv run --env-file .env python main.py query default
+```
+
+Try asking things like:
+
+```
+you > List all my Supabase projects
+you > Show me all tables in my default project
+you > How many users signed up this week?
+you > What are the top 10 most recent orders?
+```
+
+Type `exit` to quit.
+
+## Take it further
+
+The agent has full access to your Supabase projects via SQL. Some ideas:
+
+- **Scheduled reports**: wrap this in a cron job to generate daily metrics and post them to Slack using the Slack toolkit
+- **Admin dashboard backend**: pair with FastAPI to expose natural-language queries as an API for internal tools
+- **Data migration helper**: ask the agent to compare schemas across projects and generate migration SQL
+
+<Cards>
+  <Card title="FastAPI Server" href="/cookbooks/fast-api" description="Wrap an agent in an HTTP server with auth and connection management" />
+  <Card title="Background Agent" href="/cookbooks/background-agent" description="Run agents autonomously on a schedule" />
+</Cards>

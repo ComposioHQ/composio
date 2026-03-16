@@ -1,0 +1,277 @@
+---
+title: Enable and disable toolkits
+description: Control which toolkits and tools are available in your sessions
+---
+
+When creating a session, you can control which toolkits are available to your agent. By default, all 1000+ toolkits are discoverable, but you can restrict or exclude specific ones.
+
+## Enabling specific toolkits
+
+To limit your session to only specific toolkits, pass an array of toolkit slugs:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# Only GitHub and Gmail will be available
+session = composio.create(
+    user_id="user_123",
+    toolkits=["github", "gmail"]
+)
+
+# Or use the explicit enable syntax
+session = composio.create(
+    user_id="user_123",
+    toolkits={"enable": ["github", "gmail"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Only GitHub and Gmail will be available
+const session = await composio.create("user_123", {
+  toolkits: ["github", "gmail"]
+});
+
+// Or use the explicit enable syntax
+const session2 = await composio.create("user_123", {
+  toolkits: { enable: ["github", "gmail"] }
+});
+```
+</Tab>
+</Tabs>
+
+## Disabling specific toolkits
+
+To make all toolkits available except certain ones, use the `disable` syntax:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# All toolkits available except Linear and Jira
+session = composio.create(
+    user_id="user_123",
+    toolkits={"disable": ["linear", "jira"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// All toolkits available except Linear and Jira
+const session = await composio.create("user_123", {
+  toolkits: { disable: ["linear", "jira"] }
+});
+```
+</Tab>
+</Tabs>
+
+## Enabling or disabling specific tools
+
+You can also control which individual tools are available within a toolkit using the `tools` configuration. The key is the toolkit slug and the value specifies which tools to enable or disable.
+
+### Enable specific tools
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    tools={
+        # Only these Gmail tools will be available
+        "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
+        # Only issue-related GitHub tools
+        "github": {"enable": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]}
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tools: {
+    // Only these Gmail tools will be available
+    gmail: { enable: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"] },
+    // Only issue-related GitHub tools
+    github: { enable: ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"] }
+  }
+});
+```
+</Tab>
+</Tabs>
+
+You can also use the shorthand array syntax which is equivalent to `enable`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    tools={
+        "gmail": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
+        "github": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tools: {
+    gmail: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
+    github: ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]
+  }
+});
+```
+</Tab>
+</Tabs>
+
+### Disable specific tools
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    tools={
+        # All Slack tools except delete
+        "slack": {"disable": ["SLACK_DELETE_MESSAGE"]},
+        # All GitHub tools except destructive ones
+        "github": {"disable": ["GITHUB_DELETE_REPO", "GITHUB_DELETE_BRANCH"]}
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tools: {
+    // All Slack tools except delete
+    slack: { disable: ["SLACK_DELETE_MESSAGE"] },
+    // All GitHub tools except destructive ones
+    github: { disable: ["GITHUB_DELETE_REPO", "GITHUB_DELETE_BRANCH"] }
+  }
+});
+```
+</Tab>
+</Tabs>
+
+## Filtering tools by tags
+
+Tools can be filtered by their behavior tags. Available tags are:
+
+| Tag | Description |
+|-----|-------------|
+| `readOnlyHint` | Tools that only read data |
+| `destructiveHint` | Tools that modify or delete data |
+| `idempotentHint` | Tools that can be safely retried |
+| `openWorldHint` | Tools that operate in an open world context |
+
+### Global tag filtering
+
+Apply tag filters to all toolkits:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Only include read-only and idempotent tools
+session = composio.create(
+    user_id="user_123",
+    tags=["readOnlyHint", "idempotentHint"]
+)
+
+# Enable some tags, disable others
+session = composio.create(
+    user_id="user_123",
+    tags={
+        "enable": ["readOnlyHint"],
+        "disable": ["destructiveHint"]
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Only include read-only and idempotent tools
+const session = await composio.create("user_123", {
+  tags: ["readOnlyHint", "idempotentHint"]
+});
+
+// Enable some tags, disable others
+const sessionWithTagConfig = await composio.create("user_123", {
+  tags: {
+    enable: ["readOnlyHint"],
+    disable: ["destructiveHint"]
+  }
+});
+```
+</Tab>
+</Tabs>
+
+### Per-toolkit tag filtering
+
+Override global tags for specific toolkits:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    # Global: only read-only tools
+    tags=["readOnlyHint"],
+    tools={
+        # Override for GitHub: allow all tools except destructive
+        "github": {"tags": {"disable": ["destructiveHint"]}},
+        # Override for Gmail: only read-only tools (explicit)
+        "gmail": {"tags": ["readOnlyHint"]}
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  // Global: only read-only tools
+  tags: ["readOnlyHint"],
+  tools: {
+    // Override for GitHub: allow all tools except destructive
+    github: { tags: { disable: ["destructiveHint"] } },
+    // Override for Gmail: only read-only tools (explicit)
+    gmail: { tags: ["readOnlyHint"] }
+  }
+});
+```
+</Tab>
+</Tabs>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Wrench />} title="Fetching tools and toolkits" href="/docs/toolkits/fetching-tools-and-toolkits" description="List enabled toolkits, get meta tools, and browse the catalog" />
+  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Auth configs, connected accounts, and other session options" />
+  <Card icon={<Wrench />} title="Tools and toolkits" href="/docs/tools-and-toolkits" description="How meta tools discover, authenticate, and execute tools at runtime" />
+</Cards>
+

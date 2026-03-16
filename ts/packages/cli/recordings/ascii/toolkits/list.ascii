@@ -1,0 +1,228 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all toolkits
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all toolkits
+> composio toolkits list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all toolkits
+> composio toolkits list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all toolkits
+> composio toolkits list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List all toolkits
+> composio toolkits list
+│
+◒  Fetching toolkits...
+◇  Fetching toolkits...
+│
+●  Listing 30 of 985 toolkits
+│
+│  Name                 Slug                 Version      Tools   Triggers   Descri
+ption
+│  Gmail                gmail                -            40      2          Gmail
+is Google’s email service, featuring spam...
+│  Composio             composio             -            24      0          Compos
+io enables AI Agents and LLMs to authenti...
+│  GitHub               github               -            874     6          GitHub
+ is a code hosting platform for version c...
+│  Google Calendar      googlecalendar       -            46      7          Google
+ Calendar is a time management tool provi...
+│  Notion               notion               -            47      5          Notion
+ centralizes notes, docs, wikis, and task...
+│  Google Sheets        googlesheets         -            46      2          Google
+ Sheets is a cloud-based spreadsheet tool...
+│  Slack                slack                -            155     9          Slack
+is a channel-based messaging platform. Wi...
+│  Supabase             supabase             -            121     0          Supaba
+se is an open-source backend-as-a-service...
+│  Outlook              outlook              -            64      5          Outloo
+k is Microsoft's email and calendaring pl...
+│  Perplexity AI        perplexityai         -            1       0          Perple
+xity AI provides conversational AI models...
+│  Twitter              twitter              -            80      0          Twitte
+r, Inc. was an American social media comp...
+│  Google Drive         googledrive          -            127     7          Google
+ Drive is a cloud storage solution for up...
+│  Google Docs          googledocs           -            37      4          Google
+ Docs is a cloud-based word processor wit...
+│  HubSpot              hubspot              -            236     2          HubSpo
+────────────────────────────────────────────────────────────────────────────────

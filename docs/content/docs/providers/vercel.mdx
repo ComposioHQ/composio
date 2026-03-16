@@ -1,0 +1,58 @@
+---
+title: Vercel AI SDK
+description: Build an agent with Vercel AI SDK and enable it to use 1000+ tools with Composio.
+keywords: [ai sdk, vercel]
+---
+
+The Vercel AI SDK provider transforms Composio tools into Vercel's [tool format](https://sdk.vercel.ai/docs/ai-sdk-core/tools-and-tool-calling) with built-in execution — no manual agentic loop needed.
+
+<Steps>
+<Step>
+**Install**
+
+```bash
+npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
+```
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `ANTHROPIC_API_KEY` with your [Anthropic API key](https://console.anthropic.com/settings/keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+ANTHROPIC_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+The Vercel provider is **agentic** — tools include an `execute` function, so the AI SDK handles tool calls automatically via [`stopWhen`](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling).
+
+```typescript
+import { anthropic } from "@ai-sdk/anthropic";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { generateText, stepCountIs } from "ai";
+
+const composio = new Composio({ provider: new VercelProvider() });
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const { text } = await generateText({
+  model: anthropic("claude-opus-4-6"),
+  tools,
+  prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+  stopWhen: stepCountIs(10),
+});
+
+console.log(text);
+```
+</Step>
+</Steps>

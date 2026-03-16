@@ -1,25 +1,33 @@
 import process from 'node:process';
-import { Cause, Console, Effect, Exit, Layer, Logger } from 'effect';
+import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig } from '@effect/cli';
+import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
-import { runWithConfig } from 'src/commands';
+import { rootCommand, runWithConfig } from 'src/commands';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import { BaseConfigProviderLive, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
+  ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
 } from 'src/services/composio-clients';
 import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-cached';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
-import { EnvLangDetector } from 'src/services/env-lang-detector';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
+import { TerminalUILive } from 'src/services/terminal-ui';
+import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
+import { ProjectContext } from 'src/services/project-context';
+import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
+import { CommandRunner } from 'src/services/command-runner';
+import { StdinLive } from 'src/services/stdin';
+import { showUpdateNotice, checkForUpdateInBackground } from 'src/services/update-check';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -64,6 +72,26 @@ export const UpgradeBinaryLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
 ) satisfies RequiredLayer;
 
+export const TriggersRealtimeLive = Layer.provide(
+  TriggersRealtime.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
+export const ComposioClientSingletonLive = Layer.provide(
+  ComposioClientSingleton.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+) satisfies RequiredLayer;
+
+export const ToolsExecutorLive = Layer.provide(
+  _ToolsExecutorLive,
+  ComposioClientSingletonLive
+) satisfies RequiredLayer;
+
+export const ProjectContextLive = Layer.provide(
+  ProjectContext.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
   NodeOs.Default,
@@ -71,11 +99,18 @@ const layers = Layer.mergeAll(
   UpgradeBinaryLive,
   ComposioUserContextLive,
   ComposioSessionRepositoryLive,
+  ComposioClientSingletonLive, // Expose ComposioClientSingleton for commands that use Tool Router directly
   ComposioToolkitsRepositoryCachedLive, // Use the cached layer instead of the regular one
-  EnvLangDetector.Default,
+  ToolsExecutorLive,
   JsPackageManagerDetector.Default,
+  ProjectEnvironmentDetector.Default,
+  CommandRunner.Default,
+  TriggersRealtimeLive,
+  ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
+  StdinLive,
+  TerminalUILive,
   Logger.pretty
 ) satisfies RequiredLayer;
 
@@ -91,6 +126,61 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
   unknown
 >;
 
+const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
+  switch (usage._tag) {
+    case 'Named': {
+      if (Option.isSome(usage.acceptedValues)) {
+        for (const name of usage.names) {
+          if (name.startsWith('-')) {
+            acc.add(name);
+          }
+        }
+      }
+      return;
+    }
+    case 'Optional':
+    case 'Repeated': {
+      collectValueOptionNamesFromUsage(usage.usage, acc);
+      return;
+    }
+    case 'Alternation':
+    case 'Concat': {
+      collectValueOptionNamesFromUsage(usage.left, acc);
+      collectValueOptionNamesFromUsage(usage.right, acc);
+      return;
+    }
+    case 'Mixed':
+    case 'Empty': {
+      return;
+    }
+  }
+};
+
+const valueOptionNames = (() => {
+  const names = new Set<string>();
+  const visited = new Set<CommandDescriptor.Command<unknown>>();
+  const visit = (command: CommandDescriptor.Command<unknown>) => {
+    if (visited.has(command)) {
+      return;
+    }
+    visited.add(command);
+    collectValueOptionNamesFromUsage(CommandDescriptor.getUsage(command), names);
+    for (const [, subcommand] of HashMap.toEntries(CommandDescriptor.getSubcommands(command))) {
+      visit(subcommand);
+    }
+  };
+  visit(rootCommand.descriptor);
+  return names;
+})();
+
+/**
+ * Upgrade hint — runs outside the Effect runtime, never blocks or throws.
+ * showUpdateNotice() reads a cached file (~1 ms) and prints to stderr.
+ * checkForUpdateInBackground() fires a non-blocking fetch to GitHub.
+ */
+showUpdateNotice();
+checkForUpdateInBackground();
+
 /**
  * CLI entrypoint, which:
  * - runs the Effect runtime and sets up its runtime environment
@@ -98,6 +188,19 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
  */
 runWithArgs.pipe(
   Effect.scoped,
+  // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
+  // via its own printDocs before re-failing. Swallow the re-thrown error to avoid
+  // routing it through the generic error box which would dump raw JSON.
+  // When a flag is passed without its required value (e.g. `--query` instead of
+  // `--query "text"`), @effect/cli reports it as "unknown argument" — add a tip.
+  Effect.catchIf(ValidationError.isValidationError, error => {
+    const text = HelpDoc.toAnsiText(error.error).trim();
+    const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
+    if (flagMatch && valueOptionNames.has(flagMatch[1])) {
+      return Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`);
+    }
+    return Effect.void;
+  }),
   Effect.withSpan('composio-cli', {
     attributes: {
       name: constants.APP_NAME,
@@ -110,18 +213,27 @@ runWithArgs.pipe(
       const captured = yield* captureErrors(cause, {
         stripCwd: true,
       });
-      const message = prettyPrintFromCapturedErrors(captured, {
-        hideStackTrace: true,
-        stripCwd: true,
-        enabled: true,
-      });
+      const filteredErrors = captured.errors.filter(
+        error => error.errorType !== 'ToolExecutionError'
+      );
 
-      yield* Console.error(message);
+      if (captured.interrupted || filteredErrors.length > 0) {
+        const message = prettyPrintFromCapturedErrors(
+          { ...captured, errors: filteredErrors },
+          {
+            hideStackTrace: true,
+            stripCwd: true,
+            enabled: true,
+          }
+        );
+
+        yield* Console.error(message);
+        process.exitCode = 1;
+      }
     })
   ),
   Effect.provide(layers),
   Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  BunRuntime.runMain({
-    teardown,
-  })
+  effect =>
+    (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(effect)
 );

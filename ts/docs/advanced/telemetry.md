@@ -203,8 +203,31 @@ The SDK includes a batch processor for telemetry events that:
 2. Sends events in batches
 3. Handles retries and failures
 4. Automatically flushes at regular intervals
+5. **Automatically flushes on process exit** (Node.js-compatible environments only) - handles `beforeExit`, `SIGINT`, and `SIGTERM` signals
 
-This ensures that telemetry doesn't impact application performance.
+This ensures that telemetry doesn't impact application performance and that all telemetry is sent before the process exits.
+
+> **Note:** On Node.js-compatible environments, the SDK automatically registers exit handlers to ensure all pending telemetry is sent.
+
+### Cloudflare Workers and Edge Runtimes
+
+In environments like Cloudflare Workers that don't support `process.on('beforeExit')`, you should manually flush telemetry using `ctx.waitUntil()`:
+
+```typescript
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
+
+    // Do your work...
+    const result = await composio.tools.execute(...);
+
+    // Ensure telemetry flushes before worker terminates
+    ctx.waitUntil(composio.flush());
+
+    return new Response(JSON.stringify(result));
+  }
+};
+```
 
 ## Environment Context
 

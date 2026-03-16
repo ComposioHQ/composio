@@ -1,0 +1,103 @@
+name: Docs - Update Data
+
+on:
+  schedule:
+    - cron: '0 */5 * * *'
+  repository_dispatch:
+    types: [apollo-production-deploy]
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log trigger source
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HERMES_COMMIT: ${{ github.event.client_payload.hermes_commit }}
+          DEPLOY_TIMESTAMP: ${{ github.event.client_payload.timestamp }}
+        run: |
+          echo "Workflow triggered by: $EVENT_NAME"
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            echo "Triggered by Apollo production deployment"
+            echo "Hermes commit: $HERMES_COMMIT"
+            echo "Timestamp: $DEPLOY_TIMESTAMP"
+          fi
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Generate toolkits data
+        run: bun run generate:toolkits
+
+      - name: Fetch OpenAPI spec
+        run: bun run scripts/fetch-openapi.mjs
+
+      - name: Generate API index pages
+        run: bun run generate:api-index
+
+      - name: Generate meta tools reference
+        run: bun run generate:meta-tools
+
+      - name: Check for changes
+        id: changes
+        run: |
+          cd ..
+          git add -N docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
+          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git diff --stat docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
+          fi
+
+      - name: Create Pull Request
+        id: create-pr
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@98357b18bf14b5342f975ff684046ec3b2a07725 # v8.0.0
+        with:
+          commit-message: 'docs: update toolkits and API data'
+          title: 'docs: update toolkits, API spec, and meta tools data'
+          body: |
+            ## Summary
+            Automated sync of backend data into the docs site. Triggered by: `${{ github.event_name }}`${{ github.event_name == 'repository_dispatch' && format(' (Hermes commit: {0})', github.event.client_payload.hermes_commit) || '' }}.
+
+            ## What changed
+            - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
+            - **OpenAPI spec** (`docs/public/openapi.json`) — latest API specification fetched from production
+            - **API reference pages** (`docs/content/reference/api-reference/*.mdx`) — regenerated index pages from the updated OpenAPI spec
+            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/reference/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
+          branch: docs/auto-update-data
+          base: next
+          add-paths: |
+            docs/public/data/
+            docs/public/openapi.json
+            docs/content/reference/api-reference/
+            docs/content/reference/meta-tools/
+
+      - name: Request review from trigger actor
+        if: steps.create-pr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
+          AUTHOR: ${{ github.actor }}
+        run: gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR"

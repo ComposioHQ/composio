@@ -1,0 +1,81 @@
+# syntax=docker/dockerfile:1
+# Reusable Dockerfile for Node.js e2e tests
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.19.0 -t test-name .
+#
+# Uses official node:slim images. For multi-version testing, run the build/run
+# multiple times with different NODE_VERSION values from the shell script.
+
+ARG NODE_VERSION=20.19.0
+
+FROM node:${NODE_VERSION}-slim
+
+ENV PNPM_HOME="/pnpm"
+ENV BUN_INSTALL="/usr/local"
+ENV PATH="$BUN_INSTALL/bin:$PNPM_HOME:$PATH"
+
+WORKDIR /app
+
+# Install system dependencies with cache mounts
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl unzip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install corepack (for pnpm) with npm cache mount
+RUN --mount=type=cache,target=/root/.npm \
+    npm i -g corepack@latest && \
+    corepack enable
+
+# Install bun (version from .bun-version)
+COPY .bun-version ./
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v$(cat .bun-version)" && \
+    bun --version
+
+# Copy lockfile first for optimal layer caching
+COPY pnpm-lock.yaml ./
+
+# Copy workspace configuration files
+COPY package.json \
+     pnpm-workspace.yaml \
+     .pnpmfile.cjs \
+     tsconfig.base.json \
+     tsdown.config.base.ts \
+     ./
+
+# Copy pre-install scripts (rarely change)
+COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
+COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
+
+# Copy all ts/packages (pre-built)
+COPY ts/packages/ ./ts/packages/
+
+# Install dependencies using pnpm
+# Note: We intentionally don't use --mount=type=cache for the pnpm store here
+# because it causes native binding issues (e.g., rolldown-binding) across builds
+RUN pnpm install --frozen-lockfile
+
+# Build and install composio CLI binary
+# This is a simplified version of ts/packages/cli/scripts/build-binary.ts + install-binary.ts
+WORKDIR /app/ts/packages/cli
+RUN bun build ./src/bin.ts \
+    --env DEBUG_OVERRIDE_* \
+    --compile \
+    --production \
+    --outfile /usr/local/bin/composio
+
+WORKDIR /app
+
+# Copy e2e tests last (changes frequently)
+COPY ts/e2e-tests/ ./ts/e2e-tests/
+
+RUN chown -R node:node /app
+
+# Pre-create Composio CLI cache directory to work around Bun issue #7967
+# (Bun-compiled binaries may silently fail to create directories in Docker)
+# See: https://github.com/oven-sh/bun/issues/7967
+RUN mkdir -p /home/node/.composio && chown node:node /home/node/.composio
+
+USER node
+
+CMD ["sh"]

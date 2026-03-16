@@ -1,0 +1,228 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --query filter
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --query filter
+> composio tools list --query 'send email'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --query filter
+> composio tools list --query 'send email'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --query filter
+> composio tools list --query 'send email'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # List with --query filter
+> composio tools list --query 'send email'
+│
+◒  Fetching tools...
+◇  Fetching tools...
+│
+●  Listing 30 tools (page 1 of 21)
+│
+│  Slug                                Name                 Description
+│  ABSTRACT_EMAIL_REPUTATION_API       Email validation ... Validate email addresse
+s and assess their deliv...
+│  ACTIVE_CAMPAIGN_CREATE_MESSAGE      Create Message       Tool to create a messag
+e in ActiveCampaign. Use...
+│  ACTIVE_CAMPAIGN_LIST_MESSAGES       List Messages        Tool to list all messag
+es in ActiveCampaign. Us...
+│  ACTIVE_CAMPAIGN_UPDATE_MESSAGE      Update Message       Tool to update an exist
+ing message in ActiveCam...
+│  ACTIVE_TRAIL_CREATE_CAMPAIGN_FOR... Create Campaign f... Tool to create and send
+ a new campaign to speci...
+│  ACTIVE_TRAIL_GET_ALL_CAMPAIGN_RE... Get All Campaign ... Tool to retrieve a full
+ overview of all campaig...
+│  ACTIVE_TRAIL_GET_AUTOMATIONS_EMA... Get Automation Em... Tool to retrieve all em
+ail campaign steps in an...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_DOMAIN... Get Campaign Doma... Tool to retrieve a repo
+rt by domain for a speci...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_REPORT    Get Campaign Report  Retrieves comprehensive
+ performance metrics for...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_SCHEDU... Get Campaign Sche... Retrieves the schedulin
+g configuration for a sp...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_S_DETAILS Get Campaign by ID   Tool to retrieve comple
+te campaign information ...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_S_DETA... Get Campaign by I... Tool to retrieve comple
+te campaign information ...
+│  ACTIVE_TRAIL_GET_CAMPAIGN_TEMPLATE  Get Campaign Temp... Retrieves template deta
+ils (design, content, su...
+│  ACTIVE_TRAIL_GET_SENDING_PROFILES   Get Sending Profiles Tool to retrieve accoun
+t email sending profiles...
+────────────────────────────────────────────────────────────────────────────────

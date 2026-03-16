@@ -33,6 +33,9 @@ describe('ComposioUserContext', () => {
             apiKey: Option.none(),
             baseURL: 'https://backend.composio.dev',
             webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), false);
@@ -44,7 +47,7 @@ describe('ComposioUserContext', () => {
       it.scoped('[Then] is logged in', () => {
         const cwd = tempy.temporaryDirectory();
         const map = new Map([
-          ['COMPOSIO_API_KEY', 'api_key'],
+          ['COMPOSIO_USER_API_KEY', 'api_key'],
           ['COMPOSIO_BASE_URL', 'https://test.composio.localhost'],
         ]) satisfies Map<string, string>;
 
@@ -61,9 +64,29 @@ describe('ComposioUserContext', () => {
             apiKey: Option.some('api_key'),
             baseURL: 'https://test.composio.localhost',
             webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
           });
           assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
           assertEquals(ctx.isLoggedIn(), true);
+        }).pipe(Effect.provide(ComposioUserContextTest));
+      });
+
+      it.scoped('[Then] COMPOSIO_API_KEY alone does not authenticate user context', () => {
+        const cwd = tempy.temporaryDirectory();
+        const map = new Map([['COMPOSIO_API_KEY', 'legacy_api_key']]) satisfies Map<string, string>;
+
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+        const ComposioUserContextTest = Layer.provideMerge(
+          ComposioUserContextLive,
+          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+        );
+
+        return Effect.gen(function* () {
+          const ctx = yield* ComposioUserContext;
+          assertEquals(ctx.isLoggedIn(), false);
+          assertEquals(Option.getOrUndefined(ctx.data.apiKey), undefined);
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });
@@ -87,6 +110,9 @@ describe('ComposioUserContext', () => {
             apiKey: Option.some('api_key'),
             baseURL: Option.some('https://test.composio.localhost'),
             webURL: Option.some('https://platform.composio.dev'),
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
@@ -111,7 +137,7 @@ describe('ComposioUserContext', () => {
     describe('[When] dynamic `APP_CONFIG` is set', () => {
       it.scoped('[Then] it overrides the config file', () => {
         const cwd = tempy.temporaryDirectory();
-        const map = new Map([['COMPOSIO_API_KEY', 'api_key']]) satisfies Map<string, string>;
+        const map = new Map([['COMPOSIO_USER_API_KEY', 'api_key']]) satisfies Map<string, string>;
 
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
@@ -124,6 +150,9 @@ describe('ComposioUserContext', () => {
             apiKey: Option.some('api_key'),
             baseURL: Option.none(),
             webURL: Option.some('https://platform.composio.dev'),
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
           });
           const userDataAsJson = yield* userDataToJSON(expectedUserData);
 
@@ -142,6 +171,150 @@ describe('ComposioUserContext', () => {
             })
           );
           assertEquals(ctx.isLoggedIn(), true);
+        }).pipe(Effect.provide(ComposioUserContextTest));
+      });
+    });
+
+    describe('[When] the file is empty', () => {
+      it('[Then] it falls back to defaults and overwrites the file', () => {
+        const cwd = tempy.temporaryDirectory();
+        const map = new Map([]) satisfies Map<string, string>;
+
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+        const ComposioUserContextTest = Layer.provideMerge(
+          ComposioUserContextLive,
+          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+        );
+
+        return Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          yield* fs.makeDirectory(path.join(cwd, '.composio'), { recursive: true });
+          // Write an empty file
+          yield* fs.writeFileString(path.join(cwd, '.composio', 'user_data.json'), '');
+
+          // Should NOT throw — should fall back to defaults
+          const ctx = yield* ComposioUserContext;
+
+          const expectedUserData = UserDataWithDefaults.make({
+            apiKey: Option.none(),
+            baseURL: 'https://backend.composio.dev',
+            webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
+          });
+          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
+          assertEquals(ctx.isLoggedIn(), false);
+
+          // The corrupted file should have been overwritten with valid defaults
+          const contents = yield* fs.readFileString(
+            path.join(cwd, '.composio', 'user_data.json'),
+            'utf8'
+          );
+          const parsed = JSON.parse(contents);
+          assertEquals(parsed.api_key, null);
+        }).pipe(Effect.provide(ComposioUserContextTest));
+      });
+    });
+
+    describe('[When] the file contains invalid JSON', () => {
+      it('[Then] it falls back to defaults and overwrites the file', () => {
+        const cwd = tempy.temporaryDirectory();
+        const map = new Map([]) satisfies Map<string, string>;
+
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+        const ComposioUserContextTest = Layer.provideMerge(
+          ComposioUserContextLive,
+          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+        );
+
+        return Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          yield* fs.makeDirectory(path.join(cwd, '.composio'), { recursive: true });
+          // Write corrupted JSON
+          yield* fs.writeFileString(
+            path.join(cwd, '.composio', 'user_data.json'),
+            '{not valid json!!!'
+          );
+
+          // Should NOT throw — should fall back to defaults
+          const ctx = yield* ComposioUserContext;
+
+          const expectedUserData = UserDataWithDefaults.make({
+            apiKey: Option.none(),
+            baseURL: 'https://backend.composio.dev',
+            webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
+          });
+          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
+          assertEquals(ctx.isLoggedIn(), false);
+        }).pipe(Effect.provide(ComposioUserContextTest));
+      });
+    });
+
+    describe('[When] the file contains valid JSON but wrong schema', () => {
+      it('[Then] it falls back to defaults and overwrites the file', () => {
+        const cwd = tempy.temporaryDirectory();
+        const map = new Map([]) satisfies Map<string, string>;
+
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+        const ComposioUserContextTest = Layer.provideMerge(
+          ComposioUserContextLive,
+          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+        );
+
+        return Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          yield* fs.makeDirectory(path.join(cwd, '.composio'), { recursive: true });
+          // Write valid JSON but with wrong schema (api_key should be string|null, not number)
+          yield* fs.writeFileString(
+            path.join(cwd, '.composio', 'user_data.json'),
+            JSON.stringify({ api_key: 12345, unknown_field: true })
+          );
+
+          // Should NOT throw — should fall back to defaults
+          const ctx = yield* ComposioUserContext;
+
+          const expectedUserData = UserDataWithDefaults.make({
+            apiKey: Option.none(),
+            baseURL: 'https://backend.composio.dev',
+            webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
+          });
+          assertEquals(Data.struct(ctx.data), Data.struct(expectedUserData));
+          assertEquals(ctx.isLoggedIn(), false);
+        }).pipe(Effect.provide(ComposioUserContextTest));
+      });
+    });
+
+    describe('[When] the file is corrupted but env USER_API_KEY is set', () => {
+      it('[Then] it falls back to defaults but preserves env USER_API_KEY', () => {
+        const cwd = tempy.temporaryDirectory();
+        const map = new Map([
+          ['COMPOSIO_USER_API_KEY', 'env_api_key'],
+          ['COMPOSIO_API_KEY', 'legacy_api_key_should_be_ignored'],
+        ]) satisfies Map<string, string>;
+
+        const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+        const ComposioUserContextTest = Layer.provideMerge(
+          ComposioUserContextLive,
+          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+        );
+
+        return Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          yield* fs.makeDirectory(path.join(cwd, '.composio'), { recursive: true });
+          yield* fs.writeFileString(path.join(cwd, '.composio', 'user_data.json'), '');
+
+          const ctx = yield* ComposioUserContext;
+
+          // Despite corrupted file, env USER_API_KEY should still work
+          assertEquals(ctx.isLoggedIn(), true);
+          assertEquals(Option.getOrUndefined(ctx.data.apiKey), 'env_api_key');
         }).pipe(Effect.provide(ComposioUserContextTest));
       });
     });

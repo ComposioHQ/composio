@@ -1,12 +1,12 @@
-import typing as t
+from __future__ import annotations
 
 from .agentic import AgenticProvider, AgenticProviderExecuteFn
+from .base import TTool, TToolCollection
 from .none_agentic import NonAgenticProvider
 
-TProvider = t.TypeVar("TProvider", bound=AgenticProvider | NonAgenticProvider)
-
 __all__ = [
-    "TProvider",
+    "TTool",
+    "TToolCollection",
     "AgenticProvider",
     "NonAgenticProvider",
     "AgenticProviderExecuteFn",

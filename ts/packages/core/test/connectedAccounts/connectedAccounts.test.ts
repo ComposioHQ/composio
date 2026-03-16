@@ -113,6 +113,15 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.initiate(userId, authConfigId, options);
 
+      // Verify list is called with ACTIVE status filter
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_ids: [userId],
+          auth_config_ids: [authConfigId],
+          statuses: [ConnectedAccountStatuses.ACTIVE],
+        })
+      );
+
       expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
         auth_config: {
           id: authConfigId,
@@ -226,6 +235,43 @@ describe('ConnectedAccounts', () => {
       );
     });
 
+    it('should filter by ACTIVE status when checking for existing accounts', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      // Mock list response to return empty list (no ACTIVE accounts)
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_123',
+        connectionData: {
+          val: {
+            authScheme: AuthSchemeTypes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      await connectedAccounts.initiate(userId, authConfigId);
+
+      // Verify that list is called with statuses filter set to ACTIVE only
+      // This ensures expired/inactive accounts don't block new connection creation
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_ids: [userId],
+          auth_config_ids: [authConfigId],
+          statuses: [ConnectedAccountStatuses.ACTIVE],
+        })
+      );
+    });
+
     it('should allow multiple accounts when allowMultiple is true', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
@@ -309,13 +355,12 @@ describe('ConnectedAccounts', () => {
       expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
 
-    it('should create a new connected account with config and return a ConnectionRequest', async () => {
+    it('should create a connected account with OAuth2 token import and return ACTIVE ConnectionRequest', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
       const options = {
         callbackUrl: 'https://example.com/callback',
         config: AuthScheme.OAuth2({
-          status: ConnectionStatuses.ACTIVE,
           access_token: 'test_token',
           token_type: 'Bearer',
         }),
@@ -328,12 +373,12 @@ describe('ConnectedAccounts', () => {
         total_pages: 1,
       });
 
+      // When tokens are imported, the API should return ACTIVE with no redirectUrl
       const mockResponse = {
         id: 'conn_123',
         connectionData: {
           val: {
-            status: ConnectionStatuses.INITIALIZING,
-            redirectUrl: 'https://auth.example.com/connect',
+            status: ConnectionStatuses.ACTIVE,
           },
         },
       };
@@ -354,8 +399,38 @@ describe('ConnectedAccounts', () => {
       });
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
-      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.ACTIVE);
+      expect(connectionRequest).toHaveProperty('redirectUrl', null);
       expect(typeof connectionRequest.waitForConnection).toBe('function');
+    });
+
+    it('should return INITIATED status with redirectUrl when no tokens are provided', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_456',
+        connectionData: {
+          val: {
+            status: ConnectionStatuses.INITIATED,
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      const connectionRequest = await connectedAccounts.initiate(userId, authConfigId);
+
+      expect(connectionRequest).toHaveProperty('id', 'conn_456');
+      expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.INITIATED);
+      expect(connectionRequest).toHaveProperty('redirectUrl', 'https://auth.example.com/connect');
     });
   });
 
@@ -441,7 +516,7 @@ describe('ConnectedAccounts', () => {
   });
 
   describe('refresh', () => {
-    it('should refresh a connected account by nanoid', async () => {
+    it('should refresh a connected account by nanoid without options', async () => {
       const nanoid = 'conn_123';
       const mockResponse = { id: nanoid, refreshed: true };
 
@@ -449,7 +524,83 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid);
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, undefined);
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should refresh a connected account with redirectUrl option', async () => {
+      const nanoid = 'conn_123';
+      const redirectUrl = 'https://example.com/oauth/callback';
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, { redirectUrl });
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: redirectUrl,
+        validate_credentials: undefined,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should refresh a connected account with validateCredentials option', async () => {
+      const nanoid = 'conn_123';
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, { validateCredentials: true });
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: undefined,
+        validate_credentials: true,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should refresh a connected account with both options', async () => {
+      const nanoid = 'conn_123';
+      const options = {
+        redirectUrl: 'https://example.com/callback',
+        validateCredentials: false,
+      };
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, options);
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: options.redirectUrl,
+        validate_credentials: options.validateCredentials,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should throw ValidationError for invalid options', async () => {
+      const nanoid = 'conn_123';
+      const invalidOptions = { redirectUrl: 123 };
+
+      await expect(connectedAccounts.refresh(nanoid, invalidOptions as any)).rejects.toThrow(
+        'Failed to parse connected account refresh options'
+      );
+
+      expect(extendedMockClient.connectedAccounts.refresh).not.toHaveBeenCalled();
+    });
+
+    it('should handle empty options object gracefully', async () => {
+      const nanoid = 'conn_123';
+      const mockResponse = { id: nanoid, refreshed: true };
+
+      extendedMockClient.connectedAccounts.refresh.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.refresh(nanoid, {});
+
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
+        query_redirect_url: undefined,
+        validate_credentials: undefined,
+      });
       expect(result).toEqual(mockResponse);
     });
   });
@@ -564,6 +715,7 @@ describe('ConnectedAccounts', () => {
         status: ConnectedAccountStatuses.ACTIVE,
         authConfig: {
           id: 'auth_config_123',
+          authScheme: AuthSchemeTypes.OAUTH2,
           isComposioManaged: true,
           isDisabled: false,
         },

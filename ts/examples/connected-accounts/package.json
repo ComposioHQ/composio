@@ -12,10 +12,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.17.0",
+  "packageManager": "pnpm@10.28.0",
   "dependencies": {
     "@composio/core": "workspace:*",
-    "openai": "^4.94.0"
+    "openai": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "^1.2.9",

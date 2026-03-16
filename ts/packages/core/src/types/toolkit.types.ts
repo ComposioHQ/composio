@@ -8,9 +8,10 @@ export const ToolkitMangedByEnumSchema = z.enum(['all', 'composio', 'project']);
 export const ToolkitSortByEnumSchema = z.enum(['usage', 'alphabetically']);
 export const ToolkitsListParamsSchema = z.object({
   category: z.string().optional(),
-  isLocal: z.boolean().optional(),
   managedBy: ToolkitMangedByEnumSchema.optional(),
   sortBy: ToolkitSortByEnumSchema.optional(),
+  cursor: z.string().optional(),
+  limit: z.number().optional(),
 });
 
 export type ToolkitMangedByEnum = z.infer<typeof ToolkitMangedByEnumSchema>;
@@ -95,6 +96,7 @@ export const ToolkitRetrieveResponseSchema = z.object({
   authConfigDetails: z.array(ToolkitAuthConfigDetailsSchema).optional(),
   baseUrl: z.string().optional(),
   getCurrentUserEndpoint: z.string().optional(),
+  getCurrentUserEndpointMethod: z.string().optional(),
 });
 
 export type ToolkitAuthField = z.infer<typeof ToolkitAuthFieldSchema>;

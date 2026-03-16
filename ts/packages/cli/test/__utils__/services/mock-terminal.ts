@@ -1,13 +1,14 @@
-// Copied from https://github.com/Effect-TS/effect/blob/a2d57c9ac596445009ca12859b78e00e5d89b936/packages/cli/test/services/MockTerminal.ts
+// DO NOT MODIFY THIS FILE.
+// Copied from https://github.com/Effect-TS/effect/blob/4f2107548fa64c21a8643b7b0efcd556cd16d4b9/packages/cli/test/services/MockTerminal.ts
 
-import * as Terminal from '@effect/platform/Terminal';
+import type * as Terminal from '@effect/platform/Terminal';
 import * as Array from 'effect/Array';
 import * as Console from 'effect/Console';
 import * as Context from 'effect/Context';
 import * as Effect from 'effect/Effect';
 import * as Layer from 'effect/Layer';
+import * as Mailbox from 'effect/Mailbox';
 import * as Option from 'effect/Option';
-import * as Queue from 'effect/Queue';
 
 // =============================================================================
 // Models
@@ -41,14 +42,12 @@ export const MockTerminal = Context.GenericTag<Terminal.Terminal, MockTerminal>(
 // Constructors
 // =============================================================================
 
-export const make = Effect.gen(function* (_) {
-  const queue = yield* _(
-    Effect.acquireRelease(Queue.unbounded<Terminal.UserInput>(), Queue.shutdown)
-  );
+export const make = Effect.gen(function* () {
+  const queue = yield* Effect.acquireRelease(Mailbox.make<Terminal.UserInput>(), _ => _.shutdown);
 
   const inputText: MockTerminal['inputText'] = (text: string) => {
     const inputs = Array.map(text.split(''), key => toUserInput(key));
-    return Queue.offerAll(queue, inputs).pipe(Effect.asVoid);
+    return queue.offerAll(inputs).pipe(Effect.asVoid);
   };
 
   const inputKey: MockTerminal['inputKey'] = (
@@ -56,24 +55,17 @@ export const make = Effect.gen(function* (_) {
     modifiers?: Partial<MockTerminal.Modifiers>
   ) => {
     const input = toUserInput(key, modifiers);
-    return Queue.offer(queue, input).pipe(Effect.asVoid);
+    return shouldQuit(input) ? queue.end : queue.offer(input).pipe(Effect.asVoid);
   };
 
   const display: MockTerminal['display'] = input => Console.log(input);
 
-  const readInput: MockTerminal['readInput'] = Queue.take(queue).pipe(
-    Effect.filterOrFail(
-      input => !shouldQuit(input),
-      () => new Terminal.QuitException()
-    ),
-    Effect.timeoutFail({
-      duration: '2 seconds',
-      onTimeout: () => new Terminal.QuitException(),
-    })
-  );
+  const readInput: MockTerminal['readInput'] = Effect.succeed(queue);
 
   return MockTerminal.of({
     columns: Effect.succeed(80),
+    rows: Effect.succeed(24),
+    isTTY: Effect.succeed(true),
     display,
     readInput,
     readLine: Effect.succeed(''),

@@ -17,6 +17,9 @@ describe('CLI: composio logout', () => {
             apiKey: Option.none(),
             baseURL: 'https://backend.composio.dev',
             webURL: 'https://platform.composio.dev',
+            orgId: Option.none(),
+            projectId: Option.none(),
+            testUserId: Option.none(),
           });
 
           expect(ctx.data).toMatchObject(expectedUserData);
@@ -38,7 +41,7 @@ describe('CLI: composio logout', () => {
 
   describe('[When] logged in', () => {
     const testConfigProvider = ConfigProvider.fromMap(
-      new Map([['COMPOSIO_API_KEY', 'api_key_already_logged_in']])
+      new Map([['COMPOSIO_USER_API_KEY', 'api_key_already_logged_in']])
     ).pipe(extendConfigProvider);
 
     layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
@@ -51,6 +54,9 @@ describe('CLI: composio logout', () => {
               apiKey: Option.some('api_key_already_logged_in'),
               baseURL: 'https://backend.composio.dev',
               webURL: 'https://platform.composio.dev',
+              orgId: Option.none(),
+              projectId: Option.none(),
+              testUserId: Option.none(),
             })
           );
 

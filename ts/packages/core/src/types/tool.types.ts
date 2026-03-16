@@ -185,6 +185,7 @@ export const ToolListParamsSchema = z.object({
   limit: z.number().optional(),
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
+  important: z.boolean().optional(),
 });
 
 type BaseParams = {
@@ -207,6 +208,7 @@ type ToolkitsOnlyParams = {
   toolkits: string[];
   tools?: never;
   scopes?: never;
+  important?: boolean;
 } & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 
 // toolkit + scopes (single toolkit only)
@@ -214,6 +216,7 @@ type ToolkitScopeOnlyParams = {
   toolkits: [string];
   tools?: never;
   scopes: string[];
+  important?: boolean;
 } & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
 
 // tags only
@@ -317,6 +320,12 @@ export const ToolExecuteParamsSchema = z.object({
 });
 export type ToolExecuteParams = z.infer<typeof ToolExecuteParamsSchema>;
 
+export const ToolExecuteMetaParamsSchema = z.object({
+  sessionId: z.string(),
+  arguments: z.record(z.string(), z.unknown()).optional(),
+});
+export type ToolExecuteMetaParams = z.infer<typeof ToolExecuteMetaParamsSchema>;
+
 /**
  * ToolResponse Schema
  */
@@ -354,4 +363,28 @@ export type ToolProxyParams = z.infer<typeof ToolProxyParamsSchema>;
 
 export type SchemaModifierOptions = {
   modifySchema: TransformToolSchemaModifier;
+};
+
+/**
+ * Options for retrieving tools from Composio API
+ */
+export type ToolRetrievalOptions = {
+  /**
+   * Optional function to transform the tool schema after retrieval
+   */
+  modifySchema?: TransformToolSchemaModifier;
+
+  /**
+   * Override the toolkit version for tool retrieval.
+   * Takes precedence over SDK-level toolkitVersions.
+   *
+   * @example Override with specific version
+   * ```typescript
+   * const tool = await tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE', {
+   *   version: '20250909_00'
+   * });
+   * ```
+   * ```
+   */
+  version?: ToolkitVersion;
 };

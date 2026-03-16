@@ -1,0 +1,35 @@
+---
+title: "Slackbot Toolkit: Bot-Compatible Actions Only"
+description: "Slackbot toolkit now includes only actions that work with bot tokens"
+date: "2026-02-20"
+---
+
+**Toolkit version:** `20260223_00`
+
+The Slackbot toolkit inherits actions from the Slack toolkit. Previously, it included all 155 actions — but many of these were admin-only endpoints (`admin.*`) that require user tokens and don't work with bot tokens.
+
+We've filtered the action list down to **89 bot-compatible actions** — only actions whose Slack API endpoints are callable with a bot token.
+
+### What Changed
+
+| Category | Count |
+|----------|-------|
+| Bot-compatible actions (included) | 89 |
+| Admin/non-bot actions (removed) | 62 |
+| Triggers (unchanged) | 9 |
+
+### Why This Matters
+
+- **Actions that work**: Every action in the Slackbot toolkit now works with standard bot tokens
+- **Clearer scope**: No more confusion about which actions require elevated permissions
+- **All triggers kept**: Event-based triggers work with bot tokens and remain available
+
+### Removed Actions
+
+The following action categories were removed because they require user tokens or admin permissions:
+
+- `admin.*` endpoints (workspace administration)
+- `audit.*` endpoints (audit logs)
+- SCIM endpoints (user provisioning)
+
+If you need admin-level Slack functionality, use the full Slack toolkit with appropriate user token authentication.

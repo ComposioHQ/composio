@@ -5,8 +5,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
-import { MCP } from './models/MCP.experimental';
-import { MCP as DeprecatedMCP } from './models/MCP';
+import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
@@ -15,11 +14,12 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import { Files } from './models/Files';
+import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
-import { ToolRouterCreateSessionConfig, ToolRouterSession } from './types/toolRouter.types';
+import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
+import { CONFIG_DEFAULTS } from './utils/config-defaults';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -138,67 +138,63 @@ export class Composio<
   /**
    * Core models for Composio.
    */
+
+  /** List, retrieve, and execute tools */
   tools: Tools<unknown, unknown, TProvider>;
+  /** Retrieve toolkit metadata and authorize user connections */
   toolkits: Toolkits;
+  /** Manage webhook triggers and event subscriptions */
   triggers: Triggers<TProvider>;
+  /** The tool provider instance used for wrapping tools in framework-specific formats */
   provider: TProvider;
+  /** Upload and download files */
   files: Files;
+  /** Manage authentication configurations for toolkits */
   authConfigs: AuthConfigs;
+  /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
+  /** Model Context Protocol server management */
   mcp: MCP;
   /**
    * Experimental feature, use with caution
    * @experimental
    */
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
+  /**
+   * Creates a new tool router session for a user.
+   *
+   * @param userId {string} The user id to create the session for
+   * @param config {ToolRouterConfig} The config for the tool router session
+   * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from '@composio/core';
+   *
+   * const composio = new Composio();
+   * const userId = 'user_123';
+   *
+   * const session = await composio.create(userId, {
+   *  manageConnections: true,
+   * });
+   *
+   * console.log(session.sessionId);
+   * console.log(session.url);
+   * console.log(session.tools());
+   * ```
+   */
+  create: (
+    userId: string,
+    routerConfig?: ToolRouterCreateSessionConfig
+  ) => Promise<Session<unknown, unknown, TProvider>>;
 
   /**
-   * Experimental features
+   * Use an existing tool router session
+   *
+   * @param id {string} The id of the session to use
+   * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    */
-  experimental: {
-    /**
-     * Creates a new tool router session for a user.
-     *
-     * @param userId {string} The user id to create the session for
-     * @param config {ToolRouterConfig} The config for the tool router session
-     * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
-     *
-     * @example
-     * ```typescript
-     * import { Composio } from '@composio/core';
-     *
-     * const composio = new Composio();
-     * const userId = 'user_123';
-     *
-     * const session = await composio.create(userId, {
-     *  manageConnections: true,
-     * });
-     *
-     * console.log(session.sessionId);
-     * console.log(session.url);
-     * console.log(session.tools());
-     * ```
-     */
-    create: (
-      userId: string,
-      routerConfig?: ToolRouterCreateSessionConfig
-    ) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
-
-    /**
-     * Use an existing tool router session
-     *
-     * @param id {string} The id of the session to use
-     * @returns {Promise<ToolRouterSession<TToolCollection, TTool, TProvider>>} The tool router session
-     */
-    use: (id: string) => Promise<ToolRouterSession<unknown, unknown, TProvider>>;
-  };
-
-  /**
-   * Deprecated features
-   */
-  deprecated: {
-    mcp: DeprecatedMCP<TProvider>;
-  };
+  use: (id: string) => Promise<Session<unknown, unknown, TProvider>>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -254,8 +250,9 @@ export class Composio<
       baseURL: baseURLParsed,
       apiKey: apiKeyParsed,
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
-      allowTracking: config?.allowTracking ?? true,
-      autoUploadDownloadFiles: config?.autoUploadDownloadFiles ?? true,
+      allowTracking: config?.allowTracking ?? CONFIG_DEFAULTS.allowTracking,
+      autoUploadDownloadFiles:
+        config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles,
       provider: config?.provider ?? this.provider,
     };
 
@@ -282,29 +279,11 @@ export class Composio<
     this.toolRouter = new ToolRouter(this.client, this.config);
 
     /**
-     * Initialize Experimental features
+     * Initialize tool router methods
+     * Properly bind the methods to maintain the correct 'this' context
      */
-    this.experimental = {
-      create: async (
-        userId: string,
-        routerConfig?: ToolRouterCreateSessionConfig
-      ): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
-        return this.toolRouter.create(userId, routerConfig);
-      },
-      use: async (id: string): Promise<ToolRouterSession<unknown, unknown, TProvider>> => {
-        return this.toolRouter.use(id);
-      },
-    };
-
-    /**
-     * Initialize Deprecated features
-     */
-    this.deprecated = {
-      /**
-       * @deprecated this feature will be removed soon, use `composio.mcp`
-       */
-      mcp: new DeprecatedMCP(this.client, this.provider),
-    };
+    this.create = this.toolRouter.create.bind(this.toolRouter);
+    this.use = this.toolRouter.use.bind(this.toolRouter);
 
     /**
      * Initialize the client telemetry.
@@ -363,6 +342,8 @@ export class Composio<
    * The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
    * but allows you to specify custom request options that will be used for all API calls made through this session.
    *
+   * @deprecated DEPRECATED: This method will be removed in a future version of the SDK.
+   *
    * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
    *                                          This follows the Fetch API RequestInit interface with additional options.
    * @returns {Composio<TProvider>} A new Composio instance with the custom request options applied.
@@ -393,5 +374,36 @@ export class Composio<
       ...this.config,
       defaultHeaders: sessionHeaders,
     });
+  }
+
+  /**
+   * Flush any pending telemetry and wait for it to complete.
+   *
+   * In Node.js-compatible environments, telemetry is automatically flushed on process exit.
+   * However, in environments like Cloudflare Workers that don't support process exit events,
+   * you should call this method manually to ensure all telemetry is sent.
+   *
+   * @returns {Promise<void>} A promise that resolves when all pending telemetry has been sent.
+   *
+   * @example
+   * ```typescript
+   * // In a Cloudflare Worker, use ctx.waitUntil to ensure telemetry is flushed
+   * export default {
+   *   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+   *     const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
+   *
+   *     // Do your work...
+   *     const result = await composio.tools.execute(...);
+   *
+   *     // Ensure telemetry flushes before worker terminates
+   *     ctx.waitUntil(composio.flush());
+   *
+   *     return new Response(JSON.stringify(result));
+   *   }
+   * };
+   * ```
+   */
+  async flush(): Promise<void> {
+    await telemetry.flush();
   }
 }

@@ -1356,6 +1356,297 @@ describe('generateTypeScriptToolkitSources', () => {
           })
         );
       });
+
+      describe('[Given] versionMap with toolkit version overrides', () => {
+        describe('without type tools', () => {
+          it.effect(
+            '[Given] a toolkit with version override [Then] it includes version comment in generated file',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+              ]);
+
+              const versionMap = new Map([['gmail', '20250901_00']]) as Map<
+                Lowercase<string>,
+                string
+              >;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: { withTypes: false, tools: [] },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(1);
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).toContain('@toolkit-version: 20250901_00');
+            })
+          );
+
+          it.effect(
+            '[Given] multiple toolkits with different version overrides [Then] each file includes its version comment',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+                {
+                  name: 'Slack Helper',
+                  slug: 'slack',
+                },
+              ]);
+
+              const versionMap = new Map([
+                ['gmail', '20250901_00'],
+                ['slack', '20250815_00'],
+              ]) as Map<Lowercase<string>, string>;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: { withTypes: false, tools: [] },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(2);
+
+              // Gmail should have its version comment
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).toContain('@toolkit-version: 20250901_00');
+              expect(sources[0][1]).toMatchSnapshot();
+
+              // Slack should have its version comment
+              expect(sources[1][0]).toBe('slack.ts');
+              expect(sources[1][1]).toContain('@toolkit-version: 20250815_00');
+              expect(sources[1][1]).toMatchSnapshot();
+            })
+          );
+
+          it.effect(
+            '[Given] only some toolkits with version override [Then] only those files include version comment',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+                {
+                  name: 'Slack Helper',
+                  slug: 'slack',
+                },
+              ]);
+
+              // Only gmail has a version override
+              const versionMap = new Map([['gmail', '20250901_00']]) as Map<
+                Lowercase<string>,
+                string
+              >;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: { withTypes: false, tools: [] },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(2);
+
+              // Gmail should have version comment
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).toContain('@toolkit-version: 20250901_00');
+
+              // Slack should NOT have version comment
+              expect(sources[1][0]).toBe('slack.ts');
+              expect(sources[1][1]).not.toContain('@toolkit-version');
+              expect(sources[1][1]).toMatchSnapshot();
+            })
+          );
+
+          it.effect(
+            '[Given] empty versionMap [Then] no files include version comment',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+              ]);
+
+              const versionMap = new Map() as Map<Lowercase<string>, string>;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: { withTypes: false, tools: [] },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(1);
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).not.toContain('@toolkit-version');
+            })
+          );
+        });
+
+        describe('with type tools', () => {
+          it.effect(
+            '[Given] a toolkit with version override [Then] it includes version comment in generated file',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+              ]);
+
+              const versionMap = new Map([['gmail', '20250901_00']]) as Map<
+                Lowercase<string>,
+                string
+              >;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: {
+                  withTypes: true,
+                  tools: [...TOOLS_TYPES_GMAIL.slice(0, 1)],
+                },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(1);
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).toContain('@toolkit-version: 20250901_00');
+            })
+          );
+
+          it.effect(
+            '[Given] multiple toolkits with different version overrides [Then] each file includes its version comment',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+                {
+                  name: 'Github',
+                  slug: 'github',
+                },
+              ]);
+
+              const versionMap = new Map([
+                ['gmail', '20250901_00'],
+                ['github', '20250815_00'],
+              ]) as Map<Lowercase<string>, string>;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: {
+                  withTypes: true,
+                  tools: [...TOOLS_TYPES_GMAIL.slice(0, 1), ...TOOLS_TYPES_GITHUB.slice(0, 1)],
+                },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(2);
+
+              // Gmail should have its version comment
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).toContain('@toolkit-version: 20250901_00');
+              expect(sources[0][1]).toMatchSnapshot();
+
+              // Github should have its version comment
+              expect(sources[1][0]).toBe('github.ts');
+              expect(sources[1][1]).toContain('@toolkit-version: 20250815_00');
+              expect(sources[1][1]).toMatchSnapshot();
+            })
+          );
+
+          it.effect(
+            '[Given] only some toolkits with version override [Then] only those files include version comment',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+                {
+                  name: 'Github',
+                  slug: 'github',
+                },
+              ]);
+
+              // Only gmail has a version override
+              const versionMap = new Map([['gmail', '20250901_00']]) as Map<
+                Lowercase<string>,
+                string
+              >;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: {
+                  withTypes: true,
+                  tools: [...TOOLS_TYPES_GMAIL.slice(0, 1), ...TOOLS_TYPES_GITHUB.slice(0, 1)],
+                },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(2);
+
+              // Gmail should have version comment
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).toContain('@toolkit-version: 20250901_00');
+
+              // Github should NOT have version comment
+              expect(sources[1][0]).toBe('github.ts');
+              expect(sources[1][1]).not.toContain('@toolkit-version');
+            })
+          );
+
+          it.effect(
+            '[Given] empty versionMap [Then] no files include version comment',
+            Effect.fn(function* () {
+              const toolkits = makeTestToolkits([
+                {
+                  name: 'Gmail',
+                  slug: 'gmail',
+                },
+              ]);
+
+              const versionMap = new Map() as Map<Lowercase<string>, string>;
+
+              const index = createToolkitIndex({
+                toolkits,
+                typeableTools: {
+                  withTypes: true,
+                  tools: [...TOOLS_TYPES_GMAIL.slice(0, 1)],
+                },
+                triggerTypes: [],
+                versionMap,
+              });
+
+              const sources = yield* generateTypeScriptToolkitSources(banner)(index);
+              expect(sources).toHaveLength(1);
+              expect(sources[0][0]).toBe('gmail.ts');
+              expect(sources[0][1]).not.toContain('@toolkit-version');
+            })
+          );
+        });
+      });
     });
   });
 });

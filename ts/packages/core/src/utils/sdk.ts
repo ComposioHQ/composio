@@ -4,15 +4,16 @@ import { getEnvsWithPrefix, getEnvVariable } from './env';
 import logger from './logger';
 import { ComposioError } from '../errors/ComposioError';
 import { ToolkitVersion, ToolkitVersionParam, ToolkitVersions } from '../types/tool.types';
+import { platform } from '#platform';
 
 // File path helpers
 export const userDataPath = () => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('path');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const os = require('os');
-    return path.join(os.homedir(), COMPOSIO_DIR, USER_DATA_FILE_NAME);
+    const homeDir = platform.homedir();
+    if (!homeDir) {
+      return null;
+    }
+    return platform.joinPath(homeDir, COMPOSIO_DIR, USER_DATA_FILE_NAME);
   } catch (_error) {
     logger.debug('Environment', `Unable to get user data path`);
     return null;
@@ -26,10 +27,12 @@ export const userDataPath = () => {
  */
 export const getUserDataJson = () => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
-    const data = fs.readFileSync(userDataPath(), 'utf8');
-    return JSON.parse(data);
+    const dataPath = userDataPath();
+    if (!dataPath || !platform.supportsFileSystem) {
+      return {};
+    }
+    const data = platform.readFileSync(dataPath, 'utf8');
+    return JSON.parse(data as string);
   } catch (_error) {
     logger.debug('Environment', 'No user data file found');
     return {};

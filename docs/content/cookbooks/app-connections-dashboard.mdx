@@ -1,0 +1,107 @@
+---
+title: Build an App Connections Dashboard
+description: Build a dashboard for managing user app connections and auth status
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/app-connections-dashboard)
+
+[Build a Chat App](/cookbooks/chat-app) handles authentication in-chat. That works for getting started, but production apps need a dedicated page where users manage their connections. This cookbook builds a dashboard where users can see all available apps, connect via OAuth, and disconnect at any time.
+
+## What you'll build
+
+- A connections dashboard showing all available apps and their auth status
+- Connect and disconnect buttons that handle OAuth flows
+
+## Prerequisites
+
+- [Bun](https://bun.sh) (or Node.js 18+)
+- [Composio API key](https://platform.composio.dev/settings)
+
+**Stack:** Next.js, `@composio/core`
+
+## Create the project
+
+```bash
+bunx create-next-app composio-dashboard --yes
+cd composio-dashboard
+bun add @composio/core
+```
+
+Add your API key to a `.env.local` file:
+
+```bash title=".env.local"
+COMPOSIO_API_KEY=your_composio_api_key
+```
+
+## Setting up the client
+
+Create `app/api/connections/route.ts`. Initialize the Composio client and set `dynamic = "force-dynamic"` so Next.js always fetches fresh connection data.
+
+<include meta='no-twoslash title="app/api/connections/route.ts"'>../../examples/app-connections-dashboard/connections-route.ts#setup</include>
+
+`"user_123"` is a placeholder. In production, replace it with the authenticated user's ID from your auth system. See [Users & Sessions](/docs/users-and-sessions) for details.
+
+## List connections
+
+The `GET` handler creates a session and returns every toolkit's name, logo, and connection status. Toolkits where `isNoAuth` is `true` don't require authentication, so we filter them out.
+
+<include meta='no-twoslash title="app/api/connections/route.ts"'>../../examples/app-connections-dashboard/connections-route.ts#list</include>
+
+`session.toolkits()` returns each toolkit with a `connection` object. When `connection.isActive` is `true`, the user has already authorized that app. We also return the `connectedAccountId` so the frontend can disconnect later.
+
+<Callout>
+`session.toolkits()` paginates results. This example fetches up to 50. Use the `nextCursor` value from the response to fetch the next page.
+</Callout>
+
+## Connect an app
+
+The `POST` handler starts an OAuth flow for a given toolkit and returns the redirect URL.
+
+<include meta='no-twoslash title="app/api/connections/route.ts"'>../../examples/app-connections-dashboard/connections-route.ts#connect</include>
+
+`session.authorize(toolkit)` creates a connection request with a `callbackUrl`. After the user completes OAuth, they get redirected back to your app.
+
+## Disconnect an app
+
+Create `app/api/connections/disconnect/route.ts`. This endpoint takes a `connectedAccountId` and deletes it:
+
+<include meta='title="app/api/connections/disconnect/route.ts"'>../../examples/app-connections-dashboard/disconnect-route.ts</include>
+
+`composio.connectedAccounts.delete()` is a standalone SDK method. No session or provider needed.
+
+## Build the dashboard
+
+Replace `app/page.tsx` with a dashboard that shows connection cards:
+
+<include meta='title="app/page.tsx"'>../../examples/app-connections-dashboard/page.tsx</include>
+
+The page fetches toolkit connection status on load. Clicking **Connect** redirects the user to OAuth. After they authorize, the `callbackUrl` brings them back to the dashboard with the connection now active. Clicking **Disconnect** deletes the connection and refreshes the list.
+
+## Complete route
+
+The full `app/api/connections/route.ts` with both handlers:
+
+<include meta='title="app/api/connections/route.ts"'>../../examples/app-connections-dashboard/connections-route.ts</include>
+
+## Running the app
+
+```bash
+bun dev
+```
+
+Open [localhost:3000](http://localhost:3000). You'll see all available apps with their connection status.
+
+1. Click **Connect** on GitHub. You'll be redirected to GitHub's OAuth page.
+2. Authorize the app. You'll land back on the dashboard with GitHub showing "Connected."
+3. Click **Disconnect** on GitHub. The connection is removed immediately.
+
+## Take it further
+
+<Cards>
+  <Card title="Managing multiple connected accounts" href="/docs/managing-multiple-connected-accounts">
+    Let users connect multiple accounts for the same toolkit
+  </Card>
+  <Card title="Connected accounts" href="/docs/auth-configuration/connected-accounts">
+    List, refresh, disable, and delete user connections
+  </Card>
+</Cards>

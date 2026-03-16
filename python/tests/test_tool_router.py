@@ -5,14 +5,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from composio.core.models.tool_router import (
-    ToolRouter,
-    ToolRouterMCPServerConfig,
-    ToolRouterToolkitsEnabledConfig,
-    ToolRouterToolkitsDisabledConfig,
-    ToolRouterManageConnectionsConfig,
-    ToolkitConnectionState,
     ToolkitConnectionsDetails,
+    ToolkitConnectionState,
+    ToolRouter,
+    ToolRouterExperimentalConfig,
+    ToolRouterManageConnectionsConfig,
+    ToolRouterMCPServerConfig,
     ToolRouterMCPServerType,
+    ToolRouterSessionExperimental,
+    ToolRouterToolkitsDisableConfig,
+    ToolRouterToolkitsEnableConfig,
 )
 
 
@@ -35,6 +37,7 @@ def mock_client():
     ]
     mock_session_response.config = MagicMock()
     mock_session_response.config.user_id = "user_123"
+    mock_session_response.experimental = None  # Default to None
 
     client.tool_router.session.create.return_value = mock_session_response
     client.tool_router.session.retrieve.return_value = mock_session_response
@@ -126,12 +129,12 @@ class TestToolRouter:
         assert call_args is not None
         kwargs = call_args.kwargs
         assert "toolkits" in kwargs
-        assert kwargs["toolkits"] == {"enabled": ["github", "slack"]}
+        assert kwargs["toolkits"] == {"enable": ["github", "slack"]}
 
-    def test_create_session_with_disabled_toolkits(self, tool_router, mock_client):
-        """Test creating a session with disabled toolkits."""
+    def test_create_session_with_disable_toolkits(self, tool_router, mock_client):
+        """Test creating a session with disable toolkits."""
         session = tool_router.create(
-            user_id="user_123", toolkits={"disabled": ["linear", "notion"]}
+            user_id="user_123", toolkits={"disable": ["linear", "notion"]}
         )
 
         assert session.session_id == "session_123"
@@ -139,17 +142,15 @@ class TestToolRouter:
         # Verify the API was called with correct parameters
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["toolkits"] == {"disabled": ["linear", "notion"]}
+        assert kwargs["toolkits"] == {"disable": ["linear", "notion"]}
 
-    def test_create_session_with_tools_overrides(self, tool_router, mock_client):
-        """Test creating a session with tools overrides."""
+    def test_create_session_with_tools_config(self, tool_router, mock_client):
+        """Test creating a session with per-toolkit tool configuration."""
         session = tool_router.create(
             user_id="user_123",
             tools={
-                "overrides": {
-                    "gmail": ["GMAIL_SEND_EMAIL", "GMAIL_SEARCH"],
-                    "github": {"enabled": ["GITHUB_CREATE_ISSUE"]},
-                }
+                "gmail": ["GMAIL_SEND_EMAIL", "GMAIL_SEARCH"],
+                "github": {"enable": ["GITHUB_CREATE_ISSUE"]},
             },
         )
 
@@ -159,54 +160,260 @@ class TestToolRouter:
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert "tools" in kwargs
-        assert "overrides" in kwargs["tools"]
+        assert "gmail" in kwargs["tools"]
+        assert kwargs["tools"]["gmail"] == {
+            "enable": ["GMAIL_SEND_EMAIL", "GMAIL_SEARCH"]
+        }
+        assert kwargs["tools"]["github"] == {"enable": ["GITHUB_CREATE_ISSUE"]}
 
-    def test_create_session_with_tag_filters(self, tool_router, mock_client):
-        """Test creating a session with tag-based filtering."""
+    def test_create_session_with_global_tags(self, tool_router, mock_client):
+        """Test creating a session with global tag filtering (array format)."""
         session = tool_router.create(
-            user_id="user_123", tools={"tags": ["important", "safe"]}
+            user_id="user_123", tags=["readOnlyHint", "idempotentHint"]
         )
 
         assert session.session_id == "session_123"
 
-        # Verify the API was called with tag filters
+        # Verify the API was called with tags transformed to enable format
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
+
+    def test_create_session_with_global_tags_object_enable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with global tags using object format with enable."""
+        session = tool_router.create(
+            user_id="user_123", tags={"enable": ["readOnlyHint", "idempotentHint"]}
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint", "idempotentHint"]}
+
+    def test_create_session_with_global_tags_object_disable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with global tags using object format with disable."""
+        session = tool_router.create(
+            user_id="user_123", tags={"disable": ["destructiveHint"]}
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"disable": ["destructiveHint"]}
+
+    def test_create_session_with_global_tags_object_both(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with global tags using object format with both enable and disable."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags={
+                "enable": ["readOnlyHint", "idempotentHint"],
+                "disable": ["destructiveHint"],
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {
+            "enable": ["readOnlyHint", "idempotentHint"],
+            "disable": ["destructiveHint"],
+        }
+
+    def test_create_session_with_toolkit_specific_tags(self, tool_router, mock_client):
+        """Test creating a session with per-toolkit tag filtering (array format)."""
+        session = tool_router.create(
+            user_id="user_123",
+            tools={
+                "gmail": {"tags": ["readOnlyHint"]},
+                "github": {"tags": ["readOnlyHint", "idempotentHint"]},
+            },
+        )
+
+        assert session.session_id == "session_123"
+
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert "tools" in kwargs
-        assert "filters" in kwargs["tools"]
-        assert kwargs["tools"]["filters"]["tags"]["include"] == ["important", "safe"]
+        assert kwargs["tools"]["gmail"] == {"tags": {"enable": ["readOnlyHint"]}}
+        assert kwargs["tools"]["github"] == {
+            "tags": {"enable": ["readOnlyHint", "idempotentHint"]}
+        }
 
-    def test_create_session_with_enabled_tag_filters(self, tool_router, mock_client):
-        """Test creating a session with enabled tag filters."""
+    def test_create_session_with_toolkit_specific_tags_object_enable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with per-toolkit tags using object format with enable."""
         session = tool_router.create(
             user_id="user_123",
-            tools={"tags": {"enabled": ["read_only_hint", "non_destructive_hint"]}},
+            tools={
+                "gmail": {"tags": {"enable": ["readOnlyHint", "idempotentHint"]}},
+            },
         )
 
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["tools"]["filters"]["tags"]["include"] == [
-            "read_only_hint",
-            "non_destructive_hint",
-        ]
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {
+            "tags": {"enable": ["readOnlyHint", "idempotentHint"]}
+        }
 
-    def test_create_session_with_disabled_tag_filters(self, tool_router, mock_client):
-        """Test creating a session with disabled tag filters."""
+    def test_create_session_with_toolkit_specific_tags_object_disable(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with per-toolkit tags using object format with disable."""
         session = tool_router.create(
             user_id="user_123",
-            tools={"tags": {"disabled": ["dangerous", "destructive"]}},
+            tools={
+                "gmail": {"tags": {"disable": ["destructiveHint"]}},
+            },
         )
 
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["tools"]["filters"]["tags"]["exclude"] == [
-            "dangerous",
-            "destructive",
-        ]
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {"tags": {"disable": ["destructiveHint"]}}
+
+    def test_create_session_with_toolkit_specific_tags_object_both(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with per-toolkit tags using object format with both enable and disable."""
+        session = tool_router.create(
+            user_id="user_123",
+            tools={
+                "gmail": {
+                    "tags": {
+                        "enable": ["readOnlyHint", "idempotentHint"],
+                        "disable": ["destructiveHint"],
+                    }
+                },
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tools" in kwargs
+        assert kwargs["tools"]["gmail"] == {
+            "tags": {
+                "enable": ["readOnlyHint", "idempotentHint"],
+                "disable": ["destructiveHint"],
+            }
+        }
+
+    def test_create_session_with_open_world_hint_tag(self, tool_router, mock_client):
+        """Test creating a session with openWorldHint tag."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=["openWorldHint", "readOnlyHint"],
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "tags" in kwargs
+        assert kwargs["tags"] == {"enable": ["openWorldHint", "readOnlyHint"]}
+
+    def test_create_session_with_mixed_tools_config(self, tool_router, mock_client):
+        """Test creating a session with mixed tool configuration (enable, disable, tags)."""
+        session = tool_router.create(
+            user_id="user_123",
+            tools={
+                "gmail": ["GMAIL_SEND_EMAIL"],  # List shorthand
+                "slack": {"disable": ["SLACK_DELETE_MESSAGE"]},
+                "github": {"tags": ["readOnlyHint"]},
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tools"]["gmail"] == {"enable": ["GMAIL_SEND_EMAIL"]}
+        assert kwargs["tools"]["slack"] == {"disable": ["SLACK_DELETE_MESSAGE"]}
+        assert kwargs["tools"]["github"] == {"tags": {"enable": ["readOnlyHint"]}}
+
+    def test_create_session_with_global_and_toolkit_tags(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with both global tags and toolkit-specific tags."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=["readOnlyHint"],  # Global tags
+            tools={
+                "gmail": {
+                    "tags": {
+                        "enable": ["idempotentHint"],
+                        "disable": ["destructiveHint"],
+                    }
+                },
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {"enable": ["readOnlyHint"]}
+        assert kwargs["tools"]["gmail"] == {
+            "tags": {"enable": ["idempotentHint"], "disable": ["destructiveHint"]}
+        }
+
+    def test_create_session_with_empty_tags_array(self, tool_router, mock_client):
+        """Test creating a session with empty tags array."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=[],
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {"enable": []}
+
+    def test_create_session_with_all_tag_types(self, tool_router, mock_client):
+        """Test creating a session with all available tag types."""
+        session = tool_router.create(
+            user_id="user_123",
+            tags=[
+                "readOnlyHint",
+                "destructiveHint",
+                "idempotentHint",
+                "openWorldHint",
+            ],
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["tags"] == {
+            "enable": [
+                "readOnlyHint",
+                "destructiveHint",
+                "idempotentHint",
+                "openWorldHint",
+            ]
+        }
 
     def test_create_session_with_manage_connections_boolean(
         self, tool_router, mock_client
@@ -218,7 +425,7 @@ class TestToolRouter:
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["connections"]["auto_manage_connections"] is True
+        assert kwargs["manage_connections"]["enable"] is True
 
     def test_create_session_with_manage_connections_config(
         self, tool_router, mock_client
@@ -227,9 +434,8 @@ class TestToolRouter:
         session = tool_router.create(
             user_id="user_123",
             manage_connections={
-                "enabled": True,
+                "enable": True,
                 "callback_url": "https://example.com/callback",
-                "infer_scopes_from_tools": True,
             },
         )
 
@@ -237,9 +443,33 @@ class TestToolRouter:
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["connections"]["auto_manage_connections"] is True
-        assert kwargs["connections"]["callback_url"] == "https://example.com/callback"
-        assert kwargs["connections"]["infer_scopes_from_tools"] is True
+        assert kwargs["manage_connections"]["enable"] is True
+        assert (
+            kwargs["manage_connections"]["callback_url"]
+            == "https://example.com/callback"
+        )
+
+    def test_create_session_with_wait_for_connections(self, tool_router, mock_client):
+        """Test creating a session with wait_for_connections in manage_connections config."""
+        session = tool_router.create(
+            user_id="user_123",
+            manage_connections={
+                "enable": True,
+                "callback_url": "https://example.com/callback",
+                "wait_for_connections": True,
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert kwargs["manage_connections"]["enable"] is True
+        assert (
+            kwargs["manage_connections"]["callback_url"]
+            == "https://example.com/callback"
+        )
+        assert kwargs["manage_connections"]["enable_wait_for_connections"] is True
 
     def test_create_session_with_auth_configs(self, tool_router, mock_client):
         """Test creating a session with auth configs."""
@@ -266,20 +496,20 @@ class TestToolRouter:
         kwargs = call_args.kwargs
         assert kwargs["connected_accounts"] == {"github": "ca_xxx", "slack": "ca_yyy"}
 
-    def test_create_session_with_execution_config(self, tool_router, mock_client):
-        """Test creating a session with execution configuration."""
+    def test_create_session_with_workbench_config(self, tool_router, mock_client):
+        """Test creating a session with workbench configuration."""
         session = tool_router.create(
             user_id="user_123",
-            execution={"proxy_execution_enabled": False, "timeout_seconds": 300},
+            workbench={"enable_proxy_execution": False, "auto_offload_threshold": 300},
         )
 
         assert session.session_id == "session_123"
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert "execution" in kwargs
-        assert kwargs["execution"]["proxy_execution_enabled"] is False
-        assert kwargs["execution"]["timeout_seconds"] == 300
+        assert "workbench" in kwargs
+        assert kwargs["workbench"]["enable_proxy_execution"] is False
+        assert kwargs["workbench"]["auto_offload_threshold"] == 300
 
     def test_create_session_complex_config(self, tool_router, mock_client):
         """Test creating a session with complex configuration."""
@@ -287,18 +517,16 @@ class TestToolRouter:
             user_id="user_123",
             toolkits=["github", "slack"],
             tools={
-                "overrides": {
-                    "gmail": ["GMAIL_SEND_EMAIL"],
-                },
-                "tags": ["safe"],
+                "gmail": ["GMAIL_SEND_EMAIL"],
             },
+            tags=["readOnlyHint", "idempotentHint"],
             manage_connections={
-                "enabled": True,
+                "enable": True,
                 "callback_url": "https://example.com/callback",
             },
             auth_configs={"github": "ac_xxx"},
             connected_accounts={"slack": "ca_yyy"},
-            execution={"proxy_execution_enabled": True, "timeout_seconds": 600},
+            workbench={"enable_proxy_execution": True, "auto_offload_threshold": 600},
         )
 
         assert session.session_id == "session_123"
@@ -310,10 +538,140 @@ class TestToolRouter:
         assert kwargs["user_id"] == "user_123"
         assert "toolkits" in kwargs
         assert "tools" in kwargs
-        assert "connections" in kwargs
+        assert "tags" in kwargs
+        assert "manage_connections" in kwargs
         assert "auth_configs" in kwargs
         assert "connected_accounts" in kwargs
-        assert "execution" in kwargs
+        assert "workbench" in kwargs
+
+    def test_create_session_with_experimental_config(self, tool_router, mock_client):
+        """Test creating a session with experimental configuration."""
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "America/New_York",
+                }
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify the API was called with experimental config transformed correctly
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" in kwargs
+        assert kwargs["experimental"] == {
+            "assistive_prompt_config": {
+                "user_timezone": "America/New_York",
+            }
+        }
+
+    def test_create_session_with_experimental_empty_config(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with empty experimental configuration."""
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={},
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify experimental is not included when empty
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
+
+    def test_create_session_with_experimental_no_timezone(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with experimental config but no timezone."""
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {},
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify experimental is not included when timezone is not set
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
+
+    def test_create_session_with_experimental_empty_string_timezone(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with empty string timezone is excluded.
+
+        This ensures consistency with TypeScript SDK which uses truthy check.
+        """
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "",  # Empty string should be excluded
+                },
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        # Verify experimental is not included when timezone is empty string
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "experimental" not in kwargs
+
+    def test_create_session_experimental_response_transformation(
+        self, tool_router, mock_client
+    ):
+        """Test that experimental response is transformed correctly."""
+        # Setup mock response with experimental
+        mock_response_with_experimental = MagicMock()
+        mock_response_with_experimental.session_id = "session_exp"
+        mock_response_with_experimental.mcp = MagicMock()
+        mock_response_with_experimental.mcp.type = "http"
+        mock_response_with_experimental.mcp.url = "https://mcp.example.com/session_exp"
+        mock_response_with_experimental.tool_router_tools = ["TOOL_1"]
+        mock_response_with_experimental.experimental = MagicMock()
+        mock_response_with_experimental.experimental.assistive_prompt = (
+            "You are a helpful assistant working in the America/New_York timezone."
+        )
+
+        mock_client.tool_router.session.create.return_value = (
+            mock_response_with_experimental
+        )
+
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={
+                "assistive_prompt": {
+                    "user_timezone": "America/New_York",
+                }
+            },
+        )
+
+        # Verify experimental response is transformed correctly
+        assert session.experimental is not None
+        assert isinstance(session.experimental, ToolRouterSessionExperimental)
+        assert (
+            session.experimental.assistive_prompt
+            == "You are a helpful assistant working in the America/New_York timezone."
+        )
+        assert session.experimental.files is not None
+
+    def test_create_session_without_experimental_response(
+        self, tool_router, mock_client
+    ):
+        """Test that session without experimental response has experimental with files only."""
+        session = tool_router.create(user_id="user_123")
+
+        # Verify experimental is present with files, assistive_prompt is None
+        assert session.experimental is not None
+        assert session.experimental.assistive_prompt is None
+        assert session.experimental.files is not None
 
     def test_create_session_raises_error_without_provider(self, mock_client):
         """Test that creating a session without provider raises an error when calling tools()."""
@@ -322,6 +680,13 @@ class TestToolRouter:
         # The error is raised during create() because it calls _create_tools_fn
         with pytest.raises(ValueError, match="Provider is required for tool router"):
             tool_router.create(user_id="user_123")
+
+    def test_use_session_raises_error_without_provider(self, mock_client):
+        """Test that use() raises when provider is None."""
+        tool_router = ToolRouter(client=mock_client, provider=None)
+
+        with pytest.raises(ValueError, match="Provider is required for tool router"):
+            tool_router.use(session_id="session_123")
 
     def test_use_session(self, tool_router, mock_client):
         """Test retrieving an existing session."""
@@ -332,6 +697,13 @@ class TestToolRouter:
         assert session.mcp.type == ToolRouterMCPServerType.HTTP
         assert session.mcp.url == "https://mcp.example.com/session_123"
         assert session.mcp.headers == {"x-api-key": "test-api-key"}
+        assert session.experimental.files is not None
+        assert hasattr(session.experimental.files, "list")
+        assert hasattr(session.experimental.files, "upload")
+        assert hasattr(session.experimental.files, "download")
+        assert hasattr(session.experimental.files, "delete")
+        assert callable(session.search)
+        assert callable(session.execute)
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
@@ -449,6 +821,92 @@ class TestToolRouter:
         assert github_toolkit.connection.auth_config is None
         assert github_toolkit.connection.connected_account is None
 
+    def test_toolkits_function_with_search(self, tool_router, mock_client):
+        """Test the toolkits function with search parameter."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="gmail")
+
+        # Verify toolkits was called with search param
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "gmail"
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_and_toolkits_filter(
+        self, tool_router, mock_client
+    ):
+        """Test the toolkits function with search and toolkits filter together."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="github", toolkits=["github", "slack"])
+
+        # Verify toolkits was called with both search and toolkits params
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "github"
+        assert call_args.kwargs.get("toolkits") == ["github", "slack"]
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_and_is_connected(
+        self, tool_router, mock_client
+    ):
+        """Test the toolkits function with search and is_connected filter."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="mail", is_connected=True)
+
+        # Verify toolkits was called with search and is_connected params
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "mail"
+        assert call_args.kwargs.get("is_connected") is True
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_and_pagination(
+        self, tool_router, mock_client
+    ):
+        """Test the toolkits function with search and pagination parameters."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="slack", next_cursor="cursor_xyz", limit=5)
+
+        # Verify toolkits was called with search and pagination params
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "slack"
+        assert call_args.kwargs.get("cursor") == "cursor_xyz"
+        assert call_args.kwargs.get("limit") == 5
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_search_all_params(self, tool_router, mock_client):
+        """Test the toolkits function with search and all other parameters."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(
+            search="gmail",
+            toolkits=["gmail", "github"],
+            next_cursor="cursor_123",
+            limit=20,
+            is_connected=False,
+        )
+
+        # Verify toolkits was called with all params including search
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == "gmail"
+        assert call_args.kwargs.get("toolkits") == ["gmail", "github"]
+        assert call_args.kwargs.get("cursor") == "cursor_123"
+        assert call_args.kwargs.get("limit") == 20
+        assert call_args.kwargs.get("is_connected") is False
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_toolkits_function_with_empty_search(self, tool_router, mock_client):
+        """Test the toolkits function with empty search string."""
+        session = tool_router.create(user_id="user_123")
+
+        session.toolkits(search="")
+
+        # Verify toolkits was called with empty search string
+        call_args = mock_client.tool_router.session.toolkits.call_args
+        assert call_args.kwargs.get("search") == ""
+        assert call_args.kwargs["session_id"] == "session_123"
+
     @patch("composio.core.models.tools.Tools")
     def test_tools_function(
         self, mock_tools_class, tool_router, mock_client, mock_provider
@@ -456,40 +914,70 @@ class TestToolRouter:
         """Test the tools function returned by session."""
         # Setup mock Tools instance
         mock_tools_instance = MagicMock()
-        mock_tools_instance.get.return_value = "mocked-wrapped-tools"
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_FETCH_EMAILS"
+        mock_tool.toolkit.slug = "gmail"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
 
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = "mocked-wrapped-tools"
+
         session = tool_router.create(user_id="user_123")
-        session.tools()
+        result = session.tools()
 
         # Verify Tools was instantiated
         mock_tools_class.assert_called_once_with(
-            client=mock_client, provider=mock_provider
+            client=mock_client, provider=mock_provider, auto_upload_download_files=True
         )
 
-        # Verify get was called
-        mock_tools_instance.get.assert_called_once()
-        call_args = mock_tools_instance.get.call_args
-        assert call_args.kwargs["user_id"] == "user_123"
-        assert "tools" in call_args.kwargs
+        # Verify get_raw_tool_router_meta_tools was called
+        mock_tools_instance.get_raw_tool_router_meta_tools.assert_called_once()
+
+        # Verify provider's wrap_tools was called
+        mock_provider.wrap_tools.assert_called_once()
+        assert result == "mocked-wrapped-tools"
 
     @patch("composio.core.models.tools.Tools")
     def test_tools_function_with_modifiers(
-        self, mock_tools_class, tool_router, mock_client, mock_provider
+        self,
+        mock_tools_class,
+        tool_router,
+        mock_client,
+        mock_provider,
     ):
         """Test the tools function with modifiers."""
         mock_tools_instance = MagicMock()
-        mock_tools_instance.get.return_value = "mocked-wrapped-tools"
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_FETCH_EMAILS"
+        mock_tool.toolkit.slug = "gmail"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
+
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = "mocked-wrapped-tools"
 
         session = tool_router.create(user_id="user_123")
 
-        modifiers = [{"name": "test_modifier"}]
-        session.tools(modifiers=modifiers)
+        # Create a proper modifier structure
+        from composio.core.models._modifiers import Modifier
 
-        # Verify get was called with modifiers
-        call_args = mock_tools_instance.get.call_args
+        modifier = Modifier(modifier=None, type_="schema", tools=[], toolkits=[])
+        modifiers = [modifier]
+        result = session.tools(modifiers=modifiers)
+
+        # Verify provider's wrap_tools was called
+        mock_provider.wrap_tools.assert_called_once()
+        # Verify get_raw_tool_router_meta_tools was called with modifiers
+        call_args = mock_tools_instance.get_raw_tool_router_meta_tools.call_args
         assert call_args.kwargs.get("modifiers") == modifiers
+        assert result == "mocked-wrapped-tools"
 
     def test_session_mcp_type_http(self, tool_router, mock_client):
         """Test that MCP type is correctly set to HTTP enum."""
@@ -581,25 +1069,54 @@ class TestToolRouter:
 class TestToolRouterTypes:
     """Test type definitions for ToolRouter."""
 
-    def test_toolkit_enabled_config_type(self):
-        """Test ToolRouterToolkitsEnabledConfig type."""
-        config: ToolRouterToolkitsEnabledConfig = {"enabled": ["github", "slack"]}
-        assert "enabled" in config
-        assert config["enabled"] == ["github", "slack"]
+    def test_toolkit_enable_config_type(self):
+        """Test ToolRouterToolkitsEnableConfig type."""
+        config: ToolRouterToolkitsEnableConfig = {"enable": ["github", "slack"]}
+        assert "enable" in config
+        assert config["enable"] == ["github", "slack"]
 
-    def test_toolkit_disabled_config_type(self):
-        """Test ToolRouterToolkitsDisabledConfig type."""
-        config: ToolRouterToolkitsDisabledConfig = {"disabled": ["linear"]}
-        assert "disabled" in config
+    def test_toolkit_disable_config_type(self):
+        """Test ToolRouterToolkitsDisableConfig type."""
+        config: ToolRouterToolkitsDisableConfig = {"disable": ["linear"]}
+        assert "disable" in config
 
     def test_manage_connections_config_type(self):
         """Test ToolRouterManageConnectionsConfig type."""
         config: ToolRouterManageConnectionsConfig = {
-            "enabled": True,
+            "enable": True,
             "callback_url": "https://example.com/callback",
         }
-        assert config["enabled"] is True
+        assert config["enable"] is True
         assert config["callback_url"] == "https://example.com/callback"
+
+    def test_experimental_config_type(self):
+        """Test ToolRouterExperimentalConfig type."""
+        config: ToolRouterExperimentalConfig = {
+            "assistive_prompt": {
+                "user_timezone": "America/New_York",
+            }
+        }
+        assert "assistive_prompt" in config
+        assert config["assistive_prompt"]["user_timezone"] == "America/New_York"
+
+    def test_session_experimental_dataclass(self):
+        """Test ToolRouterSessionExperimental dataclass."""
+        mock_files = MagicMock()
+        experimental = ToolRouterSessionExperimental(
+            files=mock_files,
+            assistive_prompt="You are a helpful assistant.",
+        )
+        assert experimental.assistive_prompt == "You are a helpful assistant."
+        assert experimental.files is mock_files
+
+        # Test with None assistive_prompt
+        mock_files_none = MagicMock()
+        experimental_none = ToolRouterSessionExperimental(
+            files=mock_files_none,
+            assistive_prompt=None,
+        )
+        assert experimental_none.assistive_prompt is None
+        assert experimental_none.files is mock_files_none
 
     def test_mcp_server_config(self):
         """Test ToolRouterMCPServerConfig dataclass."""
@@ -625,9 +1142,9 @@ class TestToolRouterTypes:
     def test_toolkit_connection_state(self):
         """Test ToolkitConnectionState dataclass."""
         from composio.core.models.tool_router import (
+            ToolkitConnectedAccount,
             ToolkitConnection,
             ToolkitConnectionAuthConfig,
-            ToolkitConnectedAccount,
         )
 
         connection = ToolkitConnection(
@@ -653,16 +1170,180 @@ class TestToolRouterTypes:
         assert state.connection.auth_config.id == "ac_123"
 
 
+class TestToolRouterExecution:
+    """Tests for tool router execution functionality."""
+
+    @patch("composio.core.models.tools.Tools")
+    def test_wrap_execute_tool_for_tool_router_called(
+        self, mock_tools_class, tool_router, mock_client, mock_provider
+    ):
+        """Test that _wrap_execute_tool_for_tool_router is called when creating tools."""
+        # Setup
+        mock_tools_instance = MagicMock()
+        mock_tool = MagicMock()
+        mock_tool.slug = "GMAIL_SEND_EMAIL"
+        mock_tool.toolkit.slug = "gmail"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
+        mock_tools_instance._wrap_execute_tool_for_tool_router = MagicMock(
+            return_value=lambda slug, args: {
+                "data": {},
+                "error": None,
+                "successful": True,
+            }
+        )
+        mock_tools_class.return_value = mock_tools_instance
+
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = ["wrapped_tool"]
+
+        # Create session and get tools
+        session = tool_router.create(user_id="user_123")
+        session.tools()
+
+        # Verify _wrap_execute_tool_for_tool_router was called with correct session_id
+        mock_tools_instance._wrap_execute_tool_for_tool_router.assert_called_once()
+        call_args = mock_tools_instance._wrap_execute_tool_for_tool_router.call_args
+        assert call_args.kwargs["session_id"] == "session_123"
+
+    def test_execute_meta_endpoint_called(
+        self, tool_router, mock_client, mock_provider
+    ):
+        """Test that execute_meta endpoint is called when executing tools."""
+        # Setup execute_meta response
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {"result": "success"}
+        mock_execute_response.error = None
+        mock_client.tool_router.session.execute_meta.return_value = (
+            mock_execute_response
+        )
+
+        # Create a real Tools instance to test the execute function
+        from composio.core.models.tools import Tools as RealTools
+
+        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123"
+        )
+
+        # Execute the tool
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        # Verify execute_meta was called with correct parameters
+        mock_client.tool_router.session.execute_meta.assert_called_once_with(
+            session_id="session_123",
+            slug="GMAIL_SEND_EMAIL",
+            arguments={"to": "test@example.com"},
+        )
+
+        # Verify result format
+        assert result["data"] == {"result": "success"}
+        assert result["error"] is None
+        assert result["successful"] is True
+
+    def test_modifiers_applied_in_tool_router_execution(
+        self, tool_router, mock_client, mock_provider
+    ):
+        """Test that modifiers are applied before and after tool execution."""
+        # Setup execute_meta response
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {"result": "success"}
+        mock_execute_response.error = None
+        mock_client.tool_router.session.execute_meta.return_value = (
+            mock_execute_response
+        )
+
+        # Create modifier functions
+        def before_modifier(tool, toolkit, params):
+            """Modifier to change arguments before execution."""
+            params["arguments"] = {"to": "modified@example.com"}
+            return params
+
+        def after_modifier(tool, toolkit, response):
+            """Modifier to change response after execution."""
+            response["data"] = {"modified": True}
+            return response
+
+        # Create a real execute function with modifiers
+        from composio.core.models._modifiers import Modifier
+        from composio.core.models.tools import Tools as RealTools
+
+        real_tools = RealTools(client=mock_client, provider=mock_provider)
+
+        modifiers = [
+            Modifier(
+                modifier=before_modifier, type_="before_execute", tools=[], toolkits=[]
+            ),
+            Modifier(
+                modifier=after_modifier, type_="after_execute", tools=[], toolkits=[]
+            ),
+        ]
+
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123", modifiers=modifiers
+        )
+
+        # Execute the tool
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        # Verify execute_meta was called with modified arguments
+        mock_client.tool_router.session.execute_meta.assert_called_once()
+        call_args = mock_client.tool_router.session.execute_meta.call_args
+        assert call_args.kwargs["arguments"] == {"to": "modified@example.com"}
+
+        # Verify result was modified by after_execute
+        assert result["data"] == {"modified": True}
+
+    def test_execute_tool_error_handling(self, tool_router, mock_client, mock_provider):
+        """Test that tool execution errors are handled correctly."""
+        # Setup execute_meta to return an error
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {}
+        mock_execute_response.error = "Authentication failed"
+        mock_client.tool_router.session.execute_meta.return_value = (
+            mock_execute_response
+        )
+
+        # Create a real execute function
+        from composio.core.models.tools import Tools as RealTools
+
+        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123"
+        )
+
+        # Execute the tool
+        result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        # Verify error is returned correctly
+        assert result["error"] == "Authentication failed"
+        assert result["successful"] is False
+        assert result["data"] == {}
+
+
 class TestToolRouterIntegration:
     """Integration tests for ToolRouter."""
 
     @patch("composio.core.models.tools.Tools")
-    def test_full_session_workflow(self, mock_tools_class, tool_router, mock_client):
+    def test_full_session_workflow(
+        self, mock_tools_class, tool_router, mock_client, mock_provider
+    ):
         """Test a complete session workflow."""
         # Setup
         mock_tools_instance = MagicMock()
-        mock_tools_instance.get.return_value = ["tool1", "tool2"]
+        mock_tool = MagicMock()
+        mock_tool.slug = "TOOL1"
+        mock_tool.toolkit.slug = "github"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_instance._file_helper.process_file_uploadable_schema.return_value = {}
         mock_tools_class.return_value = mock_tools_instance
+
+        # Setup provider mock
+        mock_provider.wrap_tools.return_value = ["tool1", "tool2"]
 
         # Create session
         session = tool_router.create(

@@ -35,17 +35,16 @@ const allowedTools = ['GMAIL_FETCH_EMAILS'];
 // Create an MCP server with Gmail toolkit
 const mcpConfig = await composio.mcp.create(
   'gmail-anthropic-' + Date.now(),
-  [
-    {
+  {
+    toolkits: [{
       authConfigId,
-      allowedTools,
-    },
-  ],
-  { isChatAuth: true }
+    }],
+    allowedTools,
+  }
 );
 
 console.log(`✅ MCP server created: ${mcpConfig.id}`);
-console.log(`🔧 Available toolkits: ${mcpConfig.toolkits.join(', ')}`);
+console.log(`🔧 Available toolkits: ${mcpConfig.allowedTools.join(', ')}`);
 
 // Get server instance with connected accounts (using convenience method)
 const servers = await mcpConfig.getServer({

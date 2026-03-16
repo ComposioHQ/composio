@@ -7,7 +7,10 @@ import {
 
 export class AuthScheme {
   /**
-   * Creates a ConnectionData object for OAuth2 authentication
+   * Creates a ConnectionData object for OAuth2 authentication.
+   * When `access_token` is provided, status defaults to ACTIVE (token import).
+   * When omitted, status defaults to INITIALIZING (redirect-based OAuth flow).
+   * Pass an explicit `status` in params to override the auto-detected default.
    * @param params The OAuth2 parameters
    * @returns ConnectionData object
    */
@@ -33,23 +36,28 @@ export class AuthScheme {
       expired_at?: string;
     }
   ): ConnectionData {
+    const hasToken = !!params.access_token;
     return {
       authScheme: AuthSchemeTypes.OAUTH2,
       val: {
-        status: ConnectionStatuses.INITIALIZING,
+        status: hasToken ? ConnectionStatuses.ACTIVE : ConnectionStatuses.INITIALIZING,
         ...params,
       },
-    };
+    } as ConnectionData;
   }
 
   /**
-   * Creates a ConnectionData object for OAuth1 authentication
+   * Creates a ConnectionData object for OAuth1 authentication.
+   * When both `oauth_token` and `oauth_token_secret` are provided, status defaults to ACTIVE (token import).
+   * When either is omitted, status defaults to INITIALIZING (redirect-based OAuth flow).
+   * Pass an explicit `status` in params to override the auto-detected default.
    * @param params The OAuth1 parameters
    * @returns ConnectionData object
    */
   static OAuth1(
     params: BaseConnectionFields & {
       oauth_token?: string;
+      oauth_token_secret?: string;
       consumer_key?: string;
       redirectUrl?: string;
       callback_url?: string;
@@ -58,13 +66,14 @@ export class AuthScheme {
       expired_at?: string;
     }
   ): ConnectionData {
+    const hasTokens = !!params.oauth_token && !!params.oauth_token_secret;
     return {
       authScheme: AuthSchemeTypes.OAUTH1,
       val: {
-        status: ConnectionStatuses.INITIALIZING,
+        status: hasTokens ? ConnectionStatuses.ACTIVE : ConnectionStatuses.INITIALIZING,
         ...params,
       },
-    };
+    } as ConnectionData;
   }
 
   /**

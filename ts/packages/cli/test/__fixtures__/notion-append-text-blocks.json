@@ -1,0 +1,1563 @@
+{
+  "slug": "NOTION_APPEND_TEXT_BLOCKS",
+  "name": "Append text blocks (paragraphs, headings, lists)",
+  "description": "Append text blocks (paragraphs, headings, lists) to a Notion page. This is the most commonly used action for adding content to Notion. Use for: documentation, notes, articles, outlines, lists. Supported block types: - paragraph: Regular text - heading_1, heading_2, heading_3: Section headers - bulleted_list_item: Bullet points - numbered_list_item: Numbered lists ⚠️ Text content is limited to 2000 characters per text.content field. For other block types, use specialized actions: - append_task_blocks: to-do, toggle, callout - append_code_blocks: code, quote, equation - append_media_blocks: image, video, audio, files - append_layout_blocks: divider, columns, TOC - append_table_blocks: tables",
+  "available_versions": ["20260113_00"],
+  "version": "20260113_00",
+  "toolkit": {
+    "slug": "notion",
+    "name": "notion",
+    "logo": "https://logos.composio.dev/api/notion"
+  },
+  "input_parameters": {
+    "description": "Request model for appending text blocks to a Notion page.",
+    "properties": {
+      "after": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Optional UUID of an existing child block. New blocks will be inserted after this block.",
+        "examples": ["9bc30ad4-9373-46a5-84ab-0a7845ee52e6"],
+        "title": "After"
+      },
+      "block_id": {
+        "description": "The UUID of the parent block or page to append children to.",
+        "examples": ["b55c9c91-384d-452b-81db-d1ef79372b75", "b55c9c91384d452b81dbd1ef79372b75"],
+        "title": "Block Id",
+        "type": "string"
+      },
+      "children": {
+        "description": "Array of text block objects to append (also accepts 'blocks' as parameter name). Supported types:\n- paragraph: Regular text paragraph\n- heading_1, heading_2, heading_3: Section headings\n- bulleted_list_item: Bullet point\n- numbered_list_item: Numbered list item\n\n⚠️ Text content limited to 2000 characters per rich_text text.content field.\nMax 100 blocks per request.",
+        "examples": [
+          [
+            {
+              "heading_2": {
+                "rich_text": [
+                  {
+                    "text": {
+                      "content": "Section Title"
+                    },
+                    "type": "text"
+                  }
+                ]
+              },
+              "object": "block",
+              "type": "heading_2"
+            }
+          ],
+          [
+            {
+              "object": "block",
+              "paragraph": {
+                "rich_text": [
+                  {
+                    "text": {
+                      "content": "This is a paragraph."
+                    },
+                    "type": "text"
+                  }
+                ]
+              },
+              "type": "paragraph"
+            }
+          ]
+        ],
+        "items": {
+          "discriminator": {
+            "mapping": {
+              "bulleted_list_item": "#/$defs/BulletedListItemBlockInput",
+              "heading_1": "#/$defs/Heading1BlockInput",
+              "heading_2": "#/$defs/Heading2BlockInput",
+              "heading_3": "#/$defs/Heading3BlockInput",
+              "numbered_list_item": "#/$defs/NumberedListItemBlockInput",
+              "paragraph": "#/$defs/ParagraphBlockInput"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "description": "A paragraph block object.",
+              "properties": {
+                "object": {
+                  "const": "block",
+                  "default": "block",
+                  "description": "Always 'block'.",
+                  "title": "Object",
+                  "type": "string"
+                },
+                "paragraph": {
+                  "description": "Paragraph content.",
+                  "properties": {
+                    "color": {
+                      "default": "default",
+                      "description": "Color of the paragraph text or background.",
+                      "enum": [
+                        "default",
+                        "gray",
+                        "brown",
+                        "orange",
+                        "yellow",
+                        "green",
+                        "blue",
+                        "purple",
+                        "pink",
+                        "red",
+                        "gray_background",
+                        "brown_background",
+                        "orange_background",
+                        "yellow_background",
+                        "green_background",
+                        "blue_background",
+                        "purple_background",
+                        "pink_background",
+                        "red_background"
+                      ],
+                      "title": "BlockColor",
+                      "type": "string"
+                    },
+                    "rich_text": {
+                      "description": "Array of rich text objects. Each text.content is limited to 2000 chars.",
+                      "items": {
+                        "description": "Rich text object for creating text content in blocks.",
+                        "properties": {
+                          "annotations": {
+                            "anyOf": [
+                              {
+                                "description": "Text styling annotations for rich text.",
+                                "properties": {
+                                  "bold": {
+                                    "default": false,
+                                    "description": "Whether the text is bold.",
+                                    "title": "Bold",
+                                    "type": "boolean"
+                                  },
+                                  "code": {
+                                    "default": false,
+                                    "description": "Whether the text is formatted as inline code.",
+                                    "title": "Code",
+                                    "type": "boolean"
+                                  },
+                                  "color": {
+                                    "default": "default",
+                                    "description": "Color of the text or background.",
+                                    "enum": [
+                                      "default",
+                                      "gray",
+                                      "brown",
+                                      "orange",
+                                      "yellow",
+                                      "green",
+                                      "blue",
+                                      "purple",
+                                      "pink",
+                                      "red",
+                                      "gray_background",
+                                      "brown_background",
+                                      "orange_background",
+                                      "yellow_background",
+                                      "green_background",
+                                      "blue_background",
+                                      "purple_background",
+                                      "pink_background",
+                                      "red_background"
+                                    ],
+                                    "title": "BlockColor",
+                                    "type": "string"
+                                  },
+                                  "italic": {
+                                    "default": false,
+                                    "description": "Whether the text is italic.",
+                                    "title": "Italic",
+                                    "type": "boolean"
+                                  },
+                                  "strikethrough": {
+                                    "default": false,
+                                    "description": "Whether the text has strikethrough.",
+                                    "title": "Strikethrough",
+                                    "type": "boolean"
+                                  },
+                                  "underline": {
+                                    "default": false,
+                                    "description": "Whether the text is underlined.",
+                                    "title": "Underline",
+                                    "type": "boolean"
+                                  }
+                                },
+                                "title": "TextAnnotations",
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "Optional text styling annotations (bold, italic, etc.)."
+                          },
+                          "text": {
+                            "description": "The text content object.",
+                            "properties": {
+                              "content": {
+                                "description": "The actual text content. CRITICAL: Maximum 2000 characters per text object.",
+                                "examples": ["Hello, World!", "This is a paragraph of text."],
+                                "maxLength": 2000,
+                                "title": "Content",
+                                "type": "string"
+                              },
+                              "link": {
+                                "anyOf": [
+                                  {
+                                    "description": "Link object for hyperlinked text.",
+                                    "properties": {
+                                      "url": {
+                                        "description": "The URL the text links to.",
+                                        "examples": [
+                                          "https://www.notion.so",
+                                          "https://example.com"
+                                        ],
+                                        "title": "Url",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["url"],
+                                    "title": "TextLink",
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null,
+                                "description": "Optional link for the text."
+                              }
+                            },
+                            "required": ["content"],
+                            "title": "TextContent",
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "text",
+                            "default": "text",
+                            "description": "Type of rich text. Currently only 'text' is supported for input.",
+                            "title": "Type",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["text"],
+                        "title": "RichTextInput",
+                        "type": "object"
+                      },
+                      "minItems": 1,
+                      "title": "Rich Text",
+                      "type": "array"
+                    }
+                  },
+                  "required": ["rich_text"],
+                  "title": "ParagraphInput",
+                  "type": "object"
+                },
+                "type": {
+                  "const": "paragraph",
+                  "default": "paragraph",
+                  "description": "Block type.",
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": ["paragraph"],
+              "title": "ParagraphBlockInput",
+              "type": "object"
+            },
+            {
+              "description": "A heading 1 block object (largest heading).",
+              "properties": {
+                "heading_1": {
+                  "description": "Heading 1 content.",
+                  "properties": {
+                    "color": {
+                      "default": "default",
+                      "description": "Color of the heading.",
+                      "enum": [
+                        "default",
+                        "gray",
+                        "brown",
+                        "orange",
+                        "yellow",
+                        "green",
+                        "blue",
+                        "purple",
+                        "pink",
+                        "red",
+                        "gray_background",
+                        "brown_background",
+                        "orange_background",
+                        "yellow_background",
+                        "green_background",
+                        "blue_background",
+                        "purple_background",
+                        "pink_background",
+                        "red_background"
+                      ],
+                      "title": "BlockColor",
+                      "type": "string"
+                    },
+                    "is_toggleable": {
+                      "default": false,
+                      "description": "Whether the heading can be toggled to show/hide content.",
+                      "title": "Is Toggleable",
+                      "type": "boolean"
+                    },
+                    "rich_text": {
+                      "description": "Array of rich text objects for the heading text.",
+                      "items": {
+                        "description": "Rich text object for creating text content in blocks.",
+                        "properties": {
+                          "annotations": {
+                            "anyOf": [
+                              {
+                                "description": "Text styling annotations for rich text.",
+                                "properties": {
+                                  "bold": {
+                                    "default": false,
+                                    "description": "Whether the text is bold.",
+                                    "title": "Bold",
+                                    "type": "boolean"
+                                  },
+                                  "code": {
+                                    "default": false,
+                                    "description": "Whether the text is formatted as inline code.",
+                                    "title": "Code",
+                                    "type": "boolean"
+                                  },
+                                  "color": {
+                                    "default": "default",
+                                    "description": "Color of the text or background.",
+                                    "enum": [
+                                      "default",
+                                      "gray",
+                                      "brown",
+                                      "orange",
+                                      "yellow",
+                                      "green",
+                                      "blue",
+                                      "purple",
+                                      "pink",
+                                      "red",
+                                      "gray_background",
+                                      "brown_background",
+                                      "orange_background",
+                                      "yellow_background",
+                                      "green_background",
+                                      "blue_background",
+                                      "purple_background",
+                                      "pink_background",
+                                      "red_background"
+                                    ],
+                                    "title": "BlockColor",
+                                    "type": "string"
+                                  },
+                                  "italic": {
+                                    "default": false,
+                                    "description": "Whether the text is italic.",
+                                    "title": "Italic",
+                                    "type": "boolean"
+                                  },
+                                  "strikethrough": {
+                                    "default": false,
+                                    "description": "Whether the text has strikethrough.",
+                                    "title": "Strikethrough",
+                                    "type": "boolean"
+                                  },
+                                  "underline": {
+                                    "default": false,
+                                    "description": "Whether the text is underlined.",
+                                    "title": "Underline",
+                                    "type": "boolean"
+                                  }
+                                },
+                                "title": "TextAnnotations",
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "Optional text styling annotations (bold, italic, etc.)."
+                          },
+                          "text": {
+                            "description": "The text content object.",
+                            "properties": {
+                              "content": {
+                                "description": "The actual text content. CRITICAL: Maximum 2000 characters per text object.",
+                                "examples": ["Hello, World!", "This is a paragraph of text."],
+                                "maxLength": 2000,
+                                "title": "Content",
+                                "type": "string"
+                              },
+                              "link": {
+                                "anyOf": [
+                                  {
+                                    "description": "Link object for hyperlinked text.",
+                                    "properties": {
+                                      "url": {
+                                        "description": "The URL the text links to.",
+                                        "examples": [
+                                          "https://www.notion.so",
+                                          "https://example.com"
+                                        ],
+                                        "title": "Url",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["url"],
+                                    "title": "TextLink",
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null,
+                                "description": "Optional link for the text."
+                              }
+                            },
+                            "required": ["content"],
+                            "title": "TextContent",
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "text",
+                            "default": "text",
+                            "description": "Type of rich text. Currently only 'text' is supported for input.",
+                            "title": "Type",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["text"],
+                        "title": "RichTextInput",
+                        "type": "object"
+                      },
+                      "minItems": 1,
+                      "title": "Rich Text",
+                      "type": "array"
+                    }
+                  },
+                  "required": ["rich_text"],
+                  "title": "HeadingInput",
+                  "type": "object"
+                },
+                "object": {
+                  "const": "block",
+                  "default": "block",
+                  "description": "Always 'block'.",
+                  "title": "Object",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "heading_1",
+                  "default": "heading_1",
+                  "description": "Block type.",
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": ["heading_1"],
+              "title": "Heading1BlockInput",
+              "type": "object"
+            },
+            {
+              "description": "A heading 2 block object (medium heading).",
+              "properties": {
+                "heading_2": {
+                  "description": "Heading 2 content.",
+                  "properties": {
+                    "color": {
+                      "default": "default",
+                      "description": "Color of the heading.",
+                      "enum": [
+                        "default",
+                        "gray",
+                        "brown",
+                        "orange",
+                        "yellow",
+                        "green",
+                        "blue",
+                        "purple",
+                        "pink",
+                        "red",
+                        "gray_background",
+                        "brown_background",
+                        "orange_background",
+                        "yellow_background",
+                        "green_background",
+                        "blue_background",
+                        "purple_background",
+                        "pink_background",
+                        "red_background"
+                      ],
+                      "title": "BlockColor",
+                      "type": "string"
+                    },
+                    "is_toggleable": {
+                      "default": false,
+                      "description": "Whether the heading can be toggled to show/hide content.",
+                      "title": "Is Toggleable",
+                      "type": "boolean"
+                    },
+                    "rich_text": {
+                      "description": "Array of rich text objects for the heading text.",
+                      "items": {
+                        "description": "Rich text object for creating text content in blocks.",
+                        "properties": {
+                          "annotations": {
+                            "anyOf": [
+                              {
+                                "description": "Text styling annotations for rich text.",
+                                "properties": {
+                                  "bold": {
+                                    "default": false,
+                                    "description": "Whether the text is bold.",
+                                    "title": "Bold",
+                                    "type": "boolean"
+                                  },
+                                  "code": {
+                                    "default": false,
+                                    "description": "Whether the text is formatted as inline code.",
+                                    "title": "Code",
+                                    "type": "boolean"
+                                  },
+                                  "color": {
+                                    "default": "default",
+                                    "description": "Color of the text or background.",
+                                    "enum": [
+                                      "default",
+                                      "gray",
+                                      "brown",
+                                      "orange",
+                                      "yellow",
+                                      "green",
+                                      "blue",
+                                      "purple",
+                                      "pink",
+                                      "red",
+                                      "gray_background",
+                                      "brown_background",
+                                      "orange_background",
+                                      "yellow_background",
+                                      "green_background",
+                                      "blue_background",
+                                      "purple_background",
+                                      "pink_background",
+                                      "red_background"
+                                    ],
+                                    "title": "BlockColor",
+                                    "type": "string"
+                                  },
+                                  "italic": {
+                                    "default": false,
+                                    "description": "Whether the text is italic.",
+                                    "title": "Italic",
+                                    "type": "boolean"
+                                  },
+                                  "strikethrough": {
+                                    "default": false,
+                                    "description": "Whether the text has strikethrough.",
+                                    "title": "Strikethrough",
+                                    "type": "boolean"
+                                  },
+                                  "underline": {
+                                    "default": false,
+                                    "description": "Whether the text is underlined.",
+                                    "title": "Underline",
+                                    "type": "boolean"
+                                  }
+                                },
+                                "title": "TextAnnotations",
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "Optional text styling annotations (bold, italic, etc.)."
+                          },
+                          "text": {
+                            "description": "The text content object.",
+                            "properties": {
+                              "content": {
+                                "description": "The actual text content. CRITICAL: Maximum 2000 characters per text object.",
+                                "examples": ["Hello, World!", "This is a paragraph of text."],
+                                "maxLength": 2000,
+                                "title": "Content",
+                                "type": "string"
+                              },
+                              "link": {
+                                "anyOf": [
+                                  {
+                                    "description": "Link object for hyperlinked text.",
+                                    "properties": {
+                                      "url": {
+                                        "description": "The URL the text links to.",
+                                        "examples": [
+                                          "https://www.notion.so",
+                                          "https://example.com"
+                                        ],
+                                        "title": "Url",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["url"],
+                                    "title": "TextLink",
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null,
+                                "description": "Optional link for the text."
+                              }
+                            },
+                            "required": ["content"],
+                            "title": "TextContent",
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "text",
+                            "default": "text",
+                            "description": "Type of rich text. Currently only 'text' is supported for input.",
+                            "title": "Type",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["text"],
+                        "title": "RichTextInput",
+                        "type": "object"
+                      },
+                      "minItems": 1,
+                      "title": "Rich Text",
+                      "type": "array"
+                    }
+                  },
+                  "required": ["rich_text"],
+                  "title": "HeadingInput",
+                  "type": "object"
+                },
+                "object": {
+                  "const": "block",
+                  "default": "block",
+                  "description": "Always 'block'.",
+                  "title": "Object",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "heading_2",
+                  "default": "heading_2",
+                  "description": "Block type.",
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": ["heading_2"],
+              "title": "Heading2BlockInput",
+              "type": "object"
+            },
+            {
+              "description": "A heading 3 block object (smallest heading).",
+              "properties": {
+                "heading_3": {
+                  "description": "Heading 3 content.",
+                  "properties": {
+                    "color": {
+                      "default": "default",
+                      "description": "Color of the heading.",
+                      "enum": [
+                        "default",
+                        "gray",
+                        "brown",
+                        "orange",
+                        "yellow",
+                        "green",
+                        "blue",
+                        "purple",
+                        "pink",
+                        "red",
+                        "gray_background",
+                        "brown_background",
+                        "orange_background",
+                        "yellow_background",
+                        "green_background",
+                        "blue_background",
+                        "purple_background",
+                        "pink_background",
+                        "red_background"
+                      ],
+                      "title": "BlockColor",
+                      "type": "string"
+                    },
+                    "is_toggleable": {
+                      "default": false,
+                      "description": "Whether the heading can be toggled to show/hide content.",
+                      "title": "Is Toggleable",
+                      "type": "boolean"
+                    },
+                    "rich_text": {
+                      "description": "Array of rich text objects for the heading text.",
+                      "items": {
+                        "description": "Rich text object for creating text content in blocks.",
+                        "properties": {
+                          "annotations": {
+                            "anyOf": [
+                              {
+                                "description": "Text styling annotations for rich text.",
+                                "properties": {
+                                  "bold": {
+                                    "default": false,
+                                    "description": "Whether the text is bold.",
+                                    "title": "Bold",
+                                    "type": "boolean"
+                                  },
+                                  "code": {
+                                    "default": false,
+                                    "description": "Whether the text is formatted as inline code.",
+                                    "title": "Code",
+                                    "type": "boolean"
+                                  },
+                                  "color": {
+                                    "default": "default",
+                                    "description": "Color of the text or background.",
+                                    "enum": [
+                                      "default",
+                                      "gray",
+                                      "brown",
+                                      "orange",
+                                      "yellow",
+                                      "green",
+                                      "blue",
+                                      "purple",
+                                      "pink",
+                                      "red",
+                                      "gray_background",
+                                      "brown_background",
+                                      "orange_background",
+                                      "yellow_background",
+                                      "green_background",
+                                      "blue_background",
+                                      "purple_background",
+                                      "pink_background",
+                                      "red_background"
+                                    ],
+                                    "title": "BlockColor",
+                                    "type": "string"
+                                  },
+                                  "italic": {
+                                    "default": false,
+                                    "description": "Whether the text is italic.",
+                                    "title": "Italic",
+                                    "type": "boolean"
+                                  },
+                                  "strikethrough": {
+                                    "default": false,
+                                    "description": "Whether the text has strikethrough.",
+                                    "title": "Strikethrough",
+                                    "type": "boolean"
+                                  },
+                                  "underline": {
+                                    "default": false,
+                                    "description": "Whether the text is underlined.",
+                                    "title": "Underline",
+                                    "type": "boolean"
+                                  }
+                                },
+                                "title": "TextAnnotations",
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "Optional text styling annotations (bold, italic, etc.)."
+                          },
+                          "text": {
+                            "description": "The text content object.",
+                            "properties": {
+                              "content": {
+                                "description": "The actual text content. CRITICAL: Maximum 2000 characters per text object.",
+                                "examples": ["Hello, World!", "This is a paragraph of text."],
+                                "maxLength": 2000,
+                                "title": "Content",
+                                "type": "string"
+                              },
+                              "link": {
+                                "anyOf": [
+                                  {
+                                    "description": "Link object for hyperlinked text.",
+                                    "properties": {
+                                      "url": {
+                                        "description": "The URL the text links to.",
+                                        "examples": [
+                                          "https://www.notion.so",
+                                          "https://example.com"
+                                        ],
+                                        "title": "Url",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["url"],
+                                    "title": "TextLink",
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null,
+                                "description": "Optional link for the text."
+                              }
+                            },
+                            "required": ["content"],
+                            "title": "TextContent",
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "text",
+                            "default": "text",
+                            "description": "Type of rich text. Currently only 'text' is supported for input.",
+                            "title": "Type",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["text"],
+                        "title": "RichTextInput",
+                        "type": "object"
+                      },
+                      "minItems": 1,
+                      "title": "Rich Text",
+                      "type": "array"
+                    }
+                  },
+                  "required": ["rich_text"],
+                  "title": "HeadingInput",
+                  "type": "object"
+                },
+                "object": {
+                  "const": "block",
+                  "default": "block",
+                  "description": "Always 'block'.",
+                  "title": "Object",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "heading_3",
+                  "default": "heading_3",
+                  "description": "Block type.",
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": ["heading_3"],
+              "title": "Heading3BlockInput",
+              "type": "object"
+            },
+            {
+              "description": "A bulleted list item block object.",
+              "properties": {
+                "bulleted_list_item": {
+                  "description": "Bulleted list item content.",
+                  "properties": {
+                    "color": {
+                      "default": "default",
+                      "description": "Color of the list item.",
+                      "enum": [
+                        "default",
+                        "gray",
+                        "brown",
+                        "orange",
+                        "yellow",
+                        "green",
+                        "blue",
+                        "purple",
+                        "pink",
+                        "red",
+                        "gray_background",
+                        "brown_background",
+                        "orange_background",
+                        "yellow_background",
+                        "green_background",
+                        "blue_background",
+                        "purple_background",
+                        "pink_background",
+                        "red_background"
+                      ],
+                      "title": "BlockColor",
+                      "type": "string"
+                    },
+                    "rich_text": {
+                      "description": "Array of rich text objects for the list item text.",
+                      "items": {
+                        "description": "Rich text object for creating text content in blocks.",
+                        "properties": {
+                          "annotations": {
+                            "anyOf": [
+                              {
+                                "description": "Text styling annotations for rich text.",
+                                "properties": {
+                                  "bold": {
+                                    "default": false,
+                                    "description": "Whether the text is bold.",
+                                    "title": "Bold",
+                                    "type": "boolean"
+                                  },
+                                  "code": {
+                                    "default": false,
+                                    "description": "Whether the text is formatted as inline code.",
+                                    "title": "Code",
+                                    "type": "boolean"
+                                  },
+                                  "color": {
+                                    "default": "default",
+                                    "description": "Color of the text or background.",
+                                    "enum": [
+                                      "default",
+                                      "gray",
+                                      "brown",
+                                      "orange",
+                                      "yellow",
+                                      "green",
+                                      "blue",
+                                      "purple",
+                                      "pink",
+                                      "red",
+                                      "gray_background",
+                                      "brown_background",
+                                      "orange_background",
+                                      "yellow_background",
+                                      "green_background",
+                                      "blue_background",
+                                      "purple_background",
+                                      "pink_background",
+                                      "red_background"
+                                    ],
+                                    "title": "BlockColor",
+                                    "type": "string"
+                                  },
+                                  "italic": {
+                                    "default": false,
+                                    "description": "Whether the text is italic.",
+                                    "title": "Italic",
+                                    "type": "boolean"
+                                  },
+                                  "strikethrough": {
+                                    "default": false,
+                                    "description": "Whether the text has strikethrough.",
+                                    "title": "Strikethrough",
+                                    "type": "boolean"
+                                  },
+                                  "underline": {
+                                    "default": false,
+                                    "description": "Whether the text is underlined.",
+                                    "title": "Underline",
+                                    "type": "boolean"
+                                  }
+                                },
+                                "title": "TextAnnotations",
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "Optional text styling annotations (bold, italic, etc.)."
+                          },
+                          "text": {
+                            "description": "The text content object.",
+                            "properties": {
+                              "content": {
+                                "description": "The actual text content. CRITICAL: Maximum 2000 characters per text object.",
+                                "examples": ["Hello, World!", "This is a paragraph of text."],
+                                "maxLength": 2000,
+                                "title": "Content",
+                                "type": "string"
+                              },
+                              "link": {
+                                "anyOf": [
+                                  {
+                                    "description": "Link object for hyperlinked text.",
+                                    "properties": {
+                                      "url": {
+                                        "description": "The URL the text links to.",
+                                        "examples": [
+                                          "https://www.notion.so",
+                                          "https://example.com"
+                                        ],
+                                        "title": "Url",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["url"],
+                                    "title": "TextLink",
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null,
+                                "description": "Optional link for the text."
+                              }
+                            },
+                            "required": ["content"],
+                            "title": "TextContent",
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "text",
+                            "default": "text",
+                            "description": "Type of rich text. Currently only 'text' is supported for input.",
+                            "title": "Type",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["text"],
+                        "title": "RichTextInput",
+                        "type": "object"
+                      },
+                      "minItems": 1,
+                      "title": "Rich Text",
+                      "type": "array"
+                    }
+                  },
+                  "required": ["rich_text"],
+                  "title": "ListItemInput",
+                  "type": "object"
+                },
+                "object": {
+                  "const": "block",
+                  "default": "block",
+                  "description": "Always 'block'.",
+                  "title": "Object",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "bulleted_list_item",
+                  "default": "bulleted_list_item",
+                  "description": "Block type.",
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": ["bulleted_list_item"],
+              "title": "BulletedListItemBlockInput",
+              "type": "object"
+            },
+            {
+              "description": "A numbered list item block object.",
+              "properties": {
+                "numbered_list_item": {
+                  "description": "Numbered list item content.",
+                  "properties": {
+                    "color": {
+                      "default": "default",
+                      "description": "Color of the list item.",
+                      "enum": [
+                        "default",
+                        "gray",
+                        "brown",
+                        "orange",
+                        "yellow",
+                        "green",
+                        "blue",
+                        "purple",
+                        "pink",
+                        "red",
+                        "gray_background",
+                        "brown_background",
+                        "orange_background",
+                        "yellow_background",
+                        "green_background",
+                        "blue_background",
+                        "purple_background",
+                        "pink_background",
+                        "red_background"
+                      ],
+                      "title": "BlockColor",
+                      "type": "string"
+                    },
+                    "rich_text": {
+                      "description": "Array of rich text objects for the list item text.",
+                      "items": {
+                        "description": "Rich text object for creating text content in blocks.",
+                        "properties": {
+                          "annotations": {
+                            "anyOf": [
+                              {
+                                "description": "Text styling annotations for rich text.",
+                                "properties": {
+                                  "bold": {
+                                    "default": false,
+                                    "description": "Whether the text is bold.",
+                                    "title": "Bold",
+                                    "type": "boolean"
+                                  },
+                                  "code": {
+                                    "default": false,
+                                    "description": "Whether the text is formatted as inline code.",
+                                    "title": "Code",
+                                    "type": "boolean"
+                                  },
+                                  "color": {
+                                    "default": "default",
+                                    "description": "Color of the text or background.",
+                                    "enum": [
+                                      "default",
+                                      "gray",
+                                      "brown",
+                                      "orange",
+                                      "yellow",
+                                      "green",
+                                      "blue",
+                                      "purple",
+                                      "pink",
+                                      "red",
+                                      "gray_background",
+                                      "brown_background",
+                                      "orange_background",
+                                      "yellow_background",
+                                      "green_background",
+                                      "blue_background",
+                                      "purple_background",
+                                      "pink_background",
+                                      "red_background"
+                                    ],
+                                    "title": "BlockColor",
+                                    "type": "string"
+                                  },
+                                  "italic": {
+                                    "default": false,
+                                    "description": "Whether the text is italic.",
+                                    "title": "Italic",
+                                    "type": "boolean"
+                                  },
+                                  "strikethrough": {
+                                    "default": false,
+                                    "description": "Whether the text has strikethrough.",
+                                    "title": "Strikethrough",
+                                    "type": "boolean"
+                                  },
+                                  "underline": {
+                                    "default": false,
+                                    "description": "Whether the text is underlined.",
+                                    "title": "Underline",
+                                    "type": "boolean"
+                                  }
+                                },
+                                "title": "TextAnnotations",
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "description": "Optional text styling annotations (bold, italic, etc.)."
+                          },
+                          "text": {
+                            "description": "The text content object.",
+                            "properties": {
+                              "content": {
+                                "description": "The actual text content. CRITICAL: Maximum 2000 characters per text object.",
+                                "examples": ["Hello, World!", "This is a paragraph of text."],
+                                "maxLength": 2000,
+                                "title": "Content",
+                                "type": "string"
+                              },
+                              "link": {
+                                "anyOf": [
+                                  {
+                                    "description": "Link object for hyperlinked text.",
+                                    "properties": {
+                                      "url": {
+                                        "description": "The URL the text links to.",
+                                        "examples": [
+                                          "https://www.notion.so",
+                                          "https://example.com"
+                                        ],
+                                        "title": "Url",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["url"],
+                                    "title": "TextLink",
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "default": null,
+                                "description": "Optional link for the text."
+                              }
+                            },
+                            "required": ["content"],
+                            "title": "TextContent",
+                            "type": "object"
+                          },
+                          "type": {
+                            "const": "text",
+                            "default": "text",
+                            "description": "Type of rich text. Currently only 'text' is supported for input.",
+                            "title": "Type",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["text"],
+                        "title": "RichTextInput",
+                        "type": "object"
+                      },
+                      "minItems": 1,
+                      "title": "Rich Text",
+                      "type": "array"
+                    }
+                  },
+                  "required": ["rich_text"],
+                  "title": "ListItemInput",
+                  "type": "object"
+                },
+                "object": {
+                  "const": "block",
+                  "default": "block",
+                  "description": "Always 'block'.",
+                  "title": "Object",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "numbered_list_item",
+                  "default": "numbered_list_item",
+                  "description": "Block type.",
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": ["numbered_list_item"],
+              "title": "NumberedListItemBlockInput",
+              "type": "object"
+            }
+          ],
+          "properties": {}
+        },
+        "maxItems": 100,
+        "title": "Children",
+        "type": "array"
+      }
+    },
+    "required": ["block_id", "children"],
+    "title": "AppendTextBlocksRequest",
+    "type": "object"
+  },
+  "output_parameters": {
+    "properties": {
+      "data": {
+        "additionalProperties": false,
+        "description": "Data from the action execution",
+        "properties": {
+          "block": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Empty object corresponding to the type field.",
+            "title": "Block",
+            "type": "object"
+          },
+          "has_more": {
+            "description": "Whether there are more results available beyond this page.",
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Cursor for pagination. Null if there are no more results.",
+            "title": "Next Cursor"
+          },
+          "object": {
+            "description": "Always 'list' for paginated responses.",
+            "title": "Object",
+            "type": "string"
+          },
+          "results": {
+            "description": "Array of newly created block objects that were appended as children.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Notion block object returned in the results array.",
+              "properties": {
+                "archived": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Whether the block is archived.",
+                  "title": "Archived"
+                },
+                "created_by": {
+                  "anyOf": [
+                    {
+                      "description": "Partial user object representing a Notion user.",
+                      "properties": {
+                        "id": {
+                          "description": "Unique identifier for the user (UUID format).",
+                          "title": "Id",
+                          "type": "string"
+                        },
+                        "object": {
+                          "description": "Always 'user'.",
+                          "title": "Object",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["object", "id"],
+                      "title": "PartialUser",
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Partial user object representing the user who created the block.",
+                  "title": "Created By"
+                },
+                "created_time": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "ISO 8601 timestamp of when the block was created.",
+                  "title": "Created Time"
+                },
+                "has_children": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Whether the block has child blocks nested within it.",
+                  "title": "Has Children"
+                },
+                "id": {
+                  "description": "Unique identifier for the block (UUID v4 format).",
+                  "title": "Id",
+                  "type": "string"
+                },
+                "in_trash": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Whether the block is in the trash.",
+                  "title": "In Trash"
+                },
+                "last_edited_by": {
+                  "anyOf": [
+                    {
+                      "description": "Partial user object representing a Notion user.",
+                      "properties": {
+                        "id": {
+                          "description": "Unique identifier for the user (UUID format).",
+                          "title": "Id",
+                          "type": "string"
+                        },
+                        "object": {
+                          "description": "Always 'user'.",
+                          "title": "Object",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["object", "id"],
+                      "title": "PartialUser",
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Partial user object representing the user who last edited the block.",
+                  "title": "Last Edited By"
+                },
+                "last_edited_time": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "ISO 8601 timestamp of when the block was last edited.",
+                  "title": "Last Edited Time"
+                },
+                "object": {
+                  "description": "Always 'block'.",
+                  "title": "Object",
+                  "type": "string"
+                },
+                "parent": {
+                  "anyOf": [
+                    {
+                      "description": "Information about a block's parent.",
+                      "properties": {
+                        "block_id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null,
+                          "description": "UUID of the parent block (when type is 'block_id').",
+                          "title": "Block Id"
+                        },
+                        "data_source_id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null,
+                          "description": "UUID of the parent data source (when type is 'data_source_id').",
+                          "title": "Data Source Id"
+                        },
+                        "page_id": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null,
+                          "description": "UUID of the parent page (when type is 'page_id').",
+                          "title": "Page Id"
+                        },
+                        "type": {
+                          "description": "Type of parent: 'page_id', 'block_id', or 'data_source_id'.",
+                          "enum": ["page_id", "block_id", "data_source_id"],
+                          "title": "Type",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type"],
+                      "title": "BlockParent",
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Information about the block's parent.",
+                  "title": "Parent"
+                },
+                "type": {
+                  "description": "The type of block.",
+                  "title": "Type",
+                  "type": "string"
+                }
+              },
+              "required": ["object", "id", "type"],
+              "title": "Block",
+              "type": "object"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "type": {
+            "description": "The type of items in the results array. Always 'block'.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["object", "results", "has_more", "type", "block"],
+        "title": "Data",
+        "type": "object"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Error if any occurred during the execution of the action",
+        "title": "Error"
+      },
+      "successful": {
+        "description": "Whether or not the action execution was successful or not",
+        "title": "Successful",
+        "type": "boolean"
+      }
+    },
+    "required": ["data", "successful"],
+    "title": "AppendBlocksResponseWrapper",
+    "type": "object"
+  },
+  "scopes": [],
+  "tags": ["blocks", "text"],
+  "no_auth": false,
+  "status": "active",
+  "is_deprecated": false,
+  "deprecated": {
+    "displayName": "Append text blocks (paragraphs, headings, lists)",
+    "version": "20260113_00",
+    "available_versions": ["20260113_00"],
+    "is_deprecated": false,
+    "toolkit": {
+      "logo": "https://logos.composio.dev/api/notion"
+    }
+  }
+}

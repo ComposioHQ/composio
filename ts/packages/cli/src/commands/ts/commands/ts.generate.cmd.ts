@@ -3,6 +3,7 @@
  * - `--compact`: Emit a single module file
  * - `--transpiled`: Emit not just the TypeScript files, but also the transpiled JavaScript files
  * - `--output-dir`: Output directory for the generated TypeScript type stubs.
+ * - `--toolkits`: Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)
  *
  * Invariants:
  * - The `--output-dir` cannot refer to a path inside `node_modules`
@@ -16,10 +17,11 @@
 
 import path from 'node:path';
 import { Command, Options } from '@effect/cli';
-import { Console, Effect, Option, pipe } from 'effect';
+import { Effect, Option, pipe, Array } from 'effect';
 import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { GetCmdParams } from 'src/type-utils';
@@ -27,6 +29,17 @@ import { generateTypeScriptSources } from 'src/generation/typescript/generate';
 import { jsFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
 import { transpileTypeScriptSources } from 'src/generation/typescript/transpile';
 import { BANNER } from 'src/generation/constants';
+import type { Toolkit } from 'src/models/toolkits';
+import type { TriggerType } from 'src/models/trigger-types';
+import type { Tool, ToolsAsEnums } from 'src/models/tools';
+import {
+  getToolkitVersionOverrides,
+  buildToolkitVersionSpecs,
+  buildVersionMapFromSpecs,
+  type ToolkitVersionOverrides,
+} from 'src/effects/toolkit-version-overrides';
+import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
+import { TerminalUI, type SpinnerHandle } from 'src/services/terminal-ui';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -49,7 +62,16 @@ export const transpiled = Options.boolean('transpiled').pipe(
 
 export const typeTools = Options.boolean('type-tools').pipe(
   Options.withDefault(false),
-  Options.withDescription('Whether to emit type stubs for tools')
+  Options.withDescription(
+    'Generate typed input/output schemas for each tool (slower, fetches full tool definitions)'
+  )
+);
+
+export const toolkitsOpt = Options.text('toolkits').pipe(
+  Options.repeated,
+  Options.withDescription(
+    'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
+  )
 );
 
 const _tsCmd$Generate = Command.make('generate', {
@@ -57,7 +79,239 @@ const _tsCmd$Generate = Command.make('generate', {
   compact,
   transpiled: transpiled,
   typeTools,
-}).pipe(Command.withDescription('Updates the local type stubs with the latest app data.'));
+  toolkitsOpt,
+}).pipe(
+  Command.withDescription(
+    'Generate TypeScript types for toolkits, tools, and triggers from the Composio API.\n\n' +
+      'Environment Variables:\n' +
+      '  COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)\n' +
+      '                                      Use "latest" or unset to use the latest version.'
+  )
+);
+
+/**
+ * Result type for fetching toolkit data
+ */
+type FetchResult = {
+  toolkits: ReadonlyArray<Toolkit>;
+  triggerTypes: ReadonlyArray<TriggerType>;
+  typeableTools:
+    | { withTypes: true; tools: ReadonlyArray<Tool> }
+    | { withTypes: false; tools: ToolsAsEnums };
+  /** Map of lowercase toolkit slug to version (only includes non-'latest' versions) */
+  versionMap: ToolkitVersionOverrides;
+};
+
+/**
+ * Fetches data for specific toolkits when --toolkits filter is provided.
+ * Makes targeted API calls for only the requested toolkits.
+ */
+function fetchFilteredData(
+  client: ComposioToolkitsRepository,
+  slugs: ReadonlyArray<string>,
+  typeTools: boolean,
+  versionOverrides: ToolkitVersionOverrides,
+  spinner: SpinnerHandle
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    yield* spinner.message(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
+
+    // Build version specs for each requested toolkit
+    const versionSpecs = buildToolkitVersionSpecs(slugs, versionOverrides);
+
+    // Build the version map (only includes non-'latest' versions from the filtered toolkits)
+    const versionMap = buildVersionMapFromSpecs(versionSpecs);
+
+    const [filteredToolkits, filteredTriggerTypes, filteredTypeableTools] = yield* Effect.all(
+      [
+        // Fetch only the specified toolkits by slug
+        Effect.logDebug(`Fetching ${slugs.length} toolkit(s) by slug...`).pipe(
+          Effect.flatMap(() =>
+            client
+              .getToolkitsBySlugs(slugs)
+              .pipe(
+                Effect.catchTag('services/InvalidToolkitsError', error =>
+                  Effect.fail(
+                    new Error(
+                      `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. Toolkit not found.`
+                    )
+                  )
+                )
+              )
+          )
+        ),
+        // Fetch only trigger types for the specified toolkits
+        Effect.logDebug(`Fetching trigger types for ${slugs.length} toolkit(s)...`).pipe(
+          Effect.flatMap(() => client.getTriggerTypes(slugs))
+        ),
+        // Fetch tools for the specified toolkits (with version support when using --type-tools)
+        Match.value(typeTools).pipe(
+          Match.when(true, withTypes =>
+            Effect.logDebug(`Fetching tools with schemas for ${slugs.length} toolkit(s)...`).pipe(
+              Effect.flatMap(() => client.getToolsByVersionSpecs(versionSpecs)),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.when(false, withTypes =>
+            // Use filtered getTools() and extract slugs - more efficient than fetching ALL enums
+            // Note: When not using --type-tools, version overrides don't affect the output
+            Effect.logDebug(`Fetching tool names for ${slugs.length} toolkit(s)...`).pipe(
+              Effect.flatMap(() => client.getTools(slugs)),
+              Effect.map(tools => ({
+                withTypes,
+                tools: tools.map(tool => tool.slug),
+              }))
+            )
+          ),
+          Match.exhaustive
+        ),
+      ],
+      { concurrency: 'unbounded' }
+    );
+
+    yield* spinner.message(
+      `Found ${filteredToolkits.length} toolkit(s): ${filteredToolkits.map(t => t.slug).join(', ')}`
+    );
+
+    return {
+      toolkits: filteredToolkits,
+      triggerTypes: filteredTriggerTypes,
+      typeableTools: filteredTypeableTools,
+      versionMap,
+    };
+  });
+}
+
+/**
+ * Fast path for fetching all toolkit data when no version overrides are specified.
+ * Fetches everything in parallel without version-specific handling.
+ */
+function fetchAllDataFastPath(
+  client: ComposioToolkitsRepository,
+  typeTools: boolean,
+  spinner: SpinnerHandle
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    // Fetch all data in parallel
+    // Note: getToolsAsEnums is only called when typeTools === false
+    const [allToolkits, allTriggerTypes, allTypeableTools] = yield* Effect.all(
+      [
+        Effect.logDebug('Fetching all toolkits...').pipe(
+          Effect.flatMap(() => client.getToolkits())
+        ),
+        Effect.logDebug('Fetching all trigger types...').pipe(
+          Effect.flatMap(() => client.getTriggerTypes())
+        ),
+        Match.value(typeTools).pipe(
+          Match.when(true, withTypes =>
+            Effect.logDebug('Fetching all tools with schemas...').pipe(
+              Effect.flatMap(() => client.getTools()),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.when(false, withTypes =>
+            Effect.logDebug('Fetching all tool names...').pipe(
+              Effect.flatMap(() => client.getToolsAsEnums()),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.exhaustive
+        ),
+      ],
+      { concurrency: 'unbounded' }
+    );
+
+    yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);
+
+    return {
+      toolkits: allToolkits,
+      triggerTypes: allTriggerTypes,
+      typeableTools: allTypeableTools,
+      versionMap: new Map() as ToolkitVersionOverrides,
+    };
+  });
+}
+
+/**
+ * Fetches all toolkit data with version overrides applied.
+ * First fetches toolkit metadata, then fetches tools with version-specific handling.
+ */
+function fetchAllDataWithOverrides(
+  client: ComposioToolkitsRepository,
+  typeTools: boolean,
+  versionOverrides: ToolkitVersionOverrides,
+  spinner: SpinnerHandle
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    // 1. First fetch all toolkit metadata to know what's available
+    const allToolkits = yield* Effect.logDebug('Fetching all toolkits...').pipe(
+      Effect.flatMap(() => client.getToolkits())
+    );
+    const allSlugs = allToolkits.map(t => t.slug);
+
+    // 2. Build version specs (overridden toolkits get specific version, rest get 'latest')
+    const versionSpecs = buildToolkitVersionSpecs(allSlugs, versionOverrides);
+
+    // Build the version map (only includes non-'latest' versions)
+    const versionMap = buildVersionMapFromSpecs(versionSpecs);
+
+    // 3. Fetch trigger types and tools in parallel
+    const [allTriggerTypes, allTypeableTools] = yield* Effect.all(
+      [
+        Effect.logDebug('Fetching all trigger types...').pipe(
+          Effect.flatMap(() => client.getTriggerTypes())
+        ),
+        Match.value(typeTools).pipe(
+          Match.when(true, withTypes =>
+            Effect.logDebug('Fetching all tools with schemas (with version overrides)...').pipe(
+              Effect.flatMap(() => client.getToolsByVersionSpecs(versionSpecs)),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.when(false, withTypes =>
+            // When not using --type-tools, version overrides don't affect the output
+            Effect.logDebug('Fetching all tool names...').pipe(
+              Effect.flatMap(() => client.getToolsAsEnums()),
+              Effect.map(tools => ({ withTypes, tools }))
+            )
+          ),
+          Match.exhaustive
+        ),
+      ],
+      { concurrency: 'unbounded' }
+    );
+
+    yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);
+
+    return {
+      toolkits: allToolkits,
+      triggerTypes: allTriggerTypes,
+      typeableTools: allTypeableTools,
+      versionMap,
+    };
+  });
+}
+
+/**
+ * Fetches all toolkit data when no --toolkits filter is provided.
+ * Delegates to fast path or override-aware path based on version overrides.
+ */
+function fetchAllData(
+  client: ComposioToolkitsRepository,
+  typeTools: boolean,
+  versionOverrides: ToolkitVersionOverrides,
+  spinner: SpinnerHandle
+): Effect.Effect<FetchResult, Error, never> {
+  return Effect.gen(function* () {
+    yield* spinner.message('Fetching all toolkits, tools, and triggers...');
+
+    if (versionOverrides.size === 0) {
+      return yield* fetchAllDataFastPath(client, typeTools, spinner);
+    }
+
+    return yield* fetchAllDataWithOverrides(client, typeTools, versionOverrides, spinner);
+  });
+}
 
 /**
  * Validates that the output directory is not inside node_modules
@@ -98,12 +352,16 @@ export function generateTypescriptTypeStubs({
   compact,
   typeTools,
   transpiled = false,
+  toolkitsOpt,
 }: GetCmdParams<typeof _tsCmd$Generate> & { transpiled?: boolean }) {
   return Effect.gen(function* () {
+    const ui = yield* TerminalUI;
     const fs = yield* FileSystem.FileSystem;
     const process = yield* NodeProcess;
     const cwd = process.cwd;
     const client = yield* ComposioToolkitsRepository;
+
+    yield* ui.intro('composio ts generate');
 
     // Determine the actual output directory
     const outputDir = yield* outputOpt.pipe(
@@ -116,92 +374,89 @@ export function generateTypescriptTypeStubs({
       })
     );
 
-    yield* Effect.log(`Writing type stubs to ${outputDir}...`);
+    yield* ui.log.step(`Writing type stubs to ${outputDir}`);
     yield* fs.makeDirectory(outputDir, { recursive: true });
 
-    // Fetch data from Composio API
-    yield* Console.log('Fetching latest data from Composio API. This may take a while...');
+    // Read toolkit version overrides from environment variables
+    const versionOverrides = yield* getToolkitVersionOverrides;
 
-    const [triggerTypesAsEnums, toolsAsEnums] = yield* Effect.all([
-      Effect.logDebug('Fetching trigger types...').pipe(
-        Effect.flatMap(() => client.getTriggerTypesAsEnums())
-      ),
-      Effect.logDebug('Fetching tools...').pipe(Effect.flatMap(() => client.getToolsAsEnums())),
-    ]);
+    // Normalize toolkit slugs if specified (lowercase for API filtering)
+    const toolkitSlugsFilter = Array.isNonEmptyArray(toolkitsOpt)
+      ? toolkitsOpt.map(s => s.toLowerCase())
+      : null;
 
-    const [toolkits, triggerTypes] = yield* Effect.all(
-      [
-        Effect.logDebug('Fetching toolkits...').pipe(Effect.flatMap(() => client.getToolkits())),
-        Effect.logDebug('Fetching trigger types payloads...').pipe(
-          Effect.flatMap(() => client.getTriggerTypes(triggerTypesAsEnums.length))
-        ),
-      ],
-      { concurrency: 'unbounded' }
+    // Validate toolkit version overrides before fetching data
+    // This will log detected overrides, validate them against API, and warn about unused ones
+    const { validatedOverrides } = yield* validateToolkitVersionOverrides({
+      versionOverrides,
+      toolkitSlugsFilter,
+      client,
+    });
+
+    // Fetch, generate, and write with a spinner that auto-cleans up on error
+    yield* ui.useMakeSpinner('Fetching data from Composio API...', spinner =>
+      Effect.gen(function* () {
+        const { toolkits, triggerTypes, typeableTools, versionMap } = yield* toolkitSlugsFilter !==
+        null
+          ? fetchFilteredData(client, toolkitSlugsFilter, typeTools, validatedOverrides, spinner)
+          : fetchAllData(client, typeTools, validatedOverrides, spinner);
+
+        yield* spinner.message('Generating TypeScript type stubs...');
+        const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
+
+        // Generate TypeScript sources
+        const sources = yield* generateTypeScriptSources({
+          outputDir,
+          emitSingleFile: Boolean(compact), // Ensure boolean type
+          banner: BANNER,
+          importExtension: 'js',
+        })(index);
+
+        yield* spinner.message('Writing files to disk...');
+
+        // Write all generated files
+        yield* pipe(
+          Effect.all(
+            sources.map(([filePath, content]) =>
+              fs
+                .writeFileString(filePath, content)
+                .pipe(
+                  Effect.mapError(error => new Error(`Failed to write file ${filePath}: ${error}`))
+                )
+            ),
+            { concurrency: 'unbounded' }
+          ),
+          Effect.mapError(error => new Error(`Failed to write generated files: ${error}`))
+        );
+
+        // Compile TypeScript to JavaScript if needed
+        if (transpiled) {
+          yield* spinner.message('Transpiling to JavaScript...');
+          yield* pipe(
+            transpileTypeScriptSources({ sources, outputDir }),
+            Effect.catchAll(error =>
+              Effect.logWarning(`Failed to compile TypeScript files: ${error.message}`)
+            )
+          );
+        }
+
+        yield* spinner.stop('Type stubs generated successfully');
+      })
     );
-
-    // Only fetch tools if `--type-tools` was specified
-    const typeableTools = yield* Match.value(typeTools).pipe(
-      Match.when(true, typePredicate =>
-        Effect.logDebug('Fetching tools...').pipe(
-          Effect.flatMap(() => client.getTools(toolsAsEnums.length)),
-          Effect.map(tools => ({
-            withTypes: typePredicate,
-            tools,
-          }))
-        )
-      ),
-      Match.when(false, typePredicate =>
-        Effect.succeed({
-          withTypes: typePredicate,
-          tools: toolsAsEnums,
-        })
-      ),
-      Match.exhaustive
-    );
-
-    yield* Console.log('Writing TypeScript type stubs to disk...');
-    const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes });
-
-    // Generate TypeScript sources
-    const sources = yield* generateTypeScriptSources({
-      outputDir,
-      emitSingleFile: Boolean(compact), // Ensure boolean type
-      banner: BANNER,
-      importExtension: 'js',
-    })(index);
-
-    // Write all generated files
-    yield* pipe(
-      Effect.all(
-        sources.map(([filePath, content]) =>
-          fs
-            .writeFileString(filePath, content)
-            .pipe(Effect.mapError(error => new Error(`Failed to write file ${filePath}: ${error}`)))
-        ),
-        { concurrency: 'unbounded' }
-      ),
-      Effect.mapError(error => new Error(`Failed to write generated files: ${error}`))
-    );
-
-    // Compile TypeScript to JavaScript if needed
-    if (transpiled) {
-      yield* pipe(
-        transpileTypeScriptSources({ sources, outputDir }),
-        Effect.catchAll(error =>
-          Effect.logWarning(`Failed to compile TypeScript files: ${error.message}`)
-        )
-      );
-    }
 
     yield* Option.isNone(outputOpt)
-      ? Console.log(
-          '✅ Type stubs generated successfully.\n' +
-            'You can now import generated types via `import { Toolkits } from "@composio/core/generated"`'
+      ? ui.note(
+          'import { Toolkits } from "@composio/core/generated"',
+          'Import your generated types'
         )
-      : Console.log(
-          `✅ Type stubs generated successfully.\n` +
-            `Generated files are available at: ${outputDir}`
-        );
+      : ui.log.info(`Generated files are available at: ${outputDir}`);
+
+    // Log API metrics
+    const metrics = yield* client.getMetrics();
+    yield* logMetrics(metrics);
+
+    yield* ui.outro('Done');
+    yield* ui.output(outputDir);
 
     return outputDir;
   });

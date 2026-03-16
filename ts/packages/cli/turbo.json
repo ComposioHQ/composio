@@ -3,11 +3,35 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "dist/**/*.d.ts"]
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
+      "outputs": ["dist/bin.mjs", "dist/bin.d.mts"]
     },
-    "build:bin": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "dist/**/*.d.ts"]
+    "build:binary": {
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
+      "outputs": ["dist/composio"]
+    },
+    "build:binary:all": {
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "!test/**", "!vitest.config.ts"],
+      "outputs": [
+        "dist/binaries/composio-darwin-aarch64",
+        "dist/binaries/composio-darwin-x64",
+        "dist/binaries/composio-linux-x64",
+        "dist/binaries/composio-linux-aarch64"
+      ]
+    },
+    "build:binary:package": {
+      "dependsOn": ["build:binary:all"],
+      "outputs": ["dist/binaries/*.zip"]
+    },
+    "build:binary:checksums": {
+      "dependsOn": ["build:binary:package"],
+      "outputs": ["dist/binaries/checksums.txt"]
+    },
+    "install:binary": {
+      "dependsOn": ["build:binary"],
+      "cache": false
     }
   }
 }

@@ -1,0 +1,118 @@
+---
+title: LangChain
+description: Build an agent with LangChain and enable it to use 1000+ tools with Composio.
+keywords: [langchain]
+---
+
+The LangChain provider transforms Composio tools into LangChain's [StructuredTool](https://python.langchain.com/docs/how_to/custom_tools/) format with built-in execution.
+
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```bash
+pip install composio composio_langchain langchain langchain_openai
+```
+</Tab>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core @composio/langchain @langchain/openai @langchain/langgraph @langchain/core
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio_langchain import LangchainProvider
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+composio = Composio(provider=LangchainProvider())
+llm = ChatOpenAI(model="gpt-5.2")
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+agent = create_agent(tools=tools, model=llm)
+result = agent.invoke({"messages": [("user", "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")]})
+
+print(result["messages"][-1].content)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { ChatOpenAI } from '@langchain/openai';
+import { HumanMessage, AIMessage } from '@langchain/core/messages';
+import { ToolNode } from '@langchain/langgraph/prebuilt';
+import { StateGraph, MessagesAnnotation } from '@langchain/langgraph';
+import { Composio } from '@composio/core';
+import { LangchainProvider } from '@composio/langchain';
+
+const composio = new Composio({
+  provider: new LangchainProvider(),
+});
+
+// Create a session for your user
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const toolNode = new ToolNode(tools);
+
+const model = new ChatOpenAI({
+  model: 'gpt-5.2',
+  temperature: 0,
+}).bindTools(tools);
+
+function shouldContinue({ messages }: typeof MessagesAnnotation.State) {
+  const lastMessage = messages[messages.length - 1] as AIMessage;
+  if (lastMessage.tool_calls?.length) {
+    return 'tools';
+  }
+  return '__end__';
+}
+
+async function callModel(state: typeof MessagesAnnotation.State) {
+  const response = await model.invoke(state.messages);
+  return { messages: [response] };
+}
+
+const workflow = new StateGraph(MessagesAnnotation)
+  .addNode('agent', callModel)
+  .addEdge('__start__', 'agent')
+  .addNode('tools', toolNode)
+  .addEdge('tools', 'agent')
+  .addConditionalEdges('agent', shouldContinue);
+
+const app = workflow.compile();
+
+const finalState = await app.invoke({
+  messages: [new HumanMessage("Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")],
+});
+console.log(finalState.messages[finalState.messages.length - 1].content);
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>

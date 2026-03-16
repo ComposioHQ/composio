@@ -1,0 +1,80 @@
+# syntax=docker/dockerfile:1
+# Reusable Dockerfile for Deno e2e tests
+# Usage: docker build -f Dockerfile.deno --build-arg DENO_VERSION=2.6.7 -t test-name .
+#
+# Uses official denoland/deno images. For multi-version testing, run the build/run
+# multiple times with different DENO_VERSION values from the shell script.
+
+ARG DENO_VERSION=2.6.7
+
+FROM denoland/deno:${DENO_VERSION}
+
+ENV PNPM_HOME="/pnpm"
+ENV BUN_INSTALL="/usr/local"
+ENV PATH="$BUN_INSTALL/bin:$PNPM_HOME:$PATH"
+
+# Switch to root for installation
+USER root
+
+WORKDIR /app
+
+# Install system dependencies with cache mounts
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl unzip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (needed for pnpm and building packages)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install corepack (for pnpm) with npm cache mount
+RUN --mount=type=cache,target=/root/.npm \
+    npm i -g corepack@latest && \
+    corepack enable
+
+# Install bun (version from .bun-version)
+COPY .bun-version ./
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v$(cat .bun-version)" && \
+    bun --version
+
+# Copy lockfile first for optimal layer caching
+COPY pnpm-lock.yaml ./
+
+# Copy workspace configuration files
+COPY package.json \
+     pnpm-workspace.yaml \
+     .pnpmfile.cjs \
+     tsconfig.base.json \
+     tsdown.config.base.ts \
+     ./
+
+# Copy pre-install scripts (rarely change)
+COPY ts/scripts/pre-install.sh ./ts/scripts/pre-install.sh
+COPY ts/scripts/pre-install/ ./ts/scripts/pre-install/
+
+# Copy all ts/packages (pre-built)
+COPY ts/packages/ ./ts/packages/
+
+# Install dependencies using pnpm
+# Note: We intentionally don't use --mount=type=cache for the pnpm store here
+# because it causes native binding issues (e.g., rolldown-binding) across builds
+RUN pnpm install --frozen-lockfile
+
+# Copy e2e tests last (changes frequently)
+COPY ts/e2e-tests/ ./ts/e2e-tests/
+
+# Create deno user and group (to match the official image's user)
+RUN groupadd -g 1000 deno 2>/dev/null || true && \
+    useradd -u 1000 -g deno -m deno 2>/dev/null || true && \
+    chown -R deno:deno /app
+
+# Pre-create Deno cache directory
+ENV DENO_DIR="/home/deno/.cache/deno"
+RUN mkdir -p $DENO_DIR && chown -R deno:deno /home/deno
+
+USER deno
+
+CMD ["sh"]

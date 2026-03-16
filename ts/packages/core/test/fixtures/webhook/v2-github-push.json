@@ -1,0 +1,16 @@
+{
+  "description": "V2 GitHub push webhook - sanitized real-world structure",
+  "capturedAt": "2026-01-29T10:30:00Z",
+  "headers": {
+    "webhook-id": "msg_fixture_v2_001",
+    "webhook-timestamp": "1738150200",
+    "webhook-signature": "v1,a/mTZohEnMvzupLGWsiDLhTctk+hgx3Q2r1ACjybkhk="
+  },
+  "payload": "{\"type\":\"github_push_event\",\"timestamp\":\"2026-01-29T10:30:00Z\",\"log_id\":\"log_fixture_002\",\"data\":{\"connection_id\":\"conn_uuid_fixture_002\",\"connection_nano_id\":\"ca_fixture_002\",\"trigger_nano_id\":\"ti_fixture_002\",\"trigger_id\":\"trigger_uuid_fixture_002\",\"user_id\":\"user_fixture_002\",\"ref\":\"refs/heads/main\",\"repository\":{\"name\":\"test-repo\"}}}",
+  "testSecret": "test-webhook-secret-for-fixtures",
+  "expectedResult": {
+    "version": "V2",
+    "triggerSlug": "GITHUB_PUSH_EVENT",
+    "userId": "user_fixture_002"
+  }
+}

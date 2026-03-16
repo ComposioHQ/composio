@@ -1,4 +1,4 @@
-import { Data, Effect, Console, Config, Option } from 'effect';
+import { Data, Effect, Config, Option } from 'effect';
 import { HttpClient, FileSystem } from '@effect/platform';
 import * as path from 'node:path';
 import { APP_VERSION } from '../constants';
@@ -11,6 +11,7 @@ import { CompareSemverError, semverComparator } from 'src/effects/compare-semver
 import decompress from 'decompress';
 import type { Predicate } from 'effect/Predicate';
 import { renderPrettyError } from './utils/pretty-error';
+import { TerminalUI } from './terminal-ui';
 
 export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinaryError')<{
   readonly cause?: unknown;
@@ -24,11 +25,15 @@ export const CLI_BINARY_NAME = 'composio';
 
 type GitHubRelease = {
   tag_name: string;
+  prerelease?: boolean;
+  draft?: boolean;
   assets: Array<{
     name: string;
     browser_download_url: string;
   }>;
 };
+
+const CLI_RELEASE_TAG_PATTERN = /^@composio\/cli@\d+\.\d+\.\d+.*$/;
 
 // Service to manage CLI binary upgrades
 export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/UpgradeBinary', {
@@ -42,63 +47,136 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     /**
      * Fetch latest release from GitHub
      */
+    const fetchGitHubJson = <T>({
+      url,
+      fetchErrorMessage,
+      parseErrorMessage,
+    }: {
+      url: string;
+      fetchErrorMessage: string;
+      parseErrorMessage: string;
+    }): Effect.Effect<T, UpgradeBinaryError, never> =>
+      Effect.gen(function* () {
+        yield* Effect.logDebug(`GET ${url}`);
+
+        const response = yield* httpClient.get(url).pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: fetchErrorMessage,
+              })
+            )
+          )
+        );
+
+        if (response.status < 200 || response.status >= 300) {
+          const pretty = yield* response.json.pipe(
+            Effect.map(json => renderPrettyError(Object.entries(json as object))),
+            Effect.catchAll(() => Effect.succeed(''))
+          );
+
+          const cause = pretty ? `HTTP ${response.status}\n${pretty}` : `HTTP ${response.status}`;
+          return yield* Effect.fail(
+            new UpgradeBinaryError({
+              cause,
+              message: fetchErrorMessage,
+            })
+          );
+        }
+
+        return (yield* response.json.pipe(
+          Effect.catchAll(error =>
+            Effect.fail(
+              new UpgradeBinaryError({
+                cause: error,
+                message: parseErrorMessage,
+              })
+            )
+          )
+        )) as T;
+      });
+
     const fetchLatestRelease = (): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
-        const urlSuffix = yield* githubConfig.TAG.pipe(
+        const release = yield* githubConfig.TAG.pipe(
           Option.match({
             onNone: Effect.fn(function* () {
-              yield* Effect.logDebug('No tag specified, using latest release');
-              return 'latest';
+              yield* Effect.logDebug(
+                'No tag specified, resolving latest package-scoped CLI release'
+              );
+              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
+              const releases = yield* fetchGitHubJson<unknown>({
+                url,
+                fetchErrorMessage: 'Failed to fetch releases from GitHub',
+                parseErrorMessage: 'Failed to parse GitHub releases JSON response',
+              });
+
+              if (!Array.isArray(releases)) {
+                return yield* Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: new Error('GitHub releases response was not an array'),
+                    message: 'Unexpected response while resolving latest CLI release',
+                  })
+                );
+              }
+
+              const cliReleases = releases.filter(
+                (release): release is GitHubRelease =>
+                  typeof release === 'object' &&
+                  release !== null &&
+                  'tag_name' in release &&
+                  typeof release.tag_name === 'string' &&
+                  ('prerelease' in release ? release.prerelease === false : true) &&
+                  ('draft' in release ? release.draft === false : true) &&
+                  CLI_RELEASE_TAG_PATTERN.test(release.tag_name)
+              );
+
+              if (cliReleases.length === 0) {
+                return yield* Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: new Error('No package-scoped CLI releases found'),
+                    message:
+                      'Failed to determine latest CLI release from @composio/cli tags on GitHub',
+                  })
+                );
+              }
+
+              let latest = cliReleases[0];
+              for (const release of cliReleases.slice(1)) {
+                const comparison = yield* semverComparator(latest.tag_name, release.tag_name).pipe(
+                  Effect.mapError(
+                    error =>
+                      new UpgradeBinaryError({
+                        cause: error,
+                        message: 'Failed to compare CLI release versions',
+                      })
+                  )
+                );
+
+                if (comparison < 0) {
+                  latest = release;
+                }
+              }
+
+              yield* Effect.logDebug(`Resolved latest CLI release tag: ${latest.tag_name}`);
+              return latest;
             }),
             onSome: Effect.fn(function* (tag) {
               yield* Effect.logDebug(`Using tag: ${tag}`);
-              return `tags/${tag}`;
+              const encodedTag = encodeURIComponent(tag);
+              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
+              const release = yield* fetchGitHubJson<GitHubRelease>({
+                url,
+                fetchErrorMessage: `Failed to fetch tags/${tag} release from GitHub`,
+                parseErrorMessage: 'Failed to parse GitHub release JSON response',
+              });
+
+              return release as GitHubRelease;
             }),
           })
         );
-
-        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/${urlSuffix}`;
-        yield* Effect.logDebug(`GET ${url}`);
-
-        const response = yield* Effect.gen(function* () {
-          const resp = yield* httpClient.get(url);
-          if (resp.status < 200 || resp.status >= 300) {
-            const json = yield* resp.json;
-            const keyValues = Object.entries(json as object);
-            const pretty = renderPrettyError(keyValues);
-
-            return yield* Effect.fail(
-              new UpgradeBinaryError({
-                cause: `HTTP ${resp.status}\n${pretty}`,
-              })
-            );
-          }
-          return resp;
-        }).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
-              new UpgradeBinaryError({
-                cause: error,
-                message: `Failed to fetch ${urlSuffix} release from GitHub`,
-              })
-            )
-          )
-        );
-
-        const release = yield* Effect.gen(function* () {
-          return yield* response.json;
-        }).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
-              new UpgradeBinaryError({
-                cause: error,
-                message: 'Failed to parse GitHub release JSON response',
-              })
-            )
-          )
-        );
-
-        return release as GitHubRelease;
+        return release;
       });
 
     /**
@@ -138,7 +216,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           );
         }
 
-        yield* Console.log(`Downloading ${asset.name}...`);
+        yield* Effect.logDebug(`Downloading ${asset.name}...`);
 
         const response = yield* Effect.gen(function* () {
           const resp = yield* httpClient.get(asset.browser_download_url);
@@ -179,6 +257,86 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           name: binaryName,
           data: new Uint8Array(arrayBuffer),
         };
+      });
+
+    /**
+     * Fetch checksums.txt from a release, if available.
+     * Returns the parsed map of filename -> expected SHA-256 hash, or None if not found.
+     */
+    const fetchChecksums = (
+      release: GitHubRelease
+    ): Effect.Effect<Option.Option<Map<string, string>>, never, never> =>
+      Effect.gen(function* () {
+        const checksumsAsset = release.assets.find(a => a.name === 'checksums.txt');
+        if (!checksumsAsset) {
+          yield* Effect.logDebug('No checksums.txt found in release assets');
+          return Option.none();
+        }
+
+        const response = yield* httpClient
+          .get(checksumsAsset.browser_download_url)
+          .pipe(Effect.catchAll(() => Effect.succeed(null)));
+
+        if (!response || response.status < 200 || response.status >= 300) {
+          yield* Effect.logDebug('Failed to download checksums.txt');
+          return Option.none();
+        }
+
+        const text = yield* response.text.pipe(Effect.catchAll(() => Effect.succeed('')));
+        if (!text) {
+          return Option.none();
+        }
+
+        const checksums = new Map<string, string>();
+        for (const line of text.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          // Format: "<hash>  <filename>" (two spaces, sha256sum compatible)
+          const parts = trimmed.split(/\s+/);
+          if (parts.length >= 2) {
+            checksums.set(parts[1], parts[0]);
+          }
+        }
+
+        return Option.some(checksums);
+      });
+
+    /**
+     * Verify SHA-256 checksum of downloaded data against expected hash.
+     */
+    const verifyChecksum = (
+      data: Uint8Array,
+      expectedHash: string,
+      fileName: string
+    ): Effect.Effect<void, UpgradeBinaryError> =>
+      Effect.gen(function* () {
+        const hashBuffer = yield* Effect.tryPromise({
+          try: () => {
+            // Copy into a fresh ArrayBuffer to avoid SharedArrayBuffer type incompatibility
+            const buf = new ArrayBuffer(data.byteLength);
+            new Uint8Array(buf).set(data);
+            return crypto.subtle.digest('SHA-256', buf);
+          },
+          catch: error =>
+            new UpgradeBinaryError({
+              cause: error as Error,
+              message: 'Failed to compute SHA-256 checksum',
+            }),
+        });
+
+        const actual = Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+
+        if (actual !== expectedHash) {
+          return yield* Effect.fail(
+            new UpgradeBinaryError({
+              message: `Checksum mismatch for ${fileName}\n  Expected: ${expectedHash}\n  Actual:   ${actual}`,
+            })
+          );
+        }
+
+        yield* Effect.logDebug(`Checksum verified for ${fileName}`);
       });
 
     /**
@@ -312,51 +470,78 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
      */
     const upgrade = () =>
       Effect.gen(function* () {
+        const ui = yield* TerminalUI;
         const upgradeTargetOpt = yield* DEBUG_OVERRIDE_CONFIG['UPGRADE_TARGET'];
         const currentPath = yield* getCurrentExecutablePath();
         yield* Effect.logDebug(`Current executable path: ${currentPath}`);
 
+        yield* ui.intro('composio upgrade');
+
         // If local binary path is provided (for testing), use it directly
         if (Option.isSome(upgradeTargetOpt)) {
-          yield* Console.log(`📦 New local version available (current: ${APP_VERSION})`);
+          yield* ui.log.info(`New local version available (current: ${APP_VERSION})`);
           yield* replaceBinary(upgradeTargetOpt.value, currentPath);
+          yield* ui.outro('Upgrade completed');
           return;
         }
 
-        yield* Console.log('Checking for updates...');
+        const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
+          Effect.gen(function* () {
+            const release = yield* fetchLatestRelease();
+            const updateAvailable = yield* isUpdateAvailable(release);
+            if (!updateAvailable) {
+              yield* spinner.stop('You are already running the latest version!');
+              return false;
+            }
 
-        const release = yield* fetchLatestRelease();
-        const updateAvailable = yield* isUpdateAvailable(release);
-        if (!updateAvailable) {
-          yield* Console.log('✅ You are already running the latest version!');
-          return;
-        }
+            yield* spinner.message(
+              `New version available: ${release.tag_name} (current: ${APP_VERSION}). Downloading...`
+            );
 
-        yield* Console.log(
-          `📦 New version available: ${release.tag_name} (current: ${APP_VERSION})`
+            const platformArch = yield* detectPlatform;
+            const { name, data } = yield* downloadBinary(release, platformArch);
+
+            yield* spinner.message('Verifying checksum...');
+
+            const checksums = yield* fetchChecksums(release);
+            if (Option.isSome(checksums)) {
+              const expectedHash = checksums.value.get(name);
+              if (expectedHash) {
+                yield* verifyChecksum(data, expectedHash, name);
+              } else {
+                yield* Effect.logDebug(
+                  `No checksum entry found for ${name} — skipping verification`
+                );
+              }
+            }
+
+            yield* spinner.message('Extracting...');
+
+            // The temporary directory is automatically cleaned up
+            const tmpDir = yield* fs
+              .makeTempDirectoryScoped({ prefix: `${CLI_BINARY_NAME}-upgrade}` })
+              .pipe(
+                Effect.catchAll(error =>
+                  Effect.fail(
+                    new UpgradeBinaryError({
+                      cause: error as Error,
+                      message: 'Failed to create temporary directory',
+                    })
+                  )
+                )
+              );
+
+            const extractedBinaryPath = yield* extractBinary({ name, data }, tmpDir);
+            yield* replaceBinary(extractedBinaryPath, currentPath);
+
+            yield* spinner.stop('Upgrade completed!');
+            return true;
+          })
         );
 
-        const platformArch = yield* detectPlatform;
-        const { name, data } = yield* downloadBinary(release, platformArch);
-
-        // The temporary directory is automatically cleaned up
-        const tmpDir = yield* fs
-          .makeTempDirectoryScoped({ prefix: `${CLI_BINARY_NAME}-upgrade}` })
-          .pipe(
-            Effect.catchAll(error =>
-              Effect.fail(
-                new UpgradeBinaryError({
-                  cause: error as Error,
-                  message: 'Failed to create temporary directory',
-                })
-              )
-            )
-          );
-
-        const extractedBinaryPath = yield* extractBinary({ name, data }, tmpDir);
-        yield* replaceBinary(extractedBinaryPath, currentPath);
-
-        yield* Console.log(`🎉 Upgrade completed! Restart your terminal to use the new version.`);
+        yield* ui.outro(
+          didUpgrade ? 'Restart your terminal to use the new version.' : 'No upgrade needed.'
+        );
       });
 
     return {

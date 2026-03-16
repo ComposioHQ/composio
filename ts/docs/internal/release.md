@@ -2,6 +2,43 @@
 
 This document outlines the release processes for the Composio SDK. We support both automated releases through GitHub Actions and manual releases when needed.
 
+## CLI Binary Release Process
+
+The CLI binary release process is separate from npm publishing.
+
+- `@composio/cli` is marked private and is not published to npm via Changesets.
+- CLI binaries are built and published as GitHub Release assets by `.github/workflows/build-cli-binaries.yml`.
+- Install and upgrade flows (`install.sh` and `composio upgrade`) download binaries from GitHub Releases.
+
+### Triggers
+
+The CLI binary workflow supports two tag formats during the migration window:
+
+- Legacy: `v*`
+- New package-scoped tags: `@composio/cli@*`
+
+It also supports manual runs (`workflow_dispatch`).
+
+### Manual CLI Binary Release
+
+When running **Build CLI Binaries** manually:
+
+1. Enter a plain semver version (for example `1.2.3`).
+2. The workflow validates semver format.
+3. The workflow creates/publishes the release under tag `@composio/cli@<version>`.
+
+### What the workflow does
+
+1. Builds CLI binaries for Linux/macOS (x64 + arm64)
+2. Creates platform zip archives (`composio-<platform>.zip`)
+3. Publishes assets to the GitHub Release
+4. Runs `.github/workflows/cli.test-installation.yml` to validate installation paths and shell integration
+
+### Notes
+
+- The temporary dual-tag support (`v*` + `@composio/cli@*`) is intended to keep older installed CLIs upgradeable during migration.
+- After migration, legacy `v*` support can be removed.
+
 ## Automated Release Process
 
 The automated release process is triggered when code is merged into the `main` branch or manually through GitHub Actions.
@@ -35,8 +72,9 @@ The manual release process is available for cases where direct control over the 
 
 ### Prerequisites
 
-- Node.js (Latest LTS)
-- PNPM (v10.8.0 or later)
+- Node.js (version: `20.19.0`)
+- Bun (version: `1.3.6`)
+- pnpm (version: `10.28.0`)
 - Access to npm registry
 - Write access to the repository
 
