@@ -158,9 +158,11 @@ def test_langchain_direct(schema: dict, name: str, description: str) -> dict:
 def test_crewai_direct(schema: dict, name: str, description: str) -> dict:
     from json_schema_to_pydantic import create_model as create_pydantic_model
     from crewai.tools import BaseTool as CrewAIBaseTool
+    from langchain_core.messages import HumanMessage
+    from langchain_core.tools import StructuredTool
+    from langchain_openai import ChatOpenAI
 
     args_model = create_pydantic_model(schema)
-    captured = []
     _name = name
     _description = description
 
@@ -170,18 +172,28 @@ def test_crewai_direct(schema: dict, name: str, description: str) -> dict:
         args_schema: type = args_model
 
         def _run(self, **kwargs) -> str:
-            captured.append(kwargs)
             return json.dumps({"status": "ok"})
 
-    tool = DynamicTool()
-    # Test schema round-trip: validate sample args through Pydantic, then invoke
-    first_prop = next(iter(schema.get("properties", {})), None)
-    sample = {first_prop: "test"} if first_prop else {}
-    validated = args_model.model_validate(sample)
-    tool._run(**validated.model_dump(exclude_none=True))
-    if not captured:
-        raise RuntimeError("Tool was not called")
-    return {"args": json.dumps(captured[0])}
+    crewai_tool = DynamicTool()
+    # CrewAI BaseTool is Pydantic-based, not LangChain-based.
+    # Wrap as LangChain StructuredTool to test LLM compatibility via bind_tools.
+    lc_tool = StructuredTool.from_function(
+        func=lambda **kwargs: json.dumps({"status": "ok"}),
+        name=crewai_tool.name,
+        description=crewai_tool.description,
+        args_schema=crewai_tool.args_schema,
+    )
+    llm = ChatOpenAI(model="gpt-4.1", api_key=os.environ["OPENAI_API_KEY"])
+    resp = llm.bind_tools([lc_tool]).invoke(
+        [
+            HumanMessage(
+                content=f"Call the {name} tool with reasonable default arguments."
+            )
+        ]
+    )
+    if not resp.tool_calls:
+        raise RuntimeError("No tool call in response")
+    return {"args": json.dumps(resp.tool_calls[0]["args"])}
 
 
 PROVIDERS = [
