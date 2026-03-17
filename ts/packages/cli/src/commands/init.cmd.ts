@@ -285,9 +285,9 @@ export const initCmd = CliCommand.make(
 
       const composioDir = path.join(proc.cwd, constants.PROJECT_COMPOSIO_DIR);
 
-      yield* initInteractiveFlow({ composioDir, noBrowser, yes });
+      const initialized = yield* initInteractiveFlow({ composioDir, noBrowser, yes });
 
-      if (installSkills) {
+      if (initialized && installSkills) {
         yield* installSkillsFlow();
       }
     })
@@ -296,6 +296,7 @@ export const initCmd = CliCommand.make(
 /**
  * Interactive init flow — handles login, project selection, wizard, install.
  * Extracted to keep the main command handler under the line limit.
+ * Returns true if initialization succeeded, false if it was skipped due to missing credentials or projects.
  */
 const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; yes: boolean }) =>
   Effect.gen(function* () {
@@ -318,7 +319,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     if (!globalApiKey || !orgIdValue) {
       yield* ui.log.warn('No global API key or org ID found. Please try `composio login` first.');
       yield* ui.outro('');
-      return;
+      return false;
     }
 
     const orgProjects = yield* listOrgProjects({
@@ -356,7 +357,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
         'Create a project at https://platform.composio.dev, then run `composio init` again.'
       );
       yield* ui.outro('');
-      return;
+      return false;
     }
 
     // 3. Select a project
@@ -407,4 +408,5 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     );
     yield* ui.output(makeOutputJson(selected, composioDir));
     yield* ui.outro('');
+    return true;
   });
