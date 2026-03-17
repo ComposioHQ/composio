@@ -114,16 +114,11 @@ const ADVANCED_COMMANDS: ReadonlyArray<{ name: string; description: string }> = 
     description:
       'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)',
   },
-  { name: 'py', description: 'Handle Python projects.' },
-  { name: 'ts', description: 'Handle TypeScript projects.' },
-  { name: 'toolkits', description: 'Discover and inspect Composio toolkits.' },
-  { name: 'tools', description: 'Discover and inspect Composio tools.' },
-  { name: 'auth-configs', description: 'View and manage Composio auth configs.' },
-  { name: 'connected-accounts', description: 'View and manage Composio connected accounts.' },
-  { name: 'triggers', description: 'Inspect and subscribe to trigger events.' },
-  { name: 'logs', description: 'Inspect trigger and tool execution logs.' },
-  { name: 'orgs', description: 'Manage default global organization/project context.' },
-  { name: 'projects', description: 'Manage default global project context.' },
+  {
+    name: 'manage',
+    description:
+      'Manage Composio resources — toolkits, tools, accounts, triggers, logs, orgs, and projects.',
+  },
 ];
 
 /**
