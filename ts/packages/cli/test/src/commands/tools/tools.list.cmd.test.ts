@@ -55,13 +55,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio tools list', () => {
+describe('CLI: composio manage tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no flags [Then] lists all tools',
     it => {
       it.scoped('lists all tools', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'list']);
+          yield* cli(['manage', 'tools', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -78,7 +78,7 @@ describe('CLI: composio tools list', () => {
     it => {
       it.scoped('filters by toolkit', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'list', '--toolkits', 'gmail']);
+          yield* cli(['manage', 'tools', 'list', '--toolkits', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -96,7 +96,7 @@ describe('CLI: composio tools list', () => {
     it => {
       it.scoped('filters by search query', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'list', '--query', 'send']);
+          yield* cli(['manage', 'tools', 'list', '--query', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -113,7 +113,7 @@ describe('CLI: composio tools list', () => {
     it => {
       it.scoped('respects limit', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'list', '--limit', '2']);
+          yield* cli(['manage', 'tools', 'list', '--limit', '2']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -126,7 +126,7 @@ describe('CLI: composio tools list', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['tools', 'list']);
+        yield* cli(['manage', 'tools', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -140,7 +140,7 @@ describe('CLI: composio tools list', () => {
     it => {
       it.scoped('shows no tools found', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'list']);
+          yield* cli(['manage', 'tools', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -155,7 +155,7 @@ describe('CLI: composio tools list', () => {
     it => {
       it.scoped('filters by tag', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'list', '--tags', 'email']);
+          yield* cli(['manage', 'tools', 'list', '--tags', 'email']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -172,12 +172,12 @@ describe('CLI: composio tools list', () => {
     it => {
       it.scoped('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'list', '--toolkits', 'nonexistent']);
+          yield* cli(['manage', 'tools', 'list', '--toolkits', 'nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('No tools found');
-          expect(output).toContain('composio toolkits list');
+          expect(output).toContain('composio manage toolkits list');
         })
       );
     }

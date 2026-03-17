@@ -103,11 +103,11 @@ const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
 const connectionTips = (toolSlug: string, userId: string) => {
   const toolkit = toolkitFromToolSlug(toolSlug);
   if (!toolkit) {
-    return `Retry: ${bold(`composio tools execute ${toolSlug} ...`)}`;
+    return `Retry: ${bold(`composio manage tools execute ${toolSlug} ...`)}`;
   }
   return [
-    `Link the toolkit first: ${bold(`composio connected-accounts link ${toolkit} --user-id ${userId}`)}`,
-    `Then retry:             ${bold(`composio tools execute ${toolSlug} ...`)}`,
+    `Link the toolkit first: ${bold(`composio manage connected-accounts link ${toolkit} --user-id ${userId}`)}`,
+    `Then retry:             ${bold(`composio manage tools execute ${toolSlug} ...`)}`,
   ].join('\n');
 };
 
@@ -192,14 +192,14 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Tool "${toolSlug}" not found.`,
-            hint: 'Browse available tools:\n> composio tools list',
+            hint: 'Browse available tools:\n> composio manage tools list',
             fallbackValue: Option.none(),
             searchForSuggestions: () =>
               repo.searchTools({ search: toolSlug, limit: 3 }).pipe(
                 Effect.map(r =>
                   r.items.map(s => ({
                     label: `${s.slug} — ${s.description}`,
-                    command: `> composio tools execute "${s.slug}" --help`,
+                    command: `> composio manage tools execute "${s.slug}" --help`,
                   }))
                 )
               ),
@@ -212,7 +212,7 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
 
     yield* ui.note(formatToolInputParameters(tool), `Execute Help: ${tool.slug}`);
     yield* ui.log.step(
-      `Run:\n> composio tools execute "${tool.slug}" --user-id "<user-id>" -d '{"key":"value"}'`
+      `Run:\n> composio manage tools execute "${tool.slug}" --user-id "<user-id>" -d '{"key":"value"}'`
     );
     yield* ui.output(
       JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
@@ -281,8 +281,8 @@ class ToolExecutionError {
  *
  * @example
  * ```bash
- * composio tools execute GITHUB_GET_REPOS -d '{"owner":"composio"}'
- * echo '{"owner":"composio"}' | composio tools execute GITHUB_GET_REPOS
+ * composio manage tools execute GITHUB_GET_REPOS -d '{"owner":"composio"}'
+ * echo '{"owner":"composio"}' | composio manage tools execute GITHUB_GET_REPOS
  * ```
  */
 export const toolsCmd$Execute = Command.make(

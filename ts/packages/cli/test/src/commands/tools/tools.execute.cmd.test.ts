@@ -30,7 +30,7 @@ const parseLastJson = (lines: ReadonlyArray<string>) => {
   throw new Error('Expected JSON output but none found');
 };
 
-describe('CLI: composio tools execute', () => {
+describe('CLI: composio manage tools execute', () => {
   // Disable CI redaction so tests see raw values.
   // The explicit CI-redaction test overrides via vi.spyOn and is unaffected.
   let savedCI: string | undefined;
@@ -51,6 +51,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('executes via Tool Router with defaults', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
@@ -76,7 +77,7 @@ describe('CLI: composio tools execute', () => {
       baseConfigProvider: testConfigProvider,
       stdin: { isTTY: true, data: '' },
     })
-  )('[Given] composio execute alias [Then] works like composio tools execute', it => {
+  )('[Given] composio execute alias [Then] works like composio manage tools execute', it => {
     it.scoped('alias expands to tools execute', () =>
       Effect.gen(function* () {
         yield* cli([
@@ -108,7 +109,7 @@ describe('CLI: composio tools execute', () => {
     it => {
       it.scoped('uses global test user id from user_data.json', () =>
         Effect.gen(function* () {
-          yield* cli(['tools', 'execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+          yield* cli(['manage', 'tools', 'execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = parseLastJson(lines);
           const text = lines.join('\n');
@@ -199,7 +200,15 @@ describe('CLI: composio tools execute', () => {
   )('[Given] execute-help with options before slug [Then] resolves correct slug', it => {
     it.scoped('does not treat --user-id value as slug', () =>
       Effect.gen(function* () {
-        yield* cli(['tools', 'execute', '--user-id', 'default', 'GMAIL_SEND_EMAIL', '--help']);
+        yield* cli([
+          'manage',
+          'tools',
+          'execute',
+          '--user-id',
+          'default',
+          'GMAIL_SEND_EMAIL',
+          '--help',
+        ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -219,7 +228,7 @@ describe('CLI: composio tools execute', () => {
   )('[Given] stdin is piped [Then] reads input from stdin', it => {
     it.scoped('reads stdin input', () =>
       Effect.gen(function* () {
-        yield* cli(['tools', 'execute', 'GITHUB_GET_REPOS', '--user-id', 'default']);
+        yield* cli(['manage', 'tools', 'execute', 'GITHUB_GET_REPOS', '--user-id', 'default']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
@@ -245,6 +254,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('prints connected account tips for legacy slug', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
@@ -258,7 +268,7 @@ describe('CLI: composio tools execute', () => {
 
         expect(output).toContain('No connected account found');
         expect(output).toContain('Tips');
-        expect(output).toContain('composio connected-accounts link');
+        expect(output).toContain('composio manage connected-accounts link');
       })
     );
   });
@@ -287,6 +297,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('prints connection tips with toolkit name derived from tool slug', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
@@ -300,7 +311,7 @@ describe('CLI: composio tools execute', () => {
 
         expect(output).toContain('No active connection');
         expect(output).toContain('Tips');
-        expect(output).toContain('composio connected-accounts link gmail');
+        expect(output).toContain('composio manage connected-accounts link gmail');
       })
     );
   });
@@ -321,6 +332,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('flows through real ToolsExecutorLive with custom mock', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GITHUB_STAR_REPO',
@@ -356,6 +368,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('prints actionable error details', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
@@ -384,6 +397,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('prints object error message and details', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
@@ -421,6 +435,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('shows error and logId for soft failure', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
@@ -459,6 +474,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('shows error without logId for soft failure', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_CREATE_EMAIL_DRAFT',
@@ -497,6 +513,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('omits connection tips for meta tool slugs', () =>
       Effect.gen(function* () {
         yield* cli([
+          'manage',
           'tools',
           'execute',
           'COMPOSIO_SEARCH_TOOLS',
@@ -526,6 +543,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('fails with invalid JSON error', () =>
       Effect.gen(function* () {
         const result = yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
@@ -552,6 +570,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('fails with expected object error', () =>
       Effect.gen(function* () {
         const result = yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
@@ -578,6 +597,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('fails with expected object error for string', () =>
       Effect.gen(function* () {
         const result = yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
@@ -604,6 +624,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('fails with missing input error', () =>
       Effect.gen(function* () {
         const result = yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
@@ -628,6 +649,7 @@ describe('CLI: composio tools execute', () => {
     it.scoped('fails with error for empty stdin', () =>
       Effect.gen(function* () {
         const result = yield* cli([
+          'manage',
           'tools',
           'execute',
           'GMAIL_SEND_EMAIL',
@@ -674,6 +696,7 @@ describe('CLI: composio tools execute', () => {
 
         try {
           yield* cli([
+            'manage',
             'tools',
             'execute',
             'GMAIL_SEND_EMAIL',

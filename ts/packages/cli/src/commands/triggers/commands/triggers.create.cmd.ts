@@ -36,7 +36,7 @@ export const triggersCmd$Create = Command.make(
       if (Option.isNone(triggerName)) {
         yield* ui.log.warn('Missing required argument: <trigger-name>');
         yield* ui.log.step(
-          'Try specifying a trigger slug, e.g.:\n> composio triggers create "GMAIL_NEW_GMAIL_MESSAGE" --connected-account-id "con_123"'
+          'Try specifying a trigger slug, e.g.:\n> composio manage triggers create "GMAIL_NEW_GMAIL_MESSAGE" --connected-account-id "con_123"'
         );
         return;
       }
@@ -55,7 +55,7 @@ export const triggersCmd$Create = Command.make(
         } catch {
           yield* ui.log.error('Invalid JSON in --trigger-config. Please provide valid JSON.');
           yield* ui.log.step(
-            'Example:\n> composio triggers create "GMAIL_NEW_GMAIL_MESSAGE" --trigger-config \'{"label":"inbox"}\''
+            'Example:\n> composio manage triggers create "GMAIL_NEW_GMAIL_MESSAGE" --trigger-config \'{"label":"inbox"}\''
           );
           return;
         }
@@ -75,7 +75,7 @@ export const triggersCmd$Create = Command.make(
             'services/HttpServerError',
             handleHttpServerError(ui, {
               fallbackMessage: `Failed to create trigger "${triggerName.value}".`,
-              hint: 'List available trigger types with:\n> composio triggers list',
+              hint: 'List available trigger types with:\n> composio manage triggers list',
               fallbackValue: Option.none(),
             })
           )
@@ -88,7 +88,7 @@ export const triggersCmd$Create = Command.make(
       const created = createdOpt.value;
       yield* ui.log.success(`Trigger created: ${created.trigger_id}`);
       yield* ui.log.step(
-        `To check status:\n> composio triggers status --trigger-ids "${created.trigger_id}"`
+        `To check status:\n> composio manage triggers status --trigger-ids "${created.trigger_id}"`
       );
       yield* ui.output(JSON.stringify(created, null, 2));
     })

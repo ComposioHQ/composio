@@ -40,9 +40,9 @@ const limit = Options.integer('limit').pipe(
  *
  * @example
  * ```bash
- * composio tools search "send emails"
- * composio tools search "send emails" --toolkits "gmail,outlook"
- * composio tools search "messaging" --limit 5
+ * composio manage tools search "send emails"
+ * composio manage tools search "send emails" --toolkits "gmail,outlook"
+ * composio manage tools search "messaging" --limit 5
  * ```
  */
 export const toolsCmd$Search = Command.make(
@@ -162,8 +162,8 @@ export const toolsCmd$Search = Command.make(
         yield* ui.log.step(
           [
             'Hints:',
-            `> composio tools info "${firstSlug}"`,
-            `> composio tools execute "${firstSlug}" --user-id "<user-id>" --arguments '{}'`,
+            `> composio manage tools info "${firstSlug}"`,
+            `> composio manage tools execute "${firstSlug}" --user-id "<user-id>" --arguments '{}'`,
           ].join('\n')
         );
       }

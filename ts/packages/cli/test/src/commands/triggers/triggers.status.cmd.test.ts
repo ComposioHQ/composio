@@ -55,13 +55,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio triggers status', () => {
+describe('CLI: composio manage triggers status', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, triggersData }))(
     '[Given] no flags [Then] lists active triggers only',
     it => {
       it.scoped('lists active trigger instances', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'status']);
+          yield* cli(['manage', 'triggers', 'status']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -79,7 +79,7 @@ describe('CLI: composio triggers status', () => {
     it => {
       it.scoped('includes disabled trigger instances', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'status', '--show-disabled']);
+          yield* cli(['manage', 'triggers', 'status', '--show-disabled']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -96,7 +96,7 @@ describe('CLI: composio triggers status', () => {
     it => {
       it.scoped('filters by user_ids', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'status', '--user-ids', 'user_123']);
+          yield* cli(['manage', 'triggers', 'status', '--user-ids', 'user_123']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -113,7 +113,13 @@ describe('CLI: composio triggers status', () => {
     it => {
       it.scoped('normalizes trigger names to uppercase', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'status', '--trigger-names', 'gmail_new_gmail_message']);
+          yield* cli([
+            'manage',
+            'triggers',
+            'status',
+            '--trigger-names',
+            'gmail_new_gmail_message',
+          ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -130,7 +136,7 @@ describe('CLI: composio triggers status', () => {
     it => {
       it.scoped('filters by toolkit prefix in trigger name', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'status', '--toolkits', 'slack']);
+          yield* cli(['manage', 'triggers', 'status', '--toolkits', 'slack']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -145,7 +151,7 @@ describe('CLI: composio triggers status', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['triggers', 'status']);
+        yield* cli(['manage', 'triggers', 'status']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

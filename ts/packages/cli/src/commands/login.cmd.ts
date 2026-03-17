@@ -119,7 +119,7 @@ const storeCredentials = (params: {
         'Run `composio init` in your project directory to set up project context.'
       );
       yield* ui.log.info(
-        'To switch your default global org/project later, run `composio orgs switch`.'
+        'To switch your default global org/project later, run `composio manage orgs switch`.'
       );
     }
 
@@ -261,7 +261,7 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         'Run `composio init` in your project directory to set up project context.'
       );
       yield* ui.log.info(
-        'To switch your default global org/project later, run `composio orgs switch`.'
+        'To switch your default global org/project later, run `composio manage orgs switch`.'
       );
       yield* ui.outro("You're all set!");
     }
@@ -430,7 +430,7 @@ export const browserLogin = (params: {
         'Run `composio init` in your project directory to set up project context.'
       );
       yield* ui.log.info(
-        'To switch your default global org/project later, run `composio orgs switch`.'
+        'To switch your default global org/project later, run `composio manage orgs switch`.'
       );
       yield* ui.outro("You're all set!");
     }

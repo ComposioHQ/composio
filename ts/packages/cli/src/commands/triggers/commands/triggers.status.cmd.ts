@@ -97,7 +97,7 @@ export const triggersCmd$Status = Command.make(
             'services/HttpServerError',
             handleHttpServerError(ui, {
               fallbackMessage: 'Failed to fetch trigger status.',
-              hint: 'Retry with:\n> composio triggers status --show-disabled',
+              hint: 'Retry with:\n> composio manage triggers status --show-disabled',
               fallbackValue: Option.none(),
             })
           )

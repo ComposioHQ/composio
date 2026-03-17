@@ -54,13 +54,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio triggers info', () => {
+describe('CLI: composio manage triggers info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays trigger type info',
     it => {
       it.scoped('shows trigger details with config and payload fields', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
+          yield* cli(['manage', 'triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -73,7 +73,7 @@ describe('CLI: composio triggers info', () => {
           expect(output).toContain('subject');
           expect(output).toContain('default:');
           expect(output).toContain('false');
-          expect(output).toContain('composio triggers list --toolkits "gmail"');
+          expect(output).toContain('composio manage triggers list --toolkits "gmail"');
         })
       );
     }
@@ -84,7 +84,7 @@ describe('CLI: composio triggers info', () => {
     it => {
       it.scoped('shows missing argument warning', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'info']);
+          yield* cli(['manage', 'triggers', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -99,12 +99,12 @@ describe('CLI: composio triggers info', () => {
     it => {
       it.scoped('shows not found fallback hint', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'info', 'NONEXISTENT_TRIGGER']);
+          yield* cli(['manage', 'triggers', 'info', 'NONEXISTENT_TRIGGER']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
-          expect(output).toContain('composio triggers list');
+          expect(output).toContain('composio manage triggers list');
         })
       );
     }
@@ -113,7 +113,7 @@ describe('CLI: composio triggers info', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
+        yield* cli(['manage', 'triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

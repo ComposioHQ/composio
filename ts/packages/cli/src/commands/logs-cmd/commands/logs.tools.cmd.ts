@@ -117,12 +117,12 @@ const logId = Args.text({ name: 'log_id' }).pipe(
  *
  * @example
  * ```bash
- * composio logs tools --limit 50
- * composio logs tools <log_id>
- * composio logs tools --toolkit gmail --tool GMAIL_SEND_EMAIL
- * composio logs tools --connected-account-id con_123 --user-id user_123
- * composio logs tools --status success --auth-config-id ac_123
- * composio logs tools --from 1735689600000 --to 1735776000000
+ * composio manage logs tools --limit 50
+ * composio manage logs tools <log_id>
+ * composio manage logs tools --toolkit gmail --tool GMAIL_SEND_EMAIL
+ * composio manage logs tools --connected-account-id con_123 --user-id user_123
+ * composio manage logs tools --status success --auth-config-id ac_123
+ * composio manage logs tools --from 1735689600000 --to 1735776000000
  * ```
  */
 export const logsCmd$Tools = Command.make(
@@ -223,7 +223,7 @@ export const logsCmd$Tools = Command.make(
       const firstLogId = logs[0]?.id;
       if (firstLogId) {
         yield* ui.log.step(
-          `To view full details for a log:\n> composio logs tools "${firstLogId}"`
+          `To view full details for a log:\n> composio manage logs tools "${firstLogId}"`
         );
       }
 

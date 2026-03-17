@@ -38,9 +38,9 @@ const limit = Options.integer('limit').pipe(
  *
  * @example
  * ```bash
- * composio connected-accounts list
- * composio connected-accounts list --toolkits "gmail"
- * composio connected-accounts list --user-id "default" --status ACTIVE
+ * composio manage connected-accounts list
+ * composio manage connected-accounts list --toolkits "gmail"
+ * composio manage connected-accounts list --user-id "default" --status ACTIVE
  * ```
  */
 export const connectedAccountsCmd$List = Command.make(
@@ -70,7 +70,7 @@ export const connectedAccountsCmd$List = Command.make(
       if (result.items.length === 0) {
         let hint: string;
         if (Option.isSome(toolkits)) {
-          hint = `No connected accounts found for toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio toolkits list`;
+          hint = `No connected accounts found for toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio manage toolkits list`;
         } else if (Option.isSome(userId)) {
           hint = `No connected accounts found for user "${userId.value}".`;
         } else if (Option.isSome(status)) {
@@ -95,7 +95,7 @@ export const connectedAccountsCmd$List = Command.make(
 
       if (firstId) {
         yield* ui.log.step(
-          `To view details of a connected account:\n> composio connected-accounts info "${redactedId}"`
+          `To view details of a connected account:\n> composio manage connected-accounts info "${redactedId}"`
         );
       }
 

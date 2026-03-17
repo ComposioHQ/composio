@@ -80,17 +80,8 @@ BASIC COMMANDS
       --table               Show compact table rows
 
 ADVANCED COMMANDS
-  generate            Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
-  py                  Handle Python projects.
-  ts                  Handle TypeScript projects.
-  toolkits            Discover and inspect Composio toolkits.
-  tools               Discover and inspect Composio tools.
-  auth-configs        View and manage Composio auth configs.
-  connected-accounts  View and manage Composio connected accounts.
-  triggers            Inspect and subscribe to trigger events.
-  logs                Inspect trigger and tool execution logs.
-  orgs                Manage default global organization/project context.
-  projects            Manage default global project context.
+  generate    Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
+  manage      Manage Composio resources — toolkits, tools, accounts, triggers, logs, orgs, and projects.
 
 FLAGS
   -h, --help     Show help for command

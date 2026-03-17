@@ -9,7 +9,7 @@ import { toolkitsCmd$Version } from './commands/toolkits.version.cmd';
  *
  * @example
  * ```bash
- * composio toolkits <command>
+ * composio manage toolkits <command>
  * ```
  */
 export const toolkitsCmd = Command.make('toolkits').pipe(

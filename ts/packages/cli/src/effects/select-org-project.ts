@@ -46,7 +46,7 @@ const selectProject = (
  * Runs the org/project selection flow: lists orgs, prompts for org (or auto-selects if 1),
  * lists projects, prompts for project (or auto-selects if 1).
  *
- * Reused by `composio orgs switch` and `composio login -y`.
+ * Reused by `composio manage orgs switch` and `composio login -y`.
  *
  * @param params.apiKey - User API key for API calls
  * @param params.baseURL - API base URL

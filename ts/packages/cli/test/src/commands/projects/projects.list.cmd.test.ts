@@ -9,7 +9,7 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-describe('CLI: composio projects list', () => {
+describe('CLI: composio manage projects list', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -26,7 +26,7 @@ describe('CLI: composio projects list', () => {
           })
         );
 
-        yield* cli(['projects', 'list', '--org-id', 'org_1']);
+        yield* cli(['manage', 'projects', 'list', '--org-id', 'org_1']);
 
         expect(fetchSpy).toHaveBeenCalledTimes(1);
         const [projectUrl, projectRequest] = fetchSpy.mock.calls[0]!;
@@ -41,9 +41,11 @@ describe('CLI: composio projects list', () => {
         expect(output).toContain('✓ Project One (project_1)');
         expect(output).toContain('  Project Two (project_2)');
         expect(output).toContain(
-          'Hint: run `composio projects switch` to switch the default global project.'
+          'Hint: run `composio manage projects switch` to switch the default global project.'
         );
-        expect(output).toContain('Run `composio orgs switch` to switch org and project together.');
+        expect(output).toContain(
+          'Run `composio manage orgs switch` to switch org and project together.'
+        );
       })
     );
   });

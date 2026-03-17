@@ -20,7 +20,7 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-describe('CLI: composio orgs switch', () => {
+describe('CLI: composio manage orgs switch', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -41,7 +41,7 @@ describe('CLI: composio orgs switch', () => {
             })
           );
 
-        yield* cli(['orgs', 'switch']);
+        yield* cli(['manage', 'orgs', 'switch']);
 
         expect(fetchSpy).toHaveBeenCalledTimes(2);
         const [orgUrl, orgRequest] = fetchSpy.mock.calls[0]!;
@@ -83,7 +83,7 @@ describe('CLI: composio orgs switch', () => {
           })
         );
 
-        yield* cli(['orgs', 'switch', '--org-id', 'org_manual']);
+        yield* cli(['manage', 'orgs', 'switch', '--org-id', 'org_manual']);
 
         expect(fetchSpy).toHaveBeenCalledTimes(1);
         const [projectUrl, projectRequest] = fetchSpy.mock.calls[0]!;
