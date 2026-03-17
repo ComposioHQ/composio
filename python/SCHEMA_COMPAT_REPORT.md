@@ -1,6 +1,6 @@
 # Schema Violation Compatibility Report
 
-**Date**: 2026-03-16
+**Date**: 2026-03-17
 **Source**: `composio_schema_violations.csv` (6,722 violations across 1,162 tools)
 **Test tools**: One tool per violation category with only that specific issue, plus a clean baseline tool.
 
@@ -25,20 +25,20 @@
 ## Test Tools (one per category, with only that issue)
 
 
-| Category                        | Test Tool                                                           |
-| ------------------------------- | ------------------------------------------------------------------- |
-| param_name_too_long             | `DIALPAD_CONFIGURE_CALL_CENTER_SETTINGS`                            |
-| excessive_nesting               | `DATABRICKS_SETTINGS_AUTOMATIC_CLUSTER_UPDATE_UPDATE`               |
-| missing_param_description       | `ASANA_ADD_SUPPORTING_RELATIONSHIP`                                 |
-| missing_type                    | `ABSTRACT_VALIDATE_EMAIL`                                           |
-| invalid_param_chars             | `BENZINGA_GET_CONFERENCE_CALLS`                                     |
-| param_description_too_long      | `AHREFS_EXPLORE_KEYWORDS_OVERVIEW`                                  |
-| tool_name_too_long              | `BIG_DATA_CLOUD_BIG_DATA_CLOUD_REVERSE_GEOCODING_WITH_TIMEZONE_API` |
-| tool_description_too_long       | `COMPOSIO_CREATE_PLAN`                                              |
-| excessive_properties            | `HUBSPOT_CREATE_CONTACT`                                            |
-| excessive_enum_values           | `HUBSPOT_CREATE_A_NEW_MARKETING_EMAIL`                              |
-| param_name_leading_underscore   | `_21RISK_GET_COMPLIANCE` (has `_maxPageSizeInMb`)                   |
-| **(baseline -- no violations)** | `SLACK_SEND_MESSAGE`                                                |
+| Category                        | Test Tool                                                           | Action File                                                                         |
+| ------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| param_name_too_long             | `DIALPAD_CONFIGURE_CALL_CENTER_SETTINGS`                            | `apps/dialpad/actions/generated/configure_call_center_settings.py`                  |
+| excessive_nesting               | `DATABRICKS_SETTINGS_AUTOMATIC_CLUSTER_UPDATE_UPDATE`               | `apps/databricks/actions/databricks_settings_automatic_cluster_update_update.py`    |
+| missing_param_description       | `ASANA_ADD_SUPPORTING_RELATIONSHIP`                                 | `apps/asana/actions/add_supporting_relationship.py`                                 |
+| missing_type                    | `ABSTRACT_VALIDATE_EMAIL`                                           | `apps/abstract/actions/abstract_email_validation_api.py`                            |
+| invalid_param_chars             | `BENZINGA_GET_CONFERENCE_CALLS`                                     | `apps/benzinga/actions/get_conference_calls_v2_1.py`                                |
+| param_description_too_long      | `AHREFS_EXPLORE_KEYWORDS_OVERVIEW`                                  | `apps/ahrefs/actions/generated/explore_keywords_overview.py`                        |
+| tool_name_too_long              | `BIG_DATA_CLOUD_BIG_DATA_CLOUD_REVERSE_GEOCODING_WITH_TIMEZONE_API` | `apps/big_data_cloud/actions/big_data_cloud_reverse_geocoding_with_timezone_api.py` |
+| tool_description_too_long       | `COMPOSIO_CREATE_PLAN`                                              | `apps/composio/actions/create_plan.py`                                              |
+| excessive_properties            | `HUBSPOT_CREATE_CONTACT`                                            | `apps/hubspot/actions/create_contact_object_with_properties.py`                     |
+| excessive_enum_values           | `HUBSPOT_CREATE_A_NEW_MARKETING_EMAIL`                              | `apps/hubspot/actions/generated/create_a_new_marketing_email.py`                    |
+| param_name_leading_underscore   | `_21RISK_GET_COMPLIANCE` (has `_maxPageSizeInMb`)                   | `apps/_21risk/actions/get_compliance.py`                                            |
+| **(baseline -- no violations)** | `SLACK_SEND_MESSAGE`                                                | `apps/slack/actions/send_message.py`                                                |
 
 
 ---
@@ -47,43 +47,34 @@
 
 Each test tool was verified to have **only** its designated violation in the CSV (exclusive match). This ensures failures in the compatibility table are attributable to that specific issue.
 
-- **`param_name_too_long`** -- Parameter names exceed 64 characters. Most providers and LLM APIs enforce a 64-char limit on function parameter names.
+- `**param_name_too_long`** -- Parameter names exceed 64 characters. Most providers and LLM APIs enforce a 64-char limit on function parameter names.
   - *Test tool*: `DIALPAD_CONFIGURE_CALL_CENTER_SETTINGS` -- has 3 params like `advanced__settings__auto__call__recording__allow__pause__recording` (66-68 chars). Only violation in CSV: `param_name_too_long`.
-
-- **`excessive_nesting`** -- JSON schema has object nesting deeper than 5 levels. Deeply nested schemas can cause issues with providers that flatten or recursively validate tool parameters.
+- `**excessive_nesting*`* -- JSON schema has object nesting deeper than 5 levels. Deeply nested schemas can cause issues with providers that flatten or recursively validate tool parameters.
   - *Test tool*: `DATABRICKS_SETTINGS_AUTOMATIC_CLUSTER_UPDATE_UPDATE` -- path `setting.automatic_cluster_update_workspace.maintenance_window.week_day_based_schedule.window_start_time.hours` reaches nesting depth 6 via purely nested properties (no arrays). Only violation in CSV: `excessive_nesting`.
-
-- **`missing_param_description`** -- One or more parameters have no `description` field. Without descriptions, the LLM has less context to understand what values to provide, sometimes skipping the tool call entirely.
+- `**missing_param_description*`* -- One or more parameters have no `description` field. Without descriptions, the LLM has less context to understand what values to provide, sometimes skipping the tool call entirely.
   - *Test tool*: `ASANA_ADD_SUPPORTING_RELATIONSHIP` -- the `data` parameter has no description. Only violation in CSV: `missing_param_description`.
-
-- **`missing_type`** -- One or more schema nodes lack a `type` field. Providers that strictly validate JSON Schema may reject the tool, and LLMs may not know what format to use for the parameter.
+- `**missing_type*`* -- One or more schema nodes lack a `type` field. Providers that strictly validate JSON Schema may reject the tool, and LLMs may not know what format to use for the parameter.
   - *Test tool*: `ABSTRACT_VALIDATE_EMAIL` -- the `email` parameter has no `type` field. Only violation in CSV: `missing_type`.
-
-- **`invalid_param_chars`** -- Parameter names contain characters outside `[a-zA-Z0-9_]`, such as `$`, `[`, `]`. Some providers reject these at the API level. Note: Composio strips `$` prefixes server-side, so this primarily affects `[]` bracket characters via Composio.
+- `**invalid_param_chars*`* -- Parameter names contain characters outside `[a-zA-Z0-9_]`, such as `$`, `[`, `]`. Some providers reject these at the API level. Note: Composio strips `$` prefixes server-side, so this primarily affects `[]` bracket characters via Composio.
   - *Test tool*: `BENZINGA_GET_CONFERENCE_CALLS` -- has params like `parameters[date]`, `parameters[tickers]` with bracket characters. Only violation in CSV: `invalid_param_chars`.
-
-- **`param_description_too_long`** -- A parameter description exceeds 1024 characters. Some providers truncate or reject overly long descriptions.
+- `**param_description_too_long*`* -- A parameter description exceeds 1024 characters. Some providers truncate or reject overly long descriptions.
   - *Test tool*: `AHREFS_EXPLORE_KEYWORDS_OVERVIEW` -- the `where` parameter description is 3,352 chars. Only violation in CSV: `param_description_too_long`.
-
-- **`tool_name_too_long`** -- The tool name exceeds 64 characters. Most LLM APIs enforce a max function name length of 64.
+- `**tool_name_too_long*`* -- The tool name exceeds 64 characters. Most LLM APIs enforce a max function name length of 64.
   - *Test tool*: `BIG_DATA_CLOUD_BIG_DATA_CLOUD_REVERSE_GEOCODING_WITH_TIMEZONE_API` -- 65 chars. Only violation in CSV: `tool_name_too_long`.
-
-- **`tool_description_too_long`** -- The tool description exceeds 1024 characters. Some providers reject or truncate overly long tool descriptions.
+- `**tool_description_too_long*`* -- The tool description exceeds 1024 characters. Some providers reject or truncate overly long tool descriptions.
   - *Test tool*: `COMPOSIO_CREATE_PLAN` -- description is 1,258 chars. Only violation in CSV: `tool_description_too_long`.
-
-- **`excessive_properties`** -- A single object in the schema has more than 100 properties. This can overwhelm LLMs and cause issues with providers that have property count limits.
+- `**excessive_properties*`* -- A single object in the schema has more than 100 properties. This can overwhelm LLMs and cause issues with providers that have property count limits.
   - *Test tool*: `HUBSPOT_CREATE_CONTACT` -- root object has 110 properties. Only violation in CSV: `excessive_properties`.
-
-- **`excessive_enum_values`** -- An enum field has more than 500 allowed values. Large enums bloat the schema and may exceed token limits.
+- `**excessive_enum_values*`* -- An enum field has more than 500 allowed values. Large enums bloat the schema and may exceed token limits.
   - *Test tool*: `HUBSPOT_CREATE_A_NEW_MARKETING_EMAIL` -- the `language` field has 754 enum values. Only violation in CSV: `excessive_enum_values`.
-
-- **`param_name_leading_underscore`** -- Parameter names starting with `_` break Pydantic's `create_model()`, which is used by LangChain and CrewAI Composio providers. This category is **not in the CSV** -- it was discovered during testing.
+- `**param_name_leading_underscore*`* -- Parameter names starting with `_` break Pydantic's `create_model()`, which is used by LangChain and CrewAI Composio providers. This category is **not in the CSV** -- it was discovered during testing.
   - *Test tool*: `_21RISK_GET_COMPLIANCE` -- has `_maxPageSizeInMb` parameter. The tool also has `$`-prefixed violations in the raw CSV (`invalid_param_chars`, `param_name_bad_start`), but Composio strips `$` prefixes server-side, so only the underscore issue survives in the Composio API.
-
 
 ---
 
 ## Composio Provider Compatibility
+
+Schemas loaded from Composio API, tested via each Composio provider wrapper (SDK calls).
 
 
 | Category                          | OpenAI | Anthropic | Gemini | Agents SDK | LangChain | CrewAI |
@@ -92,10 +83,10 @@ Each test tool was verified to have **only** its designated violation in the CSV
 | **param_name_too_long**           | OK     | OK        | OK     | OK         | OK        | OK     |
 | **excessive_nesting**             | OK     | OK        | OK     | OK         | OK        | OK     |
 | **missing_param_description**     | FAILED | OK        | OK     | OK         | FAILED    | OK     |
-| **missing_type**                  | FAILED | OK        | OK     | OK         | OK        | OK     |
+| **missing_type**                  | FAILED | OK        | FAILED | OK         | OK        | OK     |
 | **invalid_param_chars**           | OK     | OK        | OK     | OK         | OK        | OK     |
 | **param_description_too_long**    | OK     | OK        | OK     | OK         | OK        | OK     |
-| **tool_name_too_long**            | OK     | OK        | OK     | OK         | FAILED    | OK     |
+| **tool_name_too_long**            | OK     | OK        | OK     | OK         | OK        | OK     |
 | **tool_description_too_long**     | OK     | OK        | OK     | OK         | OK        | OK     |
 | **excessive_properties**          | OK     | OK        | OK     | OK         | OK        | OK     |
 | **excessive_enum_values**         | OK     | OK        | OK     | OK         | OK        | OK     |
@@ -104,9 +95,41 @@ Each test tool was verified to have **only** its designated violation in the CSV
 
 ---
 
+## Direct API Compatibility
+
+Schemas loaded locally from action files via `Action.from_file()`, tested via raw HTTP API calls (no SDK, no Composio wrappers). The local Pydantic-generated schema includes fields like `examples` and `title` that are not present in the Composio API schema.
+
+
+| Category                          | OpenAI | Anthropic | Gemini |
+| --------------------------------- | ------ | --------- | ------ |
+| **baseline (clean)**              | OK     | OK        | FAILED |
+| **param_name_too_long**           | OK     | OK        | FAILED |
+| **excessive_nesting**             | OK     | OK        | FAILED |
+| **missing_param_description**     | FAILED | OK        | FAILED |
+| **missing_type**                  | FAILED | OK        | FAILED |
+| **invalid_param_chars**           | OK     | OK        | FAILED |
+| **param_description_too_long**    | OK     | OK        | FAILED |
+| **tool_name_too_long**            | OK     | OK        | FAILED |
+| **tool_description_too_long**     | OK     | OK        | FAILED |
+| **excessive_properties**          | OK     | OK        | FAILED |
+| **excessive_enum_values**         | OK     | OK        | FAILED |
+| **param_name_leading_underscore** | OK     | OK        | FAILED |
+
+
+---
+
+## Key Findings
+
+1. **Gemini (Direct) fails on every tool** -- The raw Pydantic-generated schema includes `examples` and `title` fields that Gemini's REST API strictly rejects. Gemini via Composio works because the Composio provider strips these unsupported fields before sending.
+2. **OpenAI fails on `missing_param_description` and `missing_type`** -- Both via Composio and Direct. Schemas without `type` or missing descriptions cause OpenAI to not produce tool calls (returns text instead).
+3. **LangChain/CrewAI fail on leading underscore params** -- Pydantic v2's `create_model()` rejects field names starting with `_` (e.g., `_maxPageSizeInMb`). These providers use Pydantic internally.
+4. **Anthropic is the most robust** -- Passes every category in both Composio and Direct modes. Tolerates missing types, missing descriptions, long names, `examples` fields, etc.
+5. **Composio providers generally handle schema issues better than direct API calls** -- The Composio layer sanitizes schemas (strips `$` prefixes, unsupported fields for Gemini, etc.) before passing to providers.
+
+---
+
 ## Scripts Used
 
-- `test_tool_compat_composio_by_name.py` -- Composio provider tests (via provider wrappers)
-- `test_categories_composio.sh` -- Batch runner for all categories
-- `run_tests.sh` -- Environment setup wrapper
+- `test_tool_compat.py` -- Unified test script: Composio provider tests + direct raw HTTP API tests. Takes an action file path, derives tool enum automatically.
+- `test_categories.sh` -- Batch runner for all categories
 

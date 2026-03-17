@@ -15,12 +15,13 @@ import json
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
 
 MAX_RETRIES = 3
-RETRY_DELAY = 2
+RETRY_DELAY = 1
 MAX_DETAIL_LENGTH = 250  # Max chars for detail column (0 for unlimited)
 
 MERCURY_PATH = Path.home() / "mercury"
@@ -397,16 +398,23 @@ def run_tests(
 
     results = []
 
-    # Build unified list of (display_name, callable_with_no_args)
+    # Build unified list of (key, display_name, test_fn)
     all_providers = {**COMPOSIO_PROVIDERS, **DIRECT_PROVIDERS}
     if provider:
         items = [(provider, all_providers[provider])]
     else:
         items = list(all_providers.items())
 
-    for _key, (display_name, test_fn) in items:
-        # Composio providers take (tool_name), direct providers take (schema, name, desc)
-        is_direct = _key.endswith("_direct")
+    def _run_one(key, display_name, test_fn):
+        # Ensure each thread has an event loop (needed by Agents SDK's Runner.run_sync)
+        import asyncio
+
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
+        is_direct = key.endswith("_direct")
         args = (schema, fn_name, description) if is_direct else (tool_name,)
         try:
             result = with_retries(test_fn, *args)
@@ -417,13 +425,26 @@ def run_tests(
                 and len(detail) > MAX_DETAIL_LENGTH
             ):
                 detail = detail[: MAX_DETAIL_LENGTH - 3] + "..."
-            results.append((display_name, "OK", detail))
+            return (display_name, "OK", detail)
         except Exception as e:
             error_str = str(e)
             first_line = error_str.split("\n")[0]
             if MAX_DETAIL_LENGTH > 0 and len(first_line) > MAX_DETAIL_LENGTH:
                 first_line = first_line[: MAX_DETAIL_LENGTH - 3] + "..."
-            results.append((display_name, "FAILED", first_line))
+            return (display_name, "FAILED", first_line)
+
+    # Run all providers concurrently, preserve original order
+    order = {key: i for i, (key, _) in enumerate(items)}
+    indexed_results: list[tuple[int, tuple]] = []
+    with ThreadPoolExecutor(max_workers=len(items)) as pool:
+        futures = {
+            pool.submit(_run_one, key, dname, fn): key for key, (dname, fn) in items
+        }
+        for future in as_completed(futures):
+            key = futures[future]
+            indexed_results.append((order[key], future.result()))
+    indexed_results.sort(key=lambda x: x[0])
+    results = [r for _, r in indexed_results]
 
     name_width = max(len(r[0]) for r in results)
     status_width = 6
