@@ -3,7 +3,7 @@
 Tool compatibility tester — Composio providers + direct API calls.
 
 Usage:
-    python test_tool_compat_composio_by_name.py <TOOL_NAME> <FILE_PATH> [--provider PROVIDER]
+    python test_tool_compat_composio_by_name.py <FILE_PATH> [--provider PROVIDER]
 
 Tests a tool via:
   1. Composio provider wrappers (tools.get() → SDK call)
@@ -38,17 +38,28 @@ PROVIDER_CHOICES = [
 ]
 
 
-def load_schema(file_path: str) -> tuple[dict, str]:
+def load_schema(file_path: str) -> tuple[dict, str, str]:
     """Load tool schema from a local action file.
 
-    Returns (schema, description).
+    Returns (schema, description, tool_enum).
     """
     from mercury.tools.base import Action
 
     action = Action.from_file(Path(file_path).resolve(), root=MERCURY_PATH)
     schema = action.request.schema()
     description = action.description or f"Execute {action.slug}"
-    return schema, description
+    # Derive the full tool enum (e.g. _21RISK_GET_COMPLIANCE) from the action
+    # The file path encodes the app name: apps/<app_name>/actions/<action>.py
+    parts = Path(file_path).parts
+    app_idx = parts.index("apps") if "apps" in parts else None
+    if app_idx is not None:
+        app_name = parts[app_idx + 1].upper()
+        enum = action.enum if hasattr(action, "enum") else action.slug
+        if not enum.startswith(app_name):
+            enum = f"{app_name}_{enum}"
+    else:
+        enum = action.slug
+    return schema, description, enum
 
 
 # ---------------------------------------------------------------------------
@@ -427,9 +438,6 @@ if __name__ == "__main__":
         description="Test tool schema compatibility across Composio providers and direct API calls."
     )
     parser.add_argument(
-        "tool_name", help="Composio tool name (e.g. SLACK_SEND_MESSAGE)"
-    )
-    parser.add_argument(
         "file_path",
         help="Path to the local action file (e.g. apps/_21risk/actions/get_compliance.py)",
     )
@@ -451,5 +459,5 @@ if __name__ == "__main__":
         print(f"Missing environment variables: {', '.join(missing)}")
         sys.exit(1)
 
-    schema, description = load_schema(str(MERCURY_PATH / args.file_path))
-    run_tests(args.tool_name, schema, description, args.file_path, args.provider)
+    schema, description, tool_name = load_schema(str(MERCURY_PATH / args.file_path))
+    run_tests(tool_name, schema, description, args.file_path, args.provider)
