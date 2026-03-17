@@ -33,13 +33,18 @@ src/
 │   ├── login.cmd.ts          # Complex command (options, spinner, polling)
 │   ├── logout.cmd.ts         # Action command (no stdout data)
 │   ├── upgrade.cmd.ts        # Action command (delegates to service)
-│   ├── generate.cmd.ts       # Command that auto-delegates to subcommands
+│   ├── generate/
+│   │   ├── generate.cmd.ts   # Parent command group for `composio generate`
+│   │   ├── generate-py.cmd.ts # `composio generate py`
+│   │   └── generate-ts.cmd.ts # `composio generate ts`
+│   ├── manage/
+│   │   └── manage.cmd.ts     # Parent command group for `composio manage`
 │   ├── ts/
-│   │   ├── ts.cmd.ts         # Parent command group
+│   │   ├── ts.cmd.ts         # Existing TS generation internals, referenced from generate/
 │   │   └── commands/
-│   │       └── ts.generate.cmd.ts  # Subcommand with complex logic
+│   │       └── ts.generate.cmd.ts  # Reusable TS generation logic
 │   └── py/
-│       ├── py.cmd.ts
+│       ├── py.cmd.ts         # Existing Python generation internals, referenced from generate/
 │       └── commands/
 │           └── py.generate.cmd.ts
 ├── services/                 # Effect services (dependency injection)
@@ -53,11 +58,11 @@ src/
 ### File Naming Convention
 
 - Command files: `<name>.cmd.ts` (e.g., `version.cmd.ts`, `login.cmd.ts`)
-- Subcommand files: `<parent>.<name>.cmd.ts` inside `commands/` (e.g., `ts.generate.cmd.ts`)
-- Parent command groups: `<name>.cmd.ts` at the group level (e.g., `ts/ts.cmd.ts`)
+- Subcommand implementation files: `<parent>.<name>.cmd.ts` inside `commands/` (e.g., `ts.generate.cmd.ts`)
+- Parent command groups: `<name>.cmd.ts` at the group level (e.g., `generate/generate.cmd.ts`, `manage/manage.cmd.ts`)
+- Wrapper subcommand entrypoints can also live beside their parent group (e.g., `generate/generate-py.cmd.ts`, `generate/generate-ts.cmd.ts`)
 
 ## Creating a New Command
-
 ### Step 1: Create the Command File
 
 Create `src/commands/<name>.cmd.ts`.
@@ -147,8 +152,7 @@ const $cmd = $defaultCmd.pipe(
     loginCmd,
     logoutCmd,
     generateCmd,
-    pyCmd,
-    tsCmd,
+    manageCmd,
     myCmd,  // Add here
   ])
 );
@@ -170,22 +174,21 @@ Most commands only use services already provided. The `ComposioToolkitsRepositor
 
 ## Creating a Subcommand Group
 
-For commands like `composio toolkits list`, `composio toolkits info`:
+For commands like `composio manage toolkits list`, `composio manage toolkits info`:
 
 ### Step 1: Create the Directory Structure
 
 ```
-src/commands/toolkits/
-├── toolkits.cmd.ts              # Parent command group
+src/commands/manage/toolkits/
+├── toolkits.cmd.ts              # Parent command group under `manage`
 └── commands/
-    ├── toolkits.list.cmd.ts     # composio toolkits list
-    └── toolkits.info.cmd.ts     # composio toolkits info
+    ├── toolkits.list.cmd.ts     # composio manage toolkits list
+    └── toolkits.info.cmd.ts     # composio manage toolkits info
 ```
 
 ### Step 2: Create the Parent Command
 
-`src/commands/toolkits/toolkits.cmd.ts`:
-
+`src/commands/manage/toolkits/toolkits.cmd.ts`:
 ```typescript
 import { Command } from '@effect/cli';
 import { toolkitsCmd$List } from './commands/toolkits.list.cmd';
@@ -199,8 +202,7 @@ export const toolkitsCmd = Command.make('toolkits').pipe(
 
 ### Step 3: Create Each Subcommand
 
-`src/commands/toolkits/commands/toolkits.list.cmd.ts`:
-
+`src/commands/manage/toolkits/commands/toolkits.list.cmd.ts`:
 ```typescript
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
@@ -238,21 +240,22 @@ export const toolkitsCmd$List = Command.make('list', { searchOpt }).pipe(
 );
 ```
 
-### Step 4: Register the Parent in index.ts
+### Step 4: Register the Parent in `manage/manage.cmd.ts`
 
 ```typescript
+import { Command } from '@effect/cli';
 import { toolkitsCmd } from './toolkits/toolkits.cmd';
 
-const $cmd = $defaultCmd.pipe(
+export const manageCmd = Command.make('manage').pipe(
+  Command.withDescription('Manage existing Composio resources.'),
   Command.withSubcommands([
-    // ... existing commands
+    // ... existing manage subcommands
     toolkitsCmd,
   ])
 );
 ```
 
 ## Option Declaration Patterns
-
 Options are declared at module level using `@effect/cli`'s `Options` API. The template above demonstrates the most common types (required text, optional text). For other option types, see `ts/vendor/effect/packages/cli/src/Options.ts`.
 
 Both `Options.optional(Options.text(...))` (wrapping) and `Options.text(...).pipe(Options.optional)` (piped) are valid. Use whichever reads better.
@@ -408,8 +411,7 @@ const [toolkits, tools, triggerTypes] = yield* Effect.all(
 
 ## Extracting Reusable Logic
 
-For commands that share logic (e.g., `composio generate` delegates to `composio ts generate`):
-
+For commands that share logic (e.g., `composio generate` delegates to `composio generate ts`):
 ```typescript
 // In ts.generate.cmd.ts — export the logic separately
 export function generateTypescriptTypeStubs(params: { ... }) {
@@ -425,9 +427,8 @@ export const tsCmd$Generate = Command.make('generate', { ... }).pipe(
 );
 
 // Other commands can reuse it
-// In generate.cmd.ts
-import { generateTypescriptTypeStubs } from './ts/commands/ts.generate.cmd';
-
+// In generate/generate-ts.cmd.ts
+import { generateTypescriptTypeStubs } from '../ts/commands/ts.generate.cmd';
 yield* Match.value(envLang).pipe(
   Match.when('TypeScript', () => generateTypescriptTypeStubs({ ... })),
   Match.when('Python', () => generatePythonTypeStubs({ ... })),
@@ -534,8 +535,9 @@ recordings/
 | `src/commands/login.cmd.ts` | Complex command (options, spinner, polling, retry) |
 | `src/commands/logout.cmd.ts` | Action command (no stdout data) |
 | `src/commands/upgrade.cmd.ts` | Action command delegating to service |
-| `src/commands/generate.cmd.ts` | Auto-detection and delegation to subcommands |
-| `src/commands/ts/commands/ts.generate.cmd.ts` | Full subcommand with parallel fetching, spinner, file I/O |
+| `src/commands/generate/generate.cmd.ts` | Parent `generate` command and delegation entrypoint |
+| `src/commands/manage/manage.cmd.ts` | Parent `manage` command and subcommand registration |
+| `src/commands/ts/commands/ts.generate.cmd.ts` | Reusable TS generation logic used by `generate ts` |
 | `src/commands/index.ts` | Command tree registration |
 | `src/bin.ts` | Entry point, layer composition, error handling |
 | `src/services/terminal-ui.ts` | TerminalUI service interface |
