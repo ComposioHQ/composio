@@ -30,7 +30,7 @@
 | param_name_too_long             | `DIALPAD_CONFIGURE_CALL_CENTER_SETTINGS`                            | `apps/dialpad/actions/generated/configure_call_center_settings.py`                  |
 | excessive_nesting               | `DATABRICKS_SETTINGS_AUTOMATIC_CLUSTER_UPDATE_UPDATE`               | `apps/databricks/actions/databricks_settings_automatic_cluster_update_update.py`    |
 | missing_param_description       | `ASANA_ADD_SUPPORTING_RELATIONSHIP`                                 | `apps/asana/actions/add_supporting_relationship.py`                                 |
-| missing_type                    | `ABSTRACT_VALIDATE_EMAIL`                                           | `apps/abstract/actions/abstract_email_validation_api.py`                            |
+| missing_type                    | `POSTHOG_CREATE_PROJECT_NOTEBOOK` (`content: t.Optional[t.Any]`)    | `apps/posthog/actions/generated/create_a_notebook_in_a_project.py`                  |
 | invalid_param_chars             | `BENZINGA_GET_CONFERENCE_CALLS`                                     | `apps/benzinga/actions/get_conference_calls_v2_1.py`                                |
 | param_description_too_long      | `AHREFS_EXPLORE_KEYWORDS_OVERVIEW`                                  | `apps/ahrefs/actions/generated/explore_keywords_overview.py`                        |
 | tool_name_too_long              | `BIG_DATA_CLOUD_BIG_DATA_CLOUD_REVERSE_GEOCODING_WITH_TIMEZONE_API` | `apps/big_data_cloud/actions/big_data_cloud_reverse_geocoding_with_timezone_api.py` |
@@ -54,7 +54,7 @@ Each test tool was verified to have **only** its designated violation in the CSV
 - `**missing_param_description`** -- One or more parameters have no `description` field. Without descriptions, the LLM has less context to understand what values to provide, sometimes skipping the tool call entirely.
   - *Test tool*: `ASANA_ADD_SUPPORTING_RELATIONSHIP` -- the `data` parameter has no description. Only violation in CSV: `missing_param_description`.
 - `**missing_type`** -- One or more schema nodes lack a `type` field. Providers that strictly validate JSON Schema may reject the tool, and LLMs may not know what format to use for the parameter.
-  - *Test tool*: `ABSTRACT_VALIDATE_EMAIL` -- the `email` parameter has no `type` field. Only violation in CSV: `missing_type`.
+  - *Test tool*: `POSTHOG_CREATE_PROJECT_NOTEBOOK` -- the `content` parameter is typed `t.Optional[t.Any]` in Pydantic, which produces a schema node with no `type` field. Note: the original CSV test tool `ABSTRACT_VALIDATE_EMAIL` has been fixed (type is now present); 72% of the 464 `missing_type` tools in the CSV are fixed, with 55 still missing (mostly PostHog).
 - `**invalid_param_chars`** -- Parameter names contain characters outside `[a-zA-Z0-9_]`, such as `$`, `[`, `]`. Some providers reject these at the API level. Note: Composio strips `$` prefixes server-side, so this primarily affects `[]` bracket characters via Composio.
   - *Test tool*: `BENZINGA_GET_CONFERENCE_CALLS` -- has params like `parameters[date]`, `parameters[tickers]` with bracket characters. Only violation in CSV: `invalid_param_chars`.
 - `**param_description_too_long`** -- A parameter description exceeds 1024 characters. Some providers truncate or reject overly long descriptions.
@@ -80,10 +80,10 @@ Schemas loaded from Composio API, tested via each Composio provider wrapper (SDK
 | Category                          | OpenAI | Anthropic | Gemini | Agents SDK | LangChain | CrewAI |
 | --------------------------------- | ------ | --------- | ------ | ---------- | --------- | ------ |
 | **baseline (clean)**              | OK     | OK        | OK     | OK         | OK        | OK     |
-| **param_name_too_long**           | OK     | OK        | OK     | OK         | OK        | OK     |
-| **excessive_nesting**             | OK     | OK        | OK     | OK         | OK        | OK     |
-| **missing_param_description**     | FAILED | OK        | OK     | OK         | FAILED    | OK     |
-| **missing_type**                  | FAILED | OK        | FAILED | OK         | OK        | OK     |
+| **param_name_too_long**           | OK     | OK        | FAILED | OK         | OK        | OK     |
+| **excessive_nesting**             | OK     | OK        | FAILED | OK         | OK        | OK     |
+| **missing_param_description**     | OK     | OK        | OK     | OK         | OK        | OK     |
+| **missing_type**                  | OK     | OK        | OK     | OK         | OK        | OK     |
 | **invalid_param_chars**           | OK     | OK        | OK     | OK         | OK        | OK     |
 | **param_description_too_long**    | OK     | OK        | OK     | OK         | OK        | OK     |
 | **tool_name_too_long**            | OK     | OK        | OK     | OK         | OK        | OK     |
@@ -105,20 +105,30 @@ Schemas loaded locally from action files via `Action.from_file()`, tested via ra
 | Category                          | OpenAI | Anthropic | Gemini | Gemini (Stripped) |
 | --------------------------------- | ------ | --------- | ------ | ----------------- |
 | **baseline (clean)**              | OK     | OK        | FAILED | OK                |
-| **param_name_too_long**           | OK     | OK        | FAILED | OK                |
+| **param_name_too_long**           | OK     | OK        | OK     | OK                |
 | **excessive_nesting**             | OK     | OK        | FAILED | OK                |
-| **missing_param_description**     | FAILED | OK        | FAILED | OK                |
-| **missing_type**                  | FAILED | OK        | FAILED | OK                |
+| **missing_param_description**     | OK     | OK        | FAILED | OK                |
+| **missing_type**                  | OK     | OK        | OK     | OK                |
 | **invalid_param_chars**           | OK     | OK        | FAILED | OK                |
-| **param_description_too_long**    | OK     | OK        | FAILED | OK                |
+| **param_description_too_long**    | OK     | OK        | OK     | OK                |
 | **tool_name_too_long**            | OK     | OK        | FAILED | OK                |
 | **tool_description_too_long**     | OK     | OK        | FAILED | OK                |
-| **excessive_properties**          | OK     | OK        | FAILED | OK                |
+| **excessive_properties**          | OK     | OK        | FAILED | FAILED            |
 | **excessive_enum_values**         | OK     | OK        | FAILED | OK                |
 | **param_name_leading_underscore** | OK     | OK        | FAILED | OK                |
 
 
 ---
+
+## Key Findings
+
+1. **Gemini (Direct) fails on most tools** -- The raw Pydantic-generated schema includes `examples`, `title`, `const`, `additionalProperties`, and `human_parameter_*` fields that Gemini's REST API strictly rejects. Gemini via Composio works because the Composio provider strips these unsupported fields before sending.
+2. **Gemini (Stripped) passes 11/12** -- Once unsupported fields are stripped, only `excessive_properties` (110 optional properties) causes a hard 400 reject from Gemini due to its constraint branching limit.
+3. **Gemini (Composio) fails on `param_name_too_long` and `excessive_nesting`** -- The Composio Gemini provider encounters issues with these schemas (response has no `.parts` attribute).
+4. **OpenAI and Anthropic pass all categories** -- With `tool_choice: required` (OpenAI) and `tool_choice: any` (Anthropic), both providers handle every schema violation correctly in both Composio and Direct modes.
+5. **LangChain/CrewAI fail on leading underscore params** -- Pydantic v2's `create_model()` rejects field names starting with `_` (e.g., `_maxPageSizeInMb`). These providers use Pydantic internally.
+6. **72% of `missing_type` CSV violations are fixed** -- Of 464 unique tools flagged in the CSV, 336 now have proper types in local action files. 55 remain (mostly PostHog tools using `t.Optional[t.Any]`).
+
 
 ---
 
