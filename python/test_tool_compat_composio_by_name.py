@@ -1,12 +1,13 @@
 # ruff: noqa: E402
 """
-Tool compatibility tester for Composio providers — by tool name.
+Tool compatibility tester — Composio providers + direct API calls.
 
 Usage:
-    python test_tool_compat_composio_by_name.py <TOOL_NAME> [--provider PROVIDER]
+    python test_tool_compat_composio_by_name.py <TOOL_NAME> <FILE_PATH> [--provider PROVIDER]
 
-Tests a tool via each Composio provider's tools.get() and reports
-which providers can successfully wrap and use the tool schema.
+Tests a tool via:
+  1. Composio provider wrappers (tools.get() → SDK call)
+  2. Raw HTTP API calls using schema loaded locally from file via Action.from_file()
 """
 
 import argparse
@@ -14,20 +15,53 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
+
+import requests
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 MAX_DETAIL_LENGTH = 250  # Max chars for detail column (0 for unlimited)
 
-PROVIDER_CHOICES = ["openai", "anthropic", "gemini", "agents", "langchain", "crewai"]
+MERCURY_PATH = Path.home() / "mercury"
+
+PROVIDER_CHOICES = [
+    "openai",
+    "anthropic",
+    "gemini",
+    "agents",
+    "langchain",
+    "crewai",
+    "openai_direct",
+    "anthropic_direct",
+    "gemini_direct",
+]
 
 
-def with_retries(fn, tool_name: str) -> dict:
+def load_schema(file_path: str) -> tuple[dict, str]:
+    """Load tool schema from a local action file.
+
+    Returns (schema, description).
+    """
+    from mercury.tools.base import Action
+
+    action = Action.from_file(Path(file_path).resolve(), root=MERCURY_PATH)
+    schema = action.request.schema()
+    description = action.description or f"Execute {action.slug}"
+    return schema, description
+
+
+# ---------------------------------------------------------------------------
+# Retry helper
+# ---------------------------------------------------------------------------
+
+
+def with_retries(fn, *args) -> dict:
     """Run a test function with retries for transient failures."""
     last_err = None
     for attempt in range(MAX_RETRIES):
         try:
-            return fn(tool_name)
+            return fn(*args)
         except Exception as e:
             last_err = e
             err_str = str(e).lower()
@@ -44,6 +78,11 @@ def with_retries(fn, tool_name: str) -> dict:
                 continue
             raise
     raise last_err
+
+
+# ---------------------------------------------------------------------------
+# Composio provider tests (use composio.tools.get() → provider SDK)
+# ---------------------------------------------------------------------------
 
 
 def test_openai_composio(tool_name: str) -> dict:
@@ -199,29 +238,167 @@ def test_crewai_composio(tool_name: str) -> dict:
     raise RuntimeError("Tool was not called")
 
 
-PROVIDERS = {
-    "openai": ("OpenAI", test_openai_composio),
-    "anthropic": ("Anthropic", test_anthropic_composio),
-    "gemini": ("Google Gemini", test_gemini_composio),
-    "agents": ("OpenAI Agents SDK", test_openai_agents_composio),
-    "langchain": ("LangChain", test_langchain_composio),
-    "crewai": ("CrewAI", test_crewai_composio),
+# ---------------------------------------------------------------------------
+# Direct API tests (raw HTTP calls using local schema from file)
+# ---------------------------------------------------------------------------
+
+
+def test_openai_direct(schema: dict, name: str, description: str) -> dict:
+    resp = requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "gpt-4.1",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"Call the {name} tool with reasonable defaults.",
+                }
+            ],
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": description,
+                        "parameters": schema,
+                    },
+                }
+            ],
+        },
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    call = data["choices"][0]["message"]["tool_calls"][0]
+    return {"args": call["function"]["arguments"]}
+
+
+def test_anthropic_direct(schema: dict, name: str, description: str) -> dict:
+    resp = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 1024,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"You MUST call the {name} tool immediately with reasonable default arguments. Do not ask questions.",
+                }
+            ],
+            "tools": [
+                {"name": name, "description": description, "input_schema": schema}
+            ],
+            "tool_choice": {"type": "any"},
+        },
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    tool_use = next(block for block in data["content"] if block["type"] == "tool_use")
+    return {"args": json.dumps(tool_use["input"])}
+
+
+def test_gemini_direct(schema: dict, name: str, description: str) -> dict:
+    api_key = os.environ["GOOGLE_API_KEY"]
+    resp = requests.post(
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}",
+        headers={"Content-Type": "application/json"},
+        json={
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"text": f"Call the {name} tool with reasonable defaults."}
+                    ],
+                }
+            ],
+            "tools": [
+                {
+                    "function_declarations": [
+                        {
+                            "name": name,
+                            "description": description,
+                            "parameters": schema,
+                        }
+                    ]
+                }
+            ],
+        },
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    for part in data["candidates"][0]["content"]["parts"]:
+        if "functionCall" in part:
+            return {"args": json.dumps(part["functionCall"]["args"])}
+    raise RuntimeError("No function call in response")
+
+
+# ---------------------------------------------------------------------------
+# Provider registry
+# ---------------------------------------------------------------------------
+
+# "composio" providers take (tool_name: str)
+# "direct" providers take (schema: dict, name: str, description: str)
+COMPOSIO_PROVIDERS = {
+    "openai": ("OpenAI (Composio)", test_openai_composio),
+    "anthropic": ("Anthropic (Composio)", test_anthropic_composio),
+    "gemini": ("Gemini (Composio)", test_gemini_composio),
+    "agents": ("Agents SDK (Composio)", test_openai_agents_composio),
+    "langchain": ("LangChain (Composio)", test_langchain_composio),
+    "crewai": ("CrewAI (Composio)", test_crewai_composio),
+}
+
+DIRECT_PROVIDERS = {
+    "openai_direct": ("OpenAI (Direct)", test_openai_direct),
+    "anthropic_direct": ("Anthropic (Direct)", test_anthropic_direct),
+    "gemini_direct": ("Gemini (Direct)", test_gemini_direct),
 }
 
 
-def run_tests(tool_name: str, provider: str | None = None):
+# ---------------------------------------------------------------------------
+# Test runner
+# ---------------------------------------------------------------------------
+
+
+def run_tests(
+    tool_name: str,
+    schema: dict,
+    description: str,
+    file_path: str,
+    provider: str | None = None,
+):
+    fn_name = tool_name.lower()[:64]
+
+    props = list(schema.get("properties", {}).keys())
     print(f"Tool: {tool_name}")
+    print(f"File: {file_path}")
+    print(
+        f"Schema properties ({len(props)}): {props[:10]}{'...' if len(props) > 10 else ''}"
+    )
     print()
 
-    if provider:
-        items = [(provider, PROVIDERS[provider])]
-    else:
-        items = list(PROVIDERS.items())
-
     results = []
-    for key, (display_name, test_fn) in items:
+
+    # Build unified list of (display_name, callable_with_no_args)
+    all_providers = {**COMPOSIO_PROVIDERS, **DIRECT_PROVIDERS}
+    if provider:
+        items = [(provider, all_providers[provider])]
+    else:
+        items = list(all_providers.items())
+
+    for _key, (display_name, test_fn) in items:
+        # Composio providers take (tool_name), direct providers take (schema, name, desc)
+        is_direct = _key.endswith("_direct")
+        args = (schema, fn_name, description) if is_direct else (tool_name,)
         try:
-            result = with_retries(test_fn, tool_name)
+            result = with_retries(test_fn, *args)
             detail = result.get("args") or result.get("output", "")
             if (
                 MAX_DETAIL_LENGTH > 0
@@ -247,10 +424,14 @@ def run_tests(tool_name: str, provider: str | None = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Test tool schema compatibility across Composio providers."
+        description="Test tool schema compatibility across Composio providers and direct API calls."
     )
     parser.add_argument(
         "tool_name", help="Composio tool name (e.g. SLACK_SEND_MESSAGE)"
+    )
+    parser.add_argument(
+        "file_path",
+        help="Path to the local action file (e.g. apps/_21risk/actions/get_compliance.py)",
     )
     parser.add_argument(
         "--provider",
@@ -260,10 +441,15 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    if not (MERCURY_PATH / args.file_path).exists():
+        print(f"File not found: {MERCURY_PATH / args.file_path}")
+        sys.exit(1)
+
     required = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]
     missing = [k for k in required if not os.environ.get(k)]
     if missing:
         print(f"Missing environment variables: {', '.join(missing)}")
         sys.exit(1)
 
-    run_tests(args.tool_name, args.provider)
+    schema, description = load_schema(str(MERCURY_PATH / args.file_path))
+    run_tests(args.tool_name, schema, description, args.file_path, args.provider)
