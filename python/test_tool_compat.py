@@ -36,6 +36,7 @@ PROVIDER_CHOICES = [
     "openai_direct",
     "anthropic_direct",
     "gemini_direct",
+    "gemini_stripped",
 ]
 
 
@@ -317,32 +318,69 @@ def test_anthropic_direct(schema: dict, name: str, description: str) -> dict:
     return {"args": json.dumps(tool_use["input"])}
 
 
-def test_gemini_direct(schema: dict, name: str, description: str) -> dict:
+GEMINI_UNSUPPORTED_FIELDS = {
+    "examples",
+    "title",
+    "human_parameter_description",
+    "human_parameter_name",
+    "const",
+    "additionalProperties",
+}
+
+
+def _strip_unsupported_fields(obj: dict) -> dict:
+    """Recursively strip fields that Gemini's REST API rejects."""
+    import copy
+
+    obj = copy.deepcopy(obj)
+
+    def _clean(d):
+        if not isinstance(d, dict):
+            return
+        for key in list(d.keys()):
+            if key in GEMINI_UNSUPPORTED_FIELDS:
+                del d[key]
+            elif isinstance(d[key], dict):
+                _clean(d[key])
+            elif isinstance(d[key], list):
+                for item in d[key]:
+                    if isinstance(item, dict):
+                        _clean(item)
+
+    _clean(obj)
+    return obj
+
+
+def _call_gemini(
+    schema: dict, name: str, description: str, *, force_tool_call: bool = False
+) -> dict:
+    """Send a tool-calling request to Gemini REST API."""
     api_key = os.environ["GOOGLE_API_KEY"]
+    body = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": f"Call the {name} tool with reasonable defaults."}],
+            }
+        ],
+        "tools": [
+            {
+                "function_declarations": [
+                    {
+                        "name": name,
+                        "description": description,
+                        "parameters": schema,
+                    }
+                ]
+            }
+        ],
+    }
+    if force_tool_call:
+        body["tool_config"] = {"function_calling_config": {"mode": "ANY"}}
     resp = requests.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}",
         headers={"Content-Type": "application/json"},
-        json={
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        {"text": f"Call the {name} tool with reasonable defaults."}
-                    ],
-                }
-            ],
-            "tools": [
-                {
-                    "function_declarations": [
-                        {
-                            "name": name,
-                            "description": description,
-                            "parameters": schema,
-                        }
-                    ]
-                }
-            ],
-        },
+        json=body,
     )
     resp.raise_for_status()
     data = resp.json()
@@ -350,6 +388,16 @@ def test_gemini_direct(schema: dict, name: str, description: str) -> dict:
         if "functionCall" in part:
             return {"args": json.dumps(part["functionCall"]["args"])}
     raise RuntimeError("No function call in response")
+
+
+def test_gemini_direct(schema: dict, name: str, description: str) -> dict:
+    return _call_gemini(schema, name, description)
+
+
+def test_gemini_stripped(schema: dict, name: str, description: str) -> dict:
+    return _call_gemini(
+        _strip_unsupported_fields(schema), name, description, force_tool_call=True
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -371,6 +419,7 @@ DIRECT_PROVIDERS = {
     "openai_direct": ("OpenAI (Direct)", test_openai_direct),
     "anthropic_direct": ("Anthropic (Direct)", test_anthropic_direct),
     "gemini_direct": ("Gemini (Direct)", test_gemini_direct),
+    "gemini_stripped": ("Gemini (Stripped)", test_gemini_stripped),
 }
 
 
@@ -414,7 +463,7 @@ def run_tests(
         except RuntimeError:
             asyncio.set_event_loop(asyncio.new_event_loop())
 
-        is_direct = key.endswith("_direct")
+        is_direct = key in DIRECT_PROVIDERS
         args = (schema, fn_name, description) if is_direct else (tool_name,)
         try:
             result = with_retries(test_fn, *args)

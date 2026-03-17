@@ -26,6 +26,6 @@ for entry in "${TOOLS[@]}"; do
   echo ""
   echo ">>> Category: $category"
   echo "============================================================"
-  python /Users/shrey/composio/python/test_tool_compat.py "$file" 2>&1
+  python /Users/shrey/composio/python/test_tool_compat.py "$file" --provider gemini_stripped 2>&1
   echo ""
 done
