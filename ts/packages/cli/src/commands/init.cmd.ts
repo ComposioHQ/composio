@@ -1,9 +1,11 @@
 import path from 'node:path';
 import { Command as CliCommand, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { Command, FileSystem } from '@effect/platform';
 import { ComposioUserContext } from 'src/services/user-context';
+import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
+import { CommandRunner } from 'src/services/command-runner';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
 import { userDataFromJSON } from 'src/models/user-data';
 import {
@@ -28,12 +30,18 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
  * ## Flags
  *
  * - `--yes` / `-y` — auto-select the first project from the list
+ * - `--install-skills` — install Composio agent skills after initialization
  */
 
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
   Options.withDescription('Auto-select default org/project, else first project')
+);
+
+const installSkillsOpt = Options.boolean('install-skills').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Install Composio agent skills after initialization')
 );
 
 // ---------------------------------------------------------------------------
@@ -203,6 +211,48 @@ const selectDefaultProject = (params: {
   return projects[0];
 };
 
+const installSkillsFlow = () =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const proc = yield* NodeProcess;
+    const os = yield* NodeOs;
+    const runner = yield* CommandRunner;
+
+    const installLocation = yield* ui.select<'local' | 'global'>(
+      'Where would you like to install Composio skills?',
+      [
+        {
+          value: 'local' as const,
+          label: 'In this repository',
+          hint: `${proc.cwd}/.claude/skills/`,
+        },
+        {
+          value: 'global' as const,
+          label: 'Globally',
+          hint: '~/.claude/skills/',
+        },
+      ]
+    );
+
+    const targetDir =
+      installLocation === 'local'
+        ? path.join(proc.cwd, '.claude', 'skills')
+        : path.join(os.homedir, '.claude', 'skills');
+
+    yield* ui.log.step(`Installing Composio skills to ${targetDir}...`);
+
+    const exitCode = yield* runner.run(
+      Command.make('npx', 'skills', 'add', 'composiohq/skills', '--path', targetDir)
+    );
+
+    if (exitCode !== 0) {
+      yield* ui.log.error('Failed to install Composio skills.');
+      return;
+    }
+
+    yield* ui.log.success('Composio skills installed successfully!');
+  });
+
 // ---------------------------------------------------------------------------
 // Command
 // ---------------------------------------------------------------------------
@@ -224,8 +274,9 @@ export const initCmd = CliCommand.make(
   {
     noBrowser: noBrowserOpt,
     yes: yesOpt,
+    installSkills: installSkillsOpt,
   },
-  ({ noBrowser, yes }) =>
+  ({ noBrowser, yes, installSkills }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const proc = yield* NodeProcess;
@@ -235,6 +286,10 @@ export const initCmd = CliCommand.make(
       const composioDir = path.join(proc.cwd, constants.PROJECT_COMPOSIO_DIR);
 
       yield* initInteractiveFlow({ composioDir, noBrowser, yes });
+
+      if (installSkills) {
+        yield* installSkillsFlow();
+      }
     })
 ).pipe(CliCommand.withDescription('Initialize a Composio project in the current directory.'));
 
