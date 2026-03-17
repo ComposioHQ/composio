@@ -99,30 +99,30 @@ Schemas loaded from Composio API, tested via each Composio provider wrapper (SDK
 
 Schemas loaded locally from action files via `Action.from_file()`, tested via raw HTTP API calls (no SDK, no Composio wrappers). The local Pydantic-generated schema includes fields like `examples` and `title` that are not present in the Composio API schema.
 
-**Gemini (Stripped)** = same raw schema but with Gemini-incompatible fields (`examples`, `title`, `human_parameter_description`, `human_parameter_name`, `const`, `additionalProperties`) recursively stripped, and `tool_config.function_calling_config.mode: "ANY"` to force tool calling.
+**Gemini (Stripped)** = raw schema with Gemini-incompatible fields (`examples`, `title`, `human_parameter_description`, `human_parameter_name`, `const`, `additionalProperties`) recursively stripped, and `tool_config.function_calling_config.mode: "ANY"` to force tool calling. Raw Gemini Direct (without stripping) fails on nearly every tool due to these unsupported fields.
 
 
-| Category                          | OpenAI | Anthropic | Gemini | Gemini (Stripped) |
-| --------------------------------- | ------ | --------- | ------ | ----------------- |
-| **baseline (clean)**              | OK     | OK        | FAILED | OK                |
-| **param_name_too_long**           | OK     | OK        | OK     | OK                |
-| **excessive_nesting**             | OK     | OK        | FAILED | OK                |
-| **missing_param_description**     | OK     | OK        | FAILED | OK                |
-| **missing_type**                  | OK     | OK        | OK     | OK                |
-| **invalid_param_chars**           | OK     | OK        | FAILED | OK                |
-| **param_description_too_long**    | OK     | OK        | OK     | OK                |
-| **tool_name_too_long**            | OK     | OK        | FAILED | OK                |
-| **tool_description_too_long**     | OK     | OK        | FAILED | OK                |
-| **excessive_properties**          | OK     | OK        | FAILED | FAILED            |
-| **excessive_enum_values**         | OK     | OK        | FAILED | OK                |
-| **param_name_leading_underscore** | OK     | OK        | FAILED | OK                |
+| Category                          | OpenAI | Anthropic | Gemini (Stripped) |
+| --------------------------------- | ------ | --------- | ----------------- |
+| **baseline (clean)**              | OK     | OK        | OK                |
+| **param_name_too_long**           | OK     | OK        | OK                |
+| **excessive_nesting**             | OK     | OK        | OK                |
+| **missing_param_description**     | OK     | OK        | OK                |
+| **missing_type**                  | OK     | OK        | OK                |
+| **invalid_param_chars**           | OK     | OK        | OK                |
+| **param_description_too_long**    | OK     | OK        | OK                |
+| **tool_name_too_long**            | OK     | OK        | OK                |
+| **tool_description_too_long**     | OK     | OK        | OK                |
+| **excessive_properties**          | OK     | OK        | FAILED            |
+| **excessive_enum_values**         | OK     | OK        | OK                |
+| **param_name_leading_underscore** | OK     | FAILED    | OK                |
 
 
 ---
 
 ## Key Findings
 
-1. **Gemini (Direct) fails on most tools** -- The raw Pydantic-generated schema includes `examples`, `title`, `const`, `additionalProperties`, and `human_parameter_*` fields that Gemini's REST API strictly rejects. Gemini via Composio works because the Composio provider strips these unsupported fields before sending.
+1. **Gemini requires schema sanitization** -- The raw Pydantic-generated schema includes `examples`, `title`, `const`, `additionalProperties`, and `human_parameter_*` fields that Gemini's REST API strictly rejects. These must be stripped before sending.
 2. **Gemini (Stripped) passes 11/12** -- Once unsupported fields are stripped, only `excessive_properties` (110 optional properties) causes a hard 400 reject from Gemini due to its constraint branching limit.
 3. **Gemini (Composio) fails on `param_name_too_long` and `excessive_nesting`** -- The Composio Gemini provider encounters issues with these schemas (response has no `.parts` attribute).
 4. **OpenAI and Anthropic pass all categories** -- With `tool_choice: required` (OpenAI) and `tool_choice: any` (Anthropic), both providers handle every schema violation correctly in both Composio and Direct modes.

@@ -35,7 +35,6 @@ PROVIDER_CHOICES = [
     "crewai",
     "openai_direct",
     "anthropic_direct",
-    "gemini_direct",
     "gemini_stripped",
 ]
 
@@ -400,10 +399,6 @@ def _call_gemini(
     raise RuntimeError("No function call in response")
 
 
-def test_gemini_direct(schema: dict, name: str, description: str) -> dict:
-    return _call_gemini(schema, name, description)
-
-
 def test_gemini_stripped(schema: dict, name: str, description: str) -> dict:
     return _call_gemini(
         _strip_unsupported_fields(schema), name, description, force_tool_call=True
@@ -428,7 +423,6 @@ COMPOSIO_PROVIDERS = {
 DIRECT_PROVIDERS = {
     "openai_direct": ("OpenAI (Direct)", test_openai_direct),
     "anthropic_direct": ("Anthropic (Direct)", test_anthropic_direct),
-    "gemini_direct": ("Gemini (Direct)", test_gemini_direct),
     "gemini_stripped": ("Gemini (Stripped)", test_gemini_stripped),
 }
 
