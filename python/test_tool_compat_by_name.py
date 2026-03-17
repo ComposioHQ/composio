@@ -62,10 +62,11 @@ def test_anthropic_direct(schema: dict, name: str, description: str) -> dict:
         messages=[
             {
                 "role": "user",
-                "content": f"Call the {name} tool with reasonable defaults.",
+                "content": f"You MUST call the {name} tool immediately with reasonable default arguments. Do not ask questions.",
             }
         ],
         tools=[{"name": name, "description": description, "input_schema": schema}],
+        tool_choice={"type": "any"},
     )
     tool_use = next(block for block in resp.content if block.type == "tool_use")
     return {"args": json.dumps(tool_use.input)}

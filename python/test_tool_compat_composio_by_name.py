@@ -50,10 +50,11 @@ def test_anthropic_composio(tool_name: str) -> dict:
         messages=[
             {
                 "role": "user",
-                "content": f"Call the {tool_name} tool with reasonable defaults.",
+                "content": f"You MUST call the {tool_name} tool immediately with reasonable default arguments. Do not ask questions.",
             }
         ],
         tools=tools,
+        tool_choice={"type": "any"},
     )
     tool_use = next(block for block in resp.content if block.type == "tool_use")
     return {"args": json.dumps(tool_use.input)}
