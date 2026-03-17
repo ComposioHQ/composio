@@ -8,7 +8,7 @@ unset GOOGLE_CLOUD_LOCATION
 TOOLS=(
   "baseline|SLACK_SEND_MESSAGE"
   "param_name_too_long|DIALPAD_CONFIGURE_CALL_CENTER_SETTINGS"
-  "excessive_nesting|AGENCYZOOM_BATCH_CREATE_LEAD"
+  "excessive_nesting|DATABRICKS_SETTINGS_AUTOMATIC_CLUSTER_UPDATE_UPDATE"
   "missing_param_description|ASANA_ADD_SUPPORTING_RELATIONSHIP"
   "missing_type|ABSTRACT_VALIDATE_EMAIL"
   "invalid_param_chars|BENZINGA_GET_CONFERENCE_CALLS"
@@ -17,6 +17,7 @@ TOOLS=(
   "tool_description_too_long|COMPOSIO_CREATE_PLAN"
   "excessive_properties|HUBSPOT_CREATE_CONTACT"
   "excessive_enum_values|HUBSPOT_CREATE_A_NEW_MARKETING_EMAIL"
+  "param_name_leading_underscore|_21RISK_GET_COMPLIANCE"
 )
 
 for entry in "${TOOLS[@]}"; do

@@ -17,6 +17,7 @@ import time
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
+MAX_DETAIL_LENGTH = 250  # Max chars for detail column (0 for unlimited)
 
 PROVIDER_CHOICES = ["openai", "anthropic", "gemini", "agents", "langchain", "crewai"]
 
@@ -222,14 +223,18 @@ def run_tests(tool_name: str, provider: str | None = None):
         try:
             result = with_retries(test_fn, tool_name)
             detail = result.get("args") or result.get("output", "")
-            if isinstance(detail, str) and len(detail) > 120:
-                detail = detail[:117] + "..."
+            if (
+                MAX_DETAIL_LENGTH > 0
+                and isinstance(detail, str)
+                and len(detail) > MAX_DETAIL_LENGTH
+            ):
+                detail = detail[: MAX_DETAIL_LENGTH - 3] + "..."
             results.append((display_name, "OK", detail))
         except Exception as e:
             error_str = str(e)
             first_line = error_str.split("\n")[0]
-            if len(first_line) > 120:
-                first_line = first_line[:117] + "..."
+            if MAX_DETAIL_LENGTH > 0 and len(first_line) > MAX_DETAIL_LENGTH:
+                first_line = first_line[: MAX_DETAIL_LENGTH - 3] + "..."
             results.append((display_name, "FAILED", first_line))
 
     name_width = max(len(r[0]) for r in results)
