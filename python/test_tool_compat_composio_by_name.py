@@ -3,15 +3,46 @@
 Tool compatibility tester for Composio providers — by tool name.
 
 Usage:
-    python test_tool_compat_composio_by_name.py <TOOL_NAME>
+    python test_tool_compat_composio_by_name.py <TOOL_NAME> [--provider PROVIDER]
 
 Tests a tool via each Composio provider's tools.get() and reports
 which providers can successfully wrap and use the tool schema.
 """
 
+import argparse
 import json
 import os
 import sys
+import time
+
+MAX_RETRIES = 3
+RETRY_DELAY = 2
+
+PROVIDER_CHOICES = ["openai", "anthropic", "gemini", "agents", "langchain", "crewai"]
+
+
+def with_retries(fn, tool_name: str) -> dict:
+    """Run a test function with retries for transient failures."""
+    last_err = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            return fn(tool_name)
+        except Exception as e:
+            last_err = e
+            err_str = str(e).lower()
+            retryable = (
+                "no function call" in err_str
+                or "no tool call" in err_str
+                or "tool was not called" in err_str
+                or "connection error" in err_str
+                or "timeout" in err_str
+                or "rate limit" in err_str
+            )
+            if retryable and attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+                continue
+            raise
+    raise last_err
 
 
 def test_openai_composio(tool_name: str) -> dict:
@@ -69,21 +100,26 @@ def test_gemini_composio(tool_name: str) -> dict:
     composio = Composio(provider=GeminiProvider())
     tools = composio.tools.get(user_id="default", tools=[tool_name])
     client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+    # Disable AFC to get raw function_call with exact args
     resp = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=f"Call the {tool_name} tool with reasonable defaults.",
-        config=types.GenerateContentConfig(tools=tools),
+        config=types.GenerateContentConfig(
+            tools=tools,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                disable=True,
+            ),
+        ),
     )
-    # Gemini provider uses AFC — check for function_call, fall back to text
     for part in resp.candidates[0].content.parts:
         if part.function_call:
             return {"args": json.dumps(dict(part.function_call.args))}
-    text = resp.candidates[0].content.parts[0].text or ""
-    return {"output": f"(AFC) {text[:150]}"}
+    raise RuntimeError("No function call in response")
 
 
 def test_openai_agents_composio(tool_name: str) -> dict:
     from agents import Agent, Runner
+    from agents.items import ToolCallItem
     from composio import Composio
     from composio_openai_agents import OpenAIAgentsProvider
 
@@ -98,7 +134,11 @@ def test_openai_agents_composio(tool_name: str) -> dict:
         starting_agent=agent,
         input=f"Call the {tool_name} tool with reasonable defaults.",
     )
-    return {"output": result.final_output[:200]}
+    # Extract tool call args from run items
+    for item in result.new_items:
+        if isinstance(item, ToolCallItem):
+            return {"args": item.raw_item.arguments}
+    raise RuntimeError("No tool call in run items")
 
 
 def test_langchain_composio(tool_name: str) -> dict:
@@ -128,6 +168,16 @@ def test_crewai_composio(tool_name: str) -> dict:
     if not tools:
         raise RuntimeError("No tools returned")
 
+    # Monkey-patch the tool's _run to capture args
+    captured_args = []
+    original_run = tools[0]._run
+
+    def capturing_run(**kwargs):
+        captured_args.append(kwargs)
+        return original_run(**kwargs)
+
+    tools[0]._run = capturing_run
+
     agent = Agent(
         role="Tool Tester",
         goal=f"Call the {tool_name} tool with reasonable default arguments.",
@@ -142,38 +192,45 @@ def test_crewai_composio(tool_name: str) -> dict:
         agent=agent,
     )
     crew = Crew(agents=[agent], tasks=[task], verbose=False)
-    result = crew.kickoff()
-    return {"output": str(result)[:200]}
+    crew.kickoff()
+    if captured_args:
+        return {"args": json.dumps(captured_args[0], default=str)}
+    raise RuntimeError("Tool was not called")
 
 
-PROVIDERS = [
-    ("OpenAI", test_openai_composio),
-    ("Anthropic", test_anthropic_composio),
-    ("Google Gemini", test_gemini_composio),
-    ("OpenAI Agents SDK", test_openai_agents_composio),
-    ("LangChain", test_langchain_composio),
-    ("CrewAI", test_crewai_composio),
-]
+PROVIDERS = {
+    "openai": ("OpenAI", test_openai_composio),
+    "anthropic": ("Anthropic", test_anthropic_composio),
+    "gemini": ("Google Gemini", test_gemini_composio),
+    "agents": ("OpenAI Agents SDK", test_openai_agents_composio),
+    "langchain": ("LangChain", test_langchain_composio),
+    "crewai": ("CrewAI", test_crewai_composio),
+}
 
 
-def run_tests(tool_name: str):
+def run_tests(tool_name: str, provider: str | None = None):
     print(f"Tool: {tool_name}")
     print()
 
+    if provider:
+        items = [(provider, PROVIDERS[provider])]
+    else:
+        items = list(PROVIDERS.items())
+
     results = []
-    for provider_name, test_fn in PROVIDERS:
+    for key, (display_name, test_fn) in items:
         try:
-            result = test_fn(tool_name)
+            result = with_retries(test_fn, tool_name)
             detail = result.get("args") or result.get("output", "")
             if isinstance(detail, str) and len(detail) > 120:
                 detail = detail[:117] + "..."
-            results.append((provider_name, "OK", detail))
+            results.append((display_name, "OK", detail))
         except Exception as e:
             error_str = str(e)
             first_line = error_str.split("\n")[0]
             if len(first_line) > 120:
                 first_line = first_line[:117] + "..."
-            results.append((provider_name, "FAILED", first_line))
+            results.append((display_name, "FAILED", first_line))
 
     name_width = max(len(r[0]) for r in results)
     status_width = 6
@@ -184,9 +241,19 @@ def run_tests(tool_name: str):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <TOOL_NAME>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Test tool schema compatibility across Composio providers."
+    )
+    parser.add_argument(
+        "tool_name", help="Composio tool name (e.g. SLACK_SEND_MESSAGE)"
+    )
+    parser.add_argument(
+        "--provider",
+        choices=PROVIDER_CHOICES,
+        default=None,
+        help="Test a single provider instead of all",
+    )
+    args = parser.parse_args()
 
     required = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]
     missing = [k for k in required if not os.environ.get(k)]
@@ -194,4 +261,4 @@ if __name__ == "__main__":
         print(f"Missing environment variables: {', '.join(missing)}")
         sys.exit(1)
 
-    run_tests(sys.argv[1])
+    run_tests(args.tool_name, args.provider)
