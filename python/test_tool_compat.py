@@ -111,10 +111,11 @@ def test_openai_composio(tool_name: str) -> dict:
         messages=[
             {
                 "role": "user",
-                "content": f"Call the {tool_name} tool with reasonable defaults.",
+                "content": f"You MUST call the {tool_name} tool immediately with reasonable default arguments. Use placeholder values like 'test@example.com' for emails, '12345' for IDs, etc. Do not ask questions.",
             }
         ],
         tools=tools,
+        tool_choice="required",
     )
     call = resp.choices[0].message.tool_calls[0]
     return {"args": call.function.arguments}
@@ -156,7 +157,7 @@ def test_gemini_composio(tool_name: str) -> dict:
     # Disable AFC to get raw function_call with exact args
     resp = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=f"Call the {tool_name} tool with reasonable defaults.",
+        contents=f"You MUST call the {tool_name} tool immediately with reasonable default arguments. Use placeholder values like 'test@example.com' for emails, '12345' for IDs, etc. Do not ask questions.",
         config=types.GenerateContentConfig(
             tools=tools,
             automatic_function_calling=types.AutomaticFunctionCallingConfig(
@@ -185,7 +186,7 @@ def test_openai_agents_composio(tool_name: str) -> dict:
     )
     result = Runner.run_sync(
         starting_agent=agent,
-        input=f"Call the {tool_name} tool with reasonable defaults.",
+        input=f"You MUST call the {tool_name} tool immediately with reasonable default arguments. Use placeholder values like 'test@example.com' for emails, '12345' for IDs, etc. Do not ask questions.",
     )
     # Extract tool call args from run items
     for item in result.new_items:
@@ -204,7 +205,11 @@ def test_langchain_composio(tool_name: str) -> dict:
     tools = composio.tools.get(user_id="default", tools=[tool_name])
     llm = ChatOpenAI(model="gpt-4.1", api_key=os.environ["OPENAI_API_KEY"])
     resp = llm.bind_tools(tools).invoke(
-        [HumanMessage(content=f"Call the {tool_name} tool with reasonable defaults.")]
+        [
+            HumanMessage(
+                content=f"You MUST call the {tool_name} tool immediately with reasonable default arguments. Use placeholder values like 'test@example.com' for emails, '12345' for IDs, etc. Do not ask questions."
+            )
+        ]
     )
     if not resp.tool_calls:
         raise RuntimeError("No tool call in response")
@@ -268,7 +273,7 @@ def test_openai_direct(schema: dict, name: str, description: str) -> dict:
             "messages": [
                 {
                     "role": "user",
-                    "content": f"Call the {name} tool with reasonable defaults.",
+                    "content": f"You MUST call the {name} tool immediately with reasonable default arguments. Use placeholder values like 'test@example.com' for emails, '12345' for IDs, etc. Do not ask questions.",
                 }
             ],
             "tools": [
@@ -281,6 +286,7 @@ def test_openai_direct(schema: dict, name: str, description: str) -> dict:
                     },
                 }
             ],
+            "tool_choice": "required",
         },
     )
     resp.raise_for_status()
@@ -360,7 +366,11 @@ def _call_gemini(
         "contents": [
             {
                 "role": "user",
-                "parts": [{"text": f"Call the {name} tool with reasonable defaults."}],
+                "parts": [
+                    {
+                        "text": f"You MUST call the {name} tool immediately with reasonable default arguments. Use placeholder values like 'test@example.com' for emails, '12345' for IDs, etc. Do not ask questions."
+                    }
+                ],
             }
         ],
         "tools": [

@@ -10,7 +10,7 @@ TOOLS=(
   "param_name_too_long|apps/dialpad/actions/generated/configure_call_center_settings.py"
   "excessive_nesting|apps/databricks/actions/databricks_settings_automatic_cluster_update_update.py"
   "missing_param_description|apps/asana/actions/add_supporting_relationship.py"
-  "missing_type|apps/abstract/actions/abstract_email_validation_api.py"
+  "missing_type|apps/posthog/actions/generated/create_a_notebook_in_a_project.py"
   "invalid_param_chars|apps/benzinga/actions/get_conference_calls_v2_1.py"
   "param_description_too_long|apps/ahrefs/actions/generated/explore_keywords_overview.py"
   "tool_name_too_long|apps/big_data_cloud/actions/big_data_cloud_reverse_geocoding_with_timezone_api.py"
