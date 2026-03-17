@@ -115,6 +115,14 @@ const ADVANCED_COMMANDS: ReadonlyArray<{ name: string; description: string }> = 
       'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)',
   },
   {
+    name: 'py',
+    description: 'Handle Python projects.',
+  },
+  {
+    name: 'ts',
+    description: 'Handle TypeScript projects.',
+  },
+  {
     name: 'manage',
     description:
       'Manage Composio resources — toolkits, tools, accounts, triggers, logs, orgs, and projects.',
