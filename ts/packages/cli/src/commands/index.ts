@@ -10,9 +10,7 @@ import { loginCmd } from './login.cmd';
 import { logoutCmd } from './logout.cmd';
 import { installCmd } from './install.cmd';
 import { initCmd } from './init.cmd';
-import { pyCmd } from './py/py.cmd';
-import { tsCmd } from './ts/ts.cmd';
-import { generateCmd } from './generate.cmd';
+import { generateCmd } from './generate/generate.cmd';
 import { manageCmd } from './manage/manage.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
 import { printRootHelp } from './root-help';
@@ -27,12 +25,9 @@ const $cmd = $defaultCmd.pipe(
     installCmd,
     initCmd,
     generateCmd,
-    pyCmd,
-    tsCmd,
     manageCmd,
   ])
 );
-
 export const rootCommand = $cmd;
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {

@@ -3,8 +3,10 @@ import { Effect, Match } from 'effect';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { NodeProcess } from 'src/services/node-process';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { generateTypescriptTypeStubs } from './ts/commands/ts.generate.cmd';
-import { generatePythonTypeStubs } from './py/commands/py.generate.cmd';
+import { generateTypescriptTypeStubs } from '../ts/commands/ts.generate.cmd';
+import { generatePythonTypeStubs } from '../py/commands/py.generate.cmd';
+import { generateCmd$Py } from './generate-py.cmd';
+import { generateCmd$Ts } from './generate-ts.cmd';
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -27,9 +29,17 @@ export const toolkitsOpt = Options.text('toolkits').pipe(
 );
 
 /**
+ * CLI entry point for code generation commands.
+ *
+ * When invoked without a subcommand, auto-detects the project language.
+ * Subcommands `py` and `ts` allow explicit language selection.
+ *
  * @example
  * ```bash
- * composio generate <command>
+ * composio generate
+ * composio generate py
+ * composio generate ts
+ * composio generate ts --type-tools
  * ```
  */
 export const generateCmd = Command.make('generate', { outputOpt, typeTools, toolkitsOpt }).pipe(
@@ -48,7 +58,6 @@ export const generateCmd = Command.make('generate', { outputOpt, typeTools, tool
       const displayLang = env.kind === 'js' ? 'TypeScript' : 'Python';
       yield* ui.log.step(`Project type detected: ${displayLang}`);
 
-      // Redirect to either `ts generate` or `py generate` commands
       yield* Match.value(env.kind).pipe(
         Match.when('js', () =>
           generateTypescriptTypeStubs({
@@ -63,5 +72,6 @@ export const generateCmd = Command.make('generate', { outputOpt, typeTools, tool
         Match.exhaustive
       );
     })
-  )
+  ),
+  Command.withSubcommands([generateCmd$Py, generateCmd$Ts])
 );
