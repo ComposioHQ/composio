@@ -436,7 +436,7 @@
                     "to": "test@gmail.com"
                   },
                   {
-                    "channel": "#general",
+                    "channel": "general",
                     "text": "Hello from Composio!"
                   },
                   {
