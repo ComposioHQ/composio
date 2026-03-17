@@ -218,10 +218,10 @@ e2e(import.meta.url, {
     let missingArgResult: E2ETestResult;
 
     beforeAll(async () => {
-      missingArgResult = await runCmd('composio tools info');
+      missingArgResult = await runCmd('composio manage tools info');
     }, TIMEOUTS.FIXTURE);
 
-    describe('composio tools info (missing argument)', () => {
+    describe('composio manage tools info (missing argument)', () => {
       it('exits with non-zero code', () => {
         expect(missingArgResult.exitCode).not.toBe(0);
       });
@@ -344,7 +344,7 @@ Commands run inside `sh -c '...'` in a POSIX shell. Rules:
 
 - Use double quotes for flag values with spaces or special chars:
   ```typescript
-  runCmd('composio tools info "GMAIL_SEND_EMAIL"')
+  runCmd('composio manage tools info "GMAIL_SEND_EMAIL"')
   ```
 - Use single quotes inside double-quoted contexts for literal strings.
 - **No bash-isms**: no `[[`, no `$()`, no arrays.
