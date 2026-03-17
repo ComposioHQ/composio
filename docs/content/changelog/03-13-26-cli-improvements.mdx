@@ -46,7 +46,7 @@ composio link github --no-wait    # Prints redirect URL and JSON, exits
 The `composio whoami` command no longer displays API keys in the output. This improves security and reduces the risk of accidental exposure in logs or screenshots.
 
 - API key is removed from both display and JSON output.
-- Hints for `composio orgs switch` and `composio init` are shown instead.
+- Hints for `composio manage orgs switch` and `composio init` are shown instead.
 
 ---
 
@@ -86,4 +86,4 @@ composio init            # Interactive project selection
 
 - **Login JSON output**: When using the org/project picker, the JSON output now reflects the final selection (not the initial session state).
 - **Picker error handling**: If the org/project picker fails (e.g. API error), the CLI shows a warning, emits JSON with session data, and displays hints so you are not left without guidance.
-- **Modularized org/project selection**: The selection logic is shared between `composio login` and `composio orgs switch`.
+- **Modularized org/project selection**: The selection logic is shared between `composio login` and `composio manage orgs switch`.

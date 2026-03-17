@@ -176,8 +176,8 @@ EXAMPLES
   $ composio generate --toolkits github,slack --type-tools
 
 COMMANDS
-  composio ts generate   Generate TypeScript stubs
-  composio py generate   Generate Python stubs
+  composio generate ts   Generate TypeScript stubs
+  composio generate py   Generate Python stubs
 ```
 
 **Suggest next commands** when it helps the user's flow:
