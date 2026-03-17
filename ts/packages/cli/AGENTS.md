@@ -27,16 +27,17 @@ Errors are captured via the custom `effect-errors/` module, which provides sourc
 
 Each command is declared with `@effect/cli`'s `Command.make()` pattern:
 
-| Command                                                  | Description                                                |
-| -------------------------------------------------------- | ---------------------------------------------------------- |
-| `composio version`                                       | Display CLI version                                        |
-| `composio whoami`                                        | Show logged-in user's API key                              |
-| `composio login [--no-browser] [--no-wait] [--key text]` | Login with browser redirect                                |
-| `composio logout`                                        | Clear stored API key                                       |
-| `composio upgrade`                                       | Self-update binary from GitHub releases                    |
-| `composio generate`                                      | Auto-detect project language, delegate to `ts` or `py`     |
-| `composio ts generate`                                   | Generate TypeScript type stubs for toolkits/tools/triggers |
-| `composio py generate`                                   | Generate Python type stubs                                 |
+| Command                                                  | Description                                                 |
+| -------------------------------------------------------- | ----------------------------------------------------------- |
+| `composio version`                                       | Display CLI version                                         |
+| `composio whoami`                                        | Show logged-in user's API key                               |
+| `composio login [--no-browser] [--no-wait] [--key text]` | Login with browser redirect                                 |
+| `composio logout`                                        | Clear stored API key                                        |
+| `composio upgrade`                                       | Self-update binary from GitHub releases                     |
+| `composio generate`                                      | Auto-detect project language, delegate to `ts` or `py`      |
+| `composio ts generate`                                   | Generate TypeScript type stubs for toolkits/tools/triggers  |
+| `composio py generate`                                   | Generate Python type stubs                                  |
+| `composio manage <subcommand>`                           | Manage Composio resources (toolkits, tools, accounts, etc.) |
 
 Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation.
 
