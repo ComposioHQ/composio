@@ -80,15 +80,15 @@ Schemas loaded from Composio API, tested via each Composio provider wrapper (SDK
 | Category                          | OpenAI | Anthropic | Gemini | Agents SDK | LangChain | CrewAI |
 | --------------------------------- | ------ | --------- | ------ | ---------- | --------- | ------ |
 | **baseline (clean)**              | OK     | OK        | OK     | OK         | OK        | OK     |
-| **param_name_too_long**           | OK     | OK        | FAILED | OK         | OK        | OK     |
-| **excessive_nesting**             | OK     | OK        | FAILED | OK         | OK        | OK     |
+| **param_name_too_long**           | OK     | OK        | OK     | OK         | OK        | OK     |
+| **excessive_nesting**             | OK     | OK        | OK     | OK         | OK        | OK     |
 | **missing_param_description**     | OK     | OK        | OK     | OK         | OK        | OK     |
 | **missing_type**                  | OK     | OK        | OK     | OK         | OK        | OK     |
 | **invalid_param_chars**           | OK     | OK        | OK     | OK         | OK        | OK     |
 | **param_description_too_long**    | OK     | OK        | OK     | OK         | OK        | OK     |
 | **tool_name_too_long**            | OK     | OK        | OK     | OK         | OK        | OK     |
 | **tool_description_too_long**     | OK     | OK        | OK     | OK         | OK        | OK     |
-| **excessive_properties**          | OK     | OK        | OK     | OK         | OK        | OK     |
+| **excessive_properties**          | OK     | OK        | FAILED | OK         | OK        | OK     |
 | **excessive_enum_values**         | OK     | OK        | OK     | OK         | OK        | OK     |
 | **param_name_leading_underscore** | OK     | OK        | OK     | OK         | FAILED    | FAILED |
 
@@ -128,7 +128,6 @@ Schemas loaded locally from action files via `Action.from_file()`, tested via ra
 4. **OpenAI and Anthropic pass all categories** -- With `tool_choice: required` (OpenAI) and `tool_choice: any` (Anthropic), both providers handle every schema violation correctly in both Composio and Direct modes.
 5. **LangChain/CrewAI fail on leading underscore params** -- Pydantic v2's `create_model()` rejects field names starting with `_` (e.g., `_maxPageSizeInMb`). These providers use Pydantic internally.
 6. **72% of `missing_type` CSV violations are fixed** -- Of 464 unique tools flagged in the CSV, 336 now have proper types in local action files. 55 remain (mostly PostHog tools using `t.Optional[t.Any]`).
-
 
 ---
 
