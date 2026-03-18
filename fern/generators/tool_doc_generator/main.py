@@ -8,6 +8,7 @@ This script automates the generation of MDX documentation for Composio tools.
 import argparse
 import concurrent.futures
 import html
+import json
 import logging
 import os
 import re
@@ -505,11 +506,30 @@ Use the dashboard to create an auth config for the {app_name} toolkit. This allo
         content.append("\n**Action Parameters**\n")
         content.append("\n".join(self._process_parameters(tool_data["params"])))
 
+        # Add input schema as JSON
+        if tool_data["params"] and isinstance(tool_data["params"], dict):
+            content.append("\n**Detailed Input Schema**\n")
+            content.append(MDX.as_code_block(
+                json.dumps(tool_data["params"], indent=2),
+                "json",
+                title="Input Schema",
+                max_lines=40,
+            ))
+
         # Add responses
         content.append("\n**Action Response**\n")
         content.append("\n".join(self._process_parameters(tool_data["response"])))
 
-        # safe_name = self._sanitize_action_name(tool_data['name'])
+        # Add response schema as JSON
+        if tool_data["response"] and isinstance(tool_data["response"], dict):
+            content.append("\n**Detailed Response Schema**\n")
+            content.append(MDX.as_code_block(
+                json.dumps(tool_data["response"], indent=2),
+                "json",
+                title="Response Schema",
+                max_lines=40,
+            ))
+
         return MDX.as_accordion(tool_data["slug"], "\n".join(content))
 
     def _extract_tool_data(self, tool: Tool) -> t.Dict[str, t.Any]:
