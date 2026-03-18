@@ -1,5 +1,15 @@
 # @composio/core
 
+## 0.6.5-alpha.1
+
+### Patch Changes
+
+- Custom tools, custom toolkits, and proxy execute for tool router sessions (TypeScript only)
+  - `experimental_createTool()` — standalone (no auth), extension (inherits toolkit auth via `extendsToolkit`), or grouped in toolkits
+  - `experimental_createToolkit()` — group related tools under a namespace
+  - `session.proxyExecute()` / `ctx.proxyExecute()` — raw HTTP calls through Composio auth, returns `{ status, data, headers }`
+  - Bump `@composio/client` to `0.1.0-alpha.62`
+
 ## 0.6.5
 
 ### Patch Changes
