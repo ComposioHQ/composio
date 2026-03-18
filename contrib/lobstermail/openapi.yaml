@@ -1625,7 +1625,7 @@ components:
           example: 0
         tierName:
           type: string
-          enum: [anonymous, free_verified, builder, scale]
+          enum: [anonymous, free_verified, builder, pro, scale]
           description: Human-readable tier name.
         limits:
           $ref: "#/components/schemas/AccountLimits"
@@ -1849,7 +1849,7 @@ components:
                   example: 0
                 tierName:
                   type: string
-                  enum: [anonymous, free_verified, builder, scale]
+                  enum: [anonymous, free_verified, builder, pro, scale]
                   example: anonymous
                 canSend:
                   type: boolean

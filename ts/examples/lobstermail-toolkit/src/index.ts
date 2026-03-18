@@ -139,19 +139,25 @@ await composio.tools.createCustomTool({
 await composio.tools.createCustomTool({
   slug: 'LOBSTERMAIL_LIST_EMAILS',
   name: 'List emails in inbox',
-  description: 'List emails for a specific inbox. Supports pagination and sender filtering.',
+  description:
+    'List emails for a specific inbox. Supports pagination, direction filtering, ' +
+    'date filtering, and unread-only filtering.',
   inputParams: z.object({
     inboxId: z.string().describe('The inbox ID to fetch emails from'),
-    from: z
-      .string()
+    direction: z
+      .enum(['inbound', 'outbound'])
       .optional()
-      .describe('Filter by sender address (case-insensitive substring match)'),
+      .describe('Filter by email direction'),
+    since: z.string().optional().describe('Only emails after this ISO datetime'),
+    unread: z.boolean().optional().describe('Only unread emails'),
     cursor: z.string().optional().describe('Pagination cursor'),
     limit: z.number().min(1).max(50).optional().describe('Max results (default 20)'),
   }),
   execute: async (input) => {
     const params = new URLSearchParams();
-    if (input.from) params.set('from', input.from);
+    if (input.direction) params.set('direction', input.direction);
+    if (input.since) params.set('since', input.since);
+    if (input.unread !== undefined) params.set('unread', String(input.unread));
     if (input.cursor) params.set('cursor', input.cursor);
     if (input.limit) params.set('limit', String(input.limit));
     const qs = params.toString();
@@ -231,12 +237,26 @@ await composio.tools.createCustomTool({
   slug: 'LOBSTERMAIL_CREATE_WEBHOOK',
   name: 'Create webhook',
   description:
-    'Register a webhook to receive notifications for email events ' +
-    '(email.received, email.bounced, email.delivered). Can be account-wide or per-inbox.',
+    'Register a webhook to receive notifications for email events. ' +
+    'Supported events: email.received, email.sent, email.bounced, email.quarantined, ' +
+    'email.scan.complete, email.thread.new, email.thread.reply, inbox.created, inbox.expired. ' +
+    'Can be account-wide or per-inbox.',
   inputParams: z.object({
     url: z.string().url().describe('HTTPS webhook endpoint URL'),
     events: z
-      .array(z.enum(['email.received', 'email.bounced', 'email.delivered']))
+      .array(
+        z.enum([
+          'email.received',
+          'email.sent',
+          'email.bounced',
+          'email.quarantined',
+          'email.scan.complete',
+          'email.thread.new',
+          'email.thread.reply',
+          'inbox.created',
+          'inbox.expired',
+        ]),
+      )
       .min(1)
       .describe('Events to subscribe to'),
     inboxId: z
