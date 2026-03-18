@@ -1,0 +1,2853 @@
+openapi: 3.1.0
+info:
+  title: LobsterMail API
+  version: 0.0.1
+  description: |
+    Email infrastructure for AI agents. LobsterMail lets AI agents self-provision
+    email inboxes, receive and send email, register custom domains, and configure
+    webhooks — all through a simple REST API.
+
+    ## Authentication
+
+    Most endpoints require a Bearer token passed in the `Authorization` header.
+    Tokens are prefixed with `lm_sk_test_` (sandbox) or `lm_sk_live_` (production).
+
+    ```
+    Authorization: Bearer lm_sk_test_abc123...
+    ```
+
+    **Public endpoints** that do not require authentication:
+    - `GET /health`
+    - `POST /v1/signup`
+    - `POST /v1/stripe/webhook`
+    - `GET /v1/docs/guides`
+    - `GET /v1/docs/guides/{slug}`
+    - `GET /v1/docs/openapi`
+
+    ## Tiers
+
+    | Tier | Name           | Price    | Max Inboxes | Sends/day | Emails/mo | Can Send |
+    |------|----------------|----------|-------------|-----------|-----------|----------|
+    | 0    | Anonymous      | Free     | 5           | 0         | 100       | No       |
+    | 1    | Free Verified  | Free     | 5           | 10        | 1 000     | Yes      |
+    | 2    | Builder        | $9/mo    | 10          | 500       | 5 000     | Yes      |
+    | 3    | Pro            | $19/mo   | 20          | 1 000     | 10 000    | Yes      |
+    | 4    | Scale          | $99/mo   | 300         | 10 000    | 100 000   | Yes      |
+
+    **Verification (Tier 0 → 1):** Two methods to reach Free Verified:
+    1. **X verification** — `POST /v1/verify/x` with a tweet URL.
+    2. **Card verification** — `POST /v1/billing/checkout` with `tier: 1`. Creates a $0/mo
+       Stripe subscription that collects a credit card. You will **not** be charged unless
+       you explicitly upgrade to a paid tier.
+
+    Subscribe via `POST /v1/billing/checkout` with `tier: 2`, `tier: 3`, or `tier: 4` for higher limits.
+
+    ## Early-Bird Promotion
+
+    The first 1,000 accounts to subscribe to the **Builder** tier get **90 days free**.
+    To claim the promotion:
+
+    1. Call `POST /v1/billing/checkout` with `{"tier": 2}`.
+    2. Complete the Stripe Checkout session (a credit card is collected but **not charged** during the trial).
+    3. After 90 days, the subscription renews at $9/mo unless cancelled via `POST /v1/billing/portal`.
+
+    Check `GET /v1/account` — the `promo` field shows whether the promotion is `"available"` or `"claimed"`,
+    including remaining slots and trial details.
+
+    ## Rate Limiting
+
+    All endpoints are rate-limited. When you exceed the limit you receive a
+    `429` response with a `Retry-After` header.
+
+    ## Pagination
+
+    List endpoints use cursor-based pagination. Pass the `cursor` value from
+    the previous response to fetch the next page. When `hasMore` is `false`,
+    you have reached the end of the result set.
+  contact:
+    name: LobsterMail Support
+    url: https://lobstermail.ai
+    email: support@lobstermail.ai
+  license:
+    name: Proprietary
+    url: https://lobstermail.ai/terms
+
+servers:
+  - url: https://api.lobstermail.ai
+    description: Production
+  - url: http://localhost:4801
+    description: Local development
+
+tags:
+  - name: Health
+    description: Service health checks
+  - name: Auth
+    description: Authentication and account creation
+  - name: Account
+    description: Account details and usage
+  - name: Inboxes
+    description: Create, list, and manage email inboxes
+  - name: Emails
+    description: Read and send email messages
+  - name: Threads
+    description: Email conversation threading
+  - name: Webhooks
+    description: Configure webhook notifications for incoming email
+  - name: Verification
+    description: Identity verification to upgrade account tier
+  - name: Domains
+    description: Register and verify custom email domains
+  - name: Billing
+    description: Stripe billing integration
+  - name: Docs
+    description: Public documentation and OpenAPI spec
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ---------------------------------------------------------------------------
+  # Health
+  # ---------------------------------------------------------------------------
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: |
+        Returns the current health status of the API and its backing services.
+        No authentication required.
+      tags: [Health]
+      security: []
+      responses:
+        "200":
+          description: Service health report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: healthy
+                checks:
+                  database: ok
+                  redis: ok
+                version: 0.0.1
+                stage: production
+
+  # ---------------------------------------------------------------------------
+  # Auth
+  # ---------------------------------------------------------------------------
+  /v1/signup:
+    post:
+      operationId: signup
+      summary: Create a new anonymous account
+      description: |
+        Provisions a new Tier 0 (anonymous) account and returns a bearer token.
+        No authentication required. Rate limited to 10 requests per IP per hour.
+      tags: [Auth]
+      security: []
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignupResponse"
+              example:
+                id: acct_abc123def456
+                token: lm_sk_test_abcdef1234567890
+                tier: 0
+                limits:
+                  maxInboxes: 5
+                  dailyEmailLimit: 100
+                  canSend: false
+                createdAt: "2025-06-01T12:00:00.000Z"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+
+  # ---------------------------------------------------------------------------
+  # Account
+  # ---------------------------------------------------------------------------
+  /v1/account:
+    get:
+      operationId: getAccount
+      summary: Get current account
+      description: |
+        Returns details for the authenticated account including tier information,
+        usage counters, and verification status.
+      tags: [Account]
+      responses:
+        "200":
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+              example:
+                id: acct_abc123def456
+                tier: 0
+                tierName: anonymous
+                limits:
+                  maxInboxes: 5
+                  dailyEmailLimit: 100
+                  canSend: false
+                usage:
+                  inboxCount: 0
+                  emailsToday: 0
+                  emailsThisMonth: 0
+                  totalEmailsReceived: 0
+                verificationRequired: true
+                verificationMethods: []
+                verifiedAt: null
+                xVerificationPending: false
+                hasPaymentMethod: false
+                promo:
+                  name: early_bird_builder_trial
+                  status: available
+                  description: "Early-bird promotion: subscribe to the Builder tier ($9/mo) via POST /v1/billing/checkout with {\"tier\": 2} and get 90 days free. Your card is collected but not charged during the trial. 982 of 1000 slots remaining."
+                createdAt: "2025-06-01T12:00:00.000Z"
+                lastActiveAt: "2025-06-01T12:05:00.000Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/account/link:
+    post:
+      operationId: linkAccount
+      summary: Link account to a Stripe customer from another LobsterKit product
+      description: |
+        Links this LobsterMail account to an existing Stripe customer from another
+        LobsterKit product (e.g. LobsterVault or LobsterDB) using a `linkToken`.
+        This enables cross-product billing and multi-product discounts.
+
+        If the account already has a Stripe customer, the endpoint returns the
+        existing customer ID without making changes.
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [linkToken]
+              properties:
+                linkToken:
+                  type: string
+                  description: A link token obtained from another LobsterKit product to resolve the shared Stripe customer.
+            example:
+              linkToken: "lt_abc123..."
+      responses:
+        "200":
+          description: Account linked successfully (or was already linked).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [linked, stripeCustomerId]
+                properties:
+                  linked:
+                    type: boolean
+                    example: true
+                  stripeCustomerId:
+                    type: string
+                    example: cus_abc123
+                  message:
+                    type: string
+                    description: Present when the account was already linked.
+        "400":
+          description: Missing link token or link resolution failed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    enum: [missing_link_token, link_failed]
+                  message:
+                    type: string
+              examples:
+                missing_token:
+                  value:
+                    error: missing_link_token
+                    message: "Provide a linkToken from another LobsterKit product."
+                link_failed:
+                  value:
+                    error: link_failed
+                    message: "Could not resolve a Stripe customer from the provided token. Ensure the linked account has an active subscription."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ---------------------------------------------------------------------------
+  # Inboxes
+  # ---------------------------------------------------------------------------
+  /v1/inboxes:
+    post:
+      operationId: createInbox
+      summary: Create an inbox
+      description: |
+        Creates a new email inbox. All fields are optional — if omitted the
+        API generates a random local part (`lobster-xxxx`) on the default
+        domain (`lobstermail.ai`).
+
+        **SDK tip:** Use `createSmartInbox({ name: 'My Agent' })` to get a
+        human-readable address (e.g. `my-agent@lobstermail.ai`) with
+        automatic collision handling. Pass `localPart` directly via the API
+        to achieve the same effect.
+
+        The response includes an `account` summary and contextual `hints`
+        so agents immediately know their tier, capabilities, and next steps.
+      tags: [Inboxes]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInboxRequest"
+            example:
+              displayName: Support Inbox
+              localPart: support-bot
+      responses:
+        "201":
+          description: Inbox created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateInboxResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+
+    get:
+      operationId: listInboxes
+      summary: List inboxes
+      description: |
+        Returns a paginated list of inboxes owned by the authenticated account.
+      tags: [Inboxes]
+      parameters:
+        - name: limit
+          in: query
+          description: Number of inboxes to return per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor returned from a previous request.
+          schema:
+            type: string
+        - name: active
+          in: query
+          description: Filter by active status.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Paginated list of inboxes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboxListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/inboxes/{id}:
+    get:
+      operationId: getInbox
+      summary: Get an inbox
+      description: Returns a single inbox by its ID.
+      tags: [Inboxes]
+      parameters:
+        - $ref: "#/components/parameters/InboxId"
+      responses:
+        "200":
+          description: Inbox details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inbox"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      operationId: deleteInbox
+      summary: Delete an inbox
+      description: |
+        Soft-deletes an inbox. The inbox address is released and can no longer
+        receive email.
+      tags: [Inboxes]
+      parameters:
+        - $ref: "#/components/parameters/InboxId"
+      responses:
+        "200":
+          description: Inbox deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: updateInbox
+      summary: Update inbox settings
+      description: |
+        Update inbox settings like `autoExtract` and `displayName`.
+        Setting `autoExtract: true` requires Builder tier (Tier 2) or above.
+      tags: [Inboxes]
+      parameters:
+        - $ref: "#/components/parameters/InboxId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoExtract:
+                  type: boolean
+                  description: Enable auto-extraction on every inbound email (Tier 2+).
+                displayName:
+                  type: string
+                  description: Human-readable label for the inbox.
+      responses:
+        "200":
+          description: Inbox updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inbox"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Tier too low for auto-extraction.
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Emails
+  # ---------------------------------------------------------------------------
+  /v1/inboxes/{inboxId}/emails:
+    get:
+      operationId: listEmails
+      summary: List emails in an inbox
+      description: |
+        Returns a paginated list of email summaries for the given inbox.
+        Supports filtering by read status, direction, and date.
+      tags: [Emails]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: limit
+          in: query
+          description: Number of emails to return per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor returned from a previous request.
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: Only return emails received after this datetime (ISO 8601).
+          schema:
+            type: string
+            format: date-time
+        - name: unread
+          in: query
+          description: Filter by unread status.
+          schema:
+            type: boolean
+        - name: direction
+          in: query
+          description: Filter by email direction.
+          schema:
+            type: string
+            enum: [inbound, outbound]
+      responses:
+        "200":
+          description: Paginated list of email summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/inboxes/{inboxId}/emails/poll:
+    get:
+      operationId: pollInboxEmails
+      summary: Long-poll for new emails
+      description: |
+        Holds the request open until a new email arrives for this inbox, then
+        returns it immediately. If no email arrives within the timeout window,
+        returns `204 No Content`.
+
+        This is significantly more efficient than polling `GET /emails` in a loop.
+        The SDK's `waitForEmail()` uses this endpoint by default.
+
+        **How it works:**
+        1. Server checks for existing new emails matching the filters (immediate return if found).
+        2. If none, subscribes to a Redis pub/sub channel for the inbox.
+        3. When an email arrives, returns the email data immediately (~200ms latency).
+        4. If the timeout elapses, returns `204 No Content`. Client should retry.
+      tags: [Emails]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: timeout
+          in: query
+          description: |
+            Server-side wait time in seconds. Capped at `25` to stay within
+            Lambda timeout limits.
+          schema:
+            type: integer
+            default: 25
+            minimum: 1
+            maximum: 25
+          example: 25
+        - name: since
+          in: query
+          description: Only consider emails after this ISO 8601 timestamp.
+          schema:
+            type: string
+            format: date-time
+        - name: from
+          in: query
+          description: Filter by sender address (case-insensitive substring match).
+          schema:
+            type: string
+        - name: subject
+          in: query
+          description: Filter by subject line (case-insensitive substring match).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email(s) matched — returned immediately.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, source]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EmailSummary"
+                  source:
+                    type: string
+                    enum: [immediate, realtime]
+                    description: |
+                      `immediate` if the email was already present when the request
+                      arrived. `realtime` if it was delivered while the request was
+                      waiting.
+        "204":
+          description: Timeout reached — no matching email arrived.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/inboxes/{inboxId}/emails/{emailId}:
+    get:
+      operationId: getEmail
+      summary: Get a single email
+      description: |
+        Returns the full email including body content and security analysis.
+        Use the `include` query parameter to request additional data such as
+        raw source, headers, or a sanitized HTML rendering.
+      tags: [Emails]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: emailId
+          in: path
+          required: true
+          description: The email ID (prefixed with `eml_`).
+          schema:
+            type: string
+            example: eml_abc123
+        - name: include
+          in: query
+          description: |
+            Comma-separated list of additional fields to include in the response.
+            Supported values: `raw`, `headers`, `htmlSanitized`.
+          schema:
+            type: string
+          example: raw,headers
+      responses:
+        "200":
+          description: Full email details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/inboxes/{inboxId}/emails/{emailId}/attachments/{attachmentIndex}:
+    get:
+      operationId: getAttachment
+      summary: Get attachment download URL
+      description: |
+        Returns a presigned download URL for a specific attachment. The URL is
+        valid for 1 hour. In local development mode, streams the file directly.
+      tags: [Emails]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: emailId
+          in: path
+          required: true
+          description: The email ID (prefixed with `eml_`).
+          schema:
+            type: string
+            example: eml_abc123
+        - name: attachmentIndex
+          in: path
+          required: true
+          description: Zero-based index of the attachment.
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Presigned download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [downloadUrl]
+                properties:
+                  downloadUrl:
+                    type: string
+                    format: uri
+                    description: Presigned S3 URL valid for 1 hour.
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/emails/send:
+    post:
+      operationId: sendEmail
+      summary: Send an email
+      description: |
+        Queues an outbound email for delivery. Requires Free Verified tier or higher.
+        The `from` address must belong to one of the account's active inboxes.
+      tags: [Emails]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailRequest"
+            example:
+              from: support-bot@lobstermail.ai
+              to:
+                - user@example.com
+              subject: Your request has been processed
+              body:
+                text: Hello! Your request has been processed successfully.
+      responses:
+        "202":
+          description: Email queued for delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailResponse"
+              example:
+                id: eml_xyz789
+                status: queued
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/InsufficientTier"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+
+  /v1/emails/search:
+    get:
+      operationId: searchEmails
+      summary: Search emails across inboxes
+      description: |
+        Full-text search across all emails in the account. Matches against subject
+        (highest weight), sender address, and body preview. Results are ranked by
+        relevance when a query is provided.
+
+        Only the first ~200 characters of the email body (the preview) are searchable.
+        Full body content stored in S3 is not included in the search index.
+      tags: [Emails]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+          description: Search query string.
+          example: invoice
+        - name: inboxId
+          in: query
+          schema:
+            type: string
+          description: Scope search to a specific inbox.
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [inbound, outbound]
+          description: Filter by email direction.
+        - name: from
+          in: query
+          schema:
+            type: string
+            maxLength: 255
+          description: Filter by sender address (partial match).
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Only return emails after this ISO 8601 timestamp.
+        - name: until
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Only return emails before this ISO 8601 timestamp.
+        - name: hasAttachments
+          in: query
+          schema:
+            type: boolean
+          description: Filter by attachment presence.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Max results per page.
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor from a previous response.
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EmailSummary"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+              example:
+                data:
+                  - id: eml_abc123
+                    inboxId: ibx_abc123
+                    direction: inbound
+                    from: billing@acme.com
+                    to: [agent@lobstermail.ai]
+                    subject: "Invoice #1234"
+                    preview: "Your invoice for March 2026 is attached..."
+                    hasAttachments: true
+                    sizeBytes: 8192
+                    status: delivered
+                    security:
+                      injectionRiskScore: 0.05
+                      flags: []
+                      spf: pass
+                      dkim: pass
+                      dmarc: pass
+                    createdAt: "2026-03-10T14:30:00Z"
+                pagination:
+                  hasMore: false
+                  cursor: null
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimitExceeded"
+
+  # ---------------------------------------------------------------------------
+  # Threads
+  # ---------------------------------------------------------------------------
+  /v1/inboxes/{inboxId}/threads:
+    get:
+      operationId: listThreads
+      summary: List threads in an inbox
+      description: |
+        Returns a paginated list of email threads for the given inbox,
+        ordered by most recent activity.
+      tags: [Threads]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: limit
+          in: query
+          description: Number of threads to return per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor (ISO 8601 timestamp) from a previous request.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Paginated list of thread summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThreadListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/inboxes/{inboxId}/threads/{threadId}:
+    get:
+      operationId: getThread
+      summary: Get a thread
+      description: |
+        Returns a single thread with its full list of emails, ordered
+        chronologically.
+      tags: [Threads]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: threadId
+          in: path
+          required: true
+          description: The thread ID (prefixed with `thd_`).
+          schema:
+            type: string
+            example: thd_abc123
+      responses:
+        "200":
+          description: Thread with emails
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThreadDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Webhooks
+  # ---------------------------------------------------------------------------
+  /v1/webhooks:
+    post:
+      operationId: createWebhook
+      summary: Create a webhook
+      description: |
+        Registers a new webhook endpoint. The API will POST a signed payload
+        to the given URL whenever a subscribed event occurs. The returned
+        `secret` is used to verify webhook signatures and is only shown once.
+      tags: [Webhooks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebhookRequest"
+            example:
+              url: https://example.com/hooks/lobstermail
+              events:
+                - email.received
+      responses:
+        "201":
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookCreatedResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      operationId: listWebhooks
+      summary: List webhooks
+      description: Returns all webhooks registered on the authenticated account.
+      tags: [Webhooks]
+      responses:
+        "200":
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/webhooks/{id}:
+    delete:
+      operationId: deleteWebhook
+      summary: Delete a webhook
+      description: Permanently removes a webhook registration.
+      tags: [Webhooks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The webhook ID (prefixed with `whk_`).
+          schema:
+            type: string
+            example: whk_abc123
+      responses:
+        "200":
+          description: Webhook deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Verification
+  # ---------------------------------------------------------------------------
+  /v1/verify/x:
+    post:
+      operationId: verifyX
+      summary: Verify via X (Twitter)
+      description: |
+        Submit a tweet URL to verify your identity and upgrade from Free
+        (anonymous) to Free Verified. Unlocks 10 outbound emails/day and
+        removes inbox expiry. The tweet must tag @lobster_mail and include
+        your account ID.
+      tags: [Verification]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyXRequest"
+            example:
+              tweetUrl: https://x.com/agentdev/status/1234567890
+      responses:
+        "200":
+          description: Verification successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyXResponse"
+              example:
+                verified: true
+                tier: 1
+                xHandle: agentdev
+                message: Account verified. Upgraded to Free Verified.
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ---------------------------------------------------------------------------
+  # Domains
+  # ---------------------------------------------------------------------------
+  /v1/domains:
+    post:
+      operationId: createDomain
+      summary: Register a custom domain
+      description: |
+        Registers a custom domain for use with your inboxes. Returns the DNS
+        records you must configure before the domain can be verified.
+        Requires Builder tier or higher.
+      tags: [Domains]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDomainRequest"
+            example:
+              domain: mail.example.com
+      responses:
+        "201":
+          description: Domain registered, pending DNS verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domain"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/InsufficientTier"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+    get:
+      operationId: listDomains
+      summary: List custom domains
+      description: Returns all custom domains registered on the authenticated account.
+      tags: [Domains]
+      responses:
+        "200":
+          description: List of domains
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/InsufficientTier"
+
+  /v1/domains/{id}/status:
+    get:
+      operationId: getDomainStatus
+      summary: Get domain verification status
+      description: |
+        Returns the current verification status and DNS record state for a
+        custom domain.
+      tags: [Domains]
+      parameters:
+        - $ref: "#/components/parameters/DomainId"
+      responses:
+        "200":
+          description: Domain status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domain"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/InsufficientTier"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/domains/{id}/verify:
+    post:
+      operationId: verifyDomain
+      summary: Trigger domain verification
+      description: |
+        Initiates a DNS check for the custom domain. If all required records
+        are found the domain status is updated to `verified`.
+      tags: [Domains]
+      parameters:
+        - $ref: "#/components/parameters/DomainId"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainVerifyResponse"
+              example:
+                id: dom_abc123
+                domain: mail.example.com
+                verificationStatus: verified
+                message: All DNS records verified. Domain is now active.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/InsufficientTier"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/domains/{id}:
+    delete:
+      operationId: deleteDomain
+      summary: Remove a custom domain
+      description: |
+        Removes a custom domain from the account. Any inboxes still using this
+        domain will revert to the default domain.
+      tags: [Domains]
+      parameters:
+        - $ref: "#/components/parameters/DomainId"
+      responses:
+        "200":
+          description: Domain deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/InsufficientTier"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ---------------------------------------------------------------------------
+  # Billing
+  # ---------------------------------------------------------------------------
+  /v1/billing/checkout:
+    post:
+      operationId: createCheckoutSession
+      summary: Create a Stripe Checkout session
+      description: |
+        Creates a Stripe Checkout session for subscribing to a tier.
+        Returns a URL to redirect the user/agent to for payment.
+
+        If the account doesn't have a Stripe customer yet, one is created
+        automatically and linked to the account.
+
+        **Tiers:**
+        - `1` — Free Verified ($0/mo): Collects a credit card for identity verification.
+          You will **not** be charged unless you explicitly upgrade. Unlocks sending (10/day).
+        - `2` — Builder ($9/mo): 10 inboxes, 500 sends/day, 5K emails/mo, 3 custom domains
+        - `3` — Pro ($19/mo): 20 inboxes, 1K sends/day, 10K emails/mo, 5 custom domains
+        - `4` — Scale ($99/mo): 300 inboxes, 10K sends/day, 100K emails/mo, 25 custom domains
+
+        **Early-bird promotion:** The first 1,000 accounts to subscribe to Builder (tier 2)
+        get a **90-day free trial**. A credit card is collected during checkout but is **not
+        charged** until the trial ends. After the trial, the subscription renews at $9/mo.
+        Cancel anytime via `POST /v1/billing/portal`. Check `GET /v1/account` to see if
+        the promo is still available before subscribing.
+
+        If the account already has an active subscription (e.g. a $0 Free Verified sub),
+        it is automatically cancelled before the new checkout session is created.
+
+        Cannot be used to downgrade — use the billing portal (`POST /v1/billing/portal`)
+        for plan changes on active subscriptions.
+      tags: [Billing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+            example:
+              tier: 2
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+              example:
+                url: https://checkout.stripe.com/c/pay/cs_test_abc123
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/billing/portal:
+    post:
+      operationId: createBillingPortalSession
+      summary: Create a Stripe Customer Portal session
+      description: |
+        Creates a Stripe Customer Portal session where the customer can manage
+        their subscription (upgrade, downgrade, cancel, update payment method).
+
+        Requires an existing Stripe customer — i.e. the account must have
+        subscribed to a plan at least once via `/v1/billing/checkout`.
+      tags: [Billing]
+      responses:
+        "200":
+          description: Portal session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortalResponse"
+              example:
+                url: https://billing.stripe.com/p/session/test_abc123
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/stripe/webhook:
+    post:
+      operationId: stripeWebhook
+      summary: Stripe webhook receiver
+      description: |
+        Receives Stripe webhook events for payment and subscription lifecycle
+        management. This endpoint is called by Stripe and does not require
+        bearer authentication — events are verified using the Stripe webhook
+        signing secret.
+      tags: [Billing]
+      security: []
+      responses:
+        "200":
+          description: Event acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [received]
+                properties:
+                  received:
+                    type: boolean
+                    description: Always `true` on success.
+              example:
+                received: true
+
+  # ---------------------------------------------------------------------------
+  # Documentation
+  # ---------------------------------------------------------------------------
+  /v1/docs/guides:
+    get:
+      operationId: listGuides
+      summary: List all documentation guides
+      description: |
+        Returns metadata for all documentation guides, sorted by display order.
+        Does not include the MDX content body — use the single guide endpoint
+        for that. This endpoint powers sidebar navigation.
+      tags: [Docs]
+      security: []
+      responses:
+        "200":
+          description: Guide list returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [guides]
+                properties:
+                  guides:
+                    type: array
+                    items:
+                      type: object
+                      required: [title, slug, order, description, lastUpdated]
+                      properties:
+                        title:
+                          type: string
+                          example: Getting Started
+                        slug:
+                          type: string
+                          example: getting-started
+                        order:
+                          type: integer
+                          example: 1
+                        description:
+                          type: string
+                          example: Install LobsterMail and send your first request in under a minute.
+                        lastUpdated:
+                          type: string
+                          example: "2026-02-23"
+
+  /v1/docs/guides/{slug}:
+    get:
+      operationId: getGuide
+      summary: Get a single documentation guide
+      description: |
+        Returns a single guide's full MDX content plus metadata. The `content`
+        field is raw MDX that can be rendered with next-mdx-remote or any MDX
+        processor.
+      tags: [Docs]
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: The guide slug (e.g. `getting-started`, `mcp-server`).
+          schema:
+            type: string
+            example: getting-started
+      responses:
+        "200":
+          description: Guide returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [title, slug, order, description, lastUpdated, content]
+                properties:
+                  title:
+                    type: string
+                    example: Getting Started
+                  slug:
+                    type: string
+                    example: getting-started
+                  order:
+                    type: integer
+                    example: 1
+                  description:
+                    type: string
+                    example: Install LobsterMail and send your first request in under a minute.
+                  lastUpdated:
+                    type: string
+                    example: "2026-02-23"
+                  content:
+                    type: string
+                    description: Raw MDX content (without frontmatter).
+                    example: "## Installation\n\n```bash\npnpm add lobstermail\n```"
+        "404":
+          description: Guide not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error, message]
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                    example: "Guide not found: nonexistent"
+
+  /v1/docs/openapi:
+    get:
+      operationId: getOpenApiSpec
+      summary: Get the OpenAPI specification
+      description: |
+        Returns the raw OpenAPI 3.1 YAML specification for the LobsterMail API.
+        Useful for rendering interactive API reference documentation.
+      tags: [Docs]
+      security: []
+      responses:
+        "200":
+          description: OpenAPI YAML spec returned successfully.
+          content:
+            text/yaml:
+              schema:
+                type: string
+
+  # ---------------------------------------------------------------------------
+  # Extraction
+  # ---------------------------------------------------------------------------
+
+  /v1/inboxes/{inboxId}/emails/{emailId}/extract:
+    post:
+      operationId: extractEmailData
+      summary: Trigger structured data extraction
+      description: |
+        Use AI to extract contacts, dates, amounts, scheduling, and action items
+        from an email's content and PDF attachments. Returns 202 with the extraction
+        record (initially `pending`). Idempotent — calling again returns the existing extraction.
+        Requires Free Verified tier (Tier 1) or above.
+      tags: [Extraction]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: emailId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Email identifier.
+      responses:
+        "202":
+          description: Extraction triggered (or already exists).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractionResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Tier too low for extraction.
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/inboxes/{inboxId}/emails/{emailId}/extraction:
+    get:
+      operationId: getEmailExtraction
+      summary: Get extraction result
+      description: |
+        Returns the extraction result for an email. The `status` field indicates
+        whether extraction is `pending`, `processing`, `completed`, or `failed`.
+      tags: [Extraction]
+      parameters:
+        - $ref: "#/components/parameters/InboxIdPath"
+        - name: emailId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Email identifier.
+      responses:
+        "200":
+          description: Extraction result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractionResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+# =============================================================================
+# Components
+# =============================================================================
+components:
+
+  # ---------------------------------------------------------------------------
+  # Security Schemes
+  # ---------------------------------------------------------------------------
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "lm_sk_{test|live}_*"
+      description: |
+        API key prefixed with `lm_sk_test_` (sandbox) or `lm_sk_live_`
+        (production). Passed as `Authorization: Bearer <token>`.
+
+  # ---------------------------------------------------------------------------
+  # Reusable Parameters
+  # ---------------------------------------------------------------------------
+  parameters:
+    InboxId:
+      name: id
+      in: path
+      required: true
+      description: The inbox ID (prefixed with `ibx_`).
+      schema:
+        type: string
+        example: ibx_abc123
+
+    InboxIdPath:
+      name: inboxId
+      in: path
+      required: true
+      description: The inbox ID (prefixed with `ibx_`).
+      schema:
+        type: string
+        example: ibx_abc123
+
+    DomainId:
+      name: id
+      in: path
+      required: true
+      description: The domain ID (prefixed with `dom_`).
+      schema:
+        type: string
+        example: dom_abc123
+
+  # ---------------------------------------------------------------------------
+  # Reusable Responses
+  # ---------------------------------------------------------------------------
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: unauthorized
+            message: Invalid or missing authentication token.
+            requestId: req_abc123
+
+    ValidationError:
+      description: Request body failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+          example:
+            error: VALIDATION_ERROR
+            message: Validation error
+            details:
+              fieldErrors:
+                localPart: "Must be between 3 and 64 characters"
+              formErrors: []
+            requestId: req_abc123
+
+    InsufficientTier:
+      description: Account tier too low for this operation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: insufficient_tier
+            message: This action requires a higher tier.
+            requestId: req_abc123
+
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: not_found
+            message: The requested resource was not found.
+            requestId: req_abc123
+
+    Conflict:
+      description: Resource already exists or conflicts with current state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: address_taken
+            message: This email address is already in use.
+            requestId: req_abc123
+
+    RateLimitExceeded:
+      description: Too many requests.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: rate_limit_exceeded
+            message: Rate limit exceeded. Try again later.
+            requestId: req_abc123
+
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: INTERNAL_ERROR
+            message: Internal server error
+            requestId: req_abc123
+
+  # ---------------------------------------------------------------------------
+  # Schemas
+  # ---------------------------------------------------------------------------
+  schemas:
+
+    # -- Health ---------------------------------------------------------------
+    HealthResponse:
+      type: object
+      required: [status, checks, version, stage]
+      description: Service health report.
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded]
+          description: Overall service status.
+        checks:
+          type: object
+          required: [database, redis]
+          description: Individual dependency health checks.
+          properties:
+            database:
+              type: string
+              enum: [ok, error]
+              description: PostgreSQL connectivity.
+            redis:
+              type: string
+              enum: [ok, error]
+              description: Redis connectivity.
+        version:
+          type: string
+          description: API version string.
+          example: 0.0.1
+        stage:
+          type: string
+          description: Deployment stage (e.g. production, staging, local).
+          example: production
+
+    # -- Auth / Signup --------------------------------------------------------
+    SignupResponse:
+      type: object
+      required: [id, token, tier, limits, createdAt]
+      description: Response returned when a new anonymous account is created.
+      properties:
+        id:
+          type: string
+          description: Unique account identifier.
+          example: acct_abc123def456
+        token:
+          type: string
+          description: |
+            Bearer token for authenticating subsequent requests. Store this
+            securely — it is only returned once.
+          example: lm_sk_test_abcdef1234567890
+        tier:
+          type: integer
+          description: Account tier (0 = anonymous).
+          example: 0
+        limits:
+          $ref: "#/components/schemas/AccountLimits"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the account was created.
+
+    # -- Account --------------------------------------------------------------
+    AccountResponse:
+      type: object
+      required:
+        - id
+        - tier
+        - tierName
+        - limits
+        - usage
+        - verificationRequired
+        - verificationMethods
+        - verifiedAt
+        - xVerificationPending
+        - hasPaymentMethod
+        - createdAt
+        - lastActiveAt
+      description: Full account details including tier, limits, and usage.
+      properties:
+        id:
+          type: string
+          description: Unique account identifier.
+          example: acct_abc123def456
+        tier:
+          type: integer
+          description: Numeric tier level.
+          example: 0
+        tierName:
+          type: string
+          enum: [anonymous, free_verified, builder, scale]
+          description: Human-readable tier name.
+        limits:
+          $ref: "#/components/schemas/AccountLimits"
+        usage:
+          $ref: "#/components/schemas/AccountUsage"
+        verificationRequired:
+          type: boolean
+          description: |
+            Whether verification is required to unlock sending. `true` for
+            Tier 0 (Anonymous) accounts that have not yet verified via X or card.
+        verificationMethods:
+          type: array
+          items:
+            type: string
+            enum: [x, card]
+          description: |
+            How the account is currently verified. Empty for Anonymous accounts.
+            Can contain `"x"` (X/Twitter verification), `"card"` (Stripe $0 subscription),
+            or both.
+          example: ["x"]
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of when the account was first verified. Null for unverified accounts.
+          example: "2025-06-01T12:10:00.000Z"
+        xVerificationPending:
+          type: boolean
+          description: Whether an X verification request is currently pending.
+        stripeCustomerId:
+          type: string
+          nullable: true
+          description: The Stripe customer ID linked to this account. Null if no Stripe customer is linked.
+          example: cus_abc123
+        hasPaymentMethod:
+          type: boolean
+          description: Whether the account has a Stripe customer with a payment method on file.
+        promo:
+          nullable: true
+          description: |
+            Early-bird promotion status. `null` if the promo has ended or the account
+            is already at Builder tier or above without claiming it.
+          oneOf:
+            - type: object
+              required: [name, status, description]
+              properties:
+                name:
+                  type: string
+                  example: early_bird_builder_trial
+                status:
+                  type: string
+                  enum: [available, claimed]
+                  description: |
+                    `"available"` — the account is eligible and the promo still has open slots.
+                    Subscribe to Builder via `POST /v1/billing/checkout` with `{"tier": 2}` to claim it.
+                    `"claimed"` — the account already claimed the trial.
+                description:
+                  type: string
+                  description: Human-readable explanation of the promo and how to claim or what it means.
+                claimedAt:
+                  type: string
+                  format: date-time
+                  description: When the promo was claimed (only present when status is `"claimed"`).
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the account was created.
+        lastActiveAt:
+          type: string
+          format: date-time
+          description: When the account was last active.
+
+    AccountLimits:
+      type: object
+      required: [maxInboxes, dailyEmailLimit, canSend]
+      description: Current limits for the account tier.
+      properties:
+        maxInboxes:
+          type: integer
+          description: Maximum number of inboxes the account may own.
+          example: 5
+        dailyEmailLimit:
+          type: integer
+          description: Maximum emails that can be received or sent per day.
+          example: 100
+        canSend:
+          type: boolean
+          description: Whether the account is allowed to send outbound email.
+          example: false
+
+    AccountUsage:
+      type: object
+      required: [inboxCount, emailsToday, emailsThisMonth, totalEmailsReceived]
+      description: Current usage counters for the account.
+      properties:
+        inboxCount:
+          type: integer
+          description: Number of active inboxes.
+          example: 0
+        emailsToday:
+          type: integer
+          description: Emails processed today (UTC).
+          example: 0
+        emailsThisMonth:
+          type: integer
+          description: Emails processed this calendar month (UTC).
+          example: 0
+        totalEmailsReceived:
+          type: integer
+          description: Lifetime count of emails received.
+          example: 0
+
+    # -- Inboxes --------------------------------------------------------------
+    CreateInboxRequest:
+      type: object
+      description: Options for creating a new inbox. All fields are optional.
+      properties:
+        displayName:
+          type: string
+          maxLength: 100
+          description: A human-readable label for the inbox.
+          example: Support Inbox
+        domain:
+          type: string
+          maxLength: 253
+          description: |
+            Domain for the inbox address. Must be a verified custom domain
+            or the default `lobstermail.ai`.
+          example: lobstermail.ai
+        localPart:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: "^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$"
+          description: |
+            Local part of the email address (the portion before `@`).
+            Must start and end with a lowercase alphanumeric character.
+            If omitted the API generates a random local part.
+          example: support-bot
+
+    Inbox:
+      type: object
+      required:
+        - id
+        - address
+        - localPart
+        - domain
+        - displayName
+        - isActive
+        - emailCount
+        - createdAt
+        - lastEmailAt
+        - expiresAt
+      description: An email inbox.
+      properties:
+        id:
+          type: string
+          description: Unique inbox identifier.
+          example: ibx_abc123
+        address:
+          type: string
+          format: email
+          description: Full email address.
+          example: lobster-xxxx@lobstermail.ai
+        localPart:
+          type: string
+          description: Local part of the address.
+          example: lobster-xxxx
+        domain:
+          type: string
+          description: Domain of the address.
+          example: lobstermail.ai
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable label.
+        isActive:
+          type: boolean
+          description: Whether the inbox is active and receiving email.
+        emailCount:
+          type: integer
+          description: Total emails received by this inbox.
+          example: 0
+        createdAt:
+          type: string
+          format: date-time
+          description: When the inbox was created.
+        lastEmailAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the last email was received, or `null` if none.
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the inbox will auto-expire, or `null` if permanent.
+        autoExtract:
+          type: boolean
+          description: Whether AI extraction runs automatically on every inbound email (Tier 2+).
+          default: false
+
+    CreateInboxResponse:
+      description: |
+        Inbox creation response. Extends the standard Inbox object with
+        an `account` summary and contextual `hints` array.
+      allOf:
+        - $ref: "#/components/schemas/Inbox"
+        - type: object
+          required: [account, hints]
+          properties:
+            account:
+              type: object
+              required: [tier, tierName, canSend, dailyEmailLimit, maxInboxes]
+              description: Current account tier and capabilities.
+              properties:
+                tier:
+                  type: integer
+                  description: "Numeric tier (0 = anonymous, 1 = free_verified, 2 = builder, 3 = pro, 4 = scale)."
+                  example: 0
+                tierName:
+                  type: string
+                  enum: [anonymous, free_verified, builder, scale]
+                  example: anonymous
+                canSend:
+                  type: boolean
+                  description: Whether outbound sending is enabled.
+                  example: false
+                dailyEmailLimit:
+                  type: integer
+                  description: Maximum outbound emails per day.
+                  example: 100
+                maxInboxes:
+                  type: integer
+                  nullable: true
+                  description: Maximum active inboxes, or `null` for unlimited.
+                  example: 5
+            hints:
+              type: array
+              description: Contextual next-step suggestions based on the account's current tier and promo eligibility.
+              items:
+                type: string
+              example:
+                - "Verify your identity to unlock outbound sending and remove inbox expiry. Use POST /v1/verify/x or POST /v1/billing/checkout with tier 1."
+                - "This inbox expires on 2026-03-28. Verify your account to make inboxes permanent."
+                - "Early-bird promotion: the first 1000 accounts to subscribe to Builder get 90 days free. Use POST /v1/billing/checkout with {\"tier\": 2} to claim yours. Your card is collected but not charged during the trial."
+
+    InboxListResponse:
+      type: object
+      required: [data, pagination]
+      description: Paginated list of inboxes.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Inbox"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # -- Emails ---------------------------------------------------------------
+    EmailSummary:
+      type: object
+      required:
+        - id
+        - inboxId
+        - direction
+        - from
+        - to
+        - subject
+        - preview
+        - hasAttachments
+        - sizeBytes
+        - status
+        - security
+        - createdAt
+      description: Summary view of an email message.
+      properties:
+        id:
+          type: string
+          description: Unique email identifier.
+          example: eml_abc123
+        inboxId:
+          type: string
+          description: ID of the inbox this email belongs to.
+          example: ibx_abc123
+        threadId:
+          type: string
+          nullable: true
+          description: ID of the thread this email belongs to, or `null` if not threaded.
+          example: thd_abc123
+        direction:
+          type: string
+          enum: [inbound, outbound]
+          description: Whether the email was received or sent.
+        from:
+          type: string
+          description: Sender address.
+          example: sender@example.com
+        to:
+          type: array
+          items:
+            type: string
+          description: Recipient addresses.
+          example:
+            - inbox@lobstermail.ai
+        cc:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: CC addresses, or `null` if none.
+        subject:
+          type: string
+          description: Email subject line.
+          example: Hello from the outside
+        preview:
+          type: string
+          description: Short plain-text preview of the body.
+          example: "Hi there, I wanted to follow up on..."
+        hasAttachments:
+          type: boolean
+          description: Whether the email has file attachments.
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAttachment"
+          description: Attachment metadata (filename, type, size). Download URLs are only included in single email responses.
+        sizeBytes:
+          type: integer
+          description: Total size of the email in bytes.
+          example: 4096
+        status:
+          type: string
+          description: Processing status of the email.
+          example: delivered
+        security:
+          $ref: "#/components/schemas/EmailSecurity"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the email record was created.
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the email was received by the MTA, or `null` for outbound.
+
+    EmailDetail:
+      type: object
+      required:
+        - id
+        - inboxId
+        - direction
+        - from
+        - to
+        - subject
+        - preview
+        - hasAttachments
+        - sizeBytes
+        - status
+        - security
+        - createdAt
+        - body
+      description: |
+        Full email message including body content and detailed security
+        analysis.
+      properties:
+        id:
+          type: string
+          description: Unique email identifier.
+          example: eml_abc123
+        inboxId:
+          type: string
+          description: ID of the inbox this email belongs to.
+          example: ibx_abc123
+        direction:
+          type: string
+          enum: [inbound, outbound]
+        from:
+          type: string
+          example: sender@example.com
+        to:
+          type: array
+          items:
+            type: string
+        cc:
+          type: array
+          items:
+            type: string
+          nullable: true
+        subject:
+          type: string
+        preview:
+          type: string
+        hasAttachments:
+          type: boolean
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAttachment"
+          description: Attachment metadata with presigned download URLs.
+        sizeBytes:
+          type: integer
+        status:
+          type: string
+        security:
+          $ref: "#/components/schemas/EmailSecurity"
+        createdAt:
+          type: string
+          format: date-time
+        receivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        body:
+          type: string
+          description: Full email body text wrapped in content boundary markers.
+
+    EmailSecurity:
+      type: object
+      required: [injectionRiskScore, flags, spf, dkim, dmarc]
+      description: Detailed security analysis for an email.
+      properties:
+        injectionRiskScore:
+          type: number
+          format: float
+          description: Injection risk from 0.0 to 1.0.
+          example: 0.02
+        flags:
+          type: array
+          items:
+            type: string
+          description: Security flags raised during analysis.
+          example: []
+        spf:
+          type: string
+          enum: [pass, fail, neutral]
+          nullable: true
+          description: SPF check result.
+        dkim:
+          type: string
+          enum: [pass, fail, neutral]
+          nullable: true
+          description: DKIM check result.
+        dmarc:
+          type: string
+          enum: [pass, fail, neutral]
+          nullable: true
+          description: DMARC check result.
+
+    EmailListResponse:
+      type: object
+      required: [data, pagination]
+      description: Paginated list of email summaries.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailSummary"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # -- Threads --------------------------------------------------------------
+    ThreadSummary:
+      type: object
+      required: [id, inboxId, subject, emailCount, lastEmailAt, createdAt]
+      description: Summary view of an email thread.
+      properties:
+        id:
+          type: string
+          description: Unique thread identifier.
+          example: thd_abc123
+        inboxId:
+          type: string
+          description: ID of the inbox this thread belongs to.
+          example: ibx_abc123
+        subject:
+          type: string
+          description: Thread subject line.
+          example: "Re: Project update"
+        emailCount:
+          type: integer
+          description: Number of emails in the thread.
+          example: 3
+        lastEmailAt:
+          type: string
+          format: date-time
+          description: When the most recent email in the thread was received or sent.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the thread was created.
+
+    ThreadDetail:
+      description: |
+        Full thread detail including all emails. Extends ThreadSummary with
+        an `emails` array ordered chronologically.
+      allOf:
+        - $ref: "#/components/schemas/ThreadSummary"
+        - type: object
+          required: [emails]
+          properties:
+            emails:
+              type: array
+              items:
+                $ref: "#/components/schemas/EmailSummary"
+              description: Emails in the thread, ordered chronologically.
+
+    ThreadListResponse:
+      type: object
+      required: [data, hasMore, cursor]
+      description: Paginated list of thread summaries.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThreadSummary"
+        hasMore:
+          type: boolean
+          description: Whether additional results exist beyond this page.
+        cursor:
+          type: string
+          nullable: true
+          description: |
+            Opaque cursor to pass as a query parameter to fetch the next page.
+            `null` when there are no more results.
+
+    SendEmailRequest:
+      type: object
+      required: [from, to, subject, body]
+      description: Outbound email to be queued for delivery.
+      properties:
+        from:
+          type: string
+          format: email
+          description: |
+            Sender address. Must be an active inbox owned by the authenticated
+            account.
+          example: support-bot@lobstermail.ai
+        to:
+          type: array
+          items:
+            type: string
+            format: email
+          minItems: 1
+          maxItems: 50
+          description: Recipient addresses (1 to 50).
+          example:
+            - user@example.com
+        cc:
+          type: array
+          items:
+            type: string
+            format: email
+          maxItems: 50
+          description: CC addresses (optional, up to 50).
+        subject:
+          type: string
+          maxLength: 998
+          description: Email subject line (max 998 characters per RFC 5322).
+          example: Your request has been processed
+        body:
+          type: object
+          description: |
+            Email body content. At least one of `text` or `html` is required.
+            When only `html` is provided, a plain-text version is auto-generated.
+          properties:
+            text:
+              type: string
+              maxLength: 1048576
+              description: Plain-text body (max 1 MB). Optional when `html` is provided.
+            html:
+              type: string
+              maxLength: 2097152
+              description: HTML body (max 2 MB). Optional when `text` is provided.
+        attachments:
+          type: array
+          maxItems: 10
+          description: File attachments (optional, up to 10).
+          items:
+            $ref: "#/components/schemas/Attachment"
+        replyTo:
+          type: string
+          format: email
+          description: Optional Reply-To address.
+        inReplyTo:
+          type: string
+          description: |
+            The `Message-ID` of the email being replied to. Sets the
+            `In-Reply-To` and `References` headers for proper threading
+            in recipients' mail clients.
+          example: "<CABx0+aG@mail.gmail.com>"
+        threadId:
+          type: string
+          description: |
+            ID of an existing thread to add this email to. If omitted and
+            `inReplyTo` is set, the API will automatically resolve the
+            thread from the referenced email.
+          example: thd_abc123
+
+    EmailAttachment:
+      type: object
+      required: [filename, contentType, s3Key, sizeBytes]
+      description: Metadata for an email attachment (inbound or stored outbound).
+      properties:
+        filename:
+          type: string
+          description: Original filename of the attachment.
+          example: report.pdf
+        contentType:
+          type: string
+          description: MIME type of the attachment.
+          example: application/pdf
+        s3Key:
+          type: string
+          description: Internal storage key for the attachment.
+        sizeBytes:
+          type: integer
+          description: Size of the attachment in bytes.
+          example: 204800
+        downloadUrl:
+          type: string
+          format: uri
+          description: |
+            Presigned download URL. Only present when fetching a single email
+            via `GET /v1/inboxes/{inboxId}/emails/{emailId}`.
+
+    Attachment:
+      type: object
+      required: [filename, contentType, content]
+      description: A base64-encoded file attachment for sending.
+      properties:
+        filename:
+          type: string
+          maxLength: 255
+          description: Filename for the attachment.
+          example: report.pdf
+        contentType:
+          type: string
+          maxLength: 255
+          description: MIME type of the attachment.
+          example: application/pdf
+        content:
+          type: string
+          format: byte
+          description: Base64-encoded file contents.
+
+    SendEmailResponse:
+      type: object
+      required: [id, status]
+      description: Confirmation that the email has been queued.
+      properties:
+        id:
+          type: string
+          description: Unique email identifier.
+          example: eml_xyz789
+        status:
+          type: string
+          description: Delivery status.
+          example: queued
+
+    # -- Webhooks -------------------------------------------------------------
+    CreateWebhookRequest:
+      type: object
+      required: [url]
+      description: Configuration for a new webhook.
+      properties:
+        url:
+          type: string
+          format: uri
+          description: HTTPS URL that will receive webhook payloads.
+          example: https://example.com/hooks/lobstermail
+        inboxId:
+          type: string
+          description: |
+            Restrict this webhook to events from a specific inbox. If omitted,
+            the webhook fires for all inboxes on the account.
+          example: ibx_abc123
+        events:
+          type: array
+          items:
+            type: string
+            enum:
+              - email.received
+              - email.sent
+              - email.bounced
+              - email.quarantined
+              - email.scan.complete
+              - email.thread.new
+              - email.thread.reply
+              - inbox.created
+              - inbox.expired
+          description: |
+            Event types to subscribe to. Defaults to `["email.received"]`.
+          default:
+            - email.received
+          example:
+            - email.received
+            - email.sent
+
+    WebhookCreatedResponse:
+      type: object
+      required: [id, url, secret, events, inboxId, isActive, createdAt]
+      description: |
+        Newly created webhook including the signing secret. The `secret` is
+        only returned at creation time.
+      properties:
+        id:
+          type: string
+          description: Unique webhook identifier.
+          example: whk_abc123
+        url:
+          type: string
+          format: uri
+          description: Webhook endpoint URL.
+          example: https://example.com/hooks/lobstermail
+        secret:
+          type: string
+          description: |
+            HMAC signing secret used to verify webhook payloads. Only shown
+            once at creation time — store it securely.
+          example: whsec_abcdef1234567890
+        events:
+          type: array
+          items:
+            type: string
+          description: Subscribed event types.
+          example:
+            - email.received
+        inboxId:
+          type: string
+          nullable: true
+          description: Inbox this webhook is scoped to, or `null` for all inboxes.
+        isActive:
+          type: boolean
+          description: Whether the webhook is active.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the webhook was created.
+
+    WebhookListItem:
+      type: object
+      required:
+        - id
+        - url
+        - events
+        - inboxId
+        - isActive
+        - failureCount
+        - lastSuccessAt
+        - lastFailureAt
+        - disabledAt
+        - createdAt
+      description: Webhook with delivery health metadata.
+      properties:
+        id:
+          type: string
+          example: whk_abc123
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        inboxId:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        failureCount:
+          type: integer
+          description: Consecutive delivery failures.
+          example: 0
+        lastSuccessAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful delivery, or `null` if never.
+        lastFailureAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last failed delivery, or `null` if never.
+        disabledAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            When the webhook was auto-disabled due to repeated failures,
+            or `null` if still active.
+        createdAt:
+          type: string
+          format: date-time
+
+    WebhookListResponse:
+      type: object
+      required: [data]
+      description: List of webhooks on the account.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookListItem"
+
+    # -- Verification ---------------------------------------------------------
+    VerifyXRequest:
+      type: object
+      required: [tweetUrl]
+      description: X (Twitter) verification request.
+      properties:
+        tweetUrl:
+          type: string
+          format: uri
+          description: |
+            URL of the verification tweet. The tweet must tag @lobster_mail
+            and include your account ID. Must be a valid x.com or
+            twitter.com status URL.
+          example: https://x.com/agentdev/status/1234567890
+
+    VerifyXResponse:
+      type: object
+      required: [verified, tier, xHandle, message]
+      description: Result of an X verification attempt.
+      properties:
+        verified:
+          type: boolean
+          description: Whether verification was successful.
+        tier:
+          type: integer
+          description: New account tier after verification.
+          example: 1
+        xHandle:
+          type: string
+          description: Verified X handle (without `@`).
+          example: agentdev
+        message:
+          type: string
+          description: Human-readable result message.
+          example: Account verified. Upgraded to Free Verified.
+
+    # -- Domains --------------------------------------------------------------
+    CreateDomainRequest:
+      type: object
+      required: [domain]
+      description: Custom domain registration request.
+      properties:
+        domain:
+          type: string
+          minLength: 1
+          maxLength: 253
+          description: Fully qualified domain name.
+          example: mail.example.com
+
+    DnsRecord:
+      type: object
+      required: [type, name, value, purpose, status]
+      description: A DNS record that must be configured for domain verification.
+      properties:
+        type:
+          type: string
+          enum: [TXT, MX, CNAME]
+          description: DNS record type.
+        name:
+          type: string
+          description: DNS record name (host).
+          example: mail.example.com
+        value:
+          type: string
+          description: DNS record value.
+          example: v=spf1 include:amazonses.com ~all
+        purpose:
+          type: string
+          enum: [domain_verification, dkim, inbound, spf, dmarc]
+          description: What this record is used for.
+        status:
+          type: string
+          enum: [pending, verified]
+          description: Whether the record has been detected.
+
+    Domain:
+      type: object
+      required: [id, domain, verificationStatus, dkimStatus, dnsRecords, createdAt]
+      description: A custom domain registration.
+      properties:
+        id:
+          type: string
+          description: Unique domain identifier.
+          example: dom_abc123
+        domain:
+          type: string
+          description: Fully qualified domain name.
+          example: mail.example.com
+        verificationStatus:
+          type: string
+          enum: [pending, dns_verified, verified, failed]
+          description: |
+            Current verification status.
+            - `pending` — DNS records not yet verified.
+            - `dns_verified` — DNS records confirmed, DKIM provisioning in progress.
+            - `verified` — Fully verified (DNS + DKIM). Domain is active.
+            - `failed` — Verification failed (DNS or DKIM).
+        dkimStatus:
+          type: string
+          enum: [not_started, pending, success, failed]
+          description: |
+            DKIM provisioning status. Becomes `pending` after DNS verification
+            passes and SES identity is created. DKIM CNAME records are added
+            to `dnsRecords` at that point.
+        dnsRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/DnsRecord"
+          description: |
+            DNS records required for this domain. Initially contains TXT (verification),
+            MX (inbound), and TXT (SPF). After DNS passes, 3 CNAME records for DKIM
+            are appended.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the domain was registered.
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the domain was verified, or `null` if not yet.
+
+    DomainListResponse:
+      type: object
+      required: [data]
+      description: List of custom domains.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Domain"
+
+    DomainVerifyResponse:
+      type: object
+      required: [id, domain, verificationStatus, message]
+      description: Result of a domain verification check.
+      properties:
+        id:
+          type: string
+          example: dom_abc123
+        domain:
+          type: string
+          example: mail.example.com
+        verificationStatus:
+          type: string
+          enum: [pending, dns_verified, verified]
+        message:
+          type: string
+          description: Human-readable verification result.
+
+    # -- Billing --------------------------------------------------------------
+    CheckoutRequest:
+      type: object
+      required: [tier]
+      description: Request to create a Stripe Checkout session.
+      properties:
+        tier:
+          type: integer
+          enum: [1, 2, 3, 4]
+          description: |
+            Target subscription tier.
+            - `1` — Free Verified ($0/mo, card verification only)
+            - `2` — Builder ($9/mo)
+            - `3` — Pro ($19/mo)
+            - `4` — Scale ($99/mo)
+          example: 2
+
+    CheckoutResponse:
+      type: object
+      required: [url]
+      description: Stripe Checkout session URL.
+      properties:
+        url:
+          type: string
+          format: uri
+          description: |
+            URL to redirect the user/agent to for completing the checkout.
+            The session expires after 24 hours.
+          example: https://checkout.stripe.com/c/pay/cs_test_abc123
+
+    PortalResponse:
+      type: object
+      required: [url]
+      description: Stripe Customer Portal session URL.
+      properties:
+        url:
+          type: string
+          format: uri
+          description: |
+            URL to redirect the user to for managing their subscription,
+            payment methods, and billing details.
+          example: https://billing.stripe.com/p/session/test_abc123
+
+    # -- Shared ---------------------------------------------------------------
+    Pagination:
+      type: object
+      required: [cursor, hasMore]
+      description: Cursor-based pagination metadata.
+      properties:
+        cursor:
+          type: string
+          nullable: true
+          description: |
+            Opaque cursor to pass as a query parameter to fetch the next page.
+            `null` when there are no more results.
+        hasMore:
+          type: boolean
+          description: Whether additional results exist beyond this page.
+
+    DeletedResponse:
+      type: object
+      required: [deleted]
+      description: Confirmation of resource deletion.
+      properties:
+        deleted:
+          type: boolean
+          description: Always `true` on success.
+
+    # -- Errors ---------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      required: [error, message, requestId]
+      description: Standard error response.
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code.
+          example: not_found
+        message:
+          type: string
+          description: Human-readable error message.
+          example: The requested resource was not found.
+        requestId:
+          type: string
+          description: Unique request identifier for support and debugging.
+          example: req_abc123
+
+    ValidationErrorResponse:
+      type: object
+      required: [error, message, details, requestId]
+      description: Validation error with field-level details.
+      properties:
+        error:
+          type: string
+          enum: [VALIDATION_ERROR]
+          description: Always `VALIDATION_ERROR`.
+        message:
+          type: string
+          description: Always `Validation error`.
+          example: Validation error
+        details:
+          type: object
+          required: [fieldErrors, formErrors]
+          description: Structured validation error details.
+          properties:
+            fieldErrors:
+              type: object
+              additionalProperties:
+                type: string
+              description: Map of field names to error messages.
+              example:
+                localPart: "Must be between 3 and 64 characters"
+            formErrors:
+              type: array
+              items:
+                type: string
+              description: Form-level (non-field-specific) errors.
+              example: []
+        requestId:
+          type: string
+          description: Unique request identifier for support and debugging.
+          example: req_abc123
+
+    # ── Extraction ────────────────────────────────────────────────────────────
+
+    ExtractionResult:
+      type: object
+      required: [id, emailId, status, contacts, dates, amounts, scheduling, actions, metadata, createdAt, completedAt]
+      description: Structured data extracted from an email by AI.
+      properties:
+        id:
+          type: string
+          example: ext_abc123
+        emailId:
+          type: string
+          example: eml_abc123
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        contacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedContact"
+        dates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedDate"
+        amounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedAmount"
+        scheduling:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedScheduling"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExtractedAction"
+        metadata:
+          type: object
+          additionalProperties: true
+        modelUsed:
+          type: string
+          nullable: true
+        inputTokens:
+          type: integer
+          nullable: true
+        outputTokens:
+          type: integer
+          nullable: true
+        processingMs:
+          type: integer
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ExtractedContact:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        organization:
+          type: string
+          nullable: true
+
+    ExtractedDate:
+      type: object
+      required: [value, label, isEstimate]
+      properties:
+        value:
+          type: string
+          format: date-time
+        label:
+          type: string
+        isEstimate:
+          type: boolean
+
+    ExtractedAmount:
+      type: object
+      required: [value, currency, label]
+      properties:
+        value:
+          type: number
+        currency:
+          type: string
+          description: ISO 4217 currency code.
+        label:
+          type: string
+
+    ExtractedScheduling:
+      type: object
+      required: [eventType, summary, attendees]
+      properties:
+        eventType:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        attendees:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
+
+    ExtractedAction:
+      type: object
+      required: [type, description]
+      properties:
+        type:
+          type: string
+          description: "Action type (e.g. verify, pay, review, click)."
+        description:
+          type: string
+        url:
+          type: string
+          nullable: true
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
