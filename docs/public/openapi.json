@@ -14604,6 +14604,12 @@
                   "workbench": {
                     "type": "object",
                     "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
+                        "example": true
+                      },
                       "enable_proxy_execution": {
                         "type": "boolean",
                         "default": true,
@@ -14619,71 +14625,11 @@
                       }
                     },
                     "default": {
+                      "enable": true,
                       "enable_proxy_execution": true
                     },
                     "additionalProperties": false,
                     "description": "Configuration for workbench behavior"
-                  },
-                  "custom_tools": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "slug": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 58,
-                          "pattern": "^[a-zA-Z0-9_-]+$",
-                          "description": "Machine identifier for the tool (e.g. GET_USER_CONTEXT). Max 58 chars, alphanumeric + underscores/hyphens only. Used to generate the LOCAL_ prefixed tool name.",
-                          "example": "GET_CUSTOMER_ORDERS"
-                        },
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 128,
-                          "description": "Human-readable display name for the tool (max 128 chars)",
-                          "example": "Get customer orders"
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 5120,
-                          "description": "Description of what this tool does (max 5KB). Used for BM25 search matching and shown to the LLM.",
-                          "example": "Fetch recent orders for a customer by their email address"
-                        },
-                        "input_schema": {
-                          "type": "object",
-                          "additionalProperties": {},
-                          "description": "JSON schema describing the tool input parameters. Must have type: \"object\" and a properties field.",
-                          "example": {
-                            "type": "object",
-                            "properties": {
-                              "email": {
-                                "type": "string",
-                                "description": "Customer email"
-                              }
-                            },
-                            "required": [
-                              "email"
-                            ]
-                          }
-                        },
-                        "toolkit": {
-                          "type": "string",
-                          "minLength": 1,
-                          "description": "Associate this local tool with an existing toolkit. Connected toolkit tools get higher search priority. Omit for no-auth tools.",
-                          "example": "gmail"
-                        }
-                      },
-                      "required": [
-                        "slug",
-                        "name",
-                        "description",
-                        "input_schema"
-                      ]
-                    },
-                    "maxItems": 100,
-                    "description": "Custom tools to include in search. Each tool needs a name, description, and input_schema. Optionally specify a toolkit to inherit connection priority. These are searched via BM25 and merged with Composio tool results."
                   },
                   "experimental": {
                     "type": "object",
@@ -14699,6 +14645,163 @@
                         },
                         "additionalProperties": false,
                         "description": "Customize assistive prompt generation (e.g., timezone)."
+                      },
+                      "custom_toolkits": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "slug": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "^[a-zA-Z0-9_-]+$",
+                              "description": "Unique slug for the toolkit. Must not conflict with existing Composio toolkit slugs. Alphanumeric, underscores, and hyphens only.",
+                              "example": "ecommerce"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "description": "Display name shown to the LLM and in search results.",
+                              "example": "E-Commerce API"
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2048,
+                              "description": "Used for BM25 search matching and shown in toolkit connection statuses.",
+                              "example": "Internal e-commerce API for order management and fulfillment"
+                            },
+                            "tools": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "slug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "pattern": "^[a-zA-Z0-9_-]+$",
+                                    "description": "Tool slug. Combined with toolkit slug to form LOCAL_<TOOLKIT>_<TOOL> (max 60 chars total).",
+                                    "example": "GET_CUSTOMER_ORDERS"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "description": "Human-readable display name",
+                                    "example": "Get Customer Orders"
+                                  },
+                                  "description": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 5120,
+                                    "description": "Used for BM25 search matching and shown to the LLM.",
+                                    "example": "Fetch recent orders for a customer by their email address"
+                                  },
+                                  "input_schema": {
+                                    "type": "object",
+                                    "additionalProperties": {},
+                                    "description": "Must have type: \"object\" and a properties field.",
+                                    "example": {
+                                      "type": "object",
+                                      "properties": {
+                                        "email": {
+                                          "type": "string",
+                                          "description": "Customer email"
+                                        }
+                                      },
+                                      "required": [
+                                        "email"
+                                      ]
+                                    }
+                                  },
+                                  "output_schema": {
+                                    "type": "object",
+                                    "additionalProperties": {},
+                                    "description": "Optional output schema for the tool response."
+                                  }
+                                },
+                                "required": [
+                                  "slug",
+                                  "name",
+                                  "description",
+                                  "input_schema"
+                                ]
+                              },
+                              "minItems": 1,
+                              "maxItems": 100,
+                              "description": "Tools in this custom toolkit"
+                            }
+                          },
+                          "required": [
+                            "slug",
+                            "name",
+                            "description",
+                            "tools"
+                          ]
+                        },
+                        "description": "Custom toolkits with grouped tools. Toolkit slugs must not conflict with existing Composio toolkits. All tools are no-auth."
+                      },
+                      "custom_tools": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "slug": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "^[a-zA-Z0-9_-]+$",
+                              "description": "Tool slug. Forms LOCAL_<TOOL> (standalone) or LOCAL_<TOOLKIT>_<TOOL> (extending). Max 60 chars total.",
+                              "example": "GET_IMPORTANT_EMAILS"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "description": "Human-readable display name",
+                              "example": "Get Important Emails"
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 5120,
+                              "description": "Used for BM25 search matching and shown to the LLM.",
+                              "example": "Fetch emails marked as important from the last 24 hours"
+                            },
+                            "input_schema": {
+                              "type": "object",
+                              "additionalProperties": {},
+                              "description": "Must have type: \"object\" and a properties field.",
+                              "example": {
+                                "type": "object",
+                                "properties": {
+                                  "limit": {
+                                    "type": "number",
+                                    "description": "Max results to return"
+                                  }
+                                }
+                              }
+                            },
+                            "output_schema": {
+                              "type": "object",
+                              "additionalProperties": {},
+                              "description": "JSON Schema describing tool output (optional)"
+                            },
+                            "extends_toolkit": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "If set, must be a valid Composio toolkit slug. The tool inherits that toolkit's auth/connection status. If omitted, the tool is standalone (no-auth).",
+                              "example": "gmail"
+                            }
+                          },
+                          "required": [
+                            "slug",
+                            "name",
+                            "description",
+                            "input_schema"
+                          ]
+                        },
+                        "description": "Custom tools to include in search. Standalone tools need no auth. Tools with extends_toolkit inherit the Composio toolkit's connection."
                       }
                     },
                     "additionalProperties": false,
@@ -15135,6 +15238,10 @@
                         "workbench": {
                           "type": "object",
                           "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -15147,9 +15254,94 @@
                             }
                           },
                           "default": {
+                            "enable": true,
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        }
+                      },
+                      "required": [
+                        "user_id"
+                      ],
+                      "description": "The session configuration including user, toolkits, and overrides"
+                    },
+                    "experimental": {
+                      "type": "object",
+                      "properties": {
+                        "assistive_prompt": {
+                          "type": "string",
+                          "description": "The assistive system prompt for the tool router session"
+                        },
+                        "custom_toolkits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "slug": {
+                                "type": "string",
+                                "minLength": 1,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              },
+                              "description": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2048
+                              },
+                              "tools": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "slug": {
+                                      "type": "string",
+                                      "description": "Prefixed tool slug (e.g. LOCAL_CRM_FIND_CUSTOMER)"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 128
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 5120
+                                    },
+                                    "input_schema": {
+                                      "type": "object",
+                                      "additionalProperties": {}
+                                    },
+                                    "output_schema": {
+                                      "type": "object",
+                                      "additionalProperties": {}
+                                    },
+                                    "original_slug": {
+                                      "type": "string",
+                                      "description": "Original tool slug as provided by the user"
+                                    }
+                                  },
+                                  "required": [
+                                    "slug",
+                                    "name",
+                                    "description",
+                                    "input_schema",
+                                    "original_slug"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "slug",
+                              "name",
+                              "description",
+                              "tools"
+                            ]
+                          },
+                          "description": "User-defined custom toolkits with grouped tools (no-auth)"
                         },
                         "custom_tools": {
                           "type": "array",
@@ -15158,9 +15350,7 @@
                             "properties": {
                               "slug": {
                                 "type": "string",
-                                "minLength": 1,
-                                "maxLength": 58,
-                                "pattern": "^[a-zA-Z0-9_-]+$"
+                                "description": "Prefixed tool slug (e.g. LOCAL_GMAIL_GET_IMPORTANT_EMAILS)"
                               },
                               "name": {
                                 "type": "string",
@@ -15176,38 +15366,30 @@
                                 "type": "object",
                                 "additionalProperties": {}
                               },
-                              "toolkit": {
+                              "output_schema": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "extends_toolkit": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "original_slug": {
+                                "type": "string",
+                                "description": "Original tool slug as provided by the user"
                               }
                             },
                             "required": [
                               "slug",
                               "name",
                               "description",
-                              "input_schema"
+                              "input_schema",
+                              "original_slug"
                             ]
                           },
-                          "description": "User-provided custom tools configured for this session"
+                          "description": "Custom tools — standalone or extending Composio toolkits"
                         }
                       },
-                      "required": [
-                        "user_id"
-                      ],
-                      "description": "The session configuration including user, toolkits, and overrides"
-                    },
-                    "experimental": {
-                      "type": "object",
-                      "properties": {
-                        "assistive_prompt": {
-                          "type": "string",
-                          "description": "The assistive system prompt to inject into your agent for optimal tool router usage",
-                          "example": "You are an AI agent that completes user tasks by calling Composio ToolRouter meta-tools..."
-                        }
-                      },
-                      "required": [
-                        "assistive_prompt"
-                      ],
                       "description": "Experimental features including the generated system prompt. Only returned on session creation, not on GET.",
                       "x-experimental": true
                     }
@@ -15849,6 +16031,10 @@
                         "workbench": {
                           "type": "object",
                           "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
+                            },
                             "proxy_execution_enabled": {
                               "type": "boolean",
                               "description": "Whether proxy execution is enabled in the workbench"
@@ -15861,9 +16047,94 @@
                             }
                           },
                           "default": {
+                            "enable": true,
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        }
+                      },
+                      "required": [
+                        "user_id"
+                      ],
+                      "description": "The session configuration including user, toolkits, and overrides"
+                    },
+                    "experimental": {
+                      "type": "object",
+                      "properties": {
+                        "assistive_prompt": {
+                          "type": "string",
+                          "description": "The assistive system prompt for the tool router session"
+                        },
+                        "custom_toolkits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "slug": {
+                                "type": "string",
+                                "minLength": 1,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              },
+                              "description": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2048
+                              },
+                              "tools": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "slug": {
+                                      "type": "string",
+                                      "description": "Prefixed tool slug (e.g. LOCAL_CRM_FIND_CUSTOMER)"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 128
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 5120
+                                    },
+                                    "input_schema": {
+                                      "type": "object",
+                                      "additionalProperties": {}
+                                    },
+                                    "output_schema": {
+                                      "type": "object",
+                                      "additionalProperties": {}
+                                    },
+                                    "original_slug": {
+                                      "type": "string",
+                                      "description": "Original tool slug as provided by the user"
+                                    }
+                                  },
+                                  "required": [
+                                    "slug",
+                                    "name",
+                                    "description",
+                                    "input_schema",
+                                    "original_slug"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "slug",
+                              "name",
+                              "description",
+                              "tools"
+                            ]
+                          },
+                          "description": "User-defined custom toolkits with grouped tools (no-auth)"
                         },
                         "custom_tools": {
                           "type": "array",
@@ -15872,9 +16143,7 @@
                             "properties": {
                               "slug": {
                                 "type": "string",
-                                "minLength": 1,
-                                "maxLength": 58,
-                                "pattern": "^[a-zA-Z0-9_-]+$"
+                                "description": "Prefixed tool slug (e.g. LOCAL_GMAIL_GET_IMPORTANT_EMAILS)"
                               },
                               "name": {
                                 "type": "string",
@@ -15890,25 +16159,32 @@
                                 "type": "object",
                                 "additionalProperties": {}
                               },
-                              "toolkit": {
+                              "output_schema": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "extends_toolkit": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "original_slug": {
+                                "type": "string",
+                                "description": "Original tool slug as provided by the user"
                               }
                             },
                             "required": [
                               "slug",
                               "name",
                               "description",
-                              "input_schema"
+                              "input_schema",
+                              "original_slug"
                             ]
                           },
-                          "description": "User-provided custom tools configured for this session"
+                          "description": "Custom tools — standalone or extending Composio toolkits"
                         }
                       },
-                      "required": [
-                        "user_id"
-                      ],
-                      "description": "The session configuration including user, toolkits, and overrides"
+                      "description": "Experimental features",
+                      "x-experimental": true
                     }
                   },
                   "required": [
@@ -16097,6 +16373,534 @@
           },
           "500": {
             "description": "Internal server error. An unexpected error occurred while creating the link session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3/tool_router/session/{session_id}/proxy_execute": {
+      "post": {
+        "summary": "Execute proxy request within a tool router session",
+        "description": "Execute any native API call on a toolkit with authentication automatically injected from Composio. This endpoint proxies HTTP requests to third-party APIs using connected account credentials resolved from the session context. Provide the toolkit slug, API endpoint, and HTTP method — Composio handles authentication injection, abstracting away credential management. Supports all HTTP methods, custom headers/query parameters, and binary request/response bodies.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "postToolRouterSessionBySessionIdProxyExecute",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          },
+          {
+            "workbench_access_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "toolRouterSessionId",
+              "description": "The unique identifier of the tool router session. Required for public API endpoints, optional for internal endpoints where it is injected by middleware.",
+              "example": "trs_LX9uJKBinWWr"
+            },
+            "required": false,
+            "description": "Tool router session ID (required for public API, optional for internal - injected by middleware)",
+            "name": "session_id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "toolkit_slug": {
+                    "type": "string",
+                    "description": "The slug of the toolkit to use for the request",
+                    "example": "gmail"
+                  },
+                  "endpoint": {
+                    "type": "string",
+                    "description": "The API endpoint to call (absolute URL or path relative to base URL of the connected account)",
+                    "example": "/api/v1/resources"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "GET",
+                      "POST",
+                      "PUT",
+                      "DELETE",
+                      "PATCH",
+                      "HEAD"
+                    ],
+                    "description": "The HTTP method to use for the request",
+                    "example": "GET"
+                  },
+                  "body": {
+                    "nullable": true,
+                    "description": "The request body (for POST, PUT, and PATCH requests)",
+                    "example": {
+                      "name": "New Resource",
+                      "description": "This is a new resource"
+                    },
+                    "type": "object"
+                  },
+                  "binary_body": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "URL to fetch binary content from"
+                          },
+                          "content_type": {
+                            "type": "string",
+                            "description": "Content-Type header to use for the request"
+                          }
+                        },
+                        "required": [
+                          "url"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "base64": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Base64-encoded binary data"
+                          },
+                          "content_type": {
+                            "type": "string",
+                            "description": "Content-Type header to use for the request"
+                          }
+                        },
+                        "required": [
+                          "base64"
+                        ]
+                      }
+                    ],
+                    "description": "Binary body to send. For binary upload via URL: use {url: \"https://...\", content_type?: \"...\"}. For binary upload via base64: use {base64: \"...\", content_type?: \"...\"}."
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Parameter name",
+                          "example": "x-api-key"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Parameter value",
+                          "example": "abc123def456"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "header",
+                            "query"
+                          ],
+                          "description": "Parameter type (header or query)",
+                          "example": "header"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "value",
+                        "type"
+                      ]
+                    },
+                    "description": "Additional HTTP headers or query parameters to include in the request",
+                    "example": [
+                      {
+                        "name": "x-api-key",
+                        "value": "abc123def456",
+                        "type": "header"
+                      },
+                      {
+                        "name": "filter",
+                        "value": "active",
+                        "type": "query"
+                      }
+                    ]
+                  },
+                  "custom_connection_data": {
+                    "type": "object",
+                    "properties": {
+                      "authScheme": {
+                        "type": "string",
+                        "enum": [
+                          "OAUTH2",
+                          "DCR_OAUTH",
+                          "API_KEY",
+                          "BASIC_WITH_JWT",
+                          "BASIC",
+                          "BEARER_TOKEN",
+                          "OAUTH1",
+                          "NO_AUTH",
+                          "SERVICE_ACCOUNT",
+                          "GOOGLE_SERVICE_ACCOUNT",
+                          "S2S_OAUTH2"
+                        ]
+                      },
+                      "toolkitSlug": {
+                        "type": "string"
+                      },
+                      "val": {
+                        "type": "object",
+                        "properties": {
+                          "subdomain": {
+                            "type": "string"
+                          },
+                          "your-domain": {
+                            "type": "string"
+                          },
+                          "region": {
+                            "type": "string"
+                          },
+                          "shop": {
+                            "type": "string"
+                          },
+                          "account_url": {
+                            "type": "string"
+                          },
+                          "COMPANYDOMAIN": {
+                            "type": "string"
+                          },
+                          "extension": {
+                            "type": "string"
+                          },
+                          "form_api_base_url": {
+                            "type": "string"
+                          },
+                          "instanceEndpoint": {
+                            "type": "string"
+                          },
+                          "api_url": {
+                            "type": "string"
+                          },
+                          "borneo_dashboard_url": {
+                            "type": "string"
+                          },
+                          "proxy_username": {
+                            "type": "string"
+                          },
+                          "proxy_password": {
+                            "type": "string"
+                          },
+                          "domain": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "dc": {
+                            "type": "string"
+                          },
+                          "site_name": {
+                            "type": "string"
+                          },
+                          "instanceName": {
+                            "type": "string"
+                          },
+                          "account_id": {
+                            "type": "string"
+                          },
+                          "your_server": {
+                            "type": "string"
+                          },
+                          "server_location": {
+                            "type": "string"
+                          },
+                          "base_url": {
+                            "type": "string"
+                          },
+                          "state_prefix": {
+                            "type": "string",
+                            "maxLength": 40,
+                            "description": "The oauth2 state prefix for the connection"
+                          },
+                          "long_redirect_url": {
+                            "type": "boolean",
+                            "description": "Whether to return the redirect url without shortening"
+                          },
+                          "access_token": {
+                            "type": "string"
+                          },
+                          "id_token": {
+                            "type": "string"
+                          },
+                          "token_type": {
+                            "type": "string"
+                          },
+                          "refresh_token": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "expires_in": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "nullable": true,
+                                "type": "object"
+                              }
+                            ]
+                          },
+                          "scope": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "nullable": true,
+                                "type": "object"
+                              }
+                            ]
+                          },
+                          "webhook_signature": {
+                            "type": "string"
+                          },
+                          "authed_user": {
+                            "type": "object",
+                            "properties": {
+                              "access_token": {
+                                "type": "string"
+                              },
+                              "scope": {
+                                "type": "string"
+                              }
+                            },
+                            "description": "for slack user scopes"
+                          },
+                          "client_id": {
+                            "type": "string",
+                            "description": "Dynamically registered client ID"
+                          },
+                          "client_secret": {
+                            "type": "string",
+                            "description": "Dynamically registered client secret"
+                          },
+                          "client_id_issued_at": {
+                            "type": "number"
+                          },
+                          "client_secret_expires_at": {
+                            "type": "number"
+                          },
+                          "generic_api_key": {
+                            "type": "string"
+                          },
+                          "api_key": {
+                            "type": "string"
+                          },
+                          "bearer_token": {
+                            "type": "string"
+                          },
+                          "basic_encoded": {
+                            "type": "string"
+                          },
+                          "username": {
+                            "type": "string"
+                          },
+                          "password": {
+                            "type": "string"
+                          },
+                          "token": {
+                            "type": "string"
+                          },
+                          "oauth_token": {
+                            "type": "string"
+                          },
+                          "oauth_token_secret": {
+                            "type": "string"
+                          },
+                          "oauth_verifier": {
+                            "type": "string"
+                          },
+                          "consumer_key": {
+                            "type": "string"
+                          },
+                          "redirectUrl": {
+                            "type": "string"
+                          },
+                          "callback_url": {
+                            "type": "string"
+                          },
+                          "application_id": {
+                            "type": "string"
+                          },
+                          "installation_id": {
+                            "type": "string"
+                          },
+                          "private_key": {
+                            "type": "string"
+                          },
+                          "credentials_json": {
+                            "type": "string"
+                          },
+                          "expires_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "access_token"
+                        ],
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": [
+                      "authScheme",
+                      "toolkitSlug",
+                      "val"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "toolkit_slug",
+                  "endpoint",
+                  "method"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully executed proxy request and received response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "nullable": true,
+                      "description": "The response data returned from the proxied API",
+                      "example": {
+                        "id": "123",
+                        "name": "Resource Name",
+                        "created_at": "2023-01-01T00:00:00Z"
+                      },
+                      "type": "object"
+                    },
+                    "binary_data": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string",
+                          "description": "URL to download binary content"
+                        },
+                        "content_type": {
+                          "type": "string",
+                          "description": "Content-Type of the binary data"
+                        },
+                        "size": {
+                          "type": "number",
+                          "description": "File size in bytes"
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "description": "ISO 8601 timestamp when the URL expires"
+                        }
+                      },
+                      "required": [
+                        "url",
+                        "content_type",
+                        "size"
+                      ],
+                      "description": "Binary body response data. Present when the response is a binary file."
+                    },
+                    "status": {
+                      "type": "number",
+                      "description": "The HTTP status code returned from the proxied API",
+                      "example": 200
+                    },
+                    "headers": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "The HTTP headers returned from the proxied API",
+                      "example": {
+                        "content-type": "application/json",
+                        "cache-control": "no-cache"
+                      }
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {

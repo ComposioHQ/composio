@@ -58,6 +58,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Read,Write,Edit,Glob,Grep"
           prompt: |
             SDK source code was just updated. Check if any documentation needs to change.
 

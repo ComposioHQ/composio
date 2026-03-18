@@ -292,7 +292,6 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     :param param_schema: Schema with 'title', 'properties', and optionally 'required' keys.
     :return: A Pydantic model class for the defined schema.
 
-    :raises KeyError: Missing 'type' in property definitions.
     :raised ValueError: Invalid 'type' for property or recursive model creation.
 
     Note: Requires global `schema_type_python_type_dict` for type mapping and
@@ -320,14 +319,22 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         return t.List
 
     for prop_name, prop_info in param_schema.get("properties", {}).items():
-        prop_type = prop_info["type"]
-        prop_title = prop_info["title"].replace(" ", "")
-        prop_default = prop_info.get("default", FALLBACK_VALUES[prop_type])
+        prop_type = prop_info.get("type")
+        prop_title = prop_info.get("title", prop_name).replace(" ", "")
+        prop_default = prop_info.get("default", FALLBACK_VALUES.get(prop_type))
         if (
-            prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
+            prop_type is not None
+            and prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
             and prop_type not in CONTAINER_TYPE
         ):
             signature_prop_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[prop_type]
+        elif prop_type is None:
+            # Schema uses anyOf/allOf/oneOf/$ref instead of a top-level "type" key.
+            # Delegate to json_schema_to_pydantic_type which handles all combiners.
+            signature_prop_type = t.cast(
+                t.Type,
+                json_schema_to_pydantic_type(json_schema=prop_info),
+            )
         else:
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
 
