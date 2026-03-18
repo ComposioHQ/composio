@@ -1,6 +1,6 @@
-# CLI `composio toolkits list` Test
+# CLI `composio manage toolkits list` Test
 
-Verifies that `composio toolkits list` returns toolkits as JSON in piped mode with correct `--query` filtering behavior.
+Verifies that `composio manage toolkits list` returns toolkits as JSON in piped mode with correct `--query` filtering behavior.
 
 ## What It Tests
 

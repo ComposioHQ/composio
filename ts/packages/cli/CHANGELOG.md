@@ -1,5 +1,34 @@
 # @composio/cli
 
+## 0.2.4
+
+### Patch Changes
+
+- 67867ae: Add login flags for agent/auth flows: `--no-wait` (print URL/session info and exit), `--key` (complete login with session key; polls until linked unless `--no-wait` is also passed)
+
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [476d451]
+- Updated dependencies
+  - @composio/core@0.6.5
+
+## 0.2.2
+
+### Patch Changes
+
+- 25c3246: CLI v0.2.2: interactive login picker, --no-wait for link, whoami security
+
+  ### What's New
+  - **Interactive org/project picker** after `composio login` (use `-y` to skip)
+  - **`--no-wait`** flag for `composio link` — print URL/JSON and exit without waiting
+  - **Whoami** no longer exposes API keys (security improvement)
+
+  ### Breaking Changes
+  - Removed `--api-key`, `--org-id`, `--project-id` from `composio login` and `composio init`
+  - Non-interactive login/init via flags is no longer supported; use browser flow with `-y` for login
+
 ## 0.2.1
 
 ### Patch Changes

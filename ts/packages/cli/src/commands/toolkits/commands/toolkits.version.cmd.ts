@@ -38,7 +38,7 @@ export const toolkitsCmd$Version = Command.make('version', { slug }, ({ slug }) 
               extractMessage(error) ?? `Failed to fetch version info for toolkit "${slug}".`;
             yield* ui.log.error(message);
             yield* Effect.logDebug('Toolkit version error:', error);
-            yield* ui.log.step('Browse available toolkits:\n> composio toolkits list');
+            yield* ui.log.step('Browse available toolkits:\n> composio manage toolkits list');
             return Option.none();
           })
         )

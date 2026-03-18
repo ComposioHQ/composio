@@ -129,13 +129,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio toolkits info', () => {
+describe('CLI: composio manage toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug "gmail"',
     it => {
       it.scoped('shows detailed info with connection status', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'info', 'gmail']);
+          yield* cli(['manage', 'toolkits', 'info', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -165,7 +165,7 @@ describe('CLI: composio toolkits info', () => {
     it => {
       it.scoped('uses global test user id for toolkit info', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'info', 'gmail']);
+          yield* cli(['manage', 'toolkits', 'info', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -181,7 +181,7 @@ describe('CLI: composio toolkits info', () => {
     it => {
       it.scoped('shows "no auth"', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'info', 'codeinterpreter']);
+          yield* cli(['manage', 'toolkits', 'info', 'codeinterpreter']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -199,7 +199,7 @@ describe('CLI: composio toolkits info', () => {
     it => {
       it.scoped('shows full auth config setup fields', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'info', 'gmail', '--all']);
+          yield* cli(['manage', 'toolkits', 'info', 'gmail', '--all']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -218,7 +218,7 @@ describe('CLI: composio toolkits info', () => {
     it => {
       it.scoped('shows error', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'info', 'gmal']).pipe(Effect.either);
+          yield* cli(['manage', 'toolkits', 'info', 'gmal']).pipe(Effect.either);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -233,12 +233,12 @@ describe('CLI: composio toolkits info', () => {
     it => {
       it.scoped('shows error with hint', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'info', 'gma']).pipe(Effect.either);
+          yield* cli(['manage', 'toolkits', 'info', 'gma']).pipe(Effect.either);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Toolkit "gma" not found');
-          expect(output).toContain('composio toolkits info "gmail"');
+          expect(output).toContain('composio manage toolkits info "gmail"');
         })
       );
     }
@@ -249,12 +249,12 @@ describe('CLI: composio toolkits info', () => {
     it => {
       it.scoped('shows missing argument warning with tip', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'info']);
+          yield* cli(['manage', 'toolkits', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Missing required argument');
-          expect(output).toContain('composio toolkits info "gmail"');
+          expect(output).toContain('composio manage toolkits info "gmail"');
         })
       );
     }
@@ -263,7 +263,7 @@ describe('CLI: composio toolkits info', () => {
   layer(TestLive())('[Given] no API key', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['toolkits', 'info', 'gmail']);
+        yield* cli(['manage', 'toolkits', 'info', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

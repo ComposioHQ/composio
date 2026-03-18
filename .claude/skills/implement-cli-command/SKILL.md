@@ -170,7 +170,7 @@ Most commands only use services already provided. The `ComposioToolkitsRepositor
 
 ## Creating a Subcommand Group
 
-For commands like `composio toolkits list`, `composio toolkits info`:
+For commands like `composio manage toolkits list`, `composio manage toolkits info`:
 
 ### Step 1: Create the Directory Structure
 
@@ -178,8 +178,8 @@ For commands like `composio toolkits list`, `composio toolkits info`:
 src/commands/toolkits/
 ├── toolkits.cmd.ts              # Parent command group
 └── commands/
-    ├── toolkits.list.cmd.ts     # composio toolkits list
-    └── toolkits.info.cmd.ts     # composio toolkits info
+    ├── toolkits.list.cmd.ts     # composio manage toolkits list
+    └── toolkits.info.cmd.ts     # composio manage toolkits info
 ```
 
 ### Step 2: Create the Parent Command

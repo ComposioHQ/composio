@@ -25,8 +25,8 @@ const limit = Options.integer('limit').pipe(
  *
  * @example
  * ```bash
- * composio toolkits search "send emails"
- * composio toolkits search "messaging" --limit 5
+ * composio manage toolkits search "send emails"
+ * composio manage toolkits search "messaging" --limit 5
  * ```
  */
 export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ query, limit }) =>
@@ -59,7 +59,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
     // Next step hint
     const firstSlug = unified[0]?.slug;
     if (firstSlug) {
-      yield* ui.log.step(`To view details:\n> composio toolkits info "${firstSlug}"`);
+      yield* ui.log.step(`To view details:\n> composio manage toolkits info "${firstSlug}"`);
     }
 
     yield* ui.output(formatToolkitsJson(unified));

@@ -78,11 +78,11 @@ const includePayload = Options.boolean('include-payload').pipe(
  *
  * @example
  * ```bash
- * composio logs triggers <log_id>
- * composio logs triggers --trigger GMAIL_NEW_GMAIL_MESSAGE
- * composio logs triggers --trigger-id 77ac1dbf-6db0-4039-8dbe-e903b3f2057e
- * composio logs triggers --connected-account-id ca_123 --user-id user_123
- * composio logs triggers --log-id log_123
+ * composio manage logs triggers <log_id>
+ * composio manage logs triggers --trigger GMAIL_NEW_GMAIL_MESSAGE
+ * composio manage logs triggers --trigger-id 77ac1dbf-6db0-4039-8dbe-e903b3f2057e
+ * composio manage logs triggers --connected-account-id ca_123 --user-id user_123
+ * composio manage logs triggers --log-id log_123
  * ```
  */
 export const logsCmd$Triggers = Command.make(
@@ -193,7 +193,7 @@ export const logsCmd$Triggers = Command.make(
       const firstLogId = logs[0]?.id;
       if (firstLogId) {
         yield* ui.log.step(
-          `To view full details for a log:\n> composio logs triggers "${firstLogId}"`
+          `To view full details for a log:\n> composio manage logs triggers "${firstLogId}"`
         );
       }
 

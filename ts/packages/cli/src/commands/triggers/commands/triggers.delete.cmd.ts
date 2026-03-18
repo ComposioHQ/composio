@@ -29,7 +29,7 @@ export const triggersCmd$Delete = Command.make('delete', { id, yes }, ({ id, yes
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
-        'Try specifying a trigger ID, e.g.:\n> composio triggers delete "trg_123" --yes\n\nTo find trigger IDs:\n> composio triggers status --show-disabled'
+        'Try specifying a trigger ID, e.g.:\n> composio manage triggers delete "trg_123" --yes\n\nTo find trigger IDs:\n> composio manage triggers status --show-disabled'
       );
       return;
     }
@@ -54,7 +54,7 @@ export const triggersCmd$Delete = Command.make('delete', { id, yes }, ({ id, yes
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Failed to delete trigger "${idValue}".`,
-            hint: 'Browse available triggers:\n> composio triggers status --show-disabled',
+            hint: 'Browse available triggers:\n> composio manage triggers status --show-disabled',
             fallbackValue: false,
           })
         )

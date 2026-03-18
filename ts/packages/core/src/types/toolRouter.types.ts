@@ -393,14 +393,19 @@ export type ToolRouterSessionExecuteResponse = z.infer<
 >;
 
 /**
- * Experimental features response from session creation.
- * Only returned on session creation, not on GET.
+ * Experimental features on a tool router session.
+ * Contains features that may be modified or removed in future versions.
  */
 export interface SessionExperimental {
   /**
    * The assistive system prompt to inject into your agent for optimal tool router usage.
+   * Only returned on session creation, not on GET.
    */
   assistivePrompt?: string;
+  /**
+   * File mount operations (list, upload, download, delete) for the session's virtual filesystem.
+   */
+  files: ToolRouterSessionFilesMount;
 }
 
 export type ToolRouterSessionSearchFn = (params: {
@@ -428,7 +433,6 @@ export interface Session<
   search: ToolRouterSessionSearchFn;
   /** Execute a tool within the session */
   execute: ToolRouterSessionExecuteFn;
-  /** File mount operations (list, upload, download, delete) */
-  files: ToolRouterSessionFilesMount;
-  experimental?: SessionExperimental;
+  /** Experimental features (files, assistive prompt, etc.) */
+  experimental: SessionExperimental;
 }

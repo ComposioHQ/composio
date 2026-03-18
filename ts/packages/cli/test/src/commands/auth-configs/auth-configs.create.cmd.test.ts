@@ -8,13 +8,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio auth-configs create', () => {
+describe('CLI: composio manage auth-configs create', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider }))(
     '[Given] --toolkit "gmail" [Then] creates with Composio managed auth',
     it => {
       it.scoped('creates successfully', () =>
         Effect.gen(function* () {
-          yield* cli(['auth-configs', 'create', '--toolkit', 'gmail']);
+          yield* cli(['manage', 'auth-configs', 'create', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -31,7 +31,7 @@ describe('CLI: composio auth-configs create', () => {
     it => {
       it.scoped('creates with name successfully', () =>
         Effect.gen(function* () {
-          yield* cli(['auth-configs', 'create', 'my-config', '--toolkit', 'gmail']);
+          yield* cli(['manage', 'auth-configs', 'create', 'my-config', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -47,7 +47,15 @@ describe('CLI: composio auth-configs create', () => {
     it => {
       it.scoped('creates with custom auth scheme', () =>
         Effect.gen(function* () {
-          yield* cli(['auth-configs', 'create', '--toolkit', 'gmail', '--auth-scheme', 'OAUTH2']);
+          yield* cli([
+            'manage',
+            'auth-configs',
+            'create',
+            '--toolkit',
+            'gmail',
+            '--auth-scheme',
+            'OAUTH2',
+          ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -70,7 +78,7 @@ describe('CLI: composio auth-configs create', () => {
   )('[Given] custom create response [Then] shows correct details', it => {
     it.scoped('shows custom response data', () =>
       Effect.gen(function* () {
-        yield* cli(['auth-configs', 'create', '--toolkit', 'slack']);
+        yield* cli(['manage', 'auth-configs', 'create', '--toolkit', 'slack']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -87,6 +95,7 @@ describe('CLI: composio auth-configs create', () => {
       it.scoped('shows JSON parse error', () =>
         Effect.gen(function* () {
           yield* cli([
+            'manage',
             'auth-configs',
             'create',
             '--toolkit',
@@ -108,7 +117,7 @@ describe('CLI: composio auth-configs create', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['auth-configs', 'create', '--toolkit', 'gmail']);
+        yield* cli(['manage', 'auth-configs', 'create', '--toolkit', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -122,11 +131,11 @@ describe('CLI: composio auth-configs create', () => {
     it => {
       it.scoped('shows next step hint', () =>
         Effect.gen(function* () {
-          yield* cli(['auth-configs', 'create', '--toolkit', 'gmail']);
+          yield* cli(['manage', 'auth-configs', 'create', '--toolkit', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('composio auth-configs info');
+          expect(output).toContain('composio manage auth-configs info');
         })
       );
     }

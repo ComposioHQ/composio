@@ -20,7 +20,7 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-describe('CLI: composio projects switch', () => {
+describe('CLI: composio manage projects switch', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -39,7 +39,7 @@ describe('CLI: composio projects switch', () => {
             })
           );
 
-          yield* cli(['projects', 'switch', '--org-id', 'org_manual']);
+          yield* cli(['manage', 'projects', 'switch', '--org-id', 'org_manual']);
 
           expect(fetchSpy).toHaveBeenCalledTimes(1);
           const [projectUrl, projectRequest] = fetchSpy.mock.calls[0]!;
@@ -58,7 +58,9 @@ describe('CLI: composio projects switch', () => {
           expect(userConfig.project_id).toBe('project_1');
 
           const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-          expect(output).toContain('To switch organization as well, run `composio orgs switch`.');
+          expect(output).toContain(
+            'To switch organization as well, run `composio manage orgs switch`.'
+          );
         })
     );
   });

@@ -67,13 +67,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio toolkits search', () => {
+describe('CLI: composio manage toolkits search', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] query "email"',
     it => {
       it.scoped('shows matching toolkits', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'search', 'email']);
+          yield* cli(['manage', 'toolkits', 'search', 'email']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -91,7 +91,7 @@ describe('CLI: composio toolkits search', () => {
     it => {
       it.scoped('shows "No toolkits found"', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'search', 'xyzzy']);
+          yield* cli(['manage', 'toolkits', 'search', 'xyzzy']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -106,7 +106,7 @@ describe('CLI: composio toolkits search', () => {
     it => {
       it.scoped('respects limit', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'search', 'email', '--limit', '1']);
+          yield* cli(['manage', 'toolkits', 'search', 'email', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -119,7 +119,7 @@ describe('CLI: composio toolkits search', () => {
   layer(TestLive())('[Given] no API key', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['toolkits', 'search', 'email']);
+        yield* cli(['manage', 'toolkits', 'search', 'email']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

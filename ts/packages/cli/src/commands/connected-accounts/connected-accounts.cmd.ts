@@ -10,7 +10,7 @@ import { connectedAccountsCmd$Link } from './commands/connected-accounts.link.cm
  *
  * @example
  * ```bash
- * composio connected-accounts <command>
+ * composio manage connected-accounts <command>
  * ```
  */
 export const connectedAccountsCmd = Command.make('connected-accounts').pipe(

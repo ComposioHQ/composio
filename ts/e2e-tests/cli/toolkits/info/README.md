@@ -1,6 +1,6 @@
-# CLI `composio toolkits info` Test
+# CLI `composio manage toolkits info` Test
 
-Verifies that `composio toolkits info <slug>` returns detailed toolkit JSON in piped mode, handles invalid slugs gracefully, and supports stdout redirection.
+Verifies that `composio manage toolkits info <slug>` returns detailed toolkit JSON in piped mode, handles invalid slugs gracefully, and supports stdout redirection.
 
 ## What It Tests
 

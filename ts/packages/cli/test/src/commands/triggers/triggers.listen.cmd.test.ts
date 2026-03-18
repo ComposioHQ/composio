@@ -106,7 +106,7 @@ const startWebhookServer = async (): Promise<{
   };
 };
 
-describe('CLI: composio triggers listen', () => {
+describe('CLI: composio manage triggers listen', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -117,7 +117,7 @@ describe('CLI: composio triggers listen', () => {
   )('[Given] one realtime event [Then] prints normalized event output', it => {
     it.scoped('prints event summary and payload', () =>
       Effect.gen(function* () {
-        yield* cli(['triggers', 'listen', '--max-events', '1']);
+        yield* cli(['manage', 'triggers', 'listen', '--max-events', '1']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -137,7 +137,7 @@ describe('CLI: composio triggers listen', () => {
         events: [mockV3TriggerEvent],
       },
     })
-  )('[Given] composio listen alias [Then] works like composio triggers listen', it => {
+  )('[Given] composio listen alias [Then] works like composio manage triggers listen', it => {
     it.scoped('alias expands to triggers listen', () =>
       Effect.gen(function* () {
         yield* cli(['listen', '--max-events', '1']);
@@ -161,7 +161,7 @@ describe('CLI: composio triggers listen', () => {
   )('[Given] --table [Then] prints compact table rows', it => {
     it.scoped('prints table header and event row', () =>
       Effect.gen(function* () {
-        yield* cli(['triggers', 'listen', '--table', '--max-events', '1']);
+        yield* cli(['manage', 'triggers', 'listen', '--table', '--max-events', '1']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -185,7 +185,7 @@ describe('CLI: composio triggers listen', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['triggers', 'listen']);
+        yield* cli(['manage', 'triggers', 'listen']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
         expect(output).toContain('not logged in');
@@ -205,6 +205,7 @@ describe('CLI: composio triggers listen', () => {
         Effect.gen(function* () {
           delete process.env.COMPOSIO_WEBHOOK_SECRET;
           yield* cli([
+            'manage',
             'triggers',
             'listen',
             '--forward',
@@ -247,7 +248,7 @@ describe('CLI: composio triggers listen', () => {
             Effect.tryPromise(() => resource.close()).pipe(Effect.catchAll(() => Effect.void))
         );
 
-        yield* cli(['triggers', 'listen', '--forward', server.url, '--max-events', '1']);
+        yield* cli(['manage', 'triggers', 'listen', '--forward', server.url, '--max-events', '1']);
 
         const request = yield* Effect.tryPromise({
           try: () =>

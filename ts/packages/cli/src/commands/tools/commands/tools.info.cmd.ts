@@ -16,7 +16,7 @@ const slug = Args.text({ name: 'slug' }).pipe(
  *
  * @example
  * ```bash
- * composio tools info "GMAIL_SEND_EMAIL"
+ * composio manage tools info "GMAIL_SEND_EMAIL"
  * ```
  */
 export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
@@ -30,7 +30,7 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
     if (Option.isNone(slug)) {
       yield* ui.log.warn('Missing required argument: <slug>');
       yield* ui.log.step(
-        'Try specifying a tool slug, e.g.:\n> composio tools info "GMAIL_SEND_EMAIL"'
+        'Try specifying a tool slug, e.g.:\n> composio manage tools info "GMAIL_SEND_EMAIL"'
       );
       return;
     }
@@ -45,14 +45,14 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Tool "${slugValue}" not found.`,
-            hint: 'Browse available tools:\n> composio tools list',
+            hint: 'Browse available tools:\n> composio manage tools list',
             fallbackValue: Option.none(),
             searchForSuggestions: () =>
               repo.searchTools({ search: slugValue, limit: 3 }).pipe(
                 Effect.map(r =>
                   r.items.map(s => ({
                     label: `${s.slug} — ${s.description}`,
-                    command: `> composio tools info "${s.slug}"`,
+                    command: `> composio manage tools info "${s.slug}"`,
                   }))
                 )
               ),
@@ -72,7 +72,7 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
     const toolkitSlug = tool.toolkit.slug;
     if (toolkitSlug) {
       yield* ui.log.step(
-        `To list more tools in this toolkit:\n> composio tools list --toolkits "${toolkitSlug}"`
+        `To list more tools in this toolkit:\n> composio manage tools list --toolkits "${toolkitSlug}"`
       );
     }
 

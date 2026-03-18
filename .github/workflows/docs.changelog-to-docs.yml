@@ -80,6 +80,7 @@ jobs:
             --base next \
             --head "$BRANCH" \
             --title "docs: update documentation for new changelog entries" \
+            --reviewer "$GITHUB_ACTOR" \
             --body "$(cat <<'EOF'
           ## Summary
           Automated documentation updates triggered by new changelog entries merged to next.

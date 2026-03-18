@@ -33,18 +33,21 @@ export class ToolRouterSession<
 > {
   public readonly sessionId: string;
   public readonly mcp: ToolRouterMCPServerConfig;
-  public readonly files: ToolRouterSessionFilesMount;
+  public readonly experimental: SessionExperimental;
 
   constructor(
     private readonly client: ComposioClient,
     private readonly config: ComposioConfig<TProvider> | undefined,
     sessionId: string,
     mcp: ToolRouterMCPServerConfig,
-    public readonly experimental?: SessionExperimental
+    experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt'>
   ) {
     this.sessionId = sessionId;
     this.mcp = mcp;
-    this.files = new ToolRouterSessionFilesMount(client, sessionId);
+    this.experimental = {
+      assistivePrompt: experimentalOverrides?.assistivePrompt,
+      files: new ToolRouterSessionFilesMount(client, sessionId),
+    };
     telemetry.instrument(this, 'ToolRouterSession');
   }
 

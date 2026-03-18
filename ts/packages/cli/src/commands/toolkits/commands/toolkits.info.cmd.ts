@@ -32,8 +32,8 @@ const allDetails = Options.boolean('all').pipe(
  *
  * @example
  * ```bash
- * composio toolkits info "gmail"
- * composio toolkits info "github" --user-id "alice"
+ * composio manage toolkits info "gmail"
+ * composio manage toolkits info "github" --user-id "alice"
  * ```
  */
 export const toolkitsCmd$Info = Command.make(
@@ -51,7 +51,7 @@ export const toolkitsCmd$Info = Command.make(
       if (Option.isNone(slug)) {
         yield* ui.log.warn('Missing required argument: <slug>');
         yield* ui.log.step(
-          'Try specifying a toolkit slug, e.g.:\n> composio toolkits info "gmail"'
+          'Try specifying a toolkit slug, e.g.:\n> composio manage toolkits info "gmail"'
         );
         return;
       }
@@ -117,7 +117,7 @@ export const toolkitsCmd$Info = Command.make(
               const message = extractMessage(error) ?? `Failed to fetch toolkit "${slugValue}".`;
               yield* ui.log.error(message);
               yield* Effect.logDebug('Toolkit info error:', error);
-              yield* ui.log.step('Browse available toolkits:\n> composio toolkits list');
+              yield* ui.log.step('Browse available toolkits:\n> composio manage toolkits list');
               return Option.none();
             })
           )
@@ -139,7 +139,7 @@ export const toolkitsCmd$Info = Command.make(
           Effect.map(r =>
             r.items.map(s => ({
               label: `${s.slug} — ${s.meta.description}`,
-              command: `> composio toolkits info "${s.slug}"`,
+              command: `> composio manage toolkits info "${s.slug}"`,
             }))
           ),
           Effect.catchAll(() => Effect.succeed([] as { label: string; command: string }[]))
@@ -150,7 +150,7 @@ export const toolkitsCmd$Info = Command.make(
           const lines = suggestions.map(s => `  ${s.label}`).join('\n');
           yield* ui.log.step(`Did you mean?\n${lines}\n\n${first.command}`);
         } else {
-          yield* ui.log.step('Browse available toolkits:\n> composio toolkits list');
+          yield* ui.log.step('Browse available toolkits:\n> composio manage toolkits list');
         }
         return;
       }
@@ -161,7 +161,7 @@ export const toolkitsCmd$Info = Command.make(
 
       // Next step hint
       yield* ui.log.step(
-        `To list tools in this toolkit:\n> composio tools list --toolkits "${toolkit.slug}"`
+        `To list tools in this toolkit:\n> composio manage tools list --toolkits "${toolkit.slug}"`
       );
 
       yield* ui.output(formatToolkitInfoJson(toolkit, detailedToolkit, allDetails));

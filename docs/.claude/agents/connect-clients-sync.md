@@ -4,7 +4,7 @@ Syncs AI client definitions from the dashboard repo (`ComposioHQ/composio_dashbo
 
 ## When This Runs
 
-Runs every 5 hours via cron, or manually via workflow_dispatch. Creates a PR if client definitions have changed.
+Triggered by `repository_dispatch` from dashboard production deploys, or manually via `workflow_dispatch`. Creates a PR if client definitions have changed.
 
 ## Source of Truth
 
@@ -69,9 +69,46 @@ All other clients go in the dropdown:
 
 ### Auth Method Selection
 
-For the docs page, use the **API key** auth method steps when available. For OAuth-only clients (like Claude Desktop, ChatGPT), use the OAuth steps.
+Show **all auth methods** from the dashboard. When a client has both OAuth and API key methods, use `<Tabs>` to let the user choose:
 
-For API key clients, always prepend this step before the client-specific steps:
+```mdx
+<Tabs items={["OAuth (recommended)", "API Key"]}>
+<Tab value="OAuth (recommended)">
+
+<Steps>
+<Step>
+<StepTitle>Step title</StepTitle>
+
+OAuth step content.
+
+</Step>
+</Steps>
+
+</Tab>
+<Tab value="API Key">
+
+<Steps>
+<Step>
+<StepTitle>Get your API key</StepTitle>
+
+Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Clients** in the sidebar. Select your client and copy your API key.
+
+</Step>
+<Step>
+<StepTitle>Step title</StepTitle>
+
+API key step content.
+
+</Step>
+</Steps>
+
+</Tab>
+</Tabs>
+```
+
+For clients with only one auth method (OAuth-only like Claude Desktop/ChatGPT, or API-key-only like n8n), use `<Steps>` directly without `<Tabs>`.
+
+For API key methods, always prepend this step before the client-specific steps:
 
 ```mdx
 <Step>
@@ -81,6 +118,8 @@ Open the [Composio dashboard](https://dashboard.composio.dev) and click **AI Cli
 
 </Step>
 ```
+
+Use the tab labels from the dashboard's `authMethods[].label` field (e.g., "OAuth (recommended)", "API Key").
 
 ### Code Blocks
 

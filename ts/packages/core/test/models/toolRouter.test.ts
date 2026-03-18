@@ -1280,9 +1280,10 @@ describe('ToolRouter', () => {
           },
         });
 
-        expect(session.experimental).toEqual({
-          assistivePrompt: 'You are a helpful assistant working in the America/New_York timezone.',
-        });
+        expect(session.experimental.assistivePrompt).toEqual(
+          'You are a helpful assistant working in the America/New_York timezone.'
+        );
+        expect(session.experimental.files).toBeDefined();
       });
 
       it('should handle API response without experimental field', async () => {
@@ -1290,7 +1291,9 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(session.experimental).toBeUndefined();
+        expect(session.experimental).toBeDefined();
+        expect(session.experimental.assistivePrompt).toBeUndefined();
+        expect(session.experimental.files).toBeDefined();
       });
     });
 

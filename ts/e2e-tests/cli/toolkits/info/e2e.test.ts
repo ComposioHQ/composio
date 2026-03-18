@@ -1,5 +1,5 @@
 /**
- * CLI `composio toolkits info` e2e test
+ * CLI `composio manage toolkits info` e2e test
  *
  * Verifies that the info subcommand returns detailed toolkit JSON in piped mode,
  * handles invalid slugs gracefully, and supports stdout redirection.
@@ -35,16 +35,16 @@ e2e(import.meta.url, {
     let missingSlugResult: E2ETestResult;
 
     beforeAll(async () => {
-      validResult = await runCmd('composio toolkits info gmail');
+      validResult = await runCmd('composio manage toolkits info gmail');
       redirectResult = await runCmd({
-        command: 'composio toolkits info gmail > out.json',
+        command: 'composio manage toolkits info gmail > out.json',
         files: ['out.json'],
       });
-      invalidResult = await runCmd('composio toolkits info nonexistent_toolkit_xyz12345');
-      missingSlugResult = await runCmd('composio toolkits info');
+      invalidResult = await runCmd('composio manage toolkits info nonexistent_toolkit_xyz12345');
+      missingSlugResult = await runCmd('composio manage toolkits info');
     }, TIMEOUTS.FIXTURE);
 
-    describe('composio toolkits info gmail (valid slug)', () => {
+    describe('composio manage toolkits info gmail (valid slug)', () => {
       it('exits successfully', () => {
         expect(validResult.exitCode).toBe(0);
       });
@@ -89,7 +89,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio toolkits info gmail > out.json (stdout redirection)', () => {
+    describe('composio manage toolkits info gmail > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });
@@ -109,7 +109,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio toolkits info nonexistent_toolkit_xyz12345 (invalid slug)', () => {
+    describe('composio manage toolkits info nonexistent_toolkit_xyz12345 (invalid slug)', () => {
       it('exits successfully (graceful error handling)', () => {
         expect(invalidResult.exitCode).toBe(0);
       });
@@ -123,7 +123,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio toolkits info (missing slug)', () => {
+    describe('composio manage toolkits info (missing slug)', () => {
       it('exits successfully (optional arg, handler guards)', () => {
         expect(missingSlugResult.exitCode).toBe(0);
       });

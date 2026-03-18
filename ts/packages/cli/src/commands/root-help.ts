@@ -27,9 +27,17 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'login',
     description: 'Log in to the Composio CLI session.',
-    usage: 'login [--no-browser] [-y, --yes]',
+    usage: 'login [--no-browser] [--no-wait] [--key text] [-y, --yes]',
     options: [
       { name: '--no-browser', description: 'Login without browser interaction' },
+      {
+        name: '--no-wait',
+        description: 'Print login URL and session info, then exit (no browser, no waiting)',
+      },
+      {
+        name: '--key',
+        description: 'Complete login using session key from --no-wait',
+      },
       { name: '-y, --yes', description: 'Skip org/project picker; use session defaults' },
     ],
   },
@@ -106,16 +114,11 @@ const ADVANCED_COMMANDS: ReadonlyArray<{ name: string; description: string }> = 
     description:
       'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)',
   },
-  { name: 'py', description: 'Handle Python projects.' },
-  { name: 'ts', description: 'Handle TypeScript projects.' },
-  { name: 'toolkits', description: 'Discover and inspect Composio toolkits.' },
-  { name: 'tools', description: 'Discover and inspect Composio tools.' },
-  { name: 'auth-configs', description: 'View and manage Composio auth configs.' },
-  { name: 'connected-accounts', description: 'View and manage Composio connected accounts.' },
-  { name: 'triggers', description: 'Inspect and subscribe to trigger events.' },
-  { name: 'logs', description: 'Inspect trigger and tool execution logs.' },
-  { name: 'orgs', description: 'Manage default global organization/project context.' },
-  { name: 'projects', description: 'Manage default global project context.' },
+  {
+    name: 'manage',
+    description:
+      'Manage Composio resources — toolkits, tools, accounts, triggers, logs, orgs, and projects.',
+  },
 ];
 
 /**

@@ -58,7 +58,7 @@ export const projectsCmd$Switch = Command.make(
 
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      yield* ui.intro('composio projects switch');
+      yield* ui.intro('composio manage projects switch');
 
       const apiKey = Option.getOrUndefined(ctx.data.apiKey);
       if (!apiKey) {
@@ -70,7 +70,7 @@ export const projectsCmd$Switch = Command.make(
       const resolvedOrgId = Option.getOrUndefined(orgId) ?? Option.getOrUndefined(ctx.data.orgId);
       if (!resolvedOrgId) {
         yield* ui.log.warn('No default org is configured.');
-        yield* ui.log.info('Run `composio orgs switch` to select org and project globally.');
+        yield* ui.log.info('Run `composio manage orgs switch` to select org and project globally.');
         yield* ui.outro('');
         return;
       }
@@ -79,7 +79,7 @@ export const projectsCmd$Switch = Command.make(
       const explicitProjectId = Option.getOrUndefined(projectId);
 
       yield* ui.note(
-        'This updates your default global project context. To switch organization, use `composio orgs switch`.',
+        'This updates your default global project context. To switch organization, use `composio manage orgs switch`.',
         'Global defaults'
       );
       yield* ui.log.info(`Using organization: ${resolvedOrgId}`);
@@ -94,7 +94,7 @@ export const projectsCmd$Switch = Command.make(
 
       if (projects.data.length === 0) {
         yield* ui.log.warn('No projects found for the selected org.');
-        yield* ui.log.info('Use `composio orgs switch` to switch to another organization.');
+        yield* ui.log.info('Use `composio manage orgs switch` to switch to another organization.');
         yield* ui.outro('No projects available.');
         return;
       }
@@ -119,7 +119,7 @@ export const projectsCmd$Switch = Command.make(
       );
 
       yield* ui.log.success(`Updated global default project to "${selectedProject.name}".`);
-      yield* ui.log.info('To switch organization as well, run `composio orgs switch`.');
+      yield* ui.log.info('To switch organization as well, run `composio manage orgs switch`.');
       yield* ui.output(
         JSON.stringify({
           scope: 'global',

@@ -9,7 +9,7 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-describe('CLI: composio orgs list', () => {
+describe('CLI: composio manage orgs list', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -26,7 +26,7 @@ describe('CLI: composio orgs list', () => {
           })
         );
 
-        yield* cli(['orgs', 'list']);
+        yield* cli(['manage', 'orgs', 'list']);
 
         expect(fetchSpy).toHaveBeenCalledTimes(1);
         const [orgUrl, orgRequest] = fetchSpy.mock.calls[0]!;
@@ -40,7 +40,7 @@ describe('CLI: composio orgs list', () => {
         expect(output).toContain('✓ Org One (org_1)');
         expect(output).toContain('  Org Two (org_2)');
         expect(output).toContain(
-          'Hint: run `composio orgs switch` to switch the default global org/project.'
+          'Hint: run `composio manage orgs switch` to switch the default global org/project.'
         );
       })
     );

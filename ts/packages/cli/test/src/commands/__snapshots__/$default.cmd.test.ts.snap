@@ -22,9 +22,11 @@ BASIC COMMANDS
 
   login
     Log in to the Composio CLI session.
-    Usage: composio login [--no-browser] [-y, --yes]
+    Usage: composio login [--no-browser] [--no-wait] [--key text] [-y, --yes]
     Options:
       --no-browser          Login without browser interaction
+      --no-wait             Print login URL and session info, then exit (no browser, no waiting)
+      --key                 Complete login using session key from --no-wait
       -y, --yes             Skip org/project picker; use session defaults
 
   logout
@@ -78,17 +80,8 @@ BASIC COMMANDS
       --table               Show compact table rows
 
 ADVANCED COMMANDS
-  generate            Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
-  py                  Handle Python projects.
-  ts                  Handle TypeScript projects.
-  toolkits            Discover and inspect Composio toolkits.
-  tools               Discover and inspect Composio tools.
-  auth-configs        View and manage Composio auth configs.
-  connected-accounts  View and manage Composio connected accounts.
-  triggers            Inspect and subscribe to trigger events.
-  logs                Inspect trigger and tool execution logs.
-  orgs                Manage default global organization/project context.
-  projects            Manage default global project context.
+  generate    Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
+  manage      Manage Composio resources — toolkits, tools, accounts, triggers, logs, orgs, and projects.
 
 FLAGS
   -h, --help     Show help for command

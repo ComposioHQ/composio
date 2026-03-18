@@ -1,7 +1,7 @@
 {
   "name": "@composio/core",
   "type": "module",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {

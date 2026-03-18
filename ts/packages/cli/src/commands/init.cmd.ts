@@ -348,7 +348,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
 
     yield* ui.log.success(`Project initialized in ${composioDir}/`);
     yield* ui.log.info(
-      'To switch your default global org/project later, run `composio orgs switch`.'
+      'To switch your default global org/project later, run `composio manage orgs switch`.'
     );
     yield* ui.output(makeOutputJson(selected, composioDir));
     yield* ui.outro('');

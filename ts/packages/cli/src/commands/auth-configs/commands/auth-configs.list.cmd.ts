@@ -29,9 +29,9 @@ const limit = Options.integer('limit').pipe(
  *
  * @example
  * ```bash
- * composio auth-configs list
- * composio auth-configs list --toolkits "gmail"
- * composio auth-configs list --query "my config" --limit 10
+ * composio manage auth-configs list
+ * composio manage auth-configs list --toolkits "gmail"
+ * composio manage auth-configs list --query "my config" --limit 10
  * ```
  */
 export const authConfigsCmd$List = Command.make(
@@ -55,7 +55,7 @@ export const authConfigsCmd$List = Command.make(
 
       if (result.items.length === 0) {
         const hint = Option.isSome(toolkits)
-          ? `No auth configs found for toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio toolkits list`
+          ? `No auth configs found for toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio manage toolkits list`
           : 'No auth configs found. Try broadening your search.';
         yield* ui.log.warn(hint);
         return;
@@ -74,7 +74,7 @@ export const authConfigsCmd$List = Command.make(
 
       if (firstId) {
         yield* ui.log.step(
-          `To view details of an auth config:\n> composio auth-configs info "${redactedId}"`
+          `To view details of an auth config:\n> composio manage auth-configs info "${redactedId}"`
         );
       }
 

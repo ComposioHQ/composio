@@ -38,7 +38,7 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               );
               yield* ui.log.step(
                 [
-                  'To switch orgs:\n> composio orgs switch',
+                  'To switch orgs:\n> composio manage orgs switch',
                   'To get API keys:\n> composio init (in your project)',
                 ].join('\n\n')
               );

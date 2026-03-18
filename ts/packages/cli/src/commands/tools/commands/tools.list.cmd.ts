@@ -33,9 +33,9 @@ const limit = Options.integer('limit').pipe(
  *
  * @example
  * ```bash
- * composio tools list --toolkits "gmail"
- * composio tools list --query "send email" --toolkits "gmail"
- * composio tools list --tags "important" --limit 10
+ * composio manage tools list --toolkits "gmail"
+ * composio manage tools list --query "send email" --toolkits "gmail"
+ * composio manage tools list --tags "important" --limit 10
  * ```
  */
 export const toolsCmd$List = Command.make(
@@ -62,7 +62,7 @@ export const toolsCmd$List = Command.make(
 
       if (result.items.length === 0) {
         const hint = Option.isSome(toolkits)
-          ? `No tools found in toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio toolkits list`
+          ? `No tools found in toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio manage toolkits list`
           : 'No tools found. Try broadening your search.';
         yield* ui.log.warn(hint);
         return;
@@ -80,7 +80,9 @@ export const toolsCmd$List = Command.make(
       // Next step hint
       const firstSlug = result.items[0]?.slug;
       if (firstSlug) {
-        yield* ui.log.step(`To view details of a tool:\n> composio tools info "${firstSlug}"`);
+        yield* ui.log.step(
+          `To view details of a tool:\n> composio manage tools info "${firstSlug}"`
+        );
       }
 
       yield* ui.output(formatToolsJson(result.items));

@@ -1824,6 +1824,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "_1password",
+    "name": "1password",
+    "logo": "https://logos.composio.dev/api/onepassword",
+    "category": "security & identity tools",
+    "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
     "slug": "_21risk",
     "name": "21risk",
     "logo": "https://logos.composio.dev/api/_21risk",
@@ -2976,6 +2984,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "companyenrich",
+    "name": "Companyenrich",
+    "logo": "https://logos.composio.dev/api/companyenrich",
+    "category": "developer tools",
+    "toolCount": 32,
+    "triggerCount": 0
+  },
+  {
     "slug": "connecteam",
     "name": "Connecteam",
     "logo": "https://logos.composio.dev/api/connecteam",
@@ -3477,6 +3493,14 @@
     "logo": "https://logos.composio.dev/api/doppler_marketing_automation",
     "category": "marketing automation",
     "toolCount": 38,
+    "triggerCount": 0
+  },
+  {
+    "slug": "doppler_secretops",
+    "name": "Doppler SecretOps",
+    "logo": "https://logos.composio.dev/api/doppler_secretops",
+    "category": "developer tools",
+    "toolCount": 29,
     "triggerCount": 0
   },
   {
@@ -5141,6 +5165,14 @@
     "logo": "https://logos.composio.dev/api/loyverse",
     "category": "ecommerce",
     "toolCount": 59,
+    "triggerCount": 0
+  },
+  {
+    "slug": "lusha",
+    "name": "Lusha",
+    "logo": "https://logos.composio.dev/api/lusha",
+    "category": "sales & crm",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -7579,7 +7611,7 @@
     "slug": "truvera",
     "name": "Truvera",
     "logo": "https://logos.composio.dev/api/truvera",
-    "category": "verifiable credentials",
+    "category": "security & identity tools",
     "toolCount": 15,
     "triggerCount": 0
   },
@@ -7653,6 +7685,14 @@
     "logo": "https://logos.composio.dev/api/unisender",
     "category": "marketing",
     "toolCount": 33,
+    "triggerCount": 0
+  },
+  {
+    "slug": "uniswap_api",
+    "name": "Uniswap Api",
+    "logo": "https://logos.composio.dev/api/uniswap_api",
+    "category": "developer tools",
+    "toolCount": 7,
     "triggerCount": 0
   },
   {
@@ -7957,46 +7997,6 @@
     "logo": "https://logos.composio.dev/api/y_gy",
     "category": "url shortener",
     "toolCount": 8,
-    "triggerCount": 0
-  },
-  {
-    "slug": "yelp",
-    "name": "Yelp",
-    "logo": "https://logos.composio.dev/api/yelp",
-    "category": "reviews",
-    "toolCount": 6,
-    "triggerCount": 0
-  },
-  {
-    "slug": "zep",
-    "name": "Zep",
-    "logo": "https://logos.composio.dev/api/zep",
-    "category": "artificial intelligence",
-    "toolCount": 41,
-    "triggerCount": 0
-  },
-  {
-    "slug": "zeplin",
-    "name": "Zeplin",
-    "logo": "https://logos.composio.dev/api/zeplin",
-    "category": "images & design",
-    "toolCount": 24,
-    "triggerCount": 0
-  },
-  {
-    "slug": "zerobounce",
-    "name": "Zerobounce",
-    "logo": "https://logos.composio.dev/api/zerobounce",
-    "category": "email",
-    "toolCount": 20,
-    "triggerCount": 0
-  },
-  {
-    "slug": "zixflow",
-    "name": "Zixflow",
-    "logo": "https://logos.composio.dev/api/zixflow",
-    "category": "crm",
-    "toolCount": 7,
     "triggerCount": 0
   }
 ]

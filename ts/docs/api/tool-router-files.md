@@ -1,9 +1,9 @@
 # Tool Router Session Files
 
-Tool Router sessions include a virtual filesystem mount that enables file storage and retrieval within a session. This is useful for agent workflows, document processing, and tools that need to read or write files. Access the files API via `session.files` on any Tool Router session.
+Tool Router sessions include a virtual filesystem mount that enables file storage and retrieval within a session. This is useful for agent workflows, document processing, and tools that need to read or write files. Access the files API via `session.experimental.files` on any Tool Router session.
 
 > **Related:**
-> - [Tool Router](./tool-router.md) – Session creation, configuration, and `session.files` overview
+> - [Tool Router](./tool-router.md) – Session creation, configuration, and `session.experimental.files` overview
 > - [Auto Upload and Download](../advanced/auto-upload-download.md) – File handling during tool execution (different feature)
 
 ## Overview
@@ -26,14 +26,14 @@ const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 const session = await composio.create('default');
 
 // Upload a file
-const file = await session.files.upload('/path/to/report.pdf');
+const file = await session.experimental.files.upload('/path/to/report.pdf');
 console.log('Uploaded:', file.mountRelativePath);
 
 // List files
-const { items, nextCursor } = await session.files.list({ path: '/' });
+const { items, nextCursor } = await session.experimental.files.list({ path: '/' });
 
 // Download a file
-const remoteFile = await session.files.download('report.pdf');
+const remoteFile = await session.experimental.files.download('report.pdf');
 const buffer = await remoteFile.buffer();
 await remoteFile.save('/tmp/report.pdf');
 ```
@@ -45,7 +45,7 @@ List files and directories at a path on the session's file mount. Supports curso
 ### Method Signature
 
 ```typescript
-session.files.list(options?: ToolRouterSessionFilesMountListOptions): Promise<FileListResponse>
+session.experimental.files.list(options?: ToolRouterSessionFilesMountListOptions): Promise<FileListResponse>
 ```
 
 ### Options
@@ -75,15 +75,15 @@ interface FileListResponse {
 
 ```typescript
 // List root directory
-const { items } = await session.files.list({ path: '/' });
+const { items } = await session.experimental.files.list({ path: '/' });
 
 // List a subdirectory
-const { items } = await session.files.list({ path: '/documents' });
+const { items } = await session.experimental.files.list({ path: '/documents' });
 
 // Paginated listing
-let result = await session.files.list({ path: '/', limit: 10 });
+let result = await session.experimental.files.list({ path: '/', limit: 10 });
 while (result.nextCursor) {
-  result = await session.files.list({
+  result = await session.experimental.files.list({
     path: '/',
     cursor: result.nextCursor,
     limit: 10,
@@ -98,7 +98,7 @@ Upload files to the session's mount. Accepts multiple input types: file paths (l
 ### Method Signature
 
 ```typescript
-session.files.upload(
+session.experimental.files.upload(
   input: string | File | ArrayBuffer | Uint8Array,
   options?: ToolRouterSessionFilesMountUploadOptions
 ): Promise<RemoteFile>
@@ -131,24 +131,24 @@ session.files.upload(
 
 ```typescript
 // From local path
-const file = await session.files.upload('/path/to/report.pdf');
+const file = await session.experimental.files.upload('/path/to/report.pdf');
 
 // From URL
-const file = await session.files.upload('https://example.com/document.pdf');
+const file = await session.experimental.files.upload('https://example.com/document.pdf');
 
 // From native File (e.g. file input)
-const file = await session.files.upload(fileInput.files[0]);
+const file = await session.experimental.files.upload(fileInput.files[0]);
 
 // From buffer with explicit path and mimetype
 const buffer = new TextEncoder().encode('{"key": "value"}');
-const file = await session.files.upload(buffer, {
+const file = await session.experimental.files.upload(buffer, {
   remotePath: 'data.json',
   mimetype: 'application/json',
 });
 
 // From buffer – mimetype or remotePath required
 const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, ...]);
-const file = await session.files.upload(pngBytes, {
+const file = await session.experimental.files.upload(pngBytes, {
   remotePath: 'screenshot.png',
   mimetype: 'image/png',
 });
@@ -161,7 +161,7 @@ Get a `RemoteFile` for a file on the mount. The `RemoteFile` provides a presigne
 ### Method Signature
 
 ```typescript
-session.files.download(
+session.experimental.files.download(
   filePath: string,
   options?: ToolRouterSessionFilesMountDownloadOptions
 ): Promise<RemoteFile>
@@ -194,7 +194,7 @@ Methods:
 ### Examples
 
 ```typescript
-const remoteFile = await session.files.download('/output/report.pdf');
+const remoteFile = await session.experimental.files.download('/output/report.pdf');
 
 // Fetch content
 const buffer = await remoteFile.buffer();
@@ -212,7 +212,7 @@ Delete a file or directory from the mount.
 ### Method Signature
 
 ```typescript
-session.files.delete(
+session.experimental.files.delete(
   remotePath: string,
   options?: ToolRouterSessionFilesMountDeleteOptions
 ): Promise<FileDeleteResponse>
@@ -221,8 +221,8 @@ session.files.delete(
 ### Examples
 
 ```typescript
-await session.files.delete('/temp/cache.json');
-await session.files.delete('/old-backup', { mountId: 'custom-mount' });
+await session.experimental.files.delete('/temp/cache.json');
+await session.experimental.files.delete('/old-backup', { mountId: 'custom-mount' });
 ```
 
 ## Type Reference

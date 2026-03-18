@@ -9,7 +9,7 @@ import { toolsCmd$Execute } from './commands/tools.execute.cmd';
  *
  * @example
  * ```bash
- * composio tools <command>
+ * composio manage tools <command>
  * ```
  */
 export const toolsCmd = Command.make('tools').pipe(

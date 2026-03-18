@@ -399,23 +399,23 @@ const paginatedFilteredToolkits = await session.toolkits({
 
 ### `files`
 
-Each session has a virtual filesystem mount for storing and retrieving files. Use `session.files` to list, upload, download, and delete files. This is useful for agent workflows, document processing, and tools that need file access.
+Each session has a virtual filesystem mount for storing and retrieving files. Use `session.experimental.files` to list, upload, download, and delete files. This is useful for agent workflows, document processing, and tools that need file access.
 
 ```typescript
 // Upload a file (from path, URL, File, or buffer)
-const file = await session.files.upload('/path/to/report.pdf');
-const file = await session.files.upload(buffer, { remotePath: 'data.json' });
+const file = await session.experimental.files.upload('/path/to/report.pdf');
+const file = await session.experimental.files.upload(buffer, { remotePath: 'data.json' });
 
 // List files with pagination
-const { items, nextCursor } = await session.files.list({ path: '/' });
+const { items, nextCursor } = await session.experimental.files.list({ path: '/' });
 
 // Download a file
-const remoteFile = await session.files.download('report.pdf');
+const remoteFile = await session.experimental.files.download('report.pdf');
 const buffer = await remoteFile.buffer();
 await remoteFile.save('/tmp/report.pdf');
 
 // Delete a file
-await session.files.delete('/temp/cache.json');
+await session.experimental.files.delete('/temp/cache.json');
 ```
 
 See [Tool Router Session Files](./tool-router-files.md) for full documentation, including upload input types (paths, URLs, `File`, buffers), mimetype detection, pagination, and the `RemoteFile` API.
