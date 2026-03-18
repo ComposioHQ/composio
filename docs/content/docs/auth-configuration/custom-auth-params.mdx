@@ -24,7 +24,7 @@ composio = Composio()
 
 result = composio.tools.execute(
     slug="GOOGLECALENDAR_LIST_EVENTS",
-    user_id="default",
+    user_id="your-user-id",
     arguments={},
     custom_auth_params={
         "parameters": [
@@ -50,7 +50,7 @@ const composio = new Composio({
 const result = await composio.tools.execute(
   "GOOGLECALENDAR_LIST_EVENTS",
   {
-    userId: "default",
+    userId: "your-user-id",
     arguments: {},
     customAuthParams: {
       parameters: [
@@ -123,7 +123,7 @@ def add_custom_auth(
 
 result = composio.tools.execute(
     slug="NOTION_GET_DATABASE_ITEMS",
-    user_id="default",
+    user_id="your-user-id",
     arguments={},
     modifiers=[
         add_custom_auth,
@@ -155,7 +155,7 @@ const authModifier = ({ toolSlug, toolkitSlug, params }: { toolSlug: string; too
 const result = await composio.tools.execute(
   "NOTION_GET_DATABASE_ITEMS",
   {
-    userId: "default",
+    userId: "your-user-id",
     arguments: {
       database_id: "1234567890",
     },
