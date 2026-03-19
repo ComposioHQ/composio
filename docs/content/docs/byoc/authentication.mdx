@@ -1,0 +1,63 @@
+---
+title: Authentication
+description: Configure authentication modes, JWT, and signup policies for your BYOC deployment.
+keywords: [byoc, authentication, jwt, auth, signup, invite-only, sso]
+---
+
+## Disabling Auth Modes
+
+Selectively disable authentication methods. Supported modes: `jwt`, `api_key`, `admin_token`, `cookie`, `org_api_key`.
+
+```yaml
+apollo:
+  auth:
+    disabledModes:
+      - cookie
+      - org_api_key
+```
+
+## JWKS-Based JWT Authentication
+
+Enable external JWT validation (e.g., from your own identity provider):
+
+```yaml
+apollo:
+  auth:
+    jwt:
+      enabled: true
+      jwksUrl: "https://your-idp.com/.well-known/jwks.json"
+      issuer: "https://your-idp.com"
+      allowedAlgs: "RS256"
+      clockSkewSeconds: 5
+```
+
+## Invite-Only Signup
+
+Restrict signups to invited users only:
+
+```yaml
+apollo:
+  signup:
+    inviteOnly: true
+```
+
+## Domain Whitelisting
+
+Allow signups only from specific email domains:
+
+```yaml
+apollo:
+  signup:
+    allowedDomains: "your-company.com,subsidiary.com"
+```
+
+## SMTP (Magic Link Login)
+
+Enable email-based login with magic links. The SMTP connection string is read from the `SMTP_CONNECTION_STRING` key in your secrets:
+
+```yaml
+apollo:
+  smtp:
+    enabled: true
+    smtpAuthorEmail: "noreply@your-company.com"
+```

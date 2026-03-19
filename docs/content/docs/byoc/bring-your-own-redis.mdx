@@ -1,0 +1,63 @@
+---
+title: Bring Your Own Redis
+description: Configure an external Redis instance or use the bundled Redis for your BYOC deployment.
+keywords: [byoc, redis, caching, sentinel, ha, aws, gcp, azure, elasticache]
+---
+
+Composio uses Redis for caching. You can use the bundled Redis or bring your own managed Redis (e.g., AWS ElastiCache, GCP Memorystore, Azure Cache for Redis).
+
+## External Redis
+
+Disable the bundled Redis and point to your own instance. The `REDIS_URL` is read from a Kubernetes secret:
+
+```yaml
+redis:
+  enabled: false
+
+externalRedis:
+  enabled: true
+  secretRef: "composio-composio-secrets"
+  key: "REDIS_URL"
+```
+
+## External Redis with Sentinel (High Availability)
+
+```yaml
+redis:
+  enabled: false
+
+externalRedis:
+  enabled: true
+  sentinel:
+    enabled: true
+    hosts: "sentinel-1:26379,sentinel-2:26379,sentinel-3:26379"
+    masterName: "mymaster"
+    tlsEnabled: false
+    db: 0
+    usernameKey: "REDIS_USERNAME"
+    passwordKey: "REDIS_PASSWORD"
+    sentinelPasswordKey: "SENTINEL_PASSWORD"
+```
+
+## Bundled Redis
+
+The chart bundles a Bitnami Redis subchart, enabled by default:
+
+```yaml
+redis:
+  enabled: true
+  architecture: "standalone"   # or "replication" for HA
+  auth:
+    enabled: true
+    password: "<STRONG_PASSWORD>"
+  sentinel:
+    enabled: false             # Enable for Sentinel-based HA
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+  tls:
+    enabled: false
+```
+
+The chart auto-generates the `REDIS_URL` in the format `redis://:<password>@<release>-redis-master:6379`.

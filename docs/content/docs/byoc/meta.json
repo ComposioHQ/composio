@@ -1,0 +1,19 @@
+{
+  "title": "BYOC",
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "installation",
+    "bring-your-own-postgres",
+    "bring-your-own-redis",
+    "vector-store",
+    "object-storage",
+    "authentication",
+    "triggers",
+    "search",
+    "observability",
+    "autoscaling",
+    "upgrading",
+    "troubleshooting"
+  ]
+}

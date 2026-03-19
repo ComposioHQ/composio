@@ -47,6 +47,7 @@ export async function generateMetadata(
   if (!page) notFound();
 
   const ogImage = getOgImageUrl('docs', page.slugs, page.data.title, page.data.description);
+  const isBYOC = page.slugs[0] === 'byoc';
 
   return {
     title: page.data.title,
@@ -54,5 +55,6 @@ export async function generateMetadata(
     alternates: { canonical: page.url },
     openGraph: { images: [ogImage] },
     twitter: { card: 'summary_large_image', images: [ogImage] },
+    ...(isBYOC && { robots: { index: false, follow: false } }),
   };
 }

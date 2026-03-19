@@ -1,0 +1,93 @@
+---
+title: Object Storage
+description: Configure S3 or Azure Blob Storage for file operations in your BYOC deployment.
+keywords: [byoc, object-storage, s3, azure-blob, aws, gcp, azure]
+---
+
+Object storage is required for file-related toolkit operations. Composio supports S3-compatible storage (AWS S3, GCS, MinIO) and Azure Blob Storage.
+
+## AWS S3
+
+Set `backend` to `"s3"` and reference a Kubernetes secret containing your AWS credentials. Configure the bucket names for temporary and permanent storage:
+
+```yaml
+apollo:
+  objectStorage:
+    backend: "s3"
+    accessKey:
+      secretName: "s3-cred"
+      key: "S3_ACCESS_KEY_ID"
+    secretKey:
+      secretName: "s3-cred"
+      key: "S3_SECRET_ACCESS_KEY"
+    namespaces:
+      temp: "composio-temp"
+      permanent: "composio-permanent"
+  s3Region: "us-east-1"
+```
+
+If your EKS cluster uses [IRSA](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html), you can skip the `accessKey`/`secretKey` fields entirely — the service account role provides credentials automatically.
+
+## GCP Cloud Storage
+
+GCS is S3-compatible via HMAC keys. Set `backend` to `"s3"` and use your GCS HMAC credentials:
+
+```yaml
+apollo:
+  objectStorage:
+    backend: "s3"
+    accessKey:
+      secretName: "gcs-cred"
+      key: "GCS_HMAC_ACCESS_KEY"
+    secretKey:
+      secretName: "gcs-cred"
+      key: "GCS_HMAC_SECRET_KEY"
+    namespaces:
+      temp: "composio-temp"
+      permanent: "composio-permanent"
+  s3Endpoint: "https://storage.googleapis.com"
+  s3EndpointUrl: "https://storage.googleapis.com"
+  s3Region: "auto"
+  s3ForcePathStyle: false
+```
+
+For GKE clusters with Workload Identity, use the HMAC key approach — Workload Identity alone does not provide S3-compatible credentials.
+
+## Azure Blob Storage
+
+Set `backend` to `"azure_blob_storage"` and reference a Kubernetes secret containing your Azure Storage connection string. Configure separate containers for temporary and permanent files:
+
+```yaml
+apollo:
+  objectStorage:
+    backend: "azure_blob_storage"
+    azureConnectionString:
+      secretName: "azure-cred"
+      key: "AZURE_CONNECTION_STRING"
+    namespaces:
+      temp: "composio-temp"
+      permanent: "composio-permanent"
+```
+
+## Self-Hosted S3 (MinIO)
+
+For self-hosted S3-compatible storage like MinIO, set the custom endpoint and enable path-style access:
+
+```yaml
+apollo:
+  objectStorage:
+    backend: "s3"
+    accessKey:
+      secretName: "minio-cred"
+      key: "MINIO_ACCESS_KEY"
+    secretKey:
+      secretName: "minio-cred"
+      key: "MINIO_SECRET_KEY"
+    namespaces:
+      temp: "composio-temp"
+      permanent: "composio-permanent"
+  s3Endpoint: "https://minio.internal:9000"
+  s3EndpointUrl: "https://minio.internal:9000"
+  s3Region: "us-east-1"
+  s3ForcePathStyle: true
+```

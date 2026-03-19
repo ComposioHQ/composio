@@ -1,0 +1,82 @@
+---
+title: Installation
+description: Install Composio on your Kubernetes cluster using Helm.
+keywords: [byoc, installation, helm, kubernetes, aws, gcp, azure]
+---
+
+## Helm Repository
+
+```bash
+helm repo add composio https://composiohq.github.io/helm-charts
+helm repo update
+
+helm install composio composio/composio \
+  -f values.yaml \
+  -n <NAMESPACE> \
+  --create-namespace \
+  --timeout 15m
+```
+
+## Replicated OCI Registry (Enterprise)
+
+```bash
+helm upgrade --install composio \
+  oci://registry.composio.io/composio-rodent/unstable/composio \
+  --version 0.1.40 \
+  --values ./values.yaml \
+  -n <NAMESPACE> \
+  --timeout 15m
+```
+
+## Global Configuration
+
+```yaml
+global:
+  environment: production       # "development" or "production"
+  domain: composio.example.com  # Domain for ingress
+  imagePullSecrets:
+    - name: ecr-secret          # Required for pulling images from private registries
+```
+
+## Ingress
+
+Each service can be independently exposed via Ingress:
+
+```yaml
+apollo:
+  ingress:
+    enabled: true
+    className: nginx
+    host: api.composio.your-company.com
+    tls: []
+
+mercury:
+  ingress:
+    enabled: true
+    className: nginx
+    host: mercury.composio.your-company.com
+    tls: []
+```
+
+## Namespace and RBAC
+
+```yaml
+namespace:
+  create: false        # Set to true to auto-create the namespace
+
+rbac:
+  create: false        # Set to true to create RBAC resources
+  pspEnabled: false    # Pod Security Policies
+
+serviceAccount:
+  create: true         # Create service accounts for pods
+```
+
+## Preflight Checks
+
+The chart validates that required secrets exist before deploying. To skip this:
+
+```yaml
+global:
+  disableK8SecretCheck: true
+```

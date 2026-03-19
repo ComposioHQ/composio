@@ -1,0 +1,18 @@
+---
+title: Upgrading
+description: Upgrade your BYOC Composio deployment to the latest version.
+keywords: [byoc, upgrade, helm, update]
+---
+
+Check the [enterprise portal](https://enterprise.composio.io/composio-rodent/update) for the latest chart version.
+
+```bash
+helm upgrade composio composio/composio \
+  -f values.yaml \
+  -n <NAMESPACE> \
+  --timeout 15m
+```
+
+<Callout type="warn">
+**Upgrading from chart version 1.47 or below:** The default `redis.auth.password` changed from `"redis123"` to `""`. If using bundled Redis, set `redis.auth.password` explicitly or delete the Redis secret and restart the pod.
+</Callout>

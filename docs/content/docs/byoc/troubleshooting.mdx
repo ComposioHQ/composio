@@ -1,0 +1,37 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for BYOC deployments.
+keywords: [byoc, troubleshooting, debugging, logs]
+---
+
+## Common Issues
+
+| Issue | Fix |
+|-------|-----|
+| DB-init pods in CrashLoopBackOff | Verify the PostgreSQL connection string and database user permissions |
+| Tool Execution pods failing | Check `securityContext` compatibility with your cluster's pod security policies |
+| Orchestrator can't reach Tool Execution | Verify the Tool Execution service is running |
+| Redis errors after upgrade | See [Upgrading](/docs/byoc/upgrading) note about password change in chart v1.47 |
+| Vector Store readiness probe failures | Increase `initialDelaySeconds` — Weaviate can take 60+ seconds to start |
+
+## Security Context
+
+All pods run with restricted security by default (GKE Autopilot compatible). Each service accepts `podSecurityContext` and `securityContext` overrides in `values.yaml`:
+
+```yaml
+apollo:
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 2000
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    seccompProfile:
+      type: RuntimeDefault
+```
+
+## Support
+
+Contact the Composio enterprise team at [composio.dev/contact](https://composio.dev/contact) for BYOC deployment assistance on AWS, GCP, or Azure.

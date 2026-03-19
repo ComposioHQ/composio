@@ -1,0 +1,38 @@
+---
+title: BYOC (Bring Your Own Cloud)
+description: Deploy Composio on your own cloud infrastructure. Supports AWS, GCP, and Azure.
+keywords: [byoc, bring-your-own-cloud, self-hosted, helm, kubernetes, enterprise, deployment, aws, gcp, azure]
+---
+
+Composio supports BYOC (Bring Your Own Cloud) deployments using [Helm charts](https://helm.sh/) on Kubernetes. Deploy on **AWS**, **GCP**, or **Azure** — your data stays in your cloud.
+
+<Callout type="info">
+BYOC deployments are available on the Composio Enterprise plan. Contact sales at [composio.dev/contact](https://composio.dev/contact) to get access.
+</Callout>
+
+## Architecture
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **Backend** | 9900 | API server — OAuth, business logic, database operations |
+| **Orchestrator** | 8180 | Workflow execution and tools management |
+| **Tool Execution** | 8080 | Tool execution runtime |
+| **Vector Store** | 8080 (HTTP), 50051 (gRPC) | Vector database for similarity search |
+| **Redis** | 6379 | Caching |
+
+The Tool Execution service connects to the Backend for context. The Orchestrator connects to both the Backend and Tool Execution for workflow execution. All services share a PostgreSQL database and Redis for caching.
+
+## Prerequisites
+
+1. Kubernetes cluster (11+ CPU cores, 28+ GiB memory)
+2. [Helm](https://helm.sh/) v3
+3. PostgreSQL database (v17+ recommended)
+4. Access to the [Composio enterprise portal](https://enterprise.composio.io/composio-rodent)
+
+## Next steps
+
+- [Installation](/docs/byoc/installation) — Install the Helm chart
+- [Bring Your Own PostgreSQL](/docs/byoc/bring-your-own-postgres) — Database configuration
+- [Bring Your Own Redis](/docs/byoc/bring-your-own-redis) — External Redis configuration
+- [Authentication](/docs/byoc/authentication) — Configure auth modes and JWT
+- [Triggers](/docs/byoc/triggers) — Enable or disable triggers

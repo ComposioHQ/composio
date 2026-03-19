@@ -1,0 +1,64 @@
+---
+title: Observability
+description: Configure OpenTelemetry, Prometheus, and Grafana for your BYOC deployment.
+keywords: [byoc, observability, opentelemetry, otel, prometheus, grafana, monitoring]
+---
+
+## OpenTelemetry
+
+To send traces and metrics to your observability stack via OTLP, enable the `otel` section and point it to your collector:
+
+```yaml
+otel:
+  enabled: true
+  exporter:
+    otlp:
+      endpoint: "your-otel-collector:4317"
+  traces:
+    enabled: true
+  metrics:
+    enabled: true
+    exportInterval: 60000
+  logs:
+    enabled: false
+```
+
+### Deploying an OTEL Collector
+
+To deploy an OpenTelemetry Collector as part of the chart:
+
+```yaml
+otel:
+  collector:
+    enabled: true
+```
+
+### GCP Cloud Trace
+
+To export traces to GCP Cloud Trace on GKE deployments:
+
+```yaml
+otel:
+  collector:
+    enabled: true
+    googleCloud:
+      enabled: true
+```
+
+## Prometheus
+
+To enable Prometheus metrics scraping:
+
+```yaml
+prometheus:
+  enabled: true
+```
+
+## Grafana
+
+To deploy Grafana dashboards:
+
+```yaml
+grafana:
+  enabled: true
+```

@@ -1,0 +1,56 @@
+---
+title: Search
+description: Configure unified search and embeddings for your BYOC deployment.
+keywords: [byoc, search, embeddings, vector-search, openai, cohere, voyage]
+---
+
+Composio supports vector-based search across tools and plans. Search is disabled by default.
+
+## Enabling Search
+
+To enable search, set `apollo.search.enabled` to `true` and choose a vector store provider. This requires the [Vector Store](/docs/byoc/vector-store) to be configured:
+
+```yaml
+apollo:
+  search:
+    enabled: true
+    vectorStoreProvider: "weaviate"    # or "turbopuffer"
+```
+
+## Embeddings Provider
+
+To configure which embeddings provider generates vectors, set the provider, model, and dimensions. The `OPENAI_API_KEY` (or equivalent) must be present in your secrets:
+
+```yaml
+openAI:
+  enabled: true
+
+apollo:
+  search:
+    embeddings:
+      provider: "openai"              # "openai", "cohere", or "voyage"
+      model: "text-embedding-3-large"
+      dimensions: 1024
+```
+
+## Unified Search
+
+To enable searching across both tools and plans simultaneously:
+
+```yaml
+apollo:
+  search:
+    unified:
+      enabled: true                   # Enabled by default when search is on
+```
+
+## Reranker
+
+To improve search result quality with a reranker model:
+
+```yaml
+apollo:
+  search:
+    reranker:
+      model: "your-reranker-model"
+```

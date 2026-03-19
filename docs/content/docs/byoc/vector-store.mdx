@@ -1,0 +1,64 @@
+---
+title: Vector Store
+description: Configure the vector store (Weaviate) for similarity search in your BYOC deployment.
+keywords: [byoc, vector-store, weaviate, embeddings, search, aws, gcp, azure]
+---
+
+Composio uses a vector store for tool and plan similarity search. The chart bundles [Weaviate](https://weaviate.io/) as the default vector database.
+
+## Enabling the Bundled Vector Store
+
+To deploy Weaviate alongside your Composio services:
+
+```yaml
+weaviate:
+  enabled: true
+  replicaCount: 1
+```
+
+## Enabling Persistence
+
+By default, persistence is disabled. To persist vector data across pod restarts:
+
+```yaml
+weaviate:
+  persistence:
+    enabled: true
+    size: "10Gi"
+    storageClass: ""           # Use cluster default, or specify a storage class
+```
+
+## Configuring Vectorizer Modules
+
+To control which embedding and AI modules Weaviate loads:
+
+```yaml
+weaviate:
+  vectorizer: "none"          # Default vectorizer module
+  modules: "text2vec-openai,text2vec-cohere,text2vec-huggingface,ref2vec-centroid,generative-openai,qna-openai"
+  auth:
+    anonymousAccess: "true"   # Set to "false" to require authentication
+```
+
+## Connecting the Backend to the Vector Store
+
+To enable the Backend to use the vector store for search, configure the search section. See [Search](/docs/byoc/search) for full details:
+
+```yaml
+apollo:
+  search:
+    enabled: true
+    vectorStoreProvider: "weaviate"    # or "turbopuffer"
+    weaviate:
+      collection: "default"
+    embeddings:
+      provider: "openai"              # "openai", "cohere", or "voyage"
+      model: "text-embedding-3-large"
+      dimensions: 1024
+    reranker:
+      model: ""                       # Optional reranker model
+```
+
+## Using an External Weaviate Instance
+
+To use your own Weaviate instance, disable the bundled deployment and point the Backend to your external instance by setting `weaviate.enabled: false` and configuring the Weaviate URL in the Backend's environment.

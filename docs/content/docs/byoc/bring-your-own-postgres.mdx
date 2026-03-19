@@ -1,0 +1,133 @@
+---
+title: Bring Your Own PostgreSQL
+description: Configure an external PostgreSQL database for your BYOC deployment.
+keywords: [byoc, postgres, postgresql, database, aws, gcp, azure, rds, cloud-sql]
+---
+
+Composio requires PostgreSQL (v17+ recommended). You can use a managed service like AWS RDS, GCP Cloud SQL, or Azure Database for PostgreSQL.
+
+## Database Setup
+
+Create the required databases and user in your PostgreSQL instance.
+
+<Tabs groupId="cloud-provider">
+<Tab value="AWS">
+```sql
+CREATE USER composio WITH PASSWORD '<DATABASE_PASSWORD>';
+CREATE DATABASE composiodb;
+CREATE DATABASE temporal;
+CREATE DATABASE temporal_visibility;
+CREATE DATABASE thermosdb;
+
+ALTER DATABASE composiodb OWNER TO composio;
+ALTER DATABASE temporal OWNER TO composio;
+ALTER DATABASE temporal_visibility OWNER TO composio;
+ALTER DATABASE thermosdb OWNER TO composio;
+ALTER ROLE composio CREATEDB;
+
+GRANT ALL PRIVILEGES ON DATABASE composiodb TO composio;
+GRANT ALL PRIVILEGES ON DATABASE temporal TO composio;
+GRANT ALL PRIVILEGES ON DATABASE temporal_visibility TO composio;
+GRANT ALL PRIVILEGES ON DATABASE thermosdb TO composio;
+```
+</Tab>
+<Tab value="GCP">
+```sql
+CREATE USER composio WITH PASSWORD '<DATABASE_PASSWORD>';
+ALTER USER composio WITH CREATEROLE CREATEDB;
+GRANT cloudsqlsuperuser TO composio;
+GRANT composio TO postgres;
+
+CREATE DATABASE composiodb;
+CREATE DATABASE temporal;
+CREATE DATABASE temporal_visibility;
+CREATE DATABASE thermosdb;
+
+ALTER DATABASE composiodb OWNER TO composio;
+ALTER DATABASE temporal OWNER TO composio;
+ALTER DATABASE temporal_visibility OWNER TO composio;
+ALTER DATABASE thermosdb OWNER TO composio;
+```
+</Tab>
+<Tab value="Azure">
+```sql
+CREATE USER composio WITH PASSWORD '<DATABASE_PASSWORD>';
+
+CREATE DATABASE composiodb OWNER composio;
+CREATE DATABASE temporal OWNER composio;
+CREATE DATABASE temporal_visibility OWNER composio;
+CREATE DATABASE thermosdb OWNER composio;
+
+ALTER ROLE composio CREATEDB;
+
+GRANT ALL PRIVILEGES ON DATABASE composiodb TO composio;
+GRANT ALL PRIVILEGES ON DATABASE temporal TO composio;
+GRANT ALL PRIVILEGES ON DATABASE temporal_visibility TO composio;
+GRANT ALL PRIVILEGES ON DATABASE thermosdb TO composio;
+```
+</Tab>
+</Tabs>
+
+## External PostgreSQL
+
+Point the chart to your external PostgreSQL instance. The connection string is read from a Kubernetes secret:
+
+```yaml
+externalPostgreSQL:
+  enabled: true
+  urlSecret:
+    name: "external-postgres-secret"   # K8s secret containing the connection string
+    key: "url"                         # Key within the secret
+```
+
+The secret should contain connection strings for both `POSTGRES_URL` (Backend, pointing to `composiodb`) and `THERMOS_DATABASE_URL` (Orchestrator, pointing to `thermosdb`).
+
+## Database Initialization
+
+The chart can run database migrations automatically:
+
+```yaml
+apollo:
+  dbInit:
+    enabled: true
+    replication:
+      enabled: false     # Enable for read-replica setups
+
+thermos:
+  dbInit:
+    enabled: true
+    replication:
+      enabled: false
+```
+
+Standalone migration job (runs as a Helm pre-install/pre-upgrade hook):
+
+```yaml
+databaseMigration:
+  enabled: false
+  host: "postgres.db"
+  port: 5432
+  user: "composio"
+```
+
+## Bundled PostgreSQL (Development Only)
+
+For local development, the chart can deploy a bundled PostgreSQL:
+
+```yaml
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres123"
+    username: "composio"
+    password: "composio123"
+    database: "composio"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+```
+
+<Callout type="warn">
+The bundled PostgreSQL is for development and testing only. Use a managed PostgreSQL service for production BYOC deployments.
+</Callout>

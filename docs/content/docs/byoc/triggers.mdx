@@ -1,0 +1,95 @@
+---
+title: Triggers
+description: Enable or disable triggers and the Temporal workflow engine in your BYOC deployment.
+keywords: [byoc, triggers, temporal, workflows, polling, auth-refresh]
+---
+
+Triggers and auth token refresh are powered by the [Temporal](https://temporal.io/) workflow engine. Temporal is **optional** — when disabled, the Orchestrator falls back to a polling mechanism.
+
+## Disabling Triggers (Default)
+
+By default, Temporal is disabled. The Orchestrator uses a 60-second polling interval as a fallback:
+
+```yaml
+features:
+  temporal: false
+```
+
+In this mode:
+- Triggers are not available
+- Auth token refresh uses polling
+
+## Enabling Triggers
+
+To enable triggers, enable the Temporal feature flag. This deploys a full Temporal server alongside your Composio services:
+
+```yaml
+features:
+  temporal: true
+```
+
+When enabled, the chart automatically:
+- Deploys the Temporal server and its database schema
+- Creates namespaces: `default`, `batched-polling`, `webhook`
+- Configures the Orchestrator to use Temporal for triggers and auth refresh
+- Requires a `TEMPORAL_TRIGGER_ENCRYPTION_KEY` in your secrets
+
+### Temporal Configuration
+
+```yaml
+temporal:
+  fullnameOverride: "temporal-stack"
+  server:
+    enabled: true
+    replicaCount: 2
+    config:
+      logLevel: "info"
+      numHistoryShards: 512
+      persistence:
+        defaultStore: "default"
+        default:
+          driver: "sql"
+          sql:
+            driver: "postgres12"
+            host: "<POSTGRES_HOST>"
+            port: 5432
+            database: "temporal"
+        visibility:
+          sql:
+            database: "temporal_visibility"
+      namespaces:
+        - name: "default"
+          retention: "7d"
+        - name: "batched-polling"
+          retention: "10d"
+        - name: "webhook"
+          retention: "10d"
+  schema:
+    setup:
+      enabled: true
+      backoffLimit: 100
+    update:
+      enabled: true
+      backoffLimit: 100
+```
+
+### Temporal TLS
+
+By default, TLS is disabled for the internal Temporal connection. To enable it:
+
+```yaml
+# In the Orchestrator environment, set:
+# DISABLE_TEMPORAL_TLS=false
+```
+
+### Temporal Web UI
+
+Optionally enable the Temporal web UI for debugging workflows:
+
+```yaml
+temporal:
+  web:
+    enabled: true
+  admintools:
+    enabled: true
+```

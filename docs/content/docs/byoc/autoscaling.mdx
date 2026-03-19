@@ -1,0 +1,68 @@
+---
+title: Autoscaling
+description: Configure horizontal pod autoscaling for BYOC services.
+keywords: [byoc, autoscaling, hpa, scaling, kubernetes]
+---
+
+The Backend and Orchestrator support Horizontal Pod Autoscaling (HPA).
+
+## Backend Autoscaling
+
+```yaml
+apollo:
+  replicaCount: 2                # Base replica count
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+```
+
+## Orchestrator Autoscaling
+
+```yaml
+thermos:
+  replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+```
+
+## Tool Execution Scaling
+
+The Tool Execution service uses a standard Kubernetes Deployment with configurable replicas:
+
+```yaml
+mercury:
+  replicaCount: 1
+```
+
+## Resource Requests and Limits
+
+Each service has configurable resource requests and limits:
+
+```yaml
+apollo:
+  resources:
+    requests: { memory: "5Gi", cpu: "1" }
+    limits: { memory: "5Gi", cpu: "1" }
+
+thermos:
+  resources:
+    requests: { memory: "4Gi", cpu: "2" }
+    limits: { memory: "4Gi", cpu: "2" }
+
+mercury:
+  resources:
+    requests: { memory: "2Gi", cpu: "1" }
+    limits: { memory: "4Gi", cpu: "2" }
+
+weaviate:
+  resources:
+    requests: { memory: "2Gi", cpu: "1" }
+    limits: { memory: "2Gi", cpu: "1" }
+```
