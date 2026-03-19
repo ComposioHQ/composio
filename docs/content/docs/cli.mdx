@@ -33,10 +33,10 @@ composio whoami
 
 ```bash
 # Connect your GitHub account
-composio manage connected-accounts link github
+composio link github
 
-# Print connect URL + JSON and exit immediately (no wait)
-composio manage connected-accounts link github --no-wait
+# Print connect URL + JSON and exit immediately
+composio link github --no-wait
 
 # Search for tools
 composio manage tools search "star a github repo"
@@ -47,6 +47,8 @@ composio manage tools info GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER
 # Execute a tool (star the Composio repo!)
 composio manage tools execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
 ```
+
+`composio link` waits for the connected account to become `ACTIVE` by default. Use `--no-wait` for non-blocking flows (for example, scripts and CI).
 
 ## Set up and listen to triggers
 
@@ -73,6 +75,7 @@ Run `composio <command> --help` for detailed usage and flags.
 | `composio logout` | | Remove stored authentication |
 | `composio whoami` | | Display your account and workspace information (without API keys) |
 | `composio init` | | Initialize a Composio project in the current directory |
+| `composio link` | | Link an external account via OAuth redirect (alias of `manage connected-accounts link`) |
 | `composio manage toolkits` | `list`, `search`, `info`, `version` | Discover and inspect toolkits |
 | `composio manage tools` | `list`, `search`, `info`, `execute` | Discover, inspect, and execute tools |
 | `composio manage connected-accounts` | `list`, `info`, `whoami`, `link`, `delete` | Manage connected accounts |
