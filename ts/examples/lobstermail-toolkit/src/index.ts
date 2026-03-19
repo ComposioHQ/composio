@@ -118,14 +118,18 @@ await composio.tools.createCustomTool({
     threadId: z.string().optional().describe('Thread ID to continue a conversation'),
   }),
   execute: async (input) => {
+    if (!input.text && !input.html) {
+      return { data: null, error: 'At least one of text or html body is required', successful: false };
+    }
+    const emailBody: Record<string, string> = {};
+    if (input.text) emailBody.text = input.text;
+    if (input.html) emailBody.html = input.html;
     const body: Record<string, unknown> = {
       from: input.from,
       to: input.to,
       subject: input.subject,
-      body: {} as Record<string, string>,
+      body: emailBody,
     };
-    if (input.text) (body.body as Record<string, string>).text = input.text;
-    if (input.html) (body.body as Record<string, string>).html = input.html;
     if (input.cc) body.cc = input.cc;
     if (input.inReplyTo) body.inReplyTo = input.inReplyTo;
     if (input.threadId) body.threadId = input.threadId;
