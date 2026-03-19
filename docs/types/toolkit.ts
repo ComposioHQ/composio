@@ -12,6 +12,8 @@ export interface ParameterSchema {
   requiredFields?: string[];
   // Array item schema
   items?: ParameterSchema;
+  // Additional properties schema (for map/dictionary types)
+  additionalProperties?: ParameterSchema | boolean;
 }
 
 export interface Tool {

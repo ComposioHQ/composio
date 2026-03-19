@@ -951,7 +951,8 @@
                   "post a formatted message to slack channel"
                 ],
                 "title": "Use Case",
-                "type": "string"
+                "type": "string",
+                "maxLength": 1024
               },
               "known_fields": {
                 "type": "string",

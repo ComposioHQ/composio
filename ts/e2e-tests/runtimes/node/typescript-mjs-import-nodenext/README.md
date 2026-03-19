@@ -1,10 +1,10 @@
 # TypeScript .mjs Import Resolution Test
 
-Verifies that `composio ts generate` produces TypeScript files that compile correctly with `moduleResolution: "nodenext"`.
+Verifies that `composio generate ts` produces TypeScript files that compile correctly with `moduleResolution: "nodenext"`.
 
 ## Background
 
-When `composio ts generate --output-dir ./types` runs without `--transpiled`:
+When `composio generate ts --output-dir ./types` runs without `--transpiled`:
 
 - Only `.ts` files are generated
 - These files contain `import ... from "./foo.mjs"` statements
@@ -18,7 +18,7 @@ This causes `TS2307: Cannot find module './foo.mjs'` errors.
 
 | Test                   | Description                                                    |
 | ---------------------- | -------------------------------------------------------------- |
-| composio ts generate   | Runs CLI to generate TypeScript files for hackernews toolkit |
+| composio generate ts   | Runs CLI to generate TypeScript files for hackernews toolkit |
 | File existence         | Verifies generated .ts files exist                             |
 | TypeScript compilation | Runs `tsc --noEmit` to check import resolution                 |
 
@@ -33,7 +33,7 @@ fixtures/
 The fixture script:
 
 1. Cleans up any previous generated files
-2. Runs `composio ts generate --toolkits hackernews --output-dir ./generated`
+2. Runs `composio generate ts --toolkits hackernews --output-dir ./generated`
 3. Verifies generated `.ts` files exist
 4. Runs `npx tsc --noEmit` to check TypeScript compilation
 5. Fails if TS2307 errors occur (indicating `.mjs` import bug)

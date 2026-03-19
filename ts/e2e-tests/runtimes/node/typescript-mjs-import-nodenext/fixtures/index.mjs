@@ -4,7 +4,7 @@
  * This test verifies that generated TypeScript files with .mjs imports
  * can be compiled successfully with moduleResolution: "nodenext".
  *
- * The issue: When `composio ts generate` uses importExtension: 'mjs',
+ * The issue: When `composio generate ts` uses importExtension: 'mjs',
  * the generated .ts files contain `import ... from "./foo.mjs"` statements.
  * With moduleResolution: "node16" or "nodenext", TypeScript expects .mjs
  * imports to resolve to .mts files, NOT .ts files.
@@ -31,19 +31,19 @@ if (existsSync(GENERATED_DIR)) {
   rmSync(GENERATED_DIR, { recursive: true });
 }
 
-// Test 1: Run composio ts generate --toolkits hackernews --output-dir ./generated
-console.log('Test 1: Running composio ts generate --toolkits hackernews --output-dir ./generated...');
+// Test 1: Run composio generate ts --toolkits hackernews --output-dir ./generated
+console.log('Test 1: Running composio generate ts --toolkits hackernews --output-dir ./generated...');
 try {
   // Use the composio CLI binary built and installed to /usr/local/bin in the Dockerfile
-  execSync(`composio ts generate --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
+  execSync(`composio generate ts --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
     cwd: __dirname,
     stdio: 'inherit',
     env: { ...process.env, FORCE_COLOR: '0' },
   });
 
-  console.log('✅ Test 1 passed: composio ts generate succeeded\n');
+  console.log('✅ Test 1 passed: composio generate ts succeeded\n');
 } catch (error) {
-  console.error('❌ Test 1 failed: composio ts generate threw an error');
+  console.error('❌ Test 1 failed: composio generate ts threw an error');
   console.error(error.message);
   process.exit(1);
 }

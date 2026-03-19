@@ -45,7 +45,7 @@ recordings:
   ts-generate:
     - name: help
       description: Show ts generate subcommand help
-      command: "composio ts generate --help"
+      command: "composio generate ts --help"
       height: dynamic
 
   toolkits:

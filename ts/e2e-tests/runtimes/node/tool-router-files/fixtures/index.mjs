@@ -55,8 +55,17 @@ async function main() {
   if (listOk) console.log('LIST_OK');
   else console.log('LIST_SKIP'); // eventual consistency
 
-  // Download the file (use path from API response)
-  const downloaded = await files.download(storedPath);
+  // Download the file (retry for eventual consistency, same as list above)
+  let downloaded;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      downloaded = await files.download(storedPath);
+      break;
+    } catch (err) {
+      if (attempt === 4) throw err;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
   const content = await downloaded.text();
   if (content !== testContent) {
     throw new Error(`Download failed: expected "${testContent}", got "${content}"`);

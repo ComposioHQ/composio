@@ -35,8 +35,8 @@ e2e(import.meta.url, {
         expect(result.exitCode).toBe(0);
       });
 
-      it('composio ts generate succeeds', () => {
-        expect(result.stdout).toContain('Test 1 passed: composio ts generate succeeded');
+      it('composio generate ts succeeds', () => {
+        expect(result.stdout).toContain('Test 1 passed: composio generate ts succeeded');
       });
 
       it('generated files exist', () => {
