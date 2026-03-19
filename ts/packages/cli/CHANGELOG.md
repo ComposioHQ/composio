@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.2.5
+
+### Patch Changes
+
+- a5be528: Cli release with changes in command scopes
+
 ## 0.2.4
 
 ### Patch Changes
