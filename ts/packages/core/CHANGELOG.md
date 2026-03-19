@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.6.6
+
+### Patch Changes
+
+- e1f6516: Add custom tool support in Toolrouter
+
 ## 0.6.5
 
 ### Patch Changes
