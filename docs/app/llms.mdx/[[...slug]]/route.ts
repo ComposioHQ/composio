@@ -137,6 +137,7 @@ interface OpenAPISchema {
   maximum?: number;
   minLength?: number;
   maxLength?: number;
+  additionalProperties?: OpenAPISchema | boolean;
 }
 
 interface OpenAPIParameter {
@@ -221,7 +222,13 @@ function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
         for (const [key, prop] of Object.entries(schema.properties)) {
           obj[key] = generateSampleValue(prop, depth + 1);
         }
+        if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+          obj['key'] = generateSampleValue(schema.additionalProperties, depth + 1);
+        }
         return obj;
+      }
+      if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+        return { key: generateSampleValue(schema.additionalProperties, depth + 1) };
       }
       return {};
     default:
@@ -237,21 +244,37 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
   const prefix = '  '.repeat(indent);
   const required = schema.required || [];
 
-  if (schema.type === 'object' && schema.properties) {
-    for (const [name, prop] of Object.entries(schema.properties)) {
-      const isRequired = required.includes(name);
-      const reqMark = isRequired ? ' *(required)*' : '';
-      const typeStr = getTypeString(prop);
-      const desc = prop.description ? `: ${prop.description}` : '';
+  if (schema.type === 'object' && (schema.properties || (schema.additionalProperties && typeof schema.additionalProperties === 'object'))) {
+    if (schema.properties) {
+      for (const [name, prop] of Object.entries(schema.properties)) {
+        const isRequired = required.includes(name);
+        const reqMark = isRequired ? ' *(required)*' : '';
+        const typeStr = getTypeString(prop);
+        const desc = prop.description ? `: ${prop.description}` : '';
 
-      lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}`);
+        lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}`);
 
-      // Recurse for nested objects/arrays
-      if (prop.type === 'object' && prop.properties) {
-        lines.push(...renderSchema(prop, indent + 1, maxDepth));
-      } else if (prop.type === 'array' && prop.items?.type === 'object' && prop.items.properties) {
+        // Recurse for nested objects/arrays
+        if (prop.type === 'object' && (prop.properties || (prop.additionalProperties && typeof prop.additionalProperties === 'object'))) {
+          lines.push(...renderSchema(prop, indent + 1, maxDepth));
+        } else if (prop.type === 'array' && prop.items?.type === 'object' && (prop.items.properties || (prop.items.additionalProperties && typeof prop.items.additionalProperties === 'object'))) {
+          lines.push(`${prefix}  - Array items:`);
+          lines.push(...renderSchema(prop.items, indent + 2, maxDepth));
+        }
+      }
+    }
+
+    // Render additionalProperties as [key: string]
+    if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+      const ap = schema.additionalProperties;
+      const typeStr = getTypeString(ap);
+      const desc = ap.description ? `: ${ap.description}` : '';
+      lines.push(`${prefix}- \`[key: string]\` (${typeStr})${desc}`);
+      if (ap.type === 'object' && (ap.properties || (ap.additionalProperties && typeof ap.additionalProperties === 'object'))) {
+        lines.push(...renderSchema(ap, indent + 1, maxDepth));
+      } else if (ap.type === 'array' && ap.items?.type === 'object' && (ap.items.properties || (ap.items.additionalProperties && typeof ap.items.additionalProperties === 'object'))) {
         lines.push(`${prefix}  - Array items:`);
-        lines.push(...renderSchema(prop.items, indent + 2, maxDepth));
+        lines.push(...renderSchema(ap.items, indent + 2, maxDepth));
       }
     }
   } else if (schema.oneOf || schema.anyOf) {

@@ -21,6 +21,9 @@ function processParams(props: any, requiredList: string[]): Record<string, Param
           ...param.items,
           ...(Array.isArray(param.items.required) ? { requiredFields: param.items.required } : {}),
         } } : {}),
+        ...(param.additionalProperties && typeof param.additionalProperties === 'object'
+          ? { additionalProperties: param.additionalProperties }
+          : {}),
       };
     }
   }

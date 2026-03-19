@@ -3,6 +3,7 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
+import type { CustomTool, CustomToolkit, RegisteredCustomTool, RegisteredCustomToolkit } from './customTool.types';
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
@@ -212,6 +213,18 @@ export const ToolRouterCreateSessionConfigSchema = z
           })
           .optional()
           .describe('Configuration for assistive prompt generation'),
+        customTools: z
+          .array(z.custom<CustomTool>())
+          .optional()
+          .describe(
+            'Custom tools to include in this session. Created via createCustomTool() from @composio/core/experimental.'
+          ),
+        customToolkits: z
+          .array(z.custom<CustomToolkit>())
+          .optional()
+          .describe(
+            'Custom toolkits to include in this session. Created via createCustomToolkit() from @composio/core/experimental.'
+          ),
       })
       .optional()
       .describe('Experimental features configuration - not stable, may be modified or removed'),
@@ -392,6 +405,24 @@ export type ToolRouterSessionExecuteResponse = z.infer<
   typeof ToolRouterSessionExecuteResponseSchema
 >;
 
+// --- Session proxy execute response (matches ToolProxyResponse from client) ---
+
+export interface ToolRouterSessionProxyExecuteResponse {
+  /** The HTTP status code returned from the proxied API */
+  status: number;
+  /** The response data from the proxied API */
+  data?: unknown;
+  /** HTTP headers from the proxied API */
+  headers?: Record<string, string>;
+  /** Binary response data (present when response is a file) */
+  binaryData?: {
+    contentType: string;
+    size: number;
+    url: string;
+    expiresAt?: string;
+  };
+}
+
 /**
  * Experimental features on a tool router session.
  * Contains features that may be modified or removed in future versions.
@@ -418,6 +449,32 @@ export type ToolRouterSessionExecuteFn = (
   arguments_?: Record<string, unknown>
 ) => Promise<ToolRouterSessionExecuteResponse>;
 
+export const SessionProxyExecuteParamsSchema = z.object({
+  /** The toolkit whose connected account to use for auth (e.g. 'gmail', 'github') */
+  toolkit: z.string(),
+  /** The API endpoint URL to call */
+  endpoint: z.string(),
+  /** HTTP method */
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
+  /** Request body (for POST/PUT/PATCH) */
+  body: z.unknown().optional(),
+  /** Query params or headers to include */
+  parameters: z
+    .array(
+      z.object({
+        in: z.enum(['query', 'header']),
+        name: z.string(),
+        value: z.union([z.string(), z.number()]),
+      })
+    )
+    .optional(),
+});
+export type SessionProxyExecuteParams = z.infer<typeof SessionProxyExecuteParamsSchema>;
+
+export type ToolRouterSessionProxyExecuteFn = (
+  params: SessionProxyExecuteParams
+) => Promise<ToolRouterSessionProxyExecuteResponse>;
+
 /** Session type returned by ToolRouter.create() and ToolRouter.use() */
 export interface Session<
   TToolCollection,
@@ -433,6 +490,12 @@ export interface Session<
   search: ToolRouterSessionSearchFn;
   /** Execute a tool within the session */
   execute: ToolRouterSessionExecuteFn;
+  /** Proxy an API call through Composio's auth layer using the session's connected account */
+  proxyExecute: ToolRouterSessionProxyExecuteFn;
+  /** List custom tools registered in this session, with their final slugs and schemas */
+  customTools: (options?: { toolkit?: string }) => RegisteredCustomTool[];
+  /** List custom toolkits registered in this session, with final slugs on nested tools */
+  customToolkits: () => RegisteredCustomToolkit[];
   /** Experimental features (files, assistive prompt, etc.) */
   experimental: SessionExperimental;
 }

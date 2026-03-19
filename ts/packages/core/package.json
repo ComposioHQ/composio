@@ -74,6 +74,20 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./experimental": {
+      "import": {
+        "types": "./dist/experimental/index.d.mts",
+        "default": "./dist/experimental/index.mjs"
+      },
+      "require": {
+        "types": "./dist/experimental/index.d.cts",
+        "default": "./dist/experimental/index.cjs"
+      },
+      "default": {
+        "types": "./dist/experimental/index.d.cts",
+        "default": "./dist/experimental/index.cjs"
+      }
+    },
     "./platform": {
       "workerd": {
         "types": "./dist/platform/workerd.d.mts",
