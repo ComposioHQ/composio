@@ -33,19 +33,19 @@ composio whoami
 
 ```bash
 # Connect your GitHub account
-composio manage connected-accounts link github
+composio link github
 
 # Print connect URL + JSON and exit immediately (no wait)
-composio manage connected-accounts link github --no-wait
+composio link github --no-wait
 
 # Search for tools
-composio manage tools search "star a github repo"
+composio search "star a github repo"
 
 # Look up a tool's input schema
 composio manage tools info GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER
 
 # Execute a tool (star the Composio repo!)
-composio manage tools execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
+composio execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
 ```
 
 ## Set up and listen to triggers
@@ -58,7 +58,7 @@ composio manage connected-accounts list --toolkits github
 composio manage triggers create GITHUB_STAR_ADDED_EVENT --connected-account-id your-connected-account-id --trigger-config '{"owner":"your-username","repo":"your-repo"}'
 
 # Listen to all GitHub trigger events on your account in real time
-composio manage triggers listen --toolkits github --table
+composio listen --toolkits github --table
 ```
 
 ## Available commands
@@ -73,6 +73,10 @@ Run `composio <command> --help` for detailed usage and flags.
 | `composio logout` | | Remove stored authentication |
 | `composio whoami` | | Display your account and workspace information (without API keys) |
 | `composio init` | | Initialize a Composio project in the current directory |
+| `composio search` | | Search for tools by use-case query (alias for `manage tools search`) |
+| `composio execute` | | Execute a tool by slug (alias for `manage tools execute`) |
+| `composio link` | | Connect an account for a toolkit (alias for `manage connected-accounts link`) |
+| `composio listen` | | Listen to trigger events in real time (alias for `manage triggers listen`) |
 | `composio manage toolkits` | `list`, `search`, `info`, `version` | Discover and inspect toolkits |
 | `composio manage tools` | `list`, `search`, `info`, `execute` | Discover, inspect, and execute tools |
 | `composio manage connected-accounts` | `list`, `info`, `whoami`, `link`, `delete` | Manage connected accounts |
