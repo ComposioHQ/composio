@@ -1,0 +1,65 @@
+---
+title: SessionContextImpl
+description: Concrete implementation of SessionContext. One instance is created per session (or per multi-execute batch) and shared across all custom tool invocations, including sibling routing.  When `customToolsMap` is provided, `execute()` checks local tools first before falling back to the backend API. This allows tool A to call tool B via `session.execute('B', ...)` without hitting the network.
+---
+
+## Usage
+
+Access this class through the `composio.sessionContextImpl` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.sessionContextImpl.list();
+```
+
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | The user ID for this session |
+
+## Methods
+
+### execute()
+
+Execute any tool from within a custom tool.
+Routes to sibling local tools in-process when available,
+otherwise delegates to the backend API.
+
+```typescript
+async execute(toolSlug: string, arguments_: Record<string, unknown>): Promise<...>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolSlug` | `string` |
+| `arguments_` | `Record<string, unknown>` |
+
+**Returns**
+
+`Promise<...>`
+
+---
+
+### proxyExecute()
+
+Proxy API calls through Composio's auth layer.
+The backend resolves the connected account from the toolkit within the session.
+
+```typescript
+async proxyExecute(params: object): Promise<ToolRouterSessionProxyExecuteResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `params` | `object` |
+
+**Returns**
+
+`Promise<ToolRouterSessionProxyExecuteResponse>`
+
+---

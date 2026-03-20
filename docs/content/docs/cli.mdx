@@ -33,32 +33,32 @@ composio whoami
 
 ```bash
 # Connect your GitHub account
-composio connected-accounts link github
+composio link github
 
 # Print connect URL + JSON and exit immediately (no wait)
-composio connected-accounts link github --no-wait
+composio link github --no-wait
 
 # Search for tools
-composio tools search "star a github repo"
+composio search "star a github repo"
 
 # Look up a tool's input schema
-composio tools info GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER
+composio manage tools info GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER
 
 # Execute a tool (star the Composio repo!)
-composio tools execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
+composio execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
 ```
 
 ## Set up and listen to triggers
 
 ```bash
 # Find your connected account ID
-composio connected-accounts list --toolkits github
+composio manage connected-accounts list --toolkits github
 
 # Create a trigger for star events on your repo
-composio triggers create GITHUB_STAR_ADDED_EVENT --connected-account-id your-connected-account-id --trigger-config '{"owner":"your-username","repo":"your-repo"}'
+composio manage triggers create GITHUB_STAR_ADDED_EVENT --connected-account-id your-connected-account-id --trigger-config '{"owner":"your-username","repo":"your-repo"}'
 
 # Listen to all GitHub trigger events on your account in real time
-composio triggers listen --toolkits github --table
+composio listen --toolkits github --table
 ```
 
 ## Available commands
@@ -73,15 +73,18 @@ Run `composio <command> --help` for detailed usage and flags.
 | `composio logout` | | Remove stored authentication |
 | `composio whoami` | | Display your account and workspace information (without API keys) |
 | `composio init` | | Initialize a Composio project in the current directory |
-| `composio toolkits` | `list`, `search`, `info`, `version` | Discover and inspect toolkits |
-| `composio tools` | `list`, `search`, `info`, `execute` | Discover, inspect, and execute tools |
-| `composio connected-accounts` | `list`, `info`, `whoami`, `link`, `delete` | Manage connected accounts |
-| `composio auth-configs` | `list`, `info`, `create`, `delete` | Manage auth configurations |
-| `composio triggers` | `list`, `info`, `create`, `status`, `listen`, `enable`, `disable`, `delete` | Subscribe to events and manage trigger instances |
-| `composio logs` | `tools`, `triggers` | Inspect tool and trigger execution logs |
-| `composio generate` | | Generate type stubs (auto-detects language) |
-| `composio ts` | `generate` | Generate TypeScript type stubs |
-| `composio py` | `generate` | Generate Python type stubs |
+| `composio search` | | Search for tools by use-case query (alias for `manage tools search`) |
+| `composio execute` | | Execute a tool by slug (alias for `manage tools execute`) |
+| `composio link` | | Connect an account for a toolkit (alias for `manage connected-accounts link`) |
+| `composio listen` | | Listen to trigger events in real time (alias for `manage triggers listen`) |
+| `composio manage toolkits` | `list`, `search`, `info`, `version` | Discover and inspect toolkits |
+| `composio manage tools` | `list`, `search`, `info`, `execute` | Discover, inspect, and execute tools |
+| `composio manage connected-accounts` | `list`, `info`, `whoami`, `link`, `delete` | Manage connected accounts |
+| `composio manage auth-configs` | `list`, `info`, `create`, `delete` | Manage auth configurations |
+| `composio manage triggers` | `list`, `info`, `create`, `status`, `listen`, `enable`, `disable`, `delete` | Subscribe to events and manage trigger instances |
+| `composio manage logs` | `tools`, `triggers` | Inspect tool and trigger execution logs |
+| `composio generate ts` | `(options)` | Generate TypeScript type stubs |
+| `composio generate py` | `(options)` | Generate Python type stubs |
 | `composio upgrade` | | Upgrade CLI to the latest version |
 | `composio version` | | Display the current CLI version |
 

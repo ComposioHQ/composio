@@ -1,4 +1,4 @@
-import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
+import { SessionCreateParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import {
   ToolRouterConfigTags,
   ToolRouterConfigTools,

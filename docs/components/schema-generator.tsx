@@ -175,16 +175,30 @@ export function generateSchemaData(
       }
     }
 
-    // Handle object
-    if ((schema.type === 'object' || schema.properties) && schema.properties) {
+    // Handle object (with properties and/or additionalProperties)
+    if ((schema.type === 'object' || schema.properties) && (schema.properties || (schema.additionalProperties && typeof schema.additionalProperties === 'object'))) {
       const required = schema.required || [];
-      const props = Object.entries(schema.properties)
-        .filter(([_, propSchema]) => isVisible(propSchema))
-        .map(([name, propSchema]) => ({
-          name,
-          $type: processSchema(propSchema as SimpleSchema),
-          required: required.includes(name),
-        }));
+      const props: { name: string; $type: string; required: boolean }[] = [];
+
+      if (schema.properties) {
+        for (const [name, propSchema] of Object.entries(schema.properties)) {
+          if (!isVisible(propSchema)) continue;
+          props.push({
+            name,
+            $type: processSchema(propSchema as SimpleSchema),
+            required: required.includes(name),
+          });
+        }
+      }
+
+      // Include additionalProperties as a synthetic [key: string] entry
+      if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+        props.push({
+          name: '[key: string]',
+          $type: processSchema(schema.additionalProperties),
+          required: false,
+        });
+      }
 
       refs[id] = {
         ...base,

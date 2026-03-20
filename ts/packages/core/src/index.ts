@@ -29,5 +29,10 @@ export * from './types/ToolRouterSessionFilesMount.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
+
+// Experimental custom tools — exported with experimental_ prefix for top-level import
+export { createCustomTool as experimental_createTool } from './models/CustomTool';
+export { createCustomToolkit as experimental_createToolkit } from './models/CustomTool';
+
 // Error handling exports
 export * from './errors';

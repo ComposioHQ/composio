@@ -1,7 +1,7 @@
 {
   "name": "@composio/core",
   "type": "module",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -72,6 +72,20 @@
       "default": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./experimental": {
+      "import": {
+        "types": "./dist/experimental/index.d.mts",
+        "default": "./dist/experimental/index.mjs"
+      },
+      "require": {
+        "types": "./dist/experimental/index.d.cts",
+        "default": "./dist/experimental/index.cjs"
+      },
+      "default": {
+        "types": "./dist/experimental/index.d.cts",
+        "default": "./dist/experimental/index.cjs"
       }
     },
     "./platform": {

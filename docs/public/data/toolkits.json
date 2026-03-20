@@ -550,7 +550,7 @@
     ],
     "toolCount": 866,
     "triggerCount": 20,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "GITHUB_ABORT_REPOSITORY_MIGRATION",
@@ -4360,7 +4360,7 @@
       {
         "slug": "GITHUB_SEARCH_ISSUES_AND_PULL_REQUESTS",
         "name": "Search issues and pull requests",
-        "description": "Searches GitHub for issues and pull requests. Use qualifiers to scope searches: `repo:owner/name` for specific repos, `org:orgname` for organizations, `user:username` for personal repos, `assignee:@me` for your assignments (automatically resolved to your username), `mentions:@me` for mentions. Combine with `is:issue`, `is:pr`, `state:open`, `label:\"name\"` filters. Logical operators (AND, OR, NOT) are supported but limited to a maximum of 5 operators total per query."
+        "description": "Searches GitHub for issues and pull requests. Supports keywords, qualifiers (repo:, org:, user:, state:, label:, author:, assignee:, mentions:, etc.), and type filters (is:issue, is:pr). Type filters cannot be used alone - they must be combined with at least one keyword or other qualifier. All other qualifiers work independently. The @me shorthand (e.g., assignee:@me, mentions:@me) is automatically resolved to your username. Logical operators (AND, OR, NOT) are supported but limited to a maximum of 5 operators total per query."
       },
       {
         "slug": "GITHUB_SEARCH_LABELS",
@@ -5386,7 +5386,7 @@
     ],
     "toolCount": 47,
     "triggerCount": 5,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
@@ -6998,7 +6998,7 @@
     ],
     "toolCount": 121,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "SUPABASE_ALPHA_CREATE_API_KEY",
@@ -7712,7 +7712,7 @@
     ],
     "toolCount": 301,
     "triggerCount": 5,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "OUTLOOK_ADD_EVENT_ATTACHMENT",
@@ -10382,7 +10382,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 10,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "GOOGLEDOCS_COPY_DOCUMENT",
@@ -10678,7 +10678,7 @@
     ],
     "toolCount": 229,
     "triggerCount": 2,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "HUBSPOT_ADD_ASSET_ASSOCIATION",
@@ -11935,7 +11935,7 @@
     ],
     "toolCount": 31,
     "triggerCount": 3,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "LINEAR_CREATE_ATTACHMENT",
@@ -12199,7 +12199,7 @@
     ],
     "toolCount": 25,
     "triggerCount": 6,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "AIRTABLE_CREATE_BASE",
@@ -12782,7 +12782,7 @@
     ],
     "toolCount": 96,
     "triggerCount": 3,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "JIRA_ADD_ATTACHMENT",
@@ -13621,7 +13621,7 @@
     ],
     "toolCount": 51,
     "triggerCount": 4,
-    "version": "20260312_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "YOUTUBE_ADD_VIDEO_TO_PLAYLIST",
@@ -27788,7 +27788,7 @@
     ],
     "toolCount": 61,
     "triggerCount": 9,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "ONE_DRIVE_CHECKIN_ITEM",
@@ -32134,7 +32134,7 @@
     ],
     "toolCount": 55,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "CALENDLY_CANCEL_SCHEDULED_EVENT",
@@ -45911,7 +45911,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "ZOHO_CONVERT_ZOHO_LEAD",
@@ -50257,7 +50257,7 @@
     ],
     "toolCount": 50,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "MIXPANEL_ADD_UNIQUE_TO_PROFILE_LIST_PROPERTY",
@@ -50447,12 +50447,12 @@
       {
         "slug": "MIXPANEL_QUERY_RETENTION_REPORT",
         "name": "Query Retention Report",
-        "description": "Tool to get cohort analysis showing user retention patterns over time. Use when analyzing how users who performed an initial event subsequently performed a target event at specified intervals. If you specify neither an interval nor a unit, the interval defaults to 1 day (24-hour intervals)."
+        "description": "Query cohort analysis showing user retention patterns over time. Tracks how users who performed an initial event (born_event) subsequently perform a target event (event). Use the 'unit' parameter to control cohort interval granularity ('day', 'week', 'month'); defaults to 'day'."
       },
       {
         "slug": "MIXPANEL_QUERY_SEGMENTATION",
         "name": "Query Segmentation Report",
-        "description": "Get data for an event, segmented and filtered by properties. The Query API has a rate limit of 60 queries per hour and 5 concurrent queries, shared across related tools (e.g., MIXPANEL_JQL_QUERY, MIXPANEL_TOP_EVENT_PROPERTY_VALUES); bursts of concurrent calls return 429."
+        "description": "Get data for an event, segmented and filtered by properties with daily/time-series breakdown. Use the 'unit' parameter to control time bucketing ('minute', 'hour', 'day', 'month'). The Query API has a rate limit of 60 queries per hour and 5 concurrent queries, shared across related tools (e.g., MIXPANEL_JQL_QUERY, MIXPANEL_TOP_EVENT_PROPERTY_VALUES); bursts of concurrent calls return 429."
       },
       {
         "slug": "MIXPANEL_QUERY_TOP_EVENTS",
@@ -59568,7 +59568,7 @@
     ],
     "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "METAADS_CREATE_AD",
@@ -60037,7 +60037,7 @@
     ],
     "toolCount": 429,
     "triggerCount": 20,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -62372,7 +62372,7 @@
     ],
     "toolCount": 5,
     "triggerCount": 0,
-    "version": "20260313_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "BROWSER_TOOL_CREATE_TASK",
@@ -95947,7 +95947,7 @@
     ],
     "toolCount": 58,
     "triggerCount": 0,
-    "version": "20260313_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "GONG_ADD_CALL_MEDIA_V2_CALLS_ID_MEDIA",
@@ -135106,7 +135106,7 @@
   {
     "slug": "cloudflare_browser_rendering",
     "name": "Cloudflare Browser Rendering",
-    "logo": "https://www.cloudflare.com/img/logo-cloudflare-dark.svg",
+    "logo": "https://logos.composio.dev/api/cloudflare_browser_rendering",
     "description": "Cloudflare Browser Rendering enables developers to programmatically control and interact with headless browser instances running on Cloudflare’s global network, facilitating tasks such as automating browser interactions, capturing screenshots, generating PDFs, and extracting data from web pages.",
     "category": "ai web scraping",
     "authSchemes": [
@@ -135114,7 +135114,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "CLOUDFLARE_BROWSER_RENDERING_CAPTURE_SCREENSHOT",
@@ -135908,7 +135908,7 @@
   {
     "slug": "coassemble",
     "name": "Coassemble",
-    "logo": "https://coassemble.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/coassemble",
     "description": "Coassemble is a platform that allows users to create, manage, and deliver online training courses.",
     "category": "online courses",
     "authSchemes": [
@@ -135916,7 +135916,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260211_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "COASSEMBLE_GET_CLIENTS",
@@ -136264,7 +136264,7 @@
   {
     "slug": "codereadr",
     "name": "Codereadr",
-    "logo": "https://www.codereadr.com/wp-content/uploads/2020/06/codereadr-logo.png",
+    "logo": "https://logos.composio.dev/api/codereadr",
     "description": "CodeREADr is a mobile data collection and barcode scanning platform that enables businesses to create and manage services for data capture, validation, and reporting.",
     "category": "developer tools",
     "authSchemes": [
@@ -136272,7 +136272,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "CODEREADR_COLLECT_DATA_WITH_QUESTIONS",
@@ -136728,7 +136728,7 @@
   {
     "slug": "college_football_data",
     "name": "College Football Data",
-    "logo": "https://collegefootballdata.com/logo.png",
+    "logo": "https://logos.composio.dev/api/college_football_data",
     "description": "CollegeFootballData.com provides comprehensive college football data, including game scores, statistics, and recruiting information, accessible via a RESTful API.",
     "category": "analytics",
     "authSchemes": [
@@ -136736,7 +136736,7 @@
     ],
     "toolCount": 56,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "COLLEGE_FOOTBALL_DATA_ADVANCED_BOX_SCORE",
@@ -137582,7 +137582,7 @@
   {
     "slug": "control_d",
     "name": "Control D",
-    "logo": "https://controld.com/logo.png",
+    "logo": "https://logos.composio.dev/api/control_d",
     "description": "Control D is a customizable DNS filtering and traffic redirection platform that allows users to manage internet access, enforce policies, and monitor usage across devices and networks.",
     "category": "security & identity tools",
     "authSchemes": [
@@ -137590,7 +137590,7 @@
     ],
     "toolCount": 54,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "CONTROL_D_DELETE_DEVICES_DEVICE_ID",
@@ -165899,7 +165899,7 @@
   {
     "slug": "formbricks",
     "name": "Formbricks",
-    "logo": "https://formbricks.com/logo.png",
+    "logo": "https://logos.composio.dev/api/formbricks",
     "description": "Formbricks is an open-source platform for building and managing surveys, enabling organizations to collect and analyze user feedback effectively.",
     "category": "forms & surveys",
     "authSchemes": [
@@ -165907,7 +165907,7 @@
     ],
     "toolCount": 46,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "FORMBRICKS_CHECK_HEALTH",
@@ -172753,7 +172753,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 1,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "GOOGLESLIDES_CREATE_PRESENTATION",
@@ -184166,7 +184166,7 @@
     ],
     "toolCount": 36,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "INSTAGRAM_CREATE_CAROUSEL_CONTAINER",
@@ -218019,7 +218019,7 @@
     ],
     "toolCount": 105,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260319_00",
     "tools": [
       {
         "slug": "QUICKBOOKS_CAPTURE_CHARGE",
@@ -218444,7 +218444,7 @@
       {
         "slug": "QUICKBOOKS_QUERY_ACCOUNT",
         "name": "Query Account Entities",
-        "description": "Query Account entities in QuickBooks using SQL-like syntax. IMPORTANT: Queries the Account entity ONLY (chart of accounts). For other entities (Purchase, Invoice, Bill, Payment, etc.), use their respective query actions. NOTE: API returns ALL fields with values regardless of SELECT clause (projections not supported). Supports: WHERE clauses (=, <, >, LIKE, IN), pattern matching (%), ORDERBY, pagination (MAXRESULTS up to 1000, STARTPOSITION), COUNT. Common fields: Id, Name, AccountType, AccountSubType, Classification, Active, FullyQualifiedName, CurrentBalance, AcctNum, Description, SubAccount. Examples: - SELECT * FROM Account WHERE AccountType = 'Expense' MAXRESULTS 100 - SELECT * FROM Account WHERE Active = true ORDERBY Name - SELECT * FROM Account WHERE Name LIKE '%Checking%'"
+        "description": "Query Account entities in QuickBooks using SQL-like syntax. IMPORTANT: Queries the Account entity ONLY (chart of accounts). For other entities (Purchase, Invoice, Bill, Payment, etc.), use their respective query actions. NOTE: API returns ALL fields with values regardless of SELECT clause (projections not supported). Supports: WHERE clauses (=, <, >, LIKE, IN), pattern matching (%), ORDER BY, pagination (MAXRESULTS up to 1000, STARTPOSITION), COUNT. Common fields: Id, Name, AccountType, AccountSubType, Classification, Active, FullyQualifiedName, CurrentBalance, AcctNum, Description, SubAccount. Examples: - SELECT * FROM Account WHERE AccountType = 'Expense' MAXRESULTS 100 - SELECT * FROM Account WHERE Active = true ORDER BY Name - SELECT * FROM Account WHERE Name LIKE '%Checking%'"
       },
       {
         "slug": "QUICKBOOKS_QUERY_ATTACHABLE",
@@ -218454,7 +218454,7 @@
       {
         "slug": "QUICKBOOKS_QUERY_ENTITIES",
         "name": "Query QuickBooks Entities",
-        "description": "Execute SQL-like queries on QuickBooks Online entities. Supports all entity types (Customer, Invoice, Bill, Payment, Purchase, Account, etc.) with WHERE clauses, pattern matching, ordering, and pagination. Use entity-specific query tools when available for typed responses."
+        "description": "Execute SQL-like queries on QuickBooks Online entities. Supports all entity types (Customer, Invoice, Bill, Payment, Purchase, Account, etc.) with WHERE clauses, pattern matching, ordering, and pagination. IMPORTANT: Reference fields (AccountRef, CurrencyRef, DepartmentRef, ClassRef, etc.) are NOT queryable in WHERE clauses - use queryable fields like Id, TxnDate, PaymentType, DisplayName instead. For account/reference filtering, query by date range and filter client-side. Use entity-specific query tools when available for typed responses."
       },
       {
         "slug": "QUICKBOOKS_READ_ACCOUNT",

@@ -7,6 +7,7 @@ export default defineConfig({
   copy: [{ from: 'pack/generated/*', to: '.', flatten: false }],
   entry: [
     'src/index.ts',
+    'src/experimental/index.ts',
 
     // #platform
     'src/platform/node.ts',

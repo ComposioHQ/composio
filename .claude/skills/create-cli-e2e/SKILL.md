@@ -225,7 +225,6 @@ e2e(import.meta.url, {
       it('exits with non-zero code', () => {
         expect(missingArgResult.exitCode).not.toBe(0);
       });
-
       it('stderr contains an error message', () => {
         expect(missingArgResult.stderr).not.toBe('');
       });

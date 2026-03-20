@@ -29,7 +29,10 @@ import {
   ToolRouterMCPServerConfig,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
-import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
+import {
+  SessionCreateParams,
+  SessionCreateResponse,
+} from '@composio/client/resources/tool-router/session/session.mjs';
 import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
@@ -38,6 +41,8 @@ import {
   transformToolRouterToolkitsParams,
 } from '../lib/toolRouterParams';
 import { ToolRouterSession } from './ToolRouterSession';
+import { buildCustomToolsMapFromResponse, serializeCustomTools, serializeCustomToolkits } from './CustomTool';
+import type { CustomToolsMap } from '../types/customTool.types';
 
 export class ToolRouter<
   TToolCollection,
@@ -76,30 +81,18 @@ export class ToolRouter<
    *
    * @example
    * ```typescript
-   * import { Composio } from '@composio/core';
+   * import { Composio, experimental_createTool } from '@composio/core';
    *
    * const composio = new Composio();
-   * const userId = 'user_123';
    *
-   * const session = await composio.experimental.create(userId, {
+   * const session = await composio.create('user_123', {
    *   toolkits: ['gmail'],
    *   manageConnections: true,
-   *   tools: {
-   *     gmail: {
-   *       disabled: ['gmail_send_email']
-   *     }
+   *   experimental: {
+   *     customTools: [myCustomTool],
+   *     customToolkits: [myToolkit],
    *   },
-   *   tags: ['readOnlyHint']
    * });
-   *
-   * console.log(session.sessionId);
-   * console.log(session.mcp.url);
-   *
-   * // Get tools formatted for your framework (requires provider)
-   * const tools = await session.tools();
-   *
-   * // Check toolkit connection states
-   * const toolkits = await session.toolkits();
    * ```
    */
   async create(
@@ -107,6 +100,26 @@ export class ToolRouter<
     config?: ToolRouterCreateSessionConfig
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
+
+    // Extract custom tools/toolkits from experimental config
+    const customTools = routerConfig.experimental?.customTools;
+    const customToolkits = routerConfig.experimental?.customToolkits;
+
+    // Build the typed experimental payload for the backend
+    const experimentalPayload: SessionCreateParams['experimental'] = {};
+
+    if (routerConfig.experimental?.assistivePrompt?.userTimezone) {
+      experimentalPayload.assistive_prompt_config = {
+        user_timezone: routerConfig.experimental.assistivePrompt.userTimezone,
+      };
+    }
+
+    if (customTools?.length) {
+      experimentalPayload.custom_tools = serializeCustomTools(customTools);
+    }
+    if (customToolkits?.length) {
+      experimentalPayload.custom_toolkits = serializeCustomToolkits(customToolkits);
+    }
 
     const payload: SessionCreateParams = {
       user_id: userId,
@@ -119,26 +132,34 @@ export class ToolRouter<
         routerConfig.manageConnections
       ),
       workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
-      experimental: routerConfig.experimental?.assistivePrompt?.userTimezone
-        ? {
-            assistive_prompt_config: {
-              user_timezone: routerConfig.experimental.assistivePrompt.userTimezone,
-            },
-          }
+      experimental: Object.keys(experimentalPayload).length > 0
+        ? experimentalPayload
         : undefined,
     };
 
     const session = await this.client.toolRouter.session.create(payload);
 
-    const assistivePrompt =
-      session.experimental?.assistive_prompt;
+    // Build custom tools map from the response's slug/original_slug mapping
+    // instead of computing LOCAL_ prefix client-side
+    let customToolsMap: CustomToolsMap | undefined;
+    if (customTools?.length || customToolkits?.length) {
+      customToolsMap = buildCustomToolsMapFromResponse(
+        customTools ?? [],
+        customToolkits,
+        session.experimental
+      );
+    }
+
+    const assistivePrompt = session.experimental?.assistive_prompt;
 
     return new ToolRouterSession<TToolCollection, TTool, TProvider>(
       this.client,
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp),
-      { assistivePrompt }
+      { assistivePrompt },
+      customToolsMap,
+      userId
     );
   }
 

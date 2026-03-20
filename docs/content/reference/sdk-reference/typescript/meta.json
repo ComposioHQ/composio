@@ -6,6 +6,7 @@
     "connected-accounts",
     "mcp",
     "remote-file",
+    "session-context-impl",
     "toolkits",
     "tool-router-session",
     "tool-router-session-files-mount",

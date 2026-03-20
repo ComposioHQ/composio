@@ -245,6 +245,8 @@ const session = await composio.create('user_123', {
 
 Configure experimental features for the session. These features are not stable and may be modified or removed in future versions.
 
+#### Assistive Prompt
+
 ```typescript
 const session = await composio.create('user_123', {
   toolkits: ['gmail'],
@@ -262,6 +264,87 @@ if (session.experimental?.assistivePrompt) {
 ```
 
 The `userTimezone` field accepts an IANA timezone identifier (e.g., 'America/New_York', 'Europe/London') which is used to generate a timezone-aware system prompt for optimal tool router usage.
+
+#### Custom Tools & Custom Toolkits
+
+Define your own tools that run in-process alongside Composio's remote tools. Custom tools are automatically indexed for search and routed to your `execute` function when called.
+
+There are three ways to define custom tools:
+
+**1. Standalone tool** — no auth needed, passed in `customTools`:
+
+```typescript
+import { experimental_createTool } from '@composio/core';
+import { z } from 'zod/v3';
+
+const grep = experimental_createTool('GREP', {
+  name: 'Grep Search',
+  description: 'Search for patterns in files',
+  inputParams: z.object({ pattern: z.string(), path: z.string() }),
+  execute: async (input) => ({ matches: [] }),
+});
+```
+
+**2. Extension tool** — extends a Composio toolkit, inherits its auth. Passed in `customTools` with `extendsToolkit`:
+
+```typescript
+const getImportant = experimental_createTool('GET_IMPORTANT_EMAILS', {
+  name: 'Get Important Emails',
+  description: 'Fetch high-priority emails',
+  extendsToolkit: 'gmail',
+  inputParams: z.object({ limit: z.number().default(10) }),
+  execute: async (input, ctx) => {
+    const result = await ctx.execute('GMAIL_SEARCH', { query: 'is:important' });
+    return { emails: result.data };
+  },
+});
+```
+
+**3. Custom toolkit** — groups related no-auth tools. Passed in `customToolkits`:
+
+```typescript
+import { experimental_createToolkit } from '@composio/core';
+
+const sed = experimental_createTool('SED', {
+  name: 'Sed Replace',
+  description: 'Find and replace in files',
+  inputParams: z.object({ pattern: z.string(), replacement: z.string() }),
+  execute: async (input) => ({ replaced: 0 }),
+});
+
+const devTools = experimental_createToolkit('DEV_TOOLS', {
+  name: 'Dev Tools',
+  description: 'Local dev utilities',
+  tools: [sed],
+});
+```
+
+**Creating a session with custom tools:**
+
+```typescript
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
+  experimental: {
+    customTools: [grep, getImportant],
+    customToolkits: [devTools],
+  },
+});
+```
+
+**Executing custom tools** — use the same slug you defined:
+
+```typescript
+// Standalone tool
+await session.execute('GREP', { pattern: 'TODO', path: '/src' });
+
+// Extension tool
+await session.execute('GET_IMPORTANT_EMAILS', { limit: 5 });
+
+// Toolkit tool
+await session.execute('SED', { pattern: 'foo', replacement: 'bar' });
+```
+
+Custom tools are searched alongside Composio tools. When the LLM calls a custom tool, the SDK executes it in-process — remote tools in the same batch are sent to the backend in parallel.
 
 ## Session Properties
 
@@ -346,6 +429,48 @@ Meta tools allow you to:
 - Manage session configuration
 
 This method is useful when you need direct access to the underlying meta tools without creating a full session object.
+
+### `execute()`
+
+Execute a tool within the session. Custom tools run in-process; remote tools are sent to the Composio backend. Works with any tool — custom or remote — using the same API.
+
+```typescript
+// Custom tool
+const result = await session.execute('GET_USER_CONTEXT', { category: 'prefs' });
+console.log(result.data);  // { preferences: { ... } }
+console.log(result.error); // null on success
+
+// Remote Composio tool — same API
+const weather = await session.execute('WEATHERMAP_WEATHER', { location: 'Tokyo' });
+```
+
+### `search()`
+
+Search for tools by semantic use case. Returns relevant tools with schemas and guidance.
+
+```typescript
+const results = await session.search({ query: 'send an email via gmail' });
+
+for (const result of results.results) {
+  console.log(result.useCase);
+  console.log(result.primaryToolSlugs); // e.g. ['GMAIL_SEND_EMAIL']
+}
+```
+
+### `proxyExecute()`
+
+Proxy an API call through Composio's auth layer using the session's connected account. The backend resolves the connected account from the toolkit within the session.
+
+```typescript
+const result = await session.proxyExecute({
+  toolkit: 'github',
+  endpoint: 'https://api.github.com/user',
+  method: 'GET',
+  parameters: [
+    { in: 'header', name: 'X-Custom', value: 'value' },
+  ],
+});
+```
 
 ### `authorize()`
 
@@ -802,6 +927,8 @@ interface ToolRouterCreateSessionConfig {
     assistivePrompt?: {
       userTimezone?: string; // IANA timezone identifier for timezone-aware assistive prompts
     };
+    customTools?: CustomTool[];      // Standalone or extension tools (from experimental_createTool)
+    customToolkits?: CustomToolkit[]; // Grouped no-auth tools (from experimental_createToolkit)
   };
 }
 ```
@@ -817,8 +944,11 @@ interface ToolRouterSession {
     headers?: Record<string, string>; // Authentication headers (includes x-api-key if configured)
   };
   tools: (modifiers?: ProviderOptions) => Promise<Tools>;
+  execute: (toolSlug: string, arguments?: Record<string, unknown>) => Promise<ToolRouterSessionExecuteResponse>;
+  search: (params: { query: string; toolkits?: string[] }) => Promise<ToolRouterSessionSearchResponse>;
+  proxyExecute: (params: SessionProxyExecuteParams) => Promise<ToolRouterSessionExecuteResponse>;
   authorize: (toolkit: string, options?: { callbackUrl?: string }) => Promise<ConnectionRequest>;
-  toolkits: (options?: { 
+  toolkits: (options?: {
     toolkits?: string[];   // Filter by specific toolkit slugs
     nextCursor?: string;   // Pagination cursor
     limit?: number;        // Number of items per page

@@ -27,6 +27,7 @@ ts/e2e-tests/
 ├── runtimes/
     ├── node/                                # Node.js runtime tests
     │   ├── cjs-basic/                       # CommonJS compatibility tests
+    │   ├── custom-tools/                    # Custom local tools execution (session.execute, proxyExecute, Zod validation)
     │   ├── esm-basic/                       # ESM compatibility tests
     │   ├── json-schema-to-zod-v3/           # @composio/json-schema-to-zod + Zod v3 tests
     │   ├── json-schema-to-zod-v4/           # @composio/json-schema-to-zod + Zod v4 tests

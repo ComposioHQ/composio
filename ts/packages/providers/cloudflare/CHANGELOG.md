@@ -1,5 +1,12 @@
 # @composio/cloudflare
 
+## 0.6.6
+
+### Patch Changes
+
+- Updated dependencies [e1f6516]
+  - @composio/core@0.6.6
+
 ## 0.6.5
 
 ### Patch Changes

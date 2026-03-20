@@ -2890,7 +2890,7 @@
   {
     "slug": "cloudflare_browser_rendering",
     "name": "Cloudflare Browser Rendering",
-    "logo": "https://www.cloudflare.com/img/logo-cloudflare-dark.svg",
+    "logo": "https://logos.composio.dev/api/cloudflare_browser_rendering",
     "category": "ai web scraping",
     "toolCount": 4,
     "triggerCount": 0
@@ -2914,7 +2914,7 @@
   {
     "slug": "coassemble",
     "name": "Coassemble",
-    "logo": "https://coassemble.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/coassemble",
     "category": "online courses",
     "toolCount": 4,
     "triggerCount": 0
@@ -2938,7 +2938,7 @@
   {
     "slug": "codereadr",
     "name": "Codereadr",
-    "logo": "https://www.codereadr.com/wp-content/uploads/2020/06/codereadr-logo.png",
+    "logo": "https://logos.composio.dev/api/codereadr",
     "category": "developer tools",
     "toolCount": 16,
     "triggerCount": 0
@@ -2970,7 +2970,7 @@
   {
     "slug": "college_football_data",
     "name": "College Football Data",
-    "logo": "https://collegefootballdata.com/logo.png",
+    "logo": "https://logos.composio.dev/api/college_football_data",
     "category": "analytics",
     "toolCount": 56,
     "triggerCount": 0
@@ -3018,7 +3018,7 @@
   {
     "slug": "control_d",
     "name": "Control D",
-    "logo": "https://controld.com/logo.png",
+    "logo": "https://logos.composio.dev/api/control_d",
     "category": "security & identity tools",
     "toolCount": 54,
     "triggerCount": 0
@@ -4026,7 +4026,7 @@
   {
     "slug": "formbricks",
     "name": "Formbricks",
-    "logo": "https://formbricks.com/logo.png",
+    "logo": "https://logos.composio.dev/api/formbricks",
     "category": "forms & surveys",
     "toolCount": 46,
     "triggerCount": 0
