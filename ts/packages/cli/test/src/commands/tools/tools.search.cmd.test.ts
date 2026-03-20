@@ -350,7 +350,7 @@ describe('CLI: composio manage tools search', () => {
           expect(output).toContain('1. Collect recipient details');
           expect(output).toContain('Hints:');
           expect(output).toContain(
-            `composio manage tools execute "GMAIL_SEND_EMAIL" --user-id "<user-id>" -d '{}'`
+            `composio manage tools execute "GMAIL_SEND_EMAIL" --user-id "<user-id>" -d "{}"`
           );
           expect(output).toContain(
             `composio manage connected-accounts link <toolkit> --user-id "<user-id>"`

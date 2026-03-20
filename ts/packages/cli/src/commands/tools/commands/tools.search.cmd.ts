@@ -155,10 +155,22 @@ const runToolsSearch = (params: {
     }
 
     const firstSlug = toolsList[0]?.slug;
+    const firstSchema =
+      firstSlug && searchResponse.tool_schemas[firstSlug]
+        ? searchResponse.tool_schemas[firstSlug]
+        : undefined;
+    const firstToolkit = firstSchema?.toolkit;
+    const firstPayload = buildMinimalPayloadFromSchema(
+      (firstSchema?.input_schema ?? {}) as Record<string, unknown>
+    );
+    const firstPayloadJson = JSON.stringify(firstPayload);
+    const firstDataArg =
+      Object.keys(firstPayload).length === 0 ? '-d "{}"' : `-d '${firstPayloadJson}'`;
+
     if (firstSlug) {
       const executeHint = params.rootOnly
-        ? `> composio execute "${firstSlug}" -d '{}'`
-        : `> composio manage tools execute "${firstSlug}" --user-id "<user-id>" -d '{}'`;
+        ? `> composio execute "${firstSlug}" ${firstDataArg}`
+        : `> composio manage tools execute "${firstSlug}" --user-id "<user-id>" ${firstDataArg}`;
       const linkHint = params.rootOnly
         ? `> composio link <toolkit>`
         : `> composio manage connected-accounts link <toolkit> --user-id "<user-id>"`;
@@ -169,24 +181,13 @@ const runToolsSearch = (params: {
       yield* ui.log.warn(searchResponse.error);
     }
 
-    const firstSchema =
-      firstSlug && searchResponse.tool_schemas[firstSlug]
-        ? searchResponse.tool_schemas[firstSlug]
-        : undefined;
-    const firstToolkit = firstSchema?.toolkit;
-
     const cta: Array<{ action: string; command: string }> = [];
     if (firstSlug) {
-      const payload = buildMinimalPayloadFromSchema(
-        firstSchema?.input_schema as Record<string, unknown>
-      );
-      const payloadJson = JSON.stringify(payload);
-      const dataArg = Object.keys(payload).length === 0 ? '-d "{}"' : `-d '${payloadJson}'`;
       cta.push({
         action: 'Execute a tool',
         command: params.rootOnly
-          ? `composio execute "${firstSlug}" ${dataArg}`
-          : `composio manage tools execute "${firstSlug}" --user-id "<user-id>" -d '${payloadJson}'`,
+          ? `composio execute "${firstSlug}" ${firstDataArg}`
+          : `composio manage tools execute "${firstSlug}" --user-id "<user-id>" ${firstDataArg}`,
       });
     }
     if (firstToolkit) {
