@@ -1,5 +1,16 @@
 # @composio/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- move how the cli auth works for top level commands
+
+### Patch Changes
+
+- 68c6e50: - Execute: Default to empty object `{}` when no -d/--data or piped stdin provided
+  - Search CTA: Use `-d "{}"` for tools with no schema properties (shell-safe)
+
 ## 0.2.6
 
 ### Patch Changes
