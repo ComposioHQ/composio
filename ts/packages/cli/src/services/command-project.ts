@@ -25,6 +25,7 @@ export interface ResolvedCommandProject {
   readonly projectId: string;
   readonly projectName?: string;
   readonly projectType: CliProjectType;
+  readonly consumerUserId?: string;
   readonly source: CliProjectResolutionSource;
 }
 
@@ -82,6 +83,7 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
         projectId: consumerProject.project_nano_id,
         projectName: consumerProject.project_name,
         projectType: 'CONSUMER',
+        consumerUserId: consumerProject.consumer_user_id,
         source: 'consumer-default',
       } satisfies ResolvedCommandProject;
     }

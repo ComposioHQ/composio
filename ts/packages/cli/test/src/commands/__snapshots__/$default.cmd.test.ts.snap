@@ -42,31 +42,24 @@ BASIC COMMANDS
 
   search
     Search tools by use case across toolkits/apps.
-    Usage: composio search <query> [--toolkits text] [--user-id text] [--project-name text] [--limit integer]
+    Usage: composio search <query> [--toolkits text] [--limit integer]
     Options:
       <query>               Semantic use-case query (e.g. "send emails")
       --toolkits            Filter by toolkit slugs, comma-separated
-      --user-id             User ID (falls back to global test_user_id)
-      --project-name        Use a developer project instead of the org consumer project
       --limit               Number of results per page (1-1000)
 
   execute
     Execute a tool.
-    Usage: composio execute <slug> [-d, --data text] [--user-id text] [--project-name text]
+    Usage: composio execute <slug> [-d, --data text]
     Options:
       <slug>                Tool slug (e.g. "GITHUB_CREATE_ISSUE")
       -d, --data            JSON arguments, @file, or - for stdin
-      --user-id             User ID (falls back to global test_user_id)
-      --project-name        Use a developer project instead of the org consumer project
 
   link
     Connect a user account for a toolkit/app.
-    Usage: composio link [<toolkit>] [--auth-config text] [--user-id text] [--project-name text] [--no-browser]
+    Usage: composio link [<toolkit>] [--no-browser]
     Options:
       <toolkit>             Toolkit slug to link (e.g. "github", "gmail")
-      --auth-config         Auth config ID (legacy flow)
-      --user-id             User ID for the connection
-      --project-name        Use a developer project instead of the org consumer project
       --no-browser          Skip auto-opening the browser
 
   listen

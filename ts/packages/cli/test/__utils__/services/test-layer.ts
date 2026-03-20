@@ -270,6 +270,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             project_name: 'Consumer Project',
             org_id: orgId,
             project_type: 'CONSUMER',
+            consumer_user_id: `consumer-user-${orgId}`,
           }),
           {
             status: 200,

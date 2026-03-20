@@ -119,8 +119,8 @@ describe('CLI: composio manage tools search', () => {
           expect(output).toContain('"CTA"');
           expect(output).toContain('"Execute a tool"');
           expect(output).toContain('"Connect a user account"');
-          expect(output).toContain('composio execute');
-          expect(output).toContain('composio link gmail');
+          expect(output).toContain('composio manage tools execute');
+          expect(output).toContain('composio manage connected-accounts link gmail');
         })
       );
     }
@@ -168,12 +168,16 @@ describe('CLI: composio manage tools search', () => {
 
           const executeCta = cta.find(c => c.action === 'Execute a tool');
           expect(executeCta).toBeTruthy();
-          expect(executeCta!.command).toContain('composio execute "GMAIL_SEND_EMAIL"');
+          expect(executeCta!.command).toContain(
+            'composio manage tools execute "GMAIL_SEND_EMAIL" --user-id "<user-id>"'
+          );
           expect(executeCta!.command).toMatch(/-d '\{"to":"","subject":"","body":""\}'/);
 
           const linkCta = cta.find(c => c.action === 'Connect a user account');
           expect(linkCta).toBeTruthy();
-          expect(linkCta!.command).toBe('composio link gmail');
+          expect(linkCta!.command).toBe(
+            'composio manage connected-accounts link gmail --user-id "<user-id>"'
+          );
         })
       );
     }
@@ -345,8 +349,12 @@ describe('CLI: composio manage tools search', () => {
           expect(output).toContain('Plan:');
           expect(output).toContain('1. Collect recipient details');
           expect(output).toContain('Hints:');
-          expect(output).toContain('composio execute "GMAIL_SEND_EMAIL" --user-id "<user-id>"');
-          expect(output).toContain(`composio link <toolkit> --user-id "<user-id>"`);
+          expect(output).toContain(
+            `composio manage tools execute "GMAIL_SEND_EMAIL" --user-id "<user-id>" -d '{}'`
+          );
+          expect(output).toContain(
+            `composio manage connected-accounts link <toolkit> --user-id "<user-id>"`
+          );
         })
       );
     }
@@ -365,9 +373,9 @@ describe('CLI: composio manage tools search', () => {
   });
 
   layer(TestLive(testLiveOptions))(
-    '[Given] explicit --user-id [Then] uses that user id for session',
+    '[Given] consumer search with explicit --user-id [Then] it still uses resolved consumer user id',
     it => {
-      it.scoped('passes user-id to session create', () =>
+      it.scoped('uses consumer user id from the resolved project context', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
           const live = TestLive({
@@ -389,27 +397,30 @@ describe('CLI: composio manage tools search', () => {
             Effect.provide(live)
           );
 
-          expect(createParams?.user_id).toBe('alice');
+          expect(createParams?.user_id).toBe('consumer-user-org_test');
         })
       );
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
-    '[Given] no test_user_id and no --user-id [Then] fails with missing user id message',
-    it => {
-      it.scoped('fails when user id cannot be resolved', () =>
-        Effect.gen(function* () {
-          const err = yield* cli(['manage', 'tools', 'search', 'send']).pipe(Effect.flip);
-          const message = err instanceof Error ? err.message : String(err);
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'user-config-with-global-context',
+      toolkitsData,
+    })
+  )('[Given] no explicit --user-id [Then] consumer search does not require one', it => {
+    it.scoped('runs without printing global test user diagnostics', () =>
+      Effect.gen(function* () {
+        yield* cli(['manage', 'tools', 'search', 'send']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
 
-          expect(message).toContain('Missing user id');
-          expect(message).toContain('--user-id');
-          expect(message).toContain('composio login');
-        })
-      );
-    }
-  );
+        expect(output).toContain('Found 2 tools');
+        expect(output).not.toContain('Using global test user id');
+      })
+    );
+  });
 
   layer(TestLive(testLiveOptions))(
     '[Given] composio search alias [Then] works like composio manage tools search',

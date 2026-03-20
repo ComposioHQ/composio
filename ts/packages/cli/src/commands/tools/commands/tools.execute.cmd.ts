@@ -40,7 +40,7 @@ const data = Options.text('data').pipe(
 
 const userId = Options.text('user-id').pipe(
   Options.optional,
-  Options.withDescription('User ID to execute the tool for (falls back to global test_user_id)')
+  Options.withDescription('Developer-project user ID override')
 );
 
 const projectName = Options.text('project-name').pipe(
@@ -92,38 +92,33 @@ const parseArguments = (raw: string) =>
     return parsed as Record<string, unknown>;
   });
 
-/**
- * Derive the toolkit slug from a tool slug.
- * e.g. "GMAIL_CREATE_EMAIL_DRAFT" → "gmail", "GITHUB_GET_REPOS" → "github"
- *
- * Returns `undefined` for meta tool slugs (COMPOSIO_*) since they don't map
- * to a real toolkit and would produce misleading connection tips.
- */
 const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
   const idx = toolSlug.indexOf('_');
   if (idx <= 0) return toolSlug.toLowerCase();
   const prefix = toolSlug.slice(0, idx).toLowerCase();
-  // Meta tools (COMPOSIO_*) are internal and don't correspond to a real toolkit.
   if (prefix === 'composio') return undefined;
   return prefix;
 };
 
-const connectionTips = (toolSlug: string, userId: string) => {
+const connectionTips = (toolSlug: string, surface: 'root' | 'manage') => {
   const toolkit = toolkitFromToolSlug(toolSlug);
   if (!toolkit) {
     return `Retry: ${bold(`composio execute ${toolSlug} ...`)}`;
   }
   return [
-    `Link the toolkit first: ${bold(`composio link ${toolkit} --user-id ${userId}`)}`,
-    `Then retry:             ${bold(`composio execute ${toolSlug} ...`)}`,
+    `Link the toolkit first: ${bold(
+      surface === 'root'
+        ? `composio link ${toolkit}`
+        : `composio manage connected-accounts link ${toolkit} --user-id "<user-id>"`
+    )}`,
+    `Then retry:             ${bold(
+      surface === 'root'
+        ? `composio execute ${toolSlug} ...`
+        : `composio manage tools execute ${toolSlug} ...`
+    )}`,
   ].join('\n');
 };
 
-/**
- * JSON.stringify replacer that redacts ID-like string values in CI.
- * Fields named "id", ending with "Id", or ending with "_id" are redacted.
- * The "logId" field preserves its "log_" prefix.
- */
 const ciRedactReplacer = (_key: string, value: unknown): unknown => {
   if (typeof value !== 'string') return value;
   if (_key === 'logId') return redact({ value, prefix: 'log_' });
@@ -181,10 +176,6 @@ const normalizeError = (error: unknown): unknown => {
   return current;
 };
 
-/**
- * Show execute-focused help for a specific tool slug.
- * This prints only input parameters (data payload schema).
- */
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
@@ -219,28 +210,19 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
     const tool = toolOpt.value;
 
     yield* ui.note(formatToolInputParameters(tool), `Execute Help: ${tool.slug}`);
-    yield* ui.log.step(
-      `Run:\n> composio execute "${tool.slug}" --user-id "<user-id>" -d '{"key":"value"}'`
-    );
+    yield* ui.log.step(`Run:\n> composio execute "${tool.slug}" -d '{"key":"value"}'`);
     yield* ui.output(
       JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
     );
   });
 
-/**
- * Display a user-friendly error message for tool execution failures.
- *
- * Returns a structured error summary suitable for `ui.output()` in piped mode.
- */
 const handleExecutionError = (
   ui: TerminalUI,
   error: unknown,
-  context: { toolSlug: string; userId: string }
+  context: { toolSlug: string; surface: 'root' | 'manage' }
 ) =>
   Effect.gen(function* () {
     const normalized = normalizeError(error);
-
-    // ActionExecuteConnectedAccountNotFoundError stores the API payload in `.details`
     const connAccountDetails =
       normalized instanceof ActionExecuteConnectedAccountNotFoundError
         ? normalized.details
@@ -253,10 +235,8 @@ const handleExecutionError = (
     const slugValue = apiDetails?.slug ?? extractSlug(error) ?? extractSlug(connAccountDetails);
     const message = extractMessage(apiDetails) ?? extractMessage(normalized) ?? 'Unknown error';
 
-    // Display the primary error message
     yield* ui.log.error(message);
 
-    // Show API error details when available
     const detailsObject =
       apiDetails ??
       (normalized instanceof ActionExecuteConnectedAccountNotFoundError &&
@@ -268,14 +248,10 @@ const handleExecutionError = (
       yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
     }
 
-    // No-connection tips — the executor already classifies these into
-    // ActionExecuteConnectedAccountNotFoundError, so check the typed error
-    // instead of re-inspecting the slug.
     if (normalized instanceof ActionExecuteConnectedAccountNotFoundError) {
-      yield* ui.note(connectionTips(context.toolSlug, context.userId), 'Tips');
+      yield* ui.note(connectionTips(context.toolSlug, context.surface), 'Tips');
     }
 
-    // Return structured summary for piped output
     return { error: message, slug: slugValue };
   });
 
@@ -284,101 +260,127 @@ class ToolExecutionError {
   constructor(readonly message: string) {}
 }
 
-/**
- * Execute a tool with JSON arguments.
- *
- * @example
- * ```bash
- * composio manage tools execute GITHUB_GET_REPOS -d '{"owner":"composio"}'
- * echo '{"owner":"composio"}' | composio manage tools execute GITHUB_GET_REPOS
- * ```
- */
+const runToolsExecute = (params: {
+  slug: string;
+  data: Option.Option<string>;
+  userId: Option.Option<string>;
+  projectName: Option.Option<string>;
+  rootOnly: boolean;
+}) =>
+  Effect.gen(function* () {
+    if (!(yield* requireAuth)) return;
+
+    const ui = yield* TerminalUI;
+    const executor = yield* ToolsExecutor;
+    const clientSingleton = yield* ComposioClientSingleton;
+    const userContext = yield* ComposioUserContext;
+
+    const input = yield* resolveInput(params.data);
+    const args = yield* parseArguments(input);
+    const resolvedProject = yield* resolveCommandProject({
+      mode: 'consumer',
+      projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
+    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    const resolvedUserId =
+      resolvedProject.projectType === 'CONSUMER'
+        ? Option.fromNullable(resolvedProject.consumerUserId)
+        : Option.match(params.userId, {
+            onSome: value => Option.some(value),
+            onNone: () => userContext.data.testUserId,
+          });
+    if (Option.isNone(resolvedUserId)) {
+      return yield* Effect.fail(
+        new Error(
+          'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
+        )
+      );
+    }
+    const client = yield* clientSingleton.getFor({
+      orgId: resolvedProject.orgId,
+      projectId: resolvedProject.projectId,
+    });
+
+    const executeParams: ToolExecuteParams = {
+      userId: resolvedUserId.value,
+      arguments: args,
+      client,
+    };
+
+    yield* ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
+      Effect.gen(function* () {
+        const resultEither = yield* executor
+          .execute(params.slug, executeParams)
+          .pipe(Effect.either);
+
+        if (Either.isLeft(resultEither)) {
+          yield* spinner.error();
+          const summary = yield* handleExecutionError(ui, resultEither.left, {
+            toolSlug: params.slug,
+            surface: params.rootOnly ? 'root' : 'manage',
+          });
+          yield* ui.output(JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2));
+          return yield* Effect.fail(new ToolExecutionError(summary.error));
+        }
+
+        const result = resultEither.right;
+
+        if (!result.successful) {
+          const logId = result.logId
+            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
+            : '';
+          yield* spinner.error(`Execution failed${logId}`);
+
+          const summary = yield* handleExecutionError(ui, result.error ?? result, {
+            toolSlug: params.slug,
+            surface: params.rootOnly ? 'root' : 'manage',
+          });
+          yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
+          return yield* Effect.fail(new ToolExecutionError(summary.error));
+        }
+
+        const logId = result.logId
+          ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
+          : '';
+        yield* spinner.stop(`Execution successful${logId}`);
+        yield* ui.log.message(`Response\n${JSON.stringify(result, ciRedactReplacer, 2)}`);
+        yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
+      })
+    );
+  });
+
 export const toolsCmd$Execute = Command.make(
   'execute',
   { slug, data, userId, projectName },
   ({ slug, data, userId, projectName }) =>
-    Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
+    runToolsExecute({ slug, data, userId, projectName, rootOnly: false })
+).pipe(
+  Command.withDescription(
+    [
+      'Execute a tool by slug with JSON arguments.',
+      '',
+      'Related:',
+      '  composio search "<query>"',
+      '  composio link <toolkit>',
+    ].join('\n')
+  )
+);
 
-      const ui = yield* TerminalUI;
-      const executor = yield* ToolsExecutor;
-      const clientSingleton = yield* ComposioClientSingleton;
-      const userContext = yield* ComposioUserContext;
-      const globalTestUserId = userContext.data.testUserId;
-      const resolvedUserId = Option.match(userId, {
-        onSome: value => Option.some(value),
-        onNone: () => globalTestUserId,
-      });
-      if (Option.isNone(resolvedUserId)) {
-        return yield* Effect.fail(
-          new Error(
-            'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
-          )
-        );
-      }
-      if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
-        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
-      }
-
-      const input = yield* resolveInput(data);
-      const args = yield* parseArguments(input);
-      const resolvedProject = yield* resolveCommandProject({
-        mode: 'consumer',
-        projectName: Option.getOrUndefined(projectName),
-      }).pipe(Effect.mapError(formatResolveCommandProjectError));
-      const client = yield* clientSingleton.getFor({
-        orgId: resolvedProject.orgId,
-        projectId: resolvedProject.projectId,
-      });
-
-      const params: ToolExecuteParams = {
-        userId: resolvedUserId.value,
-        arguments: args,
-        client,
-      };
-
-      yield* ui.useMakeSpinner(`Executing tool "${slug}"...`, spinner =>
-        Effect.gen(function* () {
-          const resultEither = yield* executor.execute(slug, params).pipe(Effect.either);
-
-          // Hard failure: API threw an exception
-          if (Either.isLeft(resultEither)) {
-            yield* spinner.error();
-            const summary = yield* handleExecutionError(ui, resultEither.left, {
-              toolSlug: slug,
-              userId: resolvedUserId.value,
-            });
-            yield* ui.output(
-              JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
-            );
-            return yield* Effect.fail(new ToolExecutionError(summary.error));
-          }
-
-          const result = resultEither.right;
-
-          // Soft failure: execution returned an error
-          if (!result.successful) {
-            const logId = result.logId
-              ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-              : '';
-            yield* spinner.error(`Execution failed${logId}`);
-
-            const summary = yield* handleExecutionError(ui, result.error ?? result, {
-              toolSlug: slug,
-              userId: resolvedUserId.value,
-            });
-            yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
-            return yield* Effect.fail(new ToolExecutionError(summary.error));
-          }
-
-          // Success
-          const logId = result.logId
-            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-            : '';
-          yield* spinner.stop(`Execution successful${logId}`);
-          yield* ui.log.message(`Response\n${JSON.stringify(result, ciRedactReplacer, 2)}`);
-          yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
-        })
-      );
-    })
-).pipe(Command.withDescription('Execute a tool by slug with JSON arguments.'));
+export const rootToolsCmd$Execute = Command.make('execute', { slug, data }, ({ slug, data }) =>
+  runToolsExecute({
+    slug,
+    data,
+    userId: Option.none(),
+    projectName: Option.none(),
+    rootOnly: true,
+  })
+).pipe(
+  Command.withDescription(
+    [
+      'Execute a tool by slug with JSON arguments.',
+      '',
+      'Related:',
+      '  composio search "<query>"',
+      '  composio link <toolkit>',
+    ].join('\n')
+  )
+);

@@ -58,46 +58,28 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'search',
     description: 'Search tools by use case across toolkits/apps.',
-    usage:
-      'search <query> [--toolkits text] [--user-id text] [--project-name text] [--limit integer]',
+    usage: 'search <query> [--toolkits text] [--limit integer]',
     options: [
       { name: '<query>', description: 'Semantic use-case query (e.g. "send emails")' },
       { name: '--toolkits', description: 'Filter by toolkit slugs, comma-separated' },
-      { name: '--user-id', description: 'User ID (falls back to global test_user_id)' },
-      {
-        name: '--project-name',
-        description: 'Use a developer project instead of the org consumer project',
-      },
       { name: '--limit', description: 'Number of results per page (1-1000)' },
     ],
   },
   {
     name: 'execute',
     description: 'Execute a tool.',
-    usage: 'execute <slug> [-d, --data text] [--user-id text] [--project-name text]',
+    usage: 'execute <slug> [-d, --data text]',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       { name: '-d, --data', description: 'JSON arguments, @file, or - for stdin' },
-      { name: '--user-id', description: 'User ID (falls back to global test_user_id)' },
-      {
-        name: '--project-name',
-        description: 'Use a developer project instead of the org consumer project',
-      },
     ],
   },
   {
     name: 'link',
     description: 'Connect a user account for a toolkit/app.',
-    usage:
-      'link [<toolkit>] [--auth-config text] [--user-id text] [--project-name text] [--no-browser]',
+    usage: 'link [<toolkit>] [--no-browser]',
     options: [
       { name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' },
-      { name: '--auth-config', description: 'Auth config ID (legacy flow)' },
-      { name: '--user-id', description: 'User ID for the connection' },
-      {
-        name: '--project-name',
-        description: 'Use a developer project instead of the org consumer project',
-      },
       { name: '--no-browser', description: 'Skip auto-opening the browser' },
     ],
   },

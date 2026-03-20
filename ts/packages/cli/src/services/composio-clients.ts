@@ -738,6 +738,7 @@ export const ConsumerProjectResolveResponse = Schema.Struct({
   project_name: Schema.String,
   org_id: Schema.String,
   project_type: Schema.Literal('CONSUMER'),
+  consumer_user_id: Schema.String,
 }).annotations({ identifier: 'ConsumerProjectResolveResponse' });
 export type ConsumerProjectResolveResponse = Schema.Schema.Type<
   typeof ConsumerProjectResolveResponse

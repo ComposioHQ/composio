@@ -14,9 +14,9 @@ import { generateCmd } from './generate/generate.cmd';
 import { manageCmd } from './manage/manage.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
 import { printRootHelp } from './root-help';
-import { toolsCmd$Search } from './tools/commands/tools.search.cmd';
-import { toolsCmd$Execute } from './tools/commands/tools.execute.cmd';
-import { connectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
+import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
+import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
+import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
 
 const $cmd = $defaultCmd.pipe(
@@ -28,9 +28,9 @@ const $cmd = $defaultCmd.pipe(
     logoutCmd,
     installCmd,
     initCmd,
-    toolsCmd$Search,
-    connectedAccountsCmd$Link,
-    toolsCmd$Execute,
+    rootToolsCmd$Search,
+    rootConnectedAccountsCmd$Link,
+    rootToolsCmd$Execute,
     triggersCmd$Listen,
     generateCmd,
     manageCmd,

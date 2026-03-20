@@ -144,16 +144,9 @@ describe('CLI: composio manage connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] composio link alias [Then] works like composio manage connected-accounts link', it => {
-    it.scoped('alias expands to connected-accounts link', () =>
+    it.scoped('root link works for consumer toolkit linking only', () =>
       Effect.gen(function* () {
-        yield* cli([
-          'link',
-          '--auth-config',
-          'ac_gmail_oauth',
-          '--user-id',
-          'default',
-          '--no-browser',
-        ]);
+        yield* cli(['link', 'gmail', '--no-browser']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
