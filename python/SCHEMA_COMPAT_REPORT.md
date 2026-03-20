@@ -20,6 +20,8 @@
 | excessive_properties          | 24    | Objects with >100 properties                                           |
 | excessive_enum_values         | 3     | Enums with >500 values                                                 |
 | param_name_leading_underscore | N/A   | Leading `_` in param names breaks Pydantic `create_model` (not in CSV) |
+| param_name_hyphen             | N/A   | Hyphenated param names (e.g. `extension-id`) via Pydantic alias (not in CSV) |
+| reserved_keyword              | N/A   | Python reserved keywords (e.g. `from`) as param names via Pydantic alias (not in CSV) |
 
 
 ## Test Tools (one per category, with only that issue)
@@ -38,6 +40,8 @@
 | excessive_properties            | `HUBSPOT_CREATE_CONTACT`                                            | `apps/hubspot/actions/create_contact_object_with_properties.py`                     |
 | excessive_enum_values           | `HUBSPOT_CREATE_A_NEW_MARKETING_EMAIL`                              | `apps/hubspot/actions/generated/create_a_new_marketing_email.py`                    |
 | param_name_leading_underscore   | `_21RISK_GET_COMPLIANCE` (has `_maxPageSizeInMb`)                   | `apps/_21risk/actions/get_compliance.py`                                            |
+| param_name_hyphen               | `OUTLOOK_DELETE_ME_CONTACT_EXTENSION` (has `extension-id` alias)    | `apps/outlook/actions/deleteContactExtension.py`                                    |
+| reserved_keyword                | `OUTLOOK_CREATE_USER_MESSAGE` (has `from` alias)                    | `apps/outlook/actions/CreateUserMessage.py`                                         |
 | **(baseline -- no violations)** | `SLACK_SEND_MESSAGE`                                                | `apps/slack/actions/send_message.py`                                                |
 
 
@@ -69,6 +73,10 @@ Each test tool was verified to have **only** its designated violation in the CSV
   - *Test tool*: `HUBSPOT_CREATE_A_NEW_MARKETING_EMAIL` -- the `language` field has 754 enum values. Only violation in CSV: `excessive_enum_values`.
 - `**param_name_leading_underscore`** -- Parameter names starting with `_` break Pydantic's `create_model()`, which is used by LangChain and CrewAI Composio providers. This category is **not in the CSV** -- it was discovered during testing.
   - *Test tool*: `_21RISK_GET_COMPLIANCE` -- has `_maxPageSizeInMb` parameter. The tool also has `$`-prefixed violations in the raw CSV (`invalid_param_chars`, `param_name_bad_start`), but Composio strips `$` prefixes server-side, so only the underscore issue survives in the Composio API.
+- `**param_name_hyphen`** -- Parameter names containing hyphens (e.g. `extension-id`) are not valid Python identifiers. Python's `inspect.Parameter` rejects any name where `str.isidentifier()` returns `False`. Hyphens are interpreted as the minus operator. These arise from Pydantic `alias="extension-id"` in tool code, which puts the hyphenated name into the JSON schema. **Not in the CSV** -- discovered via Outlook tool PRs ([#18319](https://github.com/ComposioHQ/mercury/pull/18319), [#18320](https://github.com/ComposioHQ/mercury/pull/18320)).
+  - *Test tool*: `OUTLOOK_DELETE_ME_CONTACT_EXTENSION` -- has `extension-id` parameter (via Pydantic alias). Providers that build Python function signatures (Gemini, LangChain) reject it; others pass JSON keys through unvalidated.
+- `**reserved_keyword`** -- Python reserved keywords (e.g. `from`, `for`, `async`) as parameter names. These are valid identifiers (`str.isidentifier()` returns `True`) but `keyword.iskeyword()` returns `True`, so `inspect.Parameter` rejects them. However, the Composio SDK already handles this via `substitute_reserved_python_keywords()` in `composio/utils/shared.py`, which renames e.g. `from` → `from_rs` before creating Parameter objects, then `reinstate_reserved_python_keywords()` converts back when making API calls. **Not in the CSV** -- discovered via Outlook tool PRs ([#18322](https://github.com/ComposioHQ/mercury/pull/18322), [#18324](https://github.com/ComposioHQ/mercury/pull/18324), [#18326](https://github.com/ComposioHQ/mercury/pull/18326)).
+  - *Test tool*: `OUTLOOK_CREATE_USER_MESSAGE` -- has `from` parameter (via Pydantic `alias="from"`). All providers pass because the SDK's keyword substitution handles it transparently. The PRs fixing this are unnecessary given the SDK-side workaround.
 
 ---
 
@@ -88,9 +96,11 @@ Schemas loaded from Composio API, tested via each Composio provider wrapper (SDK
 | **param_description_too_long**    | OK     | OK        | OK     | OK         | OK        | OK     |
 | **tool_name_too_long**            | OK     | OK        | OK     | OK         | OK        | OK     |
 | **tool_description_too_long**     | OK     | OK        | OK     | OK         | OK        | OK     |
-| **excessive_properties**          | OK     | OK        | FAILED | OK         | OK        | OK     |
+| **excessive_properties**          | OK     | OK        | OK     | OK         | OK        | OK     |
 | **excessive_enum_values**         | OK     | OK        | OK     | OK         | OK        | OK     |
 | **param_name_leading_underscore** | OK     | OK        | OK     | OK         | FAILED    | FAILED |
+| **param_name_hyphen**             | OK     | OK        | FAILED | OK         | FAILED    | OK     |
+| **reserved_keyword**              | OK     | OK        | OK     | OK         | OK        | OK     |
 
 
 ---
@@ -102,32 +112,25 @@ Schemas loaded locally from action files via `Action.from_file()`, tested via ra
 **Gemini (Stripped)** = raw schema with Gemini-incompatible fields (`examples`, `title`, `human_parameter_description`, `human_parameter_name`, `const`, `additionalProperties`) recursively stripped, and `tool_config.function_calling_config.mode: "ANY"` to force tool calling. Raw Gemini Direct (without stripping) fails on nearly every tool due to these unsupported fields.
 
 
-| Category                          | OpenAI | Anthropic | Gemini (Stripped) |
-| --------------------------------- | ------ | --------- | ----------------- |
-| **baseline (clean)**              | OK     | OK        | OK                |
-| **param_name_too_long**           | OK     | OK        | OK                |
-| **excessive_nesting**             | OK     | OK        | OK                |
-| **missing_param_description**     | OK     | OK        | OK                |
-| **missing_type**                  | OK     | OK        | OK                |
-| **invalid_param_chars**           | OK     | OK        | OK                |
-| **param_description_too_long**    | OK     | OK        | OK                |
-| **tool_name_too_long**            | OK     | OK        | OK                |
-| **tool_description_too_long**     | OK     | OK        | OK                |
-| **excessive_properties**          | OK     | OK        | FAILED            |
-| **excessive_enum_values**         | OK     | OK        | OK                |
-| **param_name_leading_underscore** | OK     | FAILED    | OK                |
+| Category                          | OpenAI | Anthropic | Gemini |
+| --------------------------------- | ------ | --------- | ------ |
+| **baseline (clean)**              | OK     | OK        | OK     |
+| **param_name_too_long**           | OK     | OK        | OK     |
+| **excessive_nesting**             | OK     | OK        | OK     |
+| **missing_param_description**     | OK     | OK        | OK     |
+| **missing_type**                  | OK     | OK        | OK     |
+| **invalid_param_chars**           | OK     | OK        | OK     |
+| **param_description_too_long**    | OK     | OK        | OK     |
+| **tool_name_too_long**            | OK     | OK        | OK     |
+| **tool_description_too_long**     | OK     | OK        | OK     |
+| **excessive_properties**          | OK     | OK        | FAILED |
+| **excessive_enum_values**         | OK     | OK        | OK     |
+| **param_name_leading_underscore** | OK     | OK        | OK     |
+| **param_name_hyphen**             | OK     | OK        | OK     |
+| **reserved_keyword**              | OK     | OK        | OK     |
 
 
 ---
-
-## Key Findings
-
-1. **Gemini requires schema sanitization** -- The raw Pydantic-generated schema includes `examples`, `title`, `const`, `additionalProperties`, and `human_parameter_*` fields that Gemini's REST API strictly rejects. These must be stripped before sending.
-2. **Gemini (Stripped) passes 11/12** -- Once unsupported fields are stripped, only `excessive_properties` (110 optional properties) causes a hard 400 reject from Gemini due to its constraint branching limit.
-3. **Gemini (Composio) fails on `param_name_too_long` and `excessive_nesting`** -- The Composio Gemini provider encounters issues with these schemas (response has no `.parts` attribute).
-4. **OpenAI and Anthropic pass all categories** -- With `tool_choice: required` (OpenAI) and `tool_choice: any` (Anthropic), both providers handle every schema violation correctly in both Composio and Direct modes.
-5. **LangChain/CrewAI fail on leading underscore params** -- Pydantic v2's `create_model()` rejects field names starting with `_` (e.g., `_maxPageSizeInMb`). These providers use Pydantic internally.
-6. **72% of `missing_type` CSV violations are fixed** -- Of 464 unique tools flagged in the CSV, 336 now have proper types in local action files. 55 remain (mostly PostHog tools using `t.Optional[t.Any]`).
 
 ---
 
