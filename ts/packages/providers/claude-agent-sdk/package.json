@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@anthropic-ai/claude-agent-sdk": "^0.1.9",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.80",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
