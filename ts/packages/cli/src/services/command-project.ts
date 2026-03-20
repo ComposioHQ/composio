@@ -117,14 +117,7 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
       projectType: 'DEVELOPER',
       source: 'developer-local-config',
     } satisfies ResolvedCommandProject;
-  }).pipe(
-    Effect.catchTags({
-      'services/DeveloperProjectNotFoundError': error => Effect.fail(error),
-      'services/AmbiguousDeveloperProjectNameError': error => Effect.fail(error),
-      'services/HttpServerError': error => Effect.fail(error),
-      'services/HttpDecodingError': error => Effect.fail(error),
-    })
-  ) as Effect.Effect<
+  }) as Effect.Effect<
     ResolvedCommandProject,
     | MissingDefaultOrgError
     | MissingDeveloperProjectError
