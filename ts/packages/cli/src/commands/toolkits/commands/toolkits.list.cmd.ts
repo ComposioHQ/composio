@@ -4,7 +4,7 @@ import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -57,6 +57,7 @@ export const toolkitsCmd$List = Command.make(
 
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
+      const clientSingleton = yield* ComposioClientSingleton;
       const projectContext = yield* ProjectContext;
       const userContext = yield* ComposioUserContext;
 
@@ -95,7 +96,10 @@ export const toolkitsCmd$List = Command.make(
 
       // Resolve session context in parallel with catalog fetch (saves one round trip).
       const sessionContextEffect = Option.isSome(resolvedUserId)
-        ? resolveToolRouterSession(resolvedUserId.value).pipe(
+        ? Effect.gen(function* () {
+            const client = yield* clientSingleton.get();
+            return yield* resolveToolRouterSession(client, resolvedUserId.value);
+          }).pipe(
             Effect.catchAll(error =>
               Effect.logDebug('Failed to create session:', error).pipe(Effect.as(undefined))
             )

@@ -22,7 +22,9 @@ import { projectsCmd } from '../projects/projects.cmd';
  * ```
  */
 export const manageCmd = Command.make('manage').pipe(
-  Command.withDescription('Manage Composio resources — toolkits, tools, accounts, triggers, logs, orgs, and projects.'),
+  Command.withDescription(
+    'Developer/admin workflows: orgs, toolkits, tools, accounts, triggers, logs, auth configs, and deprecated project commands.'
+  ),
   Command.withSubcommands([
     toolkitsCmd,
     toolsCmd,

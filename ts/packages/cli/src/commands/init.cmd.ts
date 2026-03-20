@@ -18,7 +18,7 @@ import { browserLogin, noBrowser as noBrowserOpt } from 'src/commands/login.cmd'
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 
 /**
- * `composio init` — Initialize a Composio project in the current directory.
+ * `composio init` — Initialize a developer project in the current directory.
  *
  * ## Behavior
  *
@@ -33,7 +33,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
-  Options.withDescription('Auto-select default org/project, else first project')
+  Options.withDescription('Auto-select the default org project, else first developer project')
 );
 
 // ---------------------------------------------------------------------------
@@ -236,7 +236,7 @@ export const initCmd = CliCommand.make(
 
       yield* initInteractiveFlow({ composioDir, noBrowser, yes });
     })
-).pipe(CliCommand.withDescription('Initialize a Composio project in the current directory.'));
+).pipe(CliCommand.withDescription('Initialize this directory with a developer project.'));
 
 /**
  * Interactive init flow — handles login, project selection, wizard, install.
@@ -304,7 +304,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
       return;
     }
 
-    // 3. Select a project
+    // 3. Select a developer project
     const orgProjectToKeys = (p: OrgProject): ProjectKeys => ({
       orgId: p.org_id,
       projectId: p.id,
@@ -322,12 +322,12 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
             defaultProjectId: projectIdValue,
           }) ?? orgProjects.data[0])
         : yield* ui.select<OrgProject>(
-            'Select a project:',
+            'Select a developer project:',
             orgProjects.data.map(p => ({ value: p, label: p.name, hint: p.id }))
           );
 
     const selected = orgProjectToKeys(selectedProject);
-    yield* ui.log.step(`Using project "${selectedProject.name}"`);
+    yield* ui.log.step(`Using developer project "${selectedProject.name}"`);
 
     // 4. Write project config
     yield* writeProjectConfig(composioDir, selected);
@@ -348,7 +348,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
 
     yield* ui.log.success(`Project initialized in ${composioDir}/`);
     yield* ui.log.info(
-      'To switch your default global org/project later, run `composio manage orgs switch`.'
+      'This directory will use the selected developer project for manage/listen flows.'
     );
     yield* ui.output(makeOutputJson(selected, composioDir));
     yield* ui.outro('');

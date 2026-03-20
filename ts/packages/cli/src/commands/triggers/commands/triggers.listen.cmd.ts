@@ -14,6 +14,10 @@ import {
 import { parseCsv } from '../parse-csv';
 import { parseTriggerListenEvent } from '../parse';
 import type { TriggerListenFilters } from '../types';
+import {
+  resolveCommandProject,
+  formatResolveCommandProjectError,
+} from 'src/services/command-project';
 
 const toolkits = Options.text('toolkits').pipe(
   Options.withDescription(
@@ -172,6 +176,9 @@ export const triggersCmd$Listen = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
+      yield* resolveCommandProject({ mode: 'developer' }).pipe(
+        Effect.mapError(formatResolveCommandProjectError)
+      );
       const fs = yield* FileSystem.FileSystem;
       const realtime = yield* TriggersRealtime;
       const runtime = yield* Effect.runtime<never>();

@@ -3,9 +3,9 @@ import { OptionFromNullishOr } from 'effect/Schema';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
 /**
- * Organization and project identifiers for a CLI project profile.
+ * Organization and developer-project identifiers for a CLI project profile.
  * Stored in `~/.composio/_keys/<projectId>.json` (global registry)
- * and `<cwd>/.composio/project.json` (per-directory config).
+ * and `<cwd>/.composio/project.json` (per-directory developer config).
  */
 export const ProjectKeys = Schema.Struct({
   /**

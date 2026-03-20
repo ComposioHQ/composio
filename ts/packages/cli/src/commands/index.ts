@@ -14,6 +14,10 @@ import { generateCmd } from './generate/generate.cmd';
 import { manageCmd } from './manage/manage.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
 import { printRootHelp } from './root-help';
+import { toolsCmd$Search } from './tools/commands/tools.search.cmd';
+import { toolsCmd$Execute } from './tools/commands/tools.execute.cmd';
+import { connectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
+import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
 
 const $cmd = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -24,6 +28,10 @@ const $cmd = $defaultCmd.pipe(
     logoutCmd,
     installCmd,
     initCmd,
+    toolsCmd$Search,
+    connectedAccountsCmd$Link,
+    toolsCmd$Execute,
+    triggersCmd$Listen,
     generateCmd,
     manageCmd,
   ])
@@ -32,13 +40,14 @@ export const rootCommand = $cmd;
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = argv.slice(2);
-  if (args.length < 4) return undefined;
-  if (args[0] !== 'manage' || args[1] !== 'tools' || args[2] !== 'execute') return undefined;
+  const isRootExecute = args[0] === 'execute';
+  const isManageExecute = args[0] === 'manage' && args[1] === 'tools' && args[2] === 'execute';
+  if (!isRootExecute && !isManageExecute) return undefined;
 
   const hasHelp = args.includes('--help') || args.includes('-h');
   if (!hasHelp) return undefined;
 
-  const tail = args.slice(3);
+  const tail = isRootExecute ? args.slice(1) : args.slice(3);
   for (let i = 0; i < tail.length; i += 1) {
     const token = tail[i];
     if (!token) continue;
@@ -55,11 +64,21 @@ const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefi
     }
 
     // Skip known execute option values.
-    if (token === '--data' || token === '-d' || token === '--user-id') {
+    if (
+      token === '--data' ||
+      token === '-d' ||
+      token === '--user-id' ||
+      token === '--project-name'
+    ) {
       i += 1;
       continue;
     }
-    if (token.startsWith('--data=') || token.startsWith('-d=') || token.startsWith('--user-id=')) {
+    if (
+      token.startsWith('--data=') ||
+      token.startsWith('-d=') ||
+      token.startsWith('--user-id=') ||
+      token.startsWith('--project-name=')
+    ) {
       continue;
     }
 
@@ -83,22 +102,6 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
   return argv;
 };
 
-const ALIAS_TO_PARENT: Record<string, ReadonlyArray<string>> = {
-  search: ['manage', 'tools'],
-  execute: ['manage', 'tools'],
-  link: ['manage', 'connected-accounts'],
-  listen: ['manage', 'triggers'],
-};
-
-const normalizeAliases = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
-  const args = argv.slice(2);
-  if (args.length === 0) return argv;
-  const first = args[0];
-  const parents = first && ALIAS_TO_PARENT[first];
-  if (!parents) return argv;
-  return [...argv.slice(0, 2), ...parents, ...args];
-};
-
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
   return args.length === 1 && (args[0] === '--help' || args[0] === '-h');
@@ -113,7 +116,7 @@ export const runWithConfig = Effect.gen(function* () {
   });
 
   return (argv: ReadonlyArray<string>) => {
-    const normalizedArgv = normalizeAliases(normalizeVersionShortFlag(argv));
+    const normalizedArgv = normalizeVersionShortFlag(argv);
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp();
     }

@@ -29,12 +29,11 @@ export class ComposioUserContext extends Context.Tag('ComposioUserData')<
     logout: Effect.Effect<void, ParseError | PlatformError, never>;
 
     /**
-     * Logs in the user by setting the API key, and optionally org/project IDs.
+     * Logs in the user by setting the API key, and optionally org ID.
      */
     login: (
       apiKey: string,
       orgId?: string,
-      projectId?: string,
       testUserId?: string
     ) => Effect.Effect<void, ParseError | PlatformError, never>;
 
@@ -79,14 +78,14 @@ export const ComposioUserContextLive = Layer.effect(
       });
     });
 
-    const login = (apiKey: string, orgId?: string, projectId?: string, testUserId?: string) =>
+    const login = (apiKey: string, orgId?: string, testUserId?: string) =>
       Effect.gen(function* () {
         yield* update({
           apiKey: Option.some(apiKey),
           baseURL: Option.some(baseURL),
           webURL: Option.some(webURL),
           orgId: Option.fromNullable(orgId),
-          projectId: Option.fromNullable(projectId),
+          projectId: Option.none(),
           testUserId: Option.fromNullable(testUserId),
         });
       });
@@ -96,10 +95,20 @@ export const ComposioUserContextLive = Layer.effect(
      */
     const update = (data: Partial<UserData>) =>
       Effect.gen(function* () {
-        const userDataAsJson = yield* userDataToJSON({ ...userData, ...data });
-        yield* Effect.logDebug('Saving user data:', userDataAsJson);
-        yield* fs.writeFileString(jsonUserConfigPath, userDataAsJson);
-        userData = { ...userData, ...data } satisfies UserData;
+        const nextUserData = { ...userData, ...data } satisfies UserData;
+        const encodedUserData = yield* userDataToJSON(nextUserData);
+        const normalizedUserDataJson = JSON.stringify(
+          (() => {
+            const parsed = JSON.parse(encodedUserData) as Record<string, unknown>;
+            if (parsed.project_id === null) {
+              delete parsed.project_id;
+            }
+            return parsed;
+          })()
+        );
+        yield* Effect.logDebug('Saving user data:', normalizedUserDataJson);
+        yield* fs.writeFileString(jsonUserConfigPath, normalizedUserDataJson);
+        userData = nextUserData;
         yield* Effect.logDebug('User data updated:', userData);
       });
 

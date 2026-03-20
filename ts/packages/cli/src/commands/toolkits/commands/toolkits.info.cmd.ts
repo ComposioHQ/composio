@@ -1,6 +1,6 @@
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -46,6 +46,7 @@ export const toolkitsCmd$Info = Command.make(
       const ui = yield* TerminalUI;
       const projectContext = yield* ProjectContext;
       const userContext = yield* ComposioUserContext;
+      const clientSingleton = yield* ComposioClientSingleton;
 
       // Missing slug guard
       if (Option.isNone(slug)) {
@@ -85,7 +86,8 @@ export const toolkitsCmd$Info = Command.make(
               .pipe(Effect.option);
 
             if (Option.isSome(resolvedUserId)) {
-              const { client, sessionId } = yield* resolveToolRouterSession(resolvedUserId.value);
+              const client = yield* clientSingleton.get();
+              const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
               const sessionToolkits = yield* Effect.tryPromise(() =>
                 client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
               );

@@ -32,7 +32,8 @@ export const UserData = Schema.Struct({
   ),
 
   /**
-   * Project ID for the current user.
+   * Legacy global project ID retained for backward-compatible reads.
+   * New CLI versions no longer persist this field.
    */
   projectId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
     Schema.fromKey('project_id')
@@ -57,7 +58,7 @@ export const UserDataWithDefaults = Schema.Struct({
   baseURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('base_url')),
   webURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('web_url')),
 
-  // orgId and projectId remain as Option<string> — they may not be set.
+  // orgId and legacy projectId remain as Option<string> — they may not be set.
 }).annotations({
   identifier: 'UserDataWithDefaults',
   description: 'User data storage for the Composio CLI with defaults',

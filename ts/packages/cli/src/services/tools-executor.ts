@@ -1,4 +1,5 @@
 import { Context, Effect, Layer } from 'effect';
+import type { Composio } from '@composio/client';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
@@ -38,6 +39,7 @@ export class ActionExecuteConnectedAccountNotFoundError extends Error {
 export interface ToolExecuteParams {
   readonly userId: string;
   readonly arguments: Record<string, unknown>;
+  readonly client?: Composio;
 }
 
 /**
@@ -107,20 +109,21 @@ export const ToolsExecutorLive = Layer.effect(
       execute: (slug, params) =>
         Effect.gen(function* () {
           const client = yield* clientSingleton.get();
+          const resolvedClient = params.client ?? client;
           // One session per invocation — CLI runs one tool per process.
-          const sessionId = yield* createToolRouterSession(client, params.userId, {
+          const sessionId = yield* createToolRouterSession(resolvedClient, params.userId, {
             manageConnections: true,
           });
 
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(
             () => {
               if (isMetaToolSlug(slug)) {
-                return client.toolRouter.session.executeMeta(sessionId, {
+                return resolvedClient.toolRouter.session.executeMeta(sessionId, {
                   slug,
                   arguments: params.arguments,
                 });
               }
-              return client.toolRouter.session.execute(sessionId, {
+              return resolvedClient.toolRouter.session.execute(sessionId, {
                 tool_slug: slug,
                 arguments: params.arguments,
               });

@@ -21,6 +21,78 @@ const selectOrganization = (organizations: ReadonlyArray<OrganizationSummary>) =
     ]);
   });
 
+export const runOrgSelection = (params: {
+  apiKey: string;
+  baseURL: string;
+  explicitOrgId?: string;
+  limit?: number;
+}) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const { apiKey, baseURL, explicitOrgId, limit = DEFAULT_LIMIT } = params;
+    const clampedLimit = clampLimit(limit);
+
+    const selectedOrganization =
+      explicitOrgId !== undefined
+        ? ({ id: explicitOrgId, name: explicitOrgId } satisfies OrganizationSummary)
+        : yield* Effect.gen(function* () {
+            const organizations = yield* listOrganizations({
+              baseURL,
+              apiKey,
+              limit: clampedLimit,
+            });
+            yield* ui.log.info(`Loaded ${organizations.data.length} orgs`);
+            if (organizations.data.length === 0) return undefined;
+            return yield* selectOrganization(organizations.data);
+          });
+
+    if (!selectedOrganization) {
+      yield* ui.log.warn('No organizations found for this API key.');
+      return undefined;
+    }
+
+    yield* ui.log.info(
+      `Selected organization: "${selectedOrganization.name}" (${selectedOrganization.id})`
+    );
+
+    return selectedOrganization;
+  });
+
+export const runDeveloperProjectSelection = (params: {
+  apiKey: string;
+  baseURL: string;
+  orgId: string;
+  explicitProjectId?: string;
+  limit?: number;
+}) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const { apiKey, baseURL, orgId, explicitProjectId, limit = DEFAULT_LIMIT } = params;
+    const clampedLimit = clampLimit(limit);
+
+    const projects = yield* listOrganizationProjects({
+      baseURL,
+      apiKey,
+      orgId,
+      limit: clampedLimit,
+    });
+    yield* ui.log.info(`Loaded ${projects.data.length} projects`);
+
+    if (projects.data.length === 0) {
+      yield* ui.log.warn(`No projects found for org "${orgId}".`);
+      return undefined;
+    }
+
+    const selectedProject = yield* selectProject(projects.data, explicitProjectId);
+    if (!selectedProject) {
+      yield* ui.log.warn('No project selected.');
+      return undefined;
+    }
+
+    yield* ui.log.info(`Selected project: "${selectedProject.name}" (${selectedProject.id})`);
+    return selectedProject;
+  });
+
 /**
  * Prompts user to select a project, or auto-selects if only one.
  * When explicitProjectId is provided (e.g. from `orgs switch --project-id`), finds and returns it without prompting.
@@ -62,52 +134,26 @@ export const runOrgProjectSelection = (params: {
   limit?: number;
 }) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
     const { apiKey, baseURL, explicitOrgId, explicitProjectId, limit = DEFAULT_LIMIT } = params;
-    const clampedLimit = clampLimit(limit);
-
-    const selectedOrganization =
-      explicitOrgId !== undefined
-        ? ({ id: explicitOrgId, name: explicitOrgId } satisfies OrganizationSummary)
-        : yield* Effect.gen(function* () {
-            const organizations = yield* listOrganizations({
-              baseURL,
-              apiKey,
-              limit: clampedLimit,
-            });
-            yield* ui.log.info(`Loaded ${organizations.data.length} orgs`);
-            if (organizations.data.length === 0) return undefined;
-            return yield* selectOrganization(organizations.data);
-          });
-
-    if (!selectedOrganization) {
-      yield* ui.log.warn('No organizations found for this API key.');
-      return undefined;
-    }
-    yield* ui.log.info(
-      `Selected organization: "${selectedOrganization.name}" (${selectedOrganization.id})`
-    );
-
-    const projects = yield* listOrganizationProjects({
-      baseURL,
+    const selectedOrganization = yield* runOrgSelection({
       apiKey,
-      orgId: selectedOrganization.id,
-      limit: clampedLimit,
+      baseURL,
+      explicitOrgId,
+      limit,
     });
-    yield* ui.log.info(`Loaded ${projects.data.length} projects`);
-
-    if (projects.data.length === 0) {
-      yield* ui.log.warn(`No projects found for org "${selectedOrganization.name}".`);
+    if (!selectedOrganization) {
       return undefined;
     }
-
-    const selectedProject = yield* selectProject(projects.data, explicitProjectId);
-
+    const selectedProject = yield* runDeveloperProjectSelection({
+      apiKey,
+      baseURL,
+      orgId: selectedOrganization.id,
+      explicitProjectId,
+      limit,
+    });
     if (!selectedProject) {
-      yield* ui.log.warn('No project selected.');
       return undefined;
     }
-    yield* ui.log.info(`Selected project: "${selectedProject.name}" (${selectedProject.id})`);
 
     return { org: selectedOrganization, project: selectedProject } as const;
   });

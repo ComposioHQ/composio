@@ -9,7 +9,7 @@ import {
 } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { runOrgProjectSelection } from 'src/effects/select-org-project';
+import { runOrgSelection } from 'src/effects/select-org-project';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
@@ -31,7 +31,7 @@ const keyOpt = Options.text('key').pipe(
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
-  Options.withDescription('Skip org/project picker; use session defaults')
+  Options.withDescription('Skip org picker; use session default org')
 );
 
 /**
@@ -47,9 +47,9 @@ const storeCredentials = (params: {
   initialOrgId: string;
   initialProjectId: string;
   fallbackEmail: string;
-  /** When true, skip the init/switch hints and outro (shown later after org/project picker). */
+  /** When true, skip the init/switch hints and outro (shown later after org picker). */
   skipHints?: boolean;
-  /** When true, skip JSON output (emitted later after org/project picker with final selection). */
+  /** When true, skip JSON output (emitted later after org picker with final selection). */
   skipOutput?: boolean;
 }) =>
   Effect.gen(function* () {
@@ -92,7 +92,6 @@ const storeCredentials = (params: {
     // The initial IDs come from the linked session response (which may use session-level
     // identifiers rather than the actual org/project IDs).
     const orgId = sessionInfo?.project.org.id ?? initialOrgId;
-    const projectId = sessionInfo?.project.nano_id ?? initialProjectId;
     const sessionUserId = sessionInfo?.org_member.user_id ?? sessionInfo?.org_member.id;
     const testUserId = sessionUserId
       ? `pg-test-${sessionUserId}`
@@ -102,15 +101,9 @@ const storeCredentials = (params: {
       if (initialOrgId !== orgId) {
         yield* Effect.logDebug(`orgId corrected: ${initialOrgId} -> ${orgId} (from session/info)`);
       }
-      if (initialProjectId !== projectId) {
-        yield* Effect.logDebug(
-          `projectId corrected: ${initialProjectId} -> ${projectId} (from session/info)`
-        );
-      }
     }
 
-    // Store UAK + org/project IDs in user_data.json
-    yield* ctx.login(uakApiKey, orgId, projectId, testUserId);
+    yield* ctx.login(uakApiKey, orgId, testUserId);
 
     const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
     yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
@@ -118,9 +111,7 @@ const storeCredentials = (params: {
       yield* ui.log.info(
         'Run `composio init` in your project directory to set up project context.'
       );
-      yield* ui.log.info(
-        'To switch your default global org/project later, run `composio manage orgs switch`.'
-      );
+      yield* ui.log.info('To switch your default org later, run `composio manage orgs switch`.');
     }
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
@@ -129,9 +120,7 @@ const storeCredentials = (params: {
         JSON.stringify({
           email,
           org_id: orgId,
-          project_id: projectId,
           org_name: sessionInfo?.project.org.name ?? '',
-          project_name: sessionInfo?.project.name ?? '',
         })
       );
     }
@@ -219,14 +208,14 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
     });
 
     if (willRunPicker) {
-      const result = yield* runOrgProjectSelection({
+      const result = yield* runOrgSelection({
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
       }).pipe(
         Effect.catchAll(error =>
           Effect.gen(function* () {
-            yield* Effect.logDebug('Org/project picker failed:', error);
-            yield* ui.log.warn('Could not load org/project list. Using session defaults.');
+            yield* Effect.logDebug('Org picker failed:', error);
+            yield* ui.log.warn('Could not load org list. Using session default org.');
             return undefined;
           })
         )
@@ -236,33 +225,24 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
         yield* ctx.login(
           uakApiKey,
-          result.org.id,
-          result.project.id,
+          result.id,
           testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
         );
-        yield* ui.log.success(
-          `Default org/project set to "${result.org.name}" / "${result.project.name}".`
-        );
+        yield* ui.log.success(`Default org set to "${result.name}".`);
       }
-      const finalOrgId = result?.org.id ?? xOrgId;
-      const finalProjectId = result?.project.id ?? xProjectId;
-      const finalOrgName = result?.org.name ?? uakSessionInfo.project.org.name ?? '';
-      const finalProjectName = result?.project.name ?? uakSessionInfo.project.name ?? '';
+      const finalOrgId = result?.id ?? xOrgId;
+      const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
       yield* ui.output(
         JSON.stringify({
           email: linkedSession.account.email ?? undefined,
           org_id: finalOrgId,
-          project_id: finalProjectId,
           org_name: finalOrgName,
-          project_name: finalProjectName,
         })
       );
       yield* ui.log.info(
         'Run `composio init` in your project directory to set up project context.'
       );
-      yield* ui.log.info(
-        'To switch your default global org/project later, run `composio manage orgs switch`.'
-      );
+      yield* ui.log.info('To switch your default org later, run `composio manage orgs switch`.');
       yield* ui.outro("You're all set!");
     }
   });
@@ -387,14 +367,14 @@ export const browserLogin = (params: {
     });
 
     if (willRunPicker) {
-      const result = yield* runOrgProjectSelection({
+      const result = yield* runOrgSelection({
         apiKey: uakApiKey,
         baseURL: ctx.data.baseURL,
       }).pipe(
         Effect.catchAll(error =>
           Effect.gen(function* () {
-            yield* Effect.logDebug('Org/project picker failed:', error);
-            yield* ui.log.warn('Could not load org/project list. Using session defaults.');
+            yield* Effect.logDebug('Org picker failed:', error);
+            yield* ui.log.warn('Could not load org list. Using session default org.');
             return undefined;
           })
         )
@@ -404,34 +384,24 @@ export const browserLogin = (params: {
         const testUserId = sessionUserId ? `pg-test-${sessionUserId}` : undefined;
         yield* ctx.login(
           uakApiKey,
-          result.org.id,
-          result.project.id,
+          result.id,
           testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
         );
-        yield* ui.log.success(
-          `Default org/project set to "${result.org.name}" / "${result.project.name}".`
-        );
+        yield* ui.log.success(`Default org set to "${result.name}".`);
       }
-      // Emit JSON with final org/project (from picker or session) for piped/scripted consumption
-      const finalOrgId = result?.org.id ?? xOrgId;
-      const finalProjectId = result?.project.id ?? xProjectId;
-      const finalOrgName = result?.org.name ?? uakSessionInfo.project.org.name ?? '';
-      const finalProjectName = result?.project.name ?? uakSessionInfo.project.name ?? '';
+      const finalOrgId = result?.id ?? xOrgId;
+      const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
       yield* ui.output(
         JSON.stringify({
           email: linkedSession.account.email ?? undefined,
           org_id: finalOrgId,
-          project_id: finalProjectId,
           org_name: finalOrgName,
-          project_name: finalProjectName,
         })
       );
       yield* ui.log.info(
         'Run `composio init` in your project directory to set up project context.'
       );
-      yield* ui.log.info(
-        'To switch your default global org/project later, run `composio manage orgs switch`.'
-      );
+      yield* ui.log.info('To switch your default org later, run `composio manage orgs switch`.');
       yield* ui.outro("You're all set!");
     }
   });
@@ -444,7 +414,7 @@ export const browserLogin = (params: {
  * Use --no-wait to print login URL and session info (JSON) then exit without opening browser or waiting.
  * Use --key to complete login with a session key from --no-wait. Without --no-wait, polls until linked;
  * with --no-wait, checks once and fails if not linked.
- * Use -y to skip org/project picker and use session defaults.
+ * Use -y to skip org picker and use session default org.
  *
  * @example
  * ```bash
@@ -476,8 +446,7 @@ export const loginCmd = Command.make(
       }
 
       if (ctx.isLoggedIn()) {
-        // Allow re-login when orgId/projectId are not yet set (old CLI login without multi-project support)
-        if (Option.isSome(ctx.data.orgId) && Option.isSome(ctx.data.projectId)) {
+        if (Option.isSome(ctx.data.orgId)) {
           yield* ui.log.warn(`You're already logged in!`);
           yield* ui.outro(
             'If you want to log in with a different account, please run `composio logout` first.'

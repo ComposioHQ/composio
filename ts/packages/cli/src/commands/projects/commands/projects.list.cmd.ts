@@ -37,9 +37,6 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
     }
 
     const clampedLimit = clampLimit(limit);
-    const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
-    const defaultProjectId = Option.getOrUndefined(ctx.data.projectId);
-
     const projects = yield* ui.withSpinner(
       'Loading projects...',
       listOrganizationProjects({
@@ -56,19 +53,20 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
 
     if (projects.data.length === 0) {
       yield* ui.log.warn('No projects found.');
-      yield* ui.outro('Hint: run `composio manage orgs switch` to switch org/project defaults.');
+      yield* ui.outro(
+        'Hint: run `composio init` in a directory to bind it to a developer project.'
+      );
       return;
     }
 
     const lines = projects.data.map(project => {
-      const isSelected = defaultOrgId === resolvedOrgId && defaultProjectId === project.id;
-      return `${isSelected ? '✓' : ' '} ${project.name} (${project.id})`;
+      return `  ${project.name} (${project.id})`;
     });
     yield* ui.log.step(lines.join('\n'));
     yield* ui.outro(
       [
-        'Hint: run `composio manage projects switch` to switch the default global project.',
-        'Run `composio manage orgs switch` to switch org and project together.',
+        'Hint: run `composio init` in a directory to bind it to a developer project.',
+        'Run `composio manage orgs switch` to change your default org.',
       ].join('\n')
     );
 
@@ -77,10 +75,9 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
         projects.data.map(project => ({
           id: project.id,
           name: project.name,
-          is_selected_global_project:
-            defaultOrgId === resolvedOrgId && defaultProjectId === project.id,
+          is_selected_global_project: false,
         }))
       )
     );
   })
-).pipe(Command.withDescription('List projects and show current global selection.'));
+).pipe(Command.withDescription('List developer projects for the current organization.'));

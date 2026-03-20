@@ -5,10 +5,14 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import {
+  resolveCommandProject,
+  formatResolveCommandProjectError,
+} from 'src/services/command-project';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -21,8 +25,15 @@ const authConfig = Options.text('auth-config').pipe(
 );
 
 const userId = Options.text('user-id').pipe(
-  Options.withDescription('User ID for the connection (falls back to project test_user_id)'),
+  Options.withDescription(
+    'User ID for the connection (falls back to local developer or global test_user_id)'
+  ),
   Options.optional
+);
+
+const projectName = Options.text('project-name').pipe(
+  Options.optional,
+  Options.withDescription('Developer project name override for this command')
 );
 
 const noBrowser = Options.boolean('no-browser').pipe(
@@ -137,32 +148,16 @@ const waitForActiveConnection = (
  */
 export const connectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, authConfig, userId, noBrowser, noWait },
-  ({ toolkit, authConfig, userId, noBrowser, noWait }) =>
+  { toolkit, authConfig, userId, projectName, noBrowser, noWait },
+  ({ toolkit, authConfig, userId, projectName, noBrowser, noWait }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
+      const clientSingleton = yield* ComposioClientSingleton;
       const projectContext = yield* ProjectContext;
       const userContext = yield* ComposioUserContext;
-      const resolvedProjectContext = yield* projectContext.resolve;
-      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
-      const globalTestUserId = userContext.data.testUserId;
-      const resolvedUserId = Option.match(userId, {
-        onSome: value => Option.some(value),
-        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
-      });
-      if (Option.isNone(resolvedUserId)) {
-        return yield* Effect.fail(
-          new Error('Missing user id. Provide --user-id or run composio init to set test_user_id.')
-        );
-      }
-      if (Option.isNone(userId) && Option.isSome(testUserId)) {
-        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
-      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
-        yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
-      }
 
       // Validate: exactly one of <toolkit> or --auth-config must be provided
       if (Option.isSome(toolkit) && Option.isSome(authConfig)) {
@@ -184,23 +179,64 @@ export const connectedAccountsCmd$Link = Command.make(
       }
 
       if (Option.isSome(authConfig)) {
+        const resolvedProjectContext = yield* projectContext.resolve.pipe(
+          Effect.catchAll(() => Effect.succeed(Option.none()))
+        );
+        const localTestUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
+        const globalTestUserId = userContext.data.testUserId;
+        const resolvedUserId = Option.match(userId, {
+          onSome: value => Option.some(value),
+          onNone: () => Option.orElse(localTestUserId, () => globalTestUserId),
+        });
+        if (Option.isNone(resolvedUserId)) {
+          return yield* Effect.fail(
+            new Error(
+              'Missing user id. Provide --user-id or run composio init to set test_user_id.'
+            )
+          );
+        }
+        if (Option.isNone(projectName) && Option.isNone(resolvedProjectContext)) {
+          yield* ui.log.error(
+            '`--auth-config` is developer-project scoped. Pass `--project-name <name>` or run from a directory initialized with `composio init`.'
+          );
+          return;
+        }
+        if (Option.isNone(userId) && Option.isSome(localTestUserId)) {
+          yield* ui.log.warn(`Using test user id "${localTestUserId.value}"`);
+        } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+          yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
+        }
+        const resolvedProject = yield* resolveCommandProject({
+          mode: 'developer',
+          projectName: Option.getOrUndefined(projectName),
+        }).pipe(Effect.mapError(formatResolveCommandProjectError));
+        const client = yield* clientSingleton.getFor({
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        });
         // Path A: Legacy flow — use existing client.link.create()
         const linkOpt = yield* ui
           .withSpinner(
             'Creating link session...',
-            repo.createConnectedAccountLink({
-              auth_config_id: authConfig.value,
-              user_id: resolvedUserId.value,
-            })
+            Effect.tryPromise(() =>
+              client.link.create({
+                auth_config_id: authConfig.value,
+                user_id: resolvedUserId.value,
+              })
+            )
           )
           .pipe(
             Effect.asSome,
-            Effect.catchTag(
-              'services/HttpServerError',
-              handleHttpServerError(ui, {
-                fallbackMessage: `Failed to create link for auth config "${authConfig.value}".`,
-                hint: 'Browse available auth configs:\n> composio manage auth-configs list',
-                fallbackValue: Option.none(),
+            Effect.catchAll(error =>
+              Effect.gen(function* () {
+                const message =
+                  extractMessage(error) ??
+                  `Failed to create link for auth config "${authConfig.value}".`;
+                yield* ui.log.error(message);
+                yield* ui.log.step(
+                  'Browse available auth configs:\n> composio manage auth-configs list'
+                );
+                return Option.none();
               })
             )
           );
@@ -220,6 +256,7 @@ export const connectedAccountsCmd$Link = Command.make(
                 message: 'Complete authorization by opening the URL',
                 connected_account_id: connId,
                 redirect_url: redirectUrl,
+                project_type: resolvedProject.projectType,
               },
               null,
               2
@@ -231,12 +268,35 @@ export const connectedAccountsCmd$Link = Command.make(
       } else {
         // Path B: Tool Router flow — toolkit is guaranteed Some (validated above)
         const toolkitSlug = Option.getOrThrow(toolkit);
+        const globalTestUserId = userContext.data.testUserId;
+        const resolvedUserId = Option.match(userId, {
+          onSome: value => Option.some(value),
+          onNone: () => globalTestUserId,
+        });
+        if (Option.isNone(resolvedUserId)) {
+          return yield* Effect.fail(
+            new Error(
+              'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
+            )
+          );
+        }
+        if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+          yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
+        }
+        const resolvedProject = yield* resolveCommandProject({
+          mode: 'consumer',
+          projectName: Option.getOrUndefined(projectName),
+        }).pipe(Effect.mapError(formatResolveCommandProjectError));
+        const client = yield* clientSingleton.getFor({
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        });
 
         const linkOpt = yield* ui
           .withSpinner(
             `Linking ${toolkitSlug}...`,
             Effect.gen(function* () {
-              const { client, sessionId } = yield* resolveToolRouterSession(resolvedUserId.value, {
+              const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
                 manageConnections: true,
               });
               return yield* Effect.tryPromise(() =>
@@ -281,6 +341,7 @@ export const connectedAccountsCmd$Link = Command.make(
                 connected_account_id: connAccountId,
                 redirect_url: redirectUrl,
                 toolkit: toolkitSlug,
+                project_type: resolvedProject.projectType,
               },
               null,
               2

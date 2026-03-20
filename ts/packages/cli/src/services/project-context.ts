@@ -44,8 +44,8 @@ const parseEnvFile = (content: string): Map<string, string> => {
 };
 
 /**
- * Service that resolves the current project context using a precedence chain.
- * Read-only -- it does NOT write files.
+ * Service that resolves the current developer project context using a precedence chain.
+ * Read-only -- it does NOT write files and is never used for consumer-project routing.
  *
  * Precedence (highest first):
  * 1. System env vars (COMPOSIO_ORG_ID, COMPOSIO_PROJECT_ID)

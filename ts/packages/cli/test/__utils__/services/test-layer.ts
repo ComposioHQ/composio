@@ -948,6 +948,10 @@ export const TestLayer = (input?: TestLiveInput) =>
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           return mockComposioClient as any;
         }),
+        getFor: Effect.fn(function* () {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return mockComposioClient as any;
+        }),
       })
     );
 

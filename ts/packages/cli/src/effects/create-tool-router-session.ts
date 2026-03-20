@@ -1,6 +1,5 @@
 import { Effect } from 'effect';
 import type { Composio } from '@composio/client';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
 
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
@@ -39,12 +38,10 @@ export const createToolRouterSession = (
  * (resolve singleton, get client, create session) repeated across commands.
  */
 export const resolveToolRouterSession = (
+  client: Composio,
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
-  Effect.gen(function* () {
-    const clientSingleton = yield* ComposioClientSingleton;
-    const client = yield* clientSingleton.get();
-    const sessionId = yield* createToolRouterSession(client, userId, options);
-    return { client, sessionId };
-  });
+  createToolRouterSession(client, userId, options).pipe(
+    Effect.map(sessionId => ({ client, sessionId }))
+  );

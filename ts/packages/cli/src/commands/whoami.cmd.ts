@@ -25,13 +25,11 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onSome: () =>
             Effect.gen(function* () {
               const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
-              const defaultProjectId = Option.getOrUndefined(ctx.data.projectId);
               const testUserId = Option.getOrUndefined(ctx.data.testUserId);
 
               yield* ui.note(
                 [
                   `Default Org ID: ${defaultOrgId ?? 'not set'}`,
-                  `Default Project ID: ${defaultProjectId ?? 'not set'}`,
                   `Test User ID: ${testUserId ?? 'not set'}`,
                 ].join('\n'),
                 'Global User Context'
@@ -45,7 +43,6 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               yield* ui.output(
                 JSON.stringify({
                   default_org_id: defaultOrgId ?? null,
-                  default_project_id: defaultProjectId ?? null,
                   test_user_id: testUserId ?? null,
                 })
               );

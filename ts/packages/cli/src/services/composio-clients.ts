@@ -732,6 +732,17 @@ export interface OrganizationProjectListResponse {
   readonly total_items: number;
 }
 
+export const ConsumerProjectResolveResponse = Schema.Struct({
+  project_id: Schema.String,
+  project_nano_id: Schema.String,
+  project_name: Schema.String,
+  org_id: Schema.String,
+  project_type: Schema.Literal('CONSUMER'),
+}).annotations({ identifier: 'ConsumerProjectResolveResponse' });
+export type ConsumerProjectResolveResponse = Schema.Schema.Type<
+  typeof ConsumerProjectResolveResponse
+>;
+
 const extractArrayPayload = (json: unknown): ReadonlyArray<unknown> => {
   if (Array.isArray(json)) return json;
   if (json && typeof json === 'object') {
@@ -1085,6 +1096,131 @@ export const createProjectApiKey = (params: {
     return createdApiKey;
   });
 
+export const resolveConsumerProject = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+}): Effect.Effect<ConsumerProjectResolveResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/consumer/project/resolve`, {
+          method: 'POST',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.apiKey,
+            'x-org-id': params.orgId,
+            'User-Agent': '@composio/cli',
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(ConsumerProjectResolveResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+export class DeveloperProjectNotFoundError extends Data.TaggedError(
+  'services/DeveloperProjectNotFoundError'
+)<{
+  readonly orgId: string;
+  readonly projectName: string;
+}> {}
+
+export class AmbiguousDeveloperProjectNameError extends Data.TaggedError(
+  'services/AmbiguousDeveloperProjectNameError'
+)<{
+  readonly orgId: string;
+  readonly projectName: string;
+  readonly matches: ReadonlyArray<OrganizationProjectSummary>;
+}> {}
+
+export const findDeveloperProjectByName = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  name: string;
+  limit?: number;
+}): Effect.Effect<
+  OrganizationProjectSummary,
+  | DeveloperProjectNotFoundError
+  | AmbiguousDeveloperProjectNameError
+  | HttpServerError
+  | HttpDecodingError
+> =>
+  Effect.gen(function* () {
+    const projects = yield* listOrgProjects({
+      baseURL: params.baseURL,
+      apiKey: params.apiKey,
+      orgId: params.orgId,
+      limit: params.limit,
+    });
+
+    const normalizedName = String.toLowerCase(params.name.trim());
+    const matches = projects.data.filter(
+      project => String.toLowerCase(project.name) === normalizedName
+    );
+
+    if (matches.length === 0) {
+      return yield* Effect.fail(
+        new DeveloperProjectNotFoundError({
+          orgId: params.orgId,
+          projectName: params.name,
+        })
+      );
+    }
+
+    if (matches.length > 1) {
+      return yield* Effect.fail(
+        new AmbiguousDeveloperProjectNameError({
+          orgId: params.orgId,
+          projectName: params.name,
+          matches,
+        })
+      );
+    }
+
+    return matches[0];
+  });
+
+const normalizeApiKey = (rawApiKey?: string): string | undefined =>
+  typeof rawApiKey === 'string' && rawApiKey.trim().length > 0 ? rawApiKey : undefined;
+
+const buildDefaultHeaders = (params: {
+  userApiKey?: string;
+  orgId?: string;
+  projectId?: string;
+}): Record<string, string> | undefined => {
+  const defaultHeaders = {
+    ...(params.userApiKey
+      ? ({ 'x-user-api-key': params.userApiKey } satisfies Record<string, string>)
+      : {}),
+    ...(params.orgId && params.projectId
+      ? ({
+          'x-org-id': params.orgId,
+          'x-project-id': params.projectId,
+        } satisfies Record<string, string>)
+      : {}),
+  };
+
+  return Object.keys(defaultHeaders).length > 0 ? defaultHeaders : undefined;
+};
+
 // Utility function for calling the Composio API and decoding its response.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const callClient = <T, S extends Schema.Schema<any, any>>(
@@ -1243,59 +1379,64 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
     effect: Effect.gen(function* () {
       const ctx = yield* ComposioUserContext;
       const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
-      let ref = Option.none<_RawComposioClient>();
+      const cache = new Map<string, _RawComposioClient>();
+
+      const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+        Effect.gen(function* () {
+          const apiKey = normalizeApiKey(
+            params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
+          );
+          const cacheKey = JSON.stringify({
+            apiKey: apiKey ?? null,
+            orgId: params?.orgId ?? null,
+            projectId: params?.projectId ?? null,
+          });
+          const cached = cache.get(cacheKey);
+          if (cached) {
+            return cached;
+          }
+
+          const client = new _RawComposioClient({
+            apiKey: null,
+            baseURL: ctx.data.baseURL,
+            defaultHeaders: buildDefaultHeaders({
+              userApiKey: apiKey,
+              orgId: params?.orgId,
+              projectId: params?.projectId,
+            }),
+          });
+
+          cache.set(cacheKey, client);
+          return client;
+        });
 
       return {
         get: Effect.fn(function* () {
-          if (Option.isSome(ref)) {
-            return ref.value;
-          }
-
-          // Note: `api_key` is not required in every API request.
-          const rawApiKey = ctx.data.apiKey.pipe(Option.getOrUndefined);
-          const apiKey =
-            typeof rawApiKey === 'string' && rawApiKey.trim().length > 0 ? rawApiKey : undefined;
-          const baseURL = ctx.data.baseURL;
-          const globalOrgId = Option.getOrUndefined(ctx.data.orgId);
-          const globalProjectId = Option.getOrUndefined(ctx.data.projectId);
           const resolvedProjectContext = yield* Option.match(projectContextOpt, {
             onNone: () => Effect.succeed(Option.none()),
             onSome: projectContext =>
               projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
           });
-          const projectContextHeaders = Option.match(resolvedProjectContext, {
-            onNone: () =>
-              globalOrgId && globalProjectId
-                ? ({
-                    'x-org-id': globalOrgId,
-                    'x-project-id': globalProjectId,
-                  } satisfies Record<string, string>)
-                : undefined,
+          return yield* Option.match(resolvedProjectContext, {
+            onNone: () => getFor(),
             onSome: keys =>
-              ({
-                'x-org-id': keys.orgId,
-                'x-project-id': keys.projectId,
-              }) satisfies Record<string, string>,
+              getFor({
+                orgId: keys.orgId,
+                projectId: keys.projectId,
+              }),
           });
-          const defaultHeaders = {
-            ...(apiKey ? ({ 'x-user-api-key': apiKey } satisfies Record<string, string>) : {}),
-            ...(projectContextHeaders ?? {}),
-          };
-          const normalizedDefaultHeaders =
-            Object.keys(defaultHeaders).length > 0 ? defaultHeaders : undefined;
-
-          yield* Effect.logDebug('Creating raw Composio client...');
-          const client = new _RawComposioClient({
-            // Disable @composio/client's built-in x-api-key auth header.
-            // CLI always authenticates with x-user-api-key instead.
-            apiKey: null,
-            baseURL,
-            defaultHeaders: normalizedDefaultHeaders,
-          });
-
-          ref = Option.some(client);
-          return client;
         }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
+        getFor: Effect.fn(function* (params: {
+          userApiKey?: string;
+          orgId?: string;
+          projectId?: string;
+        }) {
+          return yield* getFor(params);
+        }) satisfies (params: {
+          userApiKey?: string;
+          orgId?: string;
+          projectId?: string;
+        }) => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
       };
     }),
     dependencies: [ComposioUserContextLive],

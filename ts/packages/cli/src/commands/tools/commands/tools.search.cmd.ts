@@ -7,8 +7,12 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { buildMinimalPayloadFromSchema } from 'src/ui/build-minimal-payload';
 import { formatToolsTable } from '../format';
 import type { Tool } from 'src/models/tools';
-import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import {
+  resolveCommandProject,
+  formatResolveCommandProjectError,
+} from 'src/services/command-project';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription(
@@ -23,7 +27,12 @@ const toolkits = Options.text('toolkits').pipe(
 
 const userId = Options.text('user-id').pipe(
   Options.optional,
-  Options.withDescription('User ID for the session (falls back to project/global test_user_id)')
+  Options.withDescription('User ID for the session (falls back to global test_user_id)')
+);
+
+const projectName = Options.text('project-name').pipe(
+  Options.optional,
+  Options.withDescription('Developer project name override for this command')
 );
 
 const limit = Options.integer('limit').pipe(
@@ -47,35 +56,28 @@ const limit = Options.integer('limit').pipe(
  */
 export const toolsCmd$Search = Command.make(
   'search',
-  { query, toolkits, userId, limit },
-  ({ query, toolkits, userId, limit }) =>
+  { query, toolkits, userId, projectName, limit },
+  ({ query, toolkits, userId, projectName, limit }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
-      const projectContext = yield* ProjectContext;
       const userContext = yield* ComposioUserContext;
-      const resolvedProjectContext = yield* projectContext.resolve.pipe(
-        Effect.catchAll(() => Effect.succeed(Option.none()))
-      );
-      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
       const globalTestUserId = userContext.data.testUserId;
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
-        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
+        onNone: () => globalTestUserId,
       });
 
       if (Option.isNone(resolvedUserId)) {
         return yield* Effect.fail(
           new Error(
-            'Missing user id. Provide --user-id or run composio init to set test_user_id, or composio login to set global test_user_id.'
+            'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
           )
         );
       }
 
-      if (Option.isNone(userId) && Option.isSome(testUserId)) {
-        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
-      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+      if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
         yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
       }
 
@@ -92,9 +94,21 @@ export const toolsCmd$Search = Command.make(
       const searchResponse = yield* ui.withSpinner(
         `Searching tools for "${query}"...`,
         Effect.gen(function* () {
-          const { client, sessionId } = yield* resolveToolRouterSession(resolvedUserId.value, {
+          const resolvedProject = yield* resolveCommandProject({
+            mode: 'consumer',
+            projectName: Option.getOrUndefined(projectName),
+          }).pipe(Effect.mapError(formatResolveCommandProjectError));
+          const clientSingleton = yield* ComposioClientSingleton;
+          const client = yield* clientSingleton.getFor({
+            orgId: resolvedProject.orgId,
+            projectId: resolvedProject.projectId,
+          });
+          const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
             toolkits: toolkitList,
           });
+          yield* ui.log.info(
+            `Using ${resolvedProject.projectType.toLowerCase()} project "${resolvedProject.projectName ?? resolvedProject.projectId}".`
+          );
           return yield* Effect.tryPromise(() =>
             client.toolRouter.session.search(sessionId, {
               queries: [{ use_case: query }],
@@ -162,8 +176,8 @@ export const toolsCmd$Search = Command.make(
         yield* ui.log.step(
           [
             'Hints:',
-            `> composio manage tools info "${firstSlug}"`,
-            `> composio manage tools execute "${firstSlug}" --user-id "<user-id>" --arguments '{}'`,
+            `> composio execute "${firstSlug}" --user-id "<user-id>" -d '{}'`,
+            `> composio link <toolkit> --user-id "<user-id>"`,
           ].join('\n')
         );
       }

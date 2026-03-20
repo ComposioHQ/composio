@@ -12,7 +12,6 @@ import {
   ToolsExecutor,
 } from 'src/services/tools-executor';
 import type { ToolExecuteParams } from 'src/services/tools-executor';
-import { ProjectContext } from 'src/services/project-context';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import {
@@ -23,6 +22,11 @@ import {
 import { bold } from 'src/ui/colors';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { formatToolInputParameters } from '../format';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import {
+  resolveCommandProject,
+  formatResolveCommandProjectError,
+} from 'src/services/command-project';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -36,7 +40,12 @@ const data = Options.text('data').pipe(
 
 const userId = Options.text('user-id').pipe(
   Options.optional,
-  Options.withDescription('User ID to execute the tool for (falls back to project test_user_id)')
+  Options.withDescription('User ID to execute the tool for (falls back to global test_user_id)')
+);
+
+const projectName = Options.text('project-name').pipe(
+  Options.optional,
+  Options.withDescription('Developer project name override for this command')
 );
 
 const resolveInput = (input: Option.Option<string>) =>
@@ -102,11 +111,11 @@ const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
 const connectionTips = (toolSlug: string, userId: string) => {
   const toolkit = toolkitFromToolSlug(toolSlug);
   if (!toolkit) {
-    return `Retry: ${bold(`composio manage tools execute ${toolSlug} ...`)}`;
+    return `Retry: ${bold(`composio execute ${toolSlug} ...`)}`;
   }
   return [
-    `Link the toolkit first: ${bold(`composio manage connected-accounts link ${toolkit} --user-id ${userId}`)}`,
-    `Then retry:             ${bold(`composio manage tools execute ${toolSlug} ...`)}`,
+    `Link the toolkit first: ${bold(`composio link ${toolkit} --user-id ${userId}`)}`,
+    `Then retry:             ${bold(`composio execute ${toolSlug} ...`)}`,
   ].join('\n');
 };
 
@@ -198,7 +207,7 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
                 Effect.map(r =>
                   r.items.map(s => ({
                     label: `${s.slug} — ${s.description}`,
-                    command: `> composio manage tools execute "${s.slug}" --help`,
+                    command: `> composio execute "${s.slug}" --help`,
                   }))
                 )
               ),
@@ -211,7 +220,7 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
 
     yield* ui.note(formatToolInputParameters(tool), `Execute Help: ${tool.slug}`);
     yield* ui.log.step(
-      `Run:\n> composio manage tools execute "${tool.slug}" --user-id "<user-id>" -d '{"key":"value"}'`
+      `Run:\n> composio execute "${tool.slug}" --user-id "<user-id>" -d '{"key":"value"}'`
     );
     yield* ui.output(
       JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
@@ -286,39 +295,46 @@ class ToolExecutionError {
  */
 export const toolsCmd$Execute = Command.make(
   'execute',
-  { slug, data, userId },
-  ({ slug, data, userId }) =>
+  { slug, data, userId, projectName },
+  ({ slug, data, userId, projectName }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
       const executor = yield* ToolsExecutor;
-      const projectContext = yield* ProjectContext;
+      const clientSingleton = yield* ComposioClientSingleton;
       const userContext = yield* ComposioUserContext;
-      const resolvedProjectContext = yield* projectContext.resolve;
-      const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
       const globalTestUserId = userContext.data.testUserId;
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
-        onNone: () => Option.orElse(testUserId, () => globalTestUserId),
+        onNone: () => globalTestUserId,
       });
       if (Option.isNone(resolvedUserId)) {
         return yield* Effect.fail(
-          new Error('Missing user id. Provide --user-id or run composio init to set test_user_id.')
+          new Error(
+            'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
+          )
         );
       }
-      if (Option.isNone(userId) && Option.isSome(testUserId)) {
-        yield* ui.log.warn(`Using test user id "${testUserId.value}"`);
-      } else if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
+      if (Option.isNone(userId) && Option.isSome(globalTestUserId)) {
         yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
       }
 
       const input = yield* resolveInput(data);
       const args = yield* parseArguments(input);
+      const resolvedProject = yield* resolveCommandProject({
+        mode: 'consumer',
+        projectName: Option.getOrUndefined(projectName),
+      }).pipe(Effect.mapError(formatResolveCommandProjectError));
+      const client = yield* clientSingleton.getFor({
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
+      });
 
       const params: ToolExecuteParams = {
         userId: resolvedUserId.value,
         arguments: args,
+        client,
       };
 
       yield* ui.useMakeSpinner(`Executing tool "${slug}"...`, spinner =>
