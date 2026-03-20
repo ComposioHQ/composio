@@ -6,7 +6,7 @@ from openai import OpenAI
 from composio import Composio
 
 # Initialize tools.
-openai_client = OpenAI()
+openai_client = OpenAI(timeout=60.0)
 composio = Composio(provider=OpenAIProvider())
 
 # Retrieve actions
