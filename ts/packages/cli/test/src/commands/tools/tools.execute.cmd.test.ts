@@ -617,6 +617,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         respondWith: {
