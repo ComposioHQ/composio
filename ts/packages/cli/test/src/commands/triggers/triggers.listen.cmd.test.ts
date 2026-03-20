@@ -110,6 +110,7 @@ describe('CLI: composio manage triggers listen', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       realtimeData: {
         events: [mockV3TriggerEvent],
       },
@@ -133,6 +134,7 @@ describe('CLI: composio manage triggers listen', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       realtimeData: {
         events: [mockV3TriggerEvent],
       },
@@ -154,6 +156,7 @@ describe('CLI: composio manage triggers listen', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       realtimeData: {
         events: [mockV3TriggerEvent],
       },
@@ -196,6 +199,7 @@ describe('CLI: composio manage triggers listen', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       realtimeData: { events: [mockV3TriggerEvent] },
     })
   )(
@@ -226,6 +230,7 @@ describe('CLI: composio manage triggers listen', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       realtimeData: { events: [mockV3TriggerEvent] },
     })
   )('[Given] --forward [Then] sends signed webhook verifiable by composio/core', it => {

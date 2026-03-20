@@ -2,7 +2,7 @@
 
 exports[`CLI: composio > [Given] --help flag [Then] prints help message 1`] = `
 "
-Connect AI agents to external tools. Link accounts, discover tools, and execute them.
+Connect AI agents to external tools. \`search\`, \`link\`, and \`execute\` use your org consumer project by default. \`init\`, \`listen\`, and \`manage\` use developer project context.
 
 USAGE
   composio <command> [options]
@@ -27,43 +27,46 @@ BASIC COMMANDS
       --no-browser          Login without browser interaction
       --no-wait             Print login URL and session info, then exit (no browser, no waiting)
       --key                 Complete login using session key from --no-wait
-      -y, --yes             Skip org/project picker; use session defaults
+      -y, --yes             Skip org picker; use session default org
 
   logout
     Log out from the Composio CLI session.
     Usage: composio logout
 
   init
-    Initialize a Composio project in the current directory.
+    Initialize this directory with a developer project.
     Usage: composio init [--no-browser] [-y, --yes]
     Options:
       --no-browser          Skip opening browser for auth
-      -y, --yes             Auto-select default org/project
+      -y, --yes             Auto-select the default developer project
 
   search
     Search tools by use case across toolkits/apps.
-    Usage: composio search <query> [--toolkits text] [--user-id text] [--limit integer]
+    Usage: composio search <query> [--toolkits text] [--user-id text] [--project-name text] [--limit integer]
     Options:
       <query>               Semantic use-case query (e.g. "send emails")
       --toolkits            Filter by toolkit slugs, comma-separated
-      --user-id             User ID (falls back to project/global test_user_id)
+      --user-id             User ID (falls back to global test_user_id)
+      --project-name        Use a developer project instead of the org consumer project
       --limit               Number of results per page (1-1000)
 
   execute
     Execute a tool.
-    Usage: composio execute <slug> [-d, --data text] [--user-id text]
+    Usage: composio execute <slug> [-d, --data text] [--user-id text] [--project-name text]
     Options:
       <slug>                Tool slug (e.g. "GITHUB_CREATE_ISSUE")
       -d, --data            JSON arguments, @file, or - for stdin
-      --user-id             User ID (falls back to project test_user_id)
+      --user-id             User ID (falls back to global test_user_id)
+      --project-name        Use a developer project instead of the org consumer project
 
   link
     Connect a user account for a toolkit/app.
-    Usage: composio link [<toolkit>] [--auth-config text] [--user-id text] [--no-browser]
+    Usage: composio link [<toolkit>] [--auth-config text] [--user-id text] [--project-name text] [--no-browser]
     Options:
       <toolkit>             Toolkit slug to link (e.g. "github", "gmail")
       --auth-config         Auth config ID (legacy flow)
       --user-id             User ID for the connection
+      --project-name        Use a developer project instead of the org consumer project
       --no-browser          Skip auto-opening the browser
 
   listen
@@ -81,7 +84,7 @@ BASIC COMMANDS
 
 ADVANCED COMMANDS
   generate    Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
-  manage      Manage Composio resources — toolkits, tools, accounts, triggers, logs, orgs, and projects.
+  manage      Developer/admin workflows: orgs, toolkits, triggers, auth configs, logs, and deprecated project commands.
 
 FLAGS
   -h, --help     Show help for command

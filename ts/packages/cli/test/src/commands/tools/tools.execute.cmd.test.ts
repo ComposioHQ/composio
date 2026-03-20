@@ -45,6 +45,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
     })
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
@@ -75,6 +76,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
     })
   )('[Given] composio execute alias [Then] works like composio manage tools execute', it => {
@@ -223,6 +225,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: false, data: '{"owner":"composio"}' },
     })
   )('[Given] stdin is piped [Then] reads input from stdin', it => {
@@ -242,6 +245,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         failWith: new ActionExecuteConnectedAccountNotFoundError({
@@ -268,7 +272,7 @@ describe('CLI: composio manage tools execute', () => {
 
         expect(output).toContain('No connected account found');
         expect(output).toContain('Tips');
-        expect(output).toContain('composio manage connected-accounts link');
+        expect(output).toContain('composio link');
       })
     );
   });
@@ -278,6 +282,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async () => {
@@ -311,7 +316,7 @@ describe('CLI: composio manage tools execute', () => {
 
         expect(output).toContain('No active connection');
         expect(output).toContain('Tips');
-        expect(output).toContain('composio manage connected-accounts link gmail');
+        expect(output).toContain('composio link gmail');
       })
     );
   });
@@ -319,6 +324,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolRouter: {
         execute: async (_sessionId, params) => ({
@@ -355,6 +361,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         failWith: {
@@ -388,6 +395,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         failWith: { error: { message: 'API error: invalid input' } },
@@ -420,6 +428,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         respondWith: {
@@ -460,6 +469,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         respondWith: {
@@ -501,6 +511,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         failWith: new ActionExecuteConnectedAccountNotFoundError({
@@ -671,6 +682,7 @@ describe('CLI: composio manage tools execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         respondWith: {

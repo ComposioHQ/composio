@@ -64,7 +64,6 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { CommandExecutor } from '@effect/platform';
-import { Option } from 'effect';
 
 export interface TestLiveInput {
   /**
@@ -257,6 +256,29 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
+    const originalFetch = globalThis.fetch.bind(globalThis);
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes('/api/v3/org/consumer/project/resolve')) {
+        const headers = new Headers(init?.headers);
+        const orgId = headers.get('x-org-id') ?? 'org_test';
+        return new Response(
+          JSON.stringify({
+            project_id: 'consumer_project_id_test',
+            project_nano_id: 'consumer_project_test',
+            project_name: 'Consumer Project',
+            org_id: orgId,
+            project_type: 'CONSUMER',
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      return originalFetch(input, init);
+    }) as typeof globalThis.fetch;
 
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
@@ -866,6 +888,17 @@ export const TestLayer = (input?: TestLiveInput) =>
     };
 
     const mockComposioClient = {
+      link: {
+        create: async (params: { auth_config_id: string; user_id: string }) => {
+          const response = connectedAccountsData.linkResponse ?? {
+            connected_account_id: 'con_test_link',
+            expires_at: '2026-12-31T23:59:59Z',
+            link_token: 'lt_test_token',
+            redirect_url: `https://app.composio.dev/link?token=lt_test_token`,
+          };
+          return response;
+        },
+      },
       toolkits: {
         retrieve: async (slug: string) => {
           const detailed = toolkitsData.detailedToolkits.find(
@@ -1019,11 +1052,9 @@ export const TestLayer = (input?: TestLiveInput) =>
       BunPath.layer,
       StdinTest,
       TerminalUILayer,
-      Layer.succeed(
-        ProjectContext,
-        new ProjectContext({
-          resolve: Effect.succeed(Option.none()),
-        })
+      Layer.provide(
+        ProjectContext.Default,
+        Layer.mergeAll(BunFileSystem.layer, NodeOsTest, NodeProcessTest)
       )
     ) satisfies RequiredLayer;
 

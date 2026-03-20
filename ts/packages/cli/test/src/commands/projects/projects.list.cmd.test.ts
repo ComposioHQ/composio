@@ -15,7 +15,7 @@ describe('CLI: composio manage projects list', () => {
   });
 
   layer(TestLive({ fixture: 'user-config-with-global-context' }))(it => {
-    it.scoped('[Then] lists projects, marks selected global project, and shows switch hints', () =>
+    it.scoped('[Then] lists developer projects and shows init guidance', () =>
       Effect.gen(function* () {
         const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
           mockFetchResponse({
@@ -38,14 +38,12 @@ describe('CLI: composio manage projects list', () => {
 
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('Loaded 2 projects');
-        expect(output).toContain('✓ Project One (project_1)');
+        expect(output).toContain('  Project One (project_1)');
         expect(output).toContain('  Project Two (project_2)');
         expect(output).toContain(
-          'Hint: run `composio manage projects switch` to switch the default global project.'
+          'Hint: run `composio init` in a directory to bind it to a developer project.'
         );
-        expect(output).toContain(
-          'Run `composio manage orgs switch` to switch org and project together.'
-        );
+        expect(output).toContain('Run `composio manage orgs switch` to change your default org.');
       })
     );
   });

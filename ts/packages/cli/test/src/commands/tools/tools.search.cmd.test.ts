@@ -345,10 +345,8 @@ describe('CLI: composio manage tools search', () => {
           expect(output).toContain('Plan:');
           expect(output).toContain('1. Collect recipient details');
           expect(output).toContain('Hints:');
-          expect(output).toContain('composio manage tools info "GMAIL_SEND_EMAIL"');
-          expect(output).toContain(
-            `composio manage tools execute "GMAIL_SEND_EMAIL" --user-id "<user-id>" --arguments '{}'`
-          );
+          expect(output).toContain('composio execute "GMAIL_SEND_EMAIL" --user-id "<user-id>"');
+          expect(output).toContain(`composio link <toolkit> --user-id "<user-id>"`);
         })
       );
     }
@@ -407,7 +405,7 @@ describe('CLI: composio manage tools search', () => {
 
           expect(message).toContain('Missing user id');
           expect(message).toContain('--user-id');
-          expect(message).toContain('composio init');
+          expect(message).toContain('composio login');
         })
       );
     }
