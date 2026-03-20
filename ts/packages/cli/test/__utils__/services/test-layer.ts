@@ -199,6 +199,54 @@ export interface TestLiveInput {
 
 type RequiredLayer = Layer.Layer<any, any, never>;
 
+const ConsumerProjectResolveFetchMock = Layer.scopedDiscard(
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      const originalFetch = globalThis.fetch;
+
+      globalThis.fetch = (async (requestInput: RequestInfo | URL, init?: RequestInit) => {
+        const url =
+          typeof requestInput === 'string'
+            ? requestInput
+            : requestInput instanceof URL
+              ? requestInput.toString()
+              : requestInput.url;
+
+        if (url.includes('/api/v3/org/consumer/project/resolve')) {
+          const headers = new Headers(
+            requestInput instanceof Request ? requestInput.headers : undefined
+          );
+          new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
+
+          const orgId = headers.get('x-org-id') ?? 'org_test';
+          return new Response(
+            JSON.stringify({
+              project_id: 'consumer_project_id_test',
+              project_nano_id: 'consumer_project_test',
+              project_name: 'Consumer Project',
+              org_id: orgId,
+              project_type: 'CONSUMER',
+              consumer_user_id: `consumer-user-${orgId}`,
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        return originalFetch(requestInput, init);
+      }) as typeof globalThis.fetch;
+
+      return originalFetch;
+    }),
+    originalFetch =>
+      Effect.sync(() => {
+        globalThis.fetch = originalFetch;
+      })
+  )
+);
+
 /**
  * Effect layer that injects all the services needed for tests, using mocks to avoid
  * side-effects like unwanted HTTP requests to remote services.
@@ -256,30 +304,6 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const tempDir = tempy.temporaryDirectory({ prefix: 'test' });
     const cwd = (yield* setupFixtureFolder({ fixture, tempDir })) ?? tempDir;
-    const originalFetch = globalThis.fetch.bind(globalThis);
-    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url =
-        typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-      if (url.includes('/api/v3/org/consumer/project/resolve')) {
-        const headers = new Headers(init?.headers);
-        const orgId = headers.get('x-org-id') ?? 'org_test';
-        return new Response(
-          JSON.stringify({
-            project_id: 'consumer_project_id_test',
-            project_nano_id: 'consumer_project_test',
-            project_name: 'Consumer Project',
-            org_id: orgId,
-            project_type: 'CONSUMER',
-            consumer_user_id: `consumer-user-${orgId}`,
-          }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-      return originalFetch(input, init);
-    }) as typeof globalThis.fetch;
 
     const ComposioToolkitsRepositoryTest = Layer.succeed(
       ComposioToolkitsRepository,
@@ -1051,6 +1075,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       BunContext.layer,
       MockTerminal.layer,
       BunPath.layer,
+      ConsumerProjectResolveFetchMock,
       StdinTest,
       TerminalUILayer,
       Layer.provide(

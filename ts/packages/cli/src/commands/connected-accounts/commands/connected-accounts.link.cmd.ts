@@ -120,6 +120,31 @@ const waitForActiveConnection = (
     );
   });
 
+const validateLinkResponse = (
+  ui: TerminalUI,
+  linkResponse: {
+    connected_account_id?: string | null;
+    redirect_url?: string | null;
+  }
+) =>
+  Effect.gen(function* () {
+    const connectedAccountId = linkResponse.connected_account_id;
+    const redirectUrl = linkResponse.redirect_url;
+
+    if (!connectedAccountId || !redirectUrl) {
+      yield* ui.log.error(
+        'The API returned an incomplete link response (missing connected_account_id or redirect_url).'
+      );
+      yield* Effect.logDebug('Link response:', linkResponse);
+      return Option.none();
+    }
+
+    return Option.some({
+      connectedAccountId,
+      redirectUrl,
+    });
+  });
+
 const runConnectedAccountsLink = (params: {
   toolkit: Option.Option<string>;
   authConfig: Option.Option<string>;
@@ -230,7 +255,10 @@ const runConnectedAccountsLink = (params: {
 
       if (Option.isNone(linkOpt)) return;
 
-      const { connected_account_id: connId, redirect_url: redirectUrl } = linkOpt.value;
+      const validatedLink = yield* validateLinkResponse(ui, linkOpt.value);
+      if (Option.isNone(validatedLink)) return;
+
+      const { connectedAccountId: connId, redirectUrl } = validatedLink.value;
       if (params.noWait) {
         yield* ui.note(redirectUrl, 'Redirect URL');
         yield* ui.output(
@@ -304,14 +332,10 @@ const runConnectedAccountsLink = (params: {
 
     if (Option.isNone(linkOpt)) return;
 
-    const { connected_account_id: connAccountId, redirect_url: redirectUrl } = linkOpt.value;
-    if (!connAccountId || !redirectUrl) {
-      yield* ui.log.error(
-        'The API returned an incomplete link response (missing connected_account_id or redirect_url).'
-      );
-      yield* Effect.logDebug('Link response:', linkOpt.value);
-      return;
-    }
+    const validatedLink = yield* validateLinkResponse(ui, linkOpt.value);
+    if (Option.isNone(validatedLink)) return;
+
+    const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
 
     if (params.noWait) {
       yield* ui.note(redirectUrl, 'Redirect URL');

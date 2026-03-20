@@ -35,7 +35,7 @@
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
-    "build": "bun run --bun tsdown",
+    "build": "pnpm exec tsdown",
     "bin": "./dist/composio",
     "test": "vitest run",
     "prepublishOnly": "pnpm run build && pnpm run build:binary",

@@ -1,5 +1,9 @@
 import type { UserConfig, OutExtensionContext } from 'tsdown';
 
+// Turbo task execution triggers a tsdown ATTW tarball path bug for scoped packages.
+// Keep ATTW for direct package builds, but disable it for workspace builds.
+const isTurboTask = Boolean(process.env.TURBO_HASH);
+
 /**
  * tsdown config with shared defaults.
  * Package-specific options (e.g., entry, outDir, outExtensions) can be overridden by the caller.
@@ -77,7 +81,7 @@ export const baseConfig = {
    */
   attw: {
     entrypoints: ['.'],
-    enabled: true,
+    enabled: !isTurboTask,
     level: 'error',
     profile: 'node16',
     ignoreRules: [/* Node.js 10 only, attw doesn't automatically exclude it despite the selected profile */ 'internal-resolution-error'],

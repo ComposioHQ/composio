@@ -29,6 +29,16 @@ const connectedAccountsData = {
   items: testConnectedAccounts,
 } satisfies TestLiveInput['connectedAccountsData'];
 
+const incompleteConnectedAccountsData = {
+  items: testConnectedAccounts,
+  linkResponse: {
+    connected_account_id: '',
+    expires_at: '2026-12-31T23:59:59Z',
+    link_token: 'lt_test_token',
+    redirect_url: '',
+  },
+} satisfies TestLiveInput['connectedAccountsData'];
+
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
@@ -197,6 +207,38 @@ describe('CLI: composio manage connected-accounts link', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: incompleteConnectedAccountsData,
+      fixture: 'global-test-user-id',
+    })
+  )(
+    '[Given] auth-config link returns an incomplete response [Then] logs an error and exits early',
+    it => {
+      it.scoped('reports the incomplete response instead of waiting with empty values', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'manage',
+            'connected-accounts',
+            'link',
+            '--auth-config',
+            'ac_gmail_oauth',
+            '--user-id',
+            'default',
+            '--no-browser',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('The API returned an incomplete link response');
+          expect(output).not.toContain('"status"');
+          expect(output).not.toContain('Connection successful');
+        })
+      );
+    }
+  );
 
   layer(
     TestLive({
