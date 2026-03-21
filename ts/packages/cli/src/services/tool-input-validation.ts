@@ -7,7 +7,6 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 
 const TOOL_DEFINITIONS_DIR = 'tool_definitions';
-const toolDebugEnabled = process.env.COMPOSIO_TOOL_DEBUG === '1';
 
 type CachedToolInputDefinition = {
   readonly version: string | null;
@@ -66,7 +65,7 @@ const resolveLatestAvailableVersion = (params: {
 };
 
 const toolDebugLog = (label: string, details: Record<string, unknown>) => {
-  if (!toolDebugEnabled) return;
+  if (process.env.COMPOSIO_TOOL_DEBUG !== '1') return;
   console.error(`[tool-debug] ${JSON.stringify({ label, ...details })}`);
 };
 
