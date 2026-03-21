@@ -1,5 +1,4 @@
 import { Args, Command, Options } from '@effect/cli';
-import { createHash, randomBytes } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import util from 'node:util';
@@ -33,7 +32,6 @@ import {
   extractMessage,
   extractSlug,
 } from 'src/utils/api-error-extraction';
-import { bold } from 'src/ui/colors';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { formatToolInputParameters } from '../format';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -133,28 +131,24 @@ const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
 
 const connectionTips = (toolSlug: string, surface: 'root' | 'manage' | 'dev') => {
   const toolkit = toolkitFromToolSlug(toolSlug);
+  const executeStep =
+    surface === 'dev'
+      ? commandHintStep('Retry', 'dev.execute', {
+          slug: toolSlug,
+          userId: '<user-id>',
+          data: '...',
+        })
+      : commandHintStep('Retry', 'root.execute', { slug: toolSlug, data: '...' });
   if (!toolkit) {
-    return commandHintStep(
-      'Retry',
-      surface === 'root' ? 'root.execute' : 'dev.execute',
-      surface === 'root'
-        ? { slug: toolSlug, data: '...' }
-        : { slug: toolSlug, userId: '<user-id>', data: '...' }
-    );
+    return executeStep;
   }
   return [
     commandHintStep(
       'Link the toolkit first',
-      surface === 'root' ? 'root.link' : 'manage.connectedAccounts.link',
-      surface === 'root' ? { toolkit } : { toolkit, userId: '<user-id>' }
+      surface === 'dev' ? 'manage.connectedAccounts.link' : 'root.link',
+      surface === 'dev' ? { toolkit, userId: '<user-id>' } : { toolkit }
     ),
-    commandHintStep(
-      'Then retry',
-      surface === 'root' ? 'root.execute' : 'dev.execute',
-      surface === 'root'
-        ? { slug: toolSlug, data: '...' }
-        : { slug: toolSlug, userId: '<user-id>', data: '...' }
-    ),
+    executeStep.replace('Retry:', 'Then retry:'),
   ].join('\n');
 };
 
@@ -191,7 +185,14 @@ const redactRequestId = (value: object): object => {
 };
 
 const EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD = 10_000;
-const executeOutputEncoder = encodingForModel('gpt-4o');
+let executeOutputEncoder: ReturnType<typeof encodingForModel> | undefined;
+
+const getExecuteOutputEncoder = () => {
+  if (!executeOutputEncoder) {
+    executeOutputEncoder = encodingForModel('gpt-4o');
+  }
+  return executeOutputEncoder;
+};
 
 type StoredExecuteOutputSummary = {
   readonly successful: true;
@@ -205,9 +206,11 @@ type StoredExecuteOutputSummary = {
 const serializeExecuteOutput = (result: unknown): string =>
   JSON.stringify(result, ciRedactReplacer, 2);
 
+const randomToken = (length = 16) => crypto.randomUUID().replace(/-/g, '').slice(0, length);
+
 const persistLargeExecuteOutput = (json: string): StoredExecuteOutputSummary => {
-  const directoryPath = path.join('/tmp/composio', randomBytes(8).toString('hex'));
-  const outputHash = createHash('sha256').update(json).digest('hex').slice(0, 16);
+  const directoryPath = path.join('/tmp/composio', randomToken());
+  const outputHash = randomToken();
   const outputFilePath = path.join(directoryPath, `output-${outputHash}.json`);
   fs.mkdirSync(directoryPath, { recursive: true });
   fs.writeFileSync(outputFilePath, json, 'utf8');
@@ -217,7 +220,7 @@ const persistLargeExecuteOutput = (json: string): StoredExecuteOutputSummary => 
     error: null,
     logId: '',
     storedInFile: true,
-    tokenCount: executeOutputEncoder.encode(json).length,
+    tokenCount: getExecuteOutputEncoder().encode(json).length,
     outputFilePath,
   };
 };
@@ -241,7 +244,7 @@ const toolDebugLog = (label: string, details: Record<string, unknown> = {}) => {
 
 const prepareExecuteOutput = (result: ToolExecuteResponse) => {
   const json = serializeExecuteOutput(result);
-  const tokenCount = executeOutputEncoder.encode(json).length;
+  const tokenCount = getExecuteOutputEncoder().encode(json).length;
   if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
     return {
       kind: 'inline' as const,
@@ -397,6 +400,33 @@ type DryRunSummary = {
   readonly schemaVersion?: string | null;
 };
 
+const emitCachedSchema = (
+  ui: TerminalUI,
+  slug: string,
+  definition: {
+    readonly version: string | null;
+    readonly schemaPath: string;
+    readonly schema: Record<string, unknown>;
+  }
+) =>
+  Effect.gen(function* () {
+    yield* ui.log.message(
+      `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
+    );
+    yield* ui.output(
+      JSON.stringify(
+        {
+          slug,
+          version: definition.version,
+          schemaPath: definition.schemaPath,
+          inputSchema: definition.schema,
+        },
+        null,
+        2
+      )
+    );
+  });
+
 const runToolsExecute = (params: {
   slug: string;
   data: Option.Option<string>;
@@ -413,24 +443,14 @@ const runToolsExecute = (params: {
     }
     if (!(yield* requireAuth)) return;
 
+    const resolvedProject = yield* resolveCommandProject({
+      mode: params.projectMode,
+      projectName: params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
+    }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const ui = yield* TerminalUI;
     if (params.getSchema) {
       const definition = yield* getOrFetchToolInputDefinition(params.slug);
-      yield* ui.log.message(
-        `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
-      );
-      yield* ui.output(
-        JSON.stringify(
-          {
-            slug: params.slug,
-            version: definition.version,
-            schemaPath: definition.schemaPath,
-            inputSchema: definition.schema,
-          },
-          null,
-          2
-        )
-      );
+      yield* emitCachedSchema(ui, params.slug, definition);
       return;
     }
 
@@ -441,10 +461,6 @@ const runToolsExecute = (params: {
 
     const input = yield* resolveInput(params.data);
     const args = yield* parseArguments(input);
-    const resolvedProject = yield* resolveCommandProject({
-      mode: params.projectMode,
-      projectName: params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catchAll(() => Effect.succeed(Option.none()))
     );
@@ -622,15 +638,9 @@ const runToolsExecute = (params: {
         if (awaitCachedValidationDecision) {
           const decision = yield* awaitCachedValidationDecision;
           if (decision.status === 'fail') {
-            yield* spinner.error();
-            const summary = yield* handleExecutionError(ui, decision.error, {
-              toolSlug: params.slug,
-              surface: params.surface,
+            perfDebugLog('execute.validation.post_success_failure_ignored', {
+              slug: params.slug,
             });
-            yield* ui.output(
-              JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
-            );
-            return yield* Effect.fail(new ToolExecutionError(summary.error));
           }
         }
 
