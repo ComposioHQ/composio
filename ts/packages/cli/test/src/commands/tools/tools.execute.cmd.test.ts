@@ -41,9 +41,19 @@ describe('CLI: composio manage tools execute', () => {
   beforeEach(() => {
     savedCI = process.env.CI;
     delete process.env.CI;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ tool_slug: 'GMAIL_SEND_EMAIL', version: '20260115_00' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+    );
   });
   afterEach(() => {
     if (savedCI !== undefined) process.env.CI = savedCI;
+    vi.unstubAllGlobals();
   });
 
   layer(
@@ -193,8 +203,14 @@ describe('CLI: composio manage tools execute', () => {
       } satisfies TestLiveInput['toolkitsData'],
     })
   )('[Given] a placeholder tool version [Then] it stores the toolkit latest version instead', it => {
-    it.scoped('prefers toolkit latest version over 00000000_00', () =>
+    it.scoped('prefers latest version endpoint over 00000000_00 tool metadata', () =>
       Effect.gen(function* () {
+        vi.mocked(fetch).mockResolvedValueOnce(
+          new Response(JSON.stringify({ tool_slug: 'GMAIL_SEND_EMAIL', version: '20260316_00' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        );
         const definition = yield* getOrFetchToolInputDefinition('GMAIL_SEND_EMAIL');
         const raw = fs.readFileSync(definition.schemaPath, 'utf8');
         const parsed = JSON.parse(raw) as {
@@ -203,6 +219,15 @@ describe('CLI: composio manage tools execute', () => {
         };
 
         expect(parsed.version).toBe('20260316_00');
+        expect(fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/api/v3/tools/GMAIL_SEND_EMAIL/get_latest_version'),
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.objectContaining({
+              'x-user-api-key': 'test_api_key',
+            }),
+          })
+        );
       })
     );
   });
@@ -270,6 +295,12 @@ describe('CLI: composio manage tools execute', () => {
   )('[Given] a stale cached schema [Then] it does not block execution and refreshes the cache', it => {
     it.scoped('uses tool execution instead of stale validation failure', () =>
       Effect.gen(function* () {
+        vi.mocked(fetch).mockResolvedValueOnce(
+          new Response(JSON.stringify({ tool_slug: 'GMAIL_SEND_EMAIL', version: '20260115_00' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        );
         const cacheDir = yield* setupCacheDir;
         const schemaPath = `${cacheDir}/tool_definitions/GMAIL_SEND_EMAIL.json`;
         fs.mkdirSync(`${cacheDir}/tool_definitions`, { recursive: true });
