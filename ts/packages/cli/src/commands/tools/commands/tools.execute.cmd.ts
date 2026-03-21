@@ -414,8 +414,15 @@ const runToolsExecute = (params: {
     if (!(yield* requireAuth)) return;
 
     const ui = yield* TerminalUI;
+    const resolvedProject = yield* resolveCommandProject({
+      mode: params.projectMode,
+      projectName: params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
+    }).pipe(Effect.mapError(formatResolveCommandProjectError));
     if (params.getSchema) {
-      const definition = yield* getOrFetchToolInputDefinition(params.slug);
+      const definition = yield* getOrFetchToolInputDefinition(params.slug, {
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
+      });
       yield* ui.log.message(
         `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
       );
@@ -441,10 +448,6 @@ const runToolsExecute = (params: {
 
     const input = yield* resolveInput(params.data);
     const args = yield* parseArguments(input);
-    const resolvedProject = yield* resolveCommandProject({
-      mode: params.projectMode,
-      projectName: params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catchAll(() => Effect.succeed(Option.none()))
     );
@@ -500,7 +503,11 @@ const runToolsExecute = (params: {
       const versionCheckFiber = yield* refreshToolInputDefinitionIfVersionChanged(
         params.slug,
         cachedDefinition.version,
-        cachedDefinition.versionCheckedAt
+        cachedDefinition.versionCheckedAt,
+        {
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        }
       )
         .pipe(
           Effect.tap(result =>
@@ -576,7 +583,12 @@ const runToolsExecute = (params: {
         }
 
         if (params.dryRun) {
-          const definition = cachedDefinition ?? (yield* getOrFetchToolInputDefinition(params.slug));
+          const definition =
+            cachedDefinition ??
+            (yield* getOrFetchToolInputDefinition(params.slug, {
+              orgId: resolvedProject.orgId,
+              projectId: resolvedProject.projectId,
+            }));
           yield* validateToolInputArgumentsWithDefinition(params.slug, args, definition);
           const summary: DryRunSummary = {
             successful: true,
