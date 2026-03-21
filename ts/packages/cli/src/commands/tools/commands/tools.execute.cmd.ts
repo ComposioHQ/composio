@@ -438,9 +438,6 @@ const runToolsExecute = (params: {
   dryRun: boolean;
 }) =>
   Effect.gen(function* () {
-    if (process.env.COMPOSIO_PERF_DEBUG === '1') {
-      process.env.COMPOSIO_PERF_DEBUG = '1';
-    }
     if (!(yield* requireAuth)) return;
 
     const resolvedProject = yield* resolveCommandProject({

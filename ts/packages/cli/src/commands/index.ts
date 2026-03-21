@@ -151,8 +151,8 @@ const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
   return (
     (args.length === 1 && (args[0] === '--generate-graph' || args[0] === 'generate-graph')) ||
     (args.length === 2 && args[0] === 'debug' && args[1] === 'generate-graph') ||
-    (argv[1] === '--generate-graph') ||
-    (argv[1] === 'debug' && argv[2] === 'generate-graph')
+    (args[0] === '--generate-graph') ||
+    (args[0] === 'debug' && args[1] === 'generate-graph')
   );
 };
 
