@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { Effect } from 'effect';
 import { Command } from '@effect/cli';
 import * as constants from 'src/constants';
@@ -8,16 +9,18 @@ import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
 import { logoutCmd } from './logout.cmd';
+import { runCmd } from './run.cmd';
 import { installCmd } from './install.cmd';
-import { initCmd } from './init.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { manageCmd } from './manage/manage.cmd';
+import { devCmd } from './dev.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
 import { printRootHelp } from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
+import { rootToolsCmd } from './tools/tools.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
-import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
+import { renderCommandHintGraph } from 'src/services/command-hints';
 
 const $cmd = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -26,12 +29,13 @@ const $cmd = $defaultCmd.pipe(
     whoamiCmd,
     loginCmd,
     logoutCmd,
+    runCmd,
     installCmd,
-    initCmd,
+    devCmd,
+    rootToolsCmd,
     rootToolsCmd$Search,
     rootConnectedAccountsCmd$Link,
     rootToolsCmd$Execute,
-    triggersCmd$Listen,
     generateCmd,
     manageCmd,
   ])
@@ -102,9 +106,54 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
   return argv;
 };
 
+const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const normalized: string[] = [...argv.slice(0, 2)];
+  const args = argv.slice(2);
+
+  for (const arg of args) {
+    if (arg === '--perf-debug') {
+      process.env.COMPOSIO_PERF_DEBUG = '1';
+      continue;
+    }
+    if (arg === '--tool-debug') {
+      process.env.COMPOSIO_TOOL_DEBUG = '1';
+      continue;
+    }
+    if (arg === '--perf-debug=false') {
+      process.env.COMPOSIO_PERF_DEBUG = '0';
+      continue;
+    }
+    if (arg === '--tool-debug=false') {
+      process.env.COMPOSIO_TOOL_DEBUG = '0';
+      continue;
+    }
+    if (arg === '--perf-debug=true') {
+      process.env.COMPOSIO_PERF_DEBUG = '1';
+      continue;
+    }
+    if (arg === '--tool-debug=true') {
+      process.env.COMPOSIO_TOOL_DEBUG = '1';
+      continue;
+    }
+    normalized.push(arg);
+  }
+
+  return normalized;
+};
+
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
   return args.length === 1 && (args[0] === '--help' || args[0] === '-h');
+};
+
+const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
+  const args = argv.slice(2);
+  return (
+    (args.length === 1 && (args[0] === '--generate-graph' || args[0] === 'generate-graph')) ||
+    (args.length === 2 && args[0] === 'debug' && args[1] === 'generate-graph') ||
+    (argv[1] === '--generate-graph') ||
+    (argv[1] === 'debug' && argv[2] === 'generate-graph')
+  );
 };
 
 export const runWithConfig = Effect.gen(function* () {
@@ -116,9 +165,14 @@ export const runWithConfig = Effect.gen(function* () {
   });
 
   return (argv: ReadonlyArray<string>) => {
-    const normalizedArgv = normalizeVersionShortFlag(argv);
+    const normalizedArgv = normalizeHiddenDebugFlags(normalizeVersionShortFlag(argv));
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp();
+    }
+    if (isGenerateGraph(normalizedArgv)) {
+      return Effect.sync(() => {
+        process.stdout.write(`${JSON.stringify(renderCommandHintGraph(), null, 2)}\n`);
+      });
     }
     const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
     if (executeHelpSlug) {

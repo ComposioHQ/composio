@@ -83,7 +83,7 @@ export const toolkitsCmd$List = Command.make(
 
       if (Option.isSome(connected) && Option.isNone(resolvedUserId)) {
         yield* ui.log.warn(
-          '`--connected` requires a user id. Use `--user-id` or run `composio init`.'
+          '`--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
         );
       }
 

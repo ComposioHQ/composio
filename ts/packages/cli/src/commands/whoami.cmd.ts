@@ -2,6 +2,7 @@ import { Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { commandHintStep } from 'src/services/command-hints';
 
 /**
  * CLI command to display your account information.
@@ -36,8 +37,8 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               );
               yield* ui.log.step(
                 [
-                  'To switch orgs:\n> composio manage orgs switch',
-                  'To get API keys:\n> composio init (in your project)',
+                  commandHintStep('To switch orgs', 'manage.orgs.switch'),
+                  commandHintStep('To set up developer project context', 'dev.init'),
                 ].join('\n\n')
               );
               yield* ui.output(

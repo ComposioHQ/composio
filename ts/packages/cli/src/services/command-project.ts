@@ -134,11 +134,13 @@ export const formatResolveCommandProjectError = (error: unknown): Error => {
     );
   }
   if (error instanceof MissingDeveloperProjectError) {
-    return new Error('No developer project configured for this directory. Run `composio init`.');
+    return new Error(
+      'No developer project configured for this directory. Run `composio dev init`.'
+    );
   }
   if (error instanceof DeveloperProjectNotFoundError) {
     return new Error(
-      `Developer project "${error.projectName}" was not found in org "${error.orgId}". Run \`composio init\` or \`composio manage projects list\`.`
+      `Developer project "${error.projectName}" was not found in org "${error.orgId}". Run \`composio dev init\` or \`composio manage projects list\`.`
     );
   }
   if (error instanceof AmbiguousDeveloperProjectNameError) {

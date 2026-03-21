@@ -80,6 +80,7 @@
     "decompress": "^4.2.1",
     "effect": "catalog:",
     "indent-string": "^5.0.0",
+    "js-tiktoken": "^1.0.21",
     "open": "^10.2.0",
     "openapi-typescript": "^7.8.0",
     "picocolors": "^1.1.1",

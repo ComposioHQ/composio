@@ -2,7 +2,9 @@
 
 exports[`CLI: composio > [Given] --help flag [Then] prints help message 1`] = `
 "
-Connect AI agents to external tools. \`search\`, \`link\`, and \`execute\` use your org consumer project by default. \`init\`, \`listen\`, and \`manage\` use developer project context.
+Connect AI agents to external tools. \`search\`, \`link\`, \`execute\`, and \`run\` let you take actions across 1000+ apps directly; if you can describe it, it is probably supported.
+Try \`execute\` sooner than you'd think. It parses inputs, validates them against cached schemas when available, and will usually tell you whether you need to fix arguments, inspect schema, or \`link\` an account.
+Use \`dev\` when you are building with Composio and want scaffolding, playground execution, triggers, and logs.
 
 USAGE
   composio <command> [options]
@@ -33,27 +35,37 @@ BASIC COMMANDS
     Log out from the Composio CLI session.
     Usage: composio logout
 
-  init
-    Initialize this directory with a developer project.
-    Usage: composio init [--no-browser] [-y, --yes]
+  run
+    Run inline ESNext TS/JS code or a file with Bun and injected Composio helpers.
+    Usage: composio run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]
     Options:
-      --no-browser          Skip opening browser for auth
-      -y, --yes             Auto-select the default developer project
+      <code>                Inline Bun ESNext code with injected execute(slug, data?) and search(query, options?) helpers
+      -f, --file            Run a TS/JS file with the Bun runtime instead of inline code
+      --dry-run             Preview execute(...) calls without running remote actions
 
   search
-    Search tools by use case across toolkits/apps.
+    Semantically search tools by use case across all toolkits/apps.
     Usage: composio search <query> [--toolkits text] [--limit integer]
     Options:
       <query>               Semantic use-case query (e.g. "send emails")
       --toolkits            Filter by toolkit slugs, comma-separated
       --limit               Number of results per page (1-1000)
 
+  tools
+    List tools for one toolkit, or inspect a cached schema-backed summary.
+    Usage: composio tools list <toolkit> [--query text] | tools info <slug>
+    Options:
+      list <toolkit>        Non-semantic per-toolkit listing; use this when you already know the toolkit
+      info <slug>           Print a brief summary and cache the same raw schema used by execute --get-schema
+
   execute
-    Execute a tool.
-    Usage: composio execute <slug> [-d, --data text]
+    Execute a tool, preview it with --dry-run, or fetch its input schema.
+    Usage: composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]
     Options:
       <slug>                Tool slug (e.g. "GITHUB_CREATE_ISSUE")
-      -d, --data            JSON arguments, @file, or - for stdin
+      -d, --data            JSON or JS-style object arguments, e.g. -d '{ repo: "foo" }', @file, or - for stdin
+      --dry-run             Validate and preview the tool call without executing it
+      --get-schema          Fetch and print the raw cached schema; tools info shows the same schema with a brief summary
 
   link
     Connect a user account for a toolkit/app.
@@ -62,22 +74,10 @@ BASIC COMMANDS
       <toolkit>             Toolkit slug to link (e.g. "github", "gmail")
       --no-browser          Skip auto-opening the browser
 
-  listen
-    Listen for trigger events.
-    Usage: composio listen [--toolkits text] [--trigger-id text] [--user-id text] [--max-events integer] [--forward text] [--out text]
-    Options:
-      --toolkits            Filter by toolkit slugs, comma-separated
-      --trigger-id          Filter by trigger id
-      --user-id             Filter by user id
-      --max-events          Stop after N matching events
-      --forward             Forward events to URL (signed with COMPOSIO_WEBHOOK_SECRET)
-      --out                 Append events to file
-      --json                Show raw event payload as JSON
-      --table               Show compact table rows
-
 ADVANCED COMMANDS
+  dev         Developer workflows: init a local project, execute tools with playground users, listen for triggers, and inspect logs.
   generate    Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
-  manage      Developer/admin workflows: orgs, toolkits, triggers, auth configs, logs, and deprecated project commands.
+  manage      Manage your developer orgs, toolkits, connected accounts, triggers, auth configs, and projects.
 
 FLAGS
   -h, --help     Show help for command

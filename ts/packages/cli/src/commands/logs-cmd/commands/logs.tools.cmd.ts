@@ -6,6 +6,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
+import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
 
 type ToolLogFilterInput = {
@@ -223,7 +224,9 @@ export const logsCmd$Tools = Command.make(
       const firstLogId = logs[0]?.id;
       if (firstLogId) {
         yield* ui.log.step(
-          `To view full details for a log:\n> composio manage logs tools "${firstLogId}"`
+          commandHintStep('To view full details for a log', 'dev.logs.tools', {
+            logId: firstLogId,
+          })
         );
       }
 

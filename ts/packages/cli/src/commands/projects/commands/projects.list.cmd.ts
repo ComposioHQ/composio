@@ -54,7 +54,7 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
     if (projects.data.length === 0) {
       yield* ui.log.warn('No projects found.');
       yield* ui.outro(
-        'Hint: run `composio init` in a directory to bind it to a developer project.'
+        'Hint: run `composio dev init` in a directory to bind it to a developer project.'
       );
       return;
     }
@@ -65,7 +65,7 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
     yield* ui.log.step(lines.join('\n'));
     yield* ui.outro(
       [
-        'Hint: run `composio init` in a directory to bind it to a developer project.',
+        'Hint: run `composio dev init` in a directory to bind it to a developer project.',
         'Run `composio manage orgs switch` to change your default org.',
       ].join('\n')
     );
