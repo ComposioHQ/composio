@@ -8,7 +8,7 @@ export const projectsCmd$Switch = Command.make('switch', {}).pipe(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       yield* ui.log.error(
-        'Global developer project switching is no longer supported. Run `composio init` in a directory to bind it to a developer project.'
+        'Global developer project switching is no longer supported. Run `composio dev init` in a directory to bind it to a developer project.'
       );
     })
   )

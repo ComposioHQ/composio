@@ -340,4 +340,8 @@ export const triggersCmd$Listen = Command.make(
       yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
       yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
     })
-).pipe(Command.withDescription('Listen to realtime trigger events for your project.'));
+).pipe(
+  Command.withDescription(
+    'Listen to realtime trigger events for your developer project and optionally forward them into your local dev environment.'
+  )
+);

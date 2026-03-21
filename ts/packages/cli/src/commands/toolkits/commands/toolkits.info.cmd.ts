@@ -163,7 +163,7 @@ export const toolkitsCmd$Info = Command.make(
 
       // Next step hint
       yield* ui.log.step(
-        `To list tools in this toolkit:\n> composio manage tools list --toolkits "${toolkit.slug}"`
+        `To list tools in this toolkit:\n> composio tools list "${toolkit.slug}"`
       );
 
       yield* ui.output(formatToolkitInfoJson(toolkit, detailedToolkit, allDetails));

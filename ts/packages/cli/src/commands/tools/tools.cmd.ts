@@ -9,10 +9,15 @@ import { toolsCmd$Execute } from './commands/tools.execute.cmd';
  *
  * @example
  * ```bash
- * composio manage tools <command>
+ * composio tools <command>
  * ```
  */
 export const toolsCmd = Command.make('tools').pipe(
-  Command.withDescription('Discover and inspect Composio tools.'),
+  Command.withDescription('Legacy tool namespace for discovery and inspection.'),
   Command.withSubcommands([toolsCmd$List, toolsCmd$Info, toolsCmd$Search, toolsCmd$Execute])
+);
+
+export const rootToolsCmd = Command.make('tools').pipe(
+  Command.withDescription('Browse and inspect tools before executing them.'),
+  Command.withSubcommands([toolsCmd$List, toolsCmd$Info])
 );

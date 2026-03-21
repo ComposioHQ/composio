@@ -206,12 +206,14 @@ const runConnectedAccountsLink = (params: {
       });
       if (Option.isNone(resolvedUserId)) {
         return yield* Effect.fail(
-          new Error('Missing user id. Provide --user-id or run composio init to set test_user_id.')
+          new Error(
+            'Missing user id. Provide --user-id or run composio dev init to set test_user_id.'
+          )
         );
       }
       if (Option.isNone(params.projectName) && Option.isNone(resolvedProjectContext)) {
         yield* ui.log.error(
-          '`--auth-config` is developer-project scoped. Pass `--project-name <name>` or run from a directory initialized with `composio init`.'
+          '`--auth-config` is developer-project scoped. Pass `--project-name <name>` or run from a directory initialized with `composio dev init`.'
         );
         return;
       }

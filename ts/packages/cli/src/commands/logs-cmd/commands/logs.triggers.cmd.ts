@@ -6,6 +6,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
+import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
 
 const cursor = Options.text('cursor').pipe(
@@ -193,7 +194,9 @@ export const logsCmd$Triggers = Command.make(
       const firstLogId = logs[0]?.id;
       if (firstLogId) {
         yield* ui.log.step(
-          `To view full details for a log:\n> composio manage logs triggers "${firstLogId}"`
+          commandHintStep('To view full details for a log', 'dev.logs.triggers', {
+            logId: firstLogId,
+          })
         );
       }
 
