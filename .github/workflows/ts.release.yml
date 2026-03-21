@@ -66,8 +66,7 @@ jobs:
               fi
             fi
             if [ -n "$SLACK_VERSIONS" ]; then
-              SLACK_VERSIONS="$SLACK_VERSIONS
-$VERSION_LINE"
+              SLACK_VERSIONS="${SLACK_VERSIONS}"$'\n'"${VERSION_LINE}"
             else
               SLACK_VERSIONS="$VERSION_LINE"
             fi
