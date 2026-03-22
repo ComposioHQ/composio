@@ -1,6 +1,9 @@
 import logger from './logger';
 import { IS_DEVELOPMENT_OR_CI } from './constants';
 import semver from 'semver';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { readFileSync, writeFileSync } from 'fs';
 
 /**
  * Compares two semantic versions and returns true if the first version is newer than the second.
@@ -19,9 +22,40 @@ export function isNewerVersion(version1: string, version2: string): boolean {
   return false;
 }
 
+const VERSION_CACHE_FILE = join(tmpdir(), 'composio-version-cache.json');
+const VERSION_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const VERSION_FETCH_TIMEOUT_MS = 5000;
+
+interface VersionCache {
+  version: string;
+  timestamp: number;
+}
+
+function readVersionCache(): VersionCache | null {
+  try {
+    const raw = readFileSync(VERSION_CACHE_FILE, 'utf-8');
+    const cache = JSON.parse(raw) as VersionCache;
+    if (cache && typeof cache.version === 'string' && typeof cache.timestamp === 'number') {
+      return cache;
+    }
+  } catch {
+    // Cache doesn't exist or is malformed
+  }
+  return null;
+}
+
+function writeVersionCache(version: string): void {
+  try {
+    writeFileSync(VERSION_CACHE_FILE, JSON.stringify({ version, timestamp: Date.now() }));
+  } catch {
+    // Ignore write errors (e.g., permission issues)
+  }
+}
+
 /**
  * Checks for the latest version of the Composio SDK from NPM.
  * If a newer version is available, it logs a warning to the console.
+ * Uses a file-based cache to avoid hitting the npm registry on every init.
  */
 export async function checkForLatestVersionFromNPM(currentVersion: string) {
   try {
@@ -42,10 +76,24 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
       return;
     }
 
-    // @TODO: Check if fetch is available, if not use node-fetch
-    const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`);
+    // Check file-based cache first
+    const cache = readVersionCache();
+    if (cache && Date.now() - cache.timestamp < VERSION_CACHE_TTL_MS) {
+      if (semver.gt(cache.version, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
+        logger.info(
+          `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${cache.version}.`
+        );
+      }
+      return;
+    }
+
+    const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
+      signal: AbortSignal.timeout(VERSION_FETCH_TIMEOUT_MS),
+    });
     const data = await response.json();
     const latestVersion = data.version;
+
+    writeVersionCache(latestVersion);
 
     if (semver.gt(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
       logger.info(

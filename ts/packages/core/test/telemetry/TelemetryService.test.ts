@@ -319,7 +319,9 @@ describe('TelemetryTransport', () => {
     vi.restoreAllMocks();
   });
 
-  it('should send SDK_INITIALIZED metric on setup', () => {
+  it('should send SDK_INITIALIZED metric on setup', async () => {
+    // SDK_INITIALIZED is now batched via batchProcessor, flush to trigger sendMetric
+    await transport.flush();
     expect(sendMetricSpy).toHaveBeenCalled();
     const call = sendMetricSpy.mock.calls[0][0][0];
     expect(call.functionName).toBeDefined();

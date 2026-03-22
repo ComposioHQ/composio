@@ -63,9 +63,9 @@ export class TelemetryTransport {
     // Register exit handlers to automatically flush telemetry before process exit
     this.registerExitHandlers();
 
-    // send telemetry event for SDK initialization
-    this.sendMetric([
-      {
+    // send telemetry event for SDK initialization via batch processor to avoid blocking init
+    if (this.shouldSendTelemetry()) {
+      this.batchProcessor.pushItem({
         functionName: TELEMETRY_EVENTS.SDK_INITIALIZED,
         durationMs: 0,
         timestamp: Date.now() / 1000,
@@ -75,8 +75,8 @@ export class TelemetryTransport {
           provider: this.telemetryMetadata?.provider ?? 'openai',
         },
         error: undefined,
-      },
-    ]);
+      });
+    }
   }
 
   /**
