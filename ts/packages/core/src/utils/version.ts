@@ -1,9 +1,7 @@
 import logger from './logger';
-import { IS_DEVELOPMENT_OR_CI } from './constants';
+import { IS_DEVELOPMENT_OR_CI, COMPOSIO_DIR } from './constants';
 import semver from 'semver';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { readFileSync, writeFileSync } from 'fs';
+import { platform } from '#platform';
 
 /**
  * Compares two semantic versions and returns true if the first version is newer than the second.
@@ -22,7 +20,7 @@ export function isNewerVersion(version1: string, version2: string): boolean {
   return false;
 }
 
-const VERSION_CACHE_FILE = join(tmpdir(), 'composio-version-cache.json');
+const VERSION_CACHE_FILENAME = 'version-cache.json';
 const VERSION_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const VERSION_FETCH_TIMEOUT_MS = 5000;
 
@@ -31,9 +29,18 @@ interface VersionCache {
   timestamp: number;
 }
 
+function getVersionCachePath(): string | null {
+  const homeDir = platform.homedir();
+  if (!homeDir) return null;
+  return platform.joinPath(homeDir, COMPOSIO_DIR, VERSION_CACHE_FILENAME);
+}
+
 function readVersionCache(): VersionCache | null {
+  if (!platform.supportsFileSystem) return null;
   try {
-    const raw = readFileSync(VERSION_CACHE_FILE, 'utf-8');
+    const cachePath = getVersionCachePath();
+    if (!cachePath) return null;
+    const raw = platform.readFileSync(cachePath, 'utf8');
     const cache = JSON.parse(raw) as VersionCache;
     if (cache && typeof cache.version === 'string' && typeof cache.timestamp === 'number') {
       return cache;
@@ -45,8 +52,18 @@ function readVersionCache(): VersionCache | null {
 }
 
 function writeVersionCache(version: string): void {
+  if (!platform.supportsFileSystem) return;
   try {
-    writeFileSync(VERSION_CACHE_FILE, JSON.stringify({ version, timestamp: Date.now() }));
+    const cachePath = getVersionCachePath();
+    if (!cachePath) return;
+    const homeDir = platform.homedir();
+    if (homeDir) {
+      const composioDir = platform.joinPath(homeDir, COMPOSIO_DIR);
+      if (!platform.existsSync(composioDir)) {
+        platform.mkdirSync(composioDir);
+      }
+    }
+    platform.writeFileSync(cachePath, JSON.stringify({ version, timestamp: Date.now() }), 'utf8');
   } catch {
     // Ignore write errors (e.g., permission issues)
   }
