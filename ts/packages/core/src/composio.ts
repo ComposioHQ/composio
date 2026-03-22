@@ -308,7 +308,7 @@ export class Composio<
     );
 
     // Check for the latest version of the Composio SDK from NPM.
-    // Deferred to next tick to avoid blocking constructor with network I/O.
+    // Deferred to next tick so the async executor's immediate DNS/TCP setup doesn't block construction.
     if (!this.config.disableVersionCheck) {
       setTimeout(() => {
         checkForLatestVersionFromNPM(version);

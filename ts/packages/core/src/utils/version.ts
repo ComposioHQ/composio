@@ -93,7 +93,9 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
     const data = await response.json();
     const latestVersion = data.version;
 
-    writeVersionCache(latestVersion);
+    if (typeof latestVersion === 'string' && semver.valid(latestVersion)) {
+      writeVersionCache(latestVersion);
+    }
 
     if (semver.gt(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
       logger.info(
