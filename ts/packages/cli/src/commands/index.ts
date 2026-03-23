@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import { Command } from '@effect/cli';
 import * as constants from 'src/constants';
 import { $defaultCmd } from './$default.cmd';
@@ -22,6 +22,7 @@ import { rootToolsCmd } from './tools/tools.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
+import { ComposioUserContext } from 'src/services/user-context';
 
 const $cmd = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -165,6 +166,15 @@ const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
   );
 };
 
+const isDebugApiKey = (argv: ReadonlyArray<string>): boolean => {
+  const args = argv.slice(2);
+  return (
+    (args.length === 1 && args[0] === 'api-key') ||
+    (args.length === 2 && args[0] === 'debug' && args[1] === 'api-key') ||
+    (args[0] === 'debug' && args[1] === 'api-key')
+  );
+};
+
 export const runWithConfig = Effect.gen(function* () {
   const version = yield* getVersion;
   const run = Command.run($cmd, {
@@ -181,6 +191,18 @@ export const runWithConfig = Effect.gen(function* () {
     if (isGenerateGraph(normalizedArgv)) {
       return Effect.sync(() => {
         process.stdout.write(`${JSON.stringify(renderCommandHintGraph(), null, 2)}\n`);
+      });
+    }
+    if (isDebugApiKey(normalizedArgv)) {
+      return Effect.gen(function* () {
+        const ctx = yield* ComposioUserContext;
+        const apiKey = Option.getOrUndefined(ctx.data.apiKey);
+        if (!apiKey) {
+          return yield* Effect.fail(new Error('No user API key found in the current CLI session.'));
+        }
+        return yield* Effect.sync(() => {
+          process.stdout.write(`${apiKey}\n`);
+        });
       });
     }
     const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
