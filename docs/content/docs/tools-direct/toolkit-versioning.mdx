@@ -185,6 +185,40 @@ console.log("Latest Version:", toolkit.meta.availableVersions?.[0]);
   </Tab>
 </Tabs>
 
+## Third-party integrations
+
+If you're using Composio through a third-party platform (e.g., MindPal, n8n, Make, or other automation tools), tool visibility depends on how the platform fetches tools from the Composio API.
+
+**The Composio SDK** defaults to `toolkit_versions="latest"`, so all tools are returned automatically. However, platforms that call the **REST API directly** without specifying `toolkit_versions` will only see base-version tools, which may be a subset of the full toolkit.
+
+If you're seeing fewer tools than expected in a third-party integration:
+
+1. **Check the platform's Composio configuration** — look for a "toolkit version" or "API version" setting and set it to `latest` or a specific version.
+2. **If the platform doesn't expose this setting**, contact the platform's support and ask them to pass `toolkit_versions=latest` (or a pinned version) when calling the Composio tools API.
+3. **As a workaround**, you can call tools by slug directly even if they don't appear in the tool list — tool execution doesn't require the tool to be in the listing response.
+
+```bash
+# REST API — list all tools for a toolkit (including newer versions)
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=gladia&toolkit_versions=latest' \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+## Troubleshooting
+
+### I see fewer tools than expected
+
+When no `toolkit_versions` parameter is specified, the REST API defaults to the base version (`00000000_00`). Tools added in newer versions won't appear in the response.
+
+**Fix:** Pass `toolkit_versions=latest` or a specific version string (e.g., `20260310_00`) when listing tools.
+
+### The dashboard shows more tools than the API returns
+
+The Composio dashboard always shows the latest version of each toolkit. The API defaults to the base version for stability. Pass `toolkit_versions=latest` to match what the dashboard shows.
+
+### SDK returns all tools but REST API doesn't
+
+The Composio SDK (Python and TypeScript) defaults to `toolkit_versions="latest"` since SDK v0.9.0 (Python) and v0.2.0 (TypeScript). Direct REST API calls default to the base version. Add `toolkit_versions=latest` to your API query parameters to get the same results.
+
 ## What to read next
 
 <Cards>

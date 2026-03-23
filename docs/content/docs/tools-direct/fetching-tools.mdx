@@ -107,6 +107,10 @@ const rawTools = await composio.tools.getRawComposioTools({
   </Tab>
 </Tabs>
 
+<Callout type="info">
+The **Composio SDK** defaults to `toolkit_versions="latest"`, so you'll get all tools automatically. If you're calling the **REST API directly** (or through a third-party integration like MindPal, n8n, or Make), you must pass `toolkit_versions=latest` explicitly — otherwise only base-version tools are returned. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning) for details.
+</Callout>
+
 ### By name
 
 Fetch specific tools when you know their names.
