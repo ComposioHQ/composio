@@ -1,0 +1,121 @@
+name: "Security - Dependency Audit"
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - "package.json"
+      - "ts/**/package.json"
+      - "pnpm-lock.yaml"
+      - "yarn.lock"
+      - "**/package-lock.json"
+  pull_request:
+    branches: [master, next]
+    paths:
+      - "package.json"
+      - "ts/**/package.json"
+      - "pnpm-lock.yaml"
+      - "yarn.lock"
+      - "**/package-lock.json"
+  schedule:
+    - cron: "0 7 * * *"
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  npm-audit:
+    name: npm/pnpm Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ts/
+        continue-on-error: true
+
+      - name: Run pnpm audit
+        id: pnpm_audit
+        run: pnpm audit --severity high 2>&1 | tee audit-results.txt
+        working-directory: ts/
+        continue-on-error: true
+
+      - name: Post results to PR on failure
+        if: steps.pnpm_audit.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = fs.readFileSync('ts/audit-results.txt', 'utf8');
+            const body = `## pnpm audit: Vulnerabilities Found (high/critical)
+
+            \`\`\`
+            ${results.substring(0, 60000)}
+            \`\`\`
+
+            Please review and update the affected dependencies.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+      - name: Fail on high/critical vulnerabilities
+        if: steps.pnpm_audit.outcome == 'failure'
+        run: exit 1
+
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ts/
+        continue-on-error: true
+
+      - name: Install license-checker
+        run: npm install -g license-checker
+
+      - name: Check for copyleft licenses
+        run: |
+          license-checker \
+            --failOn "GPL-2.0-only;GPL-2.0-or-later;GPL-3.0-only;GPL-3.0-or-later;AGPL-1.0-only;AGPL-3.0-only;AGPL-3.0-or-later;SSPL-1.0;EUPL-1.1;EUPL-1.2;CPAL-1.0;OSL-3.0;RPL-1.1;RPL-1.5;Sleepycat;Watcom-1.0" \
+            --summary
+        working-directory: ts/

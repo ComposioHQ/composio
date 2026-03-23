@@ -1,0 +1,77 @@
+name: "SAST - CodeQL"
+
+on:
+  push:
+    branches: [master, next]
+  pull_request:
+    branches: [master, next]
+  schedule:
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  codeql-javascript:
+    name: CodeQL - JavaScript/TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+          paths: ts/
+          paths-ignore: |
+            ts/**/*.test.ts
+            ts/**/*.spec.ts
+            ts/**/test/
+            ts/**/tests/
+            ts/**/__tests__/
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  codeql-python:
+    name: CodeQL - Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-extended
+          paths: python/
+          paths-ignore: |
+            python/**/test_*.py
+            python/**/*_test.py
+            python/**/tests/
+            python/**/test/
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"

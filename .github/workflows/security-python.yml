@@ -1,0 +1,99 @@
+name: "Security - Python"
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - "python/**"
+  pull_request:
+    branches: [master, next]
+    paths:
+      - "python/**"
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  bandit:
+    name: Bandit Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: pip install bandit[sarif]
+
+      - name: Run Bandit scan
+        run: bandit -r python/ -f sarif -o bandit-results.sarif -ll
+        continue-on-error: true
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: bandit-results.sarif
+
+  pip-audit:
+    name: pip-audit Dependency Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python package
+        run: pip install ./python/
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Run pip-audit
+        id: pip_audit
+        run: pip-audit --severity high 2>&1 | tee pip-audit-results.txt
+        continue-on-error: true
+
+      - name: Post results to PR on failure
+        if: steps.pip_audit.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = fs.readFileSync('pip-audit-results.txt', 'utf8');
+            const body = `## pip-audit: Vulnerable Dependencies Found
+
+            \`\`\`
+            ${results.substring(0, 60000)}
+            \`\`\`
+
+            Please review and update the affected dependencies.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+      - name: Fail on vulnerabilities
+        if: steps.pip_audit.outcome == 'failure'
+        run: exit 1

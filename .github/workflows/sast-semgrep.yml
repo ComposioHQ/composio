@@ -1,0 +1,59 @@
+name: "SAST - Semgrep"
+
+on:
+  push:
+    branches: [master, next]
+  pull_request:
+    branches: [master, next]
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    name: Semgrep SAST Scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep scan
+        run: |
+          semgrep scan \
+            --config "p/owasp-top-ten" \
+            --config "p/python" \
+            --config "p/typescript" \
+            --config "p/nodejs" \
+            --config "p/sql-injection" \
+            --config "p/xss" \
+            --config "p/command-injection" \
+            --config "p/supply-chain" \
+            --config ".github/semgrep-rules" \
+            --error \
+            --severity ERROR \
+            --sarif \
+            --output semgrep-results.sarif \
+            --exclude "node_modules" \
+            --exclude "dist" \
+            --exclude "__pycache__" \
+            --exclude ".venv" \
+            --exclude "*.test.ts" \
+            --exclude "*.spec.ts" \
+            --exclude "*_test.py" \
+            --exclude "docs/" \
+            --exclude "fern/"
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.sarif

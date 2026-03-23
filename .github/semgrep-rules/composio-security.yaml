@@ -1,0 +1,131 @@
+rules:
+  - id: composio-python-subprocess-shell
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+    message: >
+      Subprocess call with shell=True is vulnerable to command injection.
+      Use shell=False and pass arguments as a list instead.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      category: security
+      technology:
+        - python
+
+  - id: composio-python-sql-fstring
+    patterns:
+      - pattern: $CURSOR.execute(f"...", ...)
+      - pattern: $CURSOR.execute("...".format(...), ...)
+    message: >
+      SQL query built with f-string or .format() is vulnerable to SQL injection.
+      Use parameterized queries instead.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      category: security
+      technology:
+        - python
+
+  - id: composio-python-pickle-load
+    patterns:
+      - pattern: pickle.load(...)
+      - pattern: pickle.loads(...)
+    message: >
+      Deserializing untrusted data with pickle can lead to remote code execution.
+      Use safer alternatives like json for data serialization.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      category: security
+      technology:
+        - python
+
+  - id: composio-python-eval
+    patterns:
+      - pattern: eval(...)
+      - pattern: exec(...)
+    message: >
+      Use of eval() or exec() can lead to code injection.
+      Avoid dynamic code execution with untrusted input.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe:
+        - "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      category: security
+      technology:
+        - python
+
+  - id: composio-python-hardcoded-password
+    patterns:
+      - pattern: password = "..."
+      - pattern: secret = "..."
+    message: >
+      Hardcoded password or secret detected. Use environment variables
+      or a secrets manager instead.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe:
+        - "CWE-798: Use of Hard-coded Credentials"
+      category: security
+      technology:
+        - python
+
+  - id: composio-no-raw-fetch
+    patterns:
+      - pattern: fetch(...)
+    message: >
+      Direct use of fetch() detected. Use a safeFetch wrapper that includes
+      SSRF protections and consistent error handling.
+    languages: [typescript, javascript]
+    severity: ERROR
+    metadata:
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      category: security
+      technology:
+        - typescript
+        - javascript
+
+  - id: composio-weak-hash
+    patterns:
+      - pattern: crypto.createHash("md5")
+      - pattern: crypto.createHash("sha1")
+    message: >
+      Weak hash algorithm detected. MD5 and SHA-1 are cryptographically broken.
+      Use SHA-256 or stronger algorithms.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+      category: security
+      technology:
+        - typescript
+        - javascript
+
+  - id: composio-no-console-log-secrets
+    patterns:
+      - pattern: console.log(<... $SECRET ...>)
+    message: >
+      Potential secret logged to console. Ensure sensitive values
+      (passwords, tokens, API keys) are never logged.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      cwe:
+        - "CWE-532: Insertion of Sensitive Information into Log File"
+      category: security
+      technology:
+        - typescript
+        - javascript
+      pattern-metavariable:
+        $SECRET:
+          regex: "(password|secret|token|apiKey|api_key|private_key|accessToken|auth)"
