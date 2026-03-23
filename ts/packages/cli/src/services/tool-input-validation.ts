@@ -5,6 +5,7 @@ import { jsonSchemaToZodSchema } from '@composio/core';
 import { z } from 'zod/v3';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 
 const TOOL_DEFINITIONS_DIR = 'tool_definitions';
 
@@ -40,13 +41,19 @@ const selectLatestVersion = (versions: ReadonlyArray<string> | undefined): strin
     return null;
   }
 
-  for (const version of versions) {
-    if (version && version !== PLACEHOLDER_TOOL_VERSION) {
-      return version;
-    }
+  const realVersions = versions.filter(
+    (version): version is string =>
+      typeof version === 'string' &&
+      version.trim().length > 0 &&
+      version !== PLACEHOLDER_TOOL_VERSION
+  );
+  if (realVersions.length > 0) {
+    return realVersions.reduce((latest, version) =>
+      version.localeCompare(latest) > 0 ? version : latest
+    );
   }
 
-  return versions[0] ?? null;
+  return versions.find(version => typeof version === 'string' && version.trim().length > 0) ?? null;
 };
 
 const resolveLatestAvailableVersion = (params: {
@@ -65,13 +72,11 @@ const resolveLatestAvailableVersion = (params: {
 };
 
 const toolDebugLog = (label: string, details: Record<string, unknown>) => {
-  if (process.env.COMPOSIO_TOOL_DEBUG !== '1') return;
+  if (!isToolDebugEnabled()) return;
   console.error(`[tool-debug] ${JSON.stringify({ label, ...details })}`);
 };
 
-const parseCachedToolDefinition = (
-  parsed: Record<string, unknown>
-): CachedToolInputDefinition => {
+const parseCachedToolDefinition = (parsed: Record<string, unknown>): CachedToolInputDefinition => {
   const inputSchema = parsed.inputSchema;
   if (isRecord(inputSchema)) {
     return {
@@ -158,20 +163,18 @@ export const getOrFetchToolInputDefinition = (slug: string) =>
     });
     const toolkitLatestVersion =
       tool.toolkit.slug.length > 0
-        ? (
-            yield* repo.getToolkitDetailed(tool.toolkit.slug).pipe(
-              Effect.tap(toolkit =>
-                Effect.sync(() =>
-                  toolDebugLog('toolkit_detail', {
-                    slug,
-                    toolkitSlug: tool.toolkit.slug,
-                    toolkit,
-                  })
-                )
-              ),
-              Effect.map(toolkit => selectLatestVersion(toolkit.meta.available_versions)),
-              Effect.catchAll(() => Effect.succeed(null))
-            )
+        ? yield* repo.getToolkitDetailed(tool.toolkit.slug).pipe(
+            Effect.tap(toolkit =>
+              Effect.sync(() =>
+                toolDebugLog('toolkit_detail', {
+                  slug,
+                  toolkitSlug: tool.toolkit.slug,
+                  toolkit,
+                })
+              )
+            ),
+            Effect.map(toolkit => selectLatestVersion(toolkit.meta.available_versions)),
+            Effect.catchAll(() => Effect.succeed(null))
           )
         : null;
     const schema = (tool.input_parameters ?? {}) as Record<string, unknown>;
@@ -225,21 +228,19 @@ export const refreshToolInputDefinitionIfVersionChanged = (
     });
     const toolkitLatestVersion =
       tool.toolkit.slug.length > 0
-        ? (
-            yield* repo.getToolkitDetailed(tool.toolkit.slug).pipe(
-              Effect.tap(toolkit =>
-                Effect.sync(() =>
-                  toolDebugLog('toolkit_detail', {
-                    slug,
-                    toolkitSlug: tool.toolkit.slug,
-                    toolkit,
-                    mode: 'refresh',
-                  })
-                )
-              ),
-              Effect.map(toolkit => selectLatestVersion(toolkit.meta.available_versions)),
-              Effect.catchAll(() => Effect.succeed(null))
-            )
+        ? yield* repo.getToolkitDetailed(tool.toolkit.slug).pipe(
+            Effect.tap(toolkit =>
+              Effect.sync(() =>
+                toolDebugLog('toolkit_detail', {
+                  slug,
+                  toolkitSlug: tool.toolkit.slug,
+                  toolkit,
+                  mode: 'refresh',
+                })
+              )
+            ),
+            Effect.map(toolkit => selectLatestVersion(toolkit.meta.available_versions)),
+            Effect.catchAll(() => Effect.succeed(null))
           )
         : null;
     const latestVersion = resolveLatestAvailableVersion({
@@ -402,9 +403,12 @@ export const validateToolInputArgumentsWithDefinition = (
     const zodSchema = yield* Effect.try({
       try: () => jsonSchemaToZodSchema<z.ZodTypeAny>(schema),
       catch: error =>
-        new ToolInputValidationError(slug, schemaPath, [
-          'Could not compile the cached JSON schema into a Zod validator.',
-        ], { cause: error }),
+        new ToolInputValidationError(
+          slug,
+          schemaPath,
+          ['Could not compile the cached JSON schema into a Zod validator.'],
+          { cause: error }
+        ),
     });
 
     const parsed = zodSchema.safeParse(args);

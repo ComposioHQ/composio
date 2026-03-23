@@ -2,7 +2,7 @@ import { Args, Command, Options } from '@effect/cli';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import util from 'node:util';
-import { Effect, Option, Either, Exit, Fiber } from 'effect';
+import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { parse as parseJsonWithComments } from 'comment-json';
 import { encodingForModel } from 'js-tiktoken';
@@ -40,6 +40,7 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintStep } from 'src/services/command-hints';
+import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -113,9 +114,7 @@ const parseArguments = (raw: string) =>
     });
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return yield* Effect.fail(
-        new Error(
-          'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
-        )
+        new Error('Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\'')
       );
     }
     return parsed as Record<string, unknown>;
@@ -227,7 +226,7 @@ const persistLargeExecuteOutput = (json: string): StoredExecuteOutputSummary => 
 
 const perfDebugEpoch = Date.now();
 const perfDebugLog = (label: string, details: Record<string, unknown> = {}) => {
-  if (process.env.COMPOSIO_PERF_DEBUG !== '1') return;
+  if (!isPerfDebugEnabled()) return;
   console.error(
     `[perf] ${JSON.stringify({
       phase: 'event',
@@ -238,7 +237,7 @@ const perfDebugLog = (label: string, details: Record<string, unknown> = {}) => {
   );
 };
 const toolDebugLog = (label: string, details: Record<string, unknown> = {}) => {
-  if (process.env.COMPOSIO_TOOL_DEBUG !== '1') return;
+  if (!isToolDebugEnabled()) return;
   console.error(`[tool-debug] ${JSON.stringify({ label, ...details })}`);
 };
 
@@ -301,11 +300,10 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Tool "${toolSlug}" not found.`,
-            hint:
-              [
-                commandHintStep('Browse available toolkits', 'manage.toolkits.list'),
-                commandHintStep('Then list tools', 'root.tools.list'),
-              ].join('\n'),
+            hint: [
+              commandHintStep('Browse available toolkits', 'manage.toolkits.list'),
+              commandHintStep('Then list tools', 'root.tools.list'),
+            ].join('\n'),
             fallbackValue: Option.none(),
             searchForSuggestions: () =>
               repo.searchTools({ search: toolSlug, limit: 3 }).pipe(
@@ -340,10 +338,9 @@ const handleExecutionError = (
     if (normalized instanceof ToolInputValidationError) {
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
-        [
-          `Schema: ${normalized.schemaPath}`,
-          ...normalized.issues.map(issue => `- ${issue}`),
-        ].join('\n'),
+        [`Schema: ${normalized.schemaPath}`, ...normalized.issues.map(issue => `- ${issue}`)].join(
+          '\n'
+        ),
         'Tool schema validation'
       );
       return { error: normalized.message, slug: context.toolSlug };
@@ -389,6 +386,22 @@ class ToolExecutionError {
 type CachedValidationDecision =
   | { readonly status: 'valid' | 'stale' }
   | { readonly status: 'fail'; readonly error: unknown };
+
+const validationGuardFromFiber = (validationFiber: Fiber.RuntimeFiber<unknown, unknown>) =>
+  Fiber.await(validationFiber).pipe(
+    Effect.flatMap(
+      Exit.match({
+        onFailure: cause => {
+          const defect = Cause.failureOption(cause);
+          if (Option.isSome(defect) && defect.value instanceof ToolInputValidationError) {
+            return Effect.failCause(cause);
+          }
+          return Effect.never;
+        },
+        onSuccess: () => Effect.never,
+      })
+    )
+  );
 
 type DryRunSummary = {
   readonly successful: true;
@@ -442,7 +455,8 @@ const runToolsExecute = (params: {
 
     const resolvedProject = yield* resolveCommandProject({
       mode: params.projectMode,
-      projectName: params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
+      projectName:
+        params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const ui = yield* TerminalUI;
     if (params.getSchema) {
@@ -514,21 +528,20 @@ const runToolsExecute = (params: {
         params.slug,
         cachedDefinition.version,
         cachedDefinition.versionCheckedAt
-      )
-        .pipe(
-          Effect.tap(result =>
-            Effect.sync(() =>
-              perfDebugLog('execute.validation.version_check_done', {
-                slug: params.slug,
-                cachedVersion: cachedDefinition.version,
-                latestVersion: result.latestVersion,
-                isStale: result.isStale,
-              })
-            )
-          ),
-          Effect.either,
-          Effect.forkDaemon
-        );
+      ).pipe(
+        Effect.tap(result =>
+          Effect.sync(() =>
+            perfDebugLog('execute.validation.version_check_done', {
+              slug: params.slug,
+              cachedVersion: cachedDefinition.version,
+              latestVersion: result.latestVersion,
+              isStale: result.isStale,
+            })
+          )
+        ),
+        Effect.either,
+        Effect.forkDaemon
+      );
       const cachedValidationDecisionFiber = yield* Effect.gen(function* () {
         perfDebugLog('execute.validation.cached_start', { slug: params.slug });
         const result = yield* validateToolInputArgumentsWithDefinition(
@@ -578,18 +591,12 @@ const runToolsExecute = (params: {
           const validationFiber = yield* validateToolInputArguments(params.slug, args).pipe(
             Effect.forkDaemon
           );
-          validationGuard = Fiber.await(validationFiber).pipe(
-            Effect.flatMap(
-              Exit.match({
-                onFailure: Effect.failCause,
-                onSuccess: () => Effect.never,
-              })
-            )
-          );
+          validationGuard = validationGuardFromFiber(validationFiber);
         }
 
         if (params.dryRun) {
-          const definition = cachedDefinition ?? (yield* getOrFetchToolInputDefinition(params.slug));
+          const definition =
+            cachedDefinition ?? (yield* getOrFetchToolInputDefinition(params.slug));
           yield* validateToolInputArgumentsWithDefinition(params.slug, args, definition);
           const summary: DryRunSummary = {
             successful: true,
@@ -621,7 +628,9 @@ const runToolsExecute = (params: {
         });
 
         if (Either.isLeft(resultEither)) {
-          yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catchAll(() => Effect.void));
+          yield* invalidateToolInputDefinition(params.slug).pipe(
+            Effect.catchAll(() => Effect.void)
+          );
           yield* spinner.error();
           const summary = yield* handleExecutionError(ui, resultEither.left, {
             toolSlug: params.slug,
@@ -642,7 +651,9 @@ const runToolsExecute = (params: {
         }
 
         if (!result.successful) {
-          yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catchAll(() => Effect.void));
+          yield* invalidateToolInputDefinition(params.slug).pipe(
+            Effect.catchAll(() => Effect.void)
+          );
           const logId = result.logId
             ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
             : '';
@@ -704,7 +715,7 @@ export const toolsCmd$Execute = Command.make(
       '  composio execute GMAIL_SEND_EMAIL --get-schema',
       '',
       'Related:',
-      "  composio run 'const first = await execute(\"TOOL_SLUG\", { ... }); const second = await execute(\"OTHER_TOOL\", { ... }); console.log({ first, second })'",
+      '  composio run \'const first = await execute("TOOL_SLUG", { ... }); const second = await execute("OTHER_TOOL", { ... }); console.log({ first, second })\'',
       '  composio search "<query>"',
       '  composio link <toolkit>',
     ].join('\n')
@@ -740,7 +751,7 @@ export const rootToolsCmd$Execute = Command.make(
       '  composio execute GMAIL_SEND_EMAIL --get-schema',
       '',
       'Related:',
-      "  composio run 'const first = await execute(\"TOOL_SLUG\", { ... }); const second = await execute(\"OTHER_TOOL\", { ... }); console.log({ first, second })'",
+      '  composio run \'const first = await execute("TOOL_SLUG", { ... }); const second = await execute("OTHER_TOOL", { ... }); console.log({ first, second })\'',
       '  composio search "<query>"',
       '  composio link <toolkit>',
     ].join('\n')

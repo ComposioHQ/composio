@@ -8,6 +8,7 @@ import { ts } from 'ts-morph';
 import { resolveCommandProject } from 'src/services/command-project';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
+import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -257,7 +258,7 @@ export const runCmd = Command.make('run', { file, dryRun, args }).pipe(
       'Use this for programmatic multi-step tool workflows when you want to stay in code and not orchestrate everything through bash.',
       '',
       'Usage:',
-      '  composio run \'<code>\' [-- ...args]',
+      "  composio run '<code>' [-- ...args]",
       '  composio run --file ./script.ts [-- ...args]',
       '',
       'Examples:',
@@ -287,8 +288,8 @@ export const runCmd = Command.make('run', { file, dryRun, args }).pipe(
   ),
   Command.withHandler(({ file, dryRun, args }) =>
     Effect.gen(function* () {
-      const perfDebug = process.env.COMPOSIO_PERF_DEBUG === '1';
-      const toolDebug = process.env.COMPOSIO_TOOL_DEBUG === '1';
+      const perfDebug = isPerfDebugEnabled();
+      const toolDebug = isToolDebugEnabled();
       if (Option.isNone(file)) {
         const [inlineCode] = args;
         const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
@@ -300,15 +301,12 @@ export const runCmd = Command.make('run', { file, dryRun, args }).pipe(
         }
       }
 
-      const preload = createRunHelpersPreloadFile(
-        inferCliInvocationPrefix(),
-        {
-          ...(yield* resolveRunHelperContext()),
-          perfDebug,
-          toolDebug,
-          dryRun,
-        }
-      );
+      const preload = createRunHelpersPreloadFile(inferCliInvocationPrefix(), {
+        ...(yield* resolveRunHelperContext()),
+        perfDebug,
+        toolDebug,
+        dryRun,
+      });
       try {
         const child = Bun.spawn({
           cmd: buildRunCommand({ file, args, preloadPath: preload.preloadPath }),
