@@ -168,10 +168,7 @@ const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
 
 const isDebugApiInfo = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return (
-    (args.length === 1 && args[0] === 'api-info') ||
-    (args.length === 2 && args[0] === 'debug' && args[1] === 'api-info')
-  );
+  return args.length === 2 && args[0] === 'debug' && args[1] === 'api-info';
 };
 
 export const runWithConfig = Effect.gen(function* () {
