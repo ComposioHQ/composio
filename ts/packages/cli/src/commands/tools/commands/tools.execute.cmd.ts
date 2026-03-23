@@ -43,7 +43,7 @@ import { commandHintStep } from 'src/services/command-hints';
 import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
-  primeConsumerConnectedToolkitsCacheInBackground,
+  refreshConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-connected-toolkits-cache';
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -419,6 +419,24 @@ const validationGuardFromFiber = (validationFiber: Fiber.RuntimeFiber<unknown, u
     )
   );
 
+const spawnBackgroundValidationGuard = (params: {
+  readonly slug: string;
+  readonly args: Record<string, unknown>;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+  };
+}) =>
+  Effect.gen(function* () {
+    perfDebugLog('execute.validation.background_spawn', { slug: params.slug });
+    const validationFiber = yield* validateToolInputArguments(params.slug, params.args, {
+      orgId: params.resolvedProject.orgId,
+      projectId: params.resolvedProject.projectId,
+    }).pipe(Effect.forkDaemon);
+    perfDebugLog('execute.validation.background_spawned', { slug: params.slug });
+    return validationGuardFromFiber(validationFiber);
+  });
+
 const initializeValidationState = (params: {
   readonly slug: string;
   readonly args: Record<string, unknown>;
@@ -611,17 +629,63 @@ const runToolsExecute = (params: {
       client,
     };
     if (resolvedProject.projectType === 'CONSUMER') {
-      yield* primeConsumerConnectedToolkitsCacheInBackground({
+      perfDebugLog('execute.connected_toolkits.refresh_start', {
+        slug: params.slug,
         orgId: resolvedProject.orgId,
         consumerUserId: resolvedUserId.value,
       });
+      yield* refreshConsumerConnectedToolkitsCache({
+        orgId: resolvedProject.orgId,
+        consumerUserId: resolvedUserId.value,
+      }).pipe(
+        Effect.tap(() =>
+          Effect.sync(() =>
+            perfDebugLog('execute.connected_toolkits.refresh_end', {
+              slug: params.slug,
+              orgId: resolvedProject.orgId,
+              consumerUserId: resolvedUserId.value,
+              successful: true,
+            })
+          )
+        ),
+        Effect.catchAll(() =>
+          Effect.sync(() =>
+            perfDebugLog('execute.connected_toolkits.refresh_end', {
+              slug: params.slug,
+              orgId: resolvedProject.orgId,
+              consumerUserId: resolvedUserId.value,
+              successful: false,
+            })
+          )
+        ),
+        Effect.forkDaemon,
+        Effect.asVoid
+      );
       const toolkit = toolkitFromToolSlug(params.slug);
       if (toolkit) {
         const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
           orgId: resolvedProject.orgId,
           consumerUserId: resolvedUserId.value,
         });
+        perfDebugLog(
+          Option.isSome(cachedToolkits)
+            ? 'execute.connected_toolkits.cache_hit'
+            : 'execute.connected_toolkits.cache_miss',
+          {
+            slug: params.slug,
+            toolkit,
+            orgId: resolvedProject.orgId,
+            consumerUserId: resolvedUserId.value,
+            cachedToolkits: Option.isSome(cachedToolkits) ? cachedToolkits.value : undefined,
+          }
+        );
         if (Option.isSome(cachedToolkits) && !cachedToolkits.value.includes(toolkit)) {
+          perfDebugLog('execute.connected_toolkits.fail_fast', {
+            slug: params.slug,
+            toolkit,
+            orgId: resolvedProject.orgId,
+            consumerUserId: resolvedUserId.value,
+          });
           const message = `Toolkit "${toolkit}" is not connected for this consumer user (cached within the last 5 minutes).`;
           yield* ui.log.error(message);
           yield* ui.note(connectionTips(params.slug, params.surface), 'Tips');
@@ -664,12 +728,11 @@ const runToolsExecute = (params: {
       Effect.gen(function* () {
         let validationGuard = validationState.validationGuard;
         if (!validationState.cacheHit) {
-          perfDebugLog('execute.validation.background_start', { slug: params.slug });
-          const validationFiber = yield* validateToolInputArguments(params.slug, args, {
-            orgId: resolvedProject.orgId,
-            projectId: resolvedProject.projectId,
-          }).pipe(Effect.forkDaemon);
-          validationGuard = validationGuardFromFiber(validationFiber);
+          validationGuard = yield* spawnBackgroundValidationGuard({
+            slug: params.slug,
+            args,
+            resolvedProject,
+          });
         }
 
         if (params.dryRun) {
