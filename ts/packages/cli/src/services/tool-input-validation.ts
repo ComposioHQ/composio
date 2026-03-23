@@ -41,16 +41,14 @@ const selectLatestVersion = (versions: ReadonlyArray<string> | undefined): strin
     return null;
   }
 
-  const realVersions = versions.filter(
-    (version): version is string =>
+  for (const version of versions) {
+    if (
       typeof version === 'string' &&
       version.trim().length > 0 &&
       version !== PLACEHOLDER_TOOL_VERSION
-  );
-  if (realVersions.length > 0) {
-    return realVersions.reduce((latest, version) =>
-      version.localeCompare(latest) > 0 ? version : latest
-    );
+    ) {
+      return version;
+    }
   }
 
   return versions.find(version => typeof version === 'string' && version.trim().length > 0) ?? null;
