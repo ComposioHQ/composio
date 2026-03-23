@@ -41,6 +41,10 @@ import {
 } from 'src/services/command-project';
 import { commandHintStep } from 'src/services/command-hints';
 import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import {
+  getFreshConsumerConnectedToolkitsFromCache,
+  primeConsumerConnectedToolkitsCacheInBackground,
+} from 'src/services/consumer-connected-toolkits-cache';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -606,6 +610,36 @@ const runToolsExecute = (params: {
       arguments: args,
       client,
     };
+    if (resolvedProject.projectType === 'CONSUMER') {
+      yield* primeConsumerConnectedToolkitsCacheInBackground({
+        orgId: resolvedProject.orgId,
+        consumerUserId: resolvedUserId.value,
+      });
+      const toolkit = toolkitFromToolSlug(params.slug);
+      if (toolkit) {
+        const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
+          orgId: resolvedProject.orgId,
+          consumerUserId: resolvedUserId.value,
+        });
+        if (Option.isSome(cachedToolkits) && !cachedToolkits.value.includes(toolkit)) {
+          const message = `Toolkit "${toolkit}" is not connected for this consumer user (cached within the last 5 minutes).`;
+          yield* ui.log.error(message);
+          yield* ui.note(connectionTips(params.slug, params.surface), 'Tips');
+          yield* ui.output(
+            JSON.stringify(
+              {
+                successful: false,
+                error: message,
+                slug: params.slug,
+              },
+              ciRedactReplacer,
+              2
+            )
+          );
+          return yield* Effect.fail(new ToolExecutionError(message));
+        }
+      }
+    }
     toolDebugLog('execute_params', {
       slug: params.slug,
       userId: resolvedUserId.value,

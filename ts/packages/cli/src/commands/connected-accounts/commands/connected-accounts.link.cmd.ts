@@ -13,6 +13,7 @@ import {
   resolveCommandProject,
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
+import { invalidateConsumerConnectedToolkitsCache } from 'src/services/consumer-connected-toolkits-cache';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -338,6 +339,7 @@ const runConnectedAccountsLink = (params: {
     if (Option.isNone(validatedLink)) return;
 
     const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
+    yield* invalidateConsumerConnectedToolkitsCache().pipe(Effect.catchAll(() => Effect.void));
 
     if (params.noWait) {
       yield* ui.note(redirectUrl, 'Redirect URL');

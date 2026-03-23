@@ -14,6 +14,7 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
+import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-connected-toolkits-cache';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription(
@@ -91,6 +92,12 @@ const runToolsSearch = (params: {
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,
         });
+        if (resolvedProject.projectType === 'CONSUMER') {
+          yield* primeConsumerConnectedToolkitsCacheInBackground({
+            orgId: resolvedProject.orgId,
+            consumerUserId: resolvedUserId.value,
+          });
+        }
         const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
           toolkits: toolkitList,
         });
@@ -235,7 +242,7 @@ export const toolsCmd$Search = Command.make(
       'Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.',
       '',
       'Related:',
-      "  composio run 'const result = await execute(\"TOOL_SLUG\", { ... }); console.log(result)'",
+      '  composio run \'const result = await execute("TOOL_SLUG", { ... }); console.log(result)\'',
       '  composio link <toolkit>',
       "  composio execute <slug> -d '{}'",
     ].join('\n')
@@ -260,7 +267,7 @@ export const rootToolsCmd$Search = Command.make(
       'Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.',
       '',
       'Related:',
-      "  composio run 'const result = await execute(\"TOOL_SLUG\", { ... }); console.log(result)'",
+      '  composio run \'const result = await execute("TOOL_SLUG", { ... }); console.log(result)\'',
       '  composio link <toolkit>',
       "  composio execute <slug> -d '{}'",
     ].join('\n')
