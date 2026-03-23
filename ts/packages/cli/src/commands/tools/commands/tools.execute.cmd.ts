@@ -387,6 +387,18 @@ type CachedValidationDecision =
   | { readonly status: 'valid' | 'stale' }
   | { readonly status: 'fail'; readonly error: unknown };
 
+type ValidationState = {
+  readonly cacheHit: boolean;
+  readonly validationGuard: Effect.Effect<never, unknown>;
+  readonly awaitCachedValidationDecision: Effect.Effect<CachedValidationDecision, never> | null;
+};
+
+type CachedDefinition = {
+  readonly schemaPath: string;
+  readonly schema: Record<string, unknown>;
+  readonly version: string | null;
+} | null;
+
 const validationGuardFromFiber = (validationFiber: Fiber.RuntimeFiber<unknown, unknown>) =>
   Fiber.await(validationFiber).pipe(
     Effect.flatMap(
@@ -402,6 +414,95 @@ const validationGuardFromFiber = (validationFiber: Fiber.RuntimeFiber<unknown, u
       })
     )
   );
+
+const initializeValidationState = (params: {
+  readonly slug: string;
+  readonly args: Record<string, unknown>;
+  readonly cachedDefinition: CachedDefinition;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+  };
+}) =>
+  Effect.gen(function* () {
+    if (!params.cachedDefinition) {
+      perfDebugLog('execute.validation.cache_miss', { slug: params.slug });
+      return {
+        cacheHit: false,
+        validationGuard: Effect.never,
+        awaitCachedValidationDecision: null,
+      } satisfies ValidationState;
+    }
+    const cachedDefinition = params.cachedDefinition;
+
+    perfDebugLog('execute.validation.cache_hit', {
+      slug: params.slug,
+      cachedVersion: cachedDefinition.version,
+    });
+    const versionCheckFiber = yield* refreshToolInputDefinitionIfVersionChanged(
+      params.slug,
+      cachedDefinition.version,
+      {
+        orgId: params.resolvedProject.orgId,
+        projectId: params.resolvedProject.projectId,
+      }
+    ).pipe(
+      Effect.tap(result =>
+        Effect.sync(() =>
+          perfDebugLog('execute.validation.version_check_done', {
+            slug: params.slug,
+            cachedVersion: cachedDefinition.version,
+            latestVersion: result.latestVersion,
+            isStale: result.isStale,
+          })
+        )
+      ),
+      Effect.either,
+      Effect.forkDaemon
+    );
+    const cachedValidationDecisionFiber = yield* Effect.gen(function* () {
+      perfDebugLog('execute.validation.cached_start', { slug: params.slug });
+      const result = yield* validateToolInputArgumentsWithDefinition(
+        params.slug,
+        params.args,
+        cachedDefinition
+      ).pipe(Effect.either);
+      perfDebugLog('execute.validation.cached_end', {
+        slug: params.slug,
+        successful: Either.isRight(result),
+      });
+      if (Either.isRight(result)) {
+        return { status: 'valid' as const };
+      }
+
+      const freshnessEither = yield* Fiber.join(versionCheckFiber);
+      const isStale = Either.isRight(freshnessEither) && freshnessEither.right.isStale;
+      perfDebugLog('execute.validation.cached_failed', {
+        slug: params.slug,
+        cacheStillCurrent: !isStale,
+      });
+      return isStale
+        ? { status: 'stale' as const }
+        : { status: 'fail' as const, error: result.left };
+    }).pipe(Effect.forkDaemon);
+    const awaitCachedValidationDecision = Fiber.join(
+      cachedValidationDecisionFiber
+    ) as Effect.Effect<CachedValidationDecision, never>;
+
+    return {
+      cacheHit: true,
+      awaitCachedValidationDecision,
+      validationGuard: awaitCachedValidationDecision.pipe(
+        Effect.flatMap(decision => {
+          if (decision.status === 'fail') {
+            return Effect.fail(decision.error);
+          }
+
+          return Effect.never;
+        })
+      ),
+    } satisfies ValidationState;
+  });
 
 type DryRunSummary = {
   readonly successful: true;
@@ -460,7 +561,10 @@ const runToolsExecute = (params: {
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const ui = yield* TerminalUI;
     if (params.getSchema) {
-      const definition = yield* getOrFetchToolInputDefinition(params.slug);
+      const definition = yield* getOrFetchToolInputDefinition(params.slug, {
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
+      });
       yield* emitCachedSchema(ui, params.slug, definition);
       return;
     }
@@ -515,88 +619,32 @@ const runToolsExecute = (params: {
       projectMode: params.projectMode,
     });
     const cachedDefinition = yield* getCachedToolInputDefinition(params.slug);
-    let cacheHit = false;
-    let validationGuard: Effect.Effect<never, unknown> = Effect.never;
-    let awaitCachedValidationDecision: Effect.Effect<CachedValidationDecision, never> | null = null;
-    if (cachedDefinition) {
-      cacheHit = true;
-      perfDebugLog('execute.validation.cache_hit', {
-        slug: params.slug,
-        cachedVersion: cachedDefinition.version,
-      });
-      const versionCheckFiber = yield* refreshToolInputDefinitionIfVersionChanged(
-        params.slug,
-        cachedDefinition.version,
-        cachedDefinition.versionCheckedAt
-      ).pipe(
-        Effect.tap(result =>
-          Effect.sync(() =>
-            perfDebugLog('execute.validation.version_check_done', {
-              slug: params.slug,
-              cachedVersion: cachedDefinition.version,
-              latestVersion: result.latestVersion,
-              isStale: result.isStale,
-            })
-          )
-        ),
-        Effect.either,
-        Effect.forkDaemon
-      );
-      const cachedValidationDecisionFiber = yield* Effect.gen(function* () {
-        perfDebugLog('execute.validation.cached_start', { slug: params.slug });
-        const result = yield* validateToolInputArgumentsWithDefinition(
-          params.slug,
-          args,
-          cachedDefinition
-        ).pipe(Effect.either);
-        perfDebugLog('execute.validation.cached_end', {
-          slug: params.slug,
-          successful: Either.isRight(result),
-        });
-        if (Either.isRight(result)) {
-          return { status: 'valid' as const };
-        }
-
-        const freshnessEither = yield* Fiber.join(versionCheckFiber);
-        const isStale = Either.isRight(freshnessEither) && freshnessEither.right.isStale;
-        perfDebugLog('execute.validation.cached_failed', {
-          slug: params.slug,
-          cacheStillCurrent: !isStale,
-        });
-        return isStale
-          ? { status: 'stale' as const }
-          : { status: 'fail' as const, error: result.left };
-      }).pipe(Effect.forkDaemon);
-      awaitCachedValidationDecision = Fiber.join(cachedValidationDecisionFiber) as Effect.Effect<
-        CachedValidationDecision,
-        never
-      >;
-      validationGuard = awaitCachedValidationDecision.pipe(
-        Effect.flatMap(decision => {
-          if (decision.status === 'fail') {
-            return Effect.fail(decision.error);
-          }
-
-          return Effect.never;
-        })
-      );
-    } else {
-      perfDebugLog('execute.validation.cache_miss', { slug: params.slug });
-    }
+    const validationState = yield* initializeValidationState({
+      slug: params.slug,
+      args,
+      cachedDefinition,
+      resolvedProject,
+    });
 
     yield* ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
-        if (!cacheHit) {
+        let validationGuard = validationState.validationGuard;
+        if (!validationState.cacheHit) {
           perfDebugLog('execute.validation.background_start', { slug: params.slug });
-          const validationFiber = yield* validateToolInputArguments(params.slug, args).pipe(
-            Effect.forkDaemon
-          );
+          const validationFiber = yield* validateToolInputArguments(params.slug, args, {
+            orgId: resolvedProject.orgId,
+            projectId: resolvedProject.projectId,
+          }).pipe(Effect.forkDaemon);
           validationGuard = validationGuardFromFiber(validationFiber);
         }
 
         if (params.dryRun) {
           const definition =
-            cachedDefinition ?? (yield* getOrFetchToolInputDefinition(params.slug));
+            cachedDefinition ??
+            (yield* getOrFetchToolInputDefinition(params.slug, {
+              orgId: resolvedProject.orgId,
+              projectId: resolvedProject.projectId,
+            }));
           yield* validateToolInputArgumentsWithDefinition(params.slug, args, definition);
           const summary: DryRunSummary = {
             successful: true,
@@ -641,8 +689,8 @@ const runToolsExecute = (params: {
         }
 
         const result = resultEither.right;
-        if (awaitCachedValidationDecision) {
-          const decision = yield* awaitCachedValidationDecision;
+        if (validationState.awaitCachedValidationDecision) {
+          const decision = yield* validationState.awaitCachedValidationDecision;
           if (decision.status === 'fail') {
             perfDebugLog('execute.validation.post_success_failure_ignored', {
               slug: params.slug,

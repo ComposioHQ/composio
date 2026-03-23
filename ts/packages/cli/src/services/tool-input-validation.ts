@@ -1,21 +1,19 @@
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import { jsonSchemaToZodSchema } from '@composio/core';
 import { z } from 'zod/v3';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
 import { isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import { ComposioUserContext } from 'src/services/user-context';
 
 const TOOL_DEFINITIONS_DIR = 'tool_definitions';
 
 type CachedToolInputDefinition = {
   readonly version: string | null;
-  readonly versionCheckedAt: string | null;
   readonly inputSchema: Record<string, unknown>;
 };
-
-const VERSION_CHECK_TTL_MS = 12 * 60 * 60 * 1000;
 
 const sanitizeToolSlug = (slug: string) => slug.replace(/[^A-Za-z0-9_.-]/g, '_');
 
@@ -79,8 +77,6 @@ const parseCachedToolDefinition = (parsed: Record<string, unknown>): CachedToolI
   if (isRecord(inputSchema)) {
     return {
       version: typeof parsed.version === 'string' ? parsed.version : null,
-      versionCheckedAt:
-        typeof parsed.versionCheckedAt === 'string' ? parsed.versionCheckedAt : null,
       inputSchema,
     };
   }
@@ -88,7 +84,6 @@ const parseCachedToolDefinition = (parsed: Record<string, unknown>): CachedToolI
   // Backward compatibility for previously cached bare-schema files.
   return {
     version: null,
-    versionCheckedAt: null,
     inputSchema: parsed,
   };
 };
@@ -97,7 +92,6 @@ const serializeCachedToolDefinition = (definition: CachedToolInputDefinition): s
   JSON.stringify(
     {
       version: definition.version,
-      versionCheckedAt: definition.versionCheckedAt,
       inputSchema: definition.inputSchema,
     },
     null,
@@ -121,7 +115,6 @@ export const getCachedToolInputDefinition = (slug: string) =>
       schemaPath,
       schema: cached.inputSchema,
       version: cached.version,
-      versionCheckedAt: cached.versionCheckedAt,
     };
   });
 
@@ -141,13 +134,38 @@ export const invalidateToolInputDefinition = (slug: string) =>
     }
   });
 
-export const getOrFetchToolInputDefinition = (slug: string) =>
+const fetchResolvedLatestToolVersion = (
+  slug: string,
+  params?: { readonly orgId?: string; readonly projectId?: string }
+) =>
   Effect.gen(function* () {
-    const cached = yield* getCachedToolInputDefinition(slug);
-    if (cached) {
-      return cached;
+    const userContext = yield* ComposioUserContext;
+    const apiKey = Option.getOrUndefined(userContext.data.apiKey);
+    if (!apiKey) {
+      return null;
     }
 
+    const latest = yield* getLatestToolVersion({
+      baseURL: userContext.data.baseURL,
+      apiKey,
+      toolSlug: slug,
+      orgId: params?.orgId,
+      projectId: params?.projectId,
+    });
+    toolDebugLog('latest_tool_version', {
+      slug,
+      orgId: params?.orgId,
+      projectId: params?.projectId,
+      response: latest,
+    });
+    return latest.version;
+  });
+
+const fetchAndCacheToolInputDefinition = (
+  slug: string,
+  params?: { readonly orgId?: string; readonly projectId?: string }
+) =>
+  Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const repo = yield* ComposioToolkitsRepository;
     const cacheDir = yield* setupCacheDir;
@@ -159,31 +177,17 @@ export const getOrFetchToolInputDefinition = (slug: string) =>
       slug,
       tool,
     });
-    const toolkitLatestVersion =
-      tool.toolkit.slug.length > 0
-        ? yield* repo.getToolkitDetailed(tool.toolkit.slug).pipe(
-            Effect.tap(toolkit =>
-              Effect.sync(() =>
-                toolDebugLog('toolkit_detail', {
-                  slug,
-                  toolkitSlug: tool.toolkit.slug,
-                  toolkit,
-                })
-              )
-            ),
-            Effect.map(toolkit => selectLatestVersion(toolkit.meta.available_versions)),
-            Effect.catchAll(() => Effect.succeed(null))
-          )
-        : null;
     const schema = (tool.input_parameters ?? {}) as Record<string, unknown>;
-    const version = resolveLatestAvailableVersion({
-      toolLatestVersion: selectLatestVersion(tool.available_versions),
-      toolkitLatestVersion,
-    });
+    const version =
+      (yield* fetchResolvedLatestToolVersion(slug, params).pipe(
+        Effect.catchAll(() => Effect.succeed(null))
+      )) ??
+      resolveLatestAvailableVersion({
+        toolLatestVersion: selectLatestVersion(tool.available_versions),
+        toolkitLatestVersion: null,
+      });
     toolDebugLog('resolved_tool_version', {
       slug,
-      toolLatestVersion: selectLatestVersion(tool.available_versions),
-      toolkitLatestVersion,
       resolvedVersion: version,
       cachePath: schemaPath,
     });
@@ -191,92 +195,64 @@ export const getOrFetchToolInputDefinition = (slug: string) =>
       schemaPath,
       serializeCachedToolDefinition({
         version,
-        versionCheckedAt: new Date().toISOString(),
         inputSchema: schema,
       })
     );
 
-    return { schemaPath, schema, version, versionCheckedAt: new Date().toISOString() };
+    return { schemaPath, schema, version };
+  });
+
+export const getOrFetchToolInputDefinition = (
+  slug: string,
+  params?: { readonly orgId?: string; readonly projectId?: string }
+) =>
+  Effect.gen(function* () {
+    const cached = yield* getCachedToolInputDefinition(slug);
+    if (!cached) {
+      return yield* fetchAndCacheToolInputDefinition(slug, params);
+    }
+
+    const freshness = yield* refreshToolInputDefinitionIfVersionChanged(
+      slug,
+      cached.version,
+      params
+    ).pipe(
+      Effect.catchAll(() =>
+        Effect.succeed({
+          isStale: false,
+          latestVersion: cached.version,
+          skipped: false as const,
+        })
+      )
+    );
+
+    if (!freshness.isStale) {
+      return cached;
+    }
+
+    const refreshed = yield* getCachedToolInputDefinition(slug);
+    return refreshed ?? (yield* fetchAndCacheToolInputDefinition(slug, params));
   });
 
 export const refreshToolInputDefinitionIfVersionChanged = (
   slug: string,
   cachedVersion: string | null,
-  cachedVersionCheckedAt: string | null
+  params?: { readonly orgId?: string; readonly projectId?: string }
 ) =>
   Effect.gen(function* () {
-    const lastCheckedAtMs = cachedVersionCheckedAt ? Date.parse(cachedVersionCheckedAt) : NaN;
-    const checkedRecently =
-      Number.isFinite(lastCheckedAtMs) && Date.now() - lastCheckedAtMs < VERSION_CHECK_TTL_MS;
-    if (checkedRecently) {
-      return { isStale: false, latestVersion: cachedVersion, skipped: true as const };
-    }
-
-    const repo = yield* ComposioToolkitsRepository;
-    const fs = yield* FileSystem.FileSystem;
-    const cacheDir = yield* setupCacheDir;
-    const schemaPath = toolDefinitionPath(cacheDir, slug);
-    yield* ensureToolDefinitionsDir(fs, cacheDir);
-
-    const tool = yield* repo.getToolDetailed(slug);
-    toolDebugLog('tool_detail', {
-      slug,
-      tool,
-      mode: 'refresh',
-    });
-    const toolkitLatestVersion =
-      tool.toolkit.slug.length > 0
-        ? yield* repo.getToolkitDetailed(tool.toolkit.slug).pipe(
-            Effect.tap(toolkit =>
-              Effect.sync(() =>
-                toolDebugLog('toolkit_detail', {
-                  slug,
-                  toolkitSlug: tool.toolkit.slug,
-                  toolkit,
-                  mode: 'refresh',
-                })
-              )
-            ),
-            Effect.map(toolkit => selectLatestVersion(toolkit.meta.available_versions)),
-            Effect.catchAll(() => Effect.succeed(null))
-          )
-        : null;
-    const latestVersion = resolveLatestAvailableVersion({
-      toolLatestVersion: selectLatestVersion(tool.available_versions),
-      toolkitLatestVersion,
-    });
+    const latestVersion = yield* fetchResolvedLatestToolVersion(slug, params);
     toolDebugLog('resolved_tool_version', {
       slug,
       mode: 'refresh',
       cachedVersion,
-      toolLatestVersion: selectLatestVersion(tool.available_versions),
-      toolkitLatestVersion,
       resolvedVersion: latestVersion,
+      orgId: params?.orgId,
+      projectId: params?.projectId,
     });
     const isStale = latestVersion !== cachedVersion;
 
     if (isStale) {
-      const schema = (tool.input_parameters ?? {}) as Record<string, unknown>;
-      yield* fs.writeFileString(
-        schemaPath,
-        serializeCachedToolDefinition({
-          version: latestVersion,
-          versionCheckedAt: new Date().toISOString(),
-          inputSchema: schema,
-        })
-      );
-    } else {
-      const cached = yield* getCachedToolInputDefinition(slug);
-      if (cached) {
-        yield* fs.writeFileString(
-          schemaPath,
-          serializeCachedToolDefinition({
-            version: cached.version,
-            versionCheckedAt: new Date().toISOString(),
-            inputSchema: cached.schema,
-          })
-        );
-      }
+      yield* fetchAndCacheToolInputDefinition(slug, params);
     }
 
     return { isStale, latestVersion, skipped: false as const };
@@ -436,9 +412,13 @@ export const validateToolInputArgumentsIfCached = (slug: string, args: Record<st
     return true as const;
   });
 
-export const validateToolInputArguments = (slug: string, args: Record<string, unknown>) =>
+export const validateToolInputArguments = (
+  slug: string,
+  args: Record<string, unknown>,
+  params?: { readonly orgId?: string; readonly projectId?: string }
+) =>
   Effect.gen(function* () {
-    const definition = yield* getOrFetchToolInputDefinition(slug);
+    const definition = yield* getOrFetchToolInputDefinition(slug, params);
     return yield* validateToolInputArgumentsWithDefinition(slug, args, definition);
   });
 
