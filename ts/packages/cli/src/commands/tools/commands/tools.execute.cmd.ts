@@ -536,6 +536,31 @@ type DryRunSummary = {
   readonly schemaVersion?: string | null;
 };
 
+type RunToolsExecuteParams = {
+  slug: string;
+  data: Option.Option<string>;
+  userId: Option.Option<string>;
+  projectName: Option.Option<string>;
+  surface: 'root' | 'manage' | 'dev';
+  projectMode: 'consumer' | 'developer';
+  getSchema: boolean;
+  dryRun: boolean;
+};
+
+type ResolvedExecuteContext = {
+  readonly ui: TerminalUI;
+  readonly executor: ToolsExecutor;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+    readonly projectType: 'CONSUMER' | 'DEVELOPER';
+    readonly consumerUserId?: string;
+  };
+  readonly args: Record<string, unknown>;
+  readonly resolvedUserId: string;
+  readonly executeParams: ToolExecuteParams;
+};
+
 const emitCachedSchema = (
   ui: TerminalUI,
   slug: string,
@@ -563,34 +588,14 @@ const emitCachedSchema = (
     );
   });
 
-const runToolsExecute = (params: {
-  slug: string;
-  data: Option.Option<string>;
-  userId: Option.Option<string>;
-  projectName: Option.Option<string>;
-  surface: 'root' | 'manage' | 'dev';
-  projectMode: 'consumer' | 'developer';
-  getSchema: boolean;
-  dryRun: boolean;
-}) =>
+const resolveExecuteContext = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
-
     const resolvedProject = yield* resolveCommandProject({
       mode: params.projectMode,
       projectName:
         params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const ui = yield* TerminalUI;
-    if (params.getSchema) {
-      const definition = yield* getOrFetchToolInputDefinition(params.slug, {
-        orgId: resolvedProject.orgId,
-        projectId: resolvedProject.projectId,
-      });
-      yield* emitCachedSchema(ui, params.slug, definition);
-      return;
-    }
-
     const executor = yield* ToolsExecutor;
     const clientSingleton = yield* ComposioClientSingleton;
     const userContext = yield* ComposioUserContext;
@@ -609,6 +614,7 @@ const runToolsExecute = (params: {
             onSome: value => Option.some(value),
             onNone: () => Option.orElse(localTestUserId, () => userContext.data.testUserId),
           });
+
     if (Option.isNone(resolvedUserId)) {
       return yield* Effect.fail(
         new Error(
@@ -618,120 +624,142 @@ const runToolsExecute = (params: {
         )
       );
     }
+
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
 
-    const executeParams: ToolExecuteParams = {
-      userId: resolvedUserId.value,
-      arguments: args,
-      client,
-    };
-    if (resolvedProject.projectType === 'CONSUMER') {
-      perfDebugLog('execute.connected_toolkits.refresh_start', {
+    return {
+      ui,
+      executor,
+      resolvedProject,
+      args,
+      resolvedUserId: resolvedUserId.value,
+      executeParams: {
+        userId: resolvedUserId.value,
+        arguments: args,
+        client,
+      },
+    } satisfies ResolvedExecuteContext;
+  });
+
+const runConnectedToolkitFailFast = (params: {
+  readonly slug: string;
+  readonly surface: 'root' | 'manage' | 'dev';
+  readonly ui: TerminalUI;
+  readonly resolvedProject: ResolvedExecuteContext['resolvedProject'];
+  readonly resolvedUserId: string;
+}) =>
+  Effect.gen(function* () {
+    if (params.resolvedProject.projectType !== 'CONSUMER') return;
+
+    perfDebugLog('execute.connected_toolkits.refresh_start', {
+      slug: params.slug,
+      orgId: params.resolvedProject.orgId,
+      consumerUserId: params.resolvedUserId,
+    });
+    yield* refreshConsumerConnectedToolkitsCache({
+      orgId: params.resolvedProject.orgId,
+      consumerUserId: params.resolvedUserId,
+    }).pipe(
+      Effect.tap(() =>
+        Effect.sync(() =>
+          perfDebugLog('execute.connected_toolkits.refresh_end', {
+            slug: params.slug,
+            orgId: params.resolvedProject.orgId,
+            consumerUserId: params.resolvedUserId,
+            successful: true,
+          })
+        )
+      ),
+      Effect.catchAll(() =>
+        Effect.sync(() =>
+          perfDebugLog('execute.connected_toolkits.refresh_end', {
+            slug: params.slug,
+            orgId: params.resolvedProject.orgId,
+            consumerUserId: params.resolvedUserId,
+            successful: false,
+          })
+        )
+      ),
+      Effect.forkDaemon,
+      Effect.asVoid
+    );
+
+    const toolkit = toolkitFromToolSlug(params.slug);
+    if (!toolkit) return;
+
+    const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
+      orgId: params.resolvedProject.orgId,
+      consumerUserId: params.resolvedUserId,
+    });
+    perfDebugLog(
+      Option.isSome(cachedToolkits)
+        ? 'execute.connected_toolkits.cache_hit'
+        : 'execute.connected_toolkits.cache_miss',
+      {
         slug: params.slug,
-        orgId: resolvedProject.orgId,
-        consumerUserId: resolvedUserId.value,
-      });
-      yield* refreshConsumerConnectedToolkitsCache({
-        orgId: resolvedProject.orgId,
-        consumerUserId: resolvedUserId.value,
-      }).pipe(
-        Effect.tap(() =>
-          Effect.sync(() =>
-            perfDebugLog('execute.connected_toolkits.refresh_end', {
-              slug: params.slug,
-              orgId: resolvedProject.orgId,
-              consumerUserId: resolvedUserId.value,
-              successful: true,
-            })
-          )
-        ),
-        Effect.catchAll(() =>
-          Effect.sync(() =>
-            perfDebugLog('execute.connected_toolkits.refresh_end', {
-              slug: params.slug,
-              orgId: resolvedProject.orgId,
-              consumerUserId: resolvedUserId.value,
-              successful: false,
-            })
-          )
-        ),
-        Effect.forkDaemon,
-        Effect.asVoid
-      );
-      const toolkit = toolkitFromToolSlug(params.slug);
-      if (toolkit) {
-        const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
-          orgId: resolvedProject.orgId,
-          consumerUserId: resolvedUserId.value,
-        });
-        perfDebugLog(
-          Option.isSome(cachedToolkits)
-            ? 'execute.connected_toolkits.cache_hit'
-            : 'execute.connected_toolkits.cache_miss',
-          {
-            slug: params.slug,
-            toolkit,
-            orgId: resolvedProject.orgId,
-            consumerUserId: resolvedUserId.value,
-            cachedToolkits: Option.isSome(cachedToolkits) ? cachedToolkits.value : undefined,
-          }
-        );
-        if (Option.isSome(cachedToolkits) && !cachedToolkits.value.includes(toolkit)) {
-          perfDebugLog('execute.connected_toolkits.fail_fast', {
-            slug: params.slug,
-            toolkit,
-            orgId: resolvedProject.orgId,
-            consumerUserId: resolvedUserId.value,
-          });
-          const message = `Toolkit "${toolkit}" is not connected for this consumer user (cached within the last 5 minutes).`;
-          yield* ui.log.error(message);
-          yield* ui.note(connectionTips(params.slug, params.surface), 'Tips');
-          yield* ui.output(
-            JSON.stringify(
-              {
-                successful: false,
-                error: message,
-                slug: params.slug,
-              },
-              ciRedactReplacer,
-              2
-            )
-          );
-          return yield* Effect.fail(new ToolExecutionError(message));
-        }
+        toolkit,
+        orgId: params.resolvedProject.orgId,
+        consumerUserId: params.resolvedUserId,
+        cachedToolkits: Option.isSome(cachedToolkits) ? cachedToolkits.value : undefined,
       }
+    );
+
+    if (Option.isSome(cachedToolkits) && !cachedToolkits.value.includes(toolkit)) {
+      perfDebugLog('execute.connected_toolkits.fail_fast', {
+        slug: params.slug,
+        toolkit,
+        orgId: params.resolvedProject.orgId,
+        consumerUserId: params.resolvedUserId,
+      });
+      const message = `Toolkit "${toolkit}" is not connected for this consumer user (cached within the last 5 minutes).`;
+      yield* params.ui.log.error(message);
+      yield* params.ui.note(connectionTips(params.slug, params.surface), 'Tips');
+      yield* params.ui.output(
+        JSON.stringify(
+          {
+            successful: false,
+            error: message,
+            slug: params.slug,
+          },
+          ciRedactReplacer,
+          2
+        )
+      );
+      return yield* Effect.fail(new ToolExecutionError(message));
     }
-    toolDebugLog('execute_params', {
-      slug: params.slug,
-      userId: resolvedUserId.value,
-      arguments: args,
-      projectId: resolvedProject.projectId,
-      orgId: resolvedProject.orgId,
-    });
-    perfDebugLog('execute.prepare', {
-      slug: params.slug,
-      surface: params.surface,
-      projectMode: params.projectMode,
-    });
+  });
+
+const runExecuteWithSpinner = (params: {
+  readonly slug: string;
+  readonly surface: 'root' | 'manage' | 'dev';
+  readonly dryRun: boolean;
+  readonly ui: TerminalUI;
+  readonly executor: ToolsExecutor;
+  readonly resolvedProject: ResolvedExecuteContext['resolvedProject'];
+  readonly args: Record<string, unknown>;
+  readonly resolvedUserId: string;
+  readonly executeParams: ToolExecuteParams;
+}) =>
+  Effect.gen(function* () {
     const cachedDefinition = yield* getCachedToolInputDefinition(params.slug);
     const validationState = yield* initializeValidationState({
       slug: params.slug,
-      args,
+      args: params.args,
       cachedDefinition,
-      resolvedProject,
+      resolvedProject: params.resolvedProject,
     });
 
-    yield* ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
+    yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
         let validationGuard = validationState.validationGuard;
         if (!validationState.cacheHit) {
           validationGuard = yield* spawnBackgroundValidationGuard({
             slug: params.slug,
-            args,
-            resolvedProject,
+            args: params.args,
+            resolvedProject: params.resolvedProject,
           });
         }
 
@@ -739,28 +767,30 @@ const runToolsExecute = (params: {
           const definition =
             cachedDefinition ??
             (yield* getOrFetchToolInputDefinition(params.slug, {
-              orgId: resolvedProject.orgId,
-              projectId: resolvedProject.projectId,
+              orgId: params.resolvedProject.orgId,
+              projectId: params.resolvedProject.projectId,
             }));
-          yield* validateToolInputArgumentsWithDefinition(params.slug, args, definition);
+          yield* validateToolInputArgumentsWithDefinition(params.slug, params.args, definition);
           const summary: DryRunSummary = {
             successful: true,
             dryRun: true,
             slug: params.slug,
-            arguments: args,
-            userId: resolvedUserId.value,
+            arguments: params.args,
+            userId: params.resolvedUserId,
             schemaPath: definition.schemaPath,
             schemaVersion: definition.version,
           };
           yield* spinner.stop('Dry run successful');
-          yield* ui.log.message('No tool was executed. Arguments were validated locally only.');
-          yield* ui.output(JSON.stringify(summary, ciRedactReplacer, 2));
+          yield* params.ui.log.message(
+            'No tool was executed. Arguments were validated locally only.'
+          );
+          yield* params.ui.output(JSON.stringify(summary, ciRedactReplacer, 2));
           return;
         }
 
         perfDebugLog('execute.tool_call.start', { slug: params.slug });
-        const resultEither = yield* executor
-          .execute(params.slug, executeParams)
+        const resultEither = yield* params.executor
+          .execute(params.slug, params.executeParams)
           .pipe(Effect.raceFirst(validationGuard))
           .pipe(Effect.either);
         toolDebugLog('execute_result', {
@@ -777,11 +807,13 @@ const runToolsExecute = (params: {
             Effect.catchAll(() => Effect.void)
           );
           yield* spinner.error();
-          const summary = yield* handleExecutionError(ui, resultEither.left, {
+          const summary = yield* handleExecutionError(params.ui, resultEither.left, {
             toolSlug: params.slug,
             surface: params.surface,
           });
-          yield* ui.output(JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2));
+          yield* params.ui.output(
+            JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
+          );
           return yield* Effect.fail(new ToolExecutionError(summary.error));
         }
 
@@ -804,11 +836,11 @@ const runToolsExecute = (params: {
             : '';
           yield* spinner.error(`Execution failed${logId}`);
 
-          const summary = yield* handleExecutionError(ui, result.error ?? result, {
+          const summary = yield* handleExecutionError(params.ui, result.error ?? result, {
             toolSlug: params.slug,
             surface: params.surface,
           });
-          yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
+          yield* params.ui.output(JSON.stringify(result, ciRedactReplacer, 2));
           return yield* Effect.fail(new ToolExecutionError(summary.error));
         }
 
@@ -818,17 +850,63 @@ const runToolsExecute = (params: {
         yield* spinner.stop(`Execution successful${logId}`);
         const output = prepareExecuteOutput(result);
         if (output.kind === 'file') {
-          yield* ui.log.message(
+          yield* params.ui.log.message(
             `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
           );
-          yield* ui.output(JSON.stringify(output.summary, ciRedactReplacer, 2));
+          yield* params.ui.output(JSON.stringify(output.summary, ciRedactReplacer, 2));
           return;
         }
 
-        yield* ui.log.message(`Response\n${output.json}`);
-        yield* ui.output(output.json);
+        yield* params.ui.log.message(`Response\n${output.json}`);
+        yield* params.ui.output(output.json);
       })
     );
+  });
+
+const runToolsExecute = (params: RunToolsExecuteParams) =>
+  Effect.gen(function* () {
+    if (!(yield* requireAuth)) return;
+
+    const context = yield* resolveExecuteContext(params);
+    if (params.getSchema) {
+      const definition = yield* getOrFetchToolInputDefinition(params.slug, {
+        orgId: context.resolvedProject.orgId,
+        projectId: context.resolvedProject.projectId,
+      });
+      yield* emitCachedSchema(context.ui, params.slug, definition);
+      return;
+    }
+
+    yield* runConnectedToolkitFailFast({
+      slug: params.slug,
+      surface: params.surface,
+      ui: context.ui,
+      resolvedProject: context.resolvedProject,
+      resolvedUserId: context.resolvedUserId,
+    });
+    toolDebugLog('execute_params', {
+      slug: params.slug,
+      userId: context.resolvedUserId,
+      arguments: context.args,
+      projectId: context.resolvedProject.projectId,
+      orgId: context.resolvedProject.orgId,
+    });
+    perfDebugLog('execute.prepare', {
+      slug: params.slug,
+      surface: params.surface,
+      projectMode: params.projectMode,
+    });
+    yield* runExecuteWithSpinner({
+      slug: params.slug,
+      surface: params.surface,
+      dryRun: params.dryRun,
+      ui: context.ui,
+      executor: context.executor,
+      resolvedProject: context.resolvedProject,
+      args: context.args,
+      resolvedUserId: context.resolvedUserId,
+      executeParams: context.executeParams,
+    });
   });
 
 export const toolsCmd$Execute = Command.make(
