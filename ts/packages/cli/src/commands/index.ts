@@ -23,6 +23,7 @@ import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/con
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioUserContext } from 'src/services/user-context';
+import { TerminalUI } from 'src/services/terminal-ui';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -162,20 +163,14 @@ const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
 
 const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return (
-    (args.length === 1 && (args[0] === '--generate-graph' || args[0] === 'generate-graph')) ||
-    (args.length === 2 && args[0] === 'debug' && args[1] === 'generate-graph') ||
-    args[0] === '--generate-graph' ||
-    (args[0] === 'debug' && args[1] === 'generate-graph')
-  );
+  return args.length === 2 && args[0] === 'debug' && args[1] === 'generate-graph';
 };
 
 const isDebugApiInfo = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
   return (
     (args.length === 1 && args[0] === 'api-info') ||
-    (args.length === 2 && args[0] === 'debug' && args[1] === 'api-info') ||
-    (args[0] === 'debug' && args[1] === 'api-info')
+    (args.length === 2 && args[0] === 'debug' && args[1] === 'api-info')
   );
 };
 
@@ -199,6 +194,14 @@ export const runWithConfig = Effect.gen(function* () {
     }
     if (isDebugApiInfo(normalizedArgv)) {
       return Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        const confirmed = yield* ui.confirm(
+          'This will print your current CLI API key and scoped identifiers to stdout. Continue?',
+          { defaultValue: false }
+        );
+        if (!confirmed) {
+          return yield* Effect.fail(new Error('Aborted printing API credentials.'));
+        }
         const ctx = yield* ComposioUserContext;
         const apiKey = Option.getOrUndefined(ctx.data.apiKey);
         if (!apiKey) {
