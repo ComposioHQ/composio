@@ -12,9 +12,29 @@ const COMPOSIO_DIR = '.composio';
 const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_ANALYTICS_PATH = '/api/cli/analytics';
+const TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
 
 const truthy = (value: string | undefined): boolean =>
   value === '1' || value === 'true' || value === 'yes' || value === 'on';
+
+const isTelemetryDebugEnabled = (): boolean => truthy(process.env[TELEMETRY_DEBUG_ENV_VAR]);
+
+const telemetryDebugLog = (label: string, payload: Record<string, unknown>) => {
+  if (!isTelemetryDebugEnabled()) {
+    return;
+  }
+
+  process.stderr.write(
+    `[telemetry-debug] ${JSON.stringify(
+      {
+        label,
+        ...payload,
+      },
+      null,
+      2
+    )}\n`
+  );
+};
 
 const analyticsDir = () => path.join(os.homedir(), COMPOSIO_DIR);
 const analyticsStatePath = () => path.join(analyticsDir(), ANALYTICS_STATE_FILE_NAME);
@@ -248,7 +268,17 @@ const captureToComposioAnalytics = async (envelope: AnalyticsEnvelope): Promise<
 };
 
 export const trackCliEvent = (event: TrackEvent): void => {
-  if (!event || shouldDisableAnalytics() || !getAnalyticsEndpoint()) {
+  const endpoint = getAnalyticsEndpoint();
+  if (!event) {
+    return;
+  }
+
+  if (shouldDisableAnalytics() || !endpoint) {
+    telemetryDebugLog('skip', {
+      reason: shouldDisableAnalytics() ? 'disabled' : 'missing_endpoint',
+      eventName: event.name,
+      endpoint,
+    });
     return;
   }
 
@@ -266,6 +296,10 @@ export const trackCliEvent = (event: TrackEvent): void => {
       distinctId,
       installId,
     };
+    telemetryDebugLog('enqueue', {
+      endpoint,
+      envelope,
+    });
     const encodedPayload = encodeBase64Url(JSON.stringify(envelope));
     const { command, args } = getWorkerSpawnArgs(encodedPayload);
     const child = spawn(command, args, {

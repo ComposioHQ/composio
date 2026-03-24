@@ -133,13 +133,33 @@ export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: n
   onExit(shouldFail ? errorCode : 0);
 };
 
+const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
+const CLI_TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
+
+const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
+  const normalizedArgv = [...argv];
+  const flagIndex = normalizedArgv.indexOf(TELEMETRY_DEBUG_FLAG);
+  if (flagIndex < 0) {
+    return normalizedArgv;
+  }
+
+  normalizedArgv.splice(flagIndex, 1);
+  process.env[CLI_TELEMETRY_DEBUG_ENV_VAR] = 'true';
+  return normalizedArgv;
+};
+
+process.argv = stripTelemetryDebugFlag(process.argv);
+
 const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) satisfies Effect.Effect<
   void,
   unknown,
   unknown
 >;
 
-const commandTelemetryContext = createCliCommandTelemetryContext(process.argv, constants.APP_VERSION);
+const commandTelemetryContext = createCliCommandTelemetryContext(
+  process.argv,
+  constants.APP_VERSION
+);
 if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
   process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
 }
@@ -217,9 +237,13 @@ if (isAnalyticsWorkerInvocation(process.argv)) {
     Effect.mapError(error =>
       ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
     ),
-    Effect.tap(() => trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))),
+    Effect.tap(() =>
+      trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
+    ),
     Effect.tapErrorCause(cause =>
-      trackCliEventEffect(getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause)))
+      trackCliEventEffect(
+        getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+      )
     ),
     // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
     // via its own printDocs before re-failing. Swallow the re-thrown error to avoid
@@ -230,9 +254,7 @@ if (isAnalyticsWorkerInvocation(process.argv)) {
       const text = HelpDoc.toAnsiText(error.error).trim();
       const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
       if (flagMatch && valueOptionNames.has(flagMatch[1])) {
-        return Console.error(
-          `Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`
-        );
+        return Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`);
       }
       return Effect.void;
     }),
