@@ -16,7 +16,7 @@ import { generateCmd } from './generate/generate.cmd';
 import { manageCmd } from './manage/manage.cmd';
 import { devCmd } from './dev.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
-import { printRootHelp } from './root-help';
+import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
@@ -185,6 +185,10 @@ export const runWithConfig = Effect.gen(function* () {
     const normalizedArgv = normalizeHiddenDebugFlags(normalizeVersionShortFlag(argv));
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp();
+    }
+    const subHelp = matchSubcommandHelp(normalizedArgv);
+    if (subHelp) {
+      return printSubcommandHelp(subHelp);
     }
     if (isGenerateGraph(normalizedArgv)) {
       return Effect.sync(() => {

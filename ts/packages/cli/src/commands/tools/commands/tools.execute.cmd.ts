@@ -4,9 +4,9 @@ import * as path from 'node:path';
 import util from 'node:util';
 import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
 import { FileSystem } from '@effect/platform';
-import { parse as parseJsonWithComments } from 'comment-json';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
+import { parseJsonIsh } from 'src/utils/parse-json-ish';
 import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';
 import { requireAuth } from 'src/effects/require-auth';
 import {
@@ -62,15 +62,26 @@ const projectName = Options.text('project-name').pipe(
   Options.withDescription('Developer project name override for this command')
 );
 
-const getSchema = Options.boolean('get-schema').pipe(Options.withDefault(false));
-const dryRun = Options.boolean('dry-run').pipe(Options.withDefault(false));
+const getSchema = Options.boolean('get-schema').pipe(
+  Options.withDescription('Fetch and print the raw tool schema without executing'),
+  Options.withDefault(false)
+);
+const dryRun = Options.boolean('dry-run').pipe(
+  Options.withDescription('Validate and preview the tool call without executing'),
+  Options.withDefault(false)
+);
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
+  Options.withDescription('Skip the linked-account check'),
   Options.withDefault(false)
 );
 const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
+  Options.withDescription('Skip input validation against cached schema'),
   Options.withDefault(false)
 );
-const noVerify = Options.boolean('no-verify').pipe(Options.withDefault(false));
+const noVerify = Options.boolean('no-verify').pipe(
+  Options.withDescription('Skip both connection and input validation checks'),
+  Options.withDefault(false)
+);
 
 const resolveInput = (input: Option.Option<string>) =>
   Effect.gen(function* () {
@@ -103,17 +114,7 @@ const resolveInput = (input: Option.Option<string>) =>
 const parseArguments = (raw: string) =>
   Effect.gen(function* () {
     const parsed = yield* Effect.try({
-      try: () => {
-        try {
-          return JSON.parse(raw) as unknown;
-        } catch {
-          try {
-            return parseJsonWithComments(raw, undefined, true) as unknown;
-          } catch {
-            return Function(`"use strict"; return (${raw});`)() as unknown;
-          }
-        }
-      },
+      try: () => parseJsonIsh(raw),
       catch: () =>
         new Error(
           'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
@@ -959,24 +960,23 @@ export const toolsCmd$Execute = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Execute a tool by slug with JSON arguments, or preview it locally with --dry-run.',
-      'Arguments are validated against cached tool schemas in `~/.composio/tool_definitions/` when available.',
-      'Use `--get-schema` to fetch the latest raw input schema into the cache and print it without executing the tool.',
-      'Use `composio tools info <slug>` for the same schema plus a short human summary and jq hints.',
-      'Successful execute responses are parsed immediately, and failed calls validate inputs against cached schemas when available, so it is often fastest to just try the real call first before inspecting schema.',
+      'Execute a tool by slug. Validates inputs against cached schemas and checks connections',
+      'automatically — just try it and it will tell you what to fix.',
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --skip-connection-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --skip-tool-params-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --no-verify -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --get-schema',
+      "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
+      '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
       '',
-      'Related:',
-      '  composio run \'const first = await execute("TOOL_SLUG", { ... }); const second = await execute("OTHER_TOOL", { ... }); console.log({ first, second })\'',
-      '  composio search "<query>"',
-      '  composio link <toolkit>',
+      'Flags:',
+      '  --skip-connection-check     Skip the linked-account check',
+      '  --skip-tool-params-check    Skip input validation against cached schema',
+      '  --no-verify                 Skip both checks above',
+      '',
+      'See also:',
+      '  composio search "<query>"               Find tool slugs by use case',
+      '  composio tools info <slug>              Schema summary with jq hints',
+      '  composio link <toolkit>                 Connect an account for a toolkit',
     ].join('\n')
   )
 );
@@ -1001,24 +1001,23 @@ export const rootToolsCmd$Execute = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Execute a tool by slug with JSON arguments, or preview it locally with --dry-run.',
-      'Arguments are validated against cached tool schemas in `~/.composio/tool_definitions/` when available.',
-      'Use `--get-schema` to fetch the latest raw input schema into the cache and print it without executing the tool.',
-      'Use `composio tools info <slug>` for the same schema plus a short human summary and jq hints.',
-      'Successful execute responses are parsed immediately, and failed calls validate inputs against cached schemas when available, so it is often fastest to just try the real call first before inspecting schema.',
+      'Execute a tool by slug. Validates inputs against cached schemas and checks connections',
+      'automatically — just try it and it will tell you what to fix.',
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --skip-connection-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --skip-tool-params-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --no-verify -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio execute GMAIL_SEND_EMAIL --get-schema',
+      "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
+      '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
       '',
-      'Related:',
-      '  composio run \'const first = await execute("TOOL_SLUG", { ... }); const second = await execute("OTHER_TOOL", { ... }); console.log({ first, second })\'',
-      '  composio search "<query>"',
-      '  composio link <toolkit>',
+      'Flags:',
+      '  --skip-connection-check     Skip the linked-account check',
+      '  --skip-tool-params-check    Skip input validation against cached schema',
+      '  --no-verify                 Skip both checks above',
+      '',
+      'See also:',
+      '  composio search "<query>"               Find tool slugs by use case',
+      '  composio tools info <slug>              Schema summary with jq hints',
+      '  composio link <toolkit>                 Connect an account for a toolkit',
     ].join('\n')
   )
 );

@@ -239,12 +239,17 @@ export const toolsCmd$Search = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.',
+      'Find tools by use case. Returns matching tools with slugs you can pass directly to `execute`.',
       '',
-      'Related:',
-      '  composio run \'const result = await execute("TOOL_SLUG", { ... }); console.log(result)\'',
-      '  composio link <toolkit>',
-      "  composio execute <slug> -d '{}'",
+      'Examples:',
+      '  composio search "send an email"',
+      '  composio search "create issue" --toolkits github',
+      '  composio search "list calendar events" --limit 5',
+      '',
+      'Next steps:',
+      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
+      "  composio tools info <slug>               Inspect a tool's schema before executing",
+      '  composio link <toolkit>                  Connect an account if execute tells you to',
     ].join('\n')
   )
 );
@@ -264,12 +269,17 @@ export const rootToolsCmd$Search = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.',
+      'Find tools by use case. Returns matching tools with slugs you can pass directly to `execute`.',
       '',
-      'Related:',
-      '  composio run \'const result = await execute("TOOL_SLUG", { ... }); console.log(result)\'',
-      '  composio link <toolkit>',
-      "  composio execute <slug> -d '{}'",
+      'Examples:',
+      '  composio search "send an email"',
+      '  composio search "create issue" --toolkits github',
+      '  composio search "list calendar events" --limit 5',
+      '',
+      'Next steps:',
+      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
+      "  composio tools info <slug>               Inspect a tool's schema before executing",
+      '  composio link <toolkit>                  Connect an account if execute tells you to',
     ].join('\n')
   )
 );

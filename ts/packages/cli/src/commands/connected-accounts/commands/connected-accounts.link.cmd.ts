@@ -378,11 +378,16 @@ export const connectedAccountsCmd$Link = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Link an external account via OAuth redirect.',
+      'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.',
+      'Opens a browser for OAuth authorization and waits for confirmation.',
       '',
-      'Related:',
-      '  composio search "<query>"',
-      "  composio execute <slug> -d '{}'",
+      'Examples:',
+      '  composio link github',
+      '  composio link gmail --no-browser          Print the auth URL instead of opening it',
+      '',
+      'See also:',
+      '  composio search "<query>"                 Find tools to use after linking',
+      "  composio execute <slug> -d '{ ... }'      Execute a tool with your linked account",
     ].join('\n')
   )
 );
@@ -403,11 +408,16 @@ export const rootConnectedAccountsCmd$Link = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Link an external account via OAuth redirect.',
+      'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf.',
+      'Opens a browser for OAuth authorization and waits for confirmation.',
       '',
-      'Related:',
-      '  composio search "<query>"',
-      "  composio execute <slug> -d '{}'",
+      'Examples:',
+      '  composio link github',
+      '  composio link gmail --no-browser          Print the auth URL instead of opening it',
+      '',
+      'See also:',
+      '  composio search "<query>"                 Find tools to use after linking',
+      "  composio execute <slug> -d '{ ... }'      Execute a tool with your linked account",
     ].join('\n')
   )
 );

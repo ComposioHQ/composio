@@ -16,14 +16,22 @@ const file = Options.text('file').pipe(
   Options.optional
 );
 
-const dryRun = Options.boolean('dry-run').pipe(Options.withDefault(false));
+const dryRun = Options.boolean('dry-run').pipe(
+  Options.withDescription('Preview execute() calls without running them'),
+  Options.withDefault(false)
+);
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
+  Options.withDescription('Skip the linked-account check'),
   Options.withDefault(false)
 );
 const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
+  Options.withDescription('Skip input validation against cached schema'),
   Options.withDefault(false)
 );
-const noVerify = Options.boolean('no-verify').pipe(Options.withDefault(false));
+const noVerify = Options.boolean('no-verify').pipe(
+  Options.withDescription('Skip both connection and input validation checks'),
+  Options.withDefault(false)
+);
 
 const args = Args.repeated(Args.text({ name: 'arg' })).pipe(
   Args.withDescription('Inline code followed by arguments, or just arguments when using --file')
@@ -464,44 +472,32 @@ export const runCmd = Command.make('run', {
 }).pipe(
   Command.withDescription(
     [
-      'Run inline TS/JS code or a file with the embedded Bun runtime and injected Composio helpers: `execute`, `search`, and `proxy`.',
-      'Use this for programmatic multi-step tool workflows when you want to stay in code and not orchestrate everything through bash.',
-      '',
-      'Usage:',
-      "  composio run '<code>' [-- ...args]",
-      '  composio run --file ./script.ts [-- ...args]',
+      'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.',
       '',
       'Examples:',
       `  composio run 'const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Bug report" }); console.log(issue)'`,
-      `  composio run --skip-connection-check 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
-      `  composio run --skip-tool-params-check 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
-      `  composio run --no-verify 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
-      `  composio run --dry-run 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
+      `  composio run --dry-run 'await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" })'`,
       '  composio run --file ./script.ts -- hello world',
       '',
-      'Injected globals:',
-      '  await execute(slug, data?)',
-      '    Primary helper. Wraps `composio execute` and returns parsed JSON output quickly.',
-      '    It validates arguments against cached tool schemas in `~/.composio/tool_definitions/` when available.',
-      '  await search(query, { toolkits?: string[] | string, limit?: number })',
-      '    Secondary discovery helper. Wraps `composio search` and returns parsed JSON stdout.',
-      '  const fetch = await proxy(toolkit)',
-      "    Returns a fetch-compatible function bound to that toolkit. It creates or reuses a consumer-project-scoped tool-router session and calls Composio proxy execute with that consumer project's credentials.",
-      '    Example: `const gmailFetch = await proxy("gmail"); const res = await gmailFetch("https://gmail.googleapis.com/gmail/v1/users/me/profile")`.',
-      '    Inspect `proxy.schema` in code for the basic factory schema.',
-      '  All three helpers automatically reuse your top level auth state, using the toolkits and apps you have already authorized.',
+      'Injected helpers (behave like their CLI counterparts):',
+      '  execute(slug, data?)          Same as `composio execute` — returns parsed JSON',
+      '  search(query, options?)        Same as `composio search` — returns matching tools',
+      '  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function',
+      '                                 Example: const f = await proxy("gmail")',
+      '                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")',
       '',
-      'Hints:',
-      '  Use `composio search "<query>"` outside `run` to discover tool slugs before writing a script.',
-      '  Use `composio link <toolkit>` outside `run` to authenticate apps up front before calling `execute(...)`.',
-      '  Use `composio execute <slug> --get-schema` if you want to inspect tool inputs before scripting.',
-      '  Use `await proxy("<toolkit>")` when you need raw toolkit API calls that should ride on the consumer project account instead of a tool schema.',
-      '  Since execute responses are parsed back into code almost instantly, it is usually fine to just try `execute(...)` directly in a script.',
-      '  Treat `run` as the place to compose many tool calls once discovery and auth are already handled.',
+      'All helpers reuse your CLI auth state and linked accounts.',
       '',
-      'Advanced:',
-      '  import { $ } from "bun"',
-      '  await $`${process.execPath} manage toolkits list`',
+      'Flags:',
+      '  --dry-run                   Preview execute() calls without running them',
+      '  --skip-connection-check     Skip the linked-account check',
+      '  --skip-tool-params-check    Skip input validation against cached schema',
+      '  --no-verify                 Skip both checks above',
+      '',
+      'See also:',
+      '  composio search "<query>"                 Discover tool slugs before scripting',
+      '  composio link <toolkit>                   Connect accounts before scripting',
+      '  composio execute <slug> --get-schema      Inspect tool inputs before scripting',
     ].join('\n')
   ),
   Command.withHandler(

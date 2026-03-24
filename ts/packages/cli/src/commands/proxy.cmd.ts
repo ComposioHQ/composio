@@ -5,7 +5,6 @@ import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { parse as parseJsonWithComments } from 'comment-json';
 import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -23,6 +22,7 @@ import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
+import { parseJsonIsh } from 'src/utils/parse-json-ish';
 
 const endpoint = Args.text({ name: 'url' }).pipe(
   Args.withDescription('Absolute or relative API endpoint to call through proxy execute.')
@@ -118,17 +118,9 @@ const resolveBodyInput = (input: Option.Option<string>) =>
 
 export const parseProxyBody = (raw: string): unknown => {
   try {
-    return JSON.parse(raw) as unknown;
+    return parseJsonIsh(raw);
   } catch {
-    try {
-      return parseJsonWithComments(raw, undefined, true) as unknown;
-    } catch {
-      try {
-        return Function(`"use strict"; return (${raw});`)() as unknown;
-      } catch {
-        return raw;
-      }
-    }
+    return raw;
   }
 };
 
@@ -283,12 +275,17 @@ export const proxyCmd = Command.make('proxy', {
 }).pipe(
   Command.withDescription(
     [
-      'Call a toolkit API through Composio proxy execute using the current consumer-project account.',
+      'curl-like access to any toolkit API through Composio using your linked account.',
+      'Composio handles authentication — just provide the full URL and toolkit.',
       '',
       'Examples:',
       '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail',
-      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --skip-connection-check',
-      `  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
+      `  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\`,
+      `    -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
+      '',
+      'See also:',
+      '  composio link <toolkit>                   Connect an account before calling proxy',
+      '  composio run \'const f = await proxy("gmail"); ...\'   Use proxy in a script',
     ].join('\n')
   ),
   Command.withHandler(({ endpoint, toolkit, method, headers, data, skipConnectionCheck }) =>
