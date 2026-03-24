@@ -83,6 +83,11 @@ function validateSlugLength(toolSlug: string, toolkitSlug: string | undefined, c
  * Just return the result data from `execute`, or throw an error.
  * The SDK wraps it into the standard response format internally.
  *
+ * **Slug naming:** The slug you provide is automatically prefixed with `LOCAL_` when
+ * exposed to the agent (e.g. `'GREP'` becomes `LOCAL_GREP`). If the tool is inside a
+ * custom toolkit, the toolkit slug is also included (e.g. `LOCAL_DEV_TOOLS_GREP`).
+ * The `LOCAL_` prefix is reserved and cannot be used in your slug.
+ *
  * @param slug - Unique tool identifier (alphanumeric, underscores, hyphens; no LOCAL_ or COMPOSIO_ prefix)
  * @param options - Tool definition including name, schema, and execute function
  * @returns A CustomTool to pass to session creation
@@ -181,6 +186,10 @@ export function createCustomTool<T extends z.ZodType>(
  * Create a custom toolkit that groups related tools.
  *
  * Tools passed here must NOT have `extendsToolkit` set — they inherit the toolkit identity instead.
+ *
+ * **Slug naming:** The toolkit slug becomes part of the final tool slug exposed to the agent.
+ * For example, a toolkit `'DEV_TOOLS'` with a tool `'GREP'` produces `LOCAL_DEV_TOOLS_GREP`.
+ * The `LOCAL_` prefix is reserved and cannot be used in your slug.
  *
  * @param slug - Unique toolkit identifier (alphanumeric, underscores, hyphens; no LOCAL_ or COMPOSIO_ prefix)
  * @param options - Toolkit definition including name, description, and tools

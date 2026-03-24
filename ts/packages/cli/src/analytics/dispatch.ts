@@ -6,11 +6,13 @@ import process from 'node:process';
 import { spawn } from 'node:child_process';
 import { Effect } from 'effect';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
+import * as constants from 'src/constants';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
 const COMPOSIO_DIR = '.composio';
 const USER_CONFIG_FILE_NAME = 'user-config.json';
 const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
+const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_ANALYTICS_PATH = '/api/cli/analytics';
 
 const truthy = (value: string | undefined): boolean =>
@@ -19,6 +21,25 @@ const truthy = (value: string | undefined): boolean =>
 const analyticsDir = () => path.join(os.homedir(), COMPOSIO_DIR);
 const analyticsStatePath = () => path.join(analyticsDir(), ANALYTICS_STATE_FILE_NAME);
 const userConfigPath = () => path.join(analyticsDir(), USER_CONFIG_FILE_NAME);
+const cacheDir = () =>
+  process.env.COMPOSIO_CACHE_DIR?.trim() ||
+  process.env.CACHE_DIR?.trim() ||
+  path.join(os.homedir(), constants.USER_COMPOSIO_DIR);
+const consumerShortTermCachePath = () =>
+  path.join(cacheDir(), CONSUMER_SHORT_TERM_CACHE_FILE_NAME);
+
+type ConsumerShortTermCacheState = Record<
+  string,
+  {
+    readonly probablyMyCliSessionsByCwdHash?: Record<
+      string,
+      {
+        readonly id: string;
+        readonly expiresAt: string;
+      }
+    >;
+  }
+>;
 
 const ensureAnalyticsDir = () => {
   fs.mkdirSync(analyticsDir(), { recursive: true });
@@ -92,6 +113,51 @@ const getUserApiKey = (): string | null => {
   }
 
   return null;
+};
+
+const cwdHash = (cwd: string): string => {
+  let hash = 5381;
+  for (let index = 0; index < cwd.length; index += 1) {
+    hash = (hash * 33) ^ cwd.charCodeAt(index);
+  }
+  return Math.abs(hash >>> 0).toString(36);
+};
+
+const getCurrentCwdSessionId = (): string | undefined => {
+  try {
+    const raw = fs.readFileSync(consumerShortTermCachePath(), 'utf8');
+    const parsed = JSON.parse(raw) as ConsumerShortTermCacheState;
+    const currentCwdHash = cwdHash(process.cwd());
+    const now = Date.now();
+    let best: { id: string; expiresAtMs: number } | undefined;
+
+    for (const entry of Object.values(parsed)) {
+      const session = entry.probablyMyCliSessionsByCwdHash?.[currentCwdHash];
+      if (!session?.id) continue;
+      const expiresAtMs = Date.parse(session.expiresAt);
+      if (!Number.isFinite(expiresAtMs) || expiresAtMs <= now) continue;
+      if (!best || expiresAtMs > best.expiresAtMs) {
+        best = { id: session.id, expiresAtMs };
+      }
+    }
+
+    return best?.id;
+  } catch {
+    return undefined;
+  }
+};
+
+const withCliSessionId = (event: TrackEvent): TrackEvent => {
+  if (!event) return event;
+  const cliSessionId = getCurrentCwdSessionId();
+  if (!cliSessionId) return event;
+  return {
+    ...event,
+    properties: {
+      ...(event.properties ?? {}),
+      cli_session_id: cliSessionId,
+    },
+  };
 };
 
 const readApiBaseUrl = (): string | null => {
@@ -169,10 +235,11 @@ export const trackCliEvent = (event: TrackEvent): void => {
   }
 
   try {
+    const enrichedEvent = withCliSessionId(event);
     const installId = getOrCreateInstallId();
     const distinctId = getDistinctId();
     const envelope: AnalyticsEnvelope = {
-      event,
+      event: enrichedEvent,
       sentAt: new Date().toISOString(),
       source: 'cli',
       distinctId,

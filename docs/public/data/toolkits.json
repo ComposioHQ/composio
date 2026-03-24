@@ -13,7 +13,7 @@
     ],
     "toolCount": 60,
     "triggerCount": 2,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GMAIL_ADD_LABEL_TO_EMAIL",
@@ -548,9 +548,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 866,
+    "toolCount": 867,
     "triggerCount": 20,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GITHUB_ABORT_REPOSITORY_MIGRATION",
@@ -2898,6 +2898,11 @@
         "description": "Lists active/pending GitHub Codespaces for an existing organization; admins list all, members list their own."
       },
       {
+        "slug": "GITHUB_LIST_COMMENT_CHANGES",
+        "name": "List comment changes across organization",
+        "description": "Tool to list issue and PR comment changes across an organization's repositories efficiently. Use when monitoring comment activity without per-PR/per-issue polling. Filters organization events to return only comment-related events (IssueCommentEvent, PullRequestReviewCommentEvent, CommitCommentEvent). Note: Events are limited to the past 30 days and up to 300 events per timeline. Use ETag header for efficient polling to avoid rate limits."
+      },
+      {
         "slug": "GITHUB_LIST_COMMENTS_FOR_A_PULL_REQUEST_REVIEW",
         "name": "List comments for a pull request review",
         "description": "Lists all comments for a specific review on a GitHub pull request."
@@ -4887,37 +4892,37 @@
       {
         "slug": "GITHUB_ARTIFACT_CREATED_TRIGGER",
         "name": "New Workflow Artifact Created",
-        "description": "Triggers when a new workflow artifact is created in a GitHub repository.\n\n    Uses an id_diff strategy: the first page of artifacts (newest first) is\n    fetched from ``GET /repos/{owner}/{repo}/actions/artifacts`` on every poll\n    and compared against the previously stored set of artifact IDs. Any artifact\n    ID that appears in the current response but was absent from the previous\n    snapshot causes an event to be emitted.\n\n    On the first poll the current artifact IDs are recorded as a baseline and\n    no event is emitted.\n\n    Optionally filter by ``name`` to restrict monitoring to artifacts with a\n    specific name.\n\n    **Note:** The GitHub token must have ``repo`` scope to list workflow\n    artifacts."
+        "description": "Triggers when a new workflow artifact is created in a GitHub repository.\n\n    Monitors for newly created GitHub Actions workflow artifacts. Optionally\n    filters by artifact name to restrict monitoring to specific artifacts."
       },
       {
         "slug": "GITHUB_BRANCH_CHANGED_TRIGGER",
         "name": "Branch Changed",
-        "description": "Triggers when a GitHub branch changes.\n\n    Uses a snapshot_diff strategy: the full branch resource is fetched from\n    ``GET /repos/{owner}/{repo}/branches/{branch}`` on every poll and a\n    canonicalised snapshot of tracked fields is compared against the snapshot\n    recorded during the previous poll.\n\n    Tracked fields include:\n    - ``head_commit_sha`` — detects new commits pushed to the branch\n    - ``protected`` — detects changes to the branch's protection status\n    - Protection settings: ``enforcement_level``, required status checks,\n      ``enforce_admins``, required PR reviews, linear history requirements,\n      force push allowance, deletion allowance, conversation resolution,\n      branch locking, and fork syncing settings.\n\n    On the first poll the current state is recorded as a baseline and **no\n    event is emitted**.  Events start firing from the second poll onward when\n    a tracked field changes.\n\n    **Note:** The GitHub token must have ``repo`` scope (or ``public_repo``\n    for public repositories) to read branch information."
+        "description": "Triggers when a GitHub branch changes.\n\n    Monitors a specific branch for:\n    - New commits pushed (head commit SHA changes)\n    - Protection status toggled (branch becomes protected or unprotected)\n    - Protection settings changed, including: required status checks and their\n      enforcement level, admin enforcement, required pull request reviews\n      (dismiss stale reviews, code owner reviews, approving review count,\n      last push approval), required linear history, force push allowance,\n      deletion allowance, conversation resolution, branch locking, and fork\n      syncing."
       },
       {
         "slug": "GITHUB_BRANCH_CREATED_TRIGGER",
         "name": "New Branch Created",
-        "description": "Triggers when a new branch is created in a GitHub repository.\n\n    **Strategy: snapshot_diff**\n\n    Each poll fetches the complete list of branches from\n    ``GET /repos/{owner}/{repo}/branches`` (paginating all pages in a single\n    poll cycle) and compares the returned branch names against the\n    ``known_branch_names`` snapshot stored in state.  Any branch name that\n    is present in the current response but absent from the snapshot is\n    treated as a newly created branch and causes an event to be emitted.\n\n    On the **first poll** the complete branch list is fetched and recorded\n    as the baseline snapshot; **no events are emitted**.\n\n    From the **second poll onward**, new branch names are detected by\n    set-difference comparison.  The ``known_branch_names`` list is updated\n    to the current snapshot after each poll and is capped at\n    ``POLLING_TRIGGER_STATE_LIMIT`` entries (most-recently-seen names are\n    kept, oldest discarded) to prevent unbounded state growth."
+        "description": "Triggers when a new branch is created in a GitHub repository.\n\n    Detects newly created branches. Deleted branches do not fire events."
       },
       {
         "slug": "GITHUB_CHECK_RUN_STATUS_CHANGED_TRIGGER",
         "name": "Check Run Status / Conclusion Changed",
-        "description": "Triggers when a specific GitHub check run changes its status or conclusion.\n\n    Uses snapshot-based diffing against the REST API\n    GET /repos/{owner}/{repo}/check-runs/{check_run_id} endpoint. On each poll\n    the watched fields (status, conclusion, started_at, completed_at) are compared\n    against the stored snapshot. If any watched field changed, an event is emitted\n    listing the changed fields, their previous values, and the full current check run state.\n\n    On the first poll a baseline snapshot is taken and no event is emitted.\n    On subsequent polls the current snapshot is compared to the previous one."
+        "description": "Triggers when a specific GitHub check run changes its status or conclusion.\n\n    Monitors a single check run for changes to: status (queued, in_progress,\n    completed, etc.), conclusion (success, failure, neutral, cancelled, skipped,\n    timed_out, action_required), started_at, and completed_at."
       },
       {
         "slug": "GITHUB_CHECK_SUITE_STATUS_CHANGED_TRIGGER",
         "name": "Check Suite Status / Conclusion Changed",
-        "description": "Triggers when a GitHub check suite changes its status or conclusion for a given ref.\n\n    Uses snapshot-based diffing against the REST API\n    GET /repos/{owner}/{repo}/commits/{ref}/check-suites endpoint.\n\n    On each poll, all check suites for the configured ref are fetched (with pagination).\n    For each suite, the watched fields (status, conclusion) are compared against the\n    stored per-suite snapshot.\n\n    If any watched field changed for a suite, an event is emitted for that suite\n    listing the changed fields, their previous values, and the full current suite state.\n\n    On the first poll, a baseline snapshot is taken from all current suites and no\n    events are emitted. New suites seen after the first poll also establish a snapshot\n    without emitting — only subsequent changes to an already-seen suite fire events."
+        "description": "Triggers when a GitHub check suite changes its status or conclusion for a given ref.\n\n    Monitors all check suites associated with a git reference (branch, tag, or\n    commit SHA) for changes to status (queued, in_progress, completed, etc.) and\n    conclusion (success, failure, neutral, cancelled, skipped, timed_out,\n    action_required, startup_failure, stale). Optionally filters by GitHub App ID."
       },
       {
         "slug": "GITHUB_CODE_SCANNING_ALERT_CREATED_TRIGGER",
         "name": "New Code Scanning Alert Created",
-        "description": "Triggers when a new code scanning alert is created in a repository.\n\n    **Strategy: id_diff**\n\n    Each poll fetches the most recent page of code scanning alerts from\n    ``GET /repos/{owner}/{repo}/code-scanning/alerts`` (sorted by ``created``\n    date, newest first) and compares the alert numbers against the previously\n    recorded ``known_ids`` set.  Any alert number not seen before fires a\n    ``new_code_scanning_alert`` event.\n\n    On the **first poll** the current alert numbers are recorded as a\n    baseline and **no event is emitted**.  Events start firing from the\n    second poll onward whenever a new alert is detected.\n\n    **Note:** The GitHub token must have ``security_events`` scope (or\n    ``public_repo`` for public repositories).  The repository must have\n    code scanning enabled (GitHub Advanced Security)."
+        "description": "Triggers when a new code scanning alert is created in a repository.\n\n    Fires an event for each newly created code scanning alert detected in\n    the configured repository. Alerts can be filtered by Git reference,\n    scanning tool, state, and severity. The payload includes the alert\n    number, rule details, tool information, state, severity, and the\n    location of the most recent instance."
       },
       {
         "slug": "GITHUB_COLLABORATOR_ADDED_TRIGGER",
         "name": "New Repository Collaborator Added",
-        "description": "Triggers when a new collaborator is added to a GitHub repository.\n\n    Uses snapshot-based diffing: on each poll, fetches the complete current list of\n    collaborators and compares collaborator IDs against the previous snapshot to detect\n    newly added collaborators.\n\n    On the first poll, seeds the state with the current collaborator list without\n    emitting events. On subsequent polls, any collaborator whose ID was not present\n    in the previous snapshot is emitted as a new_collaborator event.\n\n    Paginates through all pages of the collaborators API within a single poll cycle\n    to ensure no collaborators are missed."
+        "description": "Triggers when a new collaborator is added to a GitHub repository.\n\n    Monitors the full list of collaborators on a repository and fires an event\n    for each newly added collaborator. The payload includes the collaborator's\n    GitHub username, account ID, profile URL, avatar URL, permission flags\n    (pull, triage, push, maintain, admin), and assigned role name."
       },
       {
         "slug": "GITHUB_COMMIT_EVENT",
@@ -4927,27 +4932,27 @@
       {
         "slug": "GITHUB_DEPLOYMENT_CREATED_TRIGGER",
         "name": "New Deployment Created",
-        "description": "Triggers when a new deployment is created in a GitHub repository.\n\n    Uses an id_diff strategy: the most recent page of deployments is fetched\n    from ``GET /repos/{owner}/{repo}/deployments`` on every poll. GitHub\n    returns deployments newest-first, so page 1 always contains the latest\n    deployments. Any deployment ID that appears in the current response but\n    was absent from the previous snapshot causes an event to be emitted.\n\n    On the first poll the current deployment IDs are recorded as a baseline\n    and no event is emitted.\n\n    **Note:** The GitHub token must have ``repo`` scope (or ``public_repo``\n    for public repositories) to list deployments."
+        "description": "Triggers when a new deployment is created in a GitHub repository.\n\n    Fires an event for each newly created deployment detected in the\n    configured repository. Deployments can optionally be filtered by target\n    environment. The payload includes the deployment ID, commit SHA, ref,\n    task, environment, creator details, and timestamps."
       },
       {
         "slug": "GITHUB_DEPLOYMENT_STATE_CHANGED_TRIGGER",
         "name": "GitHub Deployment State Changed",
-        "description": "Triggers when a specific GitHub deployment's fields change.\n\n    The following aspects are monitored:\n    - ``environment`` — the target environment name\n    - ``original_environment`` — the original environment name before normalization\n    - ``description`` — the human-readable deployment description\n    - ``task`` — the deployment task name\n    - ``sha`` — the commit SHA being deployed\n    - ``ref`` — the branch, tag, or SHA reference being deployed\n    - ``updated_at`` — the last-updated timestamp\n    - ``transient_environment`` — whether the environment is temporary\n    - ``production_environment`` — whether this is a production deployment\n\n    Uses a snapshot-diff strategy: the deployment is fetched from\n    ``GET /repos/{owner}/{repo}/deployments/{deployment_id}`` on every poll\n    and a canonicalised snapshot hash is compared to the previous poll.  If the\n    hash differs, the changed fields are surfaced alongside the full current\n    deployment details.\n\n    On the first poll the current snapshot is recorded as a baseline and no\n    event is emitted.\n\n    **Required token scopes:** ``repo`` (for private repos) or ``public_repo``\n    (for public repos)."
+        "description": "Triggers when a specific GitHub deployment's fields change.\n\n    Monitors the following aspects of a single deployment:\n    - ``environment`` -- the target environment name\n    - ``original_environment`` -- the original environment name before normalization\n    - ``description`` -- the human-readable deployment description\n    - ``task`` -- the deployment task name\n    - ``sha`` -- the commit SHA being deployed\n    - ``ref`` -- the branch, tag, or SHA reference being deployed\n    - ``updated_at`` -- the last-updated timestamp\n    - ``transient_environment`` -- whether the environment is temporary\n    - ``production_environment`` -- whether this is a production deployment\n\n    When any of these fields change, an event is emitted containing the full\n    current deployment details and a list of which fields changed."
       },
       {
         "slug": "GITHUB_DEPLOYMENT_STATUS_CREATED",
         "name": "New Deployment Status Created",
-        "description": "Triggers when a new deployment status is created for a specific deployment.\n\n    **Strategy: id_diff**\n\n    Each poll fetches the first page of deployment statuses from\n    ``GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses?per_page=100``\n    — the GitHub API returns statuses in descending order (newest first).\n    The returned IDs are compared against the ``known_ids`` list stored in\n    state; any ID not present is treated as a new deployment status and causes\n    an event to be emitted.\n\n    On the **first poll** a bootstrap page is fetched, the returned IDs are\n    saved as the baseline and **no events are emitted**.\n\n    From the **second poll onward**, any status ID not present in\n    ``known_ids`` triggers an event.  The ``known_ids`` list is capped at\n    ``POLLING_TRIGGER_STATE_LIMIT`` entries to prevent unbounded state growth."
+        "description": "Triggers when a new deployment status is created for a specific deployment.\n\n    Fires an event for each newly created deployment status on the monitored\n    deployment. Deployment statuses represent state transitions such as\n    pending, in_progress, success, failure, error, inactive, and queued.\n    The payload includes the status state, creator, environment, description,\n    timestamps, and relevant URLs."
       },
       {
         "slug": "GITHUB_FOLLOWER_EVENT",
         "name": "Follower Changes",
-        "description": "Triggers when there are changes in GitHub followers."
+        "description": "Triggers when new followers are detected on your GitHub account."
       },
       {
         "slug": "GITHUB_GIT_REFERENCE_CREATED_TRIGGER",
         "name": "New Git Reference Created",
-        "description": "Triggers when a new Git reference (branch or tag) matching a specified\n    prefix is created in a repository.\n\n    Uses a snapshot_diff strategy: on every poll, all matching references are\n    fetched from ``GET /repos/{owner}/{repo}/git/matching-refs/{ref_prefix}``\n    and compared against the previously stored snapshot. Any reference that\n    appears in the current response but was absent from the previous snapshot\n    causes an event to be emitted.\n\n    On the first poll the current references are recorded as a baseline and\n    no event is emitted.\n\n    Use ``ref_prefix`` to filter the references to monitor:\n    - ``heads/`` to watch all branches\n    - ``heads/feature/`` to watch only feature branches\n    - ``tags/`` to watch all tags\n    - ``tags/v`` to watch tags starting with 'v'\n\n    **Note:** The GitHub token must have ``repo`` scope to list references."
+        "description": "Triggers when a new Git reference (branch or tag) matching a specified\n    prefix is created in a repository.\n\n    Fires an event for each newly created branch or tag whose name matches\n    the configured prefix. Use ``ref_prefix`` to control what is monitored:\n    - ``heads/`` to watch all branches\n    - ``heads/feature/`` to watch only feature branches\n    - ``tags/`` to watch all tags\n    - ``tags/v`` to watch tags starting with 'v'\n\n    The payload includes the full reference name, node ID, the SHA and type\n    of the Git object the reference points to, and the reference API URL."
       },
       {
         "slug": "GITHUB_ISSUE_ADDED_EVENT",
@@ -4957,32 +4962,32 @@
       {
         "slug": "GITHUB_ISSUE_ASSIGNED_TO_ME_TRIGGER",
         "name": "New Issue Assigned to Me",
-        "description": "Triggers when a new issue is assigned to the authenticated user.\n\n    Uses the GitHub /issues endpoint with filter=assigned and the `since` timestamp\n    parameter to efficiently fetch only issues updated after the last poll.\n    Maintains a bounded `seen_ids` list for deduplication at time boundaries.\n    Pull requests returned by the Issues API are excluded automatically.\n\n    On the first poll, seeds state without emitting events. On subsequent polls,\n    passes the last sync timestamp as the `since` filter and paginates through all\n    pages within a single poll cycle."
+        "description": "Triggers when a new issue is assigned to the authenticated user.\n\n    Fires an event for each GitHub issue that is newly assigned to the\n    authenticated user. Pull requests are automatically excluded -- only\n    true issues are emitted. Issues can optionally be filtered by labels\n    and state. The payload includes the issue number, title, body, state,\n    labels, assignees, creator, repository details, and timestamps."
       },
       {
         "slug": "GITHUB_ISSUE_COMMENT_CHANGED_TRIGGER",
         "name": "GitHub Issue Comment Changed",
-        "description": "Triggers when a specific GitHub issue comment changes.\n\n    The following fields are monitored:\n    - ``body`` — the text body of the comment (edit detection)\n    - ``updated_at`` — the last-updated timestamp of the comment\n    - ``reactions_*`` — all individual reaction type counts (e.g. thumbs up,\n      heart, rocket, etc.) as well as the total reaction count\n\n    Uses a snapshot-diff strategy: the comment is fetched from\n    ``GET /repos/{owner}/{repo}/issues/comments/{comment_id}`` on every poll\n    and a canonicalised snapshot hash is compared to the previous poll.  If the\n    hash differs, the changed fields are surfaced alongside the full current\n    comment details.\n\n    On the first poll the current snapshot is recorded as a baseline and no\n    event is emitted.\n\n    **Note:** This trigger requires the GitHub token to have at least\n    ``public_repo`` scope for public repositories, or ``repo`` scope for\n    private repositories."
+        "description": "Triggers when a specific GitHub issue comment changes.\n\n    Monitors the following fields for changes:\n\n    - ``body`` -- the text content of the comment (detects edits)\n    - ``updated_at`` -- the last-updated timestamp\n    - ``reactions_*`` -- all individual reaction counts (thumbs up/down,\n      laugh, confused, heart, hooray, eyes, rocket) and the total count\n\n    When a change is detected, the payload includes the full current comment\n    data plus a ``changed_fields`` list indicating exactly which fields\n    were modified."
       },
       {
         "slug": "GITHUB_ISSUE_COMMENT_CREATED_TRIGGER",
         "name": "New GitHub Issue Comment",
-        "description": "Triggers when a new comment is added to a specific GitHub issue.\n\n    Uses a timestamp-filter strategy: on each poll the GitHub API's ``since``\n    parameter is used to fetch only comments updated at or after the last sync\n    watermark.  Comments are further filtered by ``created_at`` so that edits to\n    existing comments do not produce duplicate events.  A bounded ``seen_ids`` list\n    handles deduplication at time boundaries.\n\n    On the **first poll** the current watermark is set to ``now`` and no events are\n    emitted.  Events start firing from the second poll onward.\n\n    **Prerequisites:**\n    - The GitHub token must have at least ``repo`` scope for private repositories,\n      or ``public_repo`` for public repositories."
+        "description": "Triggers when a new comment is added to a specific GitHub issue.\n\n    Only genuinely new comments are emitted; edits to existing comments do\n    not produce duplicate events.  The payload includes the comment ID, text\n    body, author details, timestamps, and direct links to the comment on\n    GitHub."
       },
       {
         "slug": "GITHUB_ISSUE_CREATED_TRIGGER",
         "name": "New Issue Created",
-        "description": "Triggers when a new issue is created in a GitHub repository.\n\n    Uses the GitHub Issues API `since` parameter (timestamp filter) to efficiently\n    fetch only issues created or updated after the last poll. Maintains a bounded\n    `seen_ids` list for deduplication at time boundaries. Pull requests returned\n    by the Issues API are excluded automatically.\n\n    On the first poll, seeds state without emitting events. On subsequent polls,\n    passes the last sync timestamp as the `since` filter and paginates through all\n    pages within a single poll cycle."
+        "description": "Triggers when a new issue is created in a GitHub repository.\n\n    Pull requests are automatically excluded -- only true issues produce events.\n    Results can be filtered by labels, assignee, creator, and mentioned user.\n\n    The payload includes the issue number, title, body, state, labels, assignees,\n    comment count, creator details, timestamps, and direct links to the issue on\n    GitHub."
       },
       {
         "slug": "GITHUB_ISSUE_EVENT_OCCURRED_TRIGGER",
         "name": "New Issue Event",
-        "description": "Triggers when a new issue event occurs in a GitHub repository.\n\n    Uses the GitHub Issue Events API (/repos/{owner}/{repo}/issues/events) which\n    returns events newest-first with stable integer IDs. Compares the fetched event\n    IDs against a bounded known_ids list to detect new events (id_diff strategy).\n\n    On the first poll, seeds state (known_ids) with the current page of event IDs\n    without emitting any events. On subsequent polls, fetches the first page and\n    emits payloads for any event IDs not present in known_ids.\n\n    Optionally filters by event type (e.g., closed, labeled, assigned)."
+        "description": "Triggers when a new issue event occurs in a GitHub repository.\n\n    Covers all issue timeline events such as issues being closed, reopened,\n    assigned, unassigned, labeled, unlabeled, milestoned, demilestoned,\n    renamed, locked, or unlocked.  Events can optionally be filtered by type.\n\n    The payload includes the event type, timestamp, the actor who triggered\n    the event, the affected issue details, and any associated commit\n    references."
       },
       {
         "slug": "GITHUB_ISSUE_LABEL_CHANGED_TRIGGER",
         "name": "GitHub Issue Labels Changed",
-        "description": "Triggers when the labels on a specific GitHub issue change.\n\n    Uses a snapshot-diff strategy: the issue's labels are fetched via\n    ``GET /repos/{owner}/{repo}/issues/{issue_number}/labels`` on every poll and\n    the current label set is compared against the previously stored snapshot.\n    Any addition, removal, or metadata change of a label causes an event to be\n    emitted with:\n\n    - The full current label set (``current_labels``)\n    - Labels that were newly added (``added_labels``)\n    - Names of labels that were removed (``removed_label_names``)\n    - Names of labels whose metadata changed without being added/removed (``changed_label_names``)\n\n    On the first poll the current label snapshot is recorded as a baseline and\n    **no event is emitted**.  Events start firing from the second poll onward\n    whenever any label change is detected."
+        "description": "Triggers when the labels on a specific GitHub issue change.\n\n    Fires whenever a label is added to, removed from, or has its metadata\n    (color, description) modified on the monitored issue.  The payload\n    includes:\n\n    - ``current_labels`` -- the full set of labels currently on the issue\n    - ``added_labels`` -- labels that were newly added\n    - ``removed_label_names`` -- names of labels that were removed\n    - ``changed_label_names`` -- labels whose metadata changed without\n      being added or removed"
       }
     ],
     "authConfigDetails": [
@@ -5050,7 +5055,7 @@
     ],
     "toolCount": 46,
     "triggerCount": 7,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLECALENDAR_ACL_DELETE",
@@ -5274,8 +5279,8 @@
       },
       {
         "slug": "GOOGLECALENDAR_SYNC_EVENTS",
-        "name": "Sync Events",
-        "description": "Synchronizes Google Calendar events, performing a full sync if no `sync_token` is provided or if a 410 GONE error (due to an expired token) necessitates it, otherwise performs an incremental sync for events changed since the `sync_token` was issued."
+        "name": "Sync Events (Deprecated)",
+        "description": "DEPRECATED: Use GOOGLECALENDAR_EVENTS_LIST instead. EventsList already handles syncToken with automatic param stripping. Synchronizes Google Calendar events, performing a full sync if no `sync_token` is provided or if a 410 GONE error (due to an expired token) necessitates it, otherwise performs an incremental sync for events changed since the `sync_token` was issued."
       },
       {
         "slug": "GOOGLECALENDAR_UPDATE_EVENT",
@@ -5386,7 +5391,7 @@
     ],
     "toolCount": 47,
     "triggerCount": 5,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
@@ -5739,7 +5744,7 @@
     ],
     "toolCount": 46,
     "triggerCount": 16,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLESHEETS_ADD_SHEET",
@@ -5768,8 +5773,8 @@
       },
       {
         "slug": "GOOGLESHEETS_BATCH_UPDATE",
-        "name": "Batch update spreadsheet",
-        "description": "Write values to ONE range in a Google Sheet, or append as new rows if no start cell is given. IMPORTANT - This tool does NOT accept the Google Sheets API's native batch format: - WRONG: {\"data\": [{\"range\": \"...\", \"values\": [[...]]}], ...} - CORRECT: {\"sheet_name\": \"...\", \"values\": [[...]], \"first_cell_location\": \"...\", ...} To update MULTIPLE ranges, make SEPARATE CALLS to this tool for each range. Features: - Auto-expands grid for large datasets (prevents range errors) - Set first_cell_location to write at a specific position (e.g., \"A1\", \"B5\") - Omit first_cell_location to append values as new rows at the end Requirements: Target sheet must exist and spreadsheet must contain at least one worksheet."
+        "name": "Batch update spreadsheet (Deprecated)",
+        "description": "DEPRECATED: Use GOOGLESHEETS_VALUES_UPDATE instead. Write values to ONE range in a Google Sheet, or append as new rows if no start cell is given. IMPORTANT - This tool does NOT accept the Google Sheets API's native batch format: - WRONG: {\"data\": [{\"range\": \"...\", \"values\": [[...]]}], ...} - CORRECT: {\"sheet_name\": \"...\", \"values\": [[...]], \"first_cell_location\": \"...\", ...} To update MULTIPLE ranges, make SEPARATE CALLS to this tool for each range. Features: - Auto-expands grid for large datasets (prevents range errors) - Set first_cell_location to write at a specific position (e.g., \"A1\", \"B5\") - Omit first_cell_location to append values as new rows at the end Requirements: Target sheet must exist and spreadsheet must contain at least one worksheet."
       },
       {
         "slug": "GOOGLESHEETS_BATCH_UPDATE_VALUES_BY_DATA_FILTER",
@@ -6118,8 +6123,8 @@
       "OAUTH2"
     ],
     "toolCount": 151,
-    "triggerCount": 9,
-    "version": "20260316_00",
+    "triggerCount": 0,
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "SLACK_ADD_CALL_PARTICIPANTS",
@@ -6368,8 +6373,8 @@
       },
       {
         "slug": "SLACK_GET_CANVAS",
-        "name": "Get Slack Canvas",
-        "description": "Retrieves a specific Slack Canvas by its ID, including its content and metadata."
+        "name": "Get Slack Canvas (Deprecated)",
+        "description": "DEPRECATED: Use SLACK_RETRIEVE_DETAILED_INFORMATION_ABOUT_A_FILE instead. Retrieves a specific Slack Canvas by its ID, including its content and metadata."
       },
       {
         "slug": "SLACK_GET_CHANNEL_CONVERSATION_PREFERENCES",
@@ -6473,8 +6478,8 @@
       },
       {
         "slug": "SLACK_LIST_CANVASES",
-        "name": "List Slack Canvases",
-        "description": "Lists Slack Canvases with filtering by channel, user, timestamp, and page-based pagination. Uses Slack's files.list API with types=canvas filter. Only canvases accessible to the authenticated app are returned; missing canvases indicate permissions restrictions, not empty data. Use `paging.pages` in the response to determine total pages; iterate `page` with `count` to retrieve all results. Known limitations: - The 'user' filter may return canvases accessible to the specified user, not just canvases they created. - The 'ts_from' and 'ts_to' timestamp filters may not work reliably for canvas types. Consider client-side filtering on the 'created' field in the response if precise date filtering is required."
+        "name": "List Slack Canvases (Deprecated)",
+        "description": "DEPRECATED: Use SLACK_LIST_FILES_WITH_FILTERS_IN_SLACK instead (pass types=\"canvas\" for equivalent behavior). Lists Slack Canvases with filtering by channel, user, timestamp, and page-based pagination. Uses Slack's files.list API with types=canvas filter. Only canvases accessible to the authenticated app are returned; missing canvases indicate permissions restrictions, not empty data. Use `paging.pages` in the response to determine total pages; iterate `page` with `count` to retrieve all results. Known limitations: - The 'user' filter may return canvases accessible to the specified user, not just canvases they created. - The 'ts_from' and 'ts_to' timestamp filters may not work reliably for canvas types. Consider client-side filtering on the 'created' field in the response if precise date filtering is required."
       },
       {
         "slug": "SLACK_LIST_CONVERSATIONS",
@@ -6877,53 +6882,7 @@
         "description": "Upload files, images, screenshots, documents, or any media to Slack channels or threads. Supports all file types including images (PNG, JPG, JPEG, GIF), documents (PDF, DOCX, TXT), code files, and more. Can share files publicly in channels or as thread replies with optional comments. Large files may fail with `upload_too_large`; use SLACK_ADD_A_REMOTE_FILE_FROM_A_SERVICE for large uploads. If the API returns `ok=false` with `method_deprecated`, fall back to SLACK_ADD_A_REMOTE_FILE_FROM_A_SERVICE or SLACK_SEND_MESSAGE with a URL."
       }
     ],
-    "triggers": [
-      {
-        "slug": "SLACK_CHANNEL_CREATED",
-        "name": "New Channel Created Trigger",
-        "description": "Triggered when a new channel is created in Slack."
-      },
-      {
-        "slug": "SLACK_REACTION_ADDED",
-        "name": "Reaction Added Trigger",
-        "description": "Triggered when a reaction is added to a message in Slack."
-      },
-      {
-        "slug": "SLACK_REACTION_REMOVED",
-        "name": "Reaction Removed Trigger",
-        "description": "Triggered when a reaction is removed from a message."
-      },
-      {
-        "slug": "SLACK_RECEIVE_BOT_MESSAGE",
-        "name": "New Bot Message Received Trigger",
-        "description": "Triggered when a new bot message is posted to a Slack channel."
-      },
-      {
-        "slug": "SLACK_RECEIVE_DIRECT_MESSAGE",
-        "name": "New Direct Message Received Trigger",
-        "description": "Triggered when a new direct message (DM) is sent to a user in Slack."
-      },
-      {
-        "slug": "SLACK_RECEIVE_GROUP_MESSAGE",
-        "name": "New Private Channel Message Received Trigger",
-        "description": "Triggered when a new message is posted to a private channel in Slack."
-      },
-      {
-        "slug": "SLACK_RECEIVE_MESSAGE",
-        "name": "New Message Received Trigger",
-        "description": "Triggered when a new message is posted to a Slack channel."
-      },
-      {
-        "slug": "SLACK_RECEIVE_MPIM_MESSAGE",
-        "name": "New Multi-Person Direct Message Received Trigger",
-        "description": "Triggered when a new message is posted to a multi-person direct message in Slack."
-      },
-      {
-        "slug": "SLACK_RECEIVE_THREAD_REPLY",
-        "name": "Thread Reply Received Trigger",
-        "description": "Triggered when reply is added to a message in a thread.\n    Excludes the parent message_replied event by design (ts != thread_ts check)."
-      }
-    ],
+    "triggers": [],
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -6998,7 +6957,7 @@
     ],
     "toolCount": 121,
     "triggerCount": 0,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "SUPABASE_ALPHA_CREATE_API_KEY",
@@ -7712,7 +7671,7 @@
     ],
     "toolCount": 301,
     "triggerCount": 5,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "OUTLOOK_ADD_EVENT_ATTACHMENT",
@@ -8286,8 +8245,8 @@
       },
       {
         "slug": "OUTLOOK_DELETE_ME_MAIL_FOLDERS_MESSAGES_ATTACHMENTS",
-        "name": "Delete Message Attachment",
-        "description": "Tool to delete an attachment from a message in a mail folder. Use when removing file or item attachments from messages in Outlook mail folders."
+        "name": "Delete Message Attachment (Deprecated)",
+        "description": "DEPRECATED: Use OUTLOOK_DELETE_MESSAGE_ATTACHMENT instead. Tool to delete an attachment from a message in a mail folder. Use when removing file or item attachments from messages in Outlook mail folders."
       },
       {
         "slug": "OUTLOOK_DELETE_ME_MAIL_FOLDERS_MESSAGES_EXTENSIONS",
@@ -8321,8 +8280,8 @@
       },
       {
         "slug": "OUTLOOK_DELETE_MESSAGE_PERMANENTLY_FROM_FOLDER",
-        "name": "Permanently Delete Message (Folder-Scoped)",
-        "description": "Tool to permanently delete a message from a specific mail folder. Use when you need to irreversibly delete a message with explicit folder context. The message is moved to the Purges folder and cannot be recovered."
+        "name": "Permanently Delete Message (Folder-Scoped) (Deprecated)",
+        "description": "DEPRECATED: Use OUTLOOK_PERMANENT_DELETE_MESSAGE instead. Tool to permanently delete a message from a specific mail folder. Use when you need to irreversibly delete a message with explicit folder context. The message is moved to the Purges folder and cannot be recovered."
       },
       {
         "slug": "OUTLOOK_DELETE_PRIMARY_CALENDAR_PERMISSION",
@@ -8616,8 +8575,8 @@
       },
       {
         "slug": "OUTLOOK_GET_ME_MAIL_FOLDER_MESSAGE_ATTACHMENT",
-        "name": "Get mail folder message attachment",
-        "description": "Tool to get a specific attachment from a message in a mail folder. Use when you have the folder ID, message ID, and attachment ID."
+        "name": "Get mail folder message attachment (Deprecated)",
+        "description": "DEPRECATED: Use OUTLOOK_GET_USER_MESSAGES_ATTACHMENTS instead. Tool to get a specific attachment from a message in a mail folder. Use when you have the folder ID, message ID, and attachment ID."
       },
       {
         "slug": "OUTLOOK_GET_ME_MAIL_FOLDERS_MESSAGES_EXTENSIONS",
@@ -8871,8 +8830,8 @@
       },
       {
         "slug": "OUTLOOK_LIST_ME_EVENT_INSTANCES",
-        "name": "List me event instances",
-        "description": "Tool to retrieve individual occurrences of a recurring calendar event within a specified time range. Use when you need to get specific instances of a recurring meeting or event series from the authenticated user's primary calendar."
+        "name": "List me event instances (Deprecated)",
+        "description": "DEPRECATED: Use OUTLOOK_LIST_EVENT_INSTANCES instead. Tool to retrieve individual occurrences of a recurring calendar event within a specified time range. Use when you need to get specific instances of a recurring meeting or event series from the authenticated user's primary calendar."
       },
       {
         "slug": "OUTLOOK_LIST_MESSAGE_ATTACHMENTS_FROM_CHILD_FOLDER",
@@ -9307,14 +9266,39 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "toolCount": 1,
+    "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
+      {
+        "slug": "PERPLEXITYAI_CREATE_ASYNC_CHAT_COMPLETION",
+        "name": "Create Async Chat Completion",
+        "description": "Create an async chat completion request. Same as /chat/completions but designed for long-running tasks like sonar-deep-research. Returns immediately with a request_id that can be used to poll for results. Async jobs have a 7-day TTL. Use this action when you need to run resource-intensive queries that take longer than typical synchronous requests. The response includes a request ID that can be used to retrieve results later."
+      },
+      {
+        "slug": "PERPLEXITYAI_CREATE_CHAT_COMPLETION",
+        "name": "Create Chat Completion",
+        "description": "Perplexity AI Chat Completions endpoint using Sonar models. Provides web-grounded conversational AI responses with optional citations. The model searches the web to provide accurate, up-to-date answers with sources. Supports various models optimized for different use cases: - sonar: Fast, cost-effective for simple queries - sonar-pro: Enhanced quality for complex questions - sonar-reasoning-pro: Advanced reasoning capabilities Features include: - Web search grounding for accurate, current information - Citations showing sources for claims - Streaming responses for real-time interaction - Configurable temperature, top_p, and other generation parameters Note: presence_penalty and frequency_penalty cannot be used simultaneously."
+      },
+      {
+        "slug": "PERPLEXITYAI_CREATE_EMBEDDINGS",
+        "name": "CreateEmbeddings",
+        "description": "Generate vector embeddings for independent texts (queries, sentences, documents). This action takes one or more input texts and generates vector embeddings using Perplexity AI's embedding models. Embeddings are useful for semantic search, similarity matching, and machine learning downstream tasks. Supported models: - pplx-embed-v1-0.6b: Smaller, faster model (1024 dimensions) - pplx-embed-v1-4b: Larger, more accurate model (2560 dimensions) The output embeddings are base64-encoded for efficient transmission. Use the dimensions parameter to reduce embedding size for faster processing when full precision is not required (Matryoshka representation)."
+      },
+      {
+        "slug": "PERPLEXITYAI_EXECUTE_AGENT",
+        "name": "Execute Agent",
+        "description": "Agent API - Orchestrates multi-step agentic workflows with built-in tools (web search, URL fetching), reasoning, and multi-model support. Use this action when you need to run complex queries that benefit from automatic web search, URL fetching, and multi-step reasoning. The agent can automatically decide when to use tools and how to synthesize responses. Supports various models including OpenAI models (e.g., gpt-5.2) and Perplexity's sonar models. Configure tools like web_search to enable automatic information gathering."
+      },
       {
         "slug": "PERPLEXITYAI_PERPLEXITY_AI_SEARCH",
         "name": "PerplexityAISearch",
         "description": "Perplexity Ai Search interfaces with Perplexity AI to perform search queries and return responses from a range of models. This action manages requests to Perplexity AI and processes the resulting completions, which may include text, citations, and images based on selected models and settings. Key features include: Autoprompting to enhance and refine queries, choice of AI models for various content and performance requirements, temperature settings to manage response randomness, Top K and Top P filters to fine-tune response generation. Beta features include citations and images in results, and response streaming for dynamic interaction. Note: The parameters 'presence_penalty' and 'frequency_penalty' are mutually exclusive and cannot be used simultaneously."
+      },
+      {
+        "slug": "PERPLEXITYAI_SEARCH",
+        "name": "Perplexity Search (Raw Results)",
+        "description": "Search API (Raw Results, No LLM) - Returns ranked web results directly from Perplexity's index without LLM processing. Faster and cheaper when you don't need a generated answer. Use this action when you need raw web search results without AI-generated summaries. Supports advanced filtering by date, domain, language, and geographic location."
       }
     ],
     "triggers": [],
@@ -9832,7 +9816,7 @@
     ],
     "toolCount": 89,
     "triggerCount": 7,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE",
@@ -10382,7 +10366,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 10,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLEDOCS_COPY_DOCUMENT",
@@ -10678,7 +10662,7 @@
     ],
     "toolCount": 229,
     "triggerCount": 2,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "HUBSPOT_ADD_ASSET_ASSOCIATION",
@@ -11935,7 +11919,7 @@
     ],
     "toolCount": 31,
     "triggerCount": 3,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "LINEAR_CREATE_ATTACHMENT",
@@ -12780,9 +12764,9 @@
     "authSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 96,
+    "toolCount": 97,
     "triggerCount": 3,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "JIRA_ADD_ATTACHMENT",
@@ -12958,6 +12942,11 @@
         "slug": "JIRA_GET_COMPONENTS",
         "name": "Get Component",
         "description": "Tool to retrieve components from Jira projects with search and filtering. Use when you need to list or find components across projects, optionally filtered by project IDs/keys or search query."
+      },
+      {
+        "slug": "JIRA_GET_CREATE_METADATA_ISSUE_TYPE_FIELDS",
+        "name": "Get Create Field Metadata for Issue Type",
+        "description": "Tool to retrieve field metadata for a specific issue type in a project. Use this to discover required fields, allowed values, and field configurations before creating issues of a specific type."
       },
       {
         "slug": "JIRA_GET_CURRENT_USER",
@@ -13621,7 +13610,7 @@
     ],
     "toolCount": 51,
     "triggerCount": 4,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "YOUTUBE_ADD_VIDEO_TO_PLAYLIST",
@@ -13965,8 +13954,8 @@
       "OAUTH2"
     ],
     "toolCount": 87,
-    "triggerCount": 9,
-    "version": "20260316_00",
+    "triggerCount": 0,
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "SLACKBOT_ADD_CALL_PARTICIPANTS",
@@ -14125,8 +14114,8 @@
       },
       {
         "slug": "SLACKBOT_GET_CANVAS",
-        "name": "Get Slack Canvas",
-        "description": "Retrieves a specific Slack Canvas by its ID, including its content and metadata."
+        "name": "Get Slack Canvas (Deprecated)",
+        "description": "DEPRECATED: Use SLACK_RETRIEVE_DETAILED_INFORMATION_ABOUT_A_FILE instead. Retrieves a specific Slack Canvas by its ID, including its content and metadata."
       },
       {
         "slug": "SLACKBOT_GET_REMINDER",
@@ -14180,8 +14169,8 @@
       },
       {
         "slug": "SLACKBOT_LIST_CANVASES",
-        "name": "List Slack Canvases",
-        "description": "Lists Slack Canvases with filtering by channel, user, timestamp, and page-based pagination. Uses Slack's files.list API with types=canvas filter. Only canvases accessible to the authenticated app are returned; missing canvases indicate permissions restrictions, not empty data. Use `paging.pages` in the response to determine total pages; iterate `page` with `count` to retrieve all results. Known limitations: - The 'user' filter may return canvases accessible to the specified user, not just canvases they created. - The 'ts_from' and 'ts_to' timestamp filters may not work reliably for canvas types. Consider client-side filtering on the 'created' field in the response if precise date filtering is required."
+        "name": "List Slack Canvases (Deprecated)",
+        "description": "DEPRECATED: Use SLACK_LIST_FILES_WITH_FILTERS_IN_SLACK instead (pass types=\"canvas\" for equivalent behavior). Lists Slack Canvases with filtering by channel, user, timestamp, and page-based pagination. Uses Slack's files.list API with types=canvas filter. Only canvases accessible to the authenticated app are returned; missing canvases indicate permissions restrictions, not empty data. Use `paging.pages` in the response to determine total pages; iterate `page` with `count` to retrieve all results. Known limitations: - The 'user' filter may return canvases accessible to the specified user, not just canvases they created. - The 'ts_from' and 'ts_to' timestamp filters may not work reliably for canvas types. Consider client-side filtering on the 'created' field in the response if precise date filtering is required."
       },
       {
         "slug": "SLACKBOT_LIST_CONVERSATIONS",
@@ -14404,53 +14393,7 @@
         "description": "Upload files, images, screenshots, documents, or any media to Slack channels or threads. Supports all file types including images (PNG, JPG, JPEG, GIF), documents (PDF, DOCX, TXT), code files, and more. Can share files publicly in channels or as thread replies with optional comments. Large files may fail with `upload_too_large`; use SLACK_ADD_A_REMOTE_FILE_FROM_A_SERVICE for large uploads. If the API returns `ok=false` with `method_deprecated`, fall back to SLACK_ADD_A_REMOTE_FILE_FROM_A_SERVICE or SLACK_SEND_MESSAGE with a URL."
       }
     ],
-    "triggers": [
-      {
-        "slug": "SLACKBOT_CHANNEL_CREATED",
-        "name": "New Channel Created Trigger",
-        "description": "Triggered when a new channel is created in Slack."
-      },
-      {
-        "slug": "SLACKBOT_REACTION_ADDED",
-        "name": "Reaction Added Trigger",
-        "description": "Triggered when a reaction is added to a message in Slack."
-      },
-      {
-        "slug": "SLACKBOT_REACTION_REMOVED",
-        "name": "Reaction Removed Trigger",
-        "description": "Triggered when a reaction is removed from a message."
-      },
-      {
-        "slug": "SLACKBOT_RECEIVE_BOT_MESSAGE",
-        "name": "New Bot Message Received Trigger",
-        "description": "Triggered when a new bot message is posted to a Slack channel."
-      },
-      {
-        "slug": "SLACKBOT_RECEIVE_DIRECT_MESSAGE",
-        "name": "New Direct Message Received Trigger",
-        "description": "Triggered when a new direct message (DM) is sent to a user in Slack."
-      },
-      {
-        "slug": "SLACKBOT_RECEIVE_GROUP_MESSAGE",
-        "name": "New Private Channel Message Received Trigger",
-        "description": "Triggered when a new message is posted to a private channel in Slack."
-      },
-      {
-        "slug": "SLACKBOT_RECEIVE_MESSAGE",
-        "name": "New Message Received Trigger",
-        "description": "Triggered when a new message is posted to a Slack channel."
-      },
-      {
-        "slug": "SLACKBOT_RECEIVE_MPIM_MESSAGE",
-        "name": "New Multi-Person Direct Message Received Trigger",
-        "description": "Triggered when a new message is posted to a multi-person direct message in Slack."
-      },
-      {
-        "slug": "SLACKBOT_RECEIVE_THREAD_REPLY",
-        "name": "Thread Reply Received Trigger",
-        "description": "Triggered when reply is added to a message in a thread.\n    Excludes the parent message_replied event by design (ts != thread_ts check)."
-      }
-    ],
+    "triggers": [],
     "authConfigDetails": [
       {
         "mode": "OAUTH2",
@@ -14522,7 +14465,7 @@
     ],
     "toolCount": 566,
     "triggerCount": 6,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "CANVAS_ABORT_QUIZ_REPORT_GENERATION",
@@ -18421,7 +18364,7 @@
     ],
     "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "FIGMA_ADD_A_COMMENT_TO_A_FILE",
@@ -18791,7 +18734,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "COMPOSIO_SEARCH_AMAZON",
@@ -23249,7 +23192,7 @@
     ],
     "toolCount": 164,
     "triggerCount": 0,
-    "version": "20260313_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "MICROSOFT_TEAMS_ADD_CHAT_MEMBER",
@@ -23308,8 +23251,8 @@
       },
       {
         "slug": "MICROSOFT_TEAMS_CLEAR_MY_PRESENCE",
-        "name": "Clear My Presence",
-        "description": "Tool to clear the authenticated user's presence session in Microsoft Teams. Use when you need to remove presence information set by an application for the current user."
+        "name": "Clear My Presence (Deprecated)",
+        "description": "DEPRECATED: Use MICROSOFT_TEAMS_CLEAR_PRESENCE instead. Tool to clear the authenticated user's presence session in Microsoft Teams. Use when you need to remove presence information set by an application for the current user."
       },
       {
         "slug": "MICROSOFT_TEAMS_CLEAR_PRESENCE",
@@ -23318,8 +23261,8 @@
       },
       {
         "slug": "MICROSOFT_TEAMS_CLEAR_PRESENCE_AUTOMATIC_LOCATION",
-        "name": "Clear Presence Automatic Location",
-        "description": "Tool to clear the automatic presence location for the authenticated user. Use when you need to remove automatically-detected location information from the user's presence status."
+        "name": "Clear Presence Automatic Location (Deprecated)",
+        "description": "DEPRECATED: Use MICROSOFT_TEAMS_CLEAR_AUTOMATIC_LOCATION instead. Tool to clear the automatic presence location for the authenticated user. Use when you need to remove automatically-detected location information from the user's presence status."
       },
       {
         "slug": "MICROSOFT_TEAMS_CLEAR_PRESENCE_LOCATION",
@@ -23543,8 +23486,8 @@
       },
       {
         "slug": "MICROSOFT_TEAMS_GET_GROUP_TEAM_CHANNEL",
-        "name": "Get group team channel",
-        "description": "Tool to get a specific channel from a group's team. Use when you have a group ID and channel ID to fetch channel details."
+        "name": "Get group team channel (Deprecated)",
+        "description": "DEPRECATED: Use MICROSOFT_TEAMS_GET_CHANNEL instead. Tool to get a specific channel from a group's team. Use when you have a group ID and channel ID to fetch channel details."
       },
       {
         "slug": "MICROSOFT_TEAMS_GET_GROUP_TEAM_OPERATION",
@@ -23698,8 +23641,8 @@
       },
       {
         "slug": "MICROSOFT_TEAMS_LIST_GROUP_TEAM_CHANNELS",
-        "name": "List group team channels",
-        "description": "Tool to list channels from a group's associated team. Use when you have a group ID and need to retrieve its team's channels."
+        "name": "List group team channels (Deprecated)",
+        "description": "DEPRECATED: Use MICROSOFT_TEAMS_LIST_CHANNELS instead. Tool to list channels from a group's associated team. Use when you have a group ID and need to retrieve its team's channels."
       },
       {
         "slug": "MICROSOFT_TEAMS_LIST_GROUP_TEAM_OPERATIONS",
@@ -23888,8 +23831,8 @@
       },
       {
         "slug": "MICROSOFT_TEAMS_SET_ME_PREFERRED_PRESENCE",
-        "name": "Set My Preferred Presence",
-        "description": "Tool to set the preferred availability and activity status for the current authenticated user. Use when you need to update your own presence status in Microsoft Teams. Preferred presence takes effect only when at least one presence session exists."
+        "name": "Set My Preferred Presence (Deprecated)",
+        "description": "DEPRECATED: Use MICROSOFT_TEAMS_SET_USER_PREFERRED_PRESENCE instead. Tool to set the preferred availability and activity status for the current authenticated user. Use when you need to update your own presence status in Microsoft Teams. Preferred presence takes effect only when at least one presence session exists."
       },
       {
         "slug": "MICROSOFT_TEAMS_SET_PRESENCE",
@@ -23903,8 +23846,8 @@
       },
       {
         "slug": "MICROSOFT_TEAMS_SET_PRESENCE_MANUAL_LOCATION",
-        "name": "Set Presence Manual Location",
-        "description": "Tool to set the manual presence location (office/remote/timeOff) for the authenticated user. Use when updating work location status in Microsoft Teams."
+        "name": "Set Presence Manual Location (Deprecated)",
+        "description": "DEPRECATED: Use MICROSOFT_TEAMS_SET_USER_PRESENCE_MANUAL_LOCATION instead. Tool to set the manual presence location (office/remote/timeOff) for the authenticated user. Use when updating work location status in Microsoft Teams."
       },
       {
         "slug": "MICROSOFT_TEAMS_SET_USER_PREFERRED_PRESENCE",
@@ -24138,7 +24081,7 @@
     ],
     "toolCount": 153,
     "triggerCount": 1,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ASANA_ADD_FOLLOWERS_TO_PROJECT",
@@ -25137,7 +25080,7 @@
     ],
     "toolCount": 432,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "SHOPIFY_ACTIVATE_ONE_TIME_CHARGE",
@@ -27788,7 +27731,7 @@
     ],
     "toolCount": 61,
     "triggerCount": 9,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ONE_DRIVE_CHECKIN_ITEM",
@@ -34998,7 +34941,7 @@
     ],
     "toolCount": 110,
     "triggerCount": 0,
-    "version": "20260313_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "NEON_ACCEPT_PROJECTS_TRANSFER_REQUESTS",
@@ -35453,7 +35396,7 @@
       {
         "slug": "NEON_RETRIEVE_PROJECTS_LIST",
         "name": "Retrieve projects list",
-        "description": "Retrieves a list of all Neon projects associated with the authenticated user's account. This endpoint provides a comprehensive overview of the user's projects, enabling efficient project management and integration workflows. It should be used when you need to obtain information about multiple projects at once, such as for dashboard displays, project selection interfaces, or batch processing tasks. The endpoint returns project details in JSON format, which can be easily parsed and utilized in various applications or data analysis processes. Note that while this endpoint gives a broad view of projects, it may not include detailed data sets or specific project contents, which might require additional API calls."
+        "description": "Retrieves a list of all Neon projects associated with the authenticated user's account. This endpoint provides a comprehensive overview of the user's projects, enabling efficient project management and integration workflows. It should be used when you need to obtain information about multiple projects at once, such as for dashboard displays, project selection interfaces, or batch processing tasks. The endpoint returns project details in JSON format, which can be easily parsed and utilized in various applications or data analysis processes. Note that while this endpoint gives a broad view of projects, it may not include detailed data sets or specific project contents, which might require additional API calls. IMPORTANT: When using a Personal API key with an organization account, the org_id parameter is REQUIRED. If you don't know the org_id, first call NEON_GET_USER_ORGANIZATIONS to discover it. Organization API keys don't need org_id as they're already scoped to an organization."
       },
       {
         "slug": "NEON_RETRIEVE_VPC_ENDPOINTS_FOR_PROJECT",
@@ -38215,7 +38158,7 @@
     ],
     "toolCount": 163,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "CLICKUP_ADD_DEPENDENCY",
@@ -45071,7 +45014,7 @@
     ],
     "toolCount": 111,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ATTIO_ASSERT_COMPANY",
@@ -46046,7 +45989,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 1,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "FIREFLIES_ADD_TO_LIVE",
@@ -46201,7 +46144,7 @@
     ],
     "toolCount": 177,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "DROPBOX_ACTIVATE_TEAM_FOLDER",
@@ -47907,7 +47850,7 @@
     ],
     "toolCount": 62,
     "triggerCount": 20,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "CONFLUENCE_ADD_CONTENT_LABEL",
@@ -48224,102 +48167,102 @@
       {
         "slug": "CONFLUENCE_ATTACHMENT_ADDED_TRIGGER",
         "name": "New Attachment Added",
-        "description": "Triggers when a new attachment is added to a Confluence page.\n    This trigger monitors a specific Confluence page and fires when new attachments are detected."
+        "description": "Triggers when a new attachment is uploaded to a Confluence page.\n    Optionally filters by media type."
       },
       {
         "slug": "CONFLUENCE_BLOG_POST_ADDED_TO_LABEL_TRIGGER",
         "name": "Blog Post Added to Label",
-        "description": "Triggers when a new blog post is added to a specific label in Confluence.\n    This trigger uses cursor-based pagination to efficiently track new blog posts."
+        "description": "Triggers when a new blog post is added to a specific label in Confluence."
       },
       {
         "slug": "CONFLUENCE_BLOGPOST_INLINE_COMMENT_ADDED_TRIGGER",
         "name": "Blogpost Inline Comment Added",
-        "description": "Triggers when a new inline comment is added to a Confluence blog post.\n    This trigger polls Confluence blog post inline comments endpoint to detect newly added comments."
+        "description": "Triggers when a new inline comment is added to a Confluence blog post."
       },
       {
         "slug": "CONFLUENCE_BLOGPOST_LIKE_COUNT_CHANGED_TRIGGER",
         "name": "Blog Post Like Count Changed",
-        "description": "Triggers when a Confluence blog post's like count changes (someone likes/unlikes the blog post).\n    This trigger monitors a specific blog post and fires when the number of likes increases or decreases."
+        "description": "Triggers when a Confluence blog post's like count changes (someone likes or unlikes)."
       },
       {
         "slug": "CONFLUENCE_BLOGPOST_UPDATED_TRIGGER",
         "name": "Blog Post Updated",
-        "description": "Triggers when a Confluence blog post is updated.\n    This trigger monitors a specific blog post and fires when its version changes."
+        "description": "Triggers when a Confluence blog post is updated (any edit that creates a new version)."
       },
       {
         "slug": "CONFLUENCE_CONTENT_RESTRICTIONS_CHANGED_TRIGGER",
         "name": "Content Restrictions Changed",
-        "description": "Triggers when content restrictions change for a Confluence page or blog post.\n    This trigger monitors view/edit restrictions and detects when they are added, removed, or modified.\n    Uses snapshot-based diffing to detect changes."
+        "description": "Triggers when view or edit restrictions change on a Confluence page or blog post.\n    Detects user/group restrictions being added, removed, or modified."
       },
       {
         "slug": "CONFLUENCE_FOOTER_COMMENT_ADDED_TRIGGER",
         "name": "New Footer Comment Added to Page",
-        "description": "Triggers when a new footer comment is added to a Confluence page.\n    This trigger polls the footer comments endpoint to detect newly added comments."
+        "description": "Triggers when a new footer comment is added to a Confluence page."
       },
       {
         "slug": "CONFLUENCE_NEW_AUDIT_LOG_TRIGGER",
         "name": "New Audit Log Record",
-        "description": "Triggers when a new audit log record is created in Confluence.\n    This trigger monitors Confluence audit logs and fires when new records are detected.\n    Note: Requires Confluence Standard, Premium, or Enterprise plan and 'Confluence Administrator' global permission."
+        "description": "Triggers when a new audit log record is created in Confluence.\n    Requires Confluence Standard/Premium/Enterprise plan and 'Confluence Administrator' permission."
       },
       {
         "slug": "CONFLUENCE_NEW_BLOG_POST_CREATED_TRIGGER",
         "name": "New Blog Post Created",
-        "description": "Triggers when a new blog post is created in Confluence.\n    This trigger uses cursor-based pagination to efficiently track new blog posts."
+        "description": "Triggers when a new blog post is created in Confluence.\n    Optionally filters by space or status."
       },
       {
         "slug": "CONFLUENCE_NEW_CHILD_PAGE_TRIGGER",
         "name": "New Child Page Created",
-        "description": "Triggers when a new child page is created under a parent page in Confluence.\n    This trigger uses cursor-based pagination to efficiently track new child pages."
+        "description": "Triggers when a new child page is created under a specific parent page in Confluence."
       },
       {
         "slug": "CONFLUENCE_NEW_CQL_CONTENT_MATCH_TRIGGER",
         "name": "New CQL Content Match",
-        "description": "Triggers when new Confluence content appears that matches a user-provided CQL query.\n    This trigger uses snapshot-based diffing to detect new content matching the query."
+        "description": "Triggers when new Confluence content appears that matches a user-provided CQL query."
       },
       {
         "slug": "CONFLUENCE_NEW_TASK_CREATED_TRIGGER",
         "name": "New Task Created",
-        "description": "Triggers when a new task is created in Confluence.\n    This trigger uses timestamp-based filtering to efficiently track new tasks."
+        "description": "Triggers when a new task (action item) is created in Confluence."
       },
       {
         "slug": "CONFLUENCE_PAGE_CONTENT_PROPERTIES_CHANGED_TRIGGER",
         "name": "Page Content Properties Changed",
-        "description": "Triggers when the set of content properties on a Confluence page changes.\n    This trigger monitors a specific page and fires when properties are added, removed, or updated.\n    Uses snapshot-based diffing to detect changes."
+        "description": "Triggers when content properties on a Confluence page are added, removed, or updated."
       },
       {
         "slug": "CONFLUENCE_PAGE_CREATED_TRIGGER",
         "name": "New Page Created",
-        "description": "Triggers when a new page is created in Confluence.\n    This trigger uses timestamp-based filtering with sorting to efficiently track new pages."
+        "description": "Triggers when a new page is created in Confluence.\n    Optionally filters by space or status."
       },
       {
         "slug": "CONFLUENCE_PAGE_INLINE_COMMENT_ADDED_TRIGGER",
         "name": "New Inline Comment Added to Page",
-        "description": "Triggers when a new inline comment is added to a Confluence page.\n    This trigger polls the page inline comments endpoint to detect newly added comments."
+        "description": "Triggers when a new inline comment is added to a Confluence page."
       },
       {
         "slug": "CONFLUENCE_PAGE_LIKE_COUNT_CHANGED_TRIGGER",
         "name": "Page Like Count Changed",
-        "description": "Triggers when a Confluence page's like count changes (someone likes/unlikes the page).\n    This trigger monitors a specific page and fires when the number of likes changes."
+        "description": "Triggers when a Confluence page's like count changes (someone likes or unlikes)."
       },
       {
         "slug": "CONFLUENCE_PAGE_MOVED_TRIGGER",
         "name": "Page Moved",
-        "description": "Triggers when a Confluence page is moved (its ancestor chain changes).\n    This trigger monitors a specific page and fires when its position in the page hierarchy changes."
+        "description": "Triggers when a Confluence page is moved to a different location in the page hierarchy."
       },
       {
         "slug": "CONFLUENCE_PAGE_UPDATED_TRIGGER",
         "name": "Page Updated",
-        "description": "Triggers when a Confluence page is updated.\n    This trigger monitors a specific page and fires when its version changes."
+        "description": "Triggers when a Confluence page is updated (any edit that creates a new version)."
       },
       {
         "slug": "CONFLUENCE_PAGE_VERSION_CREATED_TRIGGER",
         "name": "Page Version Created",
-        "description": "Triggers when a new page version is created in Confluence.\n    This trigger uses cursor-based pagination to efficiently track new page versions."
+        "description": "Triggers when a new version is created for a specific Confluence page."
       },
       {
         "slug": "CONFLUENCE_SPACE_CONTENT_ADDED_TRIGGER",
         "name": "New Space Content Added",
-        "description": "Triggers when new content (pages/blog posts) is added to a Confluence space.\n    This trigger uses cursor-based pagination to efficiently track new content."
+        "description": "Triggers when new content (pages or blog posts) is added to a Confluence space.\n    Attachments are not supported at space level; use the 'New Attachment Added' trigger instead."
       }
     ],
     "authConfigDetails": [
@@ -50257,7 +50200,7 @@
     ],
     "toolCount": 50,
     "triggerCount": 0,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "MIXPANEL_ADD_UNIQUE_TO_PROFILE_LIST_PROPERTY",
@@ -51258,7 +51201,7 @@
     ],
     "toolCount": 40,
     "triggerCount": 0,
-    "version": "20260211_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "AHREFS_BACKLINKS_STATS_RETRIEVAL",
@@ -51967,7 +51910,7 @@
     ],
     "toolCount": 72,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "HEYGEN_ADD_LOOKS_TO_PHOTO_AVATAR_GROUP",
@@ -56360,7 +56303,7 @@
     ],
     "toolCount": 402,
     "triggerCount": 3,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "PIPEDRIVE_ADD_ACTIVITY_TYPE",
@@ -57115,7 +57058,7 @@
       {
         "slug": "PIPEDRIVE_GET_ALL_PIPELINES",
         "name": "Get all pipelines",
-        "description": "Returns data about all pipelines."
+        "description": "Returns data about all pipelines. This action retrieves all pipelines from the user's Pipedrive instance using their instance-specific URL (e.g., https://company.pipedrive.com/api/v2/pipelines)."
       },
       {
         "slug": "PIPEDRIVE_GET_ALL_PRODUCT_FIELDS",
@@ -58808,7 +58751,7 @@
     ],
     "toolCount": 17,
     "triggerCount": 1,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "WHATSAPP_CREATE_MESSAGE_TEMPLATE",
@@ -59350,7 +59293,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLEPHOTOS_ADD_ENRICHMENT",
@@ -59568,7 +59511,7 @@
     ],
     "toolCount": 53,
     "triggerCount": 0,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "METAADS_CREATE_AD",
@@ -60037,7 +59980,7 @@
     ],
     "toolCount": 429,
     "triggerCount": 20,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -60186,8 +60129,8 @@
       },
       {
         "slug": "GOOGLESUPER_BATCH_UPDATE",
-        "name": "Batch update spreadsheet",
-        "description": "Write values to ONE range in a Google Sheet, or append as new rows if no start cell is given. IMPORTANT - This tool does NOT accept the Google Sheets API's native batch format: - WRONG: {\"data\": [{\"range\": \"...\", \"values\": [[...]]}], ...} - CORRECT: {\"sheet_name\": \"...\", \"values\": [[...]], \"first_cell_location\": \"...\", ...} To update MULTIPLE ranges, make SEPARATE CALLS to this tool for each range. Features: - Auto-expands grid for large datasets (prevents range errors) - Set first_cell_location to write at a specific position (e.g., \"A1\", \"B5\") - Omit first_cell_location to append values as new rows at the end Requirements: Target sheet must exist and spreadsheet must contain at least one worksheet."
+        "name": "Batch update spreadsheet (Deprecated)",
+        "description": "DEPRECATED: Use GOOGLESHEETS_VALUES_UPDATE instead. Write values to ONE range in a Google Sheet, or append as new rows if no start cell is given. IMPORTANT - This tool does NOT accept the Google Sheets API's native batch format: - WRONG: {\"data\": [{\"range\": \"...\", \"values\": [[...]]}], ...} - CORRECT: {\"sheet_name\": \"...\", \"values\": [[...]], \"first_cell_location\": \"...\", ...} To update MULTIPLE ranges, make SEPARATE CALLS to this tool for each range. Features: - Auto-expands grid for large datasets (prevents range errors) - Set first_cell_location to write at a specific position (e.g., \"A1\", \"B5\") - Omit first_cell_location to append values as new rows at the end Requirements: Target sheet must exist and spreadsheet must contain at least one worksheet."
       },
       {
         "slug": "GOOGLESUPER_BATCH_UPDATE_VALUES_BY_DATA_FILTER",
@@ -61926,8 +61869,8 @@
       },
       {
         "slug": "GOOGLESUPER_SYNC_EVENTS",
-        "name": "Sync Events",
-        "description": "Synchronizes Google Calendar events, performing a full sync if no `sync_token` is provided or if a 410 GONE error (due to an expired token) necessitates it, otherwise performs an incremental sync for events changed since the `sync_token` was issued."
+        "name": "Sync Events (Deprecated)",
+        "description": "DEPRECATED: Use GOOGLECALENDAR_EVENTS_LIST instead. EventsList already handles syncToken with automatic param stripping. Synchronizes Google Calendar events, performing a full sync if no `sync_token` is provided or if a 410 GONE error (due to an expired token) necessitates it, otherwise performs an incremental sync for events changed since the `sync_token` was issued."
       },
       {
         "slug": "GOOGLESUPER_TEXT_SEARCH",
@@ -63378,7 +63321,7 @@
     ],
     "toolCount": 73,
     "triggerCount": 11,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ZOOM_ADD_A_MEETING_REGISTRANT",
@@ -63750,7 +63693,7 @@
       {
         "slug": "ZOOM_DAILY_USAGE_REPORT_CHANGED_TRIGGER",
         "name": "Daily Usage Report Changed",
-        "description": "Triggers when the Zoom daily usage report changes for a selected year/month.\n    This trigger monitors daily usage statistics including:\n    - New users added\n    - Number of meetings held\n    - Participant counts\n    - Meeting minutes consumed\n\n    Uses snapshot-based diffing to detect changes in the report data."
+        "description": "Triggers when the Zoom daily usage report changes for a selected year/month.\n    This trigger monitors daily usage statistics including:\n    - New users added\n    - Number of meetings held\n    - Participant counts\n    - Meeting minutes consumed"
       },
       {
         "slug": "ZOOM_MEETING_DETAILS_CHANGED_TRIGGER",
@@ -63770,27 +63713,27 @@
       {
         "slug": "ZOOM_NEW_CLOUD_RECORDING_TRIGGER",
         "name": "New Cloud Recording",
-        "description": "Triggers when a new cloud recording meeting instance appears for a user.\n    Uses timestamp filtering to efficiently fetch only new recordings."
+        "description": "Triggers when a new cloud recording meeting instance appears for a user."
       },
       {
         "slug": "ZOOM_NEW_MEETING_CREATED_TRIGGER",
         "name": "New Meeting Created",
-        "description": "Triggers when a new Zoom meeting is created.\n    Uses created_at timestamps plus persisted seen IDs to detect meetings that first appear after a poll."
+        "description": "Triggers when a new Zoom meeting is created for a user."
       },
       {
         "slug": "ZOOM_NEW_MEETING_PARTICIPANT_TRIGGER",
         "name": "New Meeting Participant",
-        "description": "Triggers when a new participant appears in a past meeting's participant report.\n    Uses snapshot-based diffing to detect new participants."
+        "description": "Triggers when a new participant appears in a past meeting's participant report."
       },
       {
         "slug": "ZOOM_NEW_WEBINAR_CREATED_TRIGGER",
         "name": "New Webinar Created",
-        "description": "Triggers when a new webinar is created for a user.\n    Fetches all webinar pages on each poll and emits unseen webinar IDs."
+        "description": "Triggers when a new webinar is created for a user."
       },
       {
         "slug": "ZOOM_NEW_WEBINAR_PARTICIPANT_TRIGGER",
         "name": "New Webinar Participant",
-        "description": "Triggers when a new participant appears in a past webinar's participant list.\n    Uses snapshot-based diffing to detect new participants."
+        "description": "Triggers when a new participant appears in a past webinar's participant list."
       },
       {
         "slug": "ZOOM_USER_INFORMATION_CHANGED_TRIGGER",
@@ -63958,7 +63901,7 @@
     ],
     "toolCount": 67,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "RETELLAI_ADD_COMMUNITY_VOICE",
@@ -67267,7 +67210,7 @@
     ],
     "toolCount": 83,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "MIRO_ATTACH_TAG_TO_ITEM",
@@ -67749,9 +67692,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 86,
+    "toolCount": 90,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "SHARE_POINT_ADD_ATTACHMENT_TO_LIST_ITEM",
@@ -67910,8 +67853,8 @@
       },
       {
         "slug": "SHARE_POINT_GET_FOLDER_BY_SERVER_RELATIVE_URL",
-        "name": "Get SharePoint Folder by Server Relative URL",
-        "description": "Tool to retrieve a folder by its server-relative URL. Use when you need to fetch folder metadata by path before further operations. Returns only the immediate folder; to traverse nested structures, iterate `Folders.results` and call this tool recursively for each subfolder."
+        "name": "Get SharePoint Folder by Server Relative URL (Deprecated)",
+        "description": "DEPRECATED: Use SHARE_POINT_GET_SITE_DRIVE_ITEM_BY_PATH instead. Tool to retrieve a folder by its server-relative URL. Use when you need to fetch folder metadata by path before further operations. Returns only the immediate folder; to traverse nested structures, iterate `Folders.results` and call this tool recursively for each subfolder."
       },
       {
         "slug": "SHARE_POINT_GET_GROUP_USERS",
@@ -68029,9 +67972,19 @@
         "description": "Retrieves all lists in the current SharePoint web/site. Use this action to discover available lists and document libraries on a SharePoint site, or to pre-check for existing lists before creation (duplicate list names will fail). Returns metadata for each list including Title, Id, BaseType, ItemCount, and other properties. Supports OData query parameters for filtering, selecting specific fields, sorting, and pagination."
       },
       {
+        "slug": "SHARE_POINT_LIST_DRIVE_CHILDREN",
+        "name": "List Drive Children",
+        "description": "Tool to list children (files and folders) in a SharePoint drive using REST API v2.0. Use when you need to enumerate items in a drive's root folder or a specific folder within the drive."
+      },
+      {
         "slug": "SHARE_POINT_LIST_DRIVE_RECENT_ITEMS",
-        "name": "List Recently Accessed Drive Items",
-        "description": "Tool to list recently accessed items in a SharePoint drive. Returns files and folders recently accessed by the user, including items from other drives."
+        "name": "List Recently Modified Drive Items",
+        "description": "Tool to list recently modified items in a SharePoint drive using Microsoft Graph API. Returns files and folders from the root folder sorted by modification time (most recent first). Note: This action uses the /root/children endpoint with $orderby=lastModifiedDateTime desc to retrieve recently modified items from the root folder."
+      },
+      {
+        "slug": "SHARE_POINT_LIST_DRIVES_REST_API",
+        "name": "List Drives via SharePoint REST API",
+        "description": "Tool to retrieve drives using SharePoint REST API v2.0. Use when you need to list document libraries and drives from a SharePoint site using native SharePoint authentication (not Microsoft Graph)."
       },
       {
         "slug": "SHARE_POINT_LIST_FILES_IN_FOLDER",
@@ -68057,6 +68010,11 @@
         "slug": "SHARE_POINT_LIST_SITE_GROUPS",
         "name": "List Site Groups",
         "description": "Tool to list SharePoint site groups for a site collection. Use when you need to see all groups and their settings before managing permissions."
+      },
+      {
+        "slug": "SHARE_POINT_LIST_SITES",
+        "name": "List SharePoint Sites",
+        "description": "Tool to retrieve all SharePoint sites accessible to the user. Use when you need to discover available sites before performing site-specific operations."
       },
       {
         "slug": "SHARE_POINT_LIST_SITE_USERS",
@@ -68135,8 +68093,8 @@
       },
       {
         "slug": "SHARE_POINT_SHAREPOINT_CREATE_USER",
-        "name": "Add Azure AD User to SharePoint Site",
-        "description": "Adds an existing Azure AD user to the SharePoint site collection using the ensureuser endpoint. This action is idempotent - if the user is already in the site, it returns their existing details without error."
+        "name": "Add Azure AD User to SharePoint Site (Deprecated)",
+        "description": "DEPRECATED: Use SHARE_POINT_ENSURE_USER instead (supports email param directly). Adds an existing Azure AD user to the SharePoint site collection using the ensureuser endpoint. This action is idempotent - if the user is already in the site, it returns their existing details without error."
       },
       {
         "slug": "SHARE_POINT_SHAREPOINT_FIND_USER",
@@ -68161,7 +68119,7 @@
       {
         "slug": "SHARE_POINT_UPDATE_DRIVE_ITEM",
         "name": "Update Drive Item",
-        "description": "Tool to update the properties of a drive item (file or folder) in SharePoint. Use when you need to rename, update description, or move items between folders."
+        "description": "Tool to update the properties of a drive item (file or folder) in SharePoint using SharePoint REST API. Use when you need to rename files/folders or update their title property."
       },
       {
         "slug": "SHARE_POINT_UPDATE_LIST",
@@ -68182,6 +68140,11 @@
         "slug": "SHARE_POINT_UPLOAD_FILE",
         "name": "Upload File to Folder",
         "description": "Tool to upload a file to a SharePoint document library or folder. Use when you need to programmatically add or update a file in a document library."
+      },
+      {
+        "slug": "SHARE_POINT_UPLOAD_FROM_URL",
+        "name": "Upload File from URL to SharePoint",
+        "description": "Tool to fetch a file from a URL and upload it to SharePoint. Use when you need to upload files directly from external URLs without downloading them to the client first."
       }
     ],
     "triggers": [],
@@ -68239,7 +68202,16 @@
                 "default": null
               }
             ],
-            "optional": []
+            "optional": [
+              {
+                "name": "generic_id",
+                "displayName": "SharePoint Subsite",
+                "type": "string",
+                "description": "Optional SharePoint subsite name. You can find this in your SharePoint URL after /sites/ (e.g., https://tenant.sharepoint.com/sites/<subsite-name>). Leave blank to use the root site.",
+                "required": false,
+                "default": null
+              }
+            ]
           }
         }
       }
@@ -72037,7 +72009,7 @@
     ],
     "toolCount": 63,
     "triggerCount": 0,
-    "version": "20260223_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "RECALLAI_CREATE_BOT",
@@ -72616,7 +72588,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "SURVEY_MONKEY_CREATE_BULK_CONTACTS",
@@ -72835,7 +72807,7 @@
     ],
     "toolCount": 264,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ZOHO_BOOKS_ACCEPT_ESTIMATE",
@@ -74610,7 +74582,7 @@
     ],
     "toolCount": 44,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "FACEBOOK_ADD_PHOTOS_TO_ALBUM",
@@ -77165,7 +77137,7 @@
     ],
     "toolCount": 286,
     "triggerCount": 20,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "BOX_ADD_ALLOWED_COLLABORATION_DOMAIN",
@@ -78602,82 +78574,82 @@
       {
         "slug": "BOX_COLLABORATION_DETAILS_CHANGED_TRIGGER",
         "name": "Collaboration Details Changed",
-        "description": "Triggers when a collaboration's details change (e.g., role, status, expiration).\n\n    This trigger monitors a specific collaboration and detects when any meaningful\n    field changes, such as:\n    - Role changes (viewer -> editor, etc.)\n    - Status changes (pending -> accepted, accepted -> rejected)\n    - Expiration date changes\n    - Access type changes (is_access_only)\n    - Acknowledgment status\n\n    Uses snapshot-based diffing to detect changes by comparing canonicalized\n    collaboration data between polls."
+        "description": "Triggers when a collaboration's details change (e.g., role, status, expiration).\n\n    This trigger monitors a specific collaboration and detects when any meaningful\n    field changes, such as role, status, expiration date, access type, or\n    acknowledgment status."
       },
       {
         "slug": "BOX_COMMENT_CHANGED_TRIGGER",
         "name": "Comment Changed",
-        "description": "Triggers when a comment's content or details change in Box.\n\n    This trigger monitors a specific Box comment and detects when any meaningful\n    field changes, such as:\n    - Message text changes (edits to the comment)\n    - Tagged message changes (when mentions are added/removed)\n    - Modification timestamp updates\n\n    Uses snapshot-based diffing to detect changes by comparing canonicalized\n    comment data between polls."
+        "description": "Triggers when a comment's content or details change in Box.\n\n    This trigger monitors a specific Box comment and detects when any meaningful\n    field changes, such as message text edits, tagged message changes, or\n    modification timestamp updates."
       },
       {
         "slug": "BOX_FILE_COMMENT_ADDED_TRIGGER",
         "name": "New File Comment Added",
-        "description": "Triggers when a new comment is added to a file in Box.\n\n    This trigger monitors a specific Box file and fires when new comments are detected.\n    It uses ID diffing to compare comment IDs between polls."
+        "description": "Triggers when a new comment is added to a file in Box.\n\n    This trigger monitors a specific Box file and fires when new comments are detected."
       },
       {
         "slug": "BOX_FILE_METADATA_CHANGED_TRIGGER",
         "name": "File Metadata Changed",
-        "description": "Triggers when a file's metadata or properties change in Box.\n\n    This trigger monitors a specific Box file and fires when changes are detected\n    in key fields like name, description, size, modification time, parent folder,\n    or status. It uses a snapshot-based diffing approach comparing a hash of the\n    file's metadata state."
+        "description": "Triggers when a file's metadata or properties change in Box.\n\n    This trigger monitors a specific Box file and fires when changes are detected\n    in key fields like name, description, size, modification time, parent folder,\n    or status."
       },
       {
         "slug": "BOX_FILE_SHARED_LINK_CHANGED_TRIGGER",
         "name": "File Shared Link Changed",
-        "description": "Triggers when a file's shared link settings change in Box.\n\n    This trigger monitors a specific Box file's shared link and fires when changes\n    are detected in the shared link configuration, including:\n    - Shared link enabled/disabled\n    - Access level changes (open, company, collaborators)\n    - Permission changes (download, preview, edit)\n    - Password protection enabled/disabled\n    - Expiration date changes\n    - Vanity URL changes\n\n    Uses snapshot-based diffing by comparing a hash of the shared link state."
+        "description": "Triggers when a file's shared link settings change in Box.\n\n    This trigger monitors a specific Box file's shared link and fires when changes\n    are detected in the shared link configuration, such as access level, permissions,\n    password protection, expiration date, or vanity URL."
       },
       {
         "slug": "BOX_FILE_VERSION_UPLOADED_TRIGGER",
         "name": "New File Version Uploaded",
-        "description": "Triggers when a new file version is uploaded to a file in Box.\n\n    This trigger monitors a specific Box file and fires when new versions are detected.\n    It uses snapshot-based diffing to compare version IDs between polls and maintains\n    a bounded list of processed version IDs for deduplication."
+        "description": "Triggers when a new file version is uploaded to a file in Box.\n\n    This trigger monitors a specific Box file and fires when new versions are detected."
       },
       {
         "slug": "BOX_FOLDER_ITEM_ADDED_TRIGGER",
         "name": "New Item Added to Folder",
-        "description": "Triggers when a new item (file, folder, or web link) is added to a folder in Box.\n\n    This trigger monitors a specific Box folder and fires when new items are detected.\n    It uses cursor-based pagination (marker) to efficiently fetch only new items since\n    the last poll, and maintains a bounded list of processed item IDs for deduplication."
+        "description": "Triggers when a new item (file, folder, or web link) is added to a folder in Box.\n\n    This trigger monitors a specific Box folder and fires when new items are detected."
       },
       {
         "slug": "BOX_FOLDER_PROPERTIES_CHANGED_TRIGGER",
         "name": "Folder Properties Changed",
-        "description": "Triggers when a folder's core properties change in Box.\n\n    This trigger monitors a specific Box folder's core properties and fires when changes\n    are detected, including:\n    - Name changes\n    - Description changes\n    - Modified timestamp changes\n    - Parent folder changes (when folder is moved)\n    - Item status changes (active, trashed, deleted)\n    - Shared link changes (any shared link property)\n\n    Uses snapshot-based diffing by comparing a hash of the folder's core properties."
+        "description": "Triggers when a folder's core properties change in Box.\n\n    This trigger monitors a specific Box folder and fires when changes are detected\n    in properties like name, description, modification time, parent folder,\n    item status, or shared link settings."
       },
       {
         "slug": "BOX_FOLDER_SHARED_LINK_CHANGED_TRIGGER",
         "name": "Folder Shared Link Changed",
-        "description": "Triggers when a folder's shared link settings change in Box.\n\n    This trigger monitors a specific Box folder's shared link and fires when changes\n    are detected in the shared link configuration, including:\n    - Shared link enabled/disabled\n    - Access level changes (open, company, collaborators)\n    - Permission changes (download, preview, edit)\n    - Password protection enabled/disabled\n    - Expiration date changes\n    - Vanity URL changes\n\n    Uses snapshot-based diffing by comparing a hash of the shared link state."
+        "description": "Triggers when a folder's shared link settings change in Box.\n\n    This trigger monitors a specific Box folder's shared link and fires when changes\n    are detected in the shared link configuration, such as access level, permissions,\n    password protection, expiration date, or vanity URL."
       },
       {
         "slug": "BOX_NEW_FILE_ADDED_TRIGGER",
         "name": "New File Added to Folder",
-        "description": "Triggers when a new file is added to a folder in Box.\n\n    This trigger monitors a specific Box folder and fires when new files are detected.\n    It uses snapshot-based diffing to compare file IDs between polls and maintains\n    a bounded list of processed file IDs for deduplication.\n    Only files (not folders or web links) are monitored."
+        "description": "Triggers when a new file is added to a folder in Box.\n\n    This trigger monitors a specific Box folder and fires when new files are detected.\n    Only files (not folders or web links) are monitored."
       },
       {
         "slug": "BOX_NEW_FOLDER_COLLABORATION_CREATED_TRIGGER",
         "name": "New Folder Collaboration Created",
-        "description": "Triggers when a new collaboration is created on a specific folder in Box.\n\n    This trigger monitors a specific Box folder and fires when new collaborations are detected.\n    It uses an ID-based diffing approach to compare collaboration IDs between polls."
+        "description": "Triggers when a new collaboration is created on a specific folder in Box.\n\n    This trigger monitors a specific Box folder and fires when new collaborations are detected."
       },
       {
         "slug": "BOX_NEW_PENDING_COLLABORATION_TRIGGER",
         "name": "New Pending Collaboration Invite",
-        "description": "Triggers when a new pending collaboration invite is created.\n\n    This trigger monitors the user's pending collaborations and fires when new\n    pending collaboration invites are detected. It uses an ID-based diffing approach\n    to compare collaboration IDs between polls."
+        "description": "Triggers when a new pending collaboration invite is created.\n\n    This trigger monitors the user's pending collaborations and fires when new\n    pending collaboration invites are detected."
       },
       {
         "slug": "BOX_NEW_SIGN_REQUEST_CREATED_TRIGGER",
         "name": "New Sign Request Created",
-        "description": "Triggers when a new Box sign request is created.\n    This trigger monitors Box sign requests and fires when new sign requests are detected.\n    Uses cursor-based pagination to efficiently track new requests."
+        "description": "Triggers when a new Box sign request is created.\n    This trigger monitors Box sign requests and fires when new sign requests are detected."
       },
       {
         "slug": "BOX_NEW_TASK_ASSIGNMENT_TRIGGER",
         "name": "New Task Assignment Added",
-        "description": "Triggers when a new assignment is added to a task in Box.\n\n    This trigger monitors a specific Box task and fires when new assignments are detected.\n    It uses a snapshot-based diffing approach to compare task assignment IDs between polls."
+        "description": "Triggers when a new assignment is added to a task in Box.\n\n    This trigger monitors a specific Box task and fires when new assignments are detected."
       },
       {
         "slug": "BOX_NEW_TASK_CREATED_TRIGGER",
         "name": "New Task Created on File",
-        "description": "Triggers when a new task is created on a Box file.\n\n    This trigger monitors a specific Box file and fires when new tasks are detected.\n    It uses an ID-based diffing approach to compare task IDs between polls."
+        "description": "Triggers when a new task is created on a Box file.\n\n    This trigger monitors a specific Box file and fires when new tasks are detected."
       },
       {
         "slug": "BOX_SIGN_REQUEST_STATUS_CHANGED_TRIGGER",
         "name": "Box Sign Request Status Changed",
-        "description": "Triggers when a Box Sign request's status or meaningful fields change.\n\n    This trigger monitors a specific Box Sign request and fires when changes are detected\n    in key fields like status, signer decisions, document readiness, or completion state.\n    It uses a snapshot-based diffing approach comparing a hash of the sign request state.\n\n    Polling Strategy: snapshot_diff\n    - Compares canonicalized object snapshot (hash) to detect changes\n    - Monitors single resource state changes\n    - Emits events only when meaningful fields change"
+        "description": "Triggers when a Box Sign request's status or meaningful fields change.\n\n    This trigger monitors a specific Box Sign request and fires when changes are detected\n    in key fields like status, signer decisions, document readiness, or completion state."
       },
       {
         "slug": "BOX_TASK_ASSIGNMENT_STATE_CHANGED_TRIGGER",
@@ -78687,17 +78659,17 @@
       {
         "slug": "BOX_TASK_STATE_CHANGED_TRIGGER",
         "name": "Task State Changed",
-        "description": "Triggers when a task's status or details change in Box.\n\n    This trigger monitors a specific Box task and fires when changes are detected\n    in key fields like status, due date, message, or completion state.\n    It uses a snapshot-based diffing approach comparing a hash of the task state."
+        "description": "Triggers when a task's status or details change in Box.\n\n    This trigger monitors a specific Box task and fires when changes are detected\n    in key fields like status, due date, message, or completion state."
       },
       {
         "slug": "BOX_TRASHED_FILE_STATE_CHANGED_TRIGGER",
         "name": "Trashed File State Changed",
-        "description": "Triggers when a file's trash state changes in Box.\n\n    This trigger monitors a specific Box file and fires when its trash state changes\n    (e.g., moved to trash or restored from trash).\n    It uses a snapshot-based diffing approach comparing a hash of the file state\n    with special attention to the item_status field."
+        "description": "Triggers when a file's trash state changes in Box.\n\n    This trigger monitors a specific Box file and fires when its trash state changes\n    (e.g., moved to trash or restored from trash)."
       },
       {
         "slug": "BOX_TRASHED_FOLDER_STATE_CHANGED_TRIGGER",
         "name": "Trashed Folder State Changed",
-        "description": "Triggers when a folder's trash state changes in Box.\n\n    This trigger monitors a specific Box folder and fires when its trash state changes\n    (e.g., moved to trash or restored from trash).\n    It uses a snapshot-based diffing approach comparing a hash of the folder state\n    with special attention to the item_status field."
+        "description": "Triggers when a folder's trash state changes in Box.\n\n    This trigger monitors a specific Box folder and fires when its trash state changes\n    (e.g., moved to trash or restored from trash)."
       }
     ],
     "authConfigDetails": [
@@ -95947,7 +95919,7 @@
     ],
     "toolCount": 58,
     "triggerCount": 0,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GONG_ADD_CALL_MEDIA_V2_CALLS_ID_MEDIA",
@@ -97997,7 +97969,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "BOLDSIGN_BRAND_GET",
@@ -99675,7 +99647,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260309_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ZOHO_MAIL_ACCOUNTS_LIST_ACCOUNTS",
@@ -102470,7 +102442,7 @@
     ],
     "toolCount": 137,
     "triggerCount": 0,
-    "version": "20260227_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ZOHO_INVOICE_ADD_CREDITNOTE_TO_INVOICES",
@@ -102965,7 +102937,7 @@
       {
         "slug": "ZOHO_INVOICE_LIST_INVOICES",
         "name": "List Invoices",
-        "description": "Tool to list invoices. Use when you need to retrieve all invoices with optional filters and pagination."
+        "description": "Tool to list invoices. Use after obtaining the organization ID to retrieve invoices with optional filters and pagination."
       },
       {
         "slug": "ZOHO_INVOICE_LIST_INVOICES_CREDITED",
@@ -104843,7 +104815,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260223_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ABSTRACT_EMAIL_REPUTATION_API",
@@ -111792,7 +111764,7 @@
     ],
     "toolCount": 113,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "APIFY_ACT_BUILDS_POST",
@@ -114086,7 +114058,7 @@
     ],
     "toolCount": 161,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "BASECAMP_COMPLETE_TODO",
@@ -114944,7 +114916,7 @@
                 "name": "subdomain",
                 "displayName": "Account ID",
                 "type": "string",
-                "description": "Your Basecamp account ID.",
+                "description": "Your numeric Basecamp account ID (e.g., 5855817). Find this in your Basecamp URL: https://3.basecampapi.com/YOUR_ACCOUNT_ID. Do not use your email address.",
                 "required": true,
                 "default": null
               }
@@ -124125,7 +124097,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "BUILTWITH_CREATE_DOMAIN_LIST_FILE",
@@ -126080,7 +126052,7 @@
     ],
     "toolCount": 109,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "CAPSULE_CRM_ADD_PROJECT_PARTY",
@@ -138903,7 +138875,7 @@
     ],
     "toolCount": 390,
     "triggerCount": 0,
-    "version": "20260313_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "COUPA_ABANDON_AN_INVOICE",
@@ -149229,6 +149201,187 @@
     ]
   },
   {
+    "slug": "devto",
+    "name": "DEV Community",
+    "logo": "https://logos.composio.dev/api/devto",
+    "description": "DEV Community (dev.to) is a community of software developers where you can publish articles, engage with others, and build your online presence.",
+    "category": "developer tools",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 28,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "DEVTO_CREATE_ARTICLE",
+        "name": "Create Article",
+        "description": "Create a new article on DEV Community. Use this action to create a new article on behalf of the authenticated user. The article can be published immediately by setting published=true, or saved as a draft by setting published=false (which is the default). Required fields are title and body_markdown. Optional fields include description, main_image, tags, series, canonical_url, and organization_id."
+      },
+      {
+        "slug": "DEVTO_GET_ARTICLE",
+        "name": "Get Article By ID",
+        "description": "Returns a single published article by its ID, including full body content. Use this action when you know the unique ID of the article you want to retrieve. The response includes complete article details such as title, full HTML and markdown body content, author information, reaction counts, comments count, and reading time."
+      },
+      {
+        "slug": "DEVTO_GET_ARTICLE_BY_PATH",
+        "name": "Get Article By Path",
+        "description": "Returns a single published article by username and slug path. Use this action when you know the username of the author and the article's slug. The response includes full article details including title, content, author info, reactions count, comments count, and reading time."
+      },
+      {
+        "slug": "DEVTO_GET_COMMENT",
+        "name": "Get Comment by ID",
+        "description": "Returns a single comment and its descendants (replies) by comment ID. Use this action when you need to retrieve a specific comment along with all its replies from DEV Community. The response includes the comment content, author information, and nested child comments. Note: The comment ID is the id_code field (e.g., \"1\", \"32k5a\"), not the numeric user_id."
+      },
+      {
+        "slug": "DEVTO_GET_CURRENT_USER",
+        "name": "Get Current User",
+        "description": "Tool to get the currently authenticated user's profile information. Use when you need to retrieve the profile of the user associated with the provided API key. Returns user details including username, name, bio, location, and profile image."
+      },
+      {
+        "slug": "DEVTO_GET_LISTING",
+        "name": "Get Listing",
+        "description": "Returns a single classified listing by its ID. Use this action to retrieve detailed information about a specific listing on DEV Community, including the title, description, category, tags, and information about the user who posted it."
+      },
+      {
+        "slug": "DEVTO_GET_ORGANIZATION",
+        "name": "Get Organization",
+        "description": "Returns a single organization by its username. Use this action when you need to retrieve organization profile information from DEV Community. Returns organization details including name, summary, social links, and profile image."
+      },
+      {
+        "slug": "DEVTO_GET_PROFILE_IMAGE",
+        "name": "Get Profile Image",
+        "description": "Returns the profile image URL for a user or organization by username. Use this action to retrieve the profile picture(s) for a specific user or organization on DEV Community. The API returns both the full-size image URL and a 90px thumbnail."
+      },
+      {
+        "slug": "DEVTO_GET_USER",
+        "name": "Get user",
+        "description": "Tool to get a single user by their ID or username. Use when you need to retrieve user profile information from DEV Community. Returns user details including username, name, bio, location, and profile image."
+      },
+      {
+        "slug": "DEVTO_LIST_ARTICLES",
+        "name": "List Articles",
+        "description": "Returns a list of published articles, optionally filtered by tags, username, state, or top articles. Supports pagination. Use when you need to browse or search for articles on DEV Community. Examples: - Get latest articles: omit all filters - Get articles by tag: set tag=\"javascript\" - Get top articles: set state=\"all\" and top=7 - Get rising articles: set state=\"rising\" - Get articles from user: set username=\"ben\""
+      },
+      {
+        "slug": "DEVTO_LIST_COMMENTS",
+        "name": "List Comments",
+        "description": "Tool to list comments for a specified article or podcast episode on DEV Community. Use when you need to retrieve all comments for a particular article or podcast episode. Requires either a_id (article ID) or p_id (podcast episode ID) parameter."
+      },
+      {
+        "slug": "DEVTO_LIST_FOLLOWED_TAGS",
+        "name": "List Followed Tags",
+        "description": "Returns a list of tags followed by the authenticated user. Use this action to retrieve the tags that the currently authenticated user has followed on DEV.to. The response includes the tag ID, name, and points."
+      },
+      {
+        "slug": "DEVTO_LIST_FOLLOWERS",
+        "name": "List Followers",
+        "description": "Tool to retrieve a list of users who follow the authenticated user. Supports pagination with 80 followers per page by default. Use when you need to see who is following the authenticated user's profile."
+      },
+      {
+        "slug": "DEVTO_LIST_LATEST_ARTICLES",
+        "name": "List latest DEV Community articles",
+        "description": "Tool to retrieve a list of published articles sorted by descending publish date. Use when you need to fetch the latest articles from DEV Community with pagination support. Returns articles with full details including author info, tags, and engagement metrics."
+      },
+      {
+        "slug": "DEVTO_LIST_LISTINGS",
+        "name": "List Listings",
+        "description": "Returns a list of classified listings for jobs, mentors, products, etc. Use this action to browse available listings on DEV Community. Supports pagination and filtering by category to find specific types of listings (jobs, mentors, events, etc.)."
+      },
+      {
+        "slug": "DEVTO_LIST_LISTINGS_BY_CATEGORY",
+        "name": "List Listings By Category",
+        "description": "Returns a list of classified listings filtered by category. Use this action to browse listings on DEV Community for a specific category (jobs, mentors, products, events, etc.). The category is a required path parameter. Supports pagination via page and per_page parameters."
+      },
+      {
+        "slug": "DEVTO_LIST_ORGANIZATION_ARTICLES",
+        "name": "List Organization Articles",
+        "description": "Tool to list articles published by a specific organization on DEV.to. Use when you need to retrieve all articles published by an organization. The results are paginated and can be filtered by page number and items per page."
+      },
+      {
+        "slug": "DEVTO_LIST_ORGANIZATION_USERS",
+        "name": "List organization users on DEV.to",
+        "description": "Tool to list users belonging to a specified organization on DEV.to. Use when you need to retrieve all members/users of a particular organization. Returns a list of user objects with their profile information including username, name, profile image, and social links."
+      },
+      {
+        "slug": "DEVTO_LIST_PODCAST_EPISODES",
+        "name": "List podcast episodes on DEV.to",
+        "description": "Tool to retrieve a list of podcast episodes from DEV.to. Use when you need to browse or search for podcast episodes on DEV.to. Returns a list of podcast episodes, optionally filtered by podcast username. Supports pagination to navigate through large result sets."
+      },
+      {
+        "slug": "DEVTO_LIST_READING_LIST",
+        "name": "List DEVTO Reading List",
+        "description": "Returns the articles in the authenticated user's reading list. Requires authentication via API key. The reading list contains articles that the authenticated user has saved for later reading."
+      },
+      {
+        "slug": "DEVTO_LIST_TAGS",
+        "name": "List Tags",
+        "description": "Returns a list of tags with their names, background colors, and text colors. Use this action to retrieve available tags from DEV Community for filtering articles or discovering topics. Supports pagination to handle large numbers of tags."
+      },
+      {
+        "slug": "DEVTO_LIST_USER_ALL_ARTICLES",
+        "name": "List User All Articles",
+        "description": "Tool to list all articles (both published and unpublished) for the authenticated user. Use when you need to retrieve all articles belonging to the authenticated user's account, including draft and unpublished articles."
+      },
+      {
+        "slug": "DEVTO_LIST_USER_ARTICLES",
+        "name": "List User Articles",
+        "description": "Tool to list published articles for the authenticated user. Use when you need to retrieve only the published articles belonging to the authenticated user's account. For unpublished/draft articles, use the List User All Articles action instead."
+      },
+      {
+        "slug": "DEVTO_LIST_USER_PUBLISHED_ARTICLES",
+        "name": "List user's published articles",
+        "description": "Returns a list of the authenticated user's published articles only. Use when you need to retrieve articles that the current user has published on DEV Community. Supports pagination via page and per_page parameters."
+      },
+      {
+        "slug": "DEVTO_LIST_USER_UNPUBLISHED_ARTICLES",
+        "name": "List user's unpublished articles",
+        "description": "Returns a list of the authenticated user's unpublished (draft) articles. Use when you need to retrieve draft articles that have not yet been published. Supports pagination via page and per_page parameters."
+      },
+      {
+        "slug": "DEVTO_LIST_VIDEOS",
+        "name": "List Videos",
+        "description": "Tool to retrieve a list of articles that contain videos. Use when you need to browse video content on DEV Community. Supports pagination via page and per_page parameters."
+      },
+      {
+        "slug": "DEVTO_UPDATE_ARTICLE",
+        "name": "Update Article",
+        "description": "Update an existing article on DEV Community. Only the article owner can update it. Use this action to modify article properties like title, body content, description, cover image, tags, and publication status. Only provide the fields you want to update."
+      },
+      {
+        "slug": "DEVTO_UPDATE_LISTING",
+        "name": "Update Listing",
+        "description": "Updates an existing classified listing on DEV Community. Use this action to modify a listing's title, body, category, tags, or status. The 'bump' action refreshes the listing's timestamp, 'publish' sets it to published, and 'unpublish' sets it to unpublished. Requires API key authentication."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "devto_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your dev.to API key. You can generate one from https://dev.to/settings/extensions",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
     "slug": "devin_mcp",
     "name": "Devin MCP",
     "logo": "https://logos.composio.dev/api/devin_mcp",
@@ -157886,7 +158039,7 @@
     ],
     "toolCount": 19,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "ENIGMA_CREATE_LIST",
@@ -160227,7 +160380,7 @@
     ],
     "toolCount": 52,
     "triggerCount": 0,
-    "version": "20260313_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "EXCEL_ADD_CHART",
@@ -172074,7 +172227,7 @@
     ],
     "toolCount": 62,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLE_CLASSROOM_COURSES_ALIASES_CREATE",
@@ -172753,7 +172906,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 1,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "GOOGLESLIDES_CREATE_PRESENTATION",
@@ -181591,7 +181744,7 @@
     ],
     "toolCount": 44,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "HYPERBROWSER_ADD_EXTENSION",
@@ -184166,7 +184319,7 @@
     ],
     "toolCount": 36,
     "triggerCount": 0,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "INSTAGRAM_CREATE_CAROUSEL_CONTAINER",
@@ -189997,7 +190150,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "LEMON_SQUEEZY_CREATE_CUSTOMER",
@@ -193470,6 +193623,117 @@
                 "displayName": "Make API Token",
                 "type": "string",
                 "description": "The API token used for authenticating requests to the Make API.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "manus",
+    "name": "Manus",
+    "logo": "https://logos.composio.dev/api/manus",
+    "description": "AI-powered task automation and workflow management platform",
+    "category": "productivity",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 14,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "MANUS_CREATE_FILE",
+        "name": "Create File",
+        "description": "Tool to create a file record and obtain a presigned URL for uploading file content to S3. Use when you need to upload a file to Manus. After calling this action, use the returned upload_url with a PUT request to upload the actual file content. The upload URL expires at the timestamp specified in upload_expires_at."
+      },
+      {
+        "slug": "MANUS_CREATE_PROJECT",
+        "name": "Create New Project",
+        "description": "Tool to create a new project with default instructions. Projects organize tasks and apply consistent instructions across multiple task creations via the project_id parameter. Use when you need to set up a new project workspace for organizing related tasks."
+      },
+      {
+        "slug": "MANUS_CREATE_TASK",
+        "name": "Create New Task",
+        "description": "Creates a new AI task with custom parameters, attachments, and optional connectors. Supports multi-turn conversations by specifying taskId for continuation. Use when you want to create a new task for the Manus agent to execute."
+      },
+      {
+        "slug": "MANUS_CREATE_WEBHOOK",
+        "name": "Create Webhook",
+        "description": "Tool to register a webhook to receive real-time task notifications. Use when you need to set up real-time notifications for task events such as task_created, task_progress, and task_stopped. The webhook URL must be accessible over HTTPS and will receive POST requests with task event data in JSON format."
+      },
+      {
+        "slug": "MANUS_DELETE_FILE",
+        "name": "Delete a file",
+        "description": "Deletes a file by ID. This removes both the file record and the file from S3 storage. Use when you need to remove a previously uploaded file from the Manus platform."
+      },
+      {
+        "slug": "MANUS_DELETE_TASK",
+        "name": "Delete task",
+        "description": "Permanently delete a task by its ID. This action cannot be undone. Use this action when you want to permanently remove a task from the system."
+      },
+      {
+        "slug": "MANUS_DELETE_WEBHOOK",
+        "name": "Delete Webhook",
+        "description": "Removes a webhook subscription. This is a destructive operation that permanently removes the webhook. Use when you need to delete an existing webhook that is no longer needed."
+      },
+      {
+        "slug": "MANUS_GET_FILE",
+        "name": "Get file details",
+        "description": "Retrieves details of a specific file by ID, including its status and metadata. Use this to get information about a previously uploaded file such as its name, current status (pending, uploaded, or deleted), and creation timestamp."
+      },
+      {
+        "slug": "MANUS_GET_TASK",
+        "name": "Get Task",
+        "description": "Retrieves details of a specific task by ID, including status, output messages, credit usage, and metadata. Use this action to check the current status of a task and retrieve its results after it has been submitted. Example: Get the details of task with ID \"Y7BNH7rfCVjxMQjU98R2wq\"."
+      },
+      {
+        "slug": "MANUS_GET_WEBHOOK_PUBLIC_KEY",
+        "name": "Get Webhook Public Key",
+        "description": "Retrieves the RSA public key used for verifying webhook signatures. Use this key to validate that webhook requests genuinely came from Manus. This is essential for security - always verify webhook signatures before processing the payload."
+      },
+      {
+        "slug": "MANUS_LIST_FILES",
+        "name": "List uploaded files",
+        "description": "Retrieves a list of the 10 most recently uploaded files. Use this action to get information about files that have been uploaded to the Manus platform, including their IDs, filenames, creation timestamps, and status."
+      },
+      {
+        "slug": "MANUS_LIST_PROJECTS",
+        "name": "List Projects",
+        "description": "Retrieve a list of all projects in your account with optional pagination. Use this action when you need to get all projects to find a specific project ID or to see all available projects."
+      },
+      {
+        "slug": "MANUS_LIST_TASKS",
+        "name": "List tasks",
+        "description": "Retrieves a list of tasks with optional filtering and pagination. Allows searching, filtering by status, and sorting by creation or update time. Use this action to fetch multiple tasks at once, optionally filtered by status, project, search query, or time range. Supports pagination via 'after' cursor and sorting via 'order' and 'order_by' parameters."
+      },
+      {
+        "slug": "MANUS_UPDATE_TASK",
+        "name": "Update Task",
+        "description": "Updates a task's metadata such as title, sharing settings, and visibility in the task list. Use when you need to modify an existing task's properties like its title, enable or disable public sharing, or change its visibility in the task list."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "manus_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Get your API key from https://manus.im/app?show_settings=integrations&app_name=api",
                 "required": true,
                 "default": null
               }
@@ -204454,7 +204718,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "00000000_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "OLLAMA_CHAT",
@@ -209871,7 +210135,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "PDFMONKEY_CREATE_DOCUMENT",
@@ -212324,7 +212588,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "PLAIN_ADD_CUSTOMER_TO_GROUP",
@@ -218019,7 +218283,7 @@
     ],
     "toolCount": 105,
     "triggerCount": 0,
-    "version": "20260319_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "QUICKBOOKS_CAPTURE_CHARGE",
@@ -220363,7 +220627,7 @@
     ],
     "toolCount": 25,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "RECRUITEE_CREATE_CANDIDATE",
@@ -238119,7 +238383,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "SOFTR_CREATE_DATABASE",
@@ -245174,7 +245438,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "TELEGRAM_ANSWER_CALLBACK_QUERY",
@@ -250159,7 +250423,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "TYPEFORM_CREATE_ACCOUNT_WORKSPACE",
@@ -250512,7 +250776,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 0,
-    "version": "20260312_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "UNIONE_DELETE_EVENT_DUMP",
@@ -253223,7 +253487,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260316_00",
+    "version": "20260323_00",
     "tools": [
       {
         "slug": "VIRUSTOTAL_ADD_COMMENT",
@@ -256955,217 +257219,6 @@
                 "displayName": "Writer API Key",
                 "type": "string",
                 "description": "The API key used for authenticating requests to the Writer API.",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "xata",
-    "name": "Xata",
-    "logo": "https://logos.composio.dev/api/xata",
-    "description": "Think data, not databases. The serverless, branchable, scalable, consistent, highly available, and searchable database service focused on the developer experience.",
-    "category": "databases",
-    "authSchemes": [
-      "API_KEY",
-      "OAUTH2"
-    ],
-    "toolCount": 8,
-    "triggerCount": 0,
-    "version": "00000000_00",
-    "tools": [
-      {
-        "slug": "XATA_GET_ORGANIZATION",
-        "name": "Get Organization Details",
-        "description": "Tool to retrieve detailed information about a specific organization by its ID. Use when you need to check organization status, name, billing information, or admin settings."
-      },
-      {
-        "slug": "XATA_GET_PROJECT_LIMITS",
-        "name": "Get project resource limits",
-        "description": "Tool to retrieve the default resource limits for projects in a specified organization. Use when you need to check maximum instances, storage, allowed regions, or branch limits for a Xata organization."
-      },
-      {
-        "slug": "XATA_LIST_EXTENSIONS",
-        "name": "List Extensions",
-        "description": "Tool to get available PostgreSQL extensions for a specific image. Use when you need to check which extensions can be enabled for a particular PostgreSQL version in an organization."
-      },
-      {
-        "slug": "XATA_LIST_IMAGES",
-        "name": "List Available Images",
-        "description": "Tool to retrieve a list of all available postgres images for a specified organization and region. Use when you need to check which database images are available for deployment."
-      },
-      {
-        "slug": "XATA_LIST_INSTANCE_TYPES",
-        "name": "List Instance Types",
-        "description": "Tool to retrieve a list of all instance types for the specified organization and region. Use when you need to check available instance types and their configurations including CPU, RAM, and pricing."
-      },
-      {
-        "slug": "XATA_LIST_ORG_API_KEYS",
-        "name": "List Organization API Keys",
-        "description": "Tool to retrieve a list of API keys for a specific Xata organization. Use when you need to view all API keys associated with an organization."
-      },
-      {
-        "slug": "XATA_LIST_REGIONS",
-        "name": "List Available Regions",
-        "description": "Tool to retrieve a list of all regions where new branches can be deployed for the specified organization. Use when you need to check which regions are available for deploying new branches."
-      },
-      {
-        "slug": "XATA_UPDATE_ORGANIZATION",
-        "name": "Update Organization",
-        "description": "Tool to update information for an existing organization, such as its name. Use when you need to modify organization details."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "OAUTH2",
-        "name": "xata_oauth",
-        "fields": {
-          "auth_config_creation": {
-            "required": [
-              {
-                "name": "client_id",
-                "displayName": "Client id",
-                "type": "string",
-                "description": "Client id of the app",
-                "required": true,
-                "default": null
-              },
-              {
-                "name": "client_secret",
-                "displayName": "Client secret",
-                "type": "string",
-                "description": "Client secret of the app",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": [
-              {
-                "name": "oauth_redirect_uri",
-                "displayName": "Redirect URI",
-                "type": "string",
-                "description": "Add this Redirect URL to your app's OAuth allow list.",
-                "required": false,
-                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
-              },
-              {
-                "name": "scopes",
-                "displayName": "Scopes",
-                "type": "string",
-                "description": "Scopes to request from the user, comma separated",
-                "required": false,
-                "default": "admin:all"
-              }
-            ]
-          },
-          "connected_account_initiation": {
-            "required": [],
-            "optional": []
-          }
-        }
-      },
-      {
-        "mode": "API_KEY",
-        "name": "xata_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "API Key",
-                "type": "string",
-                "description": "Create a new API key or retrieve existing keys from your Xata account settings (https://app.xata.io/settings). API keys start with the prefix xau_",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "y_gy",
-    "name": "Y gy",
-    "logo": "https://logos.composio.dev/api/y_gy",
-    "description": "y.gy is a URL shortener and QR code generator that allows users to create short, memorable links from long URLs, customize them with unique endings, and integrate with an API for programmatic link creation.",
-    "category": "url shortener",
-    "authSchemes": [
-      "API_KEY"
-    ],
-    "toolCount": 8,
-    "triggerCount": 0,
-    "version": "20260312_00",
-    "tools": [
-      {
-        "slug": "Y_GY_CREATE_LINK",
-        "name": "Create Y.gy Link",
-        "description": "Tool to create a comprehensive Y.gy shortened link with advanced features. Supports custom domains, suffixes, QR codes, password protection, expiration dates, social media previews, device-specific redirects, and webhook integration."
-      },
-      {
-        "slug": "Y_GY_CREATE_TAG",
-        "name": "Create Tag",
-        "description": "Tool to create a new tag. Use after determining the tag name to categorize links."
-      },
-      {
-        "slug": "Y_GY_DELETE_SHORT_LINK",
-        "name": "Delete Y.GY Short Link",
-        "description": "Tool to delete a specific short link by its ID. Use when you need to remove a short link after confirming its ID."
-      },
-      {
-        "slug": "Y_GY_DELETE_TAG",
-        "name": "Delete a tag by ID",
-        "description": "Tool to delete a tag. Use when you need to remove a tag by its ID after confirming it exists."
-      },
-      {
-        "slug": "Y_GY_GET_ALL_LINKS",
-        "name": "Get all links",
-        "description": "Tool to fetch all short links with optional pagination. Use when you need to list existing links with filters."
-      },
-      {
-        "slug": "Y_GY_GET_ALL_TAGS",
-        "name": "Get all tags",
-        "description": "Tool to retrieve all tags associated with the organization. Use when you need to list all available tags for categorizing resources."
-      },
-      {
-        "slug": "Y_GY_GET_LINK",
-        "name": "Get Link Details",
-        "description": "Tool to retrieve a specific short link by its ID. Returns the complete link object including destination URL, QR codes, tags, and all configuration options. Use when you need full details about a short link."
-      },
-      {
-        "slug": "Y_GY_REGISTER_USER",
-        "name": "Register User",
-        "description": "Tool to register a new user account. Use when onboarding a new user to the y.gy system with their chosen username, password, and email."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "API_KEY",
-        "name": "y_gy_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "y.gy API Key",
-                "type": "string",
-                "description": "The API key used for authenticating requests to the y.gy API.",
                 "required": true,
                 "default": null
               }

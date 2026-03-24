@@ -15,6 +15,9 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_LINK_INVOKED: 'CLI Link Invoked',
   CLI_LINK_SUCCEEDED: 'CLI Link Succeeded',
   CLI_LINK_FAILED: 'CLI Link Failed',
+  CLI_PROXY_INVOKED: 'CLI Proxy Invoked',
+  CLI_PROXY_SUCCEEDED: 'CLI Proxy Succeeded',
+  CLI_PROXY_FAILED: 'CLI Proxy Failed',
   CLI_RUN_INVOKED: 'CLI Run Invoked',
   CLI_RUN_SUCCEEDED: 'CLI Run Succeeded',
   CLI_RUN_FAILED: 'CLI Run Failed',
@@ -40,6 +43,9 @@ const KNOWN_COMMAND_TOKENS = new Set([
   'search',
   'execute',
   'link',
+  'proxy',
+  'artifacts',
+  'cwd',
   'connected-accounts',
   'auth-configs',
   'triggers',
@@ -198,6 +204,9 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
     dry_run: isFlagPresent(context.argv, '--dry-run'),
     get_schema: isFlagPresent(context.argv, '--get-schema'),
     has_data: isFlagPresent(context.argv, '--data', '-d'),
+    skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
+    skip_tool_params_check: isFlagPresent(context.argv, '--skip-tool-params-check'),
+    no_verify: isFlagPresent(context.argv, '--no-verify'),
   };
 };
 
@@ -239,9 +248,29 @@ const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
   cli_version: context.cliVersion,
   command_path: context.commandPath,
   duration_ms: Date.now() - context.startedAt,
+  debug: isFlagPresent(context.argv, '--debug'),
   dry_run: isFlagPresent(context.argv, '--dry-run'),
+  skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
+  skip_tool_params_check: isFlagPresent(context.argv, '--skip-tool-params-check'),
+  no_verify: isFlagPresent(context.argv, '--no-verify'),
   file_mode: isFlagPresent(context.argv, '--file', '-f'),
   arg_count: Math.max(0, context.argv.length - 3),
+});
+
+const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: getInvocationOrigin(),
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+  endpoint: getTrailingPositionals(context)[0],
+  toolkit: getFlagValue(context.argv, '--toolkit', '-t'),
+  method: getFlagValue(context.argv, '--method', '-X') ?? 'GET',
+  has_data: isFlagPresent(context.argv, '--data', '-d'),
+  header_count: context.argv
+    .slice(2)
+    .filter(token => token === '--header' || token === '-H').length,
+  skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
 });
 
 const isExecuteCommand = (commandPath: string): boolean =>
@@ -252,6 +281,8 @@ const isSearchCommand = (commandPath: string): boolean =>
 
 const isLinkCommand = (commandPath: string): boolean =>
   commandPath === 'link' || commandPath === 'manage connected-accounts link';
+
+const isProxyCommand = (commandPath: string): boolean => commandPath === 'proxy';
 
 const isRunCommand = (commandPath: string): boolean => commandPath === 'run';
 
@@ -340,6 +371,12 @@ export const getPrimaryLifecycleInvokedEvent = (
       properties: getLinkCommandProperties(context),
     };
   }
+  if (isProxyCommand(context.commandPath)) {
+    return {
+      name: CLI_ANALYTICS_EVENTS.CLI_PROXY_INVOKED,
+      properties: getProxyCommandProperties(context),
+    };
+  }
   if (isRunCommand(context.commandPath)) {
     return {
       name: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
@@ -371,6 +408,12 @@ export const getPrimaryLifecycleSucceededEvent = (
     return {
       name: CLI_ANALYTICS_EVENTS.CLI_LINK_SUCCEEDED,
       properties: getLinkCommandProperties(context),
+    };
+  }
+  if (isProxyCommand(context.commandPath)) {
+    return {
+      name: CLI_ANALYTICS_EVENTS.CLI_PROXY_SUCCEEDED,
+      properties: getProxyCommandProperties(context),
     };
   }
   if (isRunCommand(context.commandPath)) {
@@ -414,6 +457,16 @@ export const getPrimaryLifecycleFailedEvent = (
       name: CLI_ANALYTICS_EVENTS.CLI_LINK_FAILED,
       properties: {
         ...getLinkCommandProperties(context),
+        error_name: errorNameOf(error),
+        error_message: errorMessageOf(error),
+      },
+    };
+  }
+  if (isProxyCommand(context.commandPath)) {
+    return {
+      name: CLI_ANALYTICS_EVENTS.CLI_PROXY_FAILED,
+      properties: {
+        ...getProxyCommandProperties(context),
         error_name: errorNameOf(error),
         error_message: errorMessageOf(error),
       },

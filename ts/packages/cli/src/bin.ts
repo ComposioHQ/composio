@@ -40,6 +40,7 @@ import {
   trackCliEvent,
   trackCliEventEffect,
 } from 'src/analytics/dispatch';
+import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -213,6 +214,9 @@ if (isAnalyticsWorkerInvocation(process.argv)) {
 } else {
   runWithArgs.pipe(
     Effect.scoped,
+    Effect.mapError(error =>
+      ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
+    ),
     Effect.tap(() => trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))),
     Effect.tapErrorCause(cause =>
       trackCliEventEffect(getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause)))
@@ -247,7 +251,6 @@ if (isAnalyticsWorkerInvocation(process.argv)) {
         const filteredErrors = captured.errors.filter(
           error => error.errorType !== 'ToolExecutionError'
         );
-
         if (captured.interrupted || filteredErrors.length > 0) {
           const message = prettyPrintFromCapturedErrors(
             { ...captured, errors: filteredErrors },

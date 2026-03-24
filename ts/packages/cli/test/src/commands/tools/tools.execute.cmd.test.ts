@@ -1,11 +1,12 @@
 import * as fs from 'node:fs';
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, Effect, Option } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
-import { ActionExecuteConnectedAccountNotFoundError } from 'src/services/tools-executor';
+import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -41,8 +42,15 @@ describe('CLI: composio execute', () => {
   beforeEach(() => {
     savedCI = process.env.CI;
     delete process.env.CI;
+    vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
+      Effect.succeed(Option.some(['gmail', 'github']))
+    );
+    vi.spyOn(consumerShortTermCache, 'refreshConsumerConnectedToolkitsCache').mockImplementation(
+      () => Effect.succeed(['gmail', 'github'])
+    );
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     if (savedCI !== undefined) process.env.CI = savedCI;
   });
 
@@ -55,7 +63,13 @@ describe('CLI: composio execute', () => {
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
     it.scoped('executes via Tool Router with defaults', () =>
       Effect.gen(function* () {
-        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
@@ -419,12 +433,17 @@ describe('CLI: composio execute', () => {
         expect(output.storedInFile).toBe(true);
         expect(output.logId).toBe('log_large_output');
         expect(output.tokenCount).toBeGreaterThan(10_000);
-        expect(output.outputFilePath).toMatch(/^\/tmp\/composio\/[^/]+\/output-[^.]+\.json$/);
+        expect(output.outputFilePath).toMatch(
+          /^\/tmp\/composio\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/
+        );
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
         const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
         expect(storedJson).toContain('token token token');
 
-        fs.rmSync(output.outputFilePath.split('/output-')[0]!, { recursive: true, force: true });
+        fs.rmSync(output.outputFilePath.slice(0, output.outputFilePath.lastIndexOf('/')), {
+          recursive: true,
+          force: true,
+        });
       })
     );
   });
@@ -734,16 +753,18 @@ describe('CLI: composio execute', () => {
       } satisfies TestLiveInput['toolkitsData'],
       stdin: { isTTY: true, data: '' },
     })
-  )('[Given] execute-help with options before slug [Then] resolves correct slug', it => {
-    it.scoped('resolves root execute help slug correctly', () =>
+  )('[Given] execute --help with a slug [Then] it shows command help', it => {
+    it.scoped('shows the root execute help text', () =>
       Effect.gen(function* () {
         yield* cli(['execute', 'GMAIL_SEND_EMAIL', '--help']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('Slug: GMAIL_SEND_EMAIL');
-        expect(output).toContain('Data Parameters:');
-        expect(output).toContain('recipient');
+        expect(output).toContain('USAGE');
+        expect(output).toContain(
+          'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]'
+        );
+        expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
       })
     );
   });
@@ -774,9 +795,12 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: new ActionExecuteConnectedAccountNotFoundError({
-          slug: 'ActionExecute_ConnectedAccountNotFound',
-          message: 'No connected account found for entity ID default for toolkit gmail',
+        failWith: new ComposioNoActiveConnectionError({
+          details: {
+            slug: 'ActionExecute_ConnectedAccountNotFound',
+            message: 'No connected account found for entity ID default for toolkit gmail',
+          },
+          toolSlug: 'GMAIL_CREATE_EMAIL_DRAFT',
         }),
       },
     })
@@ -1009,9 +1033,12 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: new ActionExecuteConnectedAccountNotFoundError({
-          slug: 'ToolRouterV2_NoActiveConnection',
-          message: 'No active connection found for toolkit(s) in this session',
+        failWith: new ComposioNoActiveConnectionError({
+          details: {
+            slug: 'ToolRouterV2_NoActiveConnection',
+            message: 'No active connection found for toolkit(s) in this session',
+          },
+          toolSlug: 'COMPOSIO_SEARCH_TOOLS',
         }),
       },
     })

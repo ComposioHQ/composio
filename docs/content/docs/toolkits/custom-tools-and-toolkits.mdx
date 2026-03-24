@@ -9,7 +9,7 @@ Custom tools are experimental. The `experimental_` prefix and `experimental` ses
 </Callout>
 
 <Callout type="info">
-Custom tools work with **native tools** (`session.tools()`). MCP support is coming soon.
+Custom tools work with **native tools** (`session.tools()`). MCP support is coming soon — custom tools are not available via the MCP server URL yet.
 </Callout>
 
 Custom tools let you define tools that run in-process alongside remote Composio tools within a session. There are three patterns:
@@ -103,6 +103,33 @@ const session = await composio.create("user_1", {
 
 const tools = await session.tools();
 ```
+
+## How custom tools work with meta tools
+
+Custom tools integrate seamlessly with Composio's meta tools:
+
+- **`COMPOSIO_SEARCH_TOOLS`** automatically includes your custom tools and toolkits in search results, giving slight priority to tools that don't require auth or are already connected
+- **`COMPOSIO_GET_TOOL_SCHEMAS`** returns schemas for custom tools alongside remote tools — the agent sees them as first-class tools
+- **`COMPOSIO_MULTI_EXECUTE_TOOL`** intelligently splits execution — custom tools run in-process while remote tools go to the backend, results are merged transparently
+- **`COMPOSIO_MANAGE_CONNECTIONS`** handles auth for extension tools — if a tool extends `gmail`, the agent can prompt the user to connect Gmail just like any other toolkit
+- Custom tools are **not supported in Workbench** — the LLM is made aware of this and will not attempt to use them there
+
+## Best practices
+
+- **Descriptive names and slugs** — The agent sees your tool's name and description to decide when to use it. Be specific: "Send weekly promo email" is better than "Send email". Slugs should be uppercase with underscores: `SEND_PROMO_EMAIL`.
+- **Detailed descriptions** — Include what the tool does, when to use it, and what it returns. The agent relies on this to pick the right tool.
+- **Use `extendsToolkit` for auth** — If your tool needs Gmail/GitHub/etc. auth for `ctx.proxyExecute()` or `ctx.execute()`, set `extendsToolkit` so connection management is handled seamlessly via `COMPOSIO_MANAGE_CONNECTIONS`.
+- **Tool names get prefixed** — Slugs exposed to the agent are automatically prefixed with `LOCAL_` and the toolkit name (if any). `GET_USER_PROFILE` becomes `LOCAL_GET_USER_PROFILE`, `ASSIGN_ROLE` in `USER_MANAGEMENT` becomes `LOCAL_USER_MANAGEMENT_ASSIGN_ROLE`. Your slugs cannot start with `LOCAL_` — this prefix is reserved.
+
+For more best practices, see [How to Build Tools for AI Agents: A Field Guide](https://composio.dev/blog/how-to-build-tools-for-ai-agents-a-field-guide).
+
+## Verifying registration
+
+Use `session.customTools()` to list registered tools (with their final `LOCAL_` prefixed slugs), or filter by toolkit with `session.customTools({ toolkit: "USER_MANAGEMENT" })`. Use `session.customToolkits()` to list registered toolkits.
+
+## Programmatic execution
+
+Use `session.execute()` to run custom tools directly, outside of an agent loop (e.g. `session.execute("GET_USER_PROFILE")`). Custom tools execute in-process; remote tools are sent to the backend automatically.
 
 ## SessionContext
 

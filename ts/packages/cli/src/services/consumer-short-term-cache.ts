@@ -11,8 +11,8 @@ import { resolveCommandProject } from 'src/services/command-project';
 import { ComposioUserContext } from 'src/services/user-context';
 
 const CACHE_FILE = 'consumer-short-term-cache.json';
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const SEARCH_SESSION_EXTENSION_MS = 2 * 60 * 1000;
+const CACHE_TTL_MS = 15 * 60 * 1000;
+const SEARCH_SESSION_EXTENSION_MS = 5 * 60 * 1000;
 
 type CacheEntry = {
   readonly toolkits: ReadonlyArray<string>;
@@ -220,3 +220,39 @@ export const primeConsumerConnectedToolkitsCacheInBackground = (params?: {
     Effect.forkDaemon,
     Effect.asVoid
   );
+
+export const getOrCreateProbablyMyCliSessionIdForCurrentCwd = (params?: {
+  readonly orgId?: string;
+  readonly consumerUserId?: string;
+}) =>
+  Effect.gen(function* () {
+    const scope = yield* resolveConsumerScope(params);
+    if (!scope?.consumerUserId) {
+      return Option.none<string>();
+    }
+
+    const proc = yield* NodeProcess;
+    const state = yield* readCache();
+    const key = cacheKey(scope.orgId, scope.consumerUserId);
+    const currentEntry = state[key];
+    const searchSessionFields = resolveSearchSessionMetadata({
+      currentEntry,
+      cwd: proc.cwd,
+    });
+    const currentCwdHash = cwdHash(proc.cwd);
+    const session = searchSessionFields.probablyMyCliSessionsByCwdHash[currentCwdHash];
+    if (!session) {
+      return Option.none<string>();
+    }
+
+    yield* writeCache({
+      ...state,
+      [key]: {
+        toolkits: currentEntry?.toolkits ?? [],
+        expiresAt: currentEntry?.expiresAt ?? new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        ...searchSessionFields,
+      },
+    });
+
+    return Option.some(session.id);
+  });
