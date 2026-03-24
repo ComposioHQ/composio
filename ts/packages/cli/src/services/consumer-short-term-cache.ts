@@ -10,7 +10,7 @@ import {
 import { resolveCommandProject } from 'src/services/command-project';
 import { ComposioUserContext } from 'src/services/user-context';
 
-const CACHE_FILE = 'consumer-connected-toolkits.json';
+const CACHE_FILE = 'consumer-short-term-cache.json';
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const SEARCH_SESSION_EXTENSION_MS = 2 * 60 * 1000;
 
@@ -24,8 +24,6 @@ type CacheEntry = {
       readonly expiresAt: string;
     }
   >;
-  readonly probablyMyCliSessionId?: string;
-  readonly probablyMyCliSessionExpiresAt?: string;
 };
 
 type CacheState = Record<string, CacheEntry>;
@@ -56,17 +54,6 @@ const resolveSearchSessionMetadata = (params: {
   const previousMap = {
     ...(params.currentEntry?.probablyMyCliSessionsByCwdHash ?? {}),
   };
-
-  if (
-    Object.keys(previousMap).length === 0 &&
-    params.currentEntry?.probablyMyCliSessionId &&
-    params.currentEntry?.probablyMyCliSessionExpiresAt
-  ) {
-    previousMap[currentCwdHash] = {
-      id: params.currentEntry.probablyMyCliSessionId,
-      expiresAt: params.currentEntry.probablyMyCliSessionExpiresAt,
-    };
-  }
 
   const probablyMyCliSessionsByCwdHash = Object.fromEntries(
     Object.entries(previousMap).filter(([, session]) => {

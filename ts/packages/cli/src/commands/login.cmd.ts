@@ -11,7 +11,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
-import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-connected-toolkits-cache';
+import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),

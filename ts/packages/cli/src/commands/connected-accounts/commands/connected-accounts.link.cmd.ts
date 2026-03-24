@@ -13,7 +13,7 @@ import {
   resolveCommandProject,
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
-import { invalidateConsumerConnectedToolkitsCache } from 'src/services/consumer-connected-toolkits-cache';
+import { invalidateConsumerConnectedToolkitsCache } from 'src/services/consumer-short-term-cache';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),

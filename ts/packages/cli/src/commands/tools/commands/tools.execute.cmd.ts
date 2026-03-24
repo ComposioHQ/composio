@@ -44,7 +44,7 @@ import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-deb
 import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
-} from 'src/services/consumer-connected-toolkits-cache';
+} from 'src/services/consumer-short-term-cache';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')

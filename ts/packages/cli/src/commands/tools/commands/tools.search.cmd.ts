@@ -14,7 +14,7 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
-import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-connected-toolkits-cache';
+import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription(
