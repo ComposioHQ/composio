@@ -2,99 +2,87 @@
 
 exports[`CLI: composio > [Given] --help flag [Then] prints help message 1`] = `
 "
-Connect AI agents to external tools. \`search\`, \`link\`, \`execute\`, \`proxy\`, and \`run\` let you take actions across 1000+ apps directly; if you can describe it, it is probably supported.
-Try \`execute\` sooner than you'd think. It parses inputs, validates them against cached schemas when available, and will usually tell you whether you need to fix arguments, inspect schema, or \`link\` an account.
-Use \`dev\` when you are building with Composio and want scaffolding, playground execution, triggers, and logs.
+Connect AI agents to external tools. search, execute, link, proxy, and run let you
+take actions across 1000+ apps directly; if you can describe it, it is probably supported.
+Try execute sooner than you'd think — it validates inputs, checks connections, and tells
+you what to fix.
+
+Use dev when you are building an agent with Composio's SDK and want scaffolding,
+playground execution, triggers, and logs.
 
 USAGE
   composio <command> [options]
 
-BASIC COMMANDS
-  version
-    Display the current Composio CLI version.
-    Usage: composio version
-
-  upgrade
-    Upgrade your Composio CLI to the latest available version.
-    Usage: composio upgrade
-
-  whoami
-    Display your account information.
-    Usage: composio whoami
-
-  login
-    Log in to the Composio CLI session.
-    Usage: composio login [--no-browser] [--no-wait] [--key text] [-y, --yes]
-    Options:
-      --no-browser          Login without browser interaction
-      --no-wait             Print login URL and session info, then exit (no browser, no waiting)
-      --key                 Complete login using session key from --no-wait
-      -y, --yes             Skip org picker; use session default org
-
-  logout
-    Log out from the Composio CLI session.
-    Usage: composio logout
-
-  run
-    Run inline ESNext TS/JS code or a file with Bun and injected Composio helpers: execute, search, and proxy.
-    Usage: composio run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]
-    Options:
-      <code>                Inline Bun ESNext code with injected execute(slug, data?), search(query, options?), and proxy(toolkit) helpers
-      -f, --file            Run a TS/JS file with the Bun runtime instead of inline code
-      --dry-run             Preview execute(...) calls without running remote actions
-      --skip-connection-check  Skip the short-lived linked-account fail-fast check if you just connected an account
-      --skip-tool-params-check  Skip the local tool parameter/schema validation check
-      --no-verify           Skip both the linked-account fail-fast check and the local tool parameter check
-
-  proxy
-    Call a toolkit API through Composio proxy execute using the current consumer-project account.
-    Usage: composio proxy <url> --toolkit text [-X, --method text] [-H, --header text]... [-d, --data text]
-    Options:
-      <url>                 Absolute or relative API endpoint to call through proxy execute.
-      --toolkit             Toolkit slug whose connected account should be used
-      -X, --method          HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)
-      -H, --header          Header in "Name: value" format. Repeat for multiple headers.
-      -d, --data            Request body as raw text, JSON, @file, or - for stdin
-      --skip-connection-check  Skip the short-lived linked-account fail-fast check if you just connected an account
-
+CORE COMMANDS
   search
-    Semantic search for tools by use case across all toolkits/apps.
+    Find tools by use case across all toolkits/apps.
     Usage: composio search <query> [--toolkits text] [--limit integer]
-    Options:
-      <query>               Semantic use-case query (e.g. "send emails")
-      --toolkits            Filter by toolkit slugs, comma-separated
-      --limit               Number of results per page (1-1000)
-
-  tools
-    List tools for one toolkit, or inspect a cached schema-backed summary.
-    Usage: composio tools list <toolkit> [--query text] | tools info <slug>
-    Options:
-      list <toolkit>        Non-semantic per-toolkit listing; use this when you already know the toolkit
-      info <slug>           Print a brief summary and cache the same raw schema used by execute --get-schema
+      <query>             Semantic use-case query (e.g. "send emails")
+      --toolkits          Filter by toolkit slugs, comma-separated
+      --limit             Number of results per page (1-1000)
 
   execute
-    Execute a tool, preview it with --dry-run, or fetch its input schema.
-    Usage: composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]
-    Options:
-      <slug>                Tool slug (e.g. "GITHUB_CREATE_ISSUE")
-      -d, --data            JSON or JS-style object arguments, e.g. -d '{ repo: "foo" }', @file, or - for stdin
-      --dry-run             Validate and preview the tool call without executing it
-      --get-schema          Fetch and print the raw cached schema; tools info shows the same schema with a brief summary
-      --skip-connection-check  Skip the short-lived linked-account fail-fast check if you just connected an account
-      --skip-tool-params-check  Skip the local tool parameter/schema validation check
-      --no-verify           Skip both the linked-account fail-fast check and the local tool parameter check
+    Execute a tool. Validates inputs and connections automatically; use it aggressively.
+    Usage: composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]
+      <slug>              Tool slug (e.g. "GITHUB_CREATE_ISSUE")
+      -d, --data          JSON or JS-style object arguments, e.g. -d '{ repo: "foo" }', @file, or - for stdin
+      --dry-run           Validate and preview the tool call without executing it
+      --get-schema        Fetch and print the raw tool schema
 
   link
-    Connect a user account for a toolkit/app.
+    Connect your account for a toolkit/app.
     Usage: composio link [<toolkit>] [--no-browser]
-    Options:
-      <toolkit>             Toolkit slug to link (e.g. "github", "gmail")
-      --no-browser          Skip auto-opening the browser
+      <toolkit>           Toolkit slug to link (e.g. "github", "gmail")
 
-ADVANCED COMMANDS
-  dev         Developer workflows: init a local project, execute tools with playground users, listen for triggers, and inspect logs.
-  generate    Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
-  manage      Manage your developer orgs, toolkits, connected accounts, triggers, auth configs, and projects.
+  run
+    Run inline TS/JS code with shimmed CLI commands; injected execute(), proxy(), and search() behave like their CLI counterparts.
+    Usage: composio run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]
+      <code>              Inline Bun ESNext code to evaluate
+      -f, --file          Run a TS/JS file instead of inline code
+      --dry-run           Preview execute() calls without running remote actions
+
+  proxy
+    curl-like access to any toolkit API through Composio using your linked account.
+    Usage: composio proxy <url> --toolkit text [-X method] [-H header]... [-d data]
+      <url>               Full API endpoint URL
+      --toolkit           Toolkit slug whose connected account should be used
+      -X, --method        HTTP method (GET, POST, PUT, DELETE, PATCH)
+      -H, --header        Header in "Name: value" format. Repeat for multiple.
+      -d, --data          Request body as raw text, JSON, @file, or - for stdin
+
+  Typical flow: search → execute (link and tools when needed)
+
+TOOLS
+  tools info <slug>     Print tool summary and cache its schema
+  tools list <toolkit>  List tools available in a toolkit
+
+EXAMPLES
+  # Find a tool
+  composio search "create github issue"
+
+  # Connect your GitHub account
+  composio link github
+
+  # Execute a tool
+  composio execute GITHUB_CREATE_ISSUE -d '{ repo: "owner/repo", title: "Bug" }'
+
+  # Call an API directly through proxy
+  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
+
+  # Run a script with injected helpers
+  composio run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'
+
+DEVELOPER COMMANDS
+  dev       Developer workflows: init, playground execution, triggers, and logs.
+  generate  Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).
+  manage    Manage orgs, toolkits, connected accounts, triggers, auth configs, and projects.
+
+ACCOUNT
+  login    Log in to Composio
+  logout   Log out from Composio
+  whoami   Show current account info
+  version  Display CLI version
+  upgrade  Upgrade CLI to the latest version
 
 FLAGS
   -h, --help     Show help for command

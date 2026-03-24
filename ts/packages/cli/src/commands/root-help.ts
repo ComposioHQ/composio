@@ -282,6 +282,409 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       `composio run 'const f = await proxy("gmail"); ...'   Use proxy in a script`,
     ],
   },
+
+  // ── Account commands ──────────────────────────────────────────────────
+
+  login: {
+    usage: 'composio login [--no-browser] [--no-wait] [--key text] [-y, --yes]',
+    description: 'Log in to the Composio CLI session.',
+    options: [
+      {
+        name: '--key <text>',
+        description: 'Complete login using session key from composio login --no-wait',
+      },
+    ],
+    flags: [
+      { name: '--no-browser', description: 'Login without browser interaction' },
+      { name: '--no-wait', description: 'Print login URL and session info, then exit' },
+      { name: '-y, --yes', description: 'Skip org picker; use session default org' },
+    ],
+  },
+  logout: {
+    usage: 'composio logout',
+    description: 'Log out from the Composio CLI session.',
+  },
+  whoami: {
+    usage: 'composio whoami',
+    description: 'Display your account information.',
+  },
+  version: {
+    usage: 'composio version',
+    description: 'Display the current Composio CLI version.',
+  },
+  upgrade: {
+    usage: 'composio upgrade',
+    description: 'Upgrade your Composio CLI to the latest available version.',
+  },
+
+  // ── Tools commands ────────────────────────────────────────────────────
+
+  'tools list': {
+    usage: 'composio tools list <toolkit> [--query text] [--tags text] [--limit integer]',
+    description: 'List available tools for a toolkit.',
+    args: [{ name: '<toolkit>', description: 'Toolkit slug to list tools for (e.g. "gmail")' }],
+    options: [
+      { name: '--query <text>', description: 'Text search by name, slug, or description' },
+      { name: '--tags <text>', description: 'Filter by tags (e.g. "important")' },
+      { name: '--limit <integer>', description: 'Number of results per page (1-1000)' },
+    ],
+  },
+  'tools info': {
+    usage: 'composio tools info [<slug>]',
+    description:
+      'View a brief summary of a tool and cache the raw schema used by `composio execute --get-schema`.',
+    args: [{ name: '<slug>', description: 'Tool slug (e.g. "GMAIL_SEND_EMAIL")' }],
+  },
+
+  // ── Generate commands ─────────────────────────────────────────────────
+
+  generate: {
+    usage: 'composio generate [--output-dir dir] [--type-tools] --toolkits text...',
+    description:
+      'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python).',
+    options: [
+      { name: '-o, --output-dir <dir>', description: 'Output directory for type stubs' },
+      {
+        name: '--toolkits <text>...',
+        description: 'Toolkits to generate for (repeat for multiple)',
+      },
+    ],
+    flags: [
+      {
+        name: '--type-tools',
+        description: 'Generate typed input/output schemas for each tool (slower)',
+      },
+    ],
+  },
+  'generate ts': {
+    usage:
+      'composio generate ts [--output-dir dir] [--compact] [--transpiled] [--type-tools] --toolkits text...',
+    description: 'Generate TypeScript type stubs for toolkits, tools, and triggers.',
+    options: [
+      {
+        name: '-o, --output-dir <dir>',
+        description: 'Output directory for generated TypeScript stubs',
+      },
+      {
+        name: '--toolkits <text>...',
+        description: 'Toolkits to generate for (repeat for multiple)',
+      },
+    ],
+    flags: [
+      { name: '--compact', description: 'Emit a single TypeScript file' },
+      {
+        name: '--transpiled',
+        description: 'Emit transpiled JavaScript alongside TypeScript files',
+      },
+      {
+        name: '--type-tools',
+        description: 'Generate typed input/output schemas for each tool (slower)',
+      },
+    ],
+  },
+  'generate py': {
+    usage: 'composio generate py [--output-dir dir] --toolkits text...',
+    description: 'Generate Python type stubs for toolkits, tools, and triggers.',
+    options: [
+      {
+        name: '-o, --output-dir <dir>',
+        description: 'Output directory for generated Python stubs',
+      },
+      {
+        name: '--toolkits <text>...',
+        description: 'Toolkits to generate for (repeat for multiple)',
+      },
+    ],
+  },
+
+  // ── Dev commands ──────────────────────────────────────────────────────
+
+  'dev init': {
+    usage: 'composio dev init [--no-browser] [-y, --yes]',
+    description: 'Initialize this directory with a developer project.',
+    flags: [
+      { name: '--no-browser', description: 'Login without browser interaction' },
+      { name: '-y, --yes', description: 'Auto-select the default org project' },
+    ],
+  },
+  'dev execute': {
+    usage:
+      'composio dev execute <slug> [-d, --data text] [--user-id text] [--project-name text] [--dry-run] [--get-schema]',
+    description:
+      'Execute a tool with your playground test user against your developer project auth configs.',
+    args: [{ name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' }],
+    options: [
+      { name: '-d, --data <text>', description: 'JSON arguments, @file, or - for stdin' },
+      { name: '--user-id <text>', description: 'Developer-project user ID override' },
+      { name: '--project-name <text>', description: 'Developer project name override' },
+      {
+        name: '--get-schema',
+        description: 'Fetch and print the raw tool schema without executing',
+      },
+      { name: '--dry-run', description: 'Validate and preview without executing' },
+    ],
+    flags: [
+      { name: '--skip-connection-check', description: 'Skip the linked-account check' },
+      {
+        name: '--skip-tool-params-check',
+        description: 'Skip input validation against cached schema',
+      },
+      { name: '--no-verify', description: 'Skip both checks above' },
+    ],
+  },
+  'dev listen': {
+    usage:
+      'composio dev listen [--toolkits text] [--trigger-slug text] [--json] [--table] [--max-events int] [--forward url] [--out file]',
+    description:
+      'Listen to realtime trigger events for your developer project and optionally forward them.',
+    options: [
+      { name: '--toolkits <text>', description: 'Filter by toolkit slugs, comma-separated' },
+      { name: '--trigger-id <text>', description: 'Filter by trigger id' },
+      { name: '--connected-account-id <text>', description: 'Filter by connected account id' },
+      { name: '--trigger-slug <text>', description: 'Filter by trigger slug, comma-separated' },
+      { name: '--user-id <text>', description: 'Filter by user id' },
+      { name: '--max-events <int>', description: 'Stop after receiving N matching events' },
+      { name: '--forward <url>', description: 'Forward each event to the given URL' },
+      { name: '--out <file>', description: 'Append each event to this file' },
+    ],
+    flags: [
+      { name: '--json', description: 'Show raw event payload as JSON' },
+      { name: '--table', description: 'Show compact table rows' },
+    ],
+  },
+
+  // ── Manage commands ───────────────────────────────────────────────────
+
+  'manage toolkits list': {
+    usage:
+      'composio manage toolkits list [--query text] [--limit integer] [--connected] [--user-id text]',
+    description: 'List available toolkits with connection status.',
+    options: [
+      { name: '--query <text>', description: 'Text search by name, slug, or description' },
+      { name: '--limit <integer>', description: 'Number of results per page (1-1000)' },
+      { name: '--user-id <text>', description: 'User ID override' },
+    ],
+    flags: [{ name: '--connected', description: 'Show only connected toolkits' }],
+  },
+  'manage toolkits info': {
+    usage: 'composio manage toolkits info [--user-id text] [-a, --all] [<slug>]',
+    description: 'View details of a specific toolkit.',
+    args: [{ name: '<slug>', description: 'Toolkit slug (e.g. "github")' }],
+    flags: [{ name: '-a, --all', description: 'Show all details' }],
+  },
+  'manage toolkits search': {
+    usage: 'composio manage toolkits search <query> [--limit integer]',
+    description: 'Search toolkits by use case.',
+    args: [{ name: '<query>', description: 'Search query' }],
+    options: [{ name: '--limit <integer>', description: 'Number of results' }],
+  },
+  'manage toolkits version': {
+    usage: 'composio manage toolkits version <slug>',
+    description: 'Show latest and recent versions for a toolkit.',
+    args: [{ name: '<slug>', description: 'Toolkit slug' }],
+  },
+  'manage auth-configs list': {
+    usage: 'composio manage auth-configs list [--toolkits text] [--query text] [--limit integer]',
+    description: 'List auth configs.',
+    options: [
+      { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
+      { name: '--query <text>', description: 'Search text' },
+      { name: '--limit <integer>', description: 'Number of results' },
+    ],
+  },
+  'manage auth-configs info': {
+    usage: 'composio manage auth-configs info [<id>]',
+    description: 'View details of a specific auth config.',
+    args: [{ name: '<id>', description: 'Auth config ID' }],
+  },
+  'manage auth-configs create': {
+    usage:
+      'composio manage auth-configs create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credentials text] [<name>]',
+    description: 'Create a new auth config.',
+    args: [{ name: '<name>', description: 'Auth config name' }],
+    options: [
+      { name: '--toolkit <text>', description: 'Toolkit slug' },
+      { name: '--auth-scheme <text>', description: 'Authentication scheme' },
+      { name: '--scopes <text>', description: 'Comma-separated scopes' },
+      { name: '--custom-credentials <text>', description: 'Custom credentials JSON' },
+    ],
+  },
+  'manage auth-configs delete': {
+    usage: 'composio manage auth-configs delete [-y, --yes] [<id>]',
+    description: 'Delete an auth config.',
+    args: [{ name: '<id>', description: 'Auth config ID' }],
+    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
+  },
+  'manage connected-accounts list': {
+    usage:
+      'composio manage connected-accounts list [--toolkits text] [--user-id text] [--status text] [--limit integer]',
+    description: 'List connected accounts.',
+    options: [
+      { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
+      { name: '--user-id <text>', description: 'Filter by user id' },
+      { name: '--status <text>', description: 'Filter by status (ACTIVE, FAILED, EXPIRED, etc.)' },
+      { name: '--limit <integer>', description: 'Number of results' },
+    ],
+  },
+  'manage connected-accounts info': {
+    usage: 'composio manage connected-accounts info [<id>]',
+    description: 'View details of a specific connected account.',
+    args: [{ name: '<id>', description: 'Connected account ID' }],
+  },
+  'manage connected-accounts whoami': {
+    usage: 'composio manage connected-accounts whoami [<id>]',
+    description: 'Show the external account profile for a connected account.',
+    args: [{ name: '<id>', description: 'Connected account ID' }],
+  },
+  'manage connected-accounts delete': {
+    usage: 'composio manage connected-accounts delete [-y, --yes] [<id>]',
+    description: 'Delete a connected account.',
+    args: [{ name: '<id>', description: 'Connected account ID' }],
+    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
+  },
+  'manage connected-accounts link': {
+    usage:
+      'composio manage connected-accounts link [--auth-config text] [--user-id text] [--project-name text] [--no-browser] [--no-wait] [<toolkit>]',
+    description: 'Connect an external account so tools can act on your behalf.',
+    args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
+    options: [
+      { name: '--auth-config <text>', description: 'Auth config ID to use' },
+      { name: '--user-id <text>', description: 'User ID override' },
+      { name: '--project-name <text>', description: 'Project name override' },
+    ],
+    flags: [
+      { name: '--no-browser', description: 'Print the auth URL instead of opening a browser' },
+      { name: '--no-wait', description: 'Print link info and exit without waiting' },
+    ],
+  },
+  'manage triggers list': {
+    usage: 'composio manage triggers list [--toolkits text] [--limit integer]',
+    description: 'List available trigger types.',
+    options: [
+      { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
+      { name: '--limit <integer>', description: 'Number of results' },
+    ],
+  },
+  'manage triggers info': {
+    usage: 'composio manage triggers info [<slug>]',
+    description: 'View details of a specific trigger type.',
+    args: [{ name: '<slug>', description: 'Trigger slug' }],
+  },
+  'manage triggers listen': {
+    usage:
+      'composio manage triggers listen [--toolkits text] [--trigger-slug text] [--json] [--table] [--max-events int] [--forward url] [--out file]',
+    description: 'Listen to realtime trigger events and optionally forward them.',
+    options: [
+      { name: '--toolkits <text>', description: 'Filter by toolkit slugs, comma-separated' },
+      { name: '--trigger-id <text>', description: 'Filter by trigger id' },
+      { name: '--connected-account-id <text>', description: 'Filter by connected account id' },
+      { name: '--trigger-slug <text>', description: 'Filter by trigger slug, comma-separated' },
+      { name: '--user-id <text>', description: 'Filter by user id' },
+      { name: '--max-events <int>', description: 'Stop after receiving N events' },
+      { name: '--forward <url>', description: 'Forward each event to the given URL' },
+      { name: '--out <file>', description: 'Append each event to this file' },
+    ],
+    flags: [
+      { name: '--json', description: 'Show raw event payload as JSON' },
+      { name: '--table', description: 'Show compact table rows' },
+    ],
+  },
+  'manage triggers status': {
+    usage:
+      'composio manage triggers status [--user-ids text] [--toolkits text] [--trigger-ids text] [--show-disabled] [--limit integer]',
+    description: 'Show active triggers with optional filters.',
+    options: [
+      { name: '--user-ids <text>', description: 'Filter by user IDs' },
+      { name: '--connected-account-ids <text>', description: 'Filter by connected account IDs' },
+      { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
+      { name: '--trigger-ids <text>', description: 'Filter by trigger IDs' },
+      { name: '--trigger-names <text>', description: 'Filter by trigger names' },
+      { name: '--limit <integer>', description: 'Number of results' },
+    ],
+    flags: [{ name: '--show-disabled', description: 'Include disabled triggers' }],
+  },
+  'manage triggers create': {
+    usage:
+      'composio manage triggers create [--connected-account-id text] [--trigger-config text] [<trigger-name>]',
+    description: 'Create a new trigger instance.',
+    args: [{ name: '<trigger-name>', description: 'Trigger type slug' }],
+    options: [
+      { name: '--connected-account-id <text>', description: 'Connected account to use' },
+      { name: '--trigger-config <text>', description: 'Trigger configuration JSON' },
+    ],
+  },
+  'manage triggers enable': {
+    usage: 'composio manage triggers enable [<id>]',
+    description: 'Enable a trigger instance.',
+    args: [{ name: '<id>', description: 'Trigger instance ID' }],
+  },
+  'manage triggers disable': {
+    usage: 'composio manage triggers disable [<id>]',
+    description: 'Disable a trigger instance.',
+    args: [{ name: '<id>', description: 'Trigger instance ID' }],
+  },
+  'manage triggers delete': {
+    usage: 'composio manage triggers delete [-y, --yes] [<id>]',
+    description: 'Delete a trigger instance.',
+    args: [{ name: '<id>', description: 'Trigger instance ID' }],
+    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
+  },
+  'manage orgs list': {
+    usage: 'composio manage orgs list [--limit integer]',
+    description: 'List organizations and show current global selection.',
+    options: [{ name: '--limit <integer>', description: 'Number of results' }],
+  },
+  'manage orgs switch': {
+    usage: 'composio manage orgs switch [--org-id text] [--limit integer]',
+    description: 'Switch default organization context.',
+    options: [
+      { name: '--org-id <text>', description: 'Organization ID to switch to' },
+      { name: '--limit <integer>', description: 'Number of orgs to show in picker' },
+    ],
+  },
+  'manage projects list': {
+    usage: 'composio manage projects list [--org-id text] [--limit integer]',
+    description: 'List developer projects for the current organization.',
+    options: [
+      { name: '--org-id <text>', description: 'Organization ID override' },
+      { name: '--limit <integer>', description: 'Number of results' },
+    ],
+  },
+
+  // ── Dev logs commands ─────────────────────────────────────────────────
+
+  'dev logs tools': {
+    usage:
+      'composio dev logs tools [--toolkit text] [--tool text] [--status text] [--limit integer] [<log_id>]',
+    description: 'List tool execution logs, or pass a log_id to fetch a specific log.',
+    args: [{ name: '<log_id>', description: 'Specific log ID to fetch' }],
+    options: [
+      { name: '--toolkit <text>', description: 'Filter by toolkit slug' },
+      { name: '--tool <text>', description: 'Filter by tool slug' },
+      { name: '--status <text>', description: 'Filter by status' },
+      { name: '--user-id <text>', description: 'Filter by user id' },
+      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--from <integer>', description: 'Start timestamp (epoch ms)' },
+      { name: '--to <integer>', description: 'End timestamp (epoch ms)' },
+    ],
+    flags: [{ name: '--case-sensitive', description: 'Case-sensitive filtering' }],
+  },
+  'dev logs triggers': {
+    usage:
+      'composio dev logs triggers [--trigger text] [--trigger-id text] [--limit integer] [--time 5m|30m|6h|1d|1w] [<log_id>]',
+    description: 'List trigger logs.',
+    args: [{ name: '<log_id>', description: 'Specific log ID to fetch' }],
+    options: [
+      { name: '--trigger <text>', description: 'Filter by trigger slug' },
+      { name: '--trigger-id <text>', description: 'Filter by trigger id' },
+      { name: '--user-id <text>', description: 'Filter by user id' },
+      { name: '--connected-account-id <text>', description: 'Filter by connected account id' },
+      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--time <period>', description: 'Time window (5m, 30m, 6h, 1d, 1w, 1month, 1y)' },
+      { name: '--search <text>', description: 'Search in log content' },
+    ],
+    flags: [{ name: '--include-payload', description: 'Include full event payload' }],
+  },
 };
 
 function renderSubcommandHelp(cmd: SubcommandHelp): string {
@@ -344,12 +747,15 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
  */
 export function matchSubcommandHelp(argv: ReadonlyArray<string>): string | undefined {
   const args = argv.slice(2);
-  if (
-    args.length === 2 &&
-    (args[1] === '--help' || args[1] === '-h') &&
-    args[0] in SUBCOMMAND_HELP
-  ) {
-    return args[0];
+  if (args.length < 2) return undefined;
+  const last = args[args.length - 1];
+  if (last !== '--help' && last !== '-h') return undefined;
+
+  const cmdParts = args.slice(0, -1);
+  // Try longest match first: "manage toolkits list" → "manage toolkits" → "manage"
+  for (let len = cmdParts.length; len > 0; len--) {
+    const key = cmdParts.slice(0, len).join(' ');
+    if (key in SUBCOMMAND_HELP) return key;
   }
   return undefined;
 }

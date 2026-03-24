@@ -304,9 +304,10 @@ export const proxyCmd = Command.make('proxy', {
         );
       }
       const consumerUserId = resolvedProject.consumerUserId;
+      const normalizedToolkit = toolkit.toLowerCase();
 
       yield* runProxyConnectedToolkitFailFast({
-        toolkit: toolkit.toLowerCase(),
+        toolkit: normalizedToolkit,
         ui,
         resolvedProject,
         resolvedUserId: consumerUserId,
@@ -327,19 +328,19 @@ export const proxyCmd = Command.make('proxy', {
       const parsedBody = rawBody === undefined ? undefined : parseProxyBody(rawBody);
 
       const result = yield* ui.withSpinner(
-        `Proxying ${normalizedMethod} ${endpoint} via ${toolkit}...`,
+        `Proxying ${normalizedMethod} ${endpoint} via ${normalizedToolkit}...`,
         Effect.gen(function* () {
           const client = yield* clientSingleton.getFor({
             orgId: resolvedProject.orgId,
             projectId: resolvedProject.projectId,
           });
           const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
-            toolkits: [toolkit],
+            toolkits: [normalizedToolkit],
           });
 
           const resultEither = yield* Effect.tryPromise(() =>
             client.toolRouter.session.proxyExecute(sessionId, {
-              toolkit_slug: toolkit,
+              toolkit_slug: normalizedToolkit,
               endpoint,
               method: normalizedMethod,
               ...(parsedBody !== undefined ? { body: parsedBody } : {}),
@@ -351,7 +352,7 @@ export const proxyCmd = Command.make('proxy', {
             return yield* handleProxyExecutionError({
               ui,
               error: resultEither.left,
-              toolkit,
+              toolkit: normalizedToolkit,
               endpoint,
             });
           }

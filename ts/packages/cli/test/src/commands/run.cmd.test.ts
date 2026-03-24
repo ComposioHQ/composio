@@ -101,15 +101,14 @@ describe('CLI: composio run', () => {
           yield* cli(['run', '--help']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
-          expect(output).toContain('await search(query');
-          expect(output).toContain('await execute(slug, data?)');
-          expect(output).toContain('const fetch = await proxy(toolkit)');
-          expect(output).toContain('proxy.schema');
-          expect(output).toContain('import { $ } from "bun"');
           expect(output).toContain(
-            'All three helpers automatically reuse your top level auth state'
+            'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.'
           );
-          expect(output).toContain('tool_definitions');
+          expect(output).toContain('--skip-connection-check');
+          expect(output).toContain('--skip-tool-params-check');
+          expect(output).toContain('--no-verify');
+          expect(output).toContain('composio search "<query>"');
+          expect(output).toContain('composio execute <slug> --get-schema');
         })
     );
   });

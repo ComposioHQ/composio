@@ -343,19 +343,9 @@ const handleExecutionError = (
 
     yield* ui.log.error(mapped.message);
 
-    const detailsObject =
-      apiDetails ??
-      (normalized instanceof ComposioNoActiveConnectionError &&
-      normalized.details &&
-      typeof normalized.details === 'object'
-        ? (normalized.details as object)
-        : undefined);
+    const detailsObject = apiDetails;
     if (detailsObject) {
       yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
-    }
-
-    if (normalized instanceof ComposioNoActiveConnectionError) {
-      yield* ui.note(connectionTips(context.toolSlug, context.surface), 'Tips');
     }
 
     return { error: mapped.message, slug: slugValue };

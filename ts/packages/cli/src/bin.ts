@@ -189,7 +189,9 @@ checkForUpdateInBackground();
  */
 runWithArgs.pipe(
   Effect.scoped,
-  Effect.mapError(error => mapComposioError({ error }).normalized),
+  Effect.mapError(error =>
+    ValidationError.isValidationError(error) ? error : mapComposioError({ error }).normalized
+  ),
   // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
   // via its own printDocs before re-failing. Swallow the re-thrown error to avoid
   // routing it through the generic error box which would dump raw JSON.
