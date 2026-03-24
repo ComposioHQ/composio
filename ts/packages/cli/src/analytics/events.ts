@@ -336,7 +336,7 @@ export const createCliCommandTelemetryContext = (
       : undefined,
 });
 
-export const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent => ({
+const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEvent => ({
   name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_INVOKED,
   properties: {
     source: 'cli',
@@ -350,7 +350,7 @@ export const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): 
   },
 });
 
-export const getCliCommandSucceededEvent = (context: CliCommandTelemetryContext): TrackEvent => ({
+const getCliCommandSucceededEvent = (context: CliCommandTelemetryContext): TrackEvent => ({
   name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_SUCCEEDED,
   properties: {
     source: 'cli',
@@ -362,7 +362,7 @@ export const getCliCommandSucceededEvent = (context: CliCommandTelemetryContext)
   },
 });
 
-export const getCliCommandFailedEvent = (
+const getCliCommandFailedEvent = (
   context: CliCommandTelemetryContext,
   error: unknown
 ): TrackEvent => ({
