@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
+import crypto from 'node:crypto';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
@@ -125,6 +126,8 @@ export const buildRunHelpersSource = (
     '    ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),',
     '    ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),',
     '    ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),',
+    '    COMPOSIO_CLI_INVOCATION_ORIGIN: "run",',
+    '    ...(process.env.COMPOSIO_CLI_PARENT_RUN_ID ? { COMPOSIO_CLI_PARENT_RUN_ID: process.env.COMPOSIO_CLI_PARENT_RUN_ID } : {}),',
     '    ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: "1" } : {}),',
     '    ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: "1" } : {}),',
     '  };',
@@ -310,11 +313,13 @@ export const runCmd = Command.make('run', { file, dryRun, args }).pipe(
         }
       );
       try {
+        const runId = crypto.randomUUID();
         const child = Bun.spawn({
           cmd: buildRunCommand({ file, args, preloadPath: preload.preloadPath }),
           env: {
             ...process.env,
             BUN_BE_BUN: '1',
+            COMPOSIO_CLI_PARENT_RUN_ID: runId,
             ...(perfDebug ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
             ...(toolDebug ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
           },

@@ -28,6 +28,18 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 import { showUpdateNotice, checkForUpdateInBackground } from 'src/services/update-check';
+import {
+  createCliCommandTelemetryContext,
+  getPrimaryLifecycleFailedEvent,
+  getPrimaryLifecycleInvokedEvent,
+  getPrimaryLifecycleSucceededEvent,
+} from 'src/analytics/events';
+import {
+  isAnalyticsWorkerInvocation,
+  runAnalyticsWorkerFromArgv,
+  trackCliEvent,
+  trackCliEventEffect,
+} from 'src/analytics/dispatch';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -126,6 +138,11 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
   unknown
 >;
 
+const commandTelemetryContext = createCliCommandTelemetryContext(process.argv, constants.APP_VERSION);
+if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
+  process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
+}
+
 const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
   switch (usage._tag) {
     case 'Named': {
@@ -178,62 +195,79 @@ const valueOptionNames = (() => {
  * showUpdateNotice() reads a cached file (~1 ms) and prints to stderr.
  * checkForUpdateInBackground() fires a non-blocking fetch to GitHub.
  */
-showUpdateNotice();
-checkForUpdateInBackground();
+if (!isAnalyticsWorkerInvocation(process.argv)) {
+  showUpdateNotice();
+  checkForUpdateInBackground();
+  trackCliEvent(getPrimaryLifecycleInvokedEvent(commandTelemetryContext));
+}
 
 /**
  * CLI entrypoint, which:
  * - runs the Effect runtime and sets up its runtime environment
  * - collects and displays errors
  */
-runWithArgs.pipe(
-  Effect.scoped,
-  // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
-  // via its own printDocs before re-failing. Swallow the re-thrown error to avoid
-  // routing it through the generic error box which would dump raw JSON.
-  // When a flag is passed without its required value (e.g. `--query` instead of
-  // `--query "text"`), @effect/cli reports it as "unknown argument" — add a tip.
-  Effect.catchIf(ValidationError.isValidationError, error => {
-    const text = HelpDoc.toAnsiText(error.error).trim();
-    const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
-    if (flagMatch && valueOptionNames.has(flagMatch[1])) {
-      return Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`);
-    }
-    return Effect.void;
-  }),
-  Effect.withSpan('composio-cli', {
-    attributes: {
-      name: constants.APP_NAME,
-      filename: 'src/bin.ts',
-    },
-  }),
-  Effect.sandbox,
-  Effect.catchAll(
-    Effect.fn(function* (cause) {
-      const captured = yield* captureErrors(cause, {
-        stripCwd: true,
-      });
-      const filteredErrors = captured.errors.filter(
-        error => error.errorType !== 'ToolExecutionError'
-      );
-
-      if (captured.interrupted || filteredErrors.length > 0) {
-        const message = prettyPrintFromCapturedErrors(
-          { ...captured, errors: filteredErrors },
-          {
-            hideStackTrace: true,
-            stripCwd: true,
-            enabled: true,
-          }
+if (isAnalyticsWorkerInvocation(process.argv)) {
+  void runAnalyticsWorkerFromArgv(process.argv).finally(() => {
+    process.exit(0);
+  });
+} else {
+  runWithArgs.pipe(
+    Effect.scoped,
+    Effect.tap(() => trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))),
+    Effect.tapErrorCause(cause =>
+      trackCliEventEffect(getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause)))
+    ),
+    // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
+    // via its own printDocs before re-failing. Swallow the re-thrown error to avoid
+    // routing it through the generic error box which would dump raw JSON.
+    // When a flag is passed without its required value (e.g. `--query` instead of
+    // `--query "text"`), @effect/cli reports it as "unknown argument" — add a tip.
+    Effect.catchIf(ValidationError.isValidationError, error => {
+      const text = HelpDoc.toAnsiText(error.error).trim();
+      const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
+      if (flagMatch && valueOptionNames.has(flagMatch[1])) {
+        return Console.error(
+          `Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`
+        );
+      }
+      return Effect.void;
+    }),
+    Effect.withSpan('composio-cli', {
+      attributes: {
+        name: constants.APP_NAME,
+        filename: 'src/bin.ts',
+      },
+    }),
+    Effect.sandbox,
+    Effect.catchAll(
+      Effect.fn(function* (cause) {
+        const captured = yield* captureErrors(cause, {
+          stripCwd: true,
+        });
+        const filteredErrors = captured.errors.filter(
+          error => error.errorType !== 'ToolExecutionError'
         );
 
-        yield* Console.error(message);
-        process.exitCode = 1;
-      }
-    })
-  ),
-  Effect.provide(layers),
-  Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  effect =>
-    (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(effect)
-);
+        if (captured.interrupted || filteredErrors.length > 0) {
+          const message = prettyPrintFromCapturedErrors(
+            { ...captured, errors: filteredErrors },
+            {
+              hideStackTrace: true,
+              stripCwd: true,
+              enabled: true,
+            }
+          );
+
+          yield* Console.error(message);
+          process.exitCode = 1;
+        }
+      })
+    ),
+    Effect.provide(layers),
+    Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+    effect =>
+      (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(
+        effect
+      )
+  );
+}

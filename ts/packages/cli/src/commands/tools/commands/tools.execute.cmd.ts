@@ -40,6 +40,13 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintStep } from 'src/services/command-hints';
+import {
+  getToolExecuteFailedEvent,
+  getToolExecuteToolNotFoundEvent,
+  getToolExecuteValidationFailedEvent,
+  isMaybeToolNotFoundError,
+} from 'src/analytics/events';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -333,11 +340,27 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
 const handleExecutionError = (
   ui: TerminalUI,
   error: unknown,
-  context: { toolSlug: string; surface: 'root' | 'manage' | 'dev' }
+  context: {
+    toolSlug: string;
+    args: Record<string, unknown>;
+    surface: 'root' | 'manage' | 'dev';
+    projectMode: 'consumer' | 'developer';
+    stage: 'dry_run' | 'execution';
+  }
 ) =>
   Effect.gen(function* () {
     const normalized = normalizeError(error);
     if (normalized instanceof ToolInputValidationError) {
+      yield* trackCliEventEffect(
+        getToolExecuteValidationFailedEvent({
+          toolSlug: context.toolSlug,
+          args: context.args,
+          error: normalized,
+          surface: context.surface,
+          projectMode: context.projectMode,
+          stage: context.stage,
+        })
+      );
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
         [
@@ -360,6 +383,40 @@ const handleExecutionError = (
       extractApiErrorDetails(connAccountDetails);
     const slugValue = apiDetails?.slug ?? extractSlug(error) ?? extractSlug(connAccountDetails);
     const message = extractMessage(apiDetails) ?? extractMessage(normalized) ?? 'Unknown error';
+    const status =
+      apiDetails && 'status' in apiDetails && typeof apiDetails.status === 'number'
+        ? apiDetails.status
+        : undefined;
+
+    yield* trackCliEventEffect(
+      isMaybeToolNotFoundError({
+        message,
+        errorSlug: slugValue,
+        status,
+      })
+        ? getToolExecuteToolNotFoundEvent({
+            toolSlug: context.toolSlug,
+            args: context.args,
+            surface: context.surface,
+            projectMode: context.projectMode,
+            stage: context.stage,
+            errorSlug: slugValue,
+            status,
+            message,
+          })
+        : getToolExecuteFailedEvent({
+            toolSlug: context.toolSlug,
+            args: context.args,
+            surface: context.surface,
+            projectMode: context.projectMode,
+            stage: context.stage,
+            errorSlug: slugValue,
+            status,
+            message,
+            errorName: normalized instanceof Error ? normalized.name : undefined,
+            isNoConnectionError: normalized instanceof ActionExecuteConnectedAccountNotFoundError,
+          })
+    );
 
     yield* ui.log.error(message);
 
@@ -446,7 +503,46 @@ const runToolsExecute = (params: {
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const ui = yield* TerminalUI;
     if (params.getSchema) {
-      const definition = yield* getOrFetchToolInputDefinition(params.slug);
+      const definition = yield* getOrFetchToolInputDefinition(params.slug).pipe(
+        Effect.tapError(error => {
+          const apiDetails = extractApiErrorDetails(error);
+          const message = extractMessage(apiDetails) ?? extractMessage(error) ?? 'Unknown error';
+          const errorSlug = apiDetails?.slug ?? extractSlug(error);
+          const status =
+            apiDetails && 'status' in apiDetails && typeof apiDetails.status === 'number'
+              ? apiDetails.status
+              : undefined;
+
+          return trackCliEventEffect(
+            isMaybeToolNotFoundError({
+              message,
+              errorSlug,
+              status,
+            })
+              ? getToolExecuteToolNotFoundEvent({
+                  toolSlug: params.slug,
+                  args: {},
+                  surface: params.surface,
+                  projectMode: params.projectMode,
+                  stage: 'schema_fetch',
+                  errorSlug,
+                  status,
+                  message,
+                })
+              : getToolExecuteFailedEvent({
+                  toolSlug: params.slug,
+                  args: {},
+                  surface: params.surface,
+                  projectMode: params.projectMode,
+                  stage: 'schema_fetch',
+                  errorSlug,
+                  status,
+                  message,
+                  errorName: error instanceof Error ? error.name : undefined,
+                })
+          );
+        })
+      );
       yield* emitCachedSchema(ui, params.slug, definition);
       return;
     }
@@ -589,8 +685,65 @@ const runToolsExecute = (params: {
         }
 
         if (params.dryRun) {
-          const definition = cachedDefinition ?? (yield* getOrFetchToolInputDefinition(params.slug));
-          yield* validateToolInputArgumentsWithDefinition(params.slug, args, definition);
+          const definition = cachedDefinition
+            ? cachedDefinition
+            : (yield* getOrFetchToolInputDefinition(params.slug).pipe(
+                Effect.tapError(error => {
+                  const apiDetails = extractApiErrorDetails(error);
+                  const message =
+                    extractMessage(apiDetails) ?? extractMessage(error) ?? 'Unknown error';
+                  const errorSlug = apiDetails?.slug ?? extractSlug(error);
+                  const status =
+                    apiDetails && 'status' in apiDetails && typeof apiDetails.status === 'number'
+                      ? apiDetails.status
+                      : undefined;
+
+                  return trackCliEventEffect(
+                    isMaybeToolNotFoundError({
+                      message,
+                      errorSlug,
+                      status,
+                    })
+                      ? getToolExecuteToolNotFoundEvent({
+                          toolSlug: params.slug,
+                          args,
+                          surface: params.surface,
+                          projectMode: params.projectMode,
+                          stage: 'dry_run',
+                          errorSlug,
+                          status,
+                          message,
+                        })
+                      : getToolExecuteFailedEvent({
+                          toolSlug: params.slug,
+                          args,
+                          surface: params.surface,
+                          projectMode: params.projectMode,
+                          stage: 'dry_run',
+                          errorSlug,
+                          status,
+                          message,
+                          errorName: error instanceof Error ? error.name : undefined,
+                        })
+                  );
+                })
+              ));
+          yield* validateToolInputArgumentsWithDefinition(params.slug, args, definition).pipe(
+            Effect.tapError(error =>
+              error instanceof ToolInputValidationError
+                ? trackCliEventEffect(
+                    getToolExecuteValidationFailedEvent({
+                      toolSlug: params.slug,
+                      args,
+                      error,
+                      surface: params.surface,
+                      projectMode: params.projectMode,
+                      stage: 'dry_run',
+                    })
+                  )
+                : Effect.void
+            )
+          );
           const summary: DryRunSummary = {
             successful: true,
             dryRun: true,
@@ -625,7 +778,10 @@ const runToolsExecute = (params: {
           yield* spinner.error();
           const summary = yield* handleExecutionError(ui, resultEither.left, {
             toolSlug: params.slug,
+            args,
             surface: params.surface,
+            projectMode: params.projectMode,
+            stage: 'execution',
           });
           yield* ui.output(JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2));
           return yield* Effect.fail(new ToolExecutionError(summary.error));
@@ -650,7 +806,10 @@ const runToolsExecute = (params: {
 
           const summary = yield* handleExecutionError(ui, result.error ?? result, {
             toolSlug: params.slug,
+            args,
             surface: params.surface,
+            projectMode: params.projectMode,
+            stage: 'execution',
           });
           yield* ui.output(JSON.stringify(result, ciRedactReplacer, 2));
           return yield* Effect.fail(new ToolExecutionError(summary.error));
