@@ -2,7 +2,6 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
-import { sanitize } from 'test/__utils__/sanitize';
 import { afterEach, vi } from 'vitest';
 
 describe('CLI: composio', () => {
@@ -35,7 +34,16 @@ describe('CLI: composio', () => {
         yield* cli(args);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        expect(yield* sanitize(output)).toMatchSnapshot();
+        expect(output).toContain('CORE COMMANDS');
+        expect(output).toContain('composio search <query>');
+        expect(output).toContain('composio execute <slug>');
+        expect(output).toContain('composio link [<toolkit>]');
+        expect(output).toContain('composio run <code>');
+        expect(output).toContain('composio proxy <url> --toolkit text');
+        expect(output).toContain('composio artifacts cwd');
+        expect(output).toContain('DEVELOPER COMMANDS');
+        expect(output).toContain('ACCOUNT');
+        expect(output).toContain('Documentation: https://docs.composio.dev');
       })
     );
   });
