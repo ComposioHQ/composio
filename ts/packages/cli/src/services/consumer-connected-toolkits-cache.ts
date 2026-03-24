@@ -17,6 +17,13 @@ const SEARCH_SESSION_EXTENSION_MS = 2 * 60 * 1000;
 type CacheEntry = {
   readonly toolkits: ReadonlyArray<string>;
   readonly expiresAt: string;
+  readonly probablyMyCliSessionsByCwdHash?: Record<
+    string,
+    {
+      readonly id: string;
+      readonly expiresAt: string;
+    }
+  >;
   readonly probablyMyCliSessionId?: string;
   readonly probablyMyCliSessionExpiresAt?: string;
 };
@@ -45,25 +52,46 @@ const resolveSearchSessionMetadata = (params: {
   readonly cwd: string;
 }) => {
   const now = Date.now();
-  const currentExpiry = params.currentEntry?.probablyMyCliSessionExpiresAt
-    ? Date.parse(params.currentEntry.probablyMyCliSessionExpiresAt)
-    : Number.NaN;
+  const currentCwdHash = cwdHash(params.cwd);
+  const previousMap = {
+    ...(params.currentEntry?.probablyMyCliSessionsByCwdHash ?? {}),
+  };
+
   if (
+    Object.keys(previousMap).length === 0 &&
     params.currentEntry?.probablyMyCliSessionId &&
-    Number.isFinite(currentExpiry) &&
-    currentExpiry > now
+    params.currentEntry?.probablyMyCliSessionExpiresAt
   ) {
-    return {
-      probablyMyCliSessionId: params.currentEntry.probablyMyCliSessionId,
-      probablyMyCliSessionExpiresAt: new Date(
-        Math.max(now, currentExpiry) + SEARCH_SESSION_EXTENSION_MS
+    previousMap[currentCwdHash] = {
+      id: params.currentEntry.probablyMyCliSessionId,
+      expiresAt: params.currentEntry.probablyMyCliSessionExpiresAt,
+    };
+  }
+
+  const probablyMyCliSessionsByCwdHash = Object.fromEntries(
+    Object.entries(previousMap).filter(([, session]) => {
+      const expiresAtMs = Date.parse(session.expiresAt);
+      return Number.isFinite(expiresAtMs) && expiresAtMs > now;
+    })
+  );
+
+  const currentSession = probablyMyCliSessionsByCwdHash[currentCwdHash];
+  if (currentSession) {
+    probablyMyCliSessionsByCwdHash[currentCwdHash] = {
+      id: currentSession.id,
+      expiresAt: new Date(
+        Math.max(now, Date.parse(currentSession.expiresAt)) + SEARCH_SESSION_EXTENSION_MS
       ).toISOString(),
+    };
+  } else {
+    probablyMyCliSessionsByCwdHash[currentCwdHash] = {
+      id: createProbablyMyCliSessionId(params.cwd),
+      expiresAt: new Date(now + CACHE_TTL_MS).toISOString(),
     };
   }
 
   return {
-    probablyMyCliSessionId: createProbablyMyCliSessionId(params.cwd),
-    probablyMyCliSessionExpiresAt: new Date(now + CACHE_TTL_MS).toISOString(),
+    probablyMyCliSessionsByCwdHash,
   };
 };
 
