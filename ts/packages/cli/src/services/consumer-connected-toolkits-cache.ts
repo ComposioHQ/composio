@@ -2,6 +2,7 @@ import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { NodeProcess } from 'src/services/node-process';
 import {
   getConsumerConnectedToolkits,
   resolveConsumerProject,
@@ -11,10 +12,13 @@ import { ComposioUserContext } from 'src/services/user-context';
 
 const CACHE_FILE = 'consumer-connected-toolkits.json';
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const SEARCH_SESSION_EXTENSION_MS = 2 * 60 * 1000;
 
 type CacheEntry = {
   readonly toolkits: ReadonlyArray<string>;
   readonly expiresAt: string;
+  readonly probablyMyCliSessionId?: string;
+  readonly probablyMyCliSessionExpiresAt?: string;
 };
 
 type CacheState = Record<string, CacheEntry>;
@@ -22,6 +26,46 @@ type CacheState = Record<string, CacheEntry>;
 const cacheKey = (orgId: string, consumerUserId: string) => `${orgId}:${consumerUserId}`;
 
 const cachePath = (cacheDir: string) => path.join(cacheDir, CACHE_FILE);
+
+const cwdHash = (cwd: string): string => {
+  let hash = 5381;
+  for (let i = 0; i < cwd.length; i += 1) {
+    hash = (hash * 33) ^ cwd.charCodeAt(i);
+  }
+  return Math.abs(hash >>> 0).toString(36);
+};
+
+const createProbablyMyCliSessionId = (cwd: string): string => {
+  const random = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
+  return `cli_s_${cwdHash(cwd)}_${random}`;
+};
+
+const resolveSearchSessionMetadata = (params: {
+  readonly currentEntry?: CacheEntry;
+  readonly cwd: string;
+}) => {
+  const now = Date.now();
+  const currentExpiry = params.currentEntry?.probablyMyCliSessionExpiresAt
+    ? Date.parse(params.currentEntry.probablyMyCliSessionExpiresAt)
+    : Number.NaN;
+  if (
+    params.currentEntry?.probablyMyCliSessionId &&
+    Number.isFinite(currentExpiry) &&
+    currentExpiry > now
+  ) {
+    return {
+      probablyMyCliSessionId: params.currentEntry.probablyMyCliSessionId,
+      probablyMyCliSessionExpiresAt: new Date(
+        Math.max(now, currentExpiry) + SEARCH_SESSION_EXTENSION_MS
+      ).toISOString(),
+    };
+  }
+
+  return {
+    probablyMyCliSessionId: createProbablyMyCliSessionId(params.cwd),
+    probablyMyCliSessionExpiresAt: new Date(now + CACHE_TTL_MS).toISOString(),
+  };
+};
 
 const readCache = () =>
   Effect.gen(function* () {
@@ -135,11 +179,19 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       consumerUserId: scope.consumerUserId,
     });
     const state = yield* readCache();
+    const key = cacheKey(scope.orgId, scope.consumerUserId);
+    const currentEntry = state[key];
+    const proc = yield* NodeProcess;
+    const searchSessionFields = resolveSearchSessionMetadata({
+      currentEntry,
+      cwd: proc.cwd,
+    });
     yield* writeCache({
       ...state,
-      [cacheKey(scope.orgId, scope.consumerUserId)]: {
+      [key]: {
         toolkits: response.toolkits.map(toolkit => toolkit.toLowerCase()),
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        ...searchSessionFields,
       },
     });
   });
