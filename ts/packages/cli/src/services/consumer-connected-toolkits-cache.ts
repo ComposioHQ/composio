@@ -32,10 +32,9 @@ const readCache = () =>
       return {} satisfies CacheState;
     }
     const raw = yield* fs.readFileString(filePath, 'utf8');
-    return yield* Effect.try({
-      try: () => JSON.parse(raw) as CacheState,
-      catch: () => ({}) satisfies CacheState,
-    });
+    return yield* Effect.sync(() => JSON.parse(raw) as CacheState).pipe(
+      Effect.catchAll(() => Effect.succeed({} satisfies CacheState))
+    );
   });
 
 const writeCache = (state: CacheState) =>
