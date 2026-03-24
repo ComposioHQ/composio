@@ -37,11 +37,14 @@ BASIC COMMANDS
 
   run
     Run inline ESNext TS/JS code or a file with Bun and injected Composio helpers.
-    Usage: composio run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]
+    Usage: composio run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]
     Options:
       <code>                Inline Bun ESNext code with injected execute(slug, data?) and search(query, options?) helpers
       -f, --file            Run a TS/JS file with the Bun runtime instead of inline code
       --dry-run             Preview execute(...) calls without running remote actions
+      --skip-connection-check  Skip the short-lived linked-account fail-fast check if you just connected an account
+      --skip-tool-params-check  Skip the local tool parameter/schema validation check
+      --no-verify           Skip both the linked-account fail-fast check and the local tool parameter check
 
   proxy
     Call a toolkit API through Composio proxy execute using curl-style flags.
@@ -56,7 +59,7 @@ BASIC COMMANDS
       --project-name        Developer project name override for this command
 
   search
-    Semantically search tools by use case across all toolkits/apps.
+    Semantic search for tools by use case across all toolkits/apps.
     Usage: composio search <query> [--toolkits text] [--limit integer]
     Options:
       <query>               Semantic use-case query (e.g. "send emails")
@@ -72,12 +75,15 @@ BASIC COMMANDS
 
   execute
     Execute a tool, preview it with --dry-run, or fetch its input schema.
-    Usage: composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]
+    Usage: composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]
     Options:
       <slug>                Tool slug (e.g. "GITHUB_CREATE_ISSUE")
       -d, --data            JSON or JS-style object arguments, e.g. -d '{ repo: "foo" }', @file, or - for stdin
       --dry-run             Validate and preview the tool call without executing it
       --get-schema          Fetch and print the raw cached schema; tools info shows the same schema with a brief summary
+      --skip-connection-check  Skip the short-lived linked-account fail-fast check if you just connected an account
+      --skip-tool-params-check  Skip the local tool parameter/schema validation check
+      --no-verify           Skip both the linked-account fail-fast check and the local tool parameter check
 
   link
     Connect a user account for a toolkit/app.

@@ -49,7 +49,8 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'run',
     description: 'Run inline ESNext TS/JS code or a file with Bun and injected Composio helpers.',
-    usage: 'run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]',
+    usage:
+      'run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]',
     options: [
       {
         name: '<code>',
@@ -63,6 +64,20 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
       {
         name: '--dry-run',
         description: 'Preview execute(...) calls without running remote actions',
+      },
+      {
+        name: '--skip-connection-check',
+        description:
+          'Skip the short-lived linked-account fail-fast check if you just connected an account',
+      },
+      {
+        name: '--skip-tool-params-check',
+        description: 'Skip the local tool parameter/schema validation check',
+      },
+      {
+        name: '--no-verify',
+        description:
+          'Skip both the linked-account fail-fast check and the local tool parameter check',
       },
     ],
   },
@@ -119,7 +134,8 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
   {
     name: 'execute',
     description: 'Execute a tool, preview it with --dry-run, or fetch its input schema.',
-    usage: 'execute <slug> [-d, --data text] [--dry-run] [--get-schema]',
+    usage:
+      'execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
@@ -132,6 +148,20 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
         name: '--get-schema',
         description:
           'Fetch and print the raw cached schema; tools info shows the same schema with a brief summary',
+      },
+      {
+        name: '--skip-connection-check',
+        description:
+          'Skip the short-lived linked-account fail-fast check if you just connected an account',
+      },
+      {
+        name: '--skip-tool-params-check',
+        description: 'Skip the local tool parameter/schema validation check',
+      },
+      {
+        name: '--no-verify',
+        description:
+          'Skip both the linked-account fail-fast check and the local tool parameter check',
       },
     ],
   },

@@ -41,7 +41,7 @@ describe('CLI: composio manage projects list', () => {
         expect(output).toContain('  Project One (project_1)');
         expect(output).toContain('  Project Two (project_2)');
         expect(output).toContain(
-          'Hint: run `composio init` in a directory to bind it to a developer project.'
+          'Hint: run `composio dev init` in a directory to bind it to a developer project.'
         );
         expect(output).toContain('Run `composio manage orgs switch` to change your default org.');
       })

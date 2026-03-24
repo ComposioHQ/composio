@@ -135,6 +135,9 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('"proxy() requires a consumer project context');
     expect(source).toContain('returned no JSON output');
     expect(source).toContain('args.push("--dry-run");');
+    expect(source).toContain('args.push("--skip-connection-check");');
+    expect(source).toContain('args.push("--skip-tool-params-check");');
+    expect(source).toContain('args.push("--no-verify");');
     expect(source).toContain(
       "stdio: ['inherit', 'pipe', perfDebugEnabled || toolDebugEnabled ? 'inherit' : 'pipe']"
     );

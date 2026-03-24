@@ -1,0 +1,103 @@
+---
+title: "Custom Tools and Toolkits (Experimental)"
+description: "Define local tools that run in-process alongside remote Composio tools in sessions"
+date: "2026-03-23"
+---
+
+You can now create custom tools and toolkits that run locally alongside remote Composio tools within a session.
+
+### SDK Version
+
+| Package | Version |
+|---------|---------|
+| @composio/core | v0.6.6 |
+
+---
+
+## What's New
+
+Custom tools support three patterns — standalone tools for internal logic, extension tools that wrap Composio toolkit APIs with business logic, and custom toolkits that group related tools.
+
+```typescript
+import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
+import { z } from "zod/v3";
+// ---cut---
+
+// Standalone tool — internal data, no Composio auth needed
+const getUserProfile = experimental_createTool("GET_USER_PROFILE", {
+  name: "Get user profile",
+  description: "Retrieve the current user's profile from the internal directory",
+  inputParams: z.object({}),
+  execute: async (_input, ctx) => {
+    // ctx.userId identifies which user's session is running
+    const profiles: Record<string, { name: string; tier: string }> = {
+      "user_1": { name: "Alice Johnson", tier: "enterprise" },
+    };
+    return profiles[ctx.userId] ?? {};
+  },
+});
+
+// Extension tool — wraps Gmail with preset business logic
+// Inherits auth from the session via extendsToolkit
+const sendPromoEmail = experimental_createTool("SEND_PROMO_EMAIL", {
+  name: "Send promo email",
+  description: "Send the standard promotional email to a recipient",
+  extendsToolkit: "gmail",
+  inputParams: z.object({ to: z.string().describe("Recipient email") }),
+  execute: async (input, ctx) => {
+    const raw = btoa(`To: ${input.to}\r\nSubject: Try MyApp Pro\r\n\r\nFree for 14 days.`);
+    const res = await ctx.proxyExecute({
+      toolkit: "gmail",
+      endpoint: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+      method: "POST",
+      body: { raw },
+    });
+    return { status: res.status, to: input.to };
+  },
+});
+
+// Custom toolkit — groups related tools under a namespace
+const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
+  name: "User management",
+  description: "Manage user roles and permissions",
+  tools: [
+    experimental_createTool("ASSIGN_ROLE", {
+      name: "Assign role",
+      description: "Assign a role to a user in the internal system",
+      inputParams: z.object({
+        user_id: z.string().describe("Target user ID"),
+        role: z.enum(["admin", "editor", "viewer"]).describe("Role to assign"),
+      }),
+      execute: async ({ user_id, role }) => ({ user_id, role, assigned: true }),
+    }),
+  ],
+});
+
+// Bind everything to a session
+const composio = new Composio({ apiKey: "your_api_key" });
+const session = await composio.create("user_1", {
+  toolkits: ["gmail"],
+  experimental: {
+    customTools: [getUserProfile, sendPromoEmail],
+    customToolkits: [userManagement],
+  },
+});
+
+const tools = await session.tools(); // Includes both remote and custom tools
+```
+
+### SessionContext
+
+Every custom tool's `execute` receives `(input, ctx)`:
+
+- **`ctx.userId`** — the user ID for the current session
+- **`ctx.proxyExecute(params)`** — authenticated HTTP request via Composio's auth layer
+- **`ctx.execute(toolSlug, args)`** — execute any Composio native tool from within your custom tool
+
+---
+
+## Limitations
+
+- **Native tools only** — custom tools work with `session.tools()`. MCP support is coming soon.
+- **TypeScript only** — Python support is not yet available.
+- **Experimental API** — the `experimental_` prefix and session option may change.
