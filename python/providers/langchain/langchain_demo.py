@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 
 from composio import Composio
 
-openai_client = ChatOpenAI(model="gpt-5")
+openai_client = ChatOpenAI(model="gpt-5", request_timeout=60, max_retries=3)
 
 
 def main():

@@ -16,7 +16,7 @@ tools = composio.tools.get(
     ],
 )
 tool_node = ToolNode(tools)
-model_with_tools = ChatOpenAI(temperature=0, streaming=True).bind_tools(tools)
+model_with_tools = ChatOpenAI(temperature=0, streaming=True, request_timeout=60, max_retries=3).bind_tools(tools)
 
 
 def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:

@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI
 from composio import Composio
 
 # Initialize tools.
-openai_client = ChatOpenAI()
+openai_client = ChatOpenAI(request_timeout=60, max_retries=3)
 composio = Composio(provider=CrewAIProvider())
 
 # Get All the tools
