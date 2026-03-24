@@ -251,12 +251,16 @@ const getWorkerSpawnArgs = (encodedPayload: string): { command: string; args: st
 const captureToComposioAnalytics = async (envelope: AnalyticsEnvelope): Promise<void> => {
   const endpoint = getAnalyticsEndpoint();
   if (!endpoint || shouldDisableAnalytics()) {
+    telemetryDebugLog('delivery_skipped', {
+      reason: shouldDisableAnalytics() ? 'disabled' : 'missing_endpoint',
+      endpoint,
+      eventName: envelope.event.name,
+    });
     return;
   }
 
   const userApiKey = getUserApiKey();
-
-  await fetch(endpoint, {
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -264,6 +268,16 @@ const captureToComposioAnalytics = async (envelope: AnalyticsEnvelope): Promise<
       ...(userApiKey ? { 'x-user-api-key': userApiKey } : {}),
     },
     body: JSON.stringify(envelope),
+  });
+  const responseBody =
+    !response.ok && isTelemetryDebugEnabled() ? await response.text() : undefined;
+
+  telemetryDebugLog(response.ok ? 'delivery_succeeded' : 'delivery_failed', {
+    endpoint,
+    eventName: envelope.event.name,
+    status: response.status,
+    ok: response.ok,
+    responseBody: responseBody?.slice(0, 1000),
   });
 };
 
@@ -304,7 +318,7 @@ export const trackCliEvent = (event: TrackEvent): void => {
     const { command, args } = getWorkerSpawnArgs(encodedPayload);
     const child = spawn(command, args, {
       detached: true,
-      stdio: 'ignore',
+      stdio: isTelemetryDebugEnabled() ? ['ignore', 'ignore', 'inherit'] : 'ignore',
       env: {
         ...process.env,
         COMPOSIO_CLI_ANALYTICS_WORKER: '1',
@@ -338,7 +352,13 @@ export const runAnalyticsWorkerFromArgv = async (argv: ReadonlyArray<string>): P
       return;
     }
     await captureToComposioAnalytics(envelope);
-  } catch {
+  } catch (error) {
+    telemetryDebugLog('delivery_error', {
+      error:
+        error instanceof Error
+          ? { name: error.name, message: error.message }
+          : { message: String(error) },
+    });
     // Analytics must never break CLI execution.
   }
 };
