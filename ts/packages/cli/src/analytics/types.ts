@@ -4,7 +4,8 @@ export type TrackEvent = {
 } | null;
 
 export type AnalyticsEnvelope = {
-  readonly event: NonNullable<TrackEvent>;
+  readonly event: NonNullable<TrackEvent>['name'];
+  readonly properties?: NonNullable<TrackEvent>['properties'];
   readonly sentAt: string;
   readonly source: 'cli';
   readonly distinctId: string;

@@ -254,7 +254,7 @@ const captureToComposioAnalytics = async (envelope: AnalyticsEnvelope): Promise<
     telemetryDebugLog('delivery_skipped', {
       reason: shouldDisableAnalytics() ? 'disabled' : 'missing_endpoint',
       endpoint,
-      eventName: envelope.event.name,
+      eventName: envelope.event,
     });
     return;
   }
@@ -274,7 +274,7 @@ const captureToComposioAnalytics = async (envelope: AnalyticsEnvelope): Promise<
 
   telemetryDebugLog(response.ok ? 'delivery_succeeded' : 'delivery_failed', {
     endpoint,
-    eventName: envelope.event.name,
+    eventName: envelope.event,
     status: response.status,
     ok: response.ok,
     responseBody: responseBody?.slice(0, 1000),
@@ -304,7 +304,8 @@ export const trackCliEvent = (event: TrackEvent): void => {
     const installId = getOrCreateInstallId();
     const distinctId = getDistinctId();
     const envelope: AnalyticsEnvelope = {
-      event: enrichedEvent,
+      event: enrichedEvent.name,
+      ...(enrichedEvent.properties ? { properties: enrichedEvent.properties } : {}),
       sentAt: new Date().toISOString(),
       source: 'cli',
       distinctId,
@@ -348,7 +349,7 @@ export const runAnalyticsWorkerFromArgv = async (argv: ReadonlyArray<string>): P
   try {
     const decoded = decodeBase64Url(encodedPayload);
     const envelope = JSON.parse(decoded) as AnalyticsEnvelope;
-    if (!envelope?.event?.name) {
+    if (typeof envelope?.event !== 'string' || envelope.event.length === 0) {
       return;
     }
     await captureToComposioAnalytics(envelope);
