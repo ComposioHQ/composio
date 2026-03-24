@@ -347,142 +347,99 @@ export const getCliCommandFailedEvent = (
   },
 });
 
+type SpecialLifecycleFamily = {
+  readonly match: (commandPath: string) => boolean;
+  readonly invokedEventName: string;
+  readonly succeededEventName: string;
+  readonly failedEventName: string;
+  readonly getProperties: (context: CliCommandTelemetryContext) => Record<string, unknown>;
+};
+
+const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
+  {
+    match: isExecuteCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_FAILED,
+    getProperties: getExecuteCommandProperties,
+  },
+  {
+    match: isSearchCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_SEARCH_FAILED,
+    getProperties: getSearchCommandProperties,
+  },
+  {
+    match: isLinkCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_FAILED,
+    getProperties: getLinkCommandProperties,
+  },
+  {
+    match: isProxyCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_PROXY_FAILED,
+    getProperties: getProxyCommandProperties,
+  },
+  {
+    match: isRunCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_FAILED,
+    getProperties: getRunCommandProperties,
+  },
+];
+
+const getSpecialLifecycleFamily = (
+  commandPath: string
+): SpecialLifecycleFamily | undefined =>
+  SPECIAL_LIFECYCLE_FAMILIES.find(family => family.match(commandPath));
+
 export const getPrimaryLifecycleInvokedEvent = (
   context: CliCommandTelemetryContext
 ): TrackEvent => {
-  if (isGenericOnlyCommand(context.commandPath)) {
+  const family = getSpecialLifecycleFamily(context.commandPath);
+  if (!family || isGenericOnlyCommand(context.commandPath)) {
     return getCliCommandInvokedEvent(context);
   }
-  if (isExecuteCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_INVOKED,
-      properties: getExecuteCommandProperties(context),
-    };
-  }
-  if (isSearchCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_SEARCH_INVOKED,
-      properties: getSearchCommandProperties(context),
-    };
-  }
-  if (isLinkCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_LINK_INVOKED,
-      properties: getLinkCommandProperties(context),
-    };
-  }
-  if (isProxyCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_PROXY_INVOKED,
-      properties: getProxyCommandProperties(context),
-    };
-  }
-  if (isRunCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_RUN_INVOKED,
-      properties: getRunCommandProperties(context),
-    };
-  }
-  return getCliCommandInvokedEvent(context);
+  return {
+    name: family.invokedEventName,
+    properties: family.getProperties(context),
+  };
 };
 
 export const getPrimaryLifecycleSucceededEvent = (
   context: CliCommandTelemetryContext
 ): TrackEvent => {
-  if (isGenericOnlyCommand(context.commandPath)) {
+  const family = getSpecialLifecycleFamily(context.commandPath);
+  if (!family || isGenericOnlyCommand(context.commandPath)) {
     return getCliCommandSucceededEvent(context);
   }
-  if (isExecuteCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_SUCCEEDED,
-      properties: getExecuteCommandProperties(context),
-    };
-  }
-  if (isSearchCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_SEARCH_SUCCEEDED,
-      properties: getSearchCommandProperties(context),
-    };
-  }
-  if (isLinkCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_LINK_SUCCEEDED,
-      properties: getLinkCommandProperties(context),
-    };
-  }
-  if (isProxyCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_PROXY_SUCCEEDED,
-      properties: getProxyCommandProperties(context),
-    };
-  }
-  if (isRunCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_RUN_SUCCEEDED,
-      properties: getRunCommandProperties(context),
-    };
-  }
-  return getCliCommandSucceededEvent(context);
+  return {
+    name: family.succeededEventName,
+    properties: family.getProperties(context),
+  };
 };
 
 export const getPrimaryLifecycleFailedEvent = (
   context: CliCommandTelemetryContext,
   error: unknown
 ): TrackEvent => {
-  if (isGenericOnlyCommand(context.commandPath)) {
+  const family = getSpecialLifecycleFamily(context.commandPath);
+  if (!family || isGenericOnlyCommand(context.commandPath)) {
     return getCliCommandFailedEvent(context, error);
   }
-  if (isExecuteCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_FAILED,
-      properties: {
-        ...getExecuteCommandProperties(context),
-        error_name: errorNameOf(error),
-        error_message: errorMessageOf(error),
-      },
-    };
-  }
-  if (isSearchCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_SEARCH_FAILED,
-      properties: {
-        ...getSearchCommandProperties(context),
-        error_name: errorNameOf(error),
-        error_message: errorMessageOf(error),
-      },
-    };
-  }
-  if (isLinkCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_LINK_FAILED,
-      properties: {
-        ...getLinkCommandProperties(context),
-        error_name: errorNameOf(error),
-        error_message: errorMessageOf(error),
-      },
-    };
-  }
-  if (isProxyCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_PROXY_FAILED,
-      properties: {
-        ...getProxyCommandProperties(context),
-        error_name: errorNameOf(error),
-        error_message: errorMessageOf(error),
-      },
-    };
-  }
-  if (isRunCommand(context.commandPath)) {
-    return {
-      name: CLI_ANALYTICS_EVENTS.CLI_RUN_FAILED,
-      properties: {
-        ...getRunCommandProperties(context),
-        error_name: errorNameOf(error),
-        error_message: errorMessageOf(error),
-      },
-    };
-  }
-  return getCliCommandFailedEvent(context, error);
+  return {
+    name: family.failedEventName,
+    properties: {
+      ...family.getProperties(context),
+      error_name: errorNameOf(error),
+      error_message: errorMessageOf(error),
+    },
+  };
 };
 
 export const getToolExecuteValidationFailedEvent = (params: {
