@@ -19,19 +19,11 @@ import {
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
-import {
-  ActionExecuteConnectedAccountNotFoundError,
-  ToolsExecutor,
-} from 'src/services/tools-executor';
+import { ToolsExecutor } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
-import {
-  extractApiErrorDetails,
-  extractMessage,
-  extractSlug,
-} from 'src/utils/api-error-extraction';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { formatToolInputParameters } from '../format';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -45,6 +37,10 @@ import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
+import {
+  ComposioNoActiveConnectionError,
+  mapComposioError,
+} from 'src/services/composio-error-overrides';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -162,17 +158,6 @@ const connectionTips = (toolSlug: string, surface: 'root' | 'manage' | 'dev') =>
   ].join('\n');
 };
 
-const isNoActiveConnectionError = (details: { code?: number; slug?: string } | undefined) =>
-  details?.code === 4302 || details?.slug === 'ToolRouterV2_NoActiveConnection';
-
-const noActiveConnectionMessage = (toolSlug: string) => {
-  const toolkit = toolkitFromToolSlug(toolSlug);
-  if (!toolkit) {
-    return 'No active connection found for this tool call. Link the required toolkit/app, then retry.';
-  }
-  return `No active connection found for toolkit "${toolkit}". Run \`composio link ${toolkit}\`, then retry.`;
-};
-
 const ciRedactReplacer = (_key: string, value: unknown): unknown => {
   if (typeof value !== 'string') return value;
   if (_key === 'logId') return redact({ value, prefix: 'log_' });
@@ -282,31 +267,6 @@ const prepareExecuteOutput = (result: ToolExecuteResponse) => {
   };
 };
 
-const normalizeError = (error: unknown): unknown => {
-  let current: unknown = error;
-  const seen = new Set<unknown>();
-
-  while (current && typeof current === 'object' && !seen.has(current)) {
-    seen.add(current);
-
-    if (current instanceof Error) {
-      return current;
-    }
-
-    if ('error' in current) {
-      current = (current as { error?: unknown }).error;
-      continue;
-    }
-    if ('cause' in current) {
-      current = (current as { cause?: unknown }).cause;
-      continue;
-    }
-    break;
-  }
-
-  return current;
-};
-
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
@@ -356,7 +316,8 @@ const handleExecutionError = (
   context: { toolSlug: string; surface: 'root' | 'manage' | 'dev' }
 ) =>
   Effect.gen(function* () {
-    const normalized = normalizeError(error);
+    const mapped = mapComposioError({ error, toolSlug: context.toolSlug });
+    const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
@@ -368,35 +329,22 @@ const handleExecutionError = (
       return { error: normalized.message, slug: context.toolSlug };
     }
 
-    const connAccountDetails =
-      normalized instanceof ActionExecuteConnectedAccountNotFoundError
-        ? normalized.details
-        : undefined;
+    const apiDetails = mapped.apiDetails;
+    const slugValue = mapped.slugValue;
 
-    const apiDetails =
-      extractApiErrorDetails(error) ??
-      extractApiErrorDetails(normalized) ??
-      extractApiErrorDetails(connAccountDetails);
-    const slugValue = apiDetails?.slug ?? extractSlug(error) ?? extractSlug(connAccountDetails);
-    const noActiveConnection =
-      normalized instanceof ActionExecuteConnectedAccountNotFoundError ||
-      isNoActiveConnectionError(apiDetails);
-    const message = extractMessage(apiDetails) ?? extractMessage(normalized) ?? 'Unknown error';
-
-    if (noActiveConnection) {
-      const rewrittenMessage = noActiveConnectionMessage(context.toolSlug);
-      yield* ui.log.error(rewrittenMessage);
+    if (normalized instanceof ComposioNoActiveConnectionError) {
+      yield* ui.log.error(mapped.message);
       if (toolkitFromToolSlug(context.toolSlug)) {
         yield* ui.note(connectionTips(context.toolSlug, context.surface), 'Tips');
       }
-      return { error: rewrittenMessage, slug: slugValue ?? context.toolSlug };
+      return { error: mapped.message, slug: slugValue ?? context.toolSlug };
     }
 
-    yield* ui.log.error(message);
+    yield* ui.log.error(mapped.message);
 
     const detailsObject =
       apiDetails ??
-      (normalized instanceof ActionExecuteConnectedAccountNotFoundError &&
+      (normalized instanceof ComposioNoActiveConnectionError &&
       normalized.details &&
       typeof normalized.details === 'object'
         ? (normalized.details as object)
@@ -405,11 +353,11 @@ const handleExecutionError = (
       yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
     }
 
-    if (normalized instanceof ActionExecuteConnectedAccountNotFoundError) {
+    if (normalized instanceof ComposioNoActiveConnectionError) {
       yield* ui.note(connectionTips(context.toolSlug, context.surface), 'Tips');
     }
 
-    return { error: message, slug: slugValue };
+    return { error: mapped.message, slug: slugValue };
   });
 
 class ToolExecutionError {

@@ -3,7 +3,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
-import { ActionExecuteConnectedAccountNotFoundError } from 'src/services/tools-executor';
+import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import * as redactModule from 'src/ui/redact';
@@ -774,9 +774,12 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: new ActionExecuteConnectedAccountNotFoundError({
-          slug: 'ActionExecute_ConnectedAccountNotFound',
-          message: 'No connected account found for entity ID default for toolkit gmail',
+        failWith: new ComposioNoActiveConnectionError({
+          details: {
+            slug: 'ActionExecute_ConnectedAccountNotFound',
+            message: 'No connected account found for entity ID default for toolkit gmail',
+          },
+          toolSlug: 'GMAIL_CREATE_EMAIL_DRAFT',
         }),
       },
     })
@@ -1009,9 +1012,12 @@ describe('CLI: composio execute', () => {
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
-        failWith: new ActionExecuteConnectedAccountNotFoundError({
-          slug: 'ToolRouterV2_NoActiveConnection',
-          message: 'No active connection found for toolkit(s) in this session',
+        failWith: new ComposioNoActiveConnectionError({
+          details: {
+            slug: 'ToolRouterV2_NoActiveConnection',
+            message: 'No active connection found for toolkit(s) in this session',
+          },
+          toolSlug: 'COMPOSIO_SEARCH_TOOLS',
         }),
       },
     })

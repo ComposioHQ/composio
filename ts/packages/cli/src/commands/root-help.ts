@@ -1,113 +1,24 @@
 import { Console, Effect } from 'effect';
-import { bold } from 'src/ui/colors';
+import { bold, dim, gray } from 'src/ui/colors';
 
-type BasicCommand = {
+type DetailedCommand = {
   name: string;
   description: string;
   usage: string;
   options?: ReadonlyArray<{ name: string; description: string }>;
 };
 
-const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
-  {
-    name: 'version',
-    description: 'Display the current Composio CLI version.',
-    usage: 'version',
-  },
-  {
-    name: 'upgrade',
-    description: 'Upgrade your Composio CLI to the latest available version.',
-    usage: 'upgrade',
-  },
-  {
-    name: 'whoami',
-    description: 'Display your account information.',
-    usage: 'whoami',
-  },
-  {
-    name: 'login',
-    description: 'Log in to the Composio CLI session.',
-    usage: 'login [--no-browser] [--no-wait] [--key text] [-y, --yes]',
-    options: [
-      { name: '--no-browser', description: 'Login without browser interaction' },
-      {
-        name: '--no-wait',
-        description: 'Print login URL and session info, then exit (no browser, no waiting)',
-      },
-      {
-        name: '--key',
-        description: 'Complete login using session key from --no-wait',
-      },
-      { name: '-y, --yes', description: 'Skip org picker; use session default org' },
-    ],
-  },
-  {
-    name: 'logout',
-    description: 'Log out from the Composio CLI session.',
-    usage: 'logout',
-  },
-  {
-    name: 'run',
-    description: 'Run inline ESNext TS/JS code or a file with Bun and injected Composio helpers.',
-    usage:
-      'run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]',
-    options: [
-      {
-        name: '<code>',
-        description:
-          'Inline Bun ESNext code with injected execute(slug, data?) and search(query, options?) helpers',
-      },
-      {
-        name: '-f, --file',
-        description: 'Run a TS/JS file with the Bun runtime instead of inline code',
-      },
-      {
-        name: '--dry-run',
-        description: 'Preview execute(...) calls without running remote actions',
-      },
-      {
-        name: '--skip-connection-check',
-        description:
-          'Skip the short-lived linked-account fail-fast check if you just connected an account',
-      },
-      {
-        name: '--skip-tool-params-check',
-        description: 'Skip the local tool parameter/schema validation check',
-      },
-      {
-        name: '--no-verify',
-        description:
-          'Skip both the linked-account fail-fast check and the local tool parameter check',
-      },
-    ],
-  },
-  {
-    name: 'proxy',
-    description: 'Call a toolkit API through Composio proxy execute using curl-style flags.',
-    usage:
-      'proxy <url> --toolkit text [-X, --method text] [-H, --header text]... [-d, --data text] [--user-id text] [--project-name text]',
-    options: [
-      {
-        name: '<url>',
-        description: 'Absolute or relative API endpoint to call through proxy execute.',
-      },
-      { name: '--toolkit', description: 'Toolkit slug whose connected account should be used' },
-      {
-        name: '-X, --method',
-        description: 'HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)',
-      },
-      {
-        name: '-H, --header',
-        description: 'Header in "Name: value" format. Repeat for multiple headers.',
-      },
-      { name: '-d, --data', description: 'Request body as raw text, JSON, @file, or - for stdin' },
-      { name: '--user-id', description: 'Developer-project user ID override' },
-      { name: '--project-name', description: 'Developer project name override for this command' },
-    ],
-  },
+type CompactCommand = {
+  name: string;
+  description: string;
+};
+
+// ── Core workflow commands ──────────────────────────────────────────────
+
+const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'search',
-    description: 'Semantic search for tools by use case across all toolkits/apps.',
+    description: 'Find tools by use case across all toolkits/apps.',
     usage: 'search <query> [--toolkits text] [--limit integer]',
     options: [
       { name: '<query>', description: 'Semantic use-case query (e.g. "send emails")' },
@@ -116,26 +27,10 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
     ],
   },
   {
-    name: 'tools',
-    description: 'List tools for one toolkit, or inspect a cached schema-backed summary.',
-    usage: 'tools list <toolkit> [--query text] | tools info <slug>',
-    options: [
-      {
-        name: 'list <toolkit>',
-        description: 'Non-semantic per-toolkit listing; use this when you already know the toolkit',
-      },
-      {
-        name: 'info <slug>',
-        description:
-          'Print a brief summary and cache the same raw schema used by execute --get-schema',
-      },
-    ],
-  },
-  {
     name: 'execute',
-    description: 'Execute a tool, preview it with --dry-run, or fetch its input schema.',
-    usage:
-      'execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]',
+    description:
+      'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
+    usage: 'execute <slug> [-d, --data text] [--dry-run] [--get-schema]',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
@@ -144,99 +39,149 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
           'JSON or JS-style object arguments, e.g. -d \'{ repo: "foo" }\', @file, or - for stdin',
       },
       { name: '--dry-run', description: 'Validate and preview the tool call without executing it' },
-      {
-        name: '--get-schema',
-        description:
-          'Fetch and print the raw cached schema; tools info shows the same schema with a brief summary',
-      },
-      {
-        name: '--skip-connection-check',
-        description:
-          'Skip the short-lived linked-account fail-fast check if you just connected an account',
-      },
-      {
-        name: '--skip-tool-params-check',
-        description: 'Skip the local tool parameter/schema validation check',
-      },
-      {
-        name: '--no-verify',
-        description:
-          'Skip both the linked-account fail-fast check and the local tool parameter check',
-      },
+      { name: '--get-schema', description: 'Fetch and print the raw tool schema' },
     ],
   },
   {
     name: 'link',
-    description: 'Connect a user account for a toolkit/app.',
+    description: 'Connect your account for a toolkit/app.',
     usage: 'link [<toolkit>] [--no-browser]',
+    options: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
+  },
+  {
+    name: 'run',
+    description:
+      'Run inline TS/JS code with shimmed CLI commands; injected execute(), proxy(), and search() behave like their CLI counterparts.',
+    usage: 'run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]',
     options: [
-      { name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' },
-      { name: '--no-browser', description: 'Skip auto-opening the browser' },
+      { name: '<code>', description: 'Inline Bun ESNext code to evaluate' },
+      { name: '-f, --file', description: 'Run a TS/JS file instead of inline code' },
+      { name: '--dry-run', description: 'Preview execute() calls without running remote actions' },
+    ],
+  },
+  {
+    name: 'proxy',
+    description: 'curl-like access to any toolkit API through Composio using your linked account.',
+    usage: 'proxy <url> --toolkit text [-X method] [-H header]... [-d data]',
+    options: [
+      { name: '<url>', description: 'Full API endpoint URL' },
+      { name: '--toolkit', description: 'Toolkit slug whose connected account should be used' },
+      { name: '-X, --method', description: 'HTTP method (GET, POST, PUT, DELETE, PATCH)' },
+      { name: '-H, --header', description: 'Header in "Name: value" format. Repeat for multiple.' },
+      { name: '-d, --data', description: 'Request body as raw text, JSON, @file, or - for stdin' },
     ],
   },
 ];
 
-const ADVANCED_COMMANDS: ReadonlyArray<{ name: string; description: string }> = [
+// ── Developer commands ─────────────────────────────────────────────────
+
+const OTHER_COMMANDS: ReadonlyArray<CompactCommand> = [
+  { name: 'tools info <slug>', description: 'Print tool summary and cache its schema' },
+  { name: 'tools list <toolkit>', description: 'List tools available in a toolkit' },
+];
+
+const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
   {
     name: 'dev',
-    description:
-      'Developer workflows: init a local project, execute tools with playground users, listen for triggers, and inspect logs.',
+    description: 'Developer workflows: init, playground execution, triggers, and logs.',
   },
   {
     name: 'generate',
-    description:
-      'Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)',
+    description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
   },
   {
     name: 'manage',
-    description:
-      'Manage your developer orgs, toolkits, connected accounts, triggers, auth configs, and projects.',
+    description: 'Manage orgs, toolkits, connected accounts, triggers, auth configs, and projects.',
   },
 ];
 
+// ── Account commands ───────────────────────────────────────────────────
+
+const ACCOUNT_COMMANDS: ReadonlyArray<CompactCommand> = [
+  { name: 'login', description: 'Log in to Composio' },
+  { name: 'logout', description: 'Log out from Composio' },
+  { name: 'whoami', description: 'Show current account info' },
+  { name: 'version', description: 'Display CLI version' },
+  { name: 'upgrade', description: 'Upgrade CLI to the latest version' },
+];
+
+// ── Render helpers ─────────────────────────────────────────────────────
+
+function renderDetailedCommands(name: string, commands: ReadonlyArray<DetailedCommand>): string[] {
+  const lines: string[] = [];
+  for (const cmd of commands) {
+    lines.push(`  ${bold(cmd.name)}`);
+    lines.push(`    ${cmd.description}`);
+    lines.push(`    ${dim('Usage:')} ${name} ${cmd.usage}`);
+    if (cmd.options && cmd.options.length > 0) {
+      for (const opt of cmd.options) {
+        lines.push(`      ${dim(opt.name.padEnd(20))}${opt.description}`);
+      }
+    }
+    lines.push('');
+  }
+  return lines;
+}
+
+function renderCompactCommands(commands: ReadonlyArray<CompactCommand>): string[] {
+  const maxLen = Math.max(...commands.map(c => c.name.length));
+  return commands.map(cmd => `  ${cmd.name.padEnd(maxLen + 2)}${cmd.description}`);
+}
+
+// ── Main help output ───────────────────────────────────────────────────
+
 /**
- * Prints the root-level help output in gh-style format.
- * Shows only top-level commands, not nested subcommands.
- * Basic commands include full usage and options.
+ * Prints the root-level help output.
+ * Core workflow commands are shown first with full usage/options.
+ * Housekeeping and developer commands are shown compactly at the bottom.
  */
 export function printRootHelp(): Effect.Effect<void> {
   const name = 'composio';
-  const allCommands = [
-    ...BASIC_COMMANDS.map(c => ({ name: c.name, description: c.description })),
-    ...ADVANCED_COMMANDS,
-  ];
-  const maxNameLen = Math.max(...allCommands.map(c => c.name.length), 10);
-
-  const basicLines: string[] = [];
-  for (const cmd of BASIC_COMMANDS) {
-    basicLines.push(`  ${cmd.name}`);
-    basicLines.push(`    ${cmd.description}`);
-    basicLines.push(`    Usage: ${name} ${cmd.usage}`);
-    if (cmd.options && cmd.options.length > 0) {
-      basicLines.push('    Options:');
-      for (const opt of cmd.options) {
-        basicLines.push(`      ${opt.name.padEnd(20)}  ${opt.description}`);
-      }
-    }
-    basicLines.push('');
-  }
 
   const lines: string[] = [
     '',
-    'Connect AI agents to external tools. `search`, `link`, `execute`, `proxy`, and `run` let you take actions across 1000+ apps directly; if you can describe it, it is probably supported.',
-    "Try `execute` sooner than you'd think. It parses inputs, validates them against cached schemas when available, and will usually tell you whether you need to fix arguments, inspect schema, or `link` an account.",
-    'Use `dev` when you are building with Composio and want scaffolding, playground execution, triggers, and logs.',
+    `Connect AI agents to external tools. ${bold('search')}, ${bold('execute')}, ${bold('link')}, ${bold('proxy')}, and ${bold('run')} let you`,
+    'take actions across 1000+ apps directly; if you can describe it, it is probably supported.',
+    `Try ${bold('execute')} sooner than you'd think — it validates inputs, checks connections, and tells`,
+    'you what to fix.',
+    '',
+    `Use ${bold('dev')} when you are building an agent with Composio's SDK and want scaffolding,`,
+    'playground execution, triggers, and logs.',
     '',
     bold('USAGE'),
     `  ${name} <command> [options]`,
     '',
-    bold('BASIC COMMANDS'),
-    ...basicLines,
-    bold('ADVANCED COMMANDS'),
-    ...ADVANCED_COMMANDS.map(cmd => `  ${cmd.name.padEnd(maxNameLen)}  ${cmd.description}`),
+    bold('CORE COMMANDS'),
+    ...renderDetailedCommands(name, CORE_COMMANDS),
+    gray('  Typical flow: search → execute (link and tools when needed)'),
+    '',
+    bold('TOOLS'),
+    ...renderCompactCommands(OTHER_COMMANDS),
+    '',
+    bold('EXAMPLES'),
+    `  ${dim('# Find a tool')}`,
+    `  ${name} search "create github issue"`,
+    '',
+    `  ${dim('# Connect your GitHub account')}`,
+    `  ${name} link github`,
+    '',
+    `  ${dim('# Execute a tool')}`,
+    `  ${name} execute GITHUB_CREATE_ISSUE -d '{ repo: "owner/repo", title: "Bug" }'`,
+    '',
+    `  ${dim('# Call an API directly through proxy')}`,
+    `  ${name} proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail`,
+    '',
+    `  ${dim('# Run a script with injected helpers')}`,
+    `  ${name} run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
+    '',
+    bold('DEVELOPER COMMANDS'),
+    ...renderCompactCommands(DEVELOPER_COMMANDS),
+    '',
+    bold('ACCOUNT'),
+    ...renderCompactCommands(ACCOUNT_COMMANDS),
     '',
     bold('FLAGS'),
-    `  -h, --help     Show help for command`,
+    '  -h, --help     Show help for command',
     `  --version      Show ${name} version`,
     '',
     bold('LEARN MORE'),

@@ -28,6 +28,7 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
 import { showUpdateNotice, checkForUpdateInBackground } from 'src/services/update-check';
+import { mapComposioError } from 'src/services/composio-error-overrides';
 
 /**
  * Concrete Effect layer compositions for the Composio CLI runtime.
@@ -188,6 +189,7 @@ checkForUpdateInBackground();
  */
 runWithArgs.pipe(
   Effect.scoped,
+  Effect.mapError(error => mapComposioError({ error }).normalized),
   // @effect/cli already prints validation errors (missing args, invalid flags, etc.)
   // via its own printDocs before re-failing. Swallow the re-thrown error to avoid
   // routing it through the generic error box which would dump raw JSON.

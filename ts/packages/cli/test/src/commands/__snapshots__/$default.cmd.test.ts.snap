@@ -36,10 +36,10 @@ BASIC COMMANDS
     Usage: composio logout
 
   run
-    Run inline ESNext TS/JS code or a file with Bun and injected Composio helpers.
+    Run inline ESNext TS/JS code or a file with Bun and injected Composio helpers: execute, search, and proxy.
     Usage: composio run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run] [--skip-connection-check] [--skip-tool-params-check] [--no-verify]
     Options:
-      <code>                Inline Bun ESNext code with injected execute(slug, data?) and search(query, options?) helpers
+      <code>                Inline Bun ESNext code with injected execute(slug, data?), search(query, options?), and proxy(toolkit) helpers
       -f, --file            Run a TS/JS file with the Bun runtime instead of inline code
       --dry-run             Preview execute(...) calls without running remote actions
       --skip-connection-check  Skip the short-lived linked-account fail-fast check if you just connected an account
@@ -47,16 +47,15 @@ BASIC COMMANDS
       --no-verify           Skip both the linked-account fail-fast check and the local tool parameter check
 
   proxy
-    Call a toolkit API through Composio proxy execute using curl-style flags.
-    Usage: composio proxy <url> --toolkit text [-X, --method text] [-H, --header text]... [-d, --data text] [--user-id text] [--project-name text]
+    Call a toolkit API through Composio proxy execute using the current consumer-project account.
+    Usage: composio proxy <url> --toolkit text [-X, --method text] [-H, --header text]... [-d, --data text]
     Options:
       <url>                 Absolute or relative API endpoint to call through proxy execute.
       --toolkit             Toolkit slug whose connected account should be used
       -X, --method          HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)
       -H, --header          Header in "Name: value" format. Repeat for multiple headers.
       -d, --data            Request body as raw text, JSON, @file, or - for stdin
-      --user-id             Developer-project user ID override
-      --project-name        Developer project name override for this command
+      --skip-connection-check  Skip the short-lived linked-account fail-fast check if you just connected an account
 
   search
     Semantic search for tools by use case across all toolkits/apps.

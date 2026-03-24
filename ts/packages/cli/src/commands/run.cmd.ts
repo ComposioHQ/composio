@@ -464,7 +464,7 @@ export const runCmd = Command.make('run', {
 }).pipe(
   Command.withDescription(
     [
-      'Run inline TS/JS code or a file with the embedded Bun runtime.',
+      'Run inline TS/JS code or a file with the embedded Bun runtime and injected Composio helpers: `execute`, `search`, and `proxy`.',
       'Use this for programmatic multi-step tool workflows when you want to stay in code and not orchestrate everything through bash.',
       '',
       'Usage:',
@@ -489,7 +489,7 @@ export const runCmd = Command.make('run', {
       "    Returns a fetch-compatible function bound to that toolkit. It creates or reuses a consumer-project-scoped tool-router session and calls Composio proxy execute with that consumer project's credentials.",
       '    Example: `const gmailFetch = await proxy("gmail"); const res = await gmailFetch("https://gmail.googleapis.com/gmail/v1/users/me/profile")`.',
       '    Inspect `proxy.schema` in code for the basic factory schema.',
-      '  Both helpers automatically reuse your top level `execute` and `search` auth states, using the toolkits and apps you have already authorized.',
+      '  All three helpers automatically reuse your top level auth state, using the toolkits and apps you have already authorized.',
       '',
       'Hints:',
       '  Use `composio search "<query>"` outside `run` to discover tool slugs before writing a script.',

@@ -94,19 +94,23 @@ describe('CLI: composio run', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] run help [Then] it documents injected search and execute helpers', () =>
-      Effect.gen(function* () {
-        yield* cli(['run', '--help']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-        expect(output).toContain('await search(query');
-        expect(output).toContain('await execute(slug, data?)');
-        expect(output).toContain('const fetch = await proxy(toolkit)');
-        expect(output).toContain('proxy.schema');
-        expect(output).toContain('import { $ } from "bun"');
-        expect(output).toContain('top level `execute` and `search` auth states');
-        expect(output).toContain('tool_definitions');
-      })
+    it.scoped(
+      '[Given] run help [Then] it documents injected execute, search, and proxy helpers',
+      () =>
+        Effect.gen(function* () {
+          yield* cli(['run', '--help']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+          expect(output).toContain('await search(query');
+          expect(output).toContain('await execute(slug, data?)');
+          expect(output).toContain('const fetch = await proxy(toolkit)');
+          expect(output).toContain('proxy.schema');
+          expect(output).toContain('import { $ } from "bun"');
+          expect(output).toContain(
+            'All three helpers automatically reuse your top level auth state'
+          );
+          expect(output).toContain('tool_definitions');
+        })
     );
   });
 });
