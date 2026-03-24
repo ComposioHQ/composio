@@ -10,6 +10,7 @@ import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
+import { proxyCmd } from './proxy.cmd';
 import { installCmd } from './install.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { manageCmd } from './manage/manage.cmd';
@@ -30,6 +31,7 @@ const $cmd = $defaultCmd.pipe(
     loginCmd,
     logoutCmd,
     runCmd,
+    proxyCmd,
     installCmd,
     devCmd,
     rootToolsCmd,
@@ -151,7 +153,7 @@ const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
   return (
     (args.length === 1 && (args[0] === '--generate-graph' || args[0] === 'generate-graph')) ||
     (args.length === 2 && args[0] === 'debug' && args[1] === 'generate-graph') ||
-    (args[0] === '--generate-graph') ||
+    args[0] === '--generate-graph' ||
     (args[0] === 'debug' && args[1] === 'generate-graph')
   );
 };

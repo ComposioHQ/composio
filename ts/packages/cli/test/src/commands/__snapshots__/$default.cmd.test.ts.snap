@@ -2,7 +2,7 @@
 
 exports[`CLI: composio > [Given] --help flag [Then] prints help message 1`] = `
 "
-Connect AI agents to external tools. \`search\`, \`link\`, \`execute\`, and \`run\` let you take actions across 1000+ apps directly; if you can describe it, it is probably supported.
+Connect AI agents to external tools. \`search\`, \`link\`, \`execute\`, \`proxy\`, and \`run\` let you take actions across 1000+ apps directly; if you can describe it, it is probably supported.
 Try \`execute\` sooner than you'd think. It parses inputs, validates them against cached schemas when available, and will usually tell you whether you need to fix arguments, inspect schema, or \`link\` an account.
 Use \`dev\` when you are building with Composio and want scaffolding, playground execution, triggers, and logs.
 
@@ -42,6 +42,18 @@ BASIC COMMANDS
       <code>                Inline Bun ESNext code with injected execute(slug, data?) and search(query, options?) helpers
       -f, --file            Run a TS/JS file with the Bun runtime instead of inline code
       --dry-run             Preview execute(...) calls without running remote actions
+
+  proxy
+    Call a toolkit API through Composio proxy execute using curl-style flags.
+    Usage: composio proxy <url> --toolkit text [-X, --method text] [-H, --header text]... [-d, --data text] [--user-id text] [--project-name text]
+    Options:
+      <url>                 Absolute or relative API endpoint to call through proxy execute.
+      --toolkit             Toolkit slug whose connected account should be used
+      -X, --method          HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)
+      -H, --header          Header in "Name: value" format. Repeat for multiple headers.
+      -d, --data            Request body as raw text, JSON, @file, or - for stdin
+      --user-id             Developer-project user ID override
+      --project-name        Developer project name override for this command
 
   search
     Semantically search tools by use case across all toolkits/apps.

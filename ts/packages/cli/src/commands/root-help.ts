@@ -56,8 +56,38 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
         description:
           'Inline Bun ESNext code with injected execute(slug, data?) and search(query, options?) helpers',
       },
-      { name: '-f, --file', description: 'Run a TS/JS file with the Bun runtime instead of inline code' },
-      { name: '--dry-run', description: 'Preview execute(...) calls without running remote actions' },
+      {
+        name: '-f, --file',
+        description: 'Run a TS/JS file with the Bun runtime instead of inline code',
+      },
+      {
+        name: '--dry-run',
+        description: 'Preview execute(...) calls without running remote actions',
+      },
+    ],
+  },
+  {
+    name: 'proxy',
+    description: 'Call a toolkit API through Composio proxy execute using curl-style flags.',
+    usage:
+      'proxy <url> --toolkit text [-X, --method text] [-H, --header text]... [-d, --data text] [--user-id text] [--project-name text]',
+    options: [
+      {
+        name: '<url>',
+        description: 'Absolute or relative API endpoint to call through proxy execute.',
+      },
+      { name: '--toolkit', description: 'Toolkit slug whose connected account should be used' },
+      {
+        name: '-X, --method',
+        description: 'HTTP method, curl-style (GET, POST, PUT, DELETE, PATCH)',
+      },
+      {
+        name: '-H, --header',
+        description: 'Header in "Name: value" format. Repeat for multiple headers.',
+      },
+      { name: '-d, --data', description: 'Request body as raw text, JSON, @file, or - for stdin' },
+      { name: '--user-id', description: 'Developer-project user ID override' },
+      { name: '--project-name', description: 'Developer project name override for this command' },
     ],
   },
   {
@@ -81,7 +111,8 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
       },
       {
         name: 'info <slug>',
-        description: 'Print a brief summary and cache the same raw schema used by execute --get-schema',
+        description:
+          'Print a brief summary and cache the same raw schema used by execute --get-schema',
       },
     ],
   },
@@ -93,12 +124,14 @@ const BASIC_COMMANDS: ReadonlyArray<BasicCommand> = [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
         name: '-d, --data',
-        description: 'JSON or JS-style object arguments, e.g. -d \'{ repo: "foo" }\', @file, or - for stdin',
+        description:
+          'JSON or JS-style object arguments, e.g. -d \'{ repo: "foo" }\', @file, or - for stdin',
       },
       { name: '--dry-run', description: 'Validate and preview the tool call without executing it' },
       {
         name: '--get-schema',
-        description: 'Fetch and print the raw cached schema; tools info shows the same schema with a brief summary',
+        description:
+          'Fetch and print the raw cached schema; tools info shows the same schema with a brief summary',
       },
     ],
   },
@@ -160,7 +193,7 @@ export function printRootHelp(): Effect.Effect<void> {
 
   const lines: string[] = [
     '',
-    'Connect AI agents to external tools. `search`, `link`, `execute`, and `run` let you take actions across 1000+ apps directly; if you can describe it, it is probably supported.',
+    'Connect AI agents to external tools. `search`, `link`, `execute`, `proxy`, and `run` let you take actions across 1000+ apps directly; if you can describe it, it is probably supported.',
     "Try `execute` sooner than you'd think. It parses inputs, validates them against cached schemas when available, and will usually tell you whether you need to fix arguments, inspect schema, or `link` an account.",
     'Use `dev` when you are building with Composio and want scaffolding, playground execution, triggers, and logs.',
     '',
