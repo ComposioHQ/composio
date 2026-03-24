@@ -53,11 +53,11 @@ const testLiveOptions = {
   fixture: 'global-test-user-id' as const,
 };
 
-describe('CLI: composio manage tools search', () => {
+describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))('[Given] query "send" [Then] returns matching tools', it => {
     it.scoped('returns matching tools', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'tools', 'search', 'send']);
+        yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -74,7 +74,7 @@ describe('CLI: composio manage tools search', () => {
     it => {
       it.scoped('shows not found message', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'search', 'nonexistent_query']);
+          yield* cli(['search', 'nonexistent_query']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -89,7 +89,7 @@ describe('CLI: composio manage tools search', () => {
     it => {
       it.scoped('scopes search to toolkit', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'search', 'send', '--toolkits', 'gmail']);
+          yield* cli(['search', 'send', '--toolkits', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           const humanOutput = output.split('\n{')[0] ?? output;
@@ -107,7 +107,7 @@ describe('CLI: composio manage tools search', () => {
     it => {
       it.scoped('prints full search response with CTA for jq', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'search', 'send']);
+          yield* cli(['search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -119,8 +119,8 @@ describe('CLI: composio manage tools search', () => {
           expect(output).toContain('"CTA"');
           expect(output).toContain('"Execute a tool"');
           expect(output).toContain('"Connect a user account"');
-          expect(output).toContain('composio manage tools execute');
-          expect(output).toContain('composio manage connected-accounts link gmail');
+          expect(output).toContain('composio execute');
+          expect(output).toContain('composio link gmail');
         })
       );
     }
@@ -157,7 +157,7 @@ describe('CLI: composio manage tools search', () => {
             },
           });
 
-          yield* cli(['manage', 'tools', 'search', 'send']).pipe(Effect.provide(live));
+          yield* cli(['search', 'send']).pipe(Effect.provide(live));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -168,16 +168,12 @@ describe('CLI: composio manage tools search', () => {
 
           const executeCta = cta.find(c => c.action === 'Execute a tool');
           expect(executeCta).toBeTruthy();
-          expect(executeCta!.command).toContain(
-            'composio manage tools execute "GMAIL_SEND_EMAIL" --user-id "<user-id>"'
-          );
+          expect(executeCta!.command).toContain('composio execute "GMAIL_SEND_EMAIL"');
           expect(executeCta!.command).toMatch(/-d '\{"to":"","subject":"","body":""\}'/);
 
           const linkCta = cta.find(c => c.action === 'Connect a user account');
           expect(linkCta).toBeTruthy();
-          expect(linkCta!.command).toBe(
-            'composio manage connected-accounts link gmail --user-id "<user-id>"'
-          );
+          expect(linkCta!.command).toBe('composio link gmail');
         })
       );
     }
@@ -188,7 +184,7 @@ describe('CLI: composio manage tools search', () => {
     it => {
       it.scoped('CTA uses -d "{}" when no schema properties', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'search', 'send']);
+          yield* cli(['search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -275,9 +271,7 @@ describe('CLI: composio manage tools search', () => {
             },
           });
 
-          yield* cli(['manage', 'tools', 'search', 'send', '--toolkits', 'gmail,outlook']).pipe(
-            Effect.provide(live)
-          );
+          yield* cli(['search', 'send', '--toolkits', 'gmail,outlook']).pipe(Effect.provide(live));
 
           expect(createParams?.toolkits).toEqual({ enable: ['gmail', 'outlook'] });
           expect(searchParams?.queries[0]?.use_case).toBe('send');
@@ -342,19 +336,15 @@ describe('CLI: composio manage tools search', () => {
             },
           });
 
-          yield* cli(['manage', 'tools', 'search', 'send email']).pipe(Effect.provide(live));
+          yield* cli(['search', 'send email']).pipe(Effect.provide(live));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Plan:');
           expect(output).toContain('1. Collect recipient details');
-          expect(output).toContain('Hints:');
-          expect(output).toContain(
-            `composio manage tools execute "GMAIL_SEND_EMAIL" --user-id "<user-id>" -d "{}"`
-          );
-          expect(output).toContain(
-            `composio manage connected-accounts link <toolkit> --user-id "<user-id>"`
-          );
+          expect(output).toContain('Execute a tool:');
+          expect(output).toContain(`composio execute "GMAIL_SEND_EMAIL" -d "{}"`);
+          expect(output).toContain(`composio link <toolkit>`);
         })
       );
     }
@@ -363,7 +353,7 @@ describe('CLI: composio manage tools search', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'tools', 'search', 'send']);
+        yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -373,7 +363,7 @@ describe('CLI: composio manage tools search', () => {
   });
 
   layer(TestLive(testLiveOptions))(
-    '[Given] consumer search with explicit --user-id [Then] it still uses resolved consumer user id',
+    '[Given] consumer search [Then] it uses the resolved consumer user id',
     it => {
       it.scoped('uses consumer user id from the resolved project context', () =>
         Effect.gen(function* () {
@@ -393,9 +383,7 @@ describe('CLI: composio manage tools search', () => {
             },
           });
 
-          yield* cli(['manage', 'tools', 'search', 'send', '--user-id', 'alice']).pipe(
-            Effect.provide(live)
-          );
+          yield* cli(['search', 'send']).pipe(Effect.provide(live));
 
           expect(createParams?.user_id).toBe('consumer-user-org_test');
         })
@@ -412,7 +400,7 @@ describe('CLI: composio manage tools search', () => {
   )('[Given] no explicit --user-id [Then] consumer search does not require one', it => {
     it.scoped('runs without printing global test user diagnostics', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'tools', 'search', 'send']);
+        yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -423,9 +411,9 @@ describe('CLI: composio manage tools search', () => {
   });
 
   layer(TestLive(testLiveOptions))(
-    '[Given] composio search alias [Then] works like composio manage tools search',
+    '[Given] composio search [Then] runs the root search flow',
     it => {
-      it.scoped('alias expands to tools search', () =>
+      it.scoped('search returns matching tools', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

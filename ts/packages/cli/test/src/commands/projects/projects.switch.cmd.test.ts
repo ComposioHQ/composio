@@ -9,7 +9,7 @@ describe('CLI: composio manage projects switch', () => {
         yield* cli(['manage', 'projects', 'switch']).pipe(Effect.catchAll(() => Effect.void));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('Global developer project switching is no longer supported');
-        expect(output).toContain('composio init');
+        expect(output).toContain('composio dev init');
       })
     );
   });

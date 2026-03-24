@@ -1,14 +1,15 @@
+import crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
-import crypto from 'node:crypto';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { resolveCommandProject } from 'src/services/command-project';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
+import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -17,6 +18,13 @@ const file = Options.text('file').pipe(
 );
 
 const dryRun = Options.boolean('dry-run').pipe(Options.withDefault(false));
+const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
+  Options.withDefault(false)
+);
+const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
+  Options.withDefault(false)
+);
+const noVerify = Options.boolean('no-verify').pipe(Options.withDefault(false));
 
 const args = Args.repeated(Args.text({ name: 'arg' })).pipe(
   Args.withDescription('Inline code followed by arguments, or just arguments when using --file')
@@ -83,12 +91,16 @@ type RunHelperContext = {
   readonly baseURL?: string;
   readonly webURL?: string;
   readonly orgId?: string;
+  readonly runId?: string;
   readonly consumerUserId?: string;
   readonly consumerProjectId?: string;
   readonly consumerProjectName?: string;
   readonly perfDebug?: boolean;
   readonly toolDebug?: boolean;
   readonly dryRun?: boolean;
+  readonly skipConnectionCheck?: boolean;
+  readonly skipToolParamsCheck?: boolean;
+  readonly noVerify?: boolean;
 };
 
 export const buildRunHelpersSource = (
@@ -127,7 +139,7 @@ export const buildRunHelpersSource = (
     '    ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),',
     '    ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),',
     '    COMPOSIO_CLI_INVOCATION_ORIGIN: "run",',
-    '    ...(process.env.COMPOSIO_CLI_PARENT_RUN_ID ? { COMPOSIO_CLI_PARENT_RUN_ID: process.env.COMPOSIO_CLI_PARENT_RUN_ID } : {}),',
+    '    ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),',
     '    ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: "1" } : {}),',
     '    ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: "1" } : {}),',
     '  };',
@@ -177,6 +189,15 @@ export const buildRunHelpersSource = (
     '  const args = ["execute", slug];',
     '  if (helperContext.dryRun === true) {',
     '    args.push("--dry-run");',
+    '  }',
+    '  if (helperContext.skipConnectionCheck === true) {',
+    '    args.push("--skip-connection-check");',
+    '  }',
+    '  if (helperContext.skipToolParamsCheck === true) {',
+    '    args.push("--skip-tool-params-check");',
+    '  }',
+    '  if (helperContext.noVerify === true) {',
+    '    args.push("--no-verify");',
     '  }',
     '  if (data !== undefined) {',
     '    const serialized = typeof data === "string" ? data : JSON.stringify(data);',
@@ -253,18 +274,28 @@ const resolveRunHelperContext = () =>
     } satisfies RunHelperContext;
   });
 
-export const runCmd = Command.make('run', { file, dryRun, args }).pipe(
+export const runCmd = Command.make('run', {
+  file,
+  dryRun,
+  skipConnectionCheck,
+  skipToolParamsCheck,
+  noVerify,
+  args,
+}).pipe(
   Command.withDescription(
     [
       'Run inline TS/JS code or a file with the embedded Bun runtime.',
       'Use this for programmatic multi-step tool workflows when you want to stay in code and not orchestrate everything through bash.',
       '',
       'Usage:',
-      '  composio run \'<code>\' [-- ...args]',
+      "  composio run '<code>' [-- ...args]",
       '  composio run --file ./script.ts [-- ...args]',
       '',
       'Examples:',
       `  composio run 'const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Bug report" }); console.log(issue)'`,
+      `  composio run --skip-connection-check 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
+      `  composio run --skip-tool-params-check 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
+      `  composio run --no-verify 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
       `  composio run --dry-run 'const email = await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" }); console.log(email)'`,
       '  composio run --file ./script.ts -- hello world',
       '',
@@ -288,50 +319,52 @@ export const runCmd = Command.make('run', { file, dryRun, args }).pipe(
       '  await $`${process.execPath} manage toolkits list`',
     ].join('\n')
   ),
-  Command.withHandler(({ file, dryRun, args }) =>
-    Effect.gen(function* () {
-      const perfDebug = process.env.COMPOSIO_PERF_DEBUG === '1';
-      const toolDebug = process.env.COMPOSIO_TOOL_DEBUG === '1';
-      if (Option.isNone(file)) {
-        const [inlineCode] = args;
-        const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
-        if (preloadSlugs.length > 0) {
-          yield* warmToolInputDefinitions(preloadSlugs).pipe(
-            Effect.catchAll(() => Effect.void),
-            Effect.forkDaemon
-          );
+  Command.withHandler(
+    ({ file, dryRun, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
+      Effect.gen(function* () {
+        const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
+        const perfDebug = isPerfDebugEnabled();
+        const toolDebug = isToolDebugEnabled();
+        if (Option.isNone(file)) {
+          const [inlineCode] = args;
+          const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
+          if (preloadSlugs.length > 0) {
+            yield* warmToolInputDefinitions(preloadSlugs).pipe(
+              Effect.catchAll(() => Effect.void),
+              Effect.forkDaemon
+            );
+          }
         }
-      }
 
-      const preload = createRunHelpersPreloadFile(
-        inferCliInvocationPrefix(),
-        {
+        const preload = createRunHelpersPreloadFile(inferCliInvocationPrefix(), {
           ...(yield* resolveRunHelperContext()),
+          runId,
           perfDebug,
           toolDebug,
           dryRun,
-        }
-      );
-      try {
-        const runId = crypto.randomUUID();
-        const child = Bun.spawn({
-          cmd: buildRunCommand({ file, args, preloadPath: preload.preloadPath }),
-          env: {
-            ...process.env,
-            BUN_BE_BUN: '1',
-            COMPOSIO_CLI_PARENT_RUN_ID: runId,
-            ...(perfDebug ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
-            ...(toolDebug ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
-          },
-          stdio: ['inherit', 'inherit', 'inherit'],
+          skipConnectionCheck,
+          skipToolParamsCheck,
+          noVerify,
         });
+        try {
+          const child = Bun.spawn({
+            cmd: buildRunCommand({ file, args, preloadPath: preload.preloadPath }),
+            env: {
+              ...process.env,
+              BUN_BE_BUN: '1',
+              COMPOSIO_CLI_PARENT_RUN_ID: runId,
+              ...(perfDebug ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
+              ...(toolDebug ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
+            },
+            stdio: ['inherit', 'inherit', 'inherit'],
+          });
 
-        const exitCode = yield* Effect.promise(() => child.exited);
-        fs.rmSync(preload.directory, { recursive: true, force: true });
-        process.exit(exitCode);
-      } finally {
-        fs.rmSync(preload.directory, { recursive: true, force: true });
-      }
-    })
+          const exitCode = yield* Effect.promise(() => child.exited);
+          fs.rmSync(preload.directory, { recursive: true, force: true });
+          process.exit(exitCode);
+        } finally {
+          fs.rmSync(preload.directory, { recursive: true, force: true });
+        }
+      })
   )
 );

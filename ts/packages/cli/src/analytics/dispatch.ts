@@ -196,11 +196,15 @@ export const trackCliEvent = (event: TrackEvent): void => {
 
 export const trackCliEventEffect = (event: TrackEvent) => Effect.sync(() => trackCliEvent(event));
 
+const getAnalyticsWorkerFlagIndex = (argv: ReadonlyArray<string>): number =>
+  argv.findIndex(token => token === INTERNAL_ANALYTICS_WORKER_FLAG);
+
 export const isAnalyticsWorkerInvocation = (argv: ReadonlyArray<string>): boolean =>
-  argv[2] === INTERNAL_ANALYTICS_WORKER_FLAG;
+  getAnalyticsWorkerFlagIndex(argv) >= 0;
 
 export const runAnalyticsWorkerFromArgv = async (argv: ReadonlyArray<string>): Promise<void> => {
-  const encodedPayload = argv[3];
+  const flagIndex = getAnalyticsWorkerFlagIndex(argv);
+  const encodedPayload = flagIndex >= 0 ? argv[flagIndex + 1] : undefined;
   if (!encodedPayload) {
     return;
   }

@@ -63,8 +63,11 @@ describe('CLI: composio tools info', () => {
           expect(output).toContain('GMAIL_SEND_EMAIL');
           expect(output).toContain('Schema Cache');
           expect(output).toContain('/tool_definitions/GMAIL_SEND_EMAIL.json');
-          expect(output).toContain("jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}'");
-          expect(output).toContain('composio execute "GMAIL_SEND_EMAIL" --dry-run');
+          expect(output).toContain(
+            "jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}'"
+          );
+          expect(output).toContain('composio execute "GMAIL_SEND_EMAIL" -d');
+          expect(output).toContain('--dry-run');
         })
       );
     }

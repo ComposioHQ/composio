@@ -139,10 +139,10 @@ describe('CLI: composio manage triggers listen', () => {
         events: [mockV3TriggerEvent],
       },
     })
-  )('[Given] composio listen alias [Then] works like composio manage triggers listen', it => {
-    it.scoped('alias expands to triggers listen', () =>
+  )('[Given] composio dev listen [Then] works like composio manage triggers listen', it => {
+    it.scoped('dev listen expands to triggers listen', () =>
       Effect.gen(function* () {
-        yield* cli(['listen', '--max-events', '1']);
+        yield* cli(['dev', 'listen', '--max-events', '1']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
