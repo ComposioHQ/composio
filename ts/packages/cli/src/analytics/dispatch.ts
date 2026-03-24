@@ -59,15 +59,15 @@ const decodeBase64Url = (value: string): string => {
   return new TextDecoder().decode(bytes);
 };
 
-const hashString = (value: string): string => {
+const djb2Hash = (value: string): number => {
   let hash = 5381;
   for (let index = 0; index < value.length; index += 1) {
     hash = (hash * 33) ^ value.charCodeAt(index);
   }
-  return Math.abs(hash >>> 0)
-    .toString(16)
-    .padStart(8, '0');
+  return Math.abs(hash >>> 0);
 };
+
+const hashString = (value: string): string => djb2Hash(value).toString(16).padStart(8, '0');
 
 const getOrCreateInstallId = (): string => {
   try {
@@ -139,13 +139,7 @@ const getUserApiKey = (): string | null => {
   return null;
 };
 
-const cwdHash = (cwd: string): string => {
-  let hash = 5381;
-  for (let index = 0; index < cwd.length; index += 1) {
-    hash = (hash * 33) ^ cwd.charCodeAt(index);
-  }
-  return Math.abs(hash >>> 0).toString(36);
-};
+const cwdHash = (cwd: string): string => djb2Hash(cwd).toString(36);
 
 const getCurrentCwdSessionId = (): string | undefined => {
   try {
