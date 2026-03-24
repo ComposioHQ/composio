@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import { Args, Command, Options } from '@effect/cli';
 import util from 'node:util';
 import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
@@ -260,6 +259,31 @@ const prepareExecuteOutput = (
       } satisfies StoredExecuteOutputSummary,
     };
   });
+
+const normalizeError = (error: unknown): unknown => {
+  let current: unknown = error;
+  const seen = new Set<unknown>();
+
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current);
+
+    if (current instanceof Error) {
+      return current;
+    }
+
+    if ('error' in current) {
+      current = (current as { error?: unknown }).error;
+      continue;
+    }
+    if ('cause' in current) {
+      current = (current as { cause?: unknown }).cause;
+      continue;
+    }
+    break;
+  }
+
+  return current;
+};
 
 const emitExecuteFailureTelemetry = (params: {
   readonly toolSlug: string;
@@ -807,6 +831,7 @@ const runConnectedToolkitFailFast = (params: {
     }
   });
 
+// eslint-disable-next-line max-lines-per-function
 const runExecuteWithSpinner = (params: {
   readonly slug: string;
   readonly surface: 'root' | 'manage' | 'dev';
@@ -871,7 +896,11 @@ const runExecuteWithSpinner = (params: {
                 )
               )));
           if (definition) {
-            yield* validateToolInputArgumentsWithDefinition(params.slug, params.args, definition).pipe(
+            yield* validateToolInputArgumentsWithDefinition(
+              params.slug,
+              params.args,
+              definition
+            ).pipe(
               Effect.tapError(error =>
                 emitExecuteFailureTelemetry({
                   toolSlug: params.slug,

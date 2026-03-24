@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,8 +24,7 @@ const cacheDir = () =>
   process.env.COMPOSIO_CACHE_DIR?.trim() ||
   process.env.CACHE_DIR?.trim() ||
   path.join(os.homedir(), constants.USER_COMPOSIO_DIR);
-const consumerShortTermCachePath = () =>
-  path.join(cacheDir(), CONSUMER_SHORT_TERM_CACHE_FILE_NAME);
+const consumerShortTermCachePath = () => path.join(cacheDir(), CONSUMER_SHORT_TERM_CACHE_FILE_NAME);
 
 type ConsumerShortTermCacheState = Record<
   string,
@@ -43,6 +41,33 @@ type ConsumerShortTermCacheState = Record<
 
 const ensureAnalyticsDir = () => {
   fs.mkdirSync(analyticsDir(), { recursive: true });
+};
+
+const encodeBase64Url = (value: string): string => {
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary).replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/u, '');
+};
+
+const decodeBase64Url = (value: string): string => {
+  const normalized = value.replace(/-/gu, '+').replace(/_/gu, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+};
+
+const hashString = (value: string): string => {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(index);
+  }
+  return Math.abs(hash >>> 0)
+    .toString(16)
+    .padStart(8, '0');
 };
 
 const getOrCreateInstallId = (): string => {
@@ -78,14 +103,14 @@ const getOrCreateInstallId = (): string => {
 const getHashedApiKeyDistinctId = (): string | null => {
   const envApiKey = process.env.COMPOSIO_USER_API_KEY?.trim();
   if (envApiKey) {
-    return `user_${crypto.createHash('sha256').update(envApiKey).digest('hex')}`;
+    return `user_${hashString(envApiKey)}`;
   }
 
   try {
     const raw = fs.readFileSync(userConfigPath(), 'utf8');
     const parsed = JSON.parse(raw) as { api_key?: unknown };
     if (typeof parsed.api_key === 'string' && parsed.api_key.trim().length > 0) {
-      return `user_${crypto.createHash('sha256').update(parsed.api_key.trim()).digest('hex')}`;
+      return `user_${hashString(parsed.api_key.trim())}`;
     }
   } catch {
     // Ignore user config read failures.
@@ -236,6 +261,9 @@ export const trackCliEvent = (event: TrackEvent): void => {
 
   try {
     const enrichedEvent = withCliSessionId(event);
+    if (!enrichedEvent) {
+      return;
+    }
     const installId = getOrCreateInstallId();
     const distinctId = getDistinctId();
     const envelope: AnalyticsEnvelope = {
@@ -245,7 +273,7 @@ export const trackCliEvent = (event: TrackEvent): void => {
       distinctId,
       installId,
     };
-    const encodedPayload = Buffer.from(JSON.stringify(envelope), 'utf8').toString('base64url');
+    const encodedPayload = encodeBase64Url(JSON.stringify(envelope));
     const { command, args } = getWorkerSpawnArgs(encodedPayload);
     const child = spawn(command, args, {
       detached: true,
@@ -277,7 +305,7 @@ export const runAnalyticsWorkerFromArgv = async (argv: ReadonlyArray<string>): P
   }
 
   try {
-    const decoded = Buffer.from(encodedPayload, 'base64url').toString('utf8');
+    const decoded = decodeBase64Url(encodedPayload);
     const envelope = JSON.parse(decoded) as AnalyticsEnvelope;
     if (!envelope?.event?.name) {
       return;
