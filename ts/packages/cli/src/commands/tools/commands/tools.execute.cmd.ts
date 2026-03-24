@@ -289,7 +289,8 @@ const emitExecuteFailureTelemetry = (params: {
     const apiDetails = mapped.apiDetails;
     const message = mapped.message;
     const errorSlug = mapped.slugValue;
-    const status = apiDetails?.code;
+    const status = apiDetails?.status;
+    const apiCode = apiDetails?.code;
     const isNoConnectionError =
       normalized instanceof ComposioNoActiveConnectionError || Boolean(mapped.override);
 
@@ -306,6 +307,7 @@ const emitExecuteFailureTelemetry = (params: {
           stage: params.stage === 'validation' ? 'execution' : params.stage,
           errorSlug,
           status,
+          apiCode,
           message,
         })
       : getToolExecuteFailedEvent({
@@ -316,6 +318,7 @@ const emitExecuteFailureTelemetry = (params: {
           stage: params.stage === 'validation' ? 'execution' : params.stage,
           errorSlug,
           status,
+          apiCode,
           message,
           errorName: normalized instanceof Error ? normalized.name : undefined,
           isNoConnectionError,

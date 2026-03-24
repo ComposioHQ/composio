@@ -484,6 +484,7 @@ export const getToolExecuteToolNotFoundEvent = (params: {
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
   readonly errorSlug?: string;
   readonly status?: number;
+  readonly apiCode?: number;
   readonly message?: string;
 }): TrackEvent => ({
   name: CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_TOOL_NOT_FOUND,
@@ -497,6 +498,7 @@ export const getToolExecuteToolNotFoundEvent = (params: {
     stage: params.stage,
     error_slug: params.errorSlug,
     http_status: params.status,
+    api_error_code: params.apiCode,
     error_message: params.message?.slice(0, 500),
     ...argumentShape(params.args),
   },
@@ -510,6 +512,7 @@ export const getToolExecuteFailedEvent = (params: {
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
   readonly errorSlug?: string;
   readonly status?: number;
+  readonly apiCode?: number;
   readonly message?: string;
   readonly errorName?: string;
   readonly isNoConnectionError?: boolean;
@@ -525,6 +528,7 @@ export const getToolExecuteFailedEvent = (params: {
     stage: params.stage,
     error_slug: params.errorSlug,
     http_status: params.status,
+    api_error_code: params.apiCode,
     error_name: params.errorName,
     error_message: params.message?.slice(0, 500),
     is_no_connection_error: Boolean(params.isNoConnectionError),
