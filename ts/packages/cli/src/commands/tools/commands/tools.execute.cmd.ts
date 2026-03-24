@@ -50,6 +50,7 @@ import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
+  normalizeCliError,
 } from 'src/services/composio-error-overrides';
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -253,31 +254,6 @@ const prepareExecuteOutput = (
     };
   });
 
-const normalizeError = (error: unknown): unknown => {
-  let current: unknown = error;
-  const seen = new Set<unknown>();
-
-  while (current && typeof current === 'object' && !seen.has(current)) {
-    seen.add(current);
-
-    if (current instanceof Error) {
-      return current;
-    }
-
-    if ('error' in current) {
-      current = (current as { error?: unknown }).error;
-      continue;
-    }
-    if ('cause' in current) {
-      current = (current as { cause?: unknown }).cause;
-      continue;
-    }
-    break;
-  }
-
-  return current;
-};
-
 const emitExecuteFailureTelemetry = (params: {
   readonly toolSlug: string;
   readonly args: Record<string, unknown>;
@@ -285,9 +261,10 @@ const emitExecuteFailureTelemetry = (params: {
   readonly surface: 'root' | 'manage' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
+  readonly mappedError?: ReturnType<typeof mapComposioError>;
 }) =>
   Effect.gen(function* () {
-    const normalized = normalizeError(params.error);
+    const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
 
     if (normalized instanceof ToolInputValidationError) {
       yield* trackCliEventEffect(
@@ -303,10 +280,12 @@ const emitExecuteFailureTelemetry = (params: {
       return;
     }
 
-    const mapped = mapComposioError({
-      error: params.error,
-      toolSlug: params.toolSlug,
-    });
+    const mapped =
+      params.mappedError ??
+      mapComposioError({
+        error: params.error,
+        toolSlug: params.toolSlug,
+      });
     const apiDetails = mapped.apiDetails;
     const message = mapped.message;
     const errorSlug = mapped.slugValue;
@@ -431,6 +410,7 @@ const handleExecutionError = (
       surface: context.surface,
       projectMode: context.projectMode,
       stage: context.stage,
+      mappedError: mapped,
     });
 
     if (normalized instanceof ComposioNoActiveConnectionError) {

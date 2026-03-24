@@ -9,7 +9,6 @@ import * as constants from 'src/constants';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
 const COMPOSIO_DIR = '.composio';
-const USER_CONFIG_FILE_NAME = 'user-config.json';
 const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_ANALYTICS_PATH = '/api/cli/analytics';
@@ -19,7 +18,7 @@ const truthy = (value: string | undefined): boolean =>
 
 const analyticsDir = () => path.join(os.homedir(), COMPOSIO_DIR);
 const analyticsStatePath = () => path.join(analyticsDir(), ANALYTICS_STATE_FILE_NAME);
-const userConfigPath = () => path.join(analyticsDir(), USER_CONFIG_FILE_NAME);
+const userConfigPath = () => path.join(analyticsDir(), constants.USER_CONFIG_FILE_NAME);
 const cacheDir = () =>
   process.env.COMPOSIO_CACHE_DIR?.trim() ||
   process.env.CACHE_DIR?.trim() ||
