@@ -1,6 +1,6 @@
-import crypto from 'node:crypto';
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
+import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 export const CLI_ANALYTICS_EVENTS = {
   CLI_COMMAND_INVOKED: 'CLI Command Invoked',
@@ -83,15 +83,14 @@ const extractCommandPath = (argv: ReadonlyArray<string>): string => {
 };
 
 const extractFlagNames = (argv: ReadonlyArray<string>): ReadonlyArray<string> =>
-  [...new Set(argv.slice(2).filter(token => token.startsWith('-')).map(token => token.split('=')[0]!))]
-    .sort();
-
-const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
-  const idx = toolSlug.indexOf('_');
-  if (idx <= 0) return toolSlug.toLowerCase();
-  const prefix = toolSlug.slice(0, idx).toLowerCase();
-  return prefix === 'composio' ? undefined : prefix;
-};
+  [
+    ...new Set(
+      argv
+        .slice(2)
+        .filter(token => token.startsWith('-'))
+        .map(token => token.split('=')[0]!)
+    ),
+  ].sort();
 
 const argumentShape = (args: Record<string, unknown>) => {
   const keys = Object.keys(args).sort();
@@ -102,18 +101,22 @@ const argumentShape = (args: Record<string, unknown>) => {
 };
 
 const extractIssueLocations = (issues: ReadonlyArray<string>): ReadonlyArray<string> =>
-  [...new Set(
-    issues
-      .map(issue => issue.match(/^([^:]+):/u)?.[1]?.trim())
-      .filter((value): value is string => typeof value === 'string' && value.length > 0)
-  )].slice(0, 20);
+  [
+    ...new Set(
+      issues
+        .map(issue => issue.match(/^([^:]+):/u)?.[1]?.trim())
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    ),
+  ].slice(0, 20);
 
 const extractUnknownKeys = (issues: ReadonlyArray<string>): ReadonlyArray<string> =>
-  [...new Set(
-    issues
-      .map(issue => issue.match(/Unknown key "([^"]+)"/u)?.[1])
-      .filter((value): value is string => typeof value === 'string' && value.length > 0)
-  )].slice(0, 20);
+  [
+    ...new Set(
+      issues
+        .map(issue => issue.match(/Unknown key "([^"]+)"/u)?.[1])
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    ),
+  ].slice(0, 20);
 
 const errorNameOf = (error: unknown): string =>
   error instanceof Error && error.name ? error.name : 'UnknownError';
@@ -267,9 +270,8 @@ const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
   toolkit: getFlagValue(context.argv, '--toolkit', '-t'),
   method: getFlagValue(context.argv, '--method', '-X') ?? 'GET',
   has_data: isFlagPresent(context.argv, '--data', '-d'),
-  header_count: context.argv
-    .slice(2)
-    .filter(token => token === '--header' || token === '-H').length,
+  header_count: context.argv.slice(2).filter(token => token === '--header' || token === '-H')
+    .length,
   skip_connection_check: isFlagPresent(context.argv, '--skip-connection-check'),
 });
 
@@ -300,7 +302,7 @@ export const createCliCommandTelemetryContext = (
   startedAt: Date.now(),
   runId:
     extractCommandPath(argv) === 'run'
-      ? process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID()
+      ? (process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())
       : undefined,
 });
 
@@ -393,9 +395,7 @@ const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
   },
 ];
 
-const getSpecialLifecycleFamily = (
-  commandPath: string
-): SpecialLifecycleFamily | undefined =>
+const getSpecialLifecycleFamily = (commandPath: string): SpecialLifecycleFamily | undefined =>
   SPECIAL_LIFECYCLE_FAMILIES.find(family => family.match(commandPath));
 
 export const getPrimaryLifecycleInvokedEvent = (

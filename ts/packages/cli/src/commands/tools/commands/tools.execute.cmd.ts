@@ -4,6 +4,7 @@ import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
 import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import {
@@ -114,14 +115,6 @@ const parseArguments = (raw: string) =>
     }
     return parsed as Record<string, unknown>;
   });
-
-const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
-  const idx = toolSlug.indexOf('_');
-  if (idx <= 0) return toolSlug.toLowerCase();
-  const prefix = toolSlug.slice(0, idx).toLowerCase();
-  if (prefix === 'composio') return undefined;
-  return prefix;
-};
 
 const connectionTips = (toolSlug: string, surface: 'root' | 'manage' | 'dev') => {
   const toolkit = toolkitFromToolSlug(toolSlug);
