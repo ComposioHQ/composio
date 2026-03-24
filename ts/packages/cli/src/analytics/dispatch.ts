@@ -11,7 +11,7 @@ const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
 const COMPOSIO_DIR = '.composio';
 const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
-const CLI_ANALYTICS_PATH = '/api/cli/analytics';
+const CLI_ANALYTICS_PATH = '/api/v3/cli/analytics';
 const TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
 
 const truthy = (value: string | undefined): boolean =>
