@@ -15,6 +15,12 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_LINK_INVOKED: 'CLI_LINK_INVOKED',
   CLI_LINK_SUCCEEDED: 'CLI_LINK_SUCCEEDED',
   CLI_LINK_FAILED: 'CLI_LINK_FAILED',
+  CLI_LOGIN_INVOKED: 'CLI_LOGIN_INVOKED',
+  CLI_LOGIN_SUCCEEDED: 'CLI_LOGIN_SUCCEEDED',
+  CLI_LOGIN_FAILED: 'CLI_LOGIN_FAILED',
+  CLI_LOGOUT_INVOKED: 'CLI_LOGOUT_INVOKED',
+  CLI_LOGOUT_SUCCEEDED: 'CLI_LOGOUT_SUCCEEDED',
+  CLI_LOGOUT_FAILED: 'CLI_LOGOUT_FAILED',
   CLI_PROXY_INVOKED: 'CLI_PROXY_INVOKED',
   CLI_PROXY_SUCCEEDED: 'CLI_PROXY_SUCCEEDED',
   CLI_PROXY_FAILED: 'CLI_PROXY_FAILED',
@@ -260,6 +266,26 @@ const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
   arg_count: Math.max(0, context.argv.length - 3),
 });
 
+const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: getInvocationOrigin(),
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+  no_browser: isFlagPresent(context.argv, '--no-browser'),
+  no_wait: isFlagPresent(context.argv, '--no-wait'),
+  has_key: isFlagPresent(context.argv, '--key'),
+  skip_org_picker: isFlagPresent(context.argv, '--yes', '-y'),
+});
+
+const getLogoutCommandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: getInvocationOrigin(),
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+});
+
 const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
   source: 'cli',
   invocation_origin: getInvocationOrigin(),
@@ -283,6 +309,10 @@ const isSearchCommand = (commandPath: string): boolean =>
 
 const isLinkCommand = (commandPath: string): boolean =>
   commandPath === 'link' || commandPath === 'manage connected-accounts link';
+
+const isLoginCommand = (commandPath: string): boolean => commandPath === 'login';
+
+const isLogoutCommand = (commandPath: string): boolean => commandPath === 'logout';
 
 const isProxyCommand = (commandPath: string): boolean => commandPath === 'proxy';
 
@@ -378,6 +408,20 @@ const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
     succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_SUCCEEDED,
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_LINK_FAILED,
     getProperties: getLinkCommandProperties,
+  },
+  {
+    match: isLoginCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGIN_FAILED,
+    getProperties: getLoginCommandProperties,
+  },
+  {
+    match: isLogoutCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_LOGOUT_FAILED,
+    getProperties: getLogoutCommandProperties,
   },
   {
     match: isProxyCommand,
