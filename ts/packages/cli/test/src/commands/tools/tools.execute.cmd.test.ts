@@ -1,11 +1,12 @@
 import * as fs from 'node:fs';
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, Effect, Option } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -41,8 +42,15 @@ describe('CLI: composio execute', () => {
   beforeEach(() => {
     savedCI = process.env.CI;
     delete process.env.CI;
+    vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
+      Effect.succeed(Option.some(['gmail', 'github']))
+    );
+    vi.spyOn(consumerShortTermCache, 'refreshConsumerConnectedToolkitsCache').mockImplementation(
+      () => Effect.succeed(['gmail', 'github'])
+    );
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     if (savedCI !== undefined) process.env.CI = savedCI;
   });
 
@@ -745,16 +753,18 @@ describe('CLI: composio execute', () => {
       } satisfies TestLiveInput['toolkitsData'],
       stdin: { isTTY: true, data: '' },
     })
-  )('[Given] execute-help with options before slug [Then] resolves correct slug', it => {
-    it.scoped('resolves root execute help slug correctly', () =>
+  )('[Given] execute --help with a slug [Then] it shows command help', it => {
+    it.scoped('shows the root execute help text', () =>
       Effect.gen(function* () {
         yield* cli(['execute', 'GMAIL_SEND_EMAIL', '--help']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('Slug: GMAIL_SEND_EMAIL');
-        expect(output).toContain('Data Parameters:');
-        expect(output).toContain('recipient');
+        expect(output).toContain('USAGE');
+        expect(output).toContain(
+          'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]'
+        );
+        expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
       })
     );
   });
