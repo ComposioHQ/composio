@@ -15,39 +15,41 @@ describe('CLI: composio run', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] inline code and args [Then] it forwards them to the embedded Bun runtime', () =>
-      Effect.gen(function* () {
-        const spawn = vi.fn(() => ({ exited: Promise.resolve(7) }));
-        const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-        vi.stubGlobal('Bun', { spawn });
+    it.scoped(
+      '[Given] inline code and args [Then] it forwards them to the embedded Bun runtime',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(7) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          vi.stubGlobal('Bun', { spawn });
 
-        yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
+          yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
 
-        expect(spawn).toHaveBeenCalledTimes(1);
-        const spawnConfig = (spawn as any).mock.calls[0][0] as {
-          cmd: string[];
-          env: unknown;
-          stdio: string[];
-        };
-        expect(spawnConfig.cmd[0]).toBe(process.execPath);
-        expect(spawnConfig.cmd[1]).toBe('--preload');
-        expect(spawnConfig.cmd[2]).toMatch(/globals\.mjs$/);
-        expect(spawnConfig.cmd.slice(3)).toEqual([
-          '--eval',
-          'console.log("hi")',
-          '--',
-          '--flag',
-          'value',
-        ]);
-        expect(spawnConfig.env).toEqual(
-          expect.objectContaining({
-            ...process.env,
-            BUN_BE_BUN: '1',
-          })
-        );
-        expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
-        expect(exit).toHaveBeenCalledWith(7);
-      })
+          expect(spawn).toHaveBeenCalledTimes(1);
+          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+            cmd: string[];
+            env: unknown;
+            stdio: string[];
+          };
+          expect(spawnConfig.cmd[0]).toBe(process.execPath);
+          expect(spawnConfig.cmd[1]).toBe('--preload');
+          expect(spawnConfig.cmd[2]).toMatch(/globals\.mjs$/);
+          expect(spawnConfig.cmd.slice(3)).toEqual([
+            '--eval',
+            'console.log("hi")',
+            '--',
+            '--flag',
+            'value',
+          ]);
+          expect(spawnConfig.env).toEqual(
+            expect.objectContaining({
+              ...process.env,
+              BUN_BE_BUN: '1',
+            })
+          );
+          expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
+          expect(exit).toHaveBeenCalledWith(7);
+        })
     );
   });
 
@@ -121,8 +123,11 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('COMPOSIO_USER_API_KEY');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');
     expect(source).toContain('__composioConsumerContext');
-    expect(source).toContain("returned no JSON output");
+    expect(source).toContain('returned no JSON output');
     expect(source).toContain('args.push("--dry-run");');
+    expect(source).toContain('args.push("--skip-connection-check");');
+    expect(source).toContain('args.push("--skip-tool-params-check");');
+    expect(source).toContain('args.push("--no-verify");');
     expect(source).toContain(
       "stdio: ['inherit', 'pipe', perfDebugEnabled || toolDebugEnabled ? 'inherit' : 'pipe']"
     );

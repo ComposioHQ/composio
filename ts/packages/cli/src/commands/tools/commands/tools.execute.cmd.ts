@@ -68,6 +68,13 @@ const projectName = Options.text('project-name').pipe(
 
 const getSchema = Options.boolean('get-schema').pipe(Options.withDefault(false));
 const dryRun = Options.boolean('dry-run').pipe(Options.withDefault(false));
+const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
+  Options.withDefault(false)
+);
+const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
+  Options.withDefault(false)
+);
+const noVerify = Options.boolean('no-verify').pipe(Options.withDefault(false));
 
 const resolveInput = (input: Option.Option<string>) =>
   Effect.gen(function* () {
@@ -568,6 +575,9 @@ type RunToolsExecuteParams = {
   projectMode: 'consumer' | 'developer';
   getSchema: boolean;
   dryRun: boolean;
+  skipConnectionCheck: boolean;
+  skipToolParamsCheck: boolean;
+  noVerify: boolean;
 };
 
 type ResolvedExecuteContext = {
@@ -673,8 +683,17 @@ const runConnectedToolkitFailFast = (params: {
   readonly ui: TerminalUI;
   readonly resolvedProject: ResolvedExecuteContext['resolvedProject'];
   readonly resolvedUserId: string;
+  readonly skipConnectionCheck: boolean;
+  readonly noVerify: boolean;
 }) =>
   Effect.gen(function* () {
+    if (params.skipConnectionCheck || params.noVerify) {
+      perfDebugLog('execute.connected_toolkits.skipped', {
+        slug: params.slug,
+        reason: params.noVerify ? 'no-verify' : 'skip-connection-check',
+      });
+      return;
+    }
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
 
     perfDebugLog('execute.connected_toolkits.refresh_start', {
@@ -737,7 +756,7 @@ const runConnectedToolkitFailFast = (params: {
         orgId: params.resolvedProject.orgId,
         consumerUserId: params.resolvedUserId,
       });
-      const message = `Toolkit "${toolkit}" is not connected for this consumer user (cached within the last 5 minutes).`;
+      const message = `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
       yield* params.ui.log.error(message);
       yield* params.ui.note(connectionTips(params.slug, params.surface), 'Tips');
       yield* params.ui.output(
@@ -765,20 +784,31 @@ const runExecuteWithSpinner = (params: {
   readonly args: Record<string, unknown>;
   readonly resolvedUserId: string;
   readonly executeParams: ToolExecuteParams;
+  readonly skipToolParamsCheck: boolean;
+  readonly noVerify: boolean;
 }) =>
   Effect.gen(function* () {
-    const cachedDefinition = yield* getCachedToolInputDefinition(params.slug);
-    const validationState = yield* initializeValidationState({
-      slug: params.slug,
-      args: params.args,
-      cachedDefinition,
-      resolvedProject: params.resolvedProject,
-    });
+    const verificationDisabled = params.noVerify || params.skipToolParamsCheck;
+    const cachedDefinition = verificationDisabled
+      ? null
+      : yield* getCachedToolInputDefinition(params.slug);
+    const validationState = verificationDisabled
+      ? ({
+          cacheHit: false,
+          validationGuard: Effect.never,
+          awaitCachedValidationDecision: null,
+        } satisfies ValidationState)
+      : yield* initializeValidationState({
+          slug: params.slug,
+          args: params.args,
+          cachedDefinition,
+          resolvedProject: params.resolvedProject,
+        });
 
     yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
       Effect.gen(function* () {
         let validationGuard = validationState.validationGuard;
-        if (!validationState.cacheHit) {
+        if (!verificationDisabled && !validationState.cacheHit) {
           validationGuard = yield* spawnBackgroundValidationGuard({
             slug: params.slug,
             args: params.args,
@@ -787,25 +817,30 @@ const runExecuteWithSpinner = (params: {
         }
 
         if (params.dryRun) {
-          const definition =
-            cachedDefinition ??
-            (yield* getOrFetchToolInputDefinition(params.slug, {
-              orgId: params.resolvedProject.orgId,
-              projectId: params.resolvedProject.projectId,
-            }));
-          yield* validateToolInputArgumentsWithDefinition(params.slug, params.args, definition);
+          const definition = verificationDisabled
+            ? null
+            : (cachedDefinition ??
+              (yield* getOrFetchToolInputDefinition(params.slug, {
+                orgId: params.resolvedProject.orgId,
+                projectId: params.resolvedProject.projectId,
+              })));
+          if (definition) {
+            yield* validateToolInputArgumentsWithDefinition(params.slug, params.args, definition);
+          }
           const summary: DryRunSummary = {
             successful: true,
             dryRun: true,
             slug: params.slug,
             arguments: params.args,
             userId: params.resolvedUserId,
-            schemaPath: definition.schemaPath,
-            schemaVersion: definition.version,
+            schemaPath: definition?.schemaPath,
+            schemaVersion: definition?.version,
           };
           yield* spinner.stop('Dry run successful');
           yield* params.ui.log.message(
-            'No tool was executed. Arguments were validated locally only.'
+            verificationDisabled
+              ? 'No tool was executed. Local validation was skipped.'
+              : 'No tool was executed. Arguments were validated locally only.'
           );
           yield* params.ui.output(JSON.stringify(summary, ciRedactReplacer, 2));
           return;
@@ -906,6 +941,8 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       ui: context.ui,
       resolvedProject: context.resolvedProject,
       resolvedUserId: context.resolvedUserId,
+      skipConnectionCheck: params.skipConnectionCheck,
+      noVerify: params.noVerify,
     });
     toolDebugLog('execute_params', {
       slug: params.slug,
@@ -929,13 +966,35 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       args: context.args,
       resolvedUserId: context.resolvedUserId,
       executeParams: context.executeParams,
+      skipToolParamsCheck: params.skipToolParamsCheck,
+      noVerify: params.noVerify,
     });
   });
 
 export const toolsCmd$Execute = Command.make(
   'execute',
-  { slug, data, userId, projectName, getSchema, dryRun },
-  ({ slug, data, userId, projectName, getSchema, dryRun }) =>
+  {
+    slug,
+    data,
+    userId,
+    projectName,
+    getSchema,
+    dryRun,
+    skipConnectionCheck,
+    skipToolParamsCheck,
+    noVerify,
+  },
+  ({
+    slug,
+    data,
+    userId,
+    projectName,
+    getSchema,
+    dryRun,
+    skipConnectionCheck,
+    skipToolParamsCheck,
+    noVerify,
+  }) =>
     runToolsExecute({
       slug,
       data,
@@ -945,6 +1004,9 @@ export const toolsCmd$Execute = Command.make(
       projectMode: 'consumer',
       getSchema,
       dryRun,
+      skipConnectionCheck,
+      skipToolParamsCheck,
+      noVerify,
     })
 ).pipe(
   Command.withDescription(
@@ -957,6 +1019,9 @@ export const toolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute GMAIL_SEND_EMAIL --skip-connection-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute GMAIL_SEND_EMAIL --skip-tool-params-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute GMAIL_SEND_EMAIL --no-verify -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio execute GMAIL_SEND_EMAIL --get-schema',
       '',
@@ -970,8 +1035,8 @@ export const toolsCmd$Execute = Command.make(
 
 export const rootToolsCmd$Execute = Command.make(
   'execute',
-  { slug, data, getSchema, dryRun },
-  ({ slug, data, getSchema, dryRun }) =>
+  { slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, noVerify },
+  ({ slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, noVerify }) =>
     runToolsExecute({
       slug,
       data,
@@ -981,6 +1046,9 @@ export const rootToolsCmd$Execute = Command.make(
       projectMode: 'consumer',
       getSchema,
       dryRun,
+      skipConnectionCheck,
+      skipToolParamsCheck,
+      noVerify,
     })
 ).pipe(
   Command.withDescription(
@@ -993,6 +1061,9 @@ export const rootToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute GMAIL_SEND_EMAIL --skip-connection-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute GMAIL_SEND_EMAIL --skip-tool-params-check -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute GMAIL_SEND_EMAIL --no-verify -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio execute GMAIL_SEND_EMAIL --get-schema',
       '',
@@ -1006,8 +1077,28 @@ export const rootToolsCmd$Execute = Command.make(
 
 export const devToolsCmd$Execute = Command.make(
   'execute',
-  { slug, data, userId, projectName, getSchema, dryRun },
-  ({ slug, data, userId, projectName, getSchema, dryRun }) =>
+  {
+    slug,
+    data,
+    userId,
+    projectName,
+    getSchema,
+    dryRun,
+    skipConnectionCheck,
+    skipToolParamsCheck,
+    noVerify,
+  },
+  ({
+    slug,
+    data,
+    userId,
+    projectName,
+    getSchema,
+    dryRun,
+    skipConnectionCheck,
+    skipToolParamsCheck,
+    noVerify,
+  }) =>
     runToolsExecute({
       slug,
       data,
@@ -1017,6 +1108,9 @@ export const devToolsCmd$Execute = Command.make(
       projectMode: 'developer',
       getSchema,
       dryRun,
+      skipConnectionCheck,
+      skipToolParamsCheck,
+      noVerify,
     })
 ).pipe(
   Command.withDescription(
