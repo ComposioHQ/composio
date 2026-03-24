@@ -1,12 +1,11 @@
 import { Args, Command, Options } from '@effect/cli';
 import util from 'node:util';
 import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
-import { FileSystem } from '@effect/platform';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
 import { parseJsonIsh } from 'src/utils/parse-json-ish';
-import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';
 import { requireAuth } from 'src/effects/require-auth';
+import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import {
   getCachedToolInputDefinition,
   getOrFetchToolInputDefinition,
@@ -87,31 +86,9 @@ const noVerify = Options.boolean('no-verify').pipe(
 );
 
 const resolveInput = (input: Option.Option<string>) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-
-    if (Option.isSome(input)) {
-      const value = input.value.trim();
-      if (value === '-') {
-        return yield* readStdin;
-      }
-      if (value.startsWith('@')) {
-        const filePath = value.slice(1).trim();
-        if (!filePath) {
-          return yield* Effect.fail(new Error('Missing file path after "@" in --data'));
-        }
-        return yield* fs.readFileString(filePath, 'utf-8');
-      }
-      return value;
-    }
-
-    const piped = yield* readStdinIfPiped;
-    if (Option.isSome(piped)) {
-      return piped.value;
-    }
-
+  resolveOptionalTextInput(input, {
     // Default to empty object when no data provided (e.g. tools with no required args)
-    return '{}';
+    missingValue: '{}',
   });
 
 const parseArguments = (raw: string) =>
@@ -582,7 +559,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const userContext = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
 
-    const input = yield* resolveInput(params.data);
+    const input = (yield* resolveInput(params.data)) ?? '{}';
     const args = yield* parseArguments(input);
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catchAll(() => Effect.succeed(Option.none()))

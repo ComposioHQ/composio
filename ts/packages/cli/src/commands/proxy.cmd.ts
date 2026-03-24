@@ -1,12 +1,11 @@
 import { Args, Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
 } from '@composio/client/resources/tool-router/session';
-import { readStdin, readStdinIfPiped } from 'src/effects/read-stdin';
 import { requireAuth } from 'src/effects/require-auth';
+import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
@@ -93,28 +92,7 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
   return { name, value: headerValue };
 };
 
-const resolveBodyInput = (input: Option.Option<string>) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-
-    if (Option.isSome(input)) {
-      const value = input.value.trim();
-      if (value === '-') {
-        return yield* readStdin;
-      }
-      if (value.startsWith('@')) {
-        const filePath = value.slice(1).trim();
-        if (!filePath) {
-          return yield* Effect.fail(new Error('Missing file path after "@" in --data'));
-        }
-        return yield* fs.readFileString(filePath, 'utf-8');
-      }
-      return value;
-    }
-
-    const piped = yield* readStdinIfPiped;
-    return Option.getOrUndefined(piped);
-  });
+const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
 
 export const parseProxyBody = (raw: string): unknown => {
   try {

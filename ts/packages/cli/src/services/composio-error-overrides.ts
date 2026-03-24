@@ -174,3 +174,12 @@ export const mapComposioError = (params: {
     override: null,
   };
 };
+
+export const mapOnlyComposioOverrideError = (params: {
+  readonly error: unknown;
+  readonly toolkit?: string;
+  readonly toolSlug?: string;
+}): unknown => {
+  const mapped = mapComposioError(params);
+  return mapped.override ? mapped.normalized : params.error;
+};
