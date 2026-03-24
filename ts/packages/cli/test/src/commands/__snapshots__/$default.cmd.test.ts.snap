@@ -44,7 +44,7 @@ BASIC COMMANDS
       --dry-run             Preview execute(...) calls without running remote actions
 
   search
-    Semantically search tools by use case across all toolkits/apps.
+    Semantic search for tools by use case across all toolkits/apps.
     Usage: composio search <query> [--toolkits text] [--limit integer]
     Options:
       <query>               Semantic use-case query (e.g. "send emails")
