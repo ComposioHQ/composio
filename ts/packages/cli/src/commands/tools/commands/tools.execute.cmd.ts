@@ -155,6 +155,17 @@ const connectionTips = (toolSlug: string, surface: 'root' | 'manage' | 'dev') =>
   ].join('\n');
 };
 
+const isNoActiveConnectionError = (details: { code?: number; slug?: string } | undefined) =>
+  details?.code === 4302 || details?.slug === 'ToolRouterV2_NoActiveConnection';
+
+const noActiveConnectionMessage = (toolSlug: string) => {
+  const toolkit = toolkitFromToolSlug(toolSlug);
+  if (!toolkit) {
+    return 'No active connection found for this tool call. Link the required toolkit/app, then retry.';
+  }
+  return `No active connection found for toolkit "${toolkit}". Run \`composio link ${toolkit}\`, then retry.`;
+};
+
 const ciRedactReplacer = (_key: string, value: unknown): unknown => {
   if (typeof value !== 'string') return value;
   if (_key === 'logId') return redact({ value, prefix: 'log_' });
@@ -360,7 +371,19 @@ const handleExecutionError = (
       extractApiErrorDetails(normalized) ??
       extractApiErrorDetails(connAccountDetails);
     const slugValue = apiDetails?.slug ?? extractSlug(error) ?? extractSlug(connAccountDetails);
+    const noActiveConnection =
+      normalized instanceof ActionExecuteConnectedAccountNotFoundError ||
+      isNoActiveConnectionError(apiDetails);
     const message = extractMessage(apiDetails) ?? extractMessage(normalized) ?? 'Unknown error';
+
+    if (noActiveConnection) {
+      const rewrittenMessage = noActiveConnectionMessage(context.toolSlug);
+      yield* ui.log.error(rewrittenMessage);
+      if (toolkitFromToolSlug(context.toolSlug)) {
+        yield* ui.note(connectionTips(context.toolSlug, context.surface), 'Tips');
+      }
+      return { error: rewrittenMessage, slug: slugValue ?? context.toolSlug };
+    }
 
     yield* ui.log.error(message);
 

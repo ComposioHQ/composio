@@ -792,9 +792,10 @@ describe('CLI: composio execute', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('No connected account found');
+        expect(output).toContain('Run `composio link gmail`, then retry.');
         expect(output).toContain('Tips');
         expect(output).toContain('composio link gmail');
+        expect(output).not.toContain('COMPOSIO_MANAGE_CONNECTIONS');
       })
     );
   });
@@ -832,9 +833,10 @@ describe('CLI: composio execute', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('No active connection');
+        expect(output).toContain('Run `composio link gmail`, then retry.');
         expect(output).toContain('Tips');
         expect(output).toContain('composio link gmail');
+        expect(output).not.toContain('COMPOSIO_MANAGE_CONNECTIONS');
       })
     );
   });
@@ -1022,9 +1024,10 @@ describe('CLI: composio execute', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('No active connection');
+        expect(output).toContain('Link the required toolkit/app, then retry.');
         // Should NOT produce a misleading tip like "link composio"
         expect(output).not.toContain('link composio');
+        expect(output).not.toContain('COMPOSIO_MANAGE_CONNECTIONS');
       })
     );
   });
