@@ -554,7 +554,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--table', description: 'Show compact table rows' },
     ],
   },
-
   // ── Manage commands ───────────────────────────────────────────────────
 
   'manage toolkits list': {

@@ -4,7 +4,7 @@ import { Effect, Option } from 'effect';
 import { resolveCliSessionArtifacts } from 'src/services/cli-session-artifacts';
 
 const cwdCmd = Command.make('cwd').pipe(
-  Command.withDescription('Print the current cwd-scoped session artifact directory.'),
+  Command.withDescription('Print the cwd-scoped session artifact directory.'),
   Command.withHandler(() =>
     Effect.gen(function* () {
       const artifacts = yield* resolveCliSessionArtifacts();
