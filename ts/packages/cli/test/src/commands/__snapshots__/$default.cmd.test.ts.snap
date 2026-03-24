@@ -50,11 +50,17 @@ CORE COMMANDS
       -H, --header        Header in "Name: value" format. Repeat for multiple.
       -d, --data          Request body as raw text, JSON, @file, or - for stdin
 
+  artifacts
+    Inspect the cwd-scoped session artifact directory and history.
+    Usage: composio artifacts cwd
+      cwd                 Print the current session artifact directory path
+
   Typical flow: search → execute (link and tools when needed)
 
 TOOLS
   tools info <slug>     Print tool summary and cache its schema
   tools list <toolkit>  List tools available in a toolkit
+  artifacts cwd         Print the cwd-scoped session artifact directory
 
 EXAMPLES
   # Find a tool

@@ -51,7 +51,7 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'run',
     description:
-      'Run inline TS/JS code with shimmed CLI commands; injected execute(), proxy(), and search() behave like their CLI counterparts.',
+      'Run inline TS/JS code with shimmed CLI commands; injected execute(), search(), proxy(), subAgent(), and z (zod).',
     usage: 'run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]',
     options: [
       { name: '<code>', description: 'Inline Bun ESNext code to evaluate' },
@@ -71,6 +71,12 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '-d, --data', description: 'Request body as raw text, JSON, @file, or - for stdin' },
     ],
   },
+  {
+    name: 'artifacts',
+    description: 'Inspect the cwd-scoped session artifact directory and history.',
+    usage: 'artifacts cwd',
+    options: [{ name: 'cwd', description: 'Print the current session artifact directory path' }],
+  },
 ];
 
 // ── Developer commands ─────────────────────────────────────────────────
@@ -78,6 +84,7 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
 const OTHER_COMMANDS: ReadonlyArray<CompactCommand> = [
   { name: 'tools info <slug>', description: 'Print tool summary and cache its schema' },
   { name: 'tools list <toolkit>', description: 'List tools available in a toolkit' },
+  { name: 'artifacts cwd', description: 'Print the cwd-scoped session artifact directory' },
 ];
 
 const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
@@ -136,6 +143,7 @@ type SubcommandHelp = {
   args?: ReadonlyArray<{ name: string; description: string }>;
   options?: ReadonlyArray<{ name: string; description: string }>;
   flags?: ReadonlyArray<{ name: string; description: string }>;
+  injectedHelpers?: ReadonlyArray<{ name: string; description: string }>;
   examples?: ReadonlyArray<string>;
   seeAlso?: ReadonlyArray<string>;
 };
@@ -156,13 +164,20 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--limit <integer>', description: 'Number of results per page (1-1000)' },
     ],
     examples: [
+      '# Find tools for a use case',
       'composio search "send an email"',
       'composio search "create issue" --toolkits github',
-      'composio search "list calendar events" --limit 5',
+      '',
+      '# Cross-app workflow discovery',
+      'composio search "post a message to a slack channel"',
+      'composio search "add a row to google sheet"',
+      '',
+      '# Narrow results to a specific toolkit',
+      'composio search "list calendar events" --toolkits google_calendar --limit 5',
     ],
     seeAlso: [
       "composio execute <slug> -d '{ ... }'    Run a tool from the results",
-      "composio tools info <slug>               Inspect a tool's schema",
+      "composio tools info <slug>               Inspect a tool's full schema",
       'composio link <toolkit>                  Connect an account if execute tells you to',
     ],
   },
@@ -195,14 +210,26 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--no-verify', description: 'Skip both checks above' },
     ],
     examples: [
-      `composio execute GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", body: "Hello" }'`,
-      `composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'`,
+      '# Send an email',
+      `composio execute GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hello", body: "World" }'`,
+      '',
+      '# Create a GitHub issue',
+      `composio execute GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug report", body: "Steps to reproduce..." }'`,
+      '',
+      '# Preview what a tool call would send without executing',
+      `composio execute SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL --dry-run -d '{ channel: "general", text: "Hello team" }'`,
+      '',
+      '# Check what inputs a tool needs',
       'composio execute GMAIL_SEND_EMAIL --get-schema',
+      '',
+      '# Read arguments from a file',
+      'composio execute GITHUB_CREATE_ISSUE -d @issue.json',
     ],
     seeAlso: [
       'composio search "<query>"               Find tool slugs by use case',
       'composio tools info <slug>              Schema summary with jq hints',
       'composio link <toolkit>                 Connect an account for a toolkit',
+      'composio artifacts cwd                  Print the current session artifact directory',
     ],
   },
   link: {
@@ -231,6 +258,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     options: [
       { name: '-f, --file <text>', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running them' },
+      { name: '--debug', description: 'Log helper steps while the script runs' },
     ],
     flags: [
       { name: '--skip-connection-check', description: 'Skip the linked-account check' },
@@ -240,15 +268,89 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       },
       { name: '--no-verify', description: 'Skip both checks above' },
     ],
+    injectedHelpers: [
+      {
+        name: 'execute(slug, data?)',
+        description: 'Run a tool — same as `composio execute`, returns parsed JSON',
+      },
+      { name: 'search(query, opts?)', description: 'Find tools — same as `composio search`' },
+      { name: 'proxy(toolkit)', description: 'Returns a fetch() bound to your linked account' },
+      {
+        name: 'subAgent(prompt, opts?)',
+        description: 'Spawn a sub-agent (Claude/Codex) with optional structured output',
+      },
+      {
+        name: 'result.prompt()',
+        description: 'Serialize any helper result into an LLM-friendly string',
+      },
+      { name: 'z', description: 'Global from zod for defining structured output schemas' },
+    ],
     examples: [
-      `composio run 'const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Bug" }); console.log(issue)'`,
-      `composio run --dry-run 'await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" })'`,
-      'composio run --file ./script.ts -- hello world',
+      `composio run '`,
+      `  // execute(slug, data?) — run a tool, returns parsed JSON`,
+      `  const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER");`,
+      `  console.log(me);`,
+      `'`,
+      '',
+      `composio run '`,
+      `  // search(query, opts?) — find tools by use case`,
+      `  const tools = await search("send email");`,
+      `  console.log(tools);`,
+      `'`,
+      '',
+      '# Sequential: chain tool outputs across services',
+      `composio run '`,
+      `  const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Deploy v2" });`,
+      `  await execute("SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL", { channel: "eng", text: "Created: " + issue.data.html_url });`,
+      `'`,
+      '',
+      '# Parallel: fetch from multiple services at once with Promise.all',
+      `composio run '`,
+      `  const [emails, issues, events] = await Promise.all([`,
+      `    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
+      `    execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),`,
+      `    execute("GOOGLECALENDAR_FIND_EVENT", { calendar_id: "primary" }),`,
+      `  ]);`,
+      `  console.log({ emails: emails.data, issues: issues.data, events: events.data });`,
+      `'`,
+      '',
+      '# Bulk: fan out with Promise.all + .map()',
+      `composio run '`,
+      `  const issues = [101, 102, 103, 104];`,
+      `  await Promise.all(issues.map(n =>`,
+      `    execute("GITHUB_ADD_LABELS_TO_ISSUE", { owner: "acme", repo: "app", issue_number: n, labels: ["priority"] })`,
+      `  ));`,
+      `'`,
+      '',
+      '# proxy(toolkit) — returns a fetch() bound to your linked account',
+      `composio run '`,
+      `  const f = await proxy("gmail");`,
+      `  console.log(await f("https://gmail.googleapis.com/gmail/v1/users/me/profile"));`,
+      `'`,
+      '',
+      '# subAgent + z + result.prompt() — structured output from a sub-agent',
+      `composio run '`,
+      `  const [emails, issues] = await Promise.all([`,
+      `    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
+      `    execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),`,
+      `  ]);`,
+      `  // result.prompt() serializes helper output for LLM consumption`,
+      `  // z is a global from zod for defining structured output schemas`,
+      `  const brief = await subAgent(`,
+      `    \`Summarize these emails and issues.\\n\\n\${emails.prompt()}\\n\\n\${issues.prompt()}\`,`,
+      `    { schema: z.object({ summary: z.string(), urgent: z.array(z.string()) }) }`,
+      `  );`,
+      `  console.log(brief.structuredOutput);`,
+      `'`,
+      '',
+      '# Run from a file',
+      'composio run --file ./workflow.ts -- --repo acme/app',
     ],
     seeAlso: [
       'composio search "<query>"               Discover tool slugs before scripting',
       'composio link <toolkit>                  Connect accounts before scripting',
       'composio execute <slug> --get-schema     Inspect tool inputs before scripting',
+      'composio artifacts cwd                   Print the current session artifact directory',
     ],
   },
   proxy: {
@@ -718,6 +820,15 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
     lines.push(bold('FLAGS'));
     for (const flag of cmd.flags) {
       lines.push(`  ${dim(flag.name.padEnd(28))}${flag.description}`);
+    }
+    lines.push('');
+  }
+
+  if (cmd.injectedHelpers && cmd.injectedHelpers.length > 0) {
+    lines.push(bold('INJECTED HELPERS'));
+    const maxLen = Math.max(...cmd.injectedHelpers.map(h => h.name.length));
+    for (const helper of cmd.injectedHelpers) {
+      lines.push(`  ${dim(helper.name.padEnd(maxLen + 2))}${helper.description}`);
     }
     lines.push('');
   }

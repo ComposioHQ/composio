@@ -55,7 +55,13 @@ describe('CLI: composio execute', () => {
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
     it.scoped('executes via Tool Router with defaults', () =>
       Effect.gen(function* () {
-        yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = parseLastJson(lines);
 
@@ -419,12 +425,17 @@ describe('CLI: composio execute', () => {
         expect(output.storedInFile).toBe(true);
         expect(output.logId).toBe('log_large_output');
         expect(output.tokenCount).toBeGreaterThan(10_000);
-        expect(output.outputFilePath).toMatch(/^\/tmp\/composio\/[^/]+\/output-[^.]+\.json$/);
+        expect(output.outputFilePath).toMatch(
+          /^\/tmp\/composio\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/
+        );
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
         const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
         expect(storedJson).toContain('token token token');
 
-        fs.rmSync(output.outputFilePath.split('/output-')[0]!, { recursive: true, force: true });
+        fs.rmSync(output.outputFilePath.slice(0, output.outputFilePath.lastIndexOf('/')), {
+          recursive: true,
+          force: true,
+        });
       })
     );
   });

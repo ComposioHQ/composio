@@ -9,6 +9,11 @@ import { resolveCommandProject } from 'src/services/command-project';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import { detectMaster, type MasterKind } from 'src/services/master-detector';
+import {
+  appendCliSessionHistory,
+  resolveCliSessionArtifacts,
+} from 'src/services/cli-session-artifacts';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -18,6 +23,10 @@ const file = Options.text('file').pipe(
 
 const dryRun = Options.boolean('dry-run').pipe(
   Options.withDescription('Preview execute() calls without running them'),
+  Options.withDefault(false)
+);
+const debug = Options.boolean('debug').pipe(
+  Options.withDescription('Log helper steps while the script runs'),
   Options.withDefault(false)
 );
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
@@ -72,6 +81,59 @@ export const extractInlineExecuteToolSlugs = (source: string): ReadonlyArray<str
   return [...slugs];
 };
 
+export const wrapInlineCodeForRun = (source: string): string => {
+  const parsed = ts.createSourceFile(
+    'composio-run-inline.ts',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  );
+  const statements = [...parsed.statements];
+  if (statements.length === 0) {
+    return source;
+  }
+
+  const lastStatement = statements.at(-1);
+  if (!lastStatement || !ts.isExpressionStatement(lastStatement)) {
+    return source;
+  }
+
+  const prefix = source.slice(0, lastStatement.getFullStart());
+  const suffix = source.slice(lastStatement.getEnd());
+  const expressionText = lastStatement.expression.getText(parsed);
+  return `${prefix}return (${expressionText});${suffix}`;
+};
+
+export const wrapFileSourceForRun = (source: string): string => {
+  const parsed = ts.createSourceFile(
+    'composio-run-file.ts',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  );
+  const statements = [...parsed.statements];
+  const firstNonImportIndex = statements.findIndex(statement => !ts.isImportDeclaration(statement));
+  if (firstNonImportIndex === -1) {
+    return source;
+  }
+
+  const bodyStart = statements[firstNonImportIndex]!.getFullStart();
+  const importPrefix = source.slice(0, bodyStart);
+  const body = source.slice(bodyStart);
+  return [
+    importPrefix,
+    'const __composioResult = await (async () => {',
+    wrapInlineCodeForRun(body),
+    '})();',
+    'if (__composioResult !== undefined) {',
+    '  console.log(__composioResult);',
+    '}',
+    '',
+  ].join('\n');
+};
+
 export const inferCliInvocationPrefix = (
   argv: ReadonlyArray<string> = process.argv
 ): ReadonlyArray<string> => {
@@ -107,15 +169,48 @@ type RunHelperContext = {
   readonly skipConnectionCheck?: boolean;
   readonly skipToolParamsCheck?: boolean;
   readonly noVerify?: boolean;
+  readonly master?: MasterKind;
+  readonly debug?: boolean;
+  readonly runOutputDir?: string;
 };
 
+// eslint-disable-next-line max-lines-per-function
 const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
+  'globalThis.z = z;',
+  'globalThis.zod = z;',
   'const perfDebugEnabled = helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === "1";',
   'const toolDebugEnabled = helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === "1";',
   'const perfDebugStart = Date.now();',
   'let perfDebugSeq = 0;',
   'const proxySessionCache = new Map();',
   'const composioBaseURL = (helperContext.baseURL || "https://backend.composio.dev").replace(/\\/$/, "");',
+  'const subAgentSchema = {',
+  '  type: "function",',
+  '  description: "Prompt a sub-agent from the same agent family as the current main agent (Codex -> Codex, Claude -> Claude) and return its final response.",',
+  '  parameters: {',
+  '    type: "object",',
+  '    additionalProperties: false,',
+  '    required: ["prompt"],',
+  '    properties: {',
+  '      prompt: { type: "string", description: "The prompt to send to the agent CLI." },',
+  '      target: { type: "string", enum: ["claude", "codex", "user"], description: "Optional master override. Defaults to the detected current master." },',
+  '      model: { type: "string", description: "Optional model override passed through to the agent CLI." },',
+  '      schema: { description: "Optional structured-output schema. Accepts a Zod schema or raw JSON Schema object." },',
+  '      jsonSchema: { description: "Optional JSON Schema requesting structured output from the agent." },',
+  '    },',
+  '  },',
+  '  returns: {',
+  '    type: "object",',
+  '    additionalProperties: false,',
+  '    required: ["master", "target", "result", "structuredOutput"],',
+  '    properties: {',
+  '      master: { type: "string", enum: ["claude", "codex", "user"] },',
+  '      target: { type: "string", enum: ["claude", "codex"] },',
+  '      result: { description: "Final plain-text result when available." },',
+  '      structuredOutput: { description: "Structured output when jsonSchema was requested." },',
+  '    },',
+  '  },',
+  '};',
   'const proxySchema = {',
   '  type: "function",',
   '  description: "Call proxy(toolkit) to get a fetch-compatible function bound to that toolkit\'s connected account.",',
@@ -147,6 +242,13 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  const payload = { phase, label, elapsedMs, ...details };',
   '  console.error(`[perf] ${JSON.stringify(payload)}`);',
   '};',
+  'const helperDebugEnabled = helperContext.debug === true;',
+  'const sharedRunOutputDir = typeof helperContext.runOutputDir === "string" && helperContext.runOutputDir.length > 0 ? helperContext.runOutputDir : null;',
+  'const helperDebugLog = (step, details = {}) => {',
+  '  if (!helperDebugEnabled) return;',
+  '  const elapsedMs = Date.now() - perfDebugStart;',
+  '  console.error(`[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`);',
+  '};',
   'const parseJson = (text) => {',
   '  const value = text.trim();',
   '  if (!value) return undefined;',
@@ -155,6 +257,123 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  } catch {',
   '    return value;',
   '  }',
+  '};',
+  'const stringifyForPrompt = (value) => {',
+  '  if (value === undefined) return "undefined";',
+  '  if (value === null) return "null";',
+  '  if (typeof value === "string") return value;',
+  '  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {',
+  '    return String(value);',
+  '  }',
+  '  try {',
+  '    return JSON.stringify(value, null, 2);',
+  '  } catch {',
+  '    return String(value);',
+  '  }',
+  '};',
+  'const attachPromptMethod = (value) => {',
+  '  if (!value || typeof value !== "object" || Array.isArray(value)) return value;',
+  '  if (typeof value.prompt === "function") return value;',
+  '  Object.defineProperty(value, "prompt", {',
+  '    value: () => stringifyForPrompt("data" in value ? value.data : value),',
+  '    enumerable: false,',
+  '  });',
+  '  return value;',
+  '};',
+  'const maybeLoadStoredCliResult = (result) => {',
+  '  if (!result || typeof result !== "object" || result.storedInFile !== true) {',
+  '    return attachPromptMethod(result);',
+  '  }',
+  '  helperDebugLog("cli.result.stored_in_file", { outputFilePath: result.outputFilePath ?? null, tokenCount: result.tokenCount ?? null });',
+  '  const outputFilePath = typeof result.outputFilePath === "string" ? result.outputFilePath : null;',
+  '  return attachPromptMethod({',
+  '    ...result,',
+  '    data: {',
+  '      storedInFilePath: outputFilePath !== null,',
+  '      outputFilePath,',
+  '    },',
+  '  });',
+  '};',
+  'const describeDebugValue = (value) => {',
+  '  if (Array.isArray(value)) return { type: "array", length: value.length };',
+  '  if (value && typeof value === "object") return { type: "object", keys: Object.keys(value).slice(0, 20) };',
+  '  return { type: typeof value, value: typeof value === "string" ? value.slice(0, 200) : value ?? null };',
+  '};',
+  'const logCliResultPreview = (requestId, result) => {',
+  '  if (!helperDebugEnabled) return;',
+  '  if (!result || typeof result !== "object") {',
+  '    helperDebugLog("cli.result", { requestId, result: describeDebugValue(result) });',
+  '    return;',
+  '  }',
+  '  helperDebugLog("cli.result", {',
+  '    requestId,',
+  '    successful: result.successful ?? null,',
+  '    storedInFile: result.storedInFile ?? false,',
+  '    outputFilePath: result.outputFilePath ?? null,',
+  '    error: result.error ?? null,',
+  '    topLevelKeys: Object.keys(result).slice(0, 20),',
+  '    data: "data" in result ? describeDebugValue(result.data) : null,',
+  '  });',
+  '};',
+  'const detectInvokeAgentMaster = () => {',
+  '  if (helperContext.master === "claude" || helperContext.master === "codex" || helperContext.master === "user") {',
+  '    return helperContext.master;',
+  '  }',
+  '  const envKeys = Object.keys(process.env || {});',
+  '  if (envKeys.some((key) => key.startsWith("CODEX_"))) return "codex";',
+  '  if (envKeys.some((key) => key.startsWith("CLAUDE_"))) return "claude";',
+  '  return "user";',
+  '};',
+  'const resolveInvokeAgentTarget = (requestedTarget) => {',
+  '  if (requestedTarget === "claude" || requestedTarget === "codex") return requestedTarget;',
+  '  const detected = requestedTarget === "user" ? "user" : detectInvokeAgentMaster();',
+  '  if (detected === "codex" || detected === "claude") return detected;',
+  '  if (typeof Bun.which === "function" && Bun.which("codex")) return "codex";',
+  '  if (typeof Bun.which === "function" && Bun.which("claude")) return "claude";',
+  '  throw new Error("subAgent() could not determine an agent CLI. Current master is user; install codex or claude, or pass { target: \\"codex\\" | \\"claude\\" }.");',
+  '};',
+  'const normalizeInvokeAgentOptions = (options = {}) => {',
+  '  if (options == null || typeof options !== "object" || Array.isArray(options)) {',
+  '    throw new Error("subAgent() options must be an object when provided.");',
+  '  }',
+  '  if (options.schema !== undefined && options.jsonSchema !== undefined) {',
+  '    throw new Error("subAgent() accepts either options.schema or options.jsonSchema, not both.");',
+  '  }',
+  '  const inputSchema = options.schema ?? options.jsonSchema;',
+  '  let structuredSchema;',
+  '  if (inputSchema !== undefined) {',
+  '    if (inputSchema && typeof inputSchema.safeParse === "function" && inputSchema._def) {',
+  '      if (typeof z.toJSONSchema !== "function") {',
+  '        throw new Error("subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.");',
+  '      }',
+  '      structuredSchema = z.toJSONSchema(inputSchema);',
+  '    } else if (typeof inputSchema === "object" && inputSchema !== null && !Array.isArray(inputSchema)) {',
+  '      structuredSchema = inputSchema;',
+  '    } else {',
+  '      throw new Error("subAgent() schema must be a Zod schema or JSON Schema object.");',
+  '    }',
+  '  }',
+  '  return { ...options, structuredSchema };',
+  '};',
+  'const runExternalCommandText = async (cmd, spawnOptions = {}) => {',
+  '  helperDebugLog("agent.spawn", { command: cmd[0], args: cmd.slice(1) });',
+  '  const child = Bun.spawn({',
+  '    cmd,',
+  '    env: { ...process.env, ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}), ...(spawnOptions.env || {}) },',
+  '    cwd: spawnOptions.cwd || process.cwd(),',
+  '    stdio: ["pipe", "pipe", "pipe"],',
+  '  });',
+  '  const stdout = child.stdout ? await new Response(child.stdout).text() : "";',
+  '  const stderr = child.stderr ? await new Response(child.stderr).text() : "";',
+  '  const exitCode = await child.exited;',
+  '  if (exitCode !== 0) {',
+  '    const details = stderr.trim() || stdout.trim();',
+  '    const suffix = details ? `: ${details}` : "";',
+  '    helperDebugLog("agent.error", { command: cmd[0], exitCode, stderr: stderr.trim() || undefined });',
+  '    throw new Error(`${cmd[0]} failed with exit code ${exitCode}${suffix}`);',
+  '  }',
+  '  helperDebugLog("agent.done", { command: cmd[0], exitCode, stdoutBytes: stdout.length, stderrBytes: stderr.length });',
+  '  return { stdout, stderr, exitCode };',
   '};',
   'const requireConsumerProxyContext = () => {',
   '  if (!helperContext.apiKey) {',
@@ -259,11 +478,13 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '',
   'const runCliJson = async (args) => {',
   '  const requestId = `${args[0] ?? "cli"}#${++perfDebugSeq}`;',
+  '  helperDebugLog("cli.start", { requestId, args });',
   '  const env = {',
   '    ...process.env,',
   '    ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),',
   '    ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),',
   '    ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),',
+  '    ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),',
   '    ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: "1" } : {}),',
   '    ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: "1" } : {}),',
   '  };',
@@ -276,10 +497,11 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  });',
   '  const stdout = child.stdout ? await new Response(child.stdout).text() : "";',
   '  const stderr = child.stderr ? await new Response(child.stderr).text() : "";',
-  '  const result = parseJson(stdout);',
+  '  const result = maybeLoadStoredCliResult(parseJson(stdout));',
   '  const exitCode = await child.exited;',
   '  if (exitCode !== 0) {',
   '    perfDebugLog("error", requestId, { exitCode, stderr: stderr.trim() || undefined });',
+  '    helperDebugLog("cli.error", { requestId, exitCode, stderr: stderr.trim() || undefined });',
   '    const error = new Error(`composio ${args.join(" ")} failed with exit code ${exitCode}`);',
   '    Object.assign(error, { exitCode, result, stderr: stderr.trim() || undefined });',
   '    throw error;',
@@ -288,15 +510,19 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '    const details = stderr.trim();',
   '    const suffix = details ? `: ${details}` : "";',
   '    perfDebugLog("error", requestId, { exitCode, stderr: details || undefined, noJson: true });',
+  '    helperDebugLog("cli.error", { requestId, exitCode, stderr: details || undefined, noJson: true });',
   '    const error = new Error(`composio ${args.join(" ")} returned no JSON output${suffix}`);',
   '    Object.assign(error, { exitCode, result, stderr: details || undefined });',
   '    throw error;',
   '  }',
   '  perfDebugLog("end", requestId, { exitCode, stdoutBytes: stdout.length, stderrBytes: stderr.length });',
+  '  logCliResultPreview(requestId, result);',
+  '  helperDebugLog("cli.done", { requestId, exitCode });',
   '  return result;',
   '};',
   '',
   'globalThis.search = async (query, options = {}) => {',
+  '  helperDebugLog("search.prepare", { query, options });',
   '  const args = ["search", query];',
   '  if (Array.isArray(options.toolkits) && options.toolkits.length > 0) {',
   '    args.push("--toolkits", options.toolkits.join(","));',
@@ -310,6 +536,7 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '};',
   '',
   'globalThis.execute = async (slug, data = {}) => {',
+  '  helperDebugLog("execute.prepare", { slug, hasData: data !== undefined });',
   '  const args = ["execute", slug];',
   '  if (helperContext.dryRun === true) {',
   '    args.push("--dry-run");',
@@ -327,8 +554,94 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '    const serialized = typeof data === "string" ? data : JSON.stringify(data);',
   '    args.push("--data", serialized);',
   '  }',
-  '  return runCliJson(args);',
+  '  const result = await runCliJson(args);',
+  '  if (result && typeof result === "object" && result.successful === false) {',
+  '    const message = typeof result.error === "string" && result.error.trim().length > 0',
+  '      ? result.error.trim()',
+  '      : `composio execute ${slug} failed`;',
+  '    const error = new Error(message);',
+  '    Object.assign(error, { result, slug });',
+  '    throw error;',
+  '  }',
+  '  return result;',
   '};',
+  '',
+];
+
+const buildRunInvokeAgentHelpersSource = (): ReadonlyArray<string> => [
+  'const toInvokeAgentResponse = (master, target, payload = {}) => ({',
+  '  master,',
+  '  target,',
+  '  result: payload.result ?? null,',
+  '  structuredOutput: payload.structuredOutput ?? null,',
+  '});',
+  'const invokeClaudeAgent = async (prompt, options) => {',
+  '  helperDebugLog("subAgent.prepare", { target: "claude", hasSchema: options.structuredSchema !== undefined });',
+  '  const args = ["claude", "--bare", "-p", "--output-format", "json"];',
+  '  if (typeof options.model === "string" && options.model.trim().length > 0) {',
+  '    args.push("--model", options.model.trim());',
+  '  }',
+  '  if (options.structuredSchema !== undefined) {',
+  '    args.push("--json-schema", JSON.stringify(options.structuredSchema));',
+  '  }',
+  '  args.push(prompt);',
+  '  const result = await runExternalCommandText(args);',
+  '  const parsed = parseJson(result.stdout.trim());',
+  '  if (!parsed || typeof parsed !== "object") {',
+  '    throw new Error("claude returned non-JSON output in subAgent().");',
+  '  }',
+  '  return toInvokeAgentResponse(detectInvokeAgentMaster(), "claude", {',
+  '    result: typeof parsed.result === "string" ? parsed.result : null,',
+  '    structuredOutput: parsed.structured_output ?? null,',
+  '  });',
+  '};',
+  'const invokeCodexAgent = async (prompt, options) => {',
+  '  const fs = await import("node:fs");',
+  '  const os = await import("node:os");',
+  '  const path = await import("node:path");',
+  '  const tempDir = sharedRunOutputDir',
+  '    ? fs.mkdtempSync(path.join(sharedRunOutputDir, "invoke-agent-"))',
+  '    : fs.mkdtempSync(path.join(os.tmpdir(), "composio-invoke-agent-"));',
+  '  const outputPath = path.join(tempDir, "last-message.txt");',
+  '  const args = ["codex", "exec", "--skip-git-repo-check", "--sandbox", "read-only", "-o", outputPath];',
+  '  try {',
+  '    helperDebugLog("subAgent.prepare", { target: "codex", hasSchema: options.structuredSchema !== undefined });',
+  '    if (typeof options.model === "string" && options.model.trim().length > 0) {',
+  '      args.push("--model", options.model.trim());',
+  '    }',
+  '    if (options.structuredSchema !== undefined) {',
+  '      const schemaPath = path.join(tempDir, "schema.json");',
+  '      fs.writeFileSync(schemaPath, JSON.stringify(options.structuredSchema), "utf8");',
+  '      args.push("--output-schema", schemaPath);',
+  '    }',
+  '    args.push(prompt);',
+  '    await runExternalCommandText(args);',
+  '    const text = fs.readFileSync(outputPath, "utf8").trim();',
+  '    const parsed = options.structuredSchema ? parseJson(text) : null;',
+  '    return toInvokeAgentResponse(detectInvokeAgentMaster(), "codex", {',
+  '      result: options.structuredSchema ? null : text,',
+  '      structuredOutput: options.structuredSchema ? parsed : null,',
+  '    });',
+  '  } finally {',
+  '    fs.rmSync(tempDir, { recursive: true, force: true });',
+  '  }',
+  '};',
+  'const subAgentImpl = async (prompt, options = {}) => {',
+  '  if (typeof prompt !== "string" || prompt.trim().length === 0) {',
+  '    throw new Error("subAgent() requires a non-empty prompt string.");',
+  '  }',
+  '  const normalizedOptions = normalizeInvokeAgentOptions(options);',
+  '  const target = resolveInvokeAgentTarget(normalizedOptions.target);',
+  '  helperDebugLog("subAgent.target", { requestedTarget: normalizedOptions.target ?? null, resolvedTarget: target });',
+  '  if (target === "claude") {',
+  '    return invokeClaudeAgent(prompt.trim(), normalizedOptions);',
+  '  }',
+  '  return invokeCodexAgent(prompt.trim(), normalizedOptions);',
+  '};',
+  'globalThis.subAgent = subAgentImpl;',
+  'Object.defineProperty(globalThis.subAgent, "schema", { value: subAgentSchema });',
+  'globalThis.invokeAgent = subAgentImpl;',
+  'Object.defineProperty(globalThis.invokeAgent, "schema", { value: subAgentSchema });',
   '',
 ];
 
@@ -357,9 +670,11 @@ const buildRunProxyHelpersSource = (): ReadonlyArray<string> => [
   '};',
   'globalThis.proxy = async (toolkit) => {',
   '  const normalizedToolkit = normalizeProxyToolkit(toolkit);',
+  '  helperDebugLog("proxy.session", { toolkit: normalizedToolkit, cached: proxySessionCache.has(normalizedToolkit) });',
   '  const sessionId = await getProxySessionId(normalizedToolkit);',
   '  const proxyFetch = async (input, init = {}) => {',
   '    const request = await normalizeFetchInput(input, init);',
+  '    helperDebugLog("proxy.request", { toolkit: normalizedToolkit, method: request.method, endpoint: request.endpoint });',
   '    const result = await fetchComposioJson(`/api/v3/tool_router/session/${sessionId}/proxy_execute`, {',
   '      toolkit_slug: normalizedToolkit,',
   '      endpoint: request.endpoint,',
@@ -394,10 +709,13 @@ export const buildRunHelpersSource = (
   context: RunHelperContext = {}
 ): string =>
   [
+    'import { z } from "zod";',
+    '',
     `const cliPrefix = ${JSON.stringify(cliPrefix)};`,
     `const helperContext = ${JSON.stringify(context)};`,
     '',
     ...buildRunBaseHelpersSource(),
+    ...buildRunInvokeAgentHelpersSource(),
     ...buildRunProxyHelpersSource(),
   ].join('\n');
 
@@ -407,27 +725,67 @@ const createRunHelpersPreloadFile = (
 ) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-'));
   const preloadPath = path.join(directory, 'globals.mjs');
-  fs.writeFileSync(preloadPath, buildRunHelpersSource(cliPrefix, context), 'utf8');
-  return { directory, preloadPath };
+  const runOutputDir =
+    typeof context.runOutputDir === 'string' && context.runOutputDir.length > 0
+      ? context.runOutputDir
+      : path.join(directory, 'artifacts');
+  fs.mkdirSync(runOutputDir, { recursive: true });
+  fs.writeFileSync(
+    preloadPath,
+    buildRunHelpersSource(cliPrefix, { ...context, runOutputDir }),
+    'utf8'
+  );
+  return { directory, preloadPath, runOutputDir };
 };
 
 export const buildRunCommand = ({
   file,
   args,
   preloadPath,
+  preloadDirectory,
 }: {
   file: Option.Option<string>;
   args: ReadonlyArray<string>;
   preloadPath: string;
+  preloadDirectory: string;
 }) => {
+  // Use process.execPath directly — the child is spawned with BUN_BE_BUN=1
+  // which makes compiled Bun binaries act as a plain Bun runtime.
+  // Avoid the `run` subcommand entirely since Bun intercepts it as its own
+  // built-in; `bun --preload <file> <script>` works without it.
   const base = [process.execPath, '--preload', preloadPath];
   if (Option.isSome(file)) {
-    return [...base, 'run', file.value, ...withArgDelimiter(args)];
+    const filePath = path.resolve(file.value);
+    const wrapperFilePath = path.join(
+      path.dirname(filePath),
+      `.composio-run-${path.basename(preloadDirectory)}${path.extname(filePath) || '.ts'}`
+    );
+    fs.writeFileSync(
+      wrapperFilePath,
+      wrapFileSourceForRun(fs.readFileSync(filePath, 'utf8')),
+      'utf8'
+    );
+    return {
+      cmd: [...base, wrapperFilePath, ...withArgDelimiter(args)],
+      cleanupPaths: [wrapperFilePath],
+    };
   }
 
   const [inlineCode, ...scriptArgs] = args;
   if (inlineCode) {
-    return [...base, '--eval', inlineCode, ...withArgDelimiter(scriptArgs)];
+    const wrappedInlineCode = [
+      '(async () => {',
+      wrapInlineCodeForRun(inlineCode),
+      '})().then((__composioResult) => {',
+      '  if (__composioResult !== undefined) {',
+      '    console.log(__composioResult);',
+      '  }',
+      '});',
+    ].join('\n');
+    return {
+      cmd: [...base, '--eval', wrappedInlineCode, ...withArgDelimiter(scriptArgs)],
+      cleanupPaths: [],
+    };
   }
 
   throw new Error('Provide inline code or use --file to run a script file.');
@@ -459,12 +817,19 @@ const resolveRunHelperContext = () =>
       consumerUserId: consumerProject.value.consumerUserId,
       consumerProjectId: consumerProject.value.projectId,
       consumerProjectName: consumerProject.value.projectName,
+      runOutputDir: Option.getOrUndefined(
+        yield* resolveCliSessionArtifacts({
+          orgId,
+          consumerUserId: consumerProject.value.consumerUserId,
+        }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
+      ),
     } satisfies RunHelperContext;
   });
 
 export const runCmd = Command.make('run', {
   file,
   dryRun,
+  debug,
   skipConnectionCheck,
   skipToolParamsCheck,
   noVerify,
@@ -475,20 +840,43 @@ export const runCmd = Command.make('run', {
       'Run inline TS/JS code or a file with injected Composio helpers that behave like their CLI counterparts.',
       '',
       'Examples:',
-      `  composio run 'const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "acme", repo: "app", title: "Bug report" }); console.log(issue)'`,
+      `  composio run 'const issue = await execute("GITHUB_CREATE_ISSUE", { owner: "composiohq", repo: "composio", title: "Bug report" }); console.log(issue)'`,
       `  composio run --dry-run 'await execute("GMAIL_SEND_EMAIL", { recipient_email: "a@b.com", body: "Hello" })'`,
+      `  composio run --debug 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
+      `  composio run '`,
+      `    const [emails, issues] = await Promise.all([`,
+      `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
+      `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),`,
+      `    ]);`,
+      `    const brief = await subAgent(`,
+      `      \`Create a morning brief from these emails and issues.\\n\\n\${emails.prompt()}\\n\\n\${issues.prompt()}\`,`,
+      `      {`,
+      `        schema: z.object({`,
+      `          brief: z.string(),`,
+      `          urgentEmails: z.array(z.string()),`,
+      `          urgentIssues: z.array(z.string()),`,
+      `        }),`,
+      `      }`,
+      `    );`,
+      `    brief.structuredOutput;`,
+      `  '`,
       '  composio run --file ./script.ts -- hello world',
       '',
       'Injected helpers (behave like their CLI counterparts):',
       '  execute(slug, data?)          Same as `composio execute` — returns parsed JSON',
       '  search(query, options?)        Same as `composio search` — returns matching tools',
+      '  subAgent(prompt, options?)     Spawn a powerful sub-agent from the same agent family as your current main agent',
+      '                                 (Codex -> Codex, Claude -> Claude) with optional Zod structured output',
+      '  result.prompt()                Prompt-safe serialization of a helper result, ideal for subAgent(...)',
       '  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function',
       '                                 Example: const f = await proxy("gmail")',
       '                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")',
+      '  z                              Injected global from `zod` for structured output schemas',
       '',
       'All helpers reuse your CLI auth state and linked accounts.',
       '',
       'Flags:',
+      '  --debug                     Log helper steps while the script runs',
       '  --dry-run                   Preview execute() calls without running them',
       '  --skip-connection-check     Skip the linked-account check',
       '  --skip-tool-params-check    Skip input validation against cached schema',
@@ -501,7 +889,7 @@ export const runCmd = Command.make('run', {
     ].join('\n')
   ),
   Command.withHandler(
-    ({ file, dryRun, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
+    ({ file, dryRun, debug, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
       Effect.gen(function* () {
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
@@ -516,18 +904,40 @@ export const runCmd = Command.make('run', {
           }
         }
 
-        const preload = createRunHelpersPreloadFile(inferCliInvocationPrefix(), {
+        const helperContext: RunHelperContext = {
           ...(yield* resolveRunHelperContext()),
+          master: detectMaster(),
           perfDebug,
           toolDebug,
+          debug,
           dryRun,
           skipConnectionCheck,
           skipToolParamsCheck,
           noVerify,
-        });
+        };
+        const preload = createRunHelpersPreloadFile(inferCliInvocationPrefix(), helperContext);
+        let cleanupPaths: ReadonlyArray<string> = [];
         try {
+          yield* appendCliSessionHistory({
+            orgId: helperContext.orgId,
+            consumerUserId: helperContext.consumerUserId,
+            entry: {
+              command: 'run',
+              status: 'start',
+              file: Option.getOrUndefined(file),
+              args,
+              debug,
+            },
+          }).pipe(Effect.catchAll(() => Effect.void));
+          const runCommand = buildRunCommand({
+            file,
+            args,
+            preloadPath: preload.preloadPath,
+            preloadDirectory: preload.directory,
+          });
+          cleanupPaths = runCommand.cleanupPaths;
           const child = Bun.spawn({
-            cmd: buildRunCommand({ file, args, preloadPath: preload.preloadPath }),
+            cmd: runCommand.cmd,
             env: {
               ...process.env,
               BUN_BE_BUN: '1',
@@ -538,9 +948,11 @@ export const runCmd = Command.make('run', {
           });
 
           const exitCode = yield* Effect.promise(() => child.exited);
-          fs.rmSync(preload.directory, { recursive: true, force: true });
           process.exit(exitCode);
         } finally {
+          for (const cleanupPath of cleanupPaths) {
+            fs.rmSync(cleanupPath, { force: true });
+          }
           fs.rmSync(preload.directory, { recursive: true, force: true });
         }
       })

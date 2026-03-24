@@ -14,6 +14,7 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { invalidateConsumerConnectedToolkitsCache } from 'src/services/consumer-short-term-cache';
+import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -357,8 +358,32 @@ const runConnectedAccountsLink = (params: {
           2
         )
       );
+      yield* appendCliSessionHistory({
+        orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,
+        consumerUserId:
+          resolvedProject.projectType === 'CONSUMER' ? resolvedProject.consumerUserId : undefined,
+        entry: {
+          command: 'link',
+          status: 'pending',
+          toolkit: toolkitSlug,
+          connectedAccountId: connAccountId,
+          redirectUrl,
+        },
+      }).pipe(Effect.catchAll(() => Effect.void));
     } else {
       yield* waitForActiveConnection(ui, repo, connAccountId, redirectUrl, params.noBrowser);
+      yield* appendCliSessionHistory({
+        orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,
+        consumerUserId:
+          resolvedProject.projectType === 'CONSUMER' ? resolvedProject.consumerUserId : undefined,
+        entry: {
+          command: 'link',
+          status: 'active',
+          toolkit: toolkitSlug,
+          connectedAccountId: connAccountId,
+          redirectUrl,
+        },
+      }).pipe(Effect.catchAll(() => Effect.void));
     }
   });
 
