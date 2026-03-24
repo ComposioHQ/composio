@@ -19,7 +19,7 @@ tools = composio.tools.get(
     ],
 )
 functions = [convert_to_openai_function(t) for t in tools]
-model = ChatOpenAI(temperature=0, streaming=True).bind_functions(functions)
+model = ChatOpenAI(temperature=0, streaming=True, request_timeout=60, max_retries=3).bind_functions(functions)
 
 
 def function_1(state):
