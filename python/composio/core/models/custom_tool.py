@@ -416,9 +416,9 @@ class ExperimentalToolkit:
         Infers slug, name, description, and input_params from the function
         if not explicitly provided.
         """
+        annotation_locals = _get_caller_locals()
 
         def decorator(f: t.Callable[..., t.Any]) -> CustomTool:
-            annotation_locals = _get_caller_locals()
             custom_tool = _infer_tool_from_function(
                 f,
                 slug=slug,
@@ -435,21 +435,7 @@ class ExperimentalToolkit:
             return custom_tool
 
         if fn is not None:
-            custom_tool = _infer_tool_from_function(
-                fn,
-                slug=slug,
-                name=name,
-                description=description,
-                output_params=output_params,
-                annotation_locals=_get_caller_locals(),
-            )
-            _validate_slug_length(
-                custom_tool.slug,
-                self.slug,
-                f'experimental.Toolkit("{self.slug}").tool',
-            )
-            self._tools.append(custom_tool)
-            return custom_tool
+            return decorator(fn)
         return decorator
 
 

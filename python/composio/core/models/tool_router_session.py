@@ -351,8 +351,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if remote_result and remote_result.get("error") is not None
             else None
         )
-        has_any_error = any(r.get("error") for _, r in local_results) or bool(
-            remote_error
+        has_any_error = (
+            any(r.get("error") for _, r in local_results)
+            or bool(remote_error)
+            or failed > 0
         )
         error_message = None
         if has_any_error:

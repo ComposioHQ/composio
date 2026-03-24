@@ -483,7 +483,7 @@ export class ToolRouterSession<
       mergedData.error_count = failedCount;
     }
     const remoteError = typeof remoteResult?.error === 'string' ? remoteResult.error : null;
-    const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
+    const hasAnyError = localResults.some(r => r.result.error) || !!remoteError || failedCount > 0;
 
     return {
       data: mergedData,
