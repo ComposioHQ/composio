@@ -16,7 +16,10 @@ import { installCmd } from './install.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { manageCmd } from './manage/manage.cmd';
 import { devCmd } from './dev.cmd';
-import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
+import {
+  runParallelToolsExecuteFromArgv,
+  showToolsExecuteInputHelp,
+} from './tools/commands/tools.execute.cmd';
 import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
@@ -83,6 +86,8 @@ const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefi
     if (
       token === '--data' ||
       token === '-d' ||
+      token === '--parallel' ||
+      token === '-p' ||
       token === '--user-id' ||
       token === '--project-name'
     ) {
@@ -92,6 +97,8 @@ const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefi
     if (
       token.startsWith('--data=') ||
       token.startsWith('-d=') ||
+      token === '--parallel' ||
+      token === '-p' ||
       token.startsWith('--user-id=') ||
       token.startsWith('--project-name=')
     ) {
@@ -197,6 +204,10 @@ export const runWithConfig = Effect.gen(function* () {
     const subHelp = matchSubcommandHelp(normalizedArgv);
     if (subHelp) {
       return printSubcommandHelp(subHelp);
+    }
+    const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
+    if (parallelExecute) {
+      return parallelExecute;
     }
     if (isGenerateGraph(normalizedArgv)) {
       return Effect.sync(() => {
