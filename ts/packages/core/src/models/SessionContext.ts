@@ -3,12 +3,19 @@
  */
 import { Composio as ComposioClient } from '@composio/client';
 import type { SessionContext, CustomToolsMap } from '../types/customTool.types';
-import type { ToolExecuteResponse } from '../types/tool.types';
-import type { SessionProxyExecuteParams, ToolRouterSessionProxyExecuteResponse } from '../types/toolRouter.types';
-import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
+import type {
+  SessionProxyExecuteParams,
+  ToolRouterSessionExecuteResponse,
+  ToolRouterSessionProxyExecuteResponse,
+} from '../types/toolRouter.types';
+import {
+  SessionProxyExecuteParamsSchema,
+  ToolRouterSessionExecuteResponseSchema,
+} from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { transformProxyParams } from './proxyParamsTransform';
 import { findCustomTool, executeCustomTool } from './customToolExecution';
+import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
 
 /**
  * Concrete implementation of SessionContext.
@@ -35,37 +42,39 @@ export class SessionContextImpl implements SessionContext {
    * Execute any tool from within a custom tool.
    * Routes to sibling local tools in-process when available,
    * otherwise delegates to the backend API.
+   *
+   * Returns the same response shape as session.execute().
    */
   async execute(
     toolSlug: string,
     arguments_: Record<string, unknown>
-  ): Promise<ToolExecuteResponse> {
+  ): Promise<ToolRouterSessionExecuteResponse> {
     // Try local tool first (sibling routing)
     const entry = findCustomTool(this.customToolsMap, toolSlug);
     if (entry) {
-      return executeCustomTool(entry, arguments_, this);
+      const result = await executeCustomTool(entry, arguments_, this);
+      return ToolRouterSessionExecuteResponseSchema.parse({
+        data: result.data,
+        error: result.error,
+        logId: '',
+      });
     }
 
     // Fall back to remote execution
-    const response = await this.client.toolRouter.session.execute(
-      this.sessionId,
-      {
-        tool_slug: toolSlug,
-        arguments: arguments_,
-      }
-    );
-    return {
-      data: response.data,
-      error: response.error,
-      successful: !response.error,
-    };
+    const response = await this.client.toolRouter.session.execute(this.sessionId, {
+      tool_slug: toolSlug,
+      arguments: arguments_,
+    });
+    return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
   }
 
   /**
    * Proxy API calls through Composio's auth layer.
    * The backend resolves the connected account from the toolkit within the session.
    */
-  async proxyExecute(params: SessionProxyExecuteParams): Promise<ToolRouterSessionProxyExecuteResponse> {
+  async proxyExecute(
+    params: SessionProxyExecuteParams
+  ): Promise<ToolRouterSessionProxyExecuteResponse> {
     const validated = SessionProxyExecuteParamsSchema.safeParse(params);
     if (!validated.success) {
       throw new ValidationError('Invalid proxy execute parameters', { cause: validated.error });
@@ -81,14 +90,16 @@ export class SessionContextImpl implements SessionContext {
       status: response.status,
       data: response.data,
       headers: response.headers,
-      ...(response.binary_data ? {
-        binaryData: {
-          contentType: response.binary_data.content_type,
-          size: response.binary_data.size,
-          url: response.binary_data.url,
-          expiresAt: response.binary_data.expires_at,
-        },
-      } : {}),
+      ...(response.binary_data
+        ? {
+            binaryData: {
+              contentType: response.binary_data.content_type,
+              size: response.binary_data.size,
+              url: response.binary_data.url,
+              expiresAt: response.binary_data.expires_at,
+            },
+          }
+        : {}),
     };
   }
 }

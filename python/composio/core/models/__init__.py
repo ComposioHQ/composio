@@ -1,5 +1,12 @@
 from .auth_configs import AuthConfigs
 from .connected_accounts import ConnectedAccounts
+from .custom_tool import ExperimentalAPI, ExperimentalToolkit
+from .custom_tool_types import (
+    CustomTool,
+    RegisteredCustomTool,
+    RegisteredCustomToolkit,
+    SessionContext,
+)
 from .mcp import MCP
 from .tool_router import ToolRouter
 from .tool_router_session import ToolRouterSession
@@ -24,8 +31,14 @@ __all__ = [
     "ConnectionExpiredEvent",
     "ConnectionState",
     "ConnectionStatusEnum",
+    "CustomTool",
+    "ExperimentalAPI",
+    "ExperimentalToolkit",
     "MCP",
+    "RegisteredCustomTool",
+    "RegisteredCustomToolkit",
     "RemoteFile",
+    "SessionContext",
     "SingleConnectedAccountDetailedResponse",
     "ToolRouter",
     "ToolRouterSession",

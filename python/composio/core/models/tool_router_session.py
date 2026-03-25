@@ -2,22 +2,46 @@
 ToolRouterSession class for managing a single tool router session.
 
 Provides methods for tools, authorize, toolkits, search, execute, and files.
+When custom tools are bound to the session, execution is routed: local tools
+run in-process, remote tools are sent to the backend.
 """
 
 from __future__ import annotations
 
 import typing as t
+from concurrent.futures import ThreadPoolExecutor
 
 from composio_client import omit
+from composio_client.types.tool_router.session_execute_response import (
+    SessionExecuteResponse,
+)
+from composio_client.types.tool_router.session_proxy_execute_response import (
+    SessionProxyExecuteResponse,
+)
 
 from composio.client import HttpClient
 from composio.core.models.connected_accounts import ConnectionRequest
+from composio.core.models.custom_tool_execution import (
+    execute_custom_tool,
+    find_custom_tool,
+)
+from composio.core.models.custom_tool_types import (
+    CustomToolsMap,
+    CustomToolsMapEntry,
+    RegisteredCustomTool,
+    RegisteredCustomToolkit,
+)
+from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
+from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
+from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
 
 if t.TYPE_CHECKING:
-    from composio.core.models._modifiers import Modifiers
     from composio.core.models.tool_router import ToolRouterSessionExperimental
+
+COMPOSIO_MULTI_EXECUTE_TOOL = "COMPOSIO_MULTI_EXECUTE_TOOL"
+MAX_PARALLEL_WORKERS = 5
 
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
@@ -43,6 +67,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
+        custom_tools_map: t.Optional[CustomToolsMap] = None,
+        user_id: t.Optional[str] = None,
     ) -> None:
         self._client = client
         self._provider = provider
@@ -50,6 +76,24 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self.session_id = session_id
         self.mcp = mcp
         self.experimental = experimental
+        self._custom_tools_map = custom_tools_map
+        self._user_id = user_id
+
+        # Create singleton session context if custom tools are bound
+        self._session_context: t.Optional[SessionContextImpl] = None
+        if custom_tools_map and user_id:
+            self._session_context = SessionContextImpl(
+                client=client,
+                user_id=user_id,
+                session_id=session_id,
+                custom_tools_map=custom_tools_map,
+            )
+
+    def _has_custom_tools(self) -> bool:
+        """Check if this session has any custom tools bound."""
+        if self._custom_tools_map is None:
+            return False
+        return len(self._custom_tools_map.by_final_slug) > 0
 
     def tools(self, modifiers: t.Optional["Modifiers"] = None) -> TToolCollection:
         """
@@ -57,6 +101,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         Returns tools configured for this session, wrapped in the format expected
         by your AI provider (OpenAI, Anthropic, LangChain, etc.).
+
+        When custom tools are bound to the session, execution of
+        COMPOSIO_MULTI_EXECUTE_TOOL is intercepted: local tools are executed
+        in-process, remote tools are sent to the backend.
         """
         from composio.core.models.tools import Tools as ToolsModel
         from composio.core.provider import AgenticProvider, NonAgenticProvider
@@ -93,16 +141,232 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 ).wrap_tools(tools=router_tools),
             )
 
+        # For agentic providers: if custom tools are bound, create a routing
+        # execute function that intercepts COMPOSIO_MULTI_EXECUTE_TOOL
+        if self._has_custom_tools():
+            execute_fn = self._create_routing_execute_fn(tools_model, modifiers)
+        else:
+            execute_fn = tools_model._wrap_execute_tool_for_tool_router(
+                session_id=self.session_id,
+                modifiers=modifiers,
+            )
+
         return t.cast(
             TToolCollection,
             t.cast(AgenticProvider[TTool, TToolCollection], self._provider).wrap_tools(
                 tools=router_tools,
-                execute_tool=tools_model._wrap_execute_tool_for_tool_router(
-                    session_id=self.session_id,
-                    modifiers=modifiers,
-                ),
+                execute_tool=execute_fn,
             ),
         )
+
+    def _create_routing_execute_fn(
+        self,
+        tools_model: t.Any,
+        modifiers: t.Optional["Modifiers"],
+    ) -> t.Callable[..., t.Any]:
+        """Create an execute function that routes local/remote tools.
+
+        Applies before_execute/after_execute modifiers around the overall
+        COMPOSIO_MULTI_EXECUTE_TOOL call, consistent with the standard path.
+        """
+        backend_execute = tools_model._wrap_execute_tool_for_tool_router(
+            session_id=self.session_id,
+            modifiers=modifiers,
+        )
+
+        def routing_execute(slug: str, arguments: t.Dict) -> t.Dict:
+            if slug == COMPOSIO_MULTI_EXECUTE_TOOL:
+                # Apply before_execute modifiers
+                processed_arguments = arguments
+                if modifiers is not None:
+                    type_before: t.Literal["before_execute"] = "before_execute"
+                    params: ToolExecuteParams = {"arguments": arguments}
+                    modified = apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit="composio",
+                        tool=slug,
+                        type=type_before,
+                        request=params,
+                    )
+                    processed_arguments = modified.get("arguments", arguments)
+
+                result = self._route_multi_execute(processed_arguments, tools_model)
+
+                # Apply after_execute modifiers
+                if modifiers is not None:
+                    type_after: t.Literal["after_execute"] = "after_execute"
+                    result = t.cast(
+                        t.Dict[str, t.Any],
+                        apply_modifier_by_type(
+                            modifiers=modifiers,
+                            toolkit="composio",
+                            tool=slug,
+                            type=type_after,
+                            response=t.cast(ToolExecutionResponse, result),
+                        ),
+                    )
+
+                return result
+            # Non-multi-execute meta tools always go to backend
+            return backend_execute(slug, arguments)
+
+        return routing_execute
+
+    def _parse_tool_item(self, item: t.Any) -> t.Dict[str, t.Any]:
+        """Parse an individual tool item from COMPOSIO_MULTI_EXECUTE_TOOL's tools array."""
+        if not isinstance(item, dict):
+            return {"tool_slug": "", "arguments": {}}
+        return {
+            "tool_slug": str(item.get("tool_slug", "")),
+            "arguments": item.get("arguments", {}),
+        }
+
+    def _route_multi_execute(
+        self,
+        input_args: t.Dict[str, t.Any],
+        tools_model: t.Any,
+    ) -> t.Dict[str, t.Any]:
+        """Route a COMPOSIO_MULTI_EXECUTE_TOOL call.
+
+        Splits the tools[] array into local and remote, executes each
+        appropriately, and merges results: remotes first, locals appended
+        (matches TS — remote results may have workbench index references).
+
+        Modifiers are NOT applied here — the caller (routing_execute)
+        handles before_execute/after_execute to avoid double application.
+        """
+        tool_items = input_args.get("tools")
+        if not isinstance(tool_items, list) or len(tool_items) == 0:
+            # Fallback: send to backend as-is (no modifiers — caller handles them)
+            return tools_model._wrap_execute_tool_for_tool_router(
+                session_id=self.session_id,
+            )(COMPOSIO_MULTI_EXECUTE_TOOL, input_args)
+
+        parsed = [self._parse_tool_item(item) for item in tool_items]
+
+        # Partition into local (with resolved entry) and remote
+        local_items: t.List[t.Tuple[int, CustomToolsMapEntry]] = []
+        remote_indices: t.List[int] = []
+        for i, p in enumerate(parsed):
+            entry = find_custom_tool(self._custom_tools_map, p["tool_slug"])
+            if entry:
+                local_items.append((i, entry))
+            else:
+                remote_indices.append(i)
+
+        # All remote — just forward entire payload (no modifiers — caller handles them)
+        if not local_items:
+            return tools_model._wrap_execute_tool_for_tool_router(
+                session_id=self.session_id,
+            )(COMPOSIO_MULTI_EXECUTE_TOOL, input_args)
+
+        ctx = self._session_context
+        assert ctx is not None
+
+        # Determine worker count (capped at MAX_PARALLEL_WORKERS)
+        num_tasks = len(local_items) + (1 if remote_indices else 0)
+        num_workers = min(MAX_PARALLEL_WORKERS, num_tasks)
+
+        with ThreadPoolExecutor(max_workers=num_workers) as pool:
+            # Submit local tool executions
+            local_futures = []
+            for idx, entry in local_items:
+                future = pool.submit(
+                    execute_custom_tool,
+                    entry,
+                    parsed[idx]["arguments"],
+                    ctx,
+                )
+                local_futures.append((idx, future))
+
+            # Submit remote batch (single call) if any
+            # No modifiers here — the outer routing_execute handles them
+            remote_future = None
+            if remote_indices:
+                remote_tool_items = [tool_items[i] for i in remote_indices]
+                remote_input = {**input_args, "tools": remote_tool_items}
+                execute_fn = tools_model._wrap_execute_tool_for_tool_router(
+                    session_id=self.session_id,
+                )
+                remote_future = pool.submit(
+                    execute_fn,
+                    COMPOSIO_MULTI_EXECUTE_TOOL,
+                    remote_input,
+                )
+
+            # Gather local results
+            local_results: t.List[t.Tuple[int, ToolExecutionResponse]] = []
+            for idx, future in local_futures:
+                local_results.append((idx, future.result()))
+
+            # Gather remote result
+            remote_result: t.Optional[t.Dict[str, t.Any]] = None
+            if remote_future:
+                remote_result = remote_future.result()
+
+        # If only one local tool and no remote, return unwrapped
+        if not remote_indices and len(local_results) == 1:
+            return t.cast(t.Dict[str, t.Any], local_results[0][1])
+
+        # Build local result entries matching backend format
+        local_entries = []
+        for idx, result in local_results:
+            local_entry: t.Dict[str, t.Any] = {
+                "response": {
+                    "successful": result["successful"],
+                    "data": result["data"],
+                },
+                "tool_slug": parsed[idx]["tool_slug"],
+            }
+            if result.get("error"):
+                local_entry["response"]["error"] = result["error"]
+                local_entry["error"] = result["error"]
+            local_entries.append(local_entry)
+
+        # Merge: remotes first, locals appended (matches TS behavior —
+        # remote results may have workbench index references)
+        remote_data_raw = (remote_result or {}).get("data")
+        remote_data = remote_data_raw if isinstance(remote_data_raw, dict) else {}
+        remote_results_list = (
+            remote_data.get("results", [])
+            if isinstance(remote_data.get("results"), list)
+            else []
+        )
+        all_results = [
+            {**entry, "index": i}
+            for i, entry in enumerate([*remote_results_list, *local_entries])
+        ]
+        failed = sum(1 for r in all_results if r.get("error"))
+        merged_data = {**remote_data, "results": all_results}
+        if local_entries and any(
+            key in remote_data
+            for key in ("total_count", "success_count", "error_count")
+        ):
+            merged_data["total_count"] = len(all_results)
+            merged_data["success_count"] = len(all_results) - failed
+            merged_data["error_count"] = failed
+
+        remote_error = (
+            str(remote_result.get("error"))
+            if remote_result and remote_result.get("error") is not None
+            else None
+        )
+        has_any_error = any(r.get("error") for _, r in local_results) or bool(
+            remote_error
+        )
+        error_message = None
+        if has_any_error:
+            error_message = (
+                remote_error
+                if remote_error is not None and failed == 0
+                else f"{failed} out of {len(all_results)} tools failed"
+            )
+
+        return {
+            "data": merged_data,
+            "error": error_message,
+            "successful": not has_any_error,
+        }
 
     def authorize(
         self,
@@ -233,12 +497,126 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         tool_slug: str,
         *,
         arguments: t.Optional[t.Dict[str, t.Any]] = None,
-    ) -> t.Any:
+    ) -> SessionExecuteResponse:
         """
         Execute a tool within the session.
+
+        For custom tools, accepts the original slug (e.g. "GREP") or the
+        full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
+        remote tools are sent to the Composio backend.
+
+        Both paths return a ``SessionExecuteResponse`` with ``data``,
+        ``error``, and ``log_id`` attributes.
         """
+        from composio_client.types.tool_router.session_execute_response import (
+            SessionExecuteResponse,
+        )
+
+        # Check if this is a local tool (by original or final slug)
+        entry = find_custom_tool(self._custom_tools_map, tool_slug)
+        if entry and self._session_context:
+            result = execute_custom_tool(entry, arguments or {}, self._session_context)
+            return SessionExecuteResponse(
+                data=result["data"],
+                error=result["error"],
+                log_id="",
+            )
+
+        # Remote execution
         return self._client.tool_router.session.execute(
             session_id=self.session_id,
             tool_slug=tool_slug,
             arguments=arguments if arguments is not None else omit,
+        )
+
+    def custom_tools(
+        self, *, toolkit: t.Optional[str] = None
+    ) -> t.List[RegisteredCustomTool]:
+        """List all custom tools registered in this session.
+
+        Returns tools with their final slugs, schemas, and resolved toolkit.
+
+        :param toolkit: Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
+        :returns: Array of registered custom tools
+        """
+        if not self._custom_tools_map:
+            return []
+
+        entries = list(self._custom_tools_map.by_final_slug.values())
+        if toolkit:
+            entries = [
+                e for e in entries if e.toolkit and e.toolkit.lower() == toolkit.lower()
+            ]
+
+        return [
+            RegisteredCustomTool(
+                slug=entry.final_slug,
+                name=entry.handle.name,
+                description=entry.handle.description,
+                toolkit=entry.toolkit,
+                input_schema=entry.handle.input_schema,
+                output_schema=entry.handle.output_schema,
+            )
+            for entry in entries
+        ]
+
+    def custom_toolkits(self) -> t.List[RegisteredCustomToolkit]:
+        """List all custom toolkits registered in this session.
+
+        Returns toolkits with their tools showing final slugs.
+        """
+        if not self._custom_tools_map or not self._custom_tools_map.toolkits:
+            return []
+
+        result = []
+        for tk in self._custom_tools_map.toolkits:
+            tools = []
+            for tool in tk.tools:
+                entry = self._custom_tools_map.by_original_slug.get(tool.slug.upper())
+                tools.append(
+                    RegisteredCustomTool(
+                        slug=entry.final_slug if entry else tool.slug,
+                        name=tool.name,
+                        description=tool.description,
+                        toolkit=tk.slug,
+                        input_schema=tool.input_schema,
+                        output_schema=tool.output_schema,
+                    )
+                )
+            result.append(
+                RegisteredCustomToolkit(
+                    slug=tk.slug,
+                    name=tk.name,
+                    description=tk.description,
+                    tools=tools,
+                )
+            )
+        return result
+
+    def proxy_execute(
+        self,
+        *,
+        toolkit: str,
+        endpoint: str,
+        method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+        body: t.Any = None,
+        parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
+    ) -> SessionProxyExecuteResponse:
+        """Proxy an API call through Composio's auth layer.
+
+        :param toolkit: Composio toolkit slug (e.g. 'gmail', 'github')
+        :param endpoint: API endpoint URL
+        :param method: HTTP method
+        :param body: Request body (for POST, PUT, PATCH)
+        :param parameters: Query/header parameters
+        :returns: Proxied API response
+        """
+        return proxy_execute_impl(
+            self._client,
+            self.session_id,
+            toolkit=toolkit,
+            endpoint=endpoint,
+            method=method,
+            body=body,
+            parameters=parameters,
         )

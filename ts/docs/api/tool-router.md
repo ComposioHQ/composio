@@ -39,8 +39,8 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 
 // Create a session for a user with access to Gmail tools
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
 // Use the MCP URL with any MCP-compatible client
@@ -60,8 +60,8 @@ const composio = new Composio({
 });
 
 // Create a session for a user with access to Gmail tools
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
 // Get the tools formatted for Vercel AI SDK
@@ -80,8 +80,8 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 
 // Create a session with Gmail access
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
 console.log('Session ID:', session.sessionId);
@@ -111,17 +111,17 @@ Specify which toolkits to enable or disable in the session.
 ```typescript
 // Simple array of toolkit slugs to enable
 const session = await composio.create('user_123', {
-  toolkits: ['gmail', 'slack', 'github']
+  toolkits: ['gmail', 'slack', 'github'],
 });
 
 // Explicit enabled configuration
 const session = await composio.create('user_123', {
-  toolkits: { enable: ['gmail', 'slack'] }
+  toolkits: { enable: ['gmail', 'slack'] },
 });
 
 // Disable specific toolkits (enable all others)
 const session = await composio.create('user_123', {
-  toolkits: { disable: ['calendar'] }
+  toolkits: { disable: ['calendar'] },
 });
 ```
 
@@ -138,10 +138,10 @@ const session = await composio.create('user_123', {
     // OR use enable/disable objects
     // gmail: { enable: ['gmail_fetch_emails'] }
     // gmail: { disable: ['gmail_delete_email'] }
-    
+
     // You can also set tags per toolkit to override global tags
-    slack: { tags: ['readOnlyHint'] }
-  }
+    slack: { tags: ['readOnlyHint'] },
+  },
 });
 ```
 
@@ -153,11 +153,12 @@ Global tags to filter tools by their behavior hints. Tags can be overridden per 
 const session = await composio.create('user_123', {
   toolkits: ['gmail', 'github'],
   // Global tags applied to all toolkits
-  tags: ['readOnlyHint', 'idempotentHint']
+  tags: ['readOnlyHint', 'idempotentHint'],
 });
 ```
 
 Available tags:
+
 - `readOnlyHint` - Tools that only read data
 - `destructiveHint` - Tools that modify or delete data
 - `idempotentHint` - Tools that can be safely retried
@@ -172,8 +173,8 @@ const session = await composio.create('user_123', {
   toolkits: ['gmail', 'github'],
   authConfigs: {
     gmail: 'ac_gmail_work',
-    github: 'ac_github_personal'
-  }
+    github: 'ac_github_personal',
+  },
 });
 ```
 
@@ -185,8 +186,8 @@ Map toolkits to specific connected account IDs:
 const session = await composio.create('user_123', {
   toolkits: ['gmail'],
   connectedAccounts: {
-    gmail: 'ca_abc123'
-  }
+    gmail: 'ca_abc123',
+  },
 });
 ```
 
@@ -198,7 +199,7 @@ Control how connections are managed within the session:
 // Boolean: enable/disable automatic connection management
 const session = await composio.create('user_123', {
   toolkits: ['gmail'],
-  manageConnections: true // default
+  manageConnections: true, // default
 });
 
 // Object: fine-grained control
@@ -207,8 +208,8 @@ const session = await composio.create('user_123', {
   manageConnections: {
     enable: true,
     callbackUrl: 'https://your-app.com/auth/callback',
-    waitForConnections: true // Wait for user to complete authentication before proceeding
-  }
+    waitForConnections: true, // Wait for user to complete authentication before proceeding
+  },
 });
 ```
 
@@ -222,8 +223,8 @@ const session = await composio.create('user_123', {
   manageConnections: {
     enable: true,
     callbackUrl: 'https://your-app.com/auth/callback',
-    waitForConnections: true // Session waits for connections to complete
-  }
+    waitForConnections: true, // Session waits for connections to complete
+  },
 });
 ```
 
@@ -236,8 +237,8 @@ const session = await composio.create('user_123', {
   toolkits: ['gmail'],
   workbench: {
     enableProxyExecution: true,
-    autoOffloadThreshold: 400000 // Automatically offload to workbench if response > 400k characters
-  }
+    autoOffloadThreshold: 400000, // Automatically offload to workbench if response > 400k characters
+  },
 });
 ```
 
@@ -252,9 +253,9 @@ const session = await composio.create('user_123', {
   toolkits: ['gmail'],
   experimental: {
     assistivePrompt: {
-      userTimezone: 'America/New_York' // IANA timezone identifier for timezone-aware assistive prompts
-    }
-  }
+      userTimezone: 'America/New_York', // IANA timezone identifier for timezone-aware assistive prompts
+    },
+  },
 });
 
 // Access the generated assistive prompt from the session response
@@ -281,7 +282,7 @@ const grep = experimental_createTool('GREP', {
   name: 'Grep Search',
   description: 'Search for patterns in files',
   inputParams: z.object({ pattern: z.string(), path: z.string() }),
-  execute: async (input) => ({ matches: [] }),
+  execute: async input => ({ matches: [] }),
 });
 ```
 
@@ -294,6 +295,7 @@ const getImportant = experimental_createTool('GET_IMPORTANT_EMAILS', {
   extendsToolkit: 'gmail',
   inputParams: z.object({ limit: z.number().default(10) }),
   execute: async (input, ctx) => {
+    // Same response shape as session.execute(): { data, error, logId }
     const result = await ctx.execute('GMAIL_SEARCH', { query: 'is:important' });
     return { emails: result.data };
   },
@@ -309,7 +311,7 @@ const sed = experimental_createTool('SED', {
   name: 'Sed Replace',
   description: 'Find and replace in files',
   inputParams: z.object({ pattern: z.string(), replacement: z.string() }),
-  execute: async (input) => ({ replaced: 0 }),
+  execute: async input => ({ replaced: 0 }),
 });
 
 const devTools = experimental_createToolkit('DEV_TOOLS', {
@@ -363,8 +365,8 @@ console.log(session.sessionId);
 The MCP server configuration for this session, including authentication headers.
 
 ```typescript
-console.log(session.mcp.url);     // The URL to connect to
-console.log(session.mcp.type);    // 'http' or 'sse'
+console.log(session.mcp.url); // The URL to connect to
+console.log(session.mcp.type); // 'http' or 'sse'
 console.log(session.mcp.headers); // Authentication headers (includes x-api-key if configured)
 ```
 
@@ -388,7 +390,7 @@ const tools = await session.tools({
   afterExecute: ({ toolSlug, toolkitSlug, sessionId, result }) => {
     console.log(`Completed ${toolSlug} in session ${sessionId}`);
     return result;
-  }
+  },
 });
 ```
 
@@ -417,13 +419,17 @@ const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', 
     // Customize meta tool schemas
     console.log(`Modifying schema for ${toolSlug}`);
     return schema;
-  }
+  },
 });
 
-console.log('Available meta tools:', metaTools.map(t => t.name));
+console.log(
+  'Available meta tools:',
+  metaTools.map(t => t.name)
+);
 ```
 
 Meta tools allow you to:
+
 - Authorize new toolkit connections within a session
 - Query toolkit connection states
 - Manage session configuration
@@ -437,7 +443,7 @@ Execute a tool within the session. Custom tools run in-process; remote tools are
 ```typescript
 // Custom tool
 const result = await session.execute('GET_USER_CONTEXT', { category: 'prefs' });
-console.log(result.data);  // { preferences: { ... } }
+console.log(result.data); // { preferences: { ... } }
 console.log(result.error); // null on success
 
 // Remote Composio tool — same API
@@ -461,14 +467,14 @@ for (const result of results.results) {
 
 Proxy an API call through Composio's auth layer using the session's connected account. The backend resolves the connected account from the toolkit within the session.
 
+`ctx.proxyExecute()` inside a custom tool returns the same response shape as `session.proxyExecute()`.
+
 ```typescript
 const result = await session.proxyExecute({
   toolkit: 'github',
   endpoint: 'https://api.github.com/user',
   method: 'GET',
-  parameters: [
-    { in: 'header', name: 'X-Custom', value: 'value' },
-  ],
+  parameters: [{ in: 'header', name: 'X-Custom', value: 'value' }],
 });
 ```
 
@@ -504,21 +510,21 @@ for (const toolkit of items) {
 }
 
 // Pagination support
-const moreToolkits = await session.toolkits({ 
+const moreToolkits = await session.toolkits({
   nextCursor: nextCursor,
-  limit: 10 
+  limit: 10,
 });
 
 // Filter by specific toolkits
 const filteredToolkits = await session.toolkits({
-  toolkits: ['gmail', 'slack']
+  toolkits: ['gmail', 'slack'],
 });
 
 // Combine filtering with pagination
 const paginatedFilteredToolkits = await session.toolkits({
   toolkits: ['gmail', 'github'],
   limit: 5,
-  nextCursor: 'cursor_abc'
+  nextCursor: 'cursor_abc',
 });
 ```
 
@@ -561,8 +567,8 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
 const tools = await session.tools();
@@ -591,14 +597,14 @@ import { stepCountIs, streamText } from 'ai';
 
 // No provider needed when using MCP
 const composio = new Composio();
-const { mcp } = await composio.create('user_123', { 
-  toolkits: ['gmail'], 
+const { mcp } = await composio.create('user_123', {
+  toolkits: ['gmail'],
   manageConnections: true,
   tools: {
     gmail: {
       disable: ['gmail_send_email'], // Disable specific tools
-    }
-  }
+    },
+  },
 });
 
 // Create MCP client using the session URL and headers
@@ -606,8 +612,8 @@ const client = await createMCPClient({
   transport: {
     type: 'http',
     url: mcp.url,
-    headers: mcp.headers // Uses pre-configured authentication headers
-  }
+    headers: mcp.headers, // Uses pre-configured authentication headers
+  },
 });
 
 const tools = await client.tools();
@@ -616,7 +622,7 @@ const stream = await streamText({
   model: openai('gpt-4o-mini'),
   prompt: 'Find my last email from gmail?',
   stopWhen: stepCountIs(10),
-  onStepFinish: (step) => {
+  onStepFinish: step => {
     if (step.toolCalls.length > 0) {
       for (const toolCall of step.toolCalls) {
         console.log(`Executed ${toolCall.toolName}`);
@@ -636,41 +642,41 @@ for await (const textPart of stream.textStream) {
 LangChain can connect to Tool Router via MCP adapters. No provider is needed:
 
 ```typescript
-import { MultiServerMCPClient } from "@langchain/mcp-adapters";  
-import { ChatOpenAI } from "@langchain/openai";
-import { createAgent } from "langchain";
-import { Composio } from "@composio/core";
+import { MultiServerMCPClient } from '@langchain/mcp-adapters';
+import { ChatOpenAI } from '@langchain/openai';
+import { createAgent } from 'langchain';
+import { Composio } from '@composio/core';
 
 // No provider needed when using MCP
 const composio = new Composio();
 
 const llm = new ChatOpenAI({
-  model: "gpt-4o",
+  model: 'gpt-4o',
 });
 
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
-const client = new MultiServerMCPClient({  
+const client = new MultiServerMCPClient({
   composio: {
-    transport: "http",  
+    transport: 'http',
     url: session.mcp.url,
-    headers: session.mcp.headers // Uses pre-configured authentication headers
+    headers: session.mcp.headers, // Uses pre-configured authentication headers
   },
 });
 
-const tools = await client.getTools();  
+const tools = await client.getTools();
 
 const agent = createAgent({
-  name: "Gmail Assistant",
-  systemPrompt: "You are a helpful gmail assistant.",
+  name: 'Gmail Assistant',
+  systemPrompt: 'You are a helpful gmail assistant.',
   model: llm,
-  tools,  
+  tools,
 });
 
 const result = await agent.invoke({
-  messages: [{ role: "user", content: "Fetch my last email from gmail" }],
+  messages: [{ role: 'user', content: 'Fetch my last email from gmail' }],
 });
 
 console.log(result);
@@ -687,8 +693,8 @@ import { Composio } from '@composio/core';
 // No provider needed when using MCP
 const composio = new Composio();
 
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
 console.log(`Tool Router Session Created: ${session.sessionId}`);
@@ -697,7 +703,7 @@ console.log(`Connecting to MCP server: ${session.mcp.url}`);
 const mcpTool = hostedMcpTool({
   serverLabel: 'ComposioApps',
   serverUrl: session.mcp.url,
-  headers: session.mcp.headers // Uses pre-configured authentication headers
+  headers: session.mcp.headers, // Uses pre-configured authentication headers
 });
 
 const agent = new Agent({
@@ -724,33 +730,33 @@ for await (const event of stream) {
 Claude Agents SDK supports MCP servers natively. No provider is needed:
 
 ```typescript
-import { query } from "@anthropic-ai/claude-agent-sdk";
+import { query } from '@anthropic-ai/claude-agent-sdk';
 import { Composio } from '@composio/core';
 
 // No provider needed when using MCP
 const composio = new Composio();
 
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
 const stream = await query({
   prompt: 'Use composio tools to fetch my last email from gmail',
   options: {
     model: 'claude-sonnet-4-5-20250929',
-    permissionMode: "bypassPermissions",
+    permissionMode: 'bypassPermissions',
     mcpServers: {
       composio: {
         type: 'http',
         url: session.mcp.url,
-        headers: session.mcp.headers // Uses pre-configured authentication headers
-      }
+        headers: session.mcp.headers, // Uses pre-configured authentication headers
+      },
     },
-  }
+  },
 });
 
 for await (const event of stream) {
-  if (event.type === "result" && event.subtype === "success") {
+  if (event.type === 'result' && event.subtype === 'success') {
     process.stdout.write(event.result);
   }
 }
@@ -764,12 +770,12 @@ When a user needs to connect a toolkit, use the `authorize()` method:
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
-const session = await composio.create('user_123', { 
-  toolkits: ['gmail'] 
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
 });
 
 // Initiate authorization for Gmail
-const connectionRequest = await session.authorize("gmail");
+const connectionRequest = await session.authorize('gmail');
 
 // Log the redirect URL for the user
 console.log('Redirect URL:', connectionRequest.redirectUrl);
@@ -782,8 +788,8 @@ console.log('Connected Account:', connectedAccount);
 You can also provide a custom callback URL:
 
 ```typescript
-const connectionRequest = await session.authorize("gmail", {
-  callbackUrl: 'https://your-app.com/auth/callback'
+const connectionRequest = await session.authorize('gmail', {
+  callbackUrl: 'https://your-app.com/auth/callback',
 });
 ```
 
@@ -798,13 +804,13 @@ const composio = new Composio();
 const session = await composio.create('user_123');
 
 // Get all toolkits
-const toolkits = await session.toolkits(); 
+const toolkits = await session.toolkits();
 
 console.log(JSON.stringify({ toolkits }, null, 2));
 
 // Filter by specific toolkits
 const gmailAndSlack = await session.toolkits({
-  toolkits: ['gmail', 'slack']
+  toolkits: ['gmail', 'slack'],
 });
 ```
 
@@ -842,7 +848,7 @@ The response includes:
 Add custom behavior before and after tool execution. Tool Router supports enhanced session-specific modifiers (v0.4.0+):
 
 ```typescript
-import { SessionExecuteMetaModifiers } from "@composio/core";
+import { SessionExecuteMetaModifiers } from '@composio/core';
 
 const modifiers: SessionExecuteMetaModifiers = {
   modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
@@ -905,20 +911,23 @@ if (sessionId) {
 ```typescript
 interface ToolRouterCreateSessionConfig {
   toolkits?: string[] | { enable: string[] } | { disable: string[] };
-  tools?: Record<string, 
-    string[] | 
-    { enable: string[] } | 
-    { disable: string[] } | 
-    { tags: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[] }
+  tools?: Record<
+    string,
+    | string[]
+    | { enable: string[] }
+    | { disable: string[] }
+    | { tags: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[] }
   >;
   tags?: ('readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint')[];
   authConfigs?: Record<string, string>;
   connectedAccounts?: Record<string, string>;
-  manageConnections?: boolean | {
-    enable?: boolean;
-    callbackUrl?: string;
-    waitForConnections?: boolean; // NEW in v0.4.0: Wait for connections to complete
-  };
+  manageConnections?:
+    | boolean
+    | {
+        enable?: boolean;
+        callbackUrl?: string;
+        waitForConnections?: boolean; // NEW in v0.4.0: Wait for connections to complete
+      };
   workbench?: {
     enableProxyExecution?: boolean;
     autoOffloadThreshold?: number;
@@ -927,7 +936,7 @@ interface ToolRouterCreateSessionConfig {
     assistivePrompt?: {
       userTimezone?: string; // IANA timezone identifier for timezone-aware assistive prompts
     };
-    customTools?: CustomTool[];      // Standalone or extension tools (from experimental_createTool)
+    customTools?: CustomTool[]; // Standalone or extension tools (from experimental_createTool)
     customToolkits?: CustomToolkit[]; // Grouped no-auth tools (from experimental_createToolkit)
   };
 }
@@ -944,16 +953,24 @@ interface ToolRouterSession {
     headers?: Record<string, string>; // Authentication headers (includes x-api-key if configured)
   };
   tools: (modifiers?: ProviderOptions) => Promise<Tools>;
-  execute: (toolSlug: string, arguments?: Record<string, unknown>) => Promise<ToolRouterSessionExecuteResponse>;
-  search: (params: { query: string; toolkits?: string[] }) => Promise<ToolRouterSessionSearchResponse>;
-  proxyExecute: (params: SessionProxyExecuteParams) => Promise<ToolRouterSessionExecuteResponse>;
+  execute: (
+    toolSlug: string,
+    arguments?: Record<string, unknown>
+  ) => Promise<ToolRouterSessionExecuteResponse>;
+  search: (params: {
+    query: string;
+    toolkits?: string[];
+  }) => Promise<ToolRouterSessionSearchResponse>;
+  proxyExecute: (
+    params: SessionProxyExecuteParams
+  ) => Promise<ToolRouterSessionProxyExecuteResponse>;
   authorize: (toolkit: string, options?: { callbackUrl?: string }) => Promise<ConnectionRequest>;
   toolkits: (options?: {
-    toolkits?: string[];   // Filter by specific toolkit slugs
-    nextCursor?: string;   // Pagination cursor
-    limit?: number;        // Number of items per page
+    toolkits?: string[]; // Filter by specific toolkit slugs
+    nextCursor?: string; // Pagination cursor
+    limit?: number; // Number of items per page
   }) => Promise<ToolkitConnectionsDetails>;
-  files: ToolRouterSessionFilesMount;  // List, upload, download, delete files. See tool-router-files.md
+  files: ToolRouterSessionFilesMount; // List, upload, download, delete files. See tool-router-files.md
   experimental?: {
     assistivePrompt?: string; // Generated system prompt for optimal tool router usage
   };
@@ -987,19 +1004,15 @@ interface ToolkitConnectionState {
 
 ```typescript
 interface SessionExecuteMetaModifiers {
-  modifySchema?: (context: {
-    toolSlug: string;
-    toolkitSlug: string;
-    schema: any;
-  }) => any;
-  
+  modifySchema?: (context: { toolSlug: string; toolkitSlug: string; schema: any }) => any;
+
   beforeExecute?: (context: {
     toolSlug: string;
     toolkitSlug: string;
     sessionId: string;
     params: any;
   }) => any;
-  
+
   afterExecute?: (context: {
     toolSlug: string;
     toolkitSlug: string;
@@ -1021,8 +1034,8 @@ const session = await composio.create('user_123', {
   manageConnections: {
     enable: true,
     callbackUrl: 'https://your-app.com/callback',
-    waitForConnections: true // NEW
-  }
+    waitForConnections: true, // NEW
+  },
 });
 ```
 
@@ -1035,7 +1048,7 @@ const tools = await session.tools({
   beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => {
     console.log(`[${sessionId}] Executing ${toolSlug}`);
     return params;
-  }
+  },
 });
 ```
 
@@ -1045,7 +1058,7 @@ New method to fetch meta tools directly from a session:
 
 ```typescript
 const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', {
-  modifySchema: ({ toolSlug, schema }) => schema
+  modifySchema: ({ toolSlug, schema }) => schema,
 });
 ```
 
@@ -1056,4 +1069,3 @@ const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123', 
 - Simplified internal tool execution paths
 
 All changes in v0.4.0 are fully backward compatible with existing code.
-

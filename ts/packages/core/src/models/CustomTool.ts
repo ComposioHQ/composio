@@ -51,24 +51,30 @@ const MAX_SLUG_LENGTH = 60;
  */
 function computeFinalSlugLength(toolSlug: string, toolkitSlug?: string): number {
   // LOCAL_ + optional TOOLKIT_ + SLUG
-  return LOCAL_TOOL_PREFIX.length
-    + (toolkitSlug ? toolkitSlug.length + 1 : 0) // +1 for underscore separator
-    + toolSlug.length;
+  return (
+    LOCAL_TOOL_PREFIX.length +
+    (toolkitSlug ? toolkitSlug.length + 1 : 0) + // +1 for underscore separator
+    toolSlug.length
+  );
 }
 
 /**
  * Validate that the final slug won't exceed the max length.
  * Called early in createCustomTool/createCustomToolkit for fast feedback.
  */
-function validateSlugLength(toolSlug: string, toolkitSlug: string | undefined, context: string): void {
+function validateSlugLength(
+  toolSlug: string,
+  toolkitSlug: string | undefined,
+  context: string
+): void {
   const finalLength = computeFinalSlugLength(toolSlug, toolkitSlug);
   if (finalLength > MAX_SLUG_LENGTH) {
     const prefix = LOCAL_TOOL_PREFIX + (toolkitSlug ? `${toolkitSlug.toUpperCase()}_` : '');
     const available = MAX_SLUG_LENGTH - prefix.length;
     throw new ValidationError(
       `${context}: slug "${toolSlug}" is too long. ` +
-      `With prefix "${prefix}", the final slug would be ${finalLength} characters (max ${MAX_SLUG_LENGTH}). ` +
-      `Shorten the slug to at most ${available} characters.`
+        `With prefix "${prefix}", the final slug would be ${finalLength} characters (max ${MAX_SLUG_LENGTH}). ` +
+        `Shorten the slug to at most ${available} characters.`
     );
   }
 }
@@ -110,6 +116,7 @@ function validateSlugLength(toolSlug: string, toolkitSlug: string | undefined, c
  *   extendsToolkit: 'gmail',
  *   inputParams: z.object({ limit: z.number().default(10) }),
  *   execute: async (input, ctx) => {
+ *     // Same response shape as session.execute(): { data, error, logId }
  *     const result = await ctx.execute('GMAIL_SEARCH', { query: 'is:important' });
  *     return { emails: result.data };
  *   },
@@ -123,7 +130,9 @@ export function createCustomTool<T extends z.ZodType>(
   // Validate slug separately
   const slugResult = CustomToolSlugSchema.safeParse(slug);
   if (!slugResult.success) {
-    throw new ValidationError(`createCustomTool: ${slugResult.error.issues[0].message}`, { cause: slugResult.error });
+    throw new ValidationError(`createCustomTool: ${slugResult.error.issues[0].message}`, {
+      cause: slugResult.error,
+    });
   }
 
   // Validate string/scalar fields via Zod schema
@@ -137,7 +146,7 @@ export function createCustomTool<T extends z.ZodType>(
   if ((options.inputParams as { _def?: { typeName?: string } })?._def?.typeName !== 'ZodObject') {
     throw new ValidationError(
       'createCustomTool: inputParams must be a z.object() schema. ' +
-      'Tool input parameters are always an object with named properties.'
+        'Tool input parameters are always an object with named properties.'
     );
   }
   if (typeof options.execute !== 'function') {
@@ -211,7 +220,9 @@ export function createCustomToolkit(
   // Validate slug
   const slugResult = CustomToolSlugSchema.safeParse(slug);
   if (!slugResult.success) {
-    throw new ValidationError(`createCustomToolkit: ${slugResult.error.issues[0].message}`, { cause: slugResult.error });
+    throw new ValidationError(`createCustomToolkit: ${slugResult.error.issues[0].message}`, {
+      cause: slugResult.error,
+    });
   }
 
   // Validate name/description
@@ -228,7 +239,7 @@ export function createCustomToolkit(
     if (tool.extendsToolkit) {
       throw new ValidationError(
         `createCustomToolkit: tool "${tool.slug}" has extendsToolkit set. ` +
-        `Tools in a custom toolkit must not use extendsToolkit — they inherit the toolkit identity instead.`
+          `Tools in a custom toolkit must not use extendsToolkit — they inherit the toolkit identity instead.`
       );
     }
     // Early length validation — we know both toolkit slug and tool slug
@@ -278,20 +289,22 @@ export function buildCustomToolsMap(
     if (finalSlug.length > MAX_SLUG_LENGTH) {
       throw new ValidationError(
         `Custom tool slug "${handle.slug}" produces final slug "${finalSlug}" ` +
-        `which exceeds ${MAX_SLUG_LENGTH} characters.`
+          `which exceeds ${MAX_SLUG_LENGTH} characters.`
       );
     }
 
     // Check cross-group collisions on final slug
     if (byFinalSlug.has(finalSlug)) {
-      throw new ValidationError(`Custom tool slug collision: "${finalSlug}" is already registered.`);
+      throw new ValidationError(
+        `Custom tool slug collision: "${finalSlug}" is already registered.`
+      );
     }
 
     // Check cross-group collisions on original slug
     if (byOriginalSlug.has(originalSlug)) {
       throw new ValidationError(
         `Custom tool slug collision: original slug "${handle.slug}" maps to multiple final slugs. ` +
-        `"${byOriginalSlug.get(originalSlug)!.finalSlug}" and "${finalSlug}" both resolve from "${originalSlug}".`
+          `"${byOriginalSlug.get(originalSlug)!.finalSlug}" and "${finalSlug}" both resolve from "${originalSlug}".`
       );
     }
 
@@ -302,11 +315,7 @@ export function buildCustomToolsMap(
 
   // Process standalone tools
   for (const handle of tools) {
-    addEntry(
-      handle,
-      buildFinalSlug(handle.slug, handle.extendsToolkit),
-      handle.extendsToolkit
-    );
+    addEntry(handle, buildFinalSlug(handle.slug, handle.extendsToolkit), handle.extendsToolkit);
   }
 
   // Process toolkit tools
@@ -330,9 +339,7 @@ export function buildCustomToolsMap(
  * @param tools - The custom tools to serialize
  * @returns Array of CustomToolDefinition for the API payload
  */
-export function serializeCustomTools(
-  tools: CustomTool[]
-): CustomToolDefinition[] {
+export function serializeCustomTools(tools: CustomTool[]): CustomToolDefinition[] {
   return tools.map(handle => ({
     slug: handle.slug,
     name: handle.name,
@@ -350,9 +357,7 @@ export function serializeCustomTools(
  * @param toolkits - The custom toolkits to serialize
  * @returns Array of CustomToolkitDefinition for the API payload
  */
-export function serializeCustomToolkits(
-  toolkits: CustomToolkit[]
-): CustomToolkitDefinition[] {
+export function serializeCustomToolkits(toolkits: CustomToolkit[]): CustomToolkitDefinition[] {
   return toolkits.map(tk => ({
     slug: tk.slug,
     name: tk.name,
@@ -388,7 +393,10 @@ export function buildCustomToolsMapFromResponse(
   // Build a lookup from original slug → custom tool handle (for matching response items)
   const handlesByOriginalSlug = new Map<string, { handle: CustomTool; toolkit?: string }>();
   for (const handle of tools) {
-    handlesByOriginalSlug.set(handle.slug.toUpperCase(), { handle, toolkit: handle.extendsToolkit });
+    handlesByOriginalSlug.set(handle.slug.toUpperCase(), {
+      handle,
+      toolkit: handle.extendsToolkit,
+    });
   }
   if (toolkits) {
     for (const tk of toolkits) {
