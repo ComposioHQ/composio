@@ -238,15 +238,32 @@ session = composio.tool_router.create(
 Configure workbench behavior:
 
 ```python
+# Disable workbench entirely — no code execution tools in the session
 session = composio.tool_router.create(
     user_id='user_123',
     toolkits=['gmail'],
     workbench={
+        'enable': False
+    }
+)
+
+# Fine-tune workbench settings
+session = composio.tool_router.create(
+    user_id='user_123',
+    toolkits=['gmail'],
+    workbench={
+        'enable': True,  # default
         'enable_proxy_execution': False,  # Whether to allow proxy execute calls in workbench
         'auto_offload_threshold': 300  # Maximum execution payload size to offload to workbench
     }
 )
 ```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enable` | `bool` | `True` | Enables/disables the workbench entirely. When `False`, `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` are excluded from the session. |
+| `enable_proxy_execution` | `bool` | `True` | Controls proxy API execution in the workbench. |
+| `auto_offload_threshold` | `int` | auto | Character threshold for auto-offloading large responses to the workbench. |
 
 ## Session Properties and Methods
 
@@ -754,6 +771,7 @@ manage_connections: Union[
 
 # Workbench configuration
 ToolRouterWorkbenchConfig = TypedDict('ToolRouterWorkbenchConfig', {
+    'enable': bool,                      # Enable/disable workbench entirely (default: True)
     'enable_proxy_execution': bool,      # Whether to allow proxy execute calls
     'auto_offload_threshold': int        # Maximum execution payload size to offload to workbench
 })

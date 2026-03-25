@@ -127,11 +127,17 @@ class ToolRouterWorkbenchConfig(te.TypedDict, total=False):
     """Configuration for workbench settings in tool router session.
 
     Attributes:
+        enable: Whether to enable the workbench entirely. Defaults to True.
+                When set to False, no code execution tools
+                (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are
+                available in the session, workbench-related prompt lines are
+                stripped, and direct workbench calls are rejected.
         enable_proxy_execution: Whether to allow proxy execute calls in the workbench.
                                 If False, prevents arbitrary HTTP requests.
         auto_offload_threshold: Maximum execution payload size to offload to workbench.
     """
 
+    enable: bool
     enable_proxy_execution: bool
     auto_offload_threshold: int
 
@@ -472,10 +478,15 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                                   Example: {'github': 'ca_xxx', 'slack': 'ca_yyy'}
         :param workbench: Optional workbench configuration (ToolRouterWorkbenchConfig).
                          Dict with:
+                         - 'enable' (bool): Whether to enable the workbench entirely.
+                           Defaults to True. When set to False, no code execution tools
+                           (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are
+                           available in the session.
                          - 'enable_proxy_execution' (bool): Whether to allow proxy execute
                            calls in the workbench. If False, prevents arbitrary HTTP requests.
                          - 'auto_offload_threshold' (int): Maximum execution payload size to
                            offload to workbench.
+                         Example: {'enable': False}
                          Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
         :param experimental: Optional experimental configuration (ToolRouterExperimentalConfig).
                             Note: These features are experimental and may change.
@@ -538,6 +549,14 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                     'enable': True,
                     'callback_url': 'https://example.com/callback',
                     'wait_for_connections': True,
+                }
+            )
+
+            # Create a session with workbench disabled
+            session = tool_router.create(
+                user_id='user_123',
+                workbench={
+                    'enable': False
                 }
             )
 
@@ -659,7 +678,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             create_params["tags"] = tags_payload
 
         if workbench is not None:
-            execution_payload: t.Dict[str, t.Any] = {}
+            execution_payload: t.Dict[str, t.Any] = {
+                "enable": workbench.get("enable", True),
+            }
             if "enable_proxy_execution" in workbench:
                 execution_payload["enable_proxy_execution"] = workbench[
                     "enable_proxy_execution"

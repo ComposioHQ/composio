@@ -232,14 +232,30 @@ const session = await composio.create('user_123', {
 Configure workbench behavior for tool execution:
 
 ```typescript
+// Disable workbench entirely — no code execution tools in the session
 const session = await composio.create('user_123', {
   toolkits: ['gmail'],
   workbench: {
+    enable: false
+  }
+});
+
+// Fine-tune workbench settings
+const session2 = await composio.create('user_123', {
+  toolkits: ['gmail'],
+  workbench: {
+    enable: true, // default
     enableProxyExecution: true,
     autoOffloadThreshold: 400000 // Automatically offload to workbench if response > 400k characters
   }
 });
 ```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enable` | `boolean` | `true` | Enables/disables the workbench entirely. When `false`, `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` are excluded from the session. |
+| `enableProxyExecution` | `boolean` | `true` | Controls proxy API execution in the workbench. |
+| `autoOffloadThreshold` | `number` | auto | Character threshold for auto-offloading large responses to the workbench. |
 
 ### `experimental`
 
@@ -920,6 +936,7 @@ interface ToolRouterCreateSessionConfig {
     waitForConnections?: boolean; // NEW in v0.4.0: Wait for connections to complete
   };
   workbench?: {
+    enable?: boolean; // Enable/disable workbench entirely (default: true)
     enableProxyExecution?: boolean;
     autoOffloadThreshold?: number;
   };

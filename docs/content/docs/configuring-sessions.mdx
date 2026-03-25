@@ -163,6 +163,40 @@ When executing a tool, the connected account is selected in this order:
 
 If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
 
+## Disabling workbench
+
+By default, sessions include the [workbench](/docs/workbench) — a persistent sandbox that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, you can disable it:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    workbench={
+        "enable": False
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  workbench: {
+    enable: false,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+When disabled:
+- `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` are excluded from the session
+- Workbench-related system prompt lines are stripped
+- Direct workbench calls are rejected with a 400 error
+
 ## Session methods
 
 ### mcp
