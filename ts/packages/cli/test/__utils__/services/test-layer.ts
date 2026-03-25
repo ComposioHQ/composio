@@ -931,6 +931,15 @@ export const TestLayer = (input?: TestLiveInput) =>
           return response;
         },
       },
+      connectedAccounts: {
+        retrieve: async (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            throw new Error(`Connected account "${nanoid}" not found`);
+          }
+          return found;
+        },
+      },
       toolkits: {
         retrieve: async (slug: string) => {
           const detailed = toolkitsData.detailedToolkits.find(

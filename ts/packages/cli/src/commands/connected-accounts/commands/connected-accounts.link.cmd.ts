@@ -1,7 +1,7 @@
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option, Schedule } from 'effect';
+import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
@@ -48,7 +48,7 @@ const noWait = Options.boolean('no-wait').pipe(
 
 const waitForActiveConnection = (
   ui: TerminalUI,
-  repo: ComposioToolkitsRepository,
+  client: RawComposioClient,
   connectedAccountId: string,
   redirectUrl: string,
   noBrowser: boolean
@@ -84,7 +84,9 @@ const waitForActiveConnection = (
     yield* ui.useMakeSpinner('Waiting for authentication...', spinner =>
       Effect.retry(
         Effect.gen(function* () {
-          const account = yield* repo.getConnectedAccount(connectedAccountId);
+          const account = yield* Effect.tryPromise(() =>
+            client.connectedAccounts.retrieve(connectedAccountId)
+          );
           if (account.status === 'ACTIVE') {
             return account;
           }
@@ -160,7 +162,6 @@ const runConnectedAccountsLink = (params: {
     if (!(yield* requireAuth)) return;
 
     const ui = yield* TerminalUI;
-    const repo = yield* ComposioToolkitsRepository;
     const clientSingleton = yield* ComposioClientSingleton;
     const projectContext = yield* ProjectContext;
     const userContext = yield* ComposioUserContext;
@@ -279,7 +280,7 @@ const runConnectedAccountsLink = (params: {
           )
         );
       } else {
-        yield* waitForActiveConnection(ui, repo, connId, redirectUrl, params.noBrowser);
+        yield* waitForActiveConnection(ui, client, connId, redirectUrl, params.noBrowser);
       }
       return;
     }
@@ -371,7 +372,7 @@ const runConnectedAccountsLink = (params: {
         },
       }).pipe(Effect.catchAll(() => Effect.void));
     } else {
-      yield* waitForActiveConnection(ui, repo, connAccountId, redirectUrl, params.noBrowser);
+      yield* waitForActiveConnection(ui, client, connAccountId, redirectUrl, params.noBrowser);
       yield* appendCliSessionHistory({
         orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,
         consumerUserId:
