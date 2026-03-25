@@ -17,6 +17,16 @@ from composio_client.types.tool_router import session_create_params
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
+from composio.core.models.custom_tool import (
+    ExperimentalToolkit,
+    build_custom_tools_map_from_response,
+    serialize_custom_tools,
+    serialize_custom_toolkits,
+)
+from composio.core.models.custom_tool_types import (
+    CustomTool,
+    CustomToolsMap,
+)
 from composio.core.models.tool_router_session import ToolRouterSession
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
@@ -127,11 +137,17 @@ class ToolRouterWorkbenchConfig(te.TypedDict, total=False):
     """Configuration for workbench settings in tool router session.
 
     Attributes:
+        enable: Whether to enable the workbench entirely. Defaults to True.
+                When set to False, no code execution tools
+                (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are
+                available in the session, workbench-related prompt lines are
+                stripped, and direct workbench calls are rejected.
         enable_proxy_execution: Whether to allow proxy execute calls in the workbench.
                                 If False, prevents arbitrary HTTP requests.
         auto_offload_threshold: Maximum execution payload size to offload to workbench.
     """
 
+    enable: bool
     enable_proxy_execution: bool
     auto_offload_threshold: int
 
@@ -172,9 +188,13 @@ class ToolRouterExperimentalConfig(te.TypedDict, total=False):
 
     Attributes:
         assistive_prompt: Configuration for assistive prompt generation.
+        custom_tools: Custom tools to include in the session.
+        custom_toolkits: Custom toolkits with grouped tools.
     """
 
     assistive_prompt: ToolRouterAssistivePromptConfig
+    custom_tools: t.List[CustomTool]
+    custom_toolkits: t.List[ExperimentalToolkit]
 
 
 @dataclass
@@ -472,10 +492,15 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                                   Example: {'github': 'ca_xxx', 'slack': 'ca_yyy'}
         :param workbench: Optional workbench configuration (ToolRouterWorkbenchConfig).
                          Dict with:
+                         - 'enable' (bool): Whether to enable the workbench entirely.
+                           Defaults to True. When set to False, no code execution tools
+                           (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are
+                           available in the session.
                          - 'enable_proxy_execution' (bool): Whether to allow proxy execute
                            calls in the workbench. If False, prevents arbitrary HTTP requests.
                          - 'auto_offload_threshold' (int): Maximum execution payload size to
                            offload to workbench.
+                         Example: {'enable': False}
                          Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
         :param experimental: Optional experimental configuration (ToolRouterExperimentalConfig).
                             Note: These features are experimental and may change.
@@ -538,6 +563,14 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                     'enable': True,
                     'callback_url': 'https://example.com/callback',
                     'wait_for_connections': True,
+                }
+            )
+
+            # Create a session with workbench disabled
+            session = tool_router.create(
+                user_id='user_123',
+                workbench={
+                    'enable': False
                 }
             )
 
@@ -659,7 +692,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             create_params["tags"] = tags_payload
 
         if workbench is not None:
-            execution_payload: t.Dict[str, t.Any] = {}
+            execution_payload: t.Dict[str, t.Any] = {
+                "enable": workbench.get("enable", True),
+            }
             if "enable_proxy_execution" in workbench:
                 execution_payload["enable_proxy_execution"] = workbench[
                     "enable_proxy_execution"
@@ -675,17 +710,35 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         # Build experimental config
         # Map SDK's experimental.assistive_prompt.user_timezone to API's
         # experimental.assistive_prompt_config.user_timezone
+        custom_tools: t.Optional[t.List[CustomTool]] = None
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None
+
         if experimental is not None:
+            experimental_payload: t.Dict[str, t.Any] = {}
+
             assistive_prompt_config = experimental.get("assistive_prompt")
             if assistive_prompt_config is not None:
                 user_timezone = assistive_prompt_config.get("user_timezone")
-                # Only include if user_timezone is a non-empty string
                 if user_timezone:
-                    create_params["experimental"] = {
-                        "assistive_prompt_config": {
-                            "user_timezone": user_timezone,
-                        }
+                    experimental_payload["assistive_prompt_config"] = {
+                        "user_timezone": user_timezone,
                     }
+
+            # Serialize custom tools and toolkits for the backend
+            custom_tools = experimental.get("custom_tools")
+            custom_toolkits = experimental.get("custom_toolkits")
+
+            if custom_tools:
+                experimental_payload["custom_tools"] = serialize_custom_tools(
+                    custom_tools
+                )
+            if custom_toolkits:
+                experimental_payload["custom_toolkits"] = serialize_custom_toolkits(
+                    custom_toolkits
+                )
+
+            if experimental_payload:
+                create_params["experimental"] = experimental_payload
 
         if self._provider is None:
             raise ValueError(
@@ -695,6 +748,15 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
         # Make API call to create session
         session = self._client.tool_router.session.create(**create_params)
+
+        # Build custom tools routing map from backend response
+        custom_tools_map: t.Optional[CustomToolsMap] = None
+        if custom_tools or custom_toolkits:
+            custom_tools_map = build_custom_tools_map_from_response(
+                tools=custom_tools or [],
+                toolkits=custom_toolkits,
+                experimental=session.experimental,
+            )
 
         # Transform experimental response:
         # API's assistive_prompt -> SDK's assistive_prompt
@@ -718,6 +780,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 url=session.mcp.url,
             ),
             experimental=experimental_response,
+            custom_tools_map=custom_tools_map,
+            user_id=user_id,
         )
 
     def use(self, session_id: str) -> ToolRouterSession[TTool, TToolCollection]:

@@ -160,6 +160,7 @@ type RunHelperContext = {
   readonly baseURL?: string;
   readonly webURL?: string;
   readonly orgId?: string;
+  readonly runId?: string;
   readonly consumerUserId?: string;
   readonly consumerProjectId?: string;
   readonly consumerProjectName?: string;
@@ -484,6 +485,8 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '    ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),',
   '    ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),',
   '    ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),',
+  '    COMPOSIO_CLI_INVOCATION_ORIGIN: "run",',
+  '    ...(helperContext.runId ? { COMPOSIO_CLI_PARENT_RUN_ID: helperContext.runId } : {}),',
   '    ...(sharedRunOutputDir ? { COMPOSIO_RUN_OUTPUT_DIR: sharedRunOutputDir } : {}),',
   '    ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: "1" } : {}),',
   '    ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: "1" } : {}),',
@@ -891,6 +894,7 @@ export const runCmd = Command.make('run', {
   Command.withHandler(
     ({ file, dryRun, debug, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
       Effect.gen(function* () {
+        const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
         if (Option.isNone(file)) {
@@ -906,6 +910,7 @@ export const runCmd = Command.make('run', {
 
         const helperContext: RunHelperContext = {
           ...(yield* resolveRunHelperContext()),
+          runId,
           master: detectMaster(),
           perfDebug,
           toolDebug,
@@ -941,6 +946,7 @@ export const runCmd = Command.make('run', {
             env: {
               ...process.env,
               BUN_BE_BUN: '1',
+              COMPOSIO_CLI_PARENT_RUN_ID: runId,
               ...(perfDebug ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
               ...(toolDebug ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
             },

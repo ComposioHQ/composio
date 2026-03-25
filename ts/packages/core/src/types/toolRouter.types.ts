@@ -187,6 +187,12 @@ export const ToolRouterCreateSessionConfigSchema = z
       ),
     workbench: z
       .object({
+        enable: z
+          .boolean()
+          .default(true)
+          .describe(
+            'Whether to enable the workbench entirely. Defaults to true. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session.'
+          ),
         enableProxyExecution: z
           .boolean()
           .optional()
@@ -199,7 +205,7 @@ export const ToolRouterCreateSessionConfigSchema = z
           ),
       })
       .optional()
-      .describe('The execution config for the tool router session'),
+      .describe('The workbench config for the tool router session'),
     experimental: z
       .object({
         assistivePrompt: z
@@ -243,7 +249,8 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
  * @param {object} workbench - Workbench configuration for tool execution
- * @param {boolean} [workbench.proxyExecutionEnabled] - Whether to enable proxy execution
+ * @param {boolean} [workbench.enable] - Whether to enable the workbench entirely. Defaults to true. When false, no code execution tools are available.
+ * @param {boolean} [workbench.enableProxyExecution] - Whether to enable proxy execution
  * @param {number} [workbench.autoOffloadThreshold] - Auto offload threshold in characters for moving execution to workbench
  */
 export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;

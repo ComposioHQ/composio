@@ -119,6 +119,7 @@ export const transformToolRouterWorkbenchParams = (
   }
 
   return {
+    enable: params.enable ?? true,
     enable_proxy_execution: params.enableProxyExecution,
     auto_offload_threshold: params.autoOffloadThreshold,
   };
