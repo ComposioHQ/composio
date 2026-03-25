@@ -28,7 +28,7 @@ async def main():
 
         agent = create_agent(
             tools=tools,
-            model=ChatOpenAI(model="gpt-4o"),
+            model=ChatOpenAI(model="gpt-4o", request_timeout=60, max_retries=3),
         )
 
         result = await agent.ainvoke(

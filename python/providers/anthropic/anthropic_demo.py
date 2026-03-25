@@ -8,7 +8,7 @@ from composio_anthropic import AnthropicProvider
 from composio import Composio
 
 # Initialize tools.
-anthropic_client = anthropic.Anthropic()
+anthropic_client = anthropic.Anthropic(timeout=60.0, max_retries=3)
 composio = Composio(provider=AnthropicProvider())
 
 # Get GitHub tools that are pre-configured
