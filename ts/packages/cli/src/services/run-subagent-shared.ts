@@ -43,7 +43,11 @@ export class AcpInvokeError extends Error {
 }
 
 export const isAcpInvokeError = (value: unknown): value is AcpInvokeError =>
-  value instanceof AcpInvokeError;
+  !!value &&
+  typeof value === 'object' &&
+  (value as { name?: unknown }).name === 'AcpInvokeError' &&
+  typeof (value as { message?: unknown }).message === 'string' &&
+  typeof (value as { code?: unknown }).code === 'string';
 
 export const toInvokeAgentResponse = (
   master: MasterKind,

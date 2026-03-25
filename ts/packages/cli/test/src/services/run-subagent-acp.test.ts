@@ -26,4 +26,14 @@ describe('run-subagent-acp', () => {
     expect(isAcpInvokeError(error)).toBe(true);
     expect(error.code).toBe('initialize_failed');
   });
+
+  it('[Given] an ACP-like error from another bundle [Then] it is still classified for fallback', () => {
+    const error = {
+      name: 'AcpInvokeError',
+      code: 'prompt_failed',
+      message: 'boom',
+    };
+
+    expect(isAcpInvokeError(error)).toBe(true);
+  });
 });

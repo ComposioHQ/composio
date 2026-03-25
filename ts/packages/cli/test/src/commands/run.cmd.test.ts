@@ -216,6 +216,9 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('let zodSchema;');
     expect(source).toContain('zodSchema = inputSchema;');
     expect(source).toContain('structuredSchema = z.toJSONSchema(inputSchema);');
+    expect(source).not.toContain(
+      'const runExternalCommandText = async (cmd, spawnOptions = {}) => {'
+    );
     expect(source).toContain('globalThis.proxy = async (toolkit) => {');
     expect(source).toContain('const proxyFetch = async (input, init = {}) => {');
     expect(source).toContain('return toProxyResponse(result);');
