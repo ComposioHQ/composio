@@ -12,7 +12,7 @@ import { projectsCmd } from './projects/projects.cmd';
 
 export const devCmd = Command.make('dev').pipe(
   Command.withDescription(
-    'Developer workflows: initialize local project context, execute tools, inspect logs, and manage orgs, projects, toolkits, auth configs, accounts, and triggers.'
+    'Developer workflows: initialize local project context, test tool executions against playground users, inspect logs, and manage orgs, projects, toolkits, auth configs, accounts, and triggers.'
   ),
   Command.withSubcommands([
     initCmd,

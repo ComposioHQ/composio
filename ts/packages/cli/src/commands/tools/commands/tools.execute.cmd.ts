@@ -121,7 +121,7 @@ const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
   const toolkit = toolkitFromToolSlug(toolSlug);
   const executeStep =
     surface === 'dev'
-      ? commandHintStep('Retry', 'dev.execute', {
+      ? commandHintStep('Retry', 'dev.playgroundExecute', {
           slug: toolSlug,
           userId: '<user-id>',
           data: '...',
@@ -1164,7 +1164,7 @@ export const rootToolsCmd$Execute = Command.make(
 );
 
 export const devToolsCmd$Execute = Command.make(
-  'execute',
+  'playground-execute',
   {
     slug,
     data,
@@ -1203,14 +1203,14 @@ export const devToolsCmd$Execute = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Execute a tool with your playground test user id against your developer project auth configs.',
+      'Test tool executions against playground users using your developer project auth configs.',
       'Uses --user-id when provided, otherwise falls back to your local or global playground test user id.',
       'Arguments are validated against cached tool schemas in `~/.composio/tool_definitions/` when available.',
       '',
       'Examples:',
-      '  composio dev execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio dev execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio dev execute GMAIL_SEND_EMAIL --get-schema',
+      '  composio dev playground-execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio dev playground-execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio dev playground-execute GMAIL_SEND_EMAIL --get-schema',
     ].join('\n')
   )
 );

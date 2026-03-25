@@ -55,7 +55,7 @@ export const rootCommand = $cmd;
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = argv.slice(2);
   const isRootExecute = args[0] === 'execute';
-  const isDevExecute = args[0] === 'dev' && args[1] === 'execute';
+  const isDevExecute = args[0] === 'dev' && args[1] === 'playground-execute';
   if (!isRootExecute && !isDevExecute) return undefined;
 
   const hasHelp = args.includes('--help') || args.includes('-h');

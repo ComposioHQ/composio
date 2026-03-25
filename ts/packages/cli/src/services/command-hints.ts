@@ -11,8 +11,8 @@ export type CommandHintId =
   | 'root.execute.getSchema'
   | 'root.link'
   | 'dev.init'
-  | 'dev.execute'
-  | 'dev.execute.getSchema'
+  | 'dev.playgroundExecute'
+  | 'dev.playgroundExecute.getSchema'
   | 'dev.logs.tools'
   | 'dev.logs.triggers'
   | 'dev.orgs.switch'
@@ -54,17 +54,17 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
   },
   'dev.init': {
     example: () => 'composio dev init',
-    links: ['dev.execute', 'dev.logs.tools', 'dev.logs.triggers'],
+    links: ['dev.playgroundExecute', 'dev.logs.tools', 'dev.logs.triggers'],
   },
-  'dev.execute': {
+  'dev.playgroundExecute': {
     example: params =>
-      `composio dev execute "${getParam(params, 'slug', '<slug>')}" --user-id "${getParam(params, 'userId', '<user-id>')}" ${getParam(params, 'data', "-d '{}'")}`.trim(),
-    links: ['dev.connectedAccounts.link', 'dev.init', 'dev.execute.getSchema'],
+      `composio dev playground-execute "${getParam(params, 'slug', '<slug>')}" --user-id "${getParam(params, 'userId', '<user-id>')}" ${getParam(params, 'data', "-d '{}'")}`.trim(),
+    links: ['dev.connectedAccounts.link', 'dev.init', 'dev.playgroundExecute.getSchema'],
   },
-  'dev.execute.getSchema': {
+  'dev.playgroundExecute.getSchema': {
     example: params =>
-      `composio dev execute "${getParam(params, 'slug', '<slug>')}" --get-schema`,
-    links: ['dev.execute'],
+      `composio dev playground-execute "${getParam(params, 'slug', '<slug>')}" --get-schema`,
+    links: ['dev.playgroundExecute'],
   },
   'dev.logs.tools': {
     example: params =>
@@ -89,7 +89,7 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
   'dev.connectedAccounts.link': {
     example: params =>
       `composio dev connected-accounts link ${getParam(params, 'toolkit', '<toolkit>')} --user-id "${getParam(params, 'userId', '<user-id>')}"`,
-    links: ['dev.execute'],
+    links: ['dev.playgroundExecute'],
   },
   'dev.authConfigs.list': {
     example: () => 'composio dev auth-configs list',

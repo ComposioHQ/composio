@@ -500,11 +500,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '-y, --yes', description: 'Auto-select the default org project' },
     ],
   },
-  'dev execute': {
+  'dev playground-execute': {
     usage:
-      'composio dev execute <slug> [-d, --data text] [--user-id text] [--project-name text] [--dry-run] [--get-schema]',
+      'composio dev playground-execute <slug> [-d, --data text] [--user-id text] [--project-name text] [--dry-run] [--get-schema]',
     description:
-      'Execute a tool with your playground test user against your developer project auth configs.',
+      'Test tool executions against playground users using your developer project auth configs.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' }],
     options: [
       { name: '-d, --data <text>', description: 'JSON arguments, @file, or - for stdin' },

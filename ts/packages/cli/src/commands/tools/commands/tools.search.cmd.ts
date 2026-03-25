@@ -194,7 +194,7 @@ const runToolsSearch = (params: {
             slug: firstSlug,
             data: firstDataArg,
           })
-        : commandHintStep('Execute a tool', 'dev.execute', {
+        : commandHintStep('Test a tool against a playground user', 'dev.playgroundExecute', {
             slug: firstSlug,
             userId: '<user-id>',
             data: firstDataArg,
@@ -218,7 +218,7 @@ const runToolsSearch = (params: {
         action: 'Execute a tool',
         command: params.rootOnly
           ? commandHintExample('root.execute', { slug: firstSlug, data: firstDataArg })
-          : commandHintExample('dev.execute', {
+          : commandHintExample('dev.playgroundExecute', {
               slug: firstSlug,
               userId: '<user-id>',
               data: firstDataArg,
