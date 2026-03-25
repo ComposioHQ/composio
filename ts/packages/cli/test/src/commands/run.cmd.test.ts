@@ -10,6 +10,7 @@ import {
   inferCliInvocationPrefix,
   wrapInlineCodeForRun,
 } from 'src/commands/run.cmd';
+import { buildStructuredPrompt, finalizeInvokeAgentText } from 'src/services/run-subagent-shared';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 describe('CLI: composio run', () => {
@@ -51,6 +52,48 @@ describe('CLI: composio run', () => {
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
           expect(exit).toHaveBeenCalledWith(7);
+        })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped(
+      '[Given] --acp-only [Then] run accepts the flag and forwards execution normally',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          vi.stubGlobal('Bun', { spawn });
+
+          yield* cli(['run', '--acp-only', 'console.log("hi")']);
+
+          expect(spawn).toHaveBeenCalledTimes(1);
+          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+            cmd: string[];
+          };
+          expect(spawnConfig.cmd[3]).toBe('--eval');
+          expect(exit).toHaveBeenCalledWith(0);
+        })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped(
+      '[Given] --logs-off [Then] run accepts the flag and forwards execution normally',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          vi.stubGlobal('Bun', { spawn });
+
+          yield* cli(['run', '--logs-off', 'console.log("hi")']);
+
+          expect(spawn).toHaveBeenCalledTimes(1);
+          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+            cmd: string[];
+          };
+          expect(spawnConfig.cmd[3]).toBe('--eval');
+          expect(exit).toHaveBeenCalledWith(0);
         })
     );
   });
@@ -118,12 +161,14 @@ describe('CLI: composio run', () => {
           expect(output).toContain('--skip-connection-check');
           expect(output).toContain('--skip-tool-params-check');
           expect(output).toContain('--no-verify');
+          expect(output).toContain('--logs-off');
           expect(output).toContain('subAgent');
           expect(output).toContain('schema: z.object');
           expect(output).toContain('INJECTED HELPERS');
           expect(output).toContain('Global from zod');
           expect(output).toContain('composio search "<query>"');
           expect(output).toContain('composio execute <slug> --get-schema');
+          expect(output).not.toContain('--acp-only');
         })
     );
   });
@@ -137,10 +182,15 @@ describe('buildRunHelpersSource', () => {
       webURL: 'https://app.example.test',
       orgId: 'org_test',
       consumerUserId: 'consumer_user_test',
+      acpOnly: true,
+      logsOff: true,
       dryRun: true,
     });
 
     expect(source).toContain('import { z } from "zod";');
+    expect(source).toContain('import { isAcpInvokeError } from "file://');
+    expect(source).toContain('import { invokeAcpSubAgent } from "file://');
+    expect(source).toContain('import { invokeLegacySubAgent } from "file://');
     expect(source).toContain('globalThis.z = z;');
     expect(source).toContain('globalThis.zod = z;');
     expect(source).toContain('const stringifyForPrompt = (value) => {');
@@ -153,14 +203,18 @@ describe('buildRunHelpersSource', () => {
       'const sharedRunOutputDir = typeof helperContext.runOutputDir === "string"'
     );
     expect(source).toContain('COMPOSIO_RUN_OUTPUT_DIR');
-    expect(source).toContain('fs.mkdtempSync(path.join(sharedRunOutputDir, "invoke-agent-"))');
     expect(source).toContain('const maybeLoadStoredCliResult = (result) => {');
     expect(source).toContain('storedInFilePath: outputFilePath !== null,');
     expect(source).toContain('outputFilePath,');
-    expect(source).toContain('const logCliResultPreview = (requestId, result) => {');
+    expect(source).toContain('const formatHelperDebugEvent = (step, details = {}) => {');
+    expect(source).toContain('return `[subAgent] triggered with ${details.resolvedTarget}`;');
+    expect(source).toContain('const logCliResultPreview = (requestId, command, result) => {');
     expect(source).toContain('helperDebugLog("cli.result", {');
     expect(source).toContain('helperDebugLog("cli.result.stored_in_file"');
+    expect(source).toContain('case "subAgent.acp.message":');
     expect(source).toContain('COMPOSIO_USER_API_KEY');
+    expect(source).toContain('"acpOnly":true');
+    expect(source).toContain('"logsOff":true');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');
     expect(source).toContain('__composioConsumerContext');
     expect(source).toContain('globalThis.execute = async (slug, data = {}) => {');
@@ -173,9 +227,11 @@ describe('buildRunHelpersSource', () => {
       'Object.defineProperty(globalThis.subAgent, "schema", { value: subAgentSchema });'
     );
     expect(source).toContain('globalThis.invokeAgent = subAgentImpl;');
-    expect(source).toContain('const toInvokeAgentResponse = (master, target, payload = {}) => ({');
-    expect(source).toContain('const invokeClaudeAgent = async (prompt, options) => {');
-    expect(source).toContain('const invokeCodexAgent = async (prompt, options) => {');
+    expect(source).toContain('return await invokeAcpSubAgent({');
+    expect(source).toContain('if (!isAcpInvokeError(error)) {');
+    expect(source).toContain('if (helperContext.acpOnly === true) {');
+    expect(source).toContain('helperDebugLog("subAgent.acp.fallback"');
+    expect(source).toContain('return invokeLegacySubAgent({');
     expect(source).toContain('const detectInvokeAgentMaster = () => {');
     expect(source).toContain(
       'throw new Error("subAgent() accepts either options.schema or options.jsonSchema, not both.");'
@@ -185,12 +241,12 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain(
       'subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
     );
+    expect(source).toContain('let zodSchema;');
+    expect(source).toContain('zodSchema = inputSchema;');
     expect(source).toContain('structuredSchema = z.toJSONSchema(inputSchema);');
-    expect(source).toContain(
-      '["codex", "exec", "--skip-git-repo-check", "--sandbox", "read-only", "-o", outputPath]'
+    expect(source).not.toContain(
+      'const runExternalCommandText = async (cmd, spawnOptions = {}) => {'
     );
-    expect(source).toContain('["claude", "--bare", "-p", "--output-format", "json"]');
-    expect(source).toContain('structuredOutput: parsed.structured_output ?? null');
     expect(source).toContain('globalThis.proxy = async (toolkit) => {');
     expect(source).toContain('const proxyFetch = async (input, init = {}) => {');
     expect(source).toContain('return toProxyResponse(result);');
@@ -207,6 +263,45 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain(
       "stdio: ['inherit', 'pipe', perfDebugEnabled || toolDebugEnabled ? 'inherit' : 'pipe']"
     );
+  });
+});
+
+describe('run-subagent-shared', () => {
+  it('[Given] a structured schema [Then] it appends a strict JSON response contract', () => {
+    expect(buildStructuredPrompt('hello', { type: 'object' })).toContain(
+      'Return only a valid JSON value that matches this schema.'
+    );
+  });
+
+  it('[Given] Zod-like structured output [Then] it validates and returns structured data', () => {
+    const result = finalizeInvokeAgentText('{"ok":true}', {
+      structuredSchema: { type: 'object' },
+      zodSchema: {
+        safeParse: value => ({ success: true as const, data: value }),
+      },
+    });
+
+    expect(result).toEqual({
+      result: null,
+      structuredOutput: { ok: true },
+    });
+  });
+
+  it('[Given] plain text output [Then] it omits structuredOutput', () => {
+    const result = finalizeInvokeAgentText('hello', {});
+
+    expect(result).toEqual({
+      result: 'hello',
+    });
+    expect('structuredOutput' in result).toBe(false);
+  });
+
+  it('[Given] invalid JSON in structured mode [Then] it throws a clear error', () => {
+    expect(() =>
+      finalizeInvokeAgentText('not-json', {
+        structuredSchema: { type: 'object' },
+      })
+    ).toThrow('subAgent() expected valid JSON output for structured response.');
   });
 });
 

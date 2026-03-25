@@ -15,7 +15,10 @@ import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { devCmd } from './dev.cmd';
-import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
+import {
+  runParallelToolsExecuteFromArgv,
+  showToolsExecuteInputHelp,
+} from './tools/commands/tools.execute.cmd';
 import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
@@ -81,6 +84,8 @@ const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefi
     if (
       token === '--data' ||
       token === '-d' ||
+      token === '--parallel' ||
+      token === '-p' ||
       token === '--user-id' ||
       token === '--project-name'
     ) {
@@ -90,6 +95,8 @@ const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefi
     if (
       token.startsWith('--data=') ||
       token.startsWith('-d=') ||
+      token === '--parallel' ||
+      token === '-p' ||
       token.startsWith('--user-id=') ||
       token.startsWith('--project-name=')
     ) {
@@ -121,6 +128,7 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
   const args = argv.slice(2);
   let perfDebug: boolean | undefined;
   let toolDebug: boolean | undefined;
+  let acpOnly: boolean | undefined;
 
   for (const arg of args) {
     if (arg === '--perf-debug') {
@@ -147,6 +155,18 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
       toolDebug = true;
       continue;
     }
+    if (arg === '--acp-only') {
+      acpOnly = true;
+      continue;
+    }
+    if (arg === '--acp-only=false') {
+      acpOnly = false;
+      continue;
+    }
+    if (arg === '--acp-only=true') {
+      acpOnly = true;
+      continue;
+    }
     normalized.push(arg);
   }
 
@@ -155,6 +175,11 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
     ...(perfDebug === undefined ? {} : { perfDebug }),
     ...(toolDebug === undefined ? {} : { toolDebug }),
   });
+  if (acpOnly === undefined) {
+    delete process.env.COMPOSIO_RUN_ACP_ONLY;
+  } else {
+    process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';
+  }
 
   return normalized;
 };
@@ -195,6 +220,10 @@ export const runWithConfig = Effect.gen(function* () {
     const subHelp = matchSubcommandHelp(normalizedArgv);
     if (subHelp) {
       return printSubcommandHelp(subHelp);
+    }
+    const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
+    if (parallelExecute) {
+      return parallelExecute;
     }
     if (isGenerateGraph(normalizedArgv)) {
       return Effect.sync(() => {

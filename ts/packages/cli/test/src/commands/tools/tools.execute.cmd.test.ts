@@ -477,6 +477,60 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+    })
+  )('[Given] composio execute --parallel [Then] it executes repeated slug/data groups', it => {
+    it.scoped('aggregates results from multiple tool calls', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          '--parallel',
+          '--no-verify',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"a"}',
+          'GITHUB_CREATE_ISSUE',
+          '-d',
+          '{"title":"Bug"}',
+        ]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          successful: boolean;
+          parallel: boolean;
+          results: Array<{
+            slug: string;
+            successful: boolean;
+            data?: Record<string, unknown>;
+          }>;
+        };
+
+        expect(output.successful).toBe(true);
+        expect(output.parallel).toBe(true);
+        expect(output.results).toHaveLength(2);
+        expect(output.results[0]).toMatchObject({
+          slug: 'GMAIL_SEND_EMAIL',
+          successful: true,
+          data: {
+            tool_slug: 'GMAIL_SEND_EMAIL',
+            arguments: { recipient: 'a' },
+          },
+        });
+        expect(output.results[1]).toMatchObject({
+          slug: 'GITHUB_CREATE_ISSUE',
+          successful: true,
+          data: {
+            tool_slug: 'GITHUB_CREATE_ISSUE',
+            arguments: { title: 'Bug' },
+          },
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
       toolkitsData: {
         tools: [
           {
@@ -766,9 +820,10 @@ describe('CLI: composio execute', () => {
 
         expect(output).toContain('USAGE');
         expect(output).toContain(
-          'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]'
+          'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]'
         );
         expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
+        expect(output).toContain('--parallel');
       })
     );
   });
