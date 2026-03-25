@@ -141,9 +141,9 @@ const emitTableLine = (line: string, ui: TerminalUI): Effect.Effect<void> =>
  *
  * @example
  * ```bash
- * composio manage triggers listen --toolkits gmail --table
- * composio manage triggers listen --trigger-slug GMAIL_NEW_GMAIL_MESSAGE --json --max-events 5
- * composio manage triggers listen --forward "http://localhost:8080/webhook" --out events.jsonl
+ * composio dev triggers listen --toolkits gmail --table
+ * composio dev triggers listen --trigger-slug GMAIL_NEW_GMAIL_MESSAGE --json --max-events 5
+ * composio dev triggers listen --forward "http://localhost:8080/webhook" --out events.jsonl
  * ```
  */
 export const triggersCmd$Listen = Command.make(
@@ -208,7 +208,7 @@ export const triggersCmd$Listen = Command.make(
       let matchingEvents = 0;
       let tableHeaderPrinted = false;
 
-      yield* ui.intro('composio manage triggers listen');
+      yield* ui.intro('composio dev triggers listen');
       if (forwardUrl) {
         if (process.env.COMPOSIO_WEBHOOK_SECRET) {
           yield* ui.note(

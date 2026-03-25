@@ -177,7 +177,7 @@ describe('CLI: composio tools list', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('No tools found');
-          expect(output).toContain('composio manage toolkits list');
+          expect(output).toContain('composio dev toolkits list');
         })
       );
     }

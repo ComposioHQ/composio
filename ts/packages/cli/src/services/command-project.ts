@@ -130,7 +130,7 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
 export const formatResolveCommandProjectError = (error: unknown): Error => {
   if (error instanceof MissingDefaultOrgError) {
     return new Error(
-      'No default org configured. Run `composio login` or `composio manage orgs switch`.'
+      'No default org configured. Run `composio login` or `composio dev orgs switch`.'
     );
   }
   if (error instanceof MissingDeveloperProjectError) {
@@ -140,7 +140,7 @@ export const formatResolveCommandProjectError = (error: unknown): Error => {
   }
   if (error instanceof DeveloperProjectNotFoundError) {
     return new Error(
-      `Developer project "${error.projectName}" was not found in org "${error.orgId}". Run \`composio dev init\` or \`composio manage projects list\`.`
+      `Developer project "${error.projectName}" was not found in org "${error.orgId}". Run \`composio dev init\` or \`composio dev projects list\`.`
     );
   }
   if (error instanceof AmbiguousDeveloperProjectNameError) {

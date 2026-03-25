@@ -84,15 +84,12 @@ const OTHER_COMMANDS: ReadonlyArray<CompactCommand> = [
 const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
   {
     name: 'dev',
-    description: 'Developer workflows: init, playground execution, triggers, and logs.',
+    description:
+      'Developer workflows and management: init, execute, logs, orgs, projects, toolkits, accounts, and triggers.',
   },
   {
     name: 'generate',
     description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
-  },
-  {
-    name: 'manage',
-    description: 'Manage orgs, toolkits, connected accounts, triggers, auth configs, and projects.',
   },
 ];
 
@@ -548,11 +545,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--table', description: 'Show compact table rows' },
     ],
   },
-  // ── Manage commands ───────────────────────────────────────────────────
+  // ── Dev admin commands ─────────────────────────────────────────────────
 
-  'manage toolkits list': {
+  'dev toolkits list': {
     usage:
-      'composio manage toolkits list [--query text] [--limit integer] [--connected] [--user-id text]',
+      'composio dev toolkits list [--query text] [--limit integer] [--connected] [--user-id text]',
     description: 'List available toolkits with connection status.',
     options: [
       { name: '--query <text>', description: 'Text search by name, slug, or description' },
@@ -561,25 +558,25 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
     flags: [{ name: '--connected', description: 'Show only connected toolkits' }],
   },
-  'manage toolkits info': {
-    usage: 'composio manage toolkits info [--user-id text] [-a, --all] [<slug>]',
+  'dev toolkits info': {
+    usage: 'composio dev toolkits info [--user-id text] [-a, --all] [<slug>]',
     description: 'View details of a specific toolkit.',
     args: [{ name: '<slug>', description: 'Toolkit slug (e.g. "github")' }],
     flags: [{ name: '-a, --all', description: 'Show all details' }],
   },
-  'manage toolkits search': {
-    usage: 'composio manage toolkits search <query> [--limit integer]',
+  'dev toolkits search': {
+    usage: 'composio dev toolkits search <query> [--limit integer]',
     description: 'Search toolkits by use case.',
     args: [{ name: '<query>', description: 'Search query' }],
     options: [{ name: '--limit <integer>', description: 'Number of results' }],
   },
-  'manage toolkits version': {
-    usage: 'composio manage toolkits version <slug>',
+  'dev toolkits version': {
+    usage: 'composio dev toolkits version <slug>',
     description: 'Show latest and recent versions for a toolkit.',
     args: [{ name: '<slug>', description: 'Toolkit slug' }],
   },
-  'manage auth-configs list': {
-    usage: 'composio manage auth-configs list [--toolkits text] [--query text] [--limit integer]',
+  'dev auth-configs list': {
+    usage: 'composio dev auth-configs list [--toolkits text] [--query text] [--limit integer]',
     description: 'List auth configs.',
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
@@ -587,14 +584,14 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--limit <integer>', description: 'Number of results' },
     ],
   },
-  'manage auth-configs info': {
-    usage: 'composio manage auth-configs info [<id>]',
+  'dev auth-configs info': {
+    usage: 'composio dev auth-configs info [<id>]',
     description: 'View details of a specific auth config.',
     args: [{ name: '<id>', description: 'Auth config ID' }],
   },
-  'manage auth-configs create': {
+  'dev auth-configs create': {
     usage:
-      'composio manage auth-configs create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credentials text] [<name>]',
+      'composio dev auth-configs create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credentials text] [<name>]',
     description: 'Create a new auth config.',
     args: [{ name: '<name>', description: 'Auth config name' }],
     options: [
@@ -604,15 +601,15 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--custom-credentials <text>', description: 'Custom credentials JSON' },
     ],
   },
-  'manage auth-configs delete': {
-    usage: 'composio manage auth-configs delete [-y, --yes] [<id>]',
+  'dev auth-configs delete': {
+    usage: 'composio dev auth-configs delete [-y, --yes] [<id>]',
     description: 'Delete an auth config.',
     args: [{ name: '<id>', description: 'Auth config ID' }],
     flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
   },
-  'manage connected-accounts list': {
+  'dev connected-accounts list': {
     usage:
-      'composio manage connected-accounts list [--toolkits text] [--user-id text] [--status text] [--limit integer]',
+      'composio dev connected-accounts list [--toolkits text] [--user-id text] [--status text] [--limit integer]',
     description: 'List connected accounts.',
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
@@ -621,25 +618,25 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--limit <integer>', description: 'Number of results' },
     ],
   },
-  'manage connected-accounts info': {
-    usage: 'composio manage connected-accounts info [<id>]',
+  'dev connected-accounts info': {
+    usage: 'composio dev connected-accounts info [<id>]',
     description: 'View details of a specific connected account.',
     args: [{ name: '<id>', description: 'Connected account ID' }],
   },
-  'manage connected-accounts whoami': {
-    usage: 'composio manage connected-accounts whoami [<id>]',
+  'dev connected-accounts whoami': {
+    usage: 'composio dev connected-accounts whoami [<id>]',
     description: 'Show the external account profile for a connected account.',
     args: [{ name: '<id>', description: 'Connected account ID' }],
   },
-  'manage connected-accounts delete': {
-    usage: 'composio manage connected-accounts delete [-y, --yes] [<id>]',
+  'dev connected-accounts delete': {
+    usage: 'composio dev connected-accounts delete [-y, --yes] [<id>]',
     description: 'Delete a connected account.',
     args: [{ name: '<id>', description: 'Connected account ID' }],
     flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
   },
-  'manage connected-accounts link': {
+  'dev connected-accounts link': {
     usage:
-      'composio manage connected-accounts link [--auth-config text] [--user-id text] [--project-name text] [--no-browser] [--no-wait] [<toolkit>]',
+      'composio dev connected-accounts link [--auth-config text] [--user-id text] [--project-name text] [--no-browser] [--no-wait] [<toolkit>]',
     description: 'Connect an external account so tools can act on your behalf.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
     options: [
@@ -652,22 +649,22 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--no-wait', description: 'Print link info and exit without waiting' },
     ],
   },
-  'manage triggers list': {
-    usage: 'composio manage triggers list [--toolkits text] [--limit integer]',
+  'dev triggers list': {
+    usage: 'composio dev triggers list [--toolkits text] [--limit integer]',
     description: 'List available trigger types.',
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
       { name: '--limit <integer>', description: 'Number of results' },
     ],
   },
-  'manage triggers info': {
-    usage: 'composio manage triggers info [<slug>]',
+  'dev triggers info': {
+    usage: 'composio dev triggers info [<slug>]',
     description: 'View details of a specific trigger type.',
     args: [{ name: '<slug>', description: 'Trigger slug' }],
   },
-  'manage triggers listen': {
+  'dev triggers listen': {
     usage:
-      'composio manage triggers listen [--toolkits text] [--trigger-slug text] [--json] [--table] [--max-events int] [--forward url] [--out file]',
+      'composio dev triggers listen [--toolkits text] [--trigger-slug text] [--json] [--table] [--max-events int] [--forward url] [--out file]',
     description: 'Listen to realtime trigger events and optionally forward them.',
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs, comma-separated' },
@@ -684,9 +681,9 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--table', description: 'Show compact table rows' },
     ],
   },
-  'manage triggers status': {
+  'dev triggers status': {
     usage:
-      'composio manage triggers status [--user-ids text] [--toolkits text] [--trigger-ids text] [--show-disabled] [--limit integer]',
+      'composio dev triggers status [--user-ids text] [--toolkits text] [--trigger-ids text] [--show-disabled] [--limit integer]',
     description: 'Show active triggers with optional filters.',
     options: [
       { name: '--user-ids <text>', description: 'Filter by user IDs' },
@@ -698,9 +695,9 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
     flags: [{ name: '--show-disabled', description: 'Include disabled triggers' }],
   },
-  'manage triggers create': {
+  'dev triggers create': {
     usage:
-      'composio manage triggers create [--connected-account-id text] [--trigger-config text] [<trigger-name>]',
+      'composio dev triggers create [--connected-account-id text] [--trigger-config text] [<trigger-name>]',
     description: 'Create a new trigger instance.',
     args: [{ name: '<trigger-name>', description: 'Trigger type slug' }],
     options: [
@@ -708,37 +705,37 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--trigger-config <text>', description: 'Trigger configuration JSON' },
     ],
   },
-  'manage triggers enable': {
-    usage: 'composio manage triggers enable [<id>]',
+  'dev triggers enable': {
+    usage: 'composio dev triggers enable [<id>]',
     description: 'Enable a trigger instance.',
     args: [{ name: '<id>', description: 'Trigger instance ID' }],
   },
-  'manage triggers disable': {
-    usage: 'composio manage triggers disable [<id>]',
+  'dev triggers disable': {
+    usage: 'composio dev triggers disable [<id>]',
     description: 'Disable a trigger instance.',
     args: [{ name: '<id>', description: 'Trigger instance ID' }],
   },
-  'manage triggers delete': {
-    usage: 'composio manage triggers delete [-y, --yes] [<id>]',
+  'dev triggers delete': {
+    usage: 'composio dev triggers delete [-y, --yes] [<id>]',
     description: 'Delete a trigger instance.',
     args: [{ name: '<id>', description: 'Trigger instance ID' }],
     flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
   },
-  'manage orgs list': {
-    usage: 'composio manage orgs list [--limit integer]',
+  'dev orgs list': {
+    usage: 'composio dev orgs list [--limit integer]',
     description: 'List organizations and show current global selection.',
     options: [{ name: '--limit <integer>', description: 'Number of results' }],
   },
-  'manage orgs switch': {
-    usage: 'composio manage orgs switch [--org-id text] [--limit integer]',
+  'dev orgs switch': {
+    usage: 'composio dev orgs switch [--org-id text] [--limit integer]',
     description: 'Switch default organization context.',
     options: [
       { name: '--org-id <text>', description: 'Organization ID to switch to' },
       { name: '--limit <integer>', description: 'Number of orgs to show in picker' },
     ],
   },
-  'manage projects list': {
-    usage: 'composio manage projects list [--org-id text] [--limit integer]',
+  'dev projects list': {
+    usage: 'composio dev projects list [--org-id text] [--limit integer]',
     description: 'List developer projects for the current organization.',
     options: [
       { name: '--org-id <text>', description: 'Organization ID override' },
@@ -856,7 +853,7 @@ export function matchSubcommandHelp(argv: ReadonlyArray<string>): string | undef
   if (last !== '--help' && last !== '-h') return undefined;
 
   const cmdParts = args.slice(0, -1);
-  // Try longest match first: "manage toolkits list" → "manage toolkits" → "manage"
+  // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
   for (let len = cmdParts.length; len > 0; len--) {
     const key = cmdParts.slice(0, len).join(' ');
     if (key in SUBCOMMAND_HELP) return key;
@@ -888,7 +885,7 @@ export function printRootHelp(): Effect.Effect<void> {
     'you what to fix.',
     '',
     `Use ${bold('dev')} when you are building an agent with Composio's SDK and want scaffolding,`,
-    'playground execution, triggers, and logs.',
+    'playground execution, logs, and developer-scoped management commands.',
     '',
     bold('USAGE'),
     `  ${name} <command> [options]`,

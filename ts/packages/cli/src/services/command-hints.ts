@@ -15,11 +15,11 @@ export type CommandHintId =
   | 'dev.execute.getSchema'
   | 'dev.logs.tools'
   | 'dev.logs.triggers'
-  | 'manage.orgs.switch'
-  | 'manage.projects.list'
-  | 'manage.toolkits.list'
-  | 'manage.connectedAccounts.link'
-  | 'manage.authConfigs.list';
+  | 'dev.orgs.switch'
+  | 'dev.projects.list'
+  | 'dev.toolkits.list'
+  | 'dev.connectedAccounts.link'
+  | 'dev.authConfigs.list';
 
 type CommandHintNode = {
   readonly example: (params?: HintParams) => string;
@@ -59,7 +59,7 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
   'dev.execute': {
     example: params =>
       `composio dev execute "${getParam(params, 'slug', '<slug>')}" --user-id "${getParam(params, 'userId', '<user-id>')}" ${getParam(params, 'data', "-d '{}'")}`.trim(),
-    links: ['manage.connectedAccounts.link', 'dev.init', 'dev.execute.getSchema'],
+    links: ['dev.connectedAccounts.link', 'dev.init', 'dev.execute.getSchema'],
   },
   'dev.execute.getSchema': {
     example: params =>
@@ -74,26 +74,26 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
     example: params =>
       `composio dev logs triggers "${getParam(params, 'logId', '<log_id>')}"`,
   },
-  'manage.orgs.switch': {
-    example: () => 'composio manage orgs switch',
-    links: ['dev.init', 'manage.projects.list'],
+  'dev.orgs.switch': {
+    example: () => 'composio dev orgs switch',
+    links: ['dev.init', 'dev.projects.list'],
   },
-  'manage.projects.list': {
-    example: () => 'composio manage projects list',
+  'dev.projects.list': {
+    example: () => 'composio dev projects list',
     links: ['dev.init'],
   },
-  'manage.toolkits.list': {
-    example: () => 'composio manage toolkits list',
-    links: ['root.tools.list', 'manage.connectedAccounts.link'],
+  'dev.toolkits.list': {
+    example: () => 'composio dev toolkits list',
+    links: ['root.tools.list', 'dev.connectedAccounts.link'],
   },
-  'manage.connectedAccounts.link': {
+  'dev.connectedAccounts.link': {
     example: params =>
-      `composio manage connected-accounts link ${getParam(params, 'toolkit', '<toolkit>')} --user-id "${getParam(params, 'userId', '<user-id>')}"`,
+      `composio dev connected-accounts link ${getParam(params, 'toolkit', '<toolkit>')} --user-id "${getParam(params, 'userId', '<user-id>')}"`,
     links: ['dev.execute'],
   },
-  'manage.authConfigs.list': {
-    example: () => 'composio manage auth-configs list',
-    links: ['manage.connectedAccounts.link'],
+  'dev.authConfigs.list': {
+    example: () => 'composio dev auth-configs list',
+    links: ['dev.connectedAccounts.link'],
   },
 };
 

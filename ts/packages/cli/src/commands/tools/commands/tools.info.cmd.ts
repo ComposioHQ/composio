@@ -46,7 +46,7 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
           handleHttpServerError(ui, {
             fallbackMessage: `Tool "${slugValue}" not found.`,
             hint: [
-              commandHintStep('Browse available toolkits', 'manage.toolkits.list'),
+              commandHintStep('Browse available toolkits', 'dev.toolkits.list'),
               commandHintStep('Then list tools', 'root.tools.list'),
             ].join('\n'),
             fallbackValue: Option.none(),

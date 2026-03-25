@@ -43,7 +43,7 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage connected-accounts link', () => {
+describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -54,7 +54,7 @@ describe('CLI: composio manage connected-accounts link', () => {
     it.scoped('creates link and waits for ACTIVE', () =>
       Effect.gen(function* () {
         yield* cli([
-          'manage',
+          'dev',
           'connected-accounts',
           'link',
           '--auth-config',
@@ -82,7 +82,7 @@ describe('CLI: composio manage connected-accounts link', () => {
     it.scoped('uses explicit user-id', () =>
       Effect.gen(function* () {
         yield* cli([
-          'manage',
+          'dev',
           'connected-accounts',
           'link',
           '--auth-config',
@@ -111,7 +111,7 @@ describe('CLI: composio manage connected-accounts link', () => {
       it.scoped('uses global test user id from user_data.json', () =>
         Effect.gen(function* () {
           yield* cli([
-            'manage',
+            'dev',
             'connected-accounts',
             'link',
             '--auth-config',
@@ -132,7 +132,7 @@ describe('CLI: composio manage connected-accounts link', () => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli([
-          'manage',
+          'dev',
           'connected-accounts',
           'link',
           '--auth-config',
@@ -153,7 +153,7 @@ describe('CLI: composio manage connected-accounts link', () => {
       connectedAccountsData,
       fixture: 'global-test-user-id',
     })
-  )('[Given] composio link alias [Then] works like composio manage connected-accounts link', it => {
+  )('[Given] composio link alias [Then] works like composio dev connected-accounts link', it => {
     it.scoped('root link works for consumer toolkit linking only', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-browser']);
@@ -176,7 +176,7 @@ describe('CLI: composio manage connected-accounts link', () => {
     it.scoped('prints JSON with status pending, connected_account_id, redirect_url', () =>
       Effect.gen(function* () {
         yield* cli([
-          'manage',
+          'dev',
           'connected-accounts',
           'link',
           '--auth-config',
@@ -220,7 +220,7 @@ describe('CLI: composio manage connected-accounts link', () => {
       it.scoped('reports the incomplete response instead of waiting with empty values', () =>
         Effect.gen(function* () {
           yield* cli([
-            'manage',
+            'dev',
             'connected-accounts',
             'link',
             '--auth-config',
@@ -252,7 +252,7 @@ describe('CLI: composio manage connected-accounts link', () => {
       () =>
         Effect.gen(function* () {
           yield* cli([
-            'manage',
+            'dev',
             'connected-accounts',
             'link',
             '--auth-config',

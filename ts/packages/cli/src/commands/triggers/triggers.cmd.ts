@@ -13,7 +13,7 @@ import { triggersCmd$Delete } from './commands/triggers.delete.cmd';
  *
  * @example
  * ```bash
- * composio manage triggers <command>
+ * composio dev triggers <command>
  * ```
  */
 export const triggersCmd = Command.make('triggers').pipe(

@@ -19,7 +19,7 @@ describe('CLI: composio', () => {
         expect(result).toEqual(
           ValidationError.commandMismatch(
             HelpDoc.p(
-              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'run', 'proxy', 'artifacts', 'install', 'dev', 'tools', 'search', 'link', 'execute', 'generate', 'manage'"
+              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'run', 'proxy', 'artifacts', 'install', 'dev', 'tools', 'search', 'link', 'execute', 'generate'"
             )
           )
         );

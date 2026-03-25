@@ -201,7 +201,7 @@ const runToolsSearch = (params: {
           });
       const linkHint = params.rootOnly
         ? commandHintStep('Link an account', 'root.link', { toolkit: '<toolkit>' })
-        : commandHintStep('Link an account', 'manage.connectedAccounts.link', {
+        : commandHintStep('Link an account', 'dev.connectedAccounts.link', {
             toolkit: '<toolkit>',
             userId: '<user-id>',
           });
@@ -230,7 +230,7 @@ const runToolsSearch = (params: {
         action: 'Connect a user account',
         command: params.rootOnly
           ? commandHintExample('root.link', { toolkit: String(firstToolkit).toLowerCase() })
-          : commandHintExample('manage.connectedAccounts.link', {
+          : commandHintExample('dev.connectedAccounts.link', {
               toolkit: String(firstToolkit).toLowerCase(),
               userId: '<user-id>',
             }),

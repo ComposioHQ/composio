@@ -9,7 +9,7 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-describe('CLI: composio manage projects list', () => {
+describe('CLI: composio dev projects list', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -26,7 +26,7 @@ describe('CLI: composio manage projects list', () => {
           })
         );
 
-        yield* cli(['manage', 'projects', 'list', '--org-id', 'org_1']);
+        yield* cli(['dev', 'projects', 'list', '--org-id', 'org_1']);
 
         expect(fetchSpy).toHaveBeenCalledTimes(1);
         const [projectUrl, projectRequest] = fetchSpy.mock.calls[0]!;
@@ -43,7 +43,7 @@ describe('CLI: composio manage projects list', () => {
         expect(output).toContain(
           'Hint: run `composio dev init` in a directory to bind it to a developer project.'
         );
-        expect(output).toContain('Run `composio manage orgs switch` to change your default org.');
+        expect(output).toContain('Run `composio dev orgs switch` to change your default org.');
       })
     );
   });

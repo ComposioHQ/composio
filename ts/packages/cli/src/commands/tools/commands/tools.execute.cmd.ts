@@ -116,7 +116,7 @@ const toolkitFromToolSlug = (toolSlug: string): string | undefined => {
   return prefix;
 };
 
-const connectionTips = (toolSlug: string, surface: 'root' | 'manage' | 'dev') => {
+const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
   const toolkit = toolkitFromToolSlug(toolSlug);
   const executeStep =
     surface === 'dev'
@@ -132,7 +132,7 @@ const connectionTips = (toolSlug: string, surface: 'root' | 'manage' | 'dev') =>
   return [
     commandHintStep(
       'Link the toolkit first',
-      surface === 'dev' ? 'manage.connectedAccounts.link' : 'root.link',
+      surface === 'dev' ? 'dev.connectedAccounts.link' : 'root.link',
       surface === 'dev' ? { toolkit, userId: '<user-id>' } : { toolkit }
     ),
     executeStep.replace('Retry:', 'Then retry:'),
@@ -269,7 +269,7 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
           handleHttpServerError(ui, {
             fallbackMessage: `Tool "${toolSlug}" not found.`,
             hint: [
-              commandHintStep('Browse available toolkits', 'manage.toolkits.list'),
+              commandHintStep('Browse available toolkits', 'dev.toolkits.list'),
               commandHintStep('Then list tools', 'root.tools.list'),
             ].join('\n'),
             fallbackValue: Option.none(),
@@ -299,7 +299,7 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
 const handleExecutionError = (
   ui: TerminalUI,
   error: unknown,
-  context: { toolSlug: string; surface: 'root' | 'manage' | 'dev' }
+  context: { toolSlug: string; surface: 'root' | 'dev' }
 ) =>
   Effect.gen(function* () {
     const mapped = mapComposioError({ error, toolSlug: context.toolSlug });
@@ -495,7 +495,7 @@ type RunToolsExecuteParams = {
   data: Option.Option<string>;
   userId: Option.Option<string>;
   projectName: Option.Option<string>;
-  surface: 'root' | 'manage' | 'dev';
+  surface: 'root' | 'dev';
   projectMode: 'consumer' | 'developer';
   getSchema: boolean;
   dryRun: boolean;
@@ -614,7 +614,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
 
 const runConnectedToolkitFailFast = (params: {
   readonly slug: string;
-  readonly surface: 'root' | 'manage' | 'dev';
+  readonly surface: 'root' | 'dev';
   readonly ui: TerminalUI;
   readonly resolvedProject: ResolvedExecuteContext['resolvedProject'];
   readonly resolvedUserId: string;
@@ -711,7 +711,7 @@ const runConnectedToolkitFailFast = (params: {
 
 const runExecuteWithSpinner = (params: {
   readonly slug: string;
-  readonly surface: 'root' | 'manage' | 'dev';
+  readonly surface: 'root' | 'dev';
   readonly dryRun: boolean;
   readonly ui: TerminalUI;
   readonly executor: ToolsExecutor;
@@ -977,67 +977,6 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       noVerify: params.noVerify,
     });
   });
-
-export const toolsCmd$Execute = Command.make(
-  'execute',
-  {
-    slug,
-    data,
-    userId,
-    projectName,
-    getSchema,
-    dryRun,
-    skipConnectionCheck,
-    skipToolParamsCheck,
-    noVerify,
-  },
-  ({
-    slug,
-    data,
-    userId,
-    projectName,
-    getSchema,
-    dryRun,
-    skipConnectionCheck,
-    skipToolParamsCheck,
-    noVerify,
-  }) =>
-    runToolsExecute({
-      slug,
-      data,
-      userId,
-      projectName,
-      surface: 'manage',
-      projectMode: 'consumer',
-      getSchema,
-      dryRun,
-      skipConnectionCheck,
-      skipToolParamsCheck,
-      noVerify,
-    })
-).pipe(
-  Command.withDescription(
-    [
-      'Execute a tool by slug. Validates inputs against cached schemas and checks connections',
-      'automatically — just try it and it will tell you what to fix.',
-      '',
-      'Examples:',
-      '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
-      '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
-      '',
-      'Flags:',
-      '  --skip-connection-check     Skip the linked-account check',
-      '  --skip-tool-params-check    Skip input validation against cached schema',
-      '  --no-verify                 Skip both checks above',
-      '',
-      'See also:',
-      '  composio search "<query>"               Find tool slugs by use case',
-      '  composio tools info <slug>              Schema summary with jq hints',
-      '  composio link <toolkit>                 Connect an account for a toolkit',
-    ].join('\n')
-  )
-);
 
 export const rootToolsCmd$Execute = Command.make(
   'execute',

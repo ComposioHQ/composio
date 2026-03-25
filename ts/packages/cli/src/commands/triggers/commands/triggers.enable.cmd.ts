@@ -23,7 +23,7 @@ export const triggersCmd$Enable = Command.make('enable', { id }, ({ id }) =>
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
-        'Try specifying a trigger ID, e.g.:\n> composio manage triggers enable "trg_123"\n\nTo find trigger IDs:\n> composio manage triggers status --show-disabled'
+        'Try specifying a trigger ID, e.g.:\n> composio dev triggers enable "trg_123"\n\nTo find trigger IDs:\n> composio dev triggers status --show-disabled'
       );
       return;
     }
@@ -37,7 +37,7 @@ export const triggersCmd$Enable = Command.make('enable', { id }, ({ id }) =>
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Failed to enable trigger "${idValue}".`,
-            hint: 'Browse available triggers:\n> composio manage triggers status --show-disabled',
+            hint: 'Browse available triggers:\n> composio dev triggers status --show-disabled',
             fallbackValue: false,
           })
         )

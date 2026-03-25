@@ -24,8 +24,8 @@ const yes = Options.boolean('yes').pipe(
  *
  * @example
  * ```bash
- * composio manage connected-accounts delete "con_1a2b3c4d5e6f"
- * composio manage connected-accounts delete "con_1a2b3c4d5e6f" --yes
+ * composio dev connected-accounts delete "con_1a2b3c4d5e6f"
+ * composio dev connected-accounts delete "con_1a2b3c4d5e6f" --yes
  * ```
  */
 export const connectedAccountsCmd$Delete = Command.make('delete', { id, yes }, ({ id, yes }) =>
@@ -39,7 +39,7 @@ export const connectedAccountsCmd$Delete = Command.make('delete', { id, yes }, (
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
-        'Try specifying a connected account ID, e.g.:\n> composio manage connected-accounts delete "con_1a2b3c4d5e6f"\n\nTo find connected account IDs:\n> composio manage connected-accounts list'
+        'Try specifying a connected account ID, e.g.:\n> composio dev connected-accounts delete "con_1a2b3c4d5e6f"\n\nTo find connected account IDs:\n> composio dev connected-accounts list'
       );
       return;
     }
@@ -69,7 +69,7 @@ export const connectedAccountsCmd$Delete = Command.make('delete', { id, yes }, (
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Failed to delete connected account "${idValue}".`,
-            hint: 'Browse available connected accounts:\n> composio manage connected-accounts list',
+            hint: 'Browse available connected accounts:\n> composio dev connected-accounts list',
             fallbackValue: false,
           })
         )

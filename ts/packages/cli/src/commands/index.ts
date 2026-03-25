@@ -14,7 +14,6 @@ import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
 import { generateCmd } from './generate/generate.cmd';
-import { manageCmd } from './manage/manage.cmd';
 import { devCmd } from './dev.cmd';
 import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
 import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-help';
@@ -49,7 +48,6 @@ const $cmd = $defaultCmd.pipe(
     rootConnectedAccountsCmd$Link,
     rootToolsCmd$Execute,
     generateCmd,
-    manageCmd,
   ])
 );
 export const rootCommand = $cmd;
@@ -57,13 +55,13 @@ export const rootCommand = $cmd;
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = argv.slice(2);
   const isRootExecute = args[0] === 'execute';
-  const isManageExecute = args[0] === 'manage' && args[1] === 'tools' && args[2] === 'execute';
-  if (!isRootExecute && !isManageExecute) return undefined;
+  const isDevExecute = args[0] === 'dev' && args[1] === 'execute';
+  if (!isRootExecute && !isDevExecute) return undefined;
 
   const hasHelp = args.includes('--help') || args.includes('-h');
   if (!hasHelp) return undefined;
 
-  const tail = isRootExecute ? args.slice(1) : args.slice(3);
+  const tail = isRootExecute ? args.slice(1) : args.slice(2);
   for (let i = 0; i < tail.length; i += 1) {
     const token = tail[i];
     if (!token) continue;
