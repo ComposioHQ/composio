@@ -3,7 +3,12 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
-import type { CustomTool, CustomToolkit, RegisteredCustomTool, RegisteredCustomToolkit } from './customTool.types';
+import type {
+  CustomTool,
+  CustomToolkit,
+  RegisteredCustomTool,
+  RegisteredCustomToolkit,
+} from './customTool.types';
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
@@ -316,6 +321,7 @@ export type ToolRouterAuthorizeFn = (
 
 export const ToolRouterToolkitsOptionsSchema = z.object({
   toolkits: z.array(z.string()).optional(),
+  cursor: z.string().optional(),
   nextCursor: z.string().optional(),
   limit: z.number().optional(),
   isConnected: z.boolean().optional(),

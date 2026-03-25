@@ -213,7 +213,7 @@ export class ToolRouterSession<
     }
 
     const result = await this.client.toolRouter.session.toolkits(this.sessionId, {
-      cursor: toolkitOptions.data.nextCursor,
+      cursor: toolkitOptions.data.cursor ?? toolkitOptions.data.nextCursor,
       limit: toolkitOptions.data.limit,
       toolkits: toolkitOptions.data.toolkits,
       is_connected: toolkitOptions.data.isConnected,

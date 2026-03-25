@@ -1570,7 +1570,7 @@ describe('ToolRouter', () => {
       expect(result.items).toHaveLength(3);
     });
 
-    it('should fetch toolkits with pagination options', async () => {
+    it('should fetch toolkits with pagination options using nextCursor', async () => {
       mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
 
       const session = await toolRouter.create(userId);
@@ -1584,6 +1584,48 @@ describe('ToolRouter', () => {
         limit: 10,
         toolkits: undefined,
         is_connected: undefined,
+        search: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should fetch toolkits with pagination options using cursor param directly', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        limit: 10,
+        cursor: 'cursor_abc',
+      });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: 'cursor_abc',
+        limit: 10,
+        toolkits: undefined,
+        is_connected: undefined,
+        search: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should prefer cursor over nextCursor when both are provided', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        limit: 10,
+        cursor: 'cursor_primary',
+        nextCursor: 'cursor_fallback',
+      });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: 'cursor_primary',
+        limit: 10,
+        toolkits: undefined,
+        is_connected: undefined,
+        search: undefined,
       });
 
       expect(result.items).toHaveLength(3);
