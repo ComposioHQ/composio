@@ -25,7 +25,7 @@ AuthFieldsT: t.TypeAlias = t.List[
 
 class Toolkits(Resource):
     """
-    Toolkits are a collectiono of tools that can be used to perform various tasks.
+    Toolkits are a collection of tools that can be used to perform various tasks.
     They're conceptualized as a set of tools. Ex: Github toolkit can perform
     Github actions via its collection of tools. This is a replacement of the
     `apps` concept in the earlier versions of the SDK.
