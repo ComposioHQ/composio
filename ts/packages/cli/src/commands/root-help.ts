@@ -224,7 +224,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio execute GITHUB_CREATE_ISSUE -d @issue.json',
       '',
       '# Execute multiple tools concurrently',
-      `composio execute --parallel GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com" }' GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
+      `composio execute --parallel GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com" }'  GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
     ],
     seeAlso: [
       'composio search "<query>"               Find tool slugs by use case',
