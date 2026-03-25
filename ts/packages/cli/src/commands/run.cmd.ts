@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
@@ -27,6 +28,12 @@ const dryRun = Options.boolean('dry-run').pipe(
 );
 const debug = Options.boolean('debug').pipe(
   Options.withDescription('Log helper steps while the script runs'),
+  Options.withDefault(false)
+);
+const acpOnly = Options.boolean('acp-only').pipe(
+  Options.withDescription(
+    'Use ACP for subAgent() calls and fail instead of falling back to the legacy CLI path'
+  ),
   Options.withDefault(false)
 );
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
@@ -155,6 +162,48 @@ export const inferCliInvocationPrefix = (
     : [process.execPath];
 };
 
+const resolveSiblingModulePath = (relativeNoExtensionFromRunCmd: string): string => {
+  const currentFilePath = fileURLToPath(import.meta.url);
+  const currentDirectory = path.dirname(currentFilePath);
+
+  // Source (.ts) — running from `bun src/bin.ts`
+  const tsPath = path.resolve(currentDirectory, `${relativeNoExtensionFromRunCmd}.ts`);
+  if (fs.existsSync(tsPath)) {
+    return tsPath;
+  }
+
+  // Built (.js) — running from `bun dist/bin.mjs`
+  const jsPath = path.resolve(currentDirectory, `${relativeNoExtensionFromRunCmd}.js`);
+  if (fs.existsSync(jsPath)) {
+    return jsPath;
+  }
+
+  // Compiled binary — import.meta.url points to /$bunfs/, files live next to the executable
+  const baseName = path.basename(relativeNoExtensionFromRunCmd);
+  const exeDir = path.dirname(process.execPath);
+  const mjsPath = path.resolve(exeDir, `${baseName}.mjs`);
+  if (fs.existsSync(mjsPath)) {
+    return mjsPath;
+  }
+  const exeJsPath = path.resolve(exeDir, `${baseName}.js`);
+  if (fs.existsSync(exeJsPath)) {
+    return exeJsPath;
+  }
+
+  // Fallback — return the .js path (will error at runtime with a clear module-not-found)
+  return jsPath;
+};
+
+const subAgentSharedModuleUrl = pathToFileURL(
+  resolveSiblingModulePath('../services/run-subagent-shared')
+).href;
+const subAgentAcpModuleUrl = pathToFileURL(
+  resolveSiblingModulePath('../services/run-subagent-acp')
+).href;
+const subAgentLegacyModuleUrl = pathToFileURL(
+  resolveSiblingModulePath('../services/run-subagent-legacy')
+).href;
+
 type RunHelperContext = {
   readonly apiKey?: string;
   readonly baseURL?: string;
@@ -171,6 +220,7 @@ type RunHelperContext = {
   readonly noVerify?: boolean;
   readonly master?: MasterKind;
   readonly debug?: boolean;
+  readonly acpOnly?: boolean;
   readonly runOutputDir?: string;
 };
 
@@ -341,11 +391,13 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  }',
   '  const inputSchema = options.schema ?? options.jsonSchema;',
   '  let structuredSchema;',
+  '  let zodSchema;',
   '  if (inputSchema !== undefined) {',
   '    if (inputSchema && typeof inputSchema.safeParse === "function" && inputSchema._def) {',
   '      if (typeof z.toJSONSchema !== "function") {',
   '        throw new Error("subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.");',
   '      }',
+  '      zodSchema = inputSchema;',
   '      structuredSchema = z.toJSONSchema(inputSchema);',
   '    } else if (typeof inputSchema === "object" && inputSchema !== null && !Array.isArray(inputSchema)) {',
   '      structuredSchema = inputSchema;',
@@ -353,7 +405,7 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '      throw new Error("subAgent() schema must be a Zod schema or JSON Schema object.");',
   '    }',
   '  }',
-  '  return { ...options, structuredSchema };',
+  '  return { ...options, structuredSchema, zodSchema };',
   '};',
   'const runExternalCommandText = async (cmd, spawnOptions = {}) => {',
   '  helperDebugLog("agent.spawn", { command: cmd[0], args: cmd.slice(1) });',
@@ -569,74 +621,38 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
 ];
 
 const buildRunInvokeAgentHelpersSource = (): ReadonlyArray<string> => [
-  'const toInvokeAgentResponse = (master, target, payload = {}) => ({',
-  '  master,',
-  '  target,',
-  '  result: payload.result ?? null,',
-  '  structuredOutput: payload.structuredOutput ?? null,',
-  '});',
-  'const invokeClaudeAgent = async (prompt, options) => {',
-  '  helperDebugLog("subAgent.prepare", { target: "claude", hasSchema: options.structuredSchema !== undefined });',
-  '  const args = ["claude", "--bare", "-p", "--output-format", "json"];',
-  '  if (typeof options.model === "string" && options.model.trim().length > 0) {',
-  '    args.push("--model", options.model.trim());',
-  '  }',
-  '  if (options.structuredSchema !== undefined) {',
-  '    args.push("--json-schema", JSON.stringify(options.structuredSchema));',
-  '  }',
-  '  args.push(prompt);',
-  '  const result = await runExternalCommandText(args);',
-  '  const parsed = parseJson(result.stdout.trim());',
-  '  if (!parsed || typeof parsed !== "object") {',
-  '    throw new Error("claude returned non-JSON output in subAgent().");',
-  '  }',
-  '  return toInvokeAgentResponse(detectInvokeAgentMaster(), "claude", {',
-  '    result: typeof parsed.result === "string" ? parsed.result : null,',
-  '    structuredOutput: parsed.structured_output ?? null,',
-  '  });',
-  '};',
-  'const invokeCodexAgent = async (prompt, options) => {',
-  '  const fs = await import("node:fs");',
-  '  const os = await import("node:os");',
-  '  const path = await import("node:path");',
-  '  const tempDir = sharedRunOutputDir',
-  '    ? fs.mkdtempSync(path.join(sharedRunOutputDir, "invoke-agent-"))',
-  '    : fs.mkdtempSync(path.join(os.tmpdir(), "composio-invoke-agent-"));',
-  '  const outputPath = path.join(tempDir, "last-message.txt");',
-  '  const args = ["codex", "exec", "--skip-git-repo-check", "--sandbox", "read-only", "-o", outputPath];',
-  '  try {',
-  '    helperDebugLog("subAgent.prepare", { target: "codex", hasSchema: options.structuredSchema !== undefined });',
-  '    if (typeof options.model === "string" && options.model.trim().length > 0) {',
-  '      args.push("--model", options.model.trim());',
-  '    }',
-  '    if (options.structuredSchema !== undefined) {',
-  '      const schemaPath = path.join(tempDir, "schema.json");',
-  '      fs.writeFileSync(schemaPath, JSON.stringify(options.structuredSchema), "utf8");',
-  '      args.push("--output-schema", schemaPath);',
-  '    }',
-  '    args.push(prompt);',
-  '    await runExternalCommandText(args);',
-  '    const text = fs.readFileSync(outputPath, "utf8").trim();',
-  '    const parsed = options.structuredSchema ? parseJson(text) : null;',
-  '    return toInvokeAgentResponse(detectInvokeAgentMaster(), "codex", {',
-  '      result: options.structuredSchema ? null : text,',
-  '      structuredOutput: options.structuredSchema ? parsed : null,',
-  '    });',
-  '  } finally {',
-  '    fs.rmSync(tempDir, { recursive: true, force: true });',
-  '  }',
-  '};',
   'const subAgentImpl = async (prompt, options = {}) => {',
   '  if (typeof prompt !== "string" || prompt.trim().length === 0) {',
   '    throw new Error("subAgent() requires a non-empty prompt string.");',
   '  }',
   '  const normalizedOptions = normalizeInvokeAgentOptions(options);',
   '  const target = resolveInvokeAgentTarget(normalizedOptions.target);',
-  '  helperDebugLog("subAgent.target", { requestedTarget: normalizedOptions.target ?? null, resolvedTarget: target });',
-  '  if (target === "claude") {',
-  '    return invokeClaudeAgent(prompt.trim(), normalizedOptions);',
+  '  const master = detectInvokeAgentMaster();',
+  '  helperDebugLog("subAgent.target", { requestedTarget: normalizedOptions.target ?? null, resolvedTarget: target, master });',
+  '  try {',
+  '    return await invokeAcpSubAgent({',
+  '      prompt: prompt.trim(),',
+  '      options: normalizedOptions,',
+  '      master,',
+  '      target,',
+  '      helperDebugLog,',
+  '    });',
+  '  } catch (error) {',
+  '    if (!isAcpInvokeError(error)) {',
+  '      throw error;',
+  '    }',
+  '    if (helperContext.acpOnly === true) {',
+  '      throw error;',
+  '    }',
+  '    helperDebugLog("subAgent.acp.fallback", { target, code: error.code, message: error.message });',
+  '    return invokeLegacySubAgent({',
+  '      prompt: prompt.trim(),',
+  '      options: normalizedOptions,',
+  '      master,',
+  '      target,',
+  '      helperDebugLog,',
+  '    });',
   '  }',
-  '  return invokeCodexAgent(prompt.trim(), normalizedOptions);',
   '};',
   'globalThis.subAgent = subAgentImpl;',
   'Object.defineProperty(globalThis.subAgent, "schema", { value: subAgentSchema });',
@@ -710,6 +726,9 @@ export const buildRunHelpersSource = (
 ): string =>
   [
     'import { z } from "zod";',
+    `import { isAcpInvokeError } from ${JSON.stringify(subAgentSharedModuleUrl)};`,
+    `import { invokeAcpSubAgent } from ${JSON.stringify(subAgentAcpModuleUrl)};`,
+    `import { invokeLegacySubAgent } from ${JSON.stringify(subAgentLegacyModuleUrl)};`,
     '',
     `const cliPrefix = ${JSON.stringify(cliPrefix)};`,
     `const helperContext = ${JSON.stringify(context)};`,
@@ -830,6 +849,7 @@ export const runCmd = Command.make('run', {
   file,
   dryRun,
   debug,
+  acpOnly,
   skipConnectionCheck,
   skipToolParamsCheck,
   noVerify,
@@ -876,6 +896,7 @@ export const runCmd = Command.make('run', {
       'All helpers reuse your CLI auth state and linked accounts.',
       '',
       'Flags:',
+      '  --acp-only                  Use ACP for subAgent() and fail instead of falling back to the legacy CLI path',
       '  --debug                     Log helper steps while the script runs',
       '  --dry-run                   Preview execute() calls without running them',
       '  --skip-connection-check     Skip the linked-account check',
@@ -889,7 +910,7 @@ export const runCmd = Command.make('run', {
     ].join('\n')
   ),
   Command.withHandler(
-    ({ file, dryRun, debug, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
+    ({ file, dryRun, debug, acpOnly, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
       Effect.gen(function* () {
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
@@ -910,6 +931,7 @@ export const runCmd = Command.make('run', {
           perfDebug,
           toolDebug,
           debug,
+          acpOnly,
           dryRun,
           skipConnectionCheck,
           skipToolParamsCheck,

@@ -72,6 +72,59 @@ export function buildBinary() {
     }
 
     yield* Effect.logDebug('', 'Binary built successfully');
+
+    // Build companion modules that `composio run` imports in the child process.
+    // These cannot live inside the compiled binary because they run in a separate
+    // Bun process via the --preload globals file.
+    const companionModules = [
+      'src/services/run-subagent-shared.ts',
+      'src/services/run-subagent-acp.ts',
+      'src/services/run-subagent-legacy.ts',
+    ] as const;
+
+    for (const entry of companionModules) {
+      const name = entry.replace(/^.*\//, '').replace(/\.ts$/, '');
+      const companionArgs = [
+        'bun',
+        'build',
+        `./${entry}`,
+        '--outfile',
+        `./dist/${name}.mjs`,
+        '--format',
+        'esm',
+        '--target',
+        'bun',
+      ] as const satisfies ReadonlyArray<string>;
+
+      yield* Effect.logDebug(`Building companion module: ${name}`);
+
+      const companionCmd = Command.make(...companionArgs);
+      const { exitCode: companionExitCode } = yield* companionCmd.pipe(
+        Command.start,
+        Effect.flatMap(p =>
+          Effect.all(
+            {
+              exitCode: p.exitCode,
+              output: Stream.merge(
+                Stream.decodeText(p.stdout, 'utf-8'),
+                Stream.decodeText(p.stderr, 'utf-8'),
+                { haltStrategy: 'left' }
+              ).pipe(
+                Stream.tap(chunk => Console.log(chunk)),
+                Stream.runDrain
+              ),
+            },
+            { concurrency: 'unbounded' }
+          )
+        )
+      );
+
+      if (companionExitCode !== 0) {
+        return yield* Effect.fail(new Error(`Failed to build companion module: ${name}`));
+      }
+    }
+
+    yield* Effect.logDebug('', 'Companion modules built successfully');
   });
 }
 
