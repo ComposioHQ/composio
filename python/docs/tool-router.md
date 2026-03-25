@@ -235,18 +235,40 @@ session = composio.tool_router.create(
 
 ### `workbench`
 
-Configure workbench behavior:
+Configure the workbench — a persistent Python sandbox that provides code execution tools
+(`COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`) within a session.
+
+The `enable` flag is a master switch for the workbench. When set to `False`, no code
+execution tools are available in the session, workbench-related prompt lines are stripped
+from the system prompt, and direct workbench calls are rejected. Defaults to `True`.
 
 ```python
+# Disable the workbench entirely
 session = composio.tool_router.create(
     user_id='user_123',
     toolkits=['gmail'],
     workbench={
-        'enable_proxy_execution': False,  # Whether to allow proxy execute calls in workbench
-        'auto_offload_threshold': 300  # Maximum execution payload size to offload to workbench
+        'enable': False
+    }
+)
+
+# Keep workbench enabled but restrict proxy execution and set offload threshold
+session = composio.tool_router.create(
+    user_id='user_123',
+    toolkits=['gmail'],
+    workbench={
+        'enable': True,                    # Enable workbench (default)
+        'enable_proxy_execution': False,   # Disallow proxy_execute() HTTP calls
+        'auto_offload_threshold': 300      # Auto-offload payloads larger than 300 chars
     }
 )
 ```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enable` | `bool` | `True` | Master switch. When `False`, removes `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` from the session. |
+| `enable_proxy_execution` | `bool` | — | Whether to allow `proxy_execute()` calls in the workbench. When `False`, prevents arbitrary HTTP requests from the sandbox. |
+| `auto_offload_threshold` | `int` | — | Maximum execution payload size (in characters). Responses larger than this are automatically offloaded to the workbench for processing. |
 
 ## Session Properties and Methods
 

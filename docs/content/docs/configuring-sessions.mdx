@@ -163,6 +163,56 @@ When executing a tool, the connected account is selected in this order:
 
 If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
 
+## Workbench
+
+The [workbench](/docs/workbench) is a persistent Python sandbox that provides code execution tools (`COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`). It is enabled by default. To disable it entirely, set `enable` to `false`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Disable the workbench — no code execution tools in this session
+session = composio.create(
+    user_id="user_123",
+    workbench={"enable": False}
+)
+
+# Fine-tune workbench behavior
+session = composio.create(
+    user_id="user_123",
+    workbench={
+        "enable_proxy_execution": False,
+        "auto_offload_threshold": 300
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Disable the workbench — no code execution tools in this session
+const session = await composio.create("user_123", {
+  workbench: { enable: false },
+});
+
+// Fine-tune workbench behavior
+const session2 = await composio.create("user_123", {
+  workbench: {
+    enableProxyExecution: false,
+    autoOffloadThreshold: 300,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enable` | boolean | `true` | Master switch. When `false`, removes `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` from the session. |
+| `enableProxyExecution` / `enable_proxy_execution` | boolean | — | Whether `proxy_execute()` can make HTTP requests from the sandbox. |
+| `autoOffloadThreshold` / `auto_offload_threshold` | number | — | Payload size (in characters) above which responses are offloaded to the workbench. |
+
 ## Session methods
 
 ### mcp

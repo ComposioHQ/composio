@@ -111,6 +111,22 @@ export const transformToolRouterManageConnectionsParams = (
   };
 };
 
+/**
+ * Transforms the SDK's camelCase workbench configuration into the snake_case
+ * format expected by the session creation API.
+ *
+ * The workbench is a persistent Python sandbox that provides code execution tools
+ * (`COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`) within a session.
+ *
+ * @param params - Workbench configuration from the session config.
+ * @param params.enable - Master switch for the workbench. When `false`, no code
+ *   execution tools are available in the session. Defaults to `true`.
+ * @param params.enableProxyExecution - Whether to allow `proxy_execute()` calls
+ *   in the workbench sandbox. When `false`, prevents arbitrary HTTP requests.
+ * @param params.autoOffloadThreshold - Maximum execution payload size (in characters).
+ *   Responses larger than this are automatically offloaded to the workbench.
+ * @returns The transformed workbench params for the API, or `undefined` if no config was provided.
+ */
 export const transformToolRouterWorkbenchParams = (
   params?: ToolRouterCreateSessionConfig['workbench']
 ): SessionCreateParams.Workbench | undefined => {

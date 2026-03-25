@@ -55,6 +55,64 @@ The workbench corrects common mistakes in the code your agent generates. For exa
 
 The sandbox runs as a persistent Jupyter notebook. Variables, imports, files, and in-memory state from one call are available in the next.
 
+## Enabling and disabling the workbench
+
+The workbench is enabled by default. To disable it, set `workbench.enable` to `false` when creating a session. This removes `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` from the session entirely — workbench-related prompt lines are stripped, and direct workbench calls are rejected.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Disable the workbench
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    workbench={"enable": False}
+)
+
+# Keep workbench enabled but restrict proxy execution
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    workbench={
+        "enable_proxy_execution": False,
+        "auto_offload_threshold": 300
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Disable the workbench
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  workbench: { enable: false },
+});
+
+// Keep workbench enabled but restrict proxy execution
+const session2 = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  workbench: {
+    enableProxyExecution: false,
+    autoOffloadThreshold: 300,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+| Option | Type | Default | What it does |
+|--------|------|---------|-------------|
+| `enable` | boolean | `true` | Master switch. When `false`, removes all code execution tools from the session. |
+| `enableProxyExecution` / `enable_proxy_execution` | boolean | — | Whether `proxy_execute()` can make HTTP requests from the sandbox. |
+| `autoOffloadThreshold` / `auto_offload_threshold` | number | — | Payload size (in characters) above which tool responses are automatically offloaded to the workbench for processing. |
+
+<Callout>
+Disabling the workbench is useful when your agent only needs to search and execute tools via `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`, without code generation capabilities.
+</Callout>
+
 ## Common patterns
 
 ### Bulk operations across apps
