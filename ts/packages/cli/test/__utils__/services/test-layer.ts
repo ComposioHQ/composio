@@ -921,11 +921,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const mockComposioClient = {
       link: {
-        create: async (params: {
-          auth_config_id: string;
-          user_id: string;
-          callback_url?: string;
-        }) => {
+        create: async (params: { auth_config_id: string; user_id: string }) => {
           const response = connectedAccountsData.linkResponse ?? {
             connected_account_id: 'con_test_link',
             expires_at: '2026-12-31T23:59:59Z',
