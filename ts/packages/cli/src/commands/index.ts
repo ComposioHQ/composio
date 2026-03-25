@@ -123,6 +123,7 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
   const args = argv.slice(2);
   let perfDebug: boolean | undefined;
   let toolDebug: boolean | undefined;
+  let acpOnly: boolean | undefined;
 
   for (const arg of args) {
     if (arg === '--perf-debug') {
@@ -149,6 +150,18 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
       toolDebug = true;
       continue;
     }
+    if (arg === '--acp-only') {
+      acpOnly = true;
+      continue;
+    }
+    if (arg === '--acp-only=false') {
+      acpOnly = false;
+      continue;
+    }
+    if (arg === '--acp-only=true') {
+      acpOnly = true;
+      continue;
+    }
     normalized.push(arg);
   }
 
@@ -157,6 +170,11 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
     ...(perfDebug === undefined ? {} : { perfDebug }),
     ...(toolDebug === undefined ? {} : { toolDebug }),
   });
+  if (acpOnly === undefined) {
+    delete process.env.COMPOSIO_RUN_ACP_ONLY;
+  } else {
+    process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';
+  }
 
   return normalized;
 };

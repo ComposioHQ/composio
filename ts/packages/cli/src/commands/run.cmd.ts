@@ -30,12 +30,6 @@ const debug = Options.boolean('debug').pipe(
   Options.withDescription('Log helper steps while the script runs'),
   Options.withDefault(false)
 );
-const acpOnly = Options.boolean('acp-only').pipe(
-  Options.withDescription(
-    'Use ACP for subAgent() calls and fail instead of falling back to the legacy CLI path'
-  ),
-  Options.withDefault(false)
-);
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
   Options.withDescription('Skip the linked-account check'),
   Options.withDefault(false)
@@ -829,7 +823,6 @@ export const runCmd = Command.make('run', {
   file,
   dryRun,
   debug,
-  acpOnly,
   skipConnectionCheck,
   skipToolParamsCheck,
   noVerify,
@@ -876,7 +869,6 @@ export const runCmd = Command.make('run', {
       'All helpers reuse your CLI auth state and linked accounts.',
       '',
       'Flags:',
-      '  --acp-only                  Use ACP for subAgent() and fail instead of falling back to the legacy CLI path',
       '  --debug                     Log helper steps while the script runs',
       '  --dry-run                   Preview execute() calls without running them',
       '  --skip-connection-check     Skip the linked-account check',
@@ -890,10 +882,11 @@ export const runCmd = Command.make('run', {
     ].join('\n')
   ),
   Command.withHandler(
-    ({ file, dryRun, debug, acpOnly, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
+    ({ file, dryRun, debug, skipConnectionCheck, skipToolParamsCheck, noVerify, args }) =>
       Effect.gen(function* () {
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
+        const acpOnly = process.env.COMPOSIO_RUN_ACP_ONLY === '1';
         if (Option.isNone(file)) {
           const [inlineCode] = args;
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');

@@ -146,6 +146,7 @@ describe('CLI: composio run', () => {
           expect(output).toContain('Global from zod');
           expect(output).toContain('composio search "<query>"');
           expect(output).toContain('composio execute <slug> --get-schema');
+          expect(output).not.toContain('--acp-only');
         })
     );
   });
