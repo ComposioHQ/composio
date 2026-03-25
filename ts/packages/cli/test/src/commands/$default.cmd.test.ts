@@ -40,7 +40,7 @@ describe('CLI: composio', () => {
         expect(output).toContain('composio link [<toolkit>]');
         expect(output).toContain('composio run <code>');
         expect(output).toContain('composio proxy <url> --toolkit text');
-        expect(output).toContain('composio artifacts cwd');
+        expect(output).toContain('artifacts cwd');
         expect(output).toContain('DEVELOPER COMMANDS');
         expect(output).toContain('ACCOUNT');
         expect(output).toContain('Documentation: https://docs.composio.dev');

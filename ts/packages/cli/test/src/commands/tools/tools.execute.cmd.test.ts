@@ -7,6 +7,7 @@ import { ComposioNoActiveConnectionError } from 'src/services/composio-error-ove
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
+import * as composioClients from 'src/services/composio-clients';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -42,6 +43,9 @@ describe('CLI: composio execute', () => {
   beforeEach(() => {
     savedCI = process.env.CI;
     delete process.env.CI;
+    vi.spyOn(composioClients, 'getLatestToolVersion').mockImplementation(() =>
+      Effect.fail(new composioClients.HttpServerError({}))
+    );
     vi.spyOn(consumerShortTermCache, 'getFreshConsumerConnectedToolkitsFromCache').mockReturnValue(
       Effect.succeed(Option.some(['gmail', 'github']))
     );
