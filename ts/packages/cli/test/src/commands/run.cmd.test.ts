@@ -78,6 +78,27 @@ describe('CLI: composio run', () => {
   });
 
   layer(TestLive())(it => {
+    it.scoped(
+      '[Given] --logs-off [Then] run accepts the flag and forwards execution normally',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          vi.stubGlobal('Bun', { spawn });
+
+          yield* cli(['run', '--logs-off', 'console.log("hi")']);
+
+          expect(spawn).toHaveBeenCalledTimes(1);
+          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+            cmd: string[];
+          };
+          expect(spawnConfig.cmd[3]).toBe('--eval');
+          expect(exit).toHaveBeenCalledWith(0);
+        })
+    );
+  });
+
+  layer(TestLive())(it => {
     it.scoped('[Given] --file [Then] it forwards file execution to the embedded Bun runtime', () =>
       Effect.gen(function* () {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
@@ -140,6 +161,7 @@ describe('CLI: composio run', () => {
           expect(output).toContain('--skip-connection-check');
           expect(output).toContain('--skip-tool-params-check');
           expect(output).toContain('--no-verify');
+          expect(output).toContain('--logs-off');
           expect(output).toContain('subAgent');
           expect(output).toContain('schema: z.object');
           expect(output).toContain('INJECTED HELPERS');
@@ -161,6 +183,7 @@ describe('buildRunHelpersSource', () => {
       orgId: 'org_test',
       consumerUserId: 'consumer_user_test',
       acpOnly: true,
+      logsOff: true,
       dryRun: true,
     });
 
@@ -183,11 +206,15 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('const maybeLoadStoredCliResult = (result) => {');
     expect(source).toContain('storedInFilePath: outputFilePath !== null,');
     expect(source).toContain('outputFilePath,');
-    expect(source).toContain('const logCliResultPreview = (requestId, result) => {');
+    expect(source).toContain('const formatHelperDebugEvent = (step, details = {}) => {');
+    expect(source).toContain('return `[subAgent] triggered with ${details.resolvedTarget}`;');
+    expect(source).toContain('const logCliResultPreview = (requestId, command, result) => {');
     expect(source).toContain('helperDebugLog("cli.result", {');
     expect(source).toContain('helperDebugLog("cli.result.stored_in_file"');
+    expect(source).toContain('case "subAgent.acp.message":');
     expect(source).toContain('COMPOSIO_USER_API_KEY');
     expect(source).toContain('"acpOnly":true');
+    expect(source).toContain('"logsOff":true');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');
     expect(source).toContain('__composioConsumerContext');
     expect(source).toContain('globalThis.execute = async (slug, data = {}) => {');
@@ -258,6 +285,15 @@ describe('run-subagent-shared', () => {
       result: null,
       structuredOutput: { ok: true },
     });
+  });
+
+  it('[Given] plain text output [Then] it omits structuredOutput', () => {
+    const result = finalizeInvokeAgentText('hello', {});
+
+    expect(result).toEqual({
+      result: 'hello',
+    });
+    expect('structuredOutput' in result).toBe(false);
   });
 
   it('[Given] invalid JSON in structured mode [Then] it throws a clear error', () => {

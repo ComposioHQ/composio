@@ -19,7 +19,7 @@ export type InvokeAgentResponse = {
   readonly master: MasterKind;
   readonly target: InvokeAgentTarget;
   readonly result: string | null;
-  readonly structuredOutput: unknown | null;
+  readonly structuredOutput?: unknown;
 };
 
 export type HelperDebugLog = (step: string, details?: Record<string, unknown>) => void;
@@ -57,7 +57,9 @@ export const toInvokeAgentResponse = (
   master,
   target,
   result: payload.result ?? null,
-  structuredOutput: payload.structuredOutput ?? null,
+  ...(payload.structuredOutput === undefined || payload.structuredOutput === null
+    ? {}
+    : { structuredOutput: payload.structuredOutput }),
 });
 
 export const parseJson = (text: string): unknown => {
@@ -121,7 +123,6 @@ export const finalizeInvokeAgentText = (
   if (!options.structuredSchema) {
     return {
       result: trimmed,
-      structuredOutput: null,
     };
   }
 

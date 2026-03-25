@@ -64,10 +64,71 @@ export const resolveAcpAdapterCommand = (
   };
 };
 
+const chunkFlushPattern = /[\s,.;:!?)\]}"]$/;
+
+export class BufferedChunkLogger {
+  private buffer = '';
+
+  constructor(
+    private readonly step: 'subAgent.acp.message' | 'subAgent.acp.thought',
+    private readonly helperDebugLog: HelperDebugLog
+  ) {}
+
+  push(text: string): void {
+    this.buffer += text;
+    this.flushCompletedLines();
+    this.flushWhenReadable();
+  }
+
+  flush(): void {
+    this.emit(this.buffer);
+    this.buffer = '';
+  }
+
+  private flushCompletedLines(): void {
+    let newlineIndex = this.buffer.indexOf('\n');
+    while (newlineIndex !== -1) {
+      const line = this.buffer.slice(0, newlineIndex);
+      this.emit(line);
+      this.buffer = this.buffer.slice(newlineIndex + 1);
+      newlineIndex = this.buffer.indexOf('\n');
+    }
+  }
+
+  private flushWhenReadable(): void {
+    if (this.buffer.length < 48) {
+      return;
+    }
+
+    if (!chunkFlushPattern.test(this.buffer)) {
+      return;
+    }
+
+    this.emit(this.buffer);
+    this.buffer = '';
+  }
+
+  private emit(text: string): void {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return;
+    }
+
+    this.helperDebugLog(this.step, {
+      text: normalized,
+    });
+  }
+}
+
 class RunSubAgentClient {
   private readonly textChunks: string[] = [];
+  private readonly messageLogger: BufferedChunkLogger;
+  private readonly thoughtLogger: BufferedChunkLogger;
 
-  constructor(private readonly helperDebugLog: HelperDebugLog) {}
+  constructor(private readonly helperDebugLog: HelperDebugLog) {
+    this.messageLogger = new BufferedChunkLogger('subAgent.acp.message', helperDebugLog);
+    this.thoughtLogger = new BufferedChunkLogger('subAgent.acp.thought', helperDebugLog);
+  }
 
   async requestPermission(
     params: acp.RequestPermissionRequest
@@ -101,6 +162,45 @@ class RunSubAgentClient {
     const update = params.update;
     if (update.sessionUpdate === 'agent_message_chunk' && update.content.type === 'text') {
       this.textChunks.push(update.content.text);
+      this.messageLogger.push(update.content.text);
+      return;
+    }
+
+    if (update.sessionUpdate === 'agent_thought_chunk' && update.content.type === 'text') {
+      this.thoughtLogger.push(update.content.text);
+      return;
+    }
+
+    if (update.sessionUpdate === 'tool_call') {
+      this.helperDebugLog('subAgent.acp.tool_call', {
+        title: update.title,
+        kind: update.kind ?? null,
+        status: update.status ?? null,
+        locations: update.locations?.map(location => location.path) ?? [],
+      });
+      return;
+    }
+
+    if (update.sessionUpdate === 'tool_call_update') {
+      this.helperDebugLog('subAgent.acp.tool_call_update', {
+        toolCallId: update.toolCallId,
+        title: update.title ?? null,
+        kind: update.kind ?? null,
+        status: update.status ?? null,
+        locations: update.locations?.map(location => location.path) ?? [],
+        rawOutput: update.rawOutput ?? null,
+      });
+      return;
+    }
+
+    if (update.sessionUpdate === 'plan') {
+      this.helperDebugLog('subAgent.acp.plan', {
+        entries: update.entries.map(entry => ({
+          status: entry.status,
+          priority: entry.priority ?? null,
+          content: entry.content,
+        })),
+      });
       return;
     }
 
@@ -110,6 +210,8 @@ class RunSubAgentClient {
   }
 
   getText(): string {
+    this.messageLogger.flush();
+    this.thoughtLogger.flush();
     return this.textChunks.join('');
   }
 }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveAcpAdapterCommand } from 'src/services/run-subagent-acp';
+import { BufferedChunkLogger, resolveAcpAdapterCommand } from 'src/services/run-subagent-acp';
 import { AcpInvokeError, isAcpInvokeError } from 'src/services/run-subagent-shared';
 
 describe('run-subagent-acp', () => {
@@ -35,5 +35,23 @@ describe('run-subagent-acp', () => {
     };
 
     expect(isAcpInvokeError(error)).toBe(true);
+  });
+
+  it('[Given] tokenized message chunks [Then] it emits buffered readable text', () => {
+    const helperDebugLog = vi.fn();
+    const logger = new BufferedChunkLogger('subAgent.acp.message', helperDebugLog);
+
+    logger.push('Pick');
+    logger.push(' one');
+    logger.push(' fruit');
+    logger.push(' from');
+    logger.push(' the');
+    logger.push(' mixed');
+    logger.push(' box.');
+    logger.flush();
+
+    expect(helperDebugLog).toHaveBeenCalledWith('subAgent.acp.message', {
+      text: 'Pick one fruit from the mixed box.',
+    });
   });
 });

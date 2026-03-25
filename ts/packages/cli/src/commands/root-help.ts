@@ -256,6 +256,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '-f, --file <text>', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running them' },
       { name: '--debug', description: 'Log helper steps while the script runs' },
+      { name: '--logs-off', description: 'Hide the always-on subAgent streaming logs' },
     ],
     flags: [
       { name: '--skip-connection-check', description: 'Skip the linked-account check' },
