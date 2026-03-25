@@ -36,11 +36,6 @@ const projectName = Options.text('project-name').pipe(
   Options.withDescription('Developer project name override for this command')
 );
 
-const callbackUrl = Options.text('callback-url').pipe(
-  Options.optional,
-  Options.withDescription('URL to redirect back to after auth completes')
-);
-
 const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
   Options.withDescription('Skip auto-opening the browser')
@@ -159,7 +154,6 @@ const runConnectedAccountsLink = (params: {
   authConfig: Option.Option<string>;
   userId: Option.Option<string>;
   projectName: Option.Option<string>;
-  callbackUrl: Option.Option<string>;
   noBrowser: boolean;
   noWait: boolean;
   rootOnly: boolean;
@@ -246,7 +240,6 @@ const runConnectedAccountsLink = (params: {
             client.link.create({
               auth_config_id: authConfigId,
               user_id: resolvedUserId.value,
-              callback_url: Option.getOrUndefined(params.callbackUrl),
             })
           )
         )
@@ -324,10 +317,7 @@ const runConnectedAccountsLink = (params: {
             manageConnections: true,
           });
           return yield* Effect.tryPromise(() =>
-            client.toolRouter.session.link(sessionId, {
-              toolkit: toolkitSlug,
-              callback_url: Option.getOrUndefined(params.callbackUrl),
-            })
+            client.toolRouter.session.link(sessionId, { toolkit: toolkitSlug })
           );
         })
       )
@@ -400,14 +390,13 @@ const runConnectedAccountsLink = (params: {
 
 export const connectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, authConfig, userId, projectName, callbackUrl, noBrowser, noWait },
-  ({ toolkit, authConfig, userId, projectName, callbackUrl, noBrowser, noWait }) =>
+  { toolkit, authConfig, userId, projectName, noBrowser, noWait },
+  ({ toolkit, authConfig, userId, projectName, noBrowser, noWait }) =>
     runConnectedAccountsLink({
       toolkit,
       authConfig,
       userId,
       projectName,
-      callbackUrl,
       noBrowser,
       noWait,
       rootOnly: false,
@@ -420,7 +409,6 @@ export const connectedAccountsCmd$Link = Command.make(
       '',
       'Examples:',
       '  composio link github',
-      '  composio link github --callback-url https://your-app.com/auth/callback',
       '  composio link gmail --no-browser          Print the auth URL instead of opening it',
       '',
       'See also:',
@@ -432,14 +420,13 @@ export const connectedAccountsCmd$Link = Command.make(
 
 export const rootConnectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, callbackUrl, noBrowser, noWait },
-  ({ toolkit, callbackUrl, noBrowser, noWait }) =>
+  { toolkit, noBrowser, noWait },
+  ({ toolkit, noBrowser, noWait }) =>
     runConnectedAccountsLink({
       toolkit,
       authConfig: Option.none(),
       userId: Option.none(),
       projectName: Option.none(),
-      callbackUrl,
       noBrowser,
       noWait,
       rootOnly: true,
@@ -452,7 +439,6 @@ export const rootConnectedAccountsCmd$Link = Command.make(
       '',
       'Examples:',
       '  composio link github',
-      '  composio link github --callback-url https://your-app.com/auth/callback',
       '  composio link gmail --no-browser          Print the auth URL instead of opening it',
       '',
       'See also:',
