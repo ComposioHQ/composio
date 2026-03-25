@@ -76,9 +76,12 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
 // ── Developer commands ─────────────────────────────────────────────────
 
 const OTHER_COMMANDS: ReadonlyArray<CompactCommand> = [
-  { name: 'tools info <slug>', description: 'Print tool summary and cache its schema' },
-  { name: 'tools list <toolkit>', description: 'List tools available in a toolkit' },
-  { name: 'artifacts cwd', description: 'Print the cwd-scoped session artifact directory' },
+  { name: 'composio tools info <slug>', description: 'Print tool summary and cache its schema' },
+  { name: 'composio tools list <toolkit>', description: 'List tools available in a toolkit' },
+  {
+    name: 'composio artifacts cwd',
+    description: 'Print the cwd-scoped session artifact directory',
+  },
 ];
 
 const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
