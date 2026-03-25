@@ -1,5 +1,5 @@
 /**
- * CLI `composio manage toolkits list` e2e test
+ * CLI `composio dev toolkits list` e2e test
  *
  * Verifies that the list subcommand returns toolkits as JSON in piped mode,
  * supports --query filtering (exact, prefix, no fuzzy), and respects --limit.
@@ -28,12 +28,12 @@ e2e(import.meta.url, {
     let noFuzzyResult: E2ETestResult;
 
     beforeAll(async () => {
-      exactResult = await runCmd('composio manage toolkits list --query gmail --limit 1');
-      prefixResult = await runCmd('composio manage toolkits list --query gmai --limit 1');
-      noFuzzyResult = await runCmd('composio manage toolkits list --query gmal --limit 1');
+      exactResult = await runCmd('composio dev toolkits list --query gmail --limit 1');
+      prefixResult = await runCmd('composio dev toolkits list --query gmai --limit 1');
+      noFuzzyResult = await runCmd('composio dev toolkits list --query gmal --limit 1');
     }, TIMEOUTS.FIXTURE);
 
-    describe('composio manage toolkits list --query gmail --limit 1 (exact slug)', () => {
+    describe('composio dev toolkits list --query gmail --limit 1 (exact slug)', () => {
       it('exits successfully', () => {
         expect(exactResult.exitCode).toBe(0);
       });
@@ -67,7 +67,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio manage toolkits list --query gmai --limit 1 (prefix search)', () => {
+    describe('composio dev toolkits list --query gmai --limit 1 (prefix search)', () => {
       it('exits successfully', () => {
         expect(prefixResult.exitCode).toBe(0);
       });
@@ -88,7 +88,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio manage toolkits list --query gmal --limit 1 (no fuzzy search)', () => {
+    describe('composio dev toolkits list --query gmal --limit 1 (no fuzzy search)', () => {
       it('exits successfully', () => {
         expect(noFuzzyResult.exitCode).toBe(0);
       });
