@@ -227,7 +227,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
   },
   link: {
-    usage: 'composio link [<toolkit>] [--no-browser] [--no-wait]',
+    usage: 'composio link [<toolkit>] [--callback-url text] [--no-browser] [--no-wait]',
     description:
       'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf. Opens a browser for OAuth authorization and waits for confirmation.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
@@ -238,7 +238,17 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
         description: 'Print link info and exit without waiting for authorization',
       },
     ],
-    examples: ['composio link github', 'composio link gmail --no-browser'],
+    options: [
+      {
+        name: '--callback-url <text>',
+        description: 'Redirect back to this URL after auth completes',
+      },
+    ],
+    examples: [
+      'composio link github',
+      'composio link github --callback-url https://your-app.com/auth/callback',
+      'composio link gmail --no-browser',
+    ],
     seeAlso: [
       'composio search "<query>"               Find tools to use after linking',
       "composio execute <slug> -d '{ ... }'    Execute a tool with your linked account",
@@ -639,13 +649,17 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   },
   'manage connected-accounts link': {
     usage:
-      'composio manage connected-accounts link [--auth-config text] [--user-id text] [--project-name text] [--no-browser] [--no-wait] [<toolkit>]',
+      'composio manage connected-accounts link [--auth-config text] [--user-id text] [--project-name text] [--callback-url text] [--no-browser] [--no-wait] [<toolkit>]',
     description: 'Connect an external account so tools can act on your behalf.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
     options: [
       { name: '--auth-config <text>', description: 'Auth config ID to use' },
       { name: '--user-id <text>', description: 'User ID override' },
       { name: '--project-name <text>', description: 'Project name override' },
+      {
+        name: '--callback-url <text>',
+        description: 'Redirect back to this URL after auth completes',
+      },
     ],
     flags: [
       { name: '--no-browser', description: 'Print the auth URL instead of opening a browser' },

@@ -171,6 +171,43 @@ describe('CLI: composio manage connected-accounts link', () => {
       baseConfigProvider: testConfigProvider,
       connectedAccountsData,
       fixture: 'global-test-user-id',
+      toolRouter: {
+        link: async (_sessionId, params) => {
+          expect(params.callback_url).toBe('https://your-app.com/auth/callback');
+          return {
+            connected_account_id: 'con_test_link',
+            link_token: 'lt_test_token',
+            redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+          };
+        },
+      },
+    })
+  )('[Given] --callback-url [Then] composio link forwards it to Tool Router', it => {
+    it.scoped('passes callback_url through the consumer toolkit flow', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'link',
+          'gmail',
+          '--callback-url',
+          'https://your-app.com/auth/callback',
+          '--no-browser',
+          '--no-wait',
+        ]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('"status"');
+        expect(output).toContain('"pending"');
+        expect(output).toContain('https://app.composio.dev/link');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData,
+      fixture: 'global-test-user-id',
     })
   )('[Given] --no-wait [Then] outputs valid JSON parseable by jq', it => {
     it.scoped('prints JSON with status pending, connected_account_id, redirect_url', () =>
