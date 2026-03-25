@@ -561,7 +561,9 @@ class TriggerSubscription(Resource):
         """Filter events and call the callback function."""
         data = self._parse_payload(event=event)
         if data is None:
-            self.logger.error(f"Error parsing trigger payload: {event}")
+            self.logger.error(
+                f"Error parsing trigger payload (length={len(event)})"
+            )
             return
 
         self.logger.debug(
