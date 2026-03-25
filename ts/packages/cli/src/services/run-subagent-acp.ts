@@ -355,7 +355,10 @@ export const invokeAcpSubAgent = async ({
       });
 
     if (response.stopReason === 'cancelled') {
-      throw new Error(`${target} ACP prompt was cancelled.`);
+      throw createFallbackError(
+        'prompt_failed',
+        `${target} ACP prompt was cancelled${stderr.trim() ? `: ${stderr.trim()}` : ''}`
+      );
     }
 
     const payload = finalizeInvokeAgentText(client.getText(), options);

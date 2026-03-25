@@ -37,6 +37,13 @@ describe('run-subagent-acp', () => {
     expect(isAcpInvokeError(error)).toBe(true);
   });
 
+  it('[Given] a cancelled ACP prompt [Then] it remains fallback-eligible', () => {
+    const error = new AcpInvokeError('prompt_failed', 'claude ACP prompt was cancelled.');
+
+    expect(isAcpInvokeError(error)).toBe(true);
+    expect(error.code).toBe('prompt_failed');
+  });
+
   it('[Given] tokenized message chunks [Then] it emits buffered readable text', () => {
     const helperDebugLog = vi.fn();
     const logger = new BufferedChunkLogger('subAgent.acp.message', helperDebugLog);
