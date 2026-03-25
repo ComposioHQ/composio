@@ -42,12 +42,12 @@ const KNOWN_COMMAND_TOKENS = new Set([
   'install',
   'dev',
   'generate',
-  'manage',
   'tools',
   'toolkits',
   'toolkit',
   'search',
   'execute',
+  'playground-execute',
   'link',
   'proxy',
   'artifacts',
@@ -206,7 +206,7 @@ const getExecuteCommandProperties = (context: CliCommandTelemetryContext) => {
     cli_version: context.cliVersion,
     command_path: context.commandPath,
     duration_ms: Date.now() - context.startedAt,
-    surface: context.commandPath === 'execute' ? 'root' : 'manage',
+    surface: context.commandPath === 'execute' ? 'root' : 'dev',
     tool_slug: slug,
     tool_name: slug,
     toolkit_slug: typeof slug === 'string' ? toolkitFromToolSlug(slug) : undefined,
@@ -302,13 +302,13 @@ const getProxyCommandProperties = (context: CliCommandTelemetryContext) => ({
 });
 
 const isExecuteCommand = (commandPath: string): boolean =>
-  commandPath === 'execute' || commandPath === 'manage tools execute';
+  commandPath === 'execute' || commandPath === 'dev playground-execute';
 
 const isSearchCommand = (commandPath: string): boolean =>
-  commandPath === 'search' || commandPath === 'manage tools search';
+  commandPath === 'search' || commandPath === 'dev toolkits search';
 
 const isLinkCommand = (commandPath: string): boolean =>
-  commandPath === 'link' || commandPath === 'manage connected-accounts link';
+  commandPath === 'link' || commandPath === 'dev connected-accounts link';
 
 const isLoginCommand = (commandPath: string): boolean => commandPath === 'login';
 
@@ -490,7 +490,7 @@ export const getToolExecuteValidationFailedEvent = (params: {
   readonly toolSlug: string;
   readonly args: Record<string, unknown>;
   readonly error: ToolInputValidationError;
-  readonly surface: 'root' | 'manage' | 'dev';
+  readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'dry_run' | 'validation' | 'execution';
 }): TrackEvent => ({
@@ -523,7 +523,7 @@ export const isMaybeToolNotFoundError = (params: {
 export const getToolExecuteToolNotFoundEvent = (params: {
   readonly toolSlug: string;
   readonly args: Record<string, unknown>;
-  readonly surface: 'root' | 'manage' | 'dev';
+  readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
   readonly errorSlug?: string;
@@ -551,7 +551,7 @@ export const getToolExecuteToolNotFoundEvent = (params: {
 export const getToolExecuteFailedEvent = (params: {
   readonly toolSlug: string;
   readonly args: Record<string, unknown>;
-  readonly surface: 'root' | 'manage' | 'dev';
+  readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
   readonly errorSlug?: string;
