@@ -5,7 +5,11 @@ import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
-import { ToolRouterCreateSessionConfig, Session } from '../../src/types/toolRouter.types';
+import {
+  ToolRouterCreateSessionConfig,
+  Session,
+  ToolRouterToolkitsOptions,
+} from '../../src/types/toolRouter.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -1589,6 +1593,61 @@ describe('ToolRouter', () => {
       expect(result.items).toHaveLength(3);
     });
 
+    it('should accept cursor as an alias for nextCursor', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        limit: 10,
+        cursor: 'cursor_alias',
+      } as ToolRouterToolkitsOptions);
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: 'cursor_alias',
+        limit: 10,
+        toolkits: undefined,
+        is_connected: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should convert page pagination into the backend cursor format', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        page: 2,
+      } as ToolRouterToolkitsOptions);
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: Buffer.from('2-20').toString('base64'),
+        limit: 20,
+        toolkits: undefined,
+        is_connected: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should convert offset pagination into the backend cursor format', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({
+        offset: 20,
+      } as ToolRouterToolkitsOptions);
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: Buffer.from('2-20').toString('base64'),
+        limit: 20,
+        toolkits: undefined,
+        is_connected: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
     it('should fetch toolkits with toolkits filter option', async () => {
       mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
 
@@ -1836,6 +1895,28 @@ describe('ToolRouter', () => {
           limit: 'invalid' as unknown as number, // Invalid type
         })
       ).rejects.toThrow();
+    });
+
+    it('should throw validation error for conflicting pagination strategies', async () => {
+      const session = await toolRouter.create(userId);
+
+      await expect(
+        session.toolkits({
+          cursor: 'cursor_abc',
+          page: 2,
+        } as ToolRouterToolkitsOptions)
+      ).rejects.toThrow('Use only one pagination strategy');
+    });
+
+    it('should throw validation error for offsets that do not align with the page size', async () => {
+      const session = await toolRouter.create(userId);
+
+      await expect(
+        session.toolkits({
+          offset: 21,
+          limit: 20,
+        } as ToolRouterToolkitsOptions)
+      ).rejects.toThrow('offset must be a multiple of limit (20)');
     });
   });
 

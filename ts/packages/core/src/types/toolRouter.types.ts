@@ -3,7 +3,12 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
-import type { CustomTool, CustomToolkit, RegisteredCustomTool, RegisteredCustomToolkit } from './customTool.types';
+import type {
+  CustomTool,
+  CustomToolkit,
+  RegisteredCustomTool,
+  RegisteredCustomToolkit,
+} from './customTool.types';
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
@@ -314,13 +319,56 @@ export type ToolRouterAuthorizeFn = (
   options?: { callbackUrl?: string }
 ) => Promise<ConnectionRequest>;
 
-export const ToolRouterToolkitsOptionsSchema = z.object({
-  toolkits: z.array(z.string()).optional(),
-  nextCursor: z.string().optional(),
-  limit: z.number().optional(),
-  isConnected: z.boolean().optional(),
-  search: z.string().optional(),
-});
+export const DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT = 20;
+
+export const ToolRouterToolkitsOptionsSchema = z
+  .object({
+    toolkits: z.array(z.string()).optional(),
+    nextCursor: z.string().optional(),
+    cursor: z.string().optional(),
+    page: z.number().int().min(1).optional(),
+    offset: z.number().int().min(0).optional(),
+    limit: z.number().int().positive().optional(),
+    isConnected: z.boolean().optional(),
+    search: z.string().optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const cursorValues = [value.nextCursor, value.cursor].filter(
+      (cursor): cursor is string => cursor !== undefined
+    );
+
+    if (new Set(cursorValues).size > 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['cursor'],
+        message: '`cursor` and `nextCursor` must match when both are provided',
+      });
+    }
+
+    const paginationStrategies = Number(cursorValues.length > 0);
+    const pageStrategies = Number(value.page !== undefined);
+    const offsetStrategies = Number(value.offset !== undefined);
+
+    if (paginationStrategies + pageStrategies + offsetStrategies > 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['cursor'],
+        message: 'Use only one pagination strategy: cursor/nextCursor, page, or offset',
+      });
+    }
+
+    if (value.offset !== undefined) {
+      const effectiveLimit = value.limit ?? DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT;
+      if (value.offset % effectiveLimit !== 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['offset'],
+          message: `offset must be a multiple of limit (${effectiveLimit})`,
+        });
+      }
+    }
+  });
 export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptionsSchema>;
 
 export type ToolRouterToolkitsFn = (

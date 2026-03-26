@@ -177,7 +177,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
   },
   execute: {
-    usage: 'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]',
+    usage: 'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]',
     description:
       'Execute a tool by slug. Validates inputs against cached schemas and checks connections automatically — just try it and it will tell you what to fix.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' }],
@@ -194,6 +194,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       {
         name: '--dry-run',
         description: 'Validate and preview the tool call without executing',
+      },
+      {
+        name: '--parallel',
+        description:
+          'Execute repeated <slug> and -d/--data groups in parallel (see the command source examples)',
       },
     ],
     flags: [
@@ -216,6 +221,9 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       '',
       '# Check what inputs a tool needs',
       'composio execute GMAIL_SEND_EMAIL --get-schema',
+      '',
+      '# Execute multiple tools in parallel',
+      `composio execute --parallel GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com" }' SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL -d '{ channel: "general", text: "Heads up" }'`,
       '',
       '# Read arguments from a file',
       'composio execute GITHUB_CREATE_ISSUE -d @issue.json',
