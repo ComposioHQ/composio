@@ -1,6 +1,6 @@
-# CLI `composio manage toolkits search` Test
+# CLI `composio dev toolkits search` Test
 
-Verifies that `composio manage toolkits search <query>` returns matching toolkits as JSON in piped mode, respects `--limit`, supports stdout redirection, and handles queries with no results.
+Verifies that `composio dev toolkits search <query>` returns matching toolkits as JSON in piped mode, respects `--limit`, supports stdout redirection, and handles queries with no results.
 
 ## What It Tests
 

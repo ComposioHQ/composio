@@ -21,7 +21,7 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
 
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    yield* ui.intro('composio manage orgs switch');
+    yield* ui.intro('composio dev orgs switch');
 
     const apiKey = Option.getOrUndefined(ctx.data.apiKey);
     if (!apiKey) {
@@ -31,7 +31,7 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
     }
 
     yield* ui.note(
-      'This updates your default org for CLI commands. Use `composio init` for local developer project setup.',
+      'This updates your default org for CLI commands. Use `composio dev init` for local developer project setup.',
       'Global defaults'
     );
 

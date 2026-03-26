@@ -16,7 +16,7 @@ const slug = Args.text({ name: 'slug' }).pipe(
  *
  * @example
  * ```bash
- * composio manage triggers info "GMAIL_NEW_GMAIL_MESSAGE"
+ * composio dev triggers info "GMAIL_NEW_GMAIL_MESSAGE"
  * ```
  */
 export const triggersCmd$Info = Command.make('info', { slug }, ({ slug }) =>
@@ -29,7 +29,7 @@ export const triggersCmd$Info = Command.make('info', { slug }, ({ slug }) =>
     if (Option.isNone(slug)) {
       yield* ui.log.warn('Missing required argument: <slug>');
       yield* ui.log.step(
-        'Try specifying a trigger slug, e.g.:\n> composio manage triggers info "GMAIL_NEW_GMAIL_MESSAGE"'
+        'Try specifying a trigger slug, e.g.:\n> composio dev triggers info "GMAIL_NEW_GMAIL_MESSAGE"'
       );
       return;
     }
@@ -44,7 +44,7 @@ export const triggersCmd$Info = Command.make('info', { slug }, ({ slug }) =>
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Trigger "${slugValue}" not found.`,
-            hint: 'Browse available trigger types:\n> composio manage triggers list',
+            hint: 'Browse available trigger types:\n> composio dev triggers list',
             fallbackValue: Option.none(),
           })
         )
@@ -59,7 +59,7 @@ export const triggersCmd$Info = Command.make('info', { slug }, ({ slug }) =>
     const toolkitSlug = triggerType.toolkit?.slug?.toLowerCase();
     if (toolkitSlug) {
       yield* ui.log.step(
-        `To list more trigger types in this toolkit:\n> composio manage triggers list --toolkits "${toolkitSlug}"`
+        `To list more trigger types in this toolkit:\n> composio dev triggers list --toolkits "${toolkitSlug}"`
       );
     }
 

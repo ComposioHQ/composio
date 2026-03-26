@@ -26,7 +26,7 @@ export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
     const clampedLimit = clampLimit(limit);
     const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
 
-    yield* ui.intro(`composio manage orgs list`);
+    yield* ui.intro(`composio dev orgs list`);
 
     const organizations = yield* ui.withSpinner(
       'Loading organizations...',
@@ -52,7 +52,7 @@ export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
     });
     yield* ui.log.info(lines.join('\n'));
     yield* ui.outro(
-      'Hint: run `composio manage orgs switch` to switch the default global org/project.'
+      'Hint: run `composio dev orgs switch` to switch the default global org/project.'
     );
 
     yield* ui.output(

@@ -7,7 +7,7 @@ import { logsCmd$Triggers } from './commands/logs.triggers.cmd';
  *
  * @example
  * ```bash
- * composio manage logs <command>
+ * composio dev logs <command>
  * ```
  */
 export const logsCmd = Command.make('logs').pipe(

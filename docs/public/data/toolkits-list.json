@@ -20,7 +20,7 @@
     "name": "GitHub",
     "logo": "https://logos.composio.dev/api/github",
     "category": "developer tools",
-    "toolCount": 866,
+    "toolCount": 867,
     "triggerCount": 20
   },
   {
@@ -53,7 +53,7 @@
     "logo": "https://logos.composio.dev/api/slack",
     "category": "team chat",
     "toolCount": 151,
-    "triggerCount": 9
+    "triggerCount": 0
   },
   {
     "slug": "supabase",
@@ -76,7 +76,7 @@
     "name": "Perplexity AI",
     "logo": "https://logos.composio.dev/api/perplexityai",
     "category": "artificial intelligence",
-    "toolCount": 1,
+    "toolCount": 6,
     "triggerCount": 0
   },
   {
@@ -148,7 +148,7 @@
     "name": "Jira",
     "logo": "https://logos.composio.dev/api/jira",
     "category": "project management",
-    "toolCount": 96,
+    "toolCount": 97,
     "triggerCount": 3
   },
   {
@@ -181,7 +181,7 @@
     "logo": "https://logos.composio.dev/api/slackbot",
     "category": "team chat",
     "toolCount": 87,
-    "triggerCount": 9
+    "triggerCount": 0
   },
   {
     "slug": "canvas",
@@ -932,7 +932,7 @@
     "name": "SharePoint",
     "logo": "https://logos.composio.dev/api/share_point",
     "category": "documents",
-    "toolCount": 86,
+    "toolCount": 90,
     "triggerCount": 0
   },
   {
@@ -3320,6 +3320,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "devto",
+    "name": "DEV Community",
+    "logo": "https://logos.composio.dev/api/devto",
+    "category": "developer tools",
+    "toolCount": 28,
+    "triggerCount": 0
+  },
+  {
     "slug": "devin_mcp",
     "name": "Devin MCP",
     "logo": "https://logos.composio.dev/api/devin_mcp",
@@ -5261,6 +5269,14 @@
     "logo": "https://logos.composio.dev/api/make",
     "category": "marketing automation",
     "toolCount": 25,
+    "triggerCount": 0
+  },
+  {
+    "slug": "manus",
+    "name": "Manus",
+    "logo": "https://logos.composio.dev/api/manus",
+    "category": "productivity",
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -7981,22 +7997,6 @@
     "logo": "https://logos.composio.dev/api/writer",
     "category": "artificial intelligence",
     "toolCount": 23,
-    "triggerCount": 0
-  },
-  {
-    "slug": "xata",
-    "name": "Xata",
-    "logo": "https://logos.composio.dev/api/xata",
-    "category": "databases",
-    "toolCount": 8,
-    "triggerCount": 0
-  },
-  {
-    "slug": "y_gy",
-    "name": "Y gy",
-    "logo": "https://logos.composio.dev/api/y_gy",
-    "category": "url shortener",
-    "toolCount": 8,
     "triggerCount": 0
   }
 ]

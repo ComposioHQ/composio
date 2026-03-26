@@ -915,6 +915,7 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
+            enable: true,
             enable_proxy_execution: true,
             auto_offload_threshold: undefined,
           },
@@ -941,6 +942,7 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
+            enable: true,
             enable_proxy_execution: undefined,
             auto_offload_threshold: 1000,
           },
@@ -968,13 +970,14 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
+            enable: true,
             enable_proxy_execution: true,
             auto_offload_threshold: 500,
           },
         });
       });
 
-      it('should create a session with workbench disable', async () => {
+      it('should create a session with workbench proxy and offload disabled', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
@@ -995,8 +998,65 @@ describe('ToolRouter', () => {
           tags: undefined,
           manage_connections: createExpectedManageConnections(),
           workbench: {
+            enable: true,
             enable_proxy_execution: false,
             auto_offload_threshold: 0,
+          },
+        });
+      });
+
+      it('should create a session with workbench entirely disabled', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          workbench: {
+            enable: false,
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: {
+            enable: false,
+            enable_proxy_execution: undefined,
+            auto_offload_threshold: undefined,
+          },
+        });
+      });
+
+      it('should create a session with workbench explicitly enabled', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          workbench: {
+            enable: true,
+            enableProxyExecution: true,
+            autoOffloadThreshold: 20000,
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: undefined,
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: {
+            enable: true,
+            enable_proxy_execution: true,
+            auto_offload_threshold: 20000,
           },
         });
       });

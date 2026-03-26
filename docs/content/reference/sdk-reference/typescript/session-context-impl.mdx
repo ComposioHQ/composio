@@ -26,8 +26,10 @@ Execute any tool from within a custom tool.
 Routes to sibling local tools in-process when available,
 otherwise delegates to the backend API.
 
+Returns the same response shape as session.execute().
+
 ```typescript
-async execute(toolSlug: string, arguments_: Record<string, unknown>): Promise<...>
+async execute(toolSlug: string, arguments_: Record<string, unknown>): Promise<{ data: Record<string, unknown>; error: string | null; logId: string }>
 ```
 
 **Parameters**

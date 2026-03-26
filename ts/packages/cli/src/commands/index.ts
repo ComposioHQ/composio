@@ -1,4 +1,5 @@
-import { Effect } from 'effect';
+import process from 'node:process';
+import { Effect, Option } from 'effect';
 import { Command } from '@effect/cli';
 import * as constants from 'src/constants';
 import { $defaultCmd } from './$default.cmd';
@@ -8,16 +9,30 @@ import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
 import { logoutCmd } from './logout.cmd';
+import { runCmd } from './run.cmd';
+import { proxyCmd } from './proxy.cmd';
+import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
-import { initCmd } from './init.cmd';
 import { generateCmd } from './generate/generate.cmd';
-import { manageCmd } from './manage/manage.cmd';
-import { showToolsExecuteInputHelp } from './tools/commands/tools.execute.cmd';
-import { printRootHelp } from './root-help';
+import { devCmd } from './dev.cmd';
+import {
+  runParallelToolsExecuteFromArgv,
+  showToolsExecuteInputHelp,
+} from './tools/commands/tools.execute.cmd';
+import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
+import { rootToolsCmd } from './tools/tools.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
-import { triggersCmd$Listen } from './triggers/commands/triggers.listen.cmd';
+import { renderCommandHintGraph } from 'src/services/command-hints';
+import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
+import { ComposioUserContext } from 'src/services/user-context';
+import { TerminalUI } from 'src/services/terminal-ui';
+import { detectMaster } from 'src/services/master-detector';
+import {
+  formatResolveCommandProjectError,
+  resolveCommandProject,
+} from 'src/services/command-project';
 
 const $cmd = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -26,14 +41,16 @@ const $cmd = $defaultCmd.pipe(
     whoamiCmd,
     loginCmd,
     logoutCmd,
+    runCmd,
+    proxyCmd,
+    artifactsCmd,
     installCmd,
-    initCmd,
+    devCmd,
+    rootToolsCmd,
     rootToolsCmd$Search,
     rootConnectedAccountsCmd$Link,
     rootToolsCmd$Execute,
-    triggersCmd$Listen,
     generateCmd,
-    manageCmd,
   ])
 );
 export const rootCommand = $cmd;
@@ -41,13 +58,13 @@ export const rootCommand = $cmd;
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = argv.slice(2);
   const isRootExecute = args[0] === 'execute';
-  const isManageExecute = args[0] === 'manage' && args[1] === 'tools' && args[2] === 'execute';
-  if (!isRootExecute && !isManageExecute) return undefined;
+  const isDevExecute = args[0] === 'dev' && args[1] === 'playground-execute';
+  if (!isRootExecute && !isDevExecute) return undefined;
 
   const hasHelp = args.includes('--help') || args.includes('-h');
   if (!hasHelp) return undefined;
 
-  const tail = isRootExecute ? args.slice(1) : args.slice(3);
+  const tail = isRootExecute ? args.slice(1) : args.slice(2);
   for (let i = 0; i < tail.length; i += 1) {
     const token = tail[i];
     if (!token) continue;
@@ -67,6 +84,8 @@ const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefi
     if (
       token === '--data' ||
       token === '-d' ||
+      token === '--parallel' ||
+      token === '-p' ||
       token === '--user-id' ||
       token === '--project-name'
     ) {
@@ -76,6 +95,8 @@ const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefi
     if (
       token.startsWith('--data=') ||
       token.startsWith('-d=') ||
+      token === '--parallel' ||
+      token === '-p' ||
       token.startsWith('--user-id=') ||
       token.startsWith('--project-name=')
     ) {
@@ -102,9 +123,85 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
   return argv;
 };
 
+const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const normalized: string[] = [...argv.slice(0, 2)];
+  const args = argv.slice(2);
+  let perfDebug: boolean | undefined;
+  let toolDebug: boolean | undefined;
+  let acpOnly: boolean | undefined;
+
+  for (const arg of args) {
+    if (arg === '--perf-debug') {
+      perfDebug = true;
+      continue;
+    }
+    if (arg === '--tool-debug') {
+      toolDebug = true;
+      continue;
+    }
+    if (arg === '--perf-debug=false') {
+      perfDebug = false;
+      continue;
+    }
+    if (arg === '--tool-debug=false') {
+      toolDebug = false;
+      continue;
+    }
+    if (arg === '--perf-debug=true') {
+      perfDebug = true;
+      continue;
+    }
+    if (arg === '--tool-debug=true') {
+      toolDebug = true;
+      continue;
+    }
+    if (arg === '--acp-only') {
+      acpOnly = true;
+      continue;
+    }
+    if (arg === '--acp-only=false') {
+      acpOnly = false;
+      continue;
+    }
+    if (arg === '--acp-only=true') {
+      acpOnly = true;
+      continue;
+    }
+    normalized.push(arg);
+  }
+
+  resetRuntimeDebugFlags();
+  setRuntimeDebugFlags({
+    ...(perfDebug === undefined ? {} : { perfDebug }),
+    ...(toolDebug === undefined ? {} : { toolDebug }),
+  });
+  if (acpOnly === undefined) {
+    delete process.env.COMPOSIO_RUN_ACP_ONLY;
+  } else {
+    process.env.COMPOSIO_RUN_ACP_ONLY = acpOnly ? '1' : '0';
+  }
+
+  return normalized;
+};
+
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
   return args.length === 1 && (args[0] === '--help' || args[0] === '-h');
+};
+
+const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
+  const args = argv.slice(2);
+  return args.length === 2 && args[0] === 'debug' && args[1] === 'generate-graph';
+};
+
+const isDebugApiInfo = (argv: ReadonlyArray<string>): boolean => {
+  const args = argv.slice(2);
+  return args.length === 2 && args[0] === 'debug' && args[1] === 'api-info';
+};
+
+const isDebugWhoIsMyMaster = (argv: ReadonlyArray<string>): boolean => {
+  const args = argv.slice(2);
+  return args.length === 2 && args[0] === 'debug' && args[1] === 'who-is-my-master';
 };
 
 export const runWithConfig = Effect.gen(function* () {
@@ -116,9 +213,65 @@ export const runWithConfig = Effect.gen(function* () {
   });
 
   return (argv: ReadonlyArray<string>) => {
-    const normalizedArgv = normalizeVersionShortFlag(argv);
+    const normalizedArgv = normalizeHiddenDebugFlags(normalizeVersionShortFlag(argv));
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp();
+    }
+    const subHelp = matchSubcommandHelp(normalizedArgv);
+    if (subHelp) {
+      return printSubcommandHelp(subHelp);
+    }
+    const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
+    if (parallelExecute) {
+      return parallelExecute;
+    }
+    if (isGenerateGraph(normalizedArgv)) {
+      return Effect.sync(() => {
+        process.stdout.write(`${JSON.stringify(renderCommandHintGraph(), null, 2)}\n`);
+      });
+    }
+    if (isDebugApiInfo(normalizedArgv)) {
+      return Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        const confirmed = yield* ui.confirm(
+          'This will print your current CLI API key and scoped identifiers to stdout. Continue?',
+          { defaultValue: false }
+        );
+        if (!confirmed) {
+          return yield* Effect.fail(new Error('Aborted printing API credentials.'));
+        }
+        const ctx = yield* ComposioUserContext;
+        const apiKey = Option.getOrUndefined(ctx.data.apiKey);
+        if (!apiKey) {
+          return yield* Effect.fail(new Error('No user API key found in the current CLI session.'));
+        }
+        const orgId = Option.getOrUndefined(ctx.data.orgId);
+        const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
+          Effect.mapError(formatResolveCommandProjectError),
+          Effect.option
+        );
+        return yield* Effect.sync(() => {
+          process.stdout.write(
+            `${JSON.stringify(
+              {
+                apiKey,
+                orgId: orgId ?? null,
+                consumerUserId:
+                  Option.isSome(consumerProject) && consumerProject.value.projectType === 'CONSUMER'
+                    ? (consumerProject.value.consumerUserId ?? null)
+                    : null,
+              },
+              null,
+              2
+            )}\n`
+          );
+        });
+      });
+    }
+    if (isDebugWhoIsMyMaster(normalizedArgv)) {
+      return Effect.sync(() => {
+        process.stdout.write(`${JSON.stringify({ master: detectMaster() }, null, 2)}\n`);
+      });
     }
     const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
     if (executeHelpSlug) {

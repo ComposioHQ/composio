@@ -9,7 +9,9 @@ import {
 } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
+import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
@@ -104,14 +106,15 @@ const storeCredentials = (params: {
     }
 
     yield* ctx.login(uakApiKey, orgId, testUserId);
+    yield* primeConsumerConnectedToolkitsCacheInBackground({
+      orgId,
+    });
 
     const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
     yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
     if (!skipHints) {
-      yield* ui.log.info(
-        'Run `composio init` in your project directory to set up project context.'
-      );
-      yield* ui.log.info('To switch your default org later, run `composio manage orgs switch`.');
+      yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
+      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
     }
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
@@ -228,6 +231,9 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
           result.id,
           testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
         );
+        yield* primeConsumerConnectedToolkitsCacheInBackground({
+          orgId: result.id,
+        });
         yield* ui.log.success(`Default org set to "${result.name}".`);
       }
       const finalOrgId = result?.id ?? xOrgId;
@@ -239,10 +245,8 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
           org_name: finalOrgName,
         })
       );
-      yield* ui.log.info(
-        'Run `composio init` in your project directory to set up project context.'
-      );
-      yield* ui.log.info('To switch your default org later, run `composio manage orgs switch`.');
+      yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
+      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
       yield* ui.outro("You're all set!");
     }
   });
@@ -387,6 +391,9 @@ export const browserLogin = (params: {
           result.id,
           testUserId ?? Option.getOrUndefined(ctx.data.testUserId)
         );
+        yield* primeConsumerConnectedToolkitsCacheInBackground({
+          orgId: result.id,
+        });
         yield* ui.log.success(`Default org set to "${result.name}".`);
       }
       const finalOrgId = result?.id ?? xOrgId;
@@ -398,10 +405,8 @@ export const browserLogin = (params: {
           org_name: finalOrgName,
         })
       );
-      yield* ui.log.info(
-        'Run `composio init` in your project directory to set up project context.'
-      );
-      yield* ui.log.info('To switch your default org later, run `composio manage orgs switch`.');
+      yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
+      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
       yield* ui.outro("You're all set!");
     }
   });

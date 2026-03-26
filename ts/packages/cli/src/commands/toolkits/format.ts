@@ -234,7 +234,7 @@ export function formatToolkitInfo(
   } else if (!toolkit.is_no_auth) {
     lines.push(`${bold('Connection Status:')} ${dim('Not connected')}`);
     lines.push(
-      `${bold('Tip:')} Link this toolkit:\n> composio manage connected-accounts link "${toolkit.slug}"`
+      `${bold('Tip:')} Link this toolkit:\n> composio dev connected-accounts link "${toolkit.slug}"`
     );
   }
 

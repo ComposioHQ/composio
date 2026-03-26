@@ -6,6 +6,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
+import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
 
 const cursor = Options.text('cursor').pipe(
@@ -78,11 +79,11 @@ const includePayload = Options.boolean('include-payload').pipe(
  *
  * @example
  * ```bash
- * composio manage logs triggers <log_id>
- * composio manage logs triggers --trigger GMAIL_NEW_GMAIL_MESSAGE
- * composio manage logs triggers --trigger-id 77ac1dbf-6db0-4039-8dbe-e903b3f2057e
- * composio manage logs triggers --connected-account-id ca_123 --user-id user_123
- * composio manage logs triggers --log-id log_123
+ * composio dev logs triggers <log_id>
+ * composio dev logs triggers --trigger GMAIL_NEW_GMAIL_MESSAGE
+ * composio dev logs triggers --trigger-id 77ac1dbf-6db0-4039-8dbe-e903b3f2057e
+ * composio dev logs triggers --connected-account-id ca_123 --user-id user_123
+ * composio dev logs triggers --log-id log_123
  * ```
  */
 export const logsCmd$Triggers = Command.make(
@@ -193,7 +194,9 @@ export const logsCmd$Triggers = Command.make(
       const firstLogId = logs[0]?.id;
       if (firstLogId) {
         yield* ui.log.step(
-          `To view full details for a log:\n> composio manage logs triggers "${firstLogId}"`
+          commandHintStep('To view full details for a log', 'dev.logs.triggers', {
+            logId: firstLogId,
+          })
         );
       }
 

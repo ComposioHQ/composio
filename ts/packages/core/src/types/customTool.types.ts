@@ -1,6 +1,10 @@
 import { z } from 'zod/v3';
-import { Tool, ToolProxyParams, ToolExecuteResponse as SdkToolExecuteResponse } from './tool.types';
-import type { SessionProxyExecuteParams, ToolRouterSessionProxyExecuteResponse } from './toolRouter.types';
+import { Tool, ToolProxyParams } from './tool.types';
+import type {
+  SessionProxyExecuteParams,
+  ToolRouterSessionExecuteResponse,
+  ToolRouterSessionProxyExecuteResponse,
+} from './toolRouter.types';
 import { ToolExecuteResponse } from '@composio/client/resources/tools';
 import { ConnectionData } from './connectedAccountAuthStates.types';
 import type {
@@ -74,11 +78,11 @@ export interface ExecuteMetadata {
 export interface SessionContext {
   /** The user ID for this session */
   readonly userId: string;
-  /** Execute any Composio native tool from within a custom tool */
+  /** Execute any Composio native tool from within a custom tool. Returns the same shape as session.execute(). */
   execute(
     toolSlug: string,
     arguments_: Record<string, unknown>
-  ): Promise<SdkToolExecuteResponse>;
+  ): Promise<ToolRouterSessionExecuteResponse>;
   /** Proxy API calls through Composio's auth layer (resolved from session toolkit). */
   proxyExecute(params: SessionProxyExecuteParams): Promise<ToolRouterSessionProxyExecuteResponse>;
 }
@@ -109,8 +113,7 @@ export const CustomToolSlugSchema = z
     'slug must only contain alphanumeric characters, underscores, and hyphens'
   )
   .refine(s => !s.toUpperCase().startsWith('LOCAL_'), {
-    message:
-      'slug must not start with "LOCAL_" — this prefix is reserved for internal routing.',
+    message: 'slug must not start with "LOCAL_" — this prefix is reserved for internal routing.',
   })
   .refine(s => !s.toUpperCase().startsWith('COMPOSIO_'), {
     message:

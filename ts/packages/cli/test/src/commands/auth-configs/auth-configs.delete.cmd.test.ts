@@ -29,13 +29,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage auth-configs delete', () => {
+describe('CLI: composio dev auth-configs delete', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(
     '[Given] valid ID with --yes [Then] deletes successfully',
     it => {
       it.scoped('shows success message', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'auth-configs', 'delete', 'ac_gmail_default', '--yes']);
+          yield* cli(['dev', 'auth-configs', 'delete', 'ac_gmail_default', '--yes']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -51,7 +51,7 @@ describe('CLI: composio manage auth-configs delete', () => {
     it => {
       it.scoped('shows missing argument warning', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'auth-configs', 'delete']);
+          yield* cli(['dev', 'auth-configs', 'delete']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -66,12 +66,12 @@ describe('CLI: composio manage auth-configs delete', () => {
     it => {
       it.scoped('shows not found error', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'auth-configs', 'delete', 'ac_nonexistent', '--yes']);
+          yield* cli(['dev', 'auth-configs', 'delete', 'ac_nonexistent', '--yes']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
-          expect(output).toContain('composio manage auth-configs list');
+          expect(output).toContain('composio dev auth-configs list');
         })
       );
     }
@@ -80,7 +80,7 @@ describe('CLI: composio manage auth-configs delete', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'auth-configs', 'delete', 'ac_gmail_default', '--yes']);
+        yield* cli(['dev', 'auth-configs', 'delete', 'ac_gmail_default', '--yes']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

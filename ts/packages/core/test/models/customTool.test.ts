@@ -44,7 +44,10 @@ describe('createCustomTool', () => {
   });
 
   it('should include extendsToolkit when provided', () => {
-    const tool = createCustomTool('GET_AD_ACCOUNTS', { ...baseOptions, extendsToolkit: 'meta_ads' });
+    const tool = createCustomTool('GET_AD_ACCOUNTS', {
+      ...baseOptions,
+      extendsToolkit: 'meta_ads',
+    });
     expect(tool.extendsToolkit).toBe('meta_ads');
   });
 
@@ -137,7 +140,9 @@ describe('createCustomTool', () => {
 
   describe('other validation', () => {
     it('should throw if name is missing', () => {
-      expect(() => createCustomTool('SLUG', { ...baseOptions, name: '' })).toThrow('name is required');
+      expect(() => createCustomTool('SLUG', { ...baseOptions, name: '' })).toThrow(
+        'name is required'
+      );
     });
 
     it('should throw if description is missing', () => {
@@ -251,9 +256,9 @@ describe('createCustomToolkit', () => {
   });
 
   it('should throw if tools array is empty', () => {
-    expect(() =>
-      createCustomToolkit('TK', { name: 'X', description: 'X', tools: [] })
-    ).toThrow('at least one tool is required');
+    expect(() => createCustomToolkit('TK', { name: 'X', description: 'X', tools: [] })).toThrow(
+      'at least one tool is required'
+    );
   });
 
   it('should reject tools with extendsToolkit set', () => {
@@ -349,9 +354,7 @@ describe('buildCustomToolsMap', () => {
 
   describe('collision detection', () => {
     it('should throw on duplicate standalone slugs', () => {
-      expect(() => buildCustomToolsMap([makeTool('DUPE'), makeTool('DUPE')])).toThrow(
-        'collision'
-      );
+      expect(() => buildCustomToolsMap([makeTool('DUPE'), makeTool('DUPE')])).toThrow('collision');
     });
 
     it('should throw on cross-group collision (standalone vs toolkit same original slug)', () => {
@@ -371,26 +374,40 @@ describe('buildCustomToolsMap', () => {
   describe('length validation', () => {
     it('should throw early in createCustomTool when slug is too long (standalone)', () => {
       const longSlug = 'A'.repeat(56); // LOCAL_ + 56 = 62 > 60
-      expect(() => createCustomTool(longSlug, {
-        name: 'Long', description: 'Too long', inputParams: z.object({}), execute: vi.fn().mockResolvedValue({}),
-      })).toThrow('too long');
+      expect(() =>
+        createCustomTool(longSlug, {
+          name: 'Long',
+          description: 'Too long',
+          inputParams: z.object({}),
+          execute: vi.fn().mockResolvedValue({}),
+        })
+      ).toThrow('too long');
     });
 
     it('should throw early in createCustomTool when slug is too long (extension)', () => {
       // LOCAL_GMAIL_ = 12 chars, so slug > 48 chars overflows
       const longSlug = 'A'.repeat(49);
-      expect(() => createCustomTool(longSlug, {
-        name: 'Long', description: 'Too long', extendsToolkit: 'gmail',
-        inputParams: z.object({}), execute: vi.fn().mockResolvedValue({}),
-      })).toThrow('too long');
+      expect(() =>
+        createCustomTool(longSlug, {
+          name: 'Long',
+          description: 'Too long',
+          extendsToolkit: 'gmail',
+          inputParams: z.object({}),
+          execute: vi.fn().mockResolvedValue({}),
+        })
+      ).toThrow('too long');
     });
 
     it('should throw early in createCustomToolkit when tool slug is too long', () => {
       const longSlug = 'A'.repeat(50); // LOCAL_DEV_TOOLS_ + 50 = 66 > 60
       const tool = makeTool(longSlug);
-      expect(() => createCustomToolkit('DEV_TOOLS', {
-        name: 'Dev Tools', description: 'Utilities', tools: [tool],
-      })).toThrow('too long');
+      expect(() =>
+        createCustomToolkit('DEV_TOOLS', {
+          name: 'Dev Tools',
+          description: 'Utilities',
+          tools: [tool],
+        })
+      ).toThrow('too long');
     });
 
     it('should still validate in buildCustomToolsMap as safety net', () => {
@@ -549,11 +566,11 @@ describe('SessionContextImpl', () => {
     expect(result).toEqual({
       data: { result: 'ok' },
       error: null,
-      successful: true,
+      logId: 'log_1',
     });
   });
 
-  it('should set successful=false when execute() returns an error', async () => {
+  it('should preserve logId and error when execute() returns an error', async () => {
     mockClient.toolRouter.session.execute.mockResolvedValue({
       data: {},
       error: 'something went wrong',
@@ -563,7 +580,7 @@ describe('SessionContextImpl', () => {
     const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
     const result = await ctx.execute('BAD_TOOL', {});
 
-    expect(result.successful).toBe(false);
+    expect(result.logId).toBe('log_2');
     expect(result.error).toBe('something went wrong');
   });
 
@@ -581,15 +598,12 @@ describe('SessionContextImpl', () => {
       parameters: [{ in: 'header' as const, name: 'X-Custom', value: 'val' }],
     });
 
-    expect(mockClient.toolRouter.session.proxyExecute).toHaveBeenCalledWith(
-      'sess_1',
-      {
-        toolkit_slug: 'github',
-        endpoint: 'https://api.github.com/user',
-        method: 'GET',
-        parameters: [{ name: 'X-Custom', type: 'header', value: 'val' }],
-      }
-    );
+    expect(mockClient.toolRouter.session.proxyExecute).toHaveBeenCalledWith('sess_1', {
+      toolkit_slug: 'github',
+      endpoint: 'https://api.github.com/user',
+      method: 'GET',
+      parameters: [{ name: 'X-Custom', type: 'header', value: 'val' }],
+    });
     expect(result).toEqual({
       status: 200,
       data: { proxy_result: true },
@@ -619,7 +633,7 @@ describe('SessionContextImpl', () => {
       const result = await ctx.execute('SIBLING_TOOL', { key: 'val' });
 
       expect(siblingExecute).toHaveBeenCalledWith({ key: 'val' }, ctx);
-      expect(result).toEqual({ data: { local: true }, error: null, successful: true });
+      expect(result).toEqual({ data: { local: true }, error: null, logId: '' });
       // Should NOT call remote
       expect(mockClient.toolRouter.session.execute).not.toHaveBeenCalled();
     });
@@ -646,7 +660,7 @@ describe('SessionContextImpl', () => {
         tool_slug: 'REMOTE_TOOL',
         arguments: { key: 'val' },
       });
-      expect(result).toEqual({ data: { remote: true }, error: null, successful: true });
+      expect(result).toEqual({ data: { remote: true }, error: null, logId: 'log_3' });
     });
 
     it('should delegate to remote when no customToolsMap is provided', async () => {
@@ -660,7 +674,7 @@ describe('SessionContextImpl', () => {
       const result = await ctx.execute('ANY_TOOL', {});
 
       expect(mockClient.toolRouter.session.execute).toHaveBeenCalled();
-      expect(result.successful).toBe(true);
+      expect(result.logId).toBe('log_4');
     });
   });
 });

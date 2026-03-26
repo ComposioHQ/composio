@@ -6,6 +6,6 @@ import { projectsCmd$Switch } from './commands/projects.switch.cmd';
  * CLI entry point for project context commands.
  */
 export const projectsCmd = Command.make('projects').pipe(
-  Command.withDescription('Manage default global project context.'),
+  Command.withDescription('Inspect developer projects and project context helpers.'),
   Command.withSubcommands([projectsCmd$List, projectsCmd$Switch])
 );

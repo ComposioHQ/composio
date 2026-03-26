@@ -230,7 +230,7 @@ export const initCmd = CliCommand.make(
       const ui = yield* TerminalUI;
       const proc = yield* NodeProcess;
 
-      yield* ui.intro('composio init');
+      yield* ui.intro('composio dev init');
 
       const composioDir = path.join(proc.cwd, constants.PROJECT_COMPOSIO_DIR);
 
@@ -276,7 +276,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           yield* Effect.logDebug('Failed to list org projects:', e);
           yield* ui.log.warn('Could not fetch projects from the server.');
           yield* ui.log.info(
-            'Create a project at https://platform.composio.dev, then run `composio init` again.'
+            'Create a project at https://platform.composio.dev, then run `composio dev init` again.'
           );
           yield* ui.outro('');
           return yield* Effect.fail(e);
@@ -287,7 +287,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           yield* Effect.logDebug('Failed to decode org projects response:', e);
           yield* ui.log.warn('Unexpected response from the server.');
           yield* ui.log.info(
-            'Create a project at https://platform.composio.dev, then run `composio init` again.'
+            'Create a project at https://platform.composio.dev, then run `composio dev init` again.'
           );
           yield* ui.outro('');
           return yield* Effect.fail(e);
@@ -298,7 +298,7 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
     if (orgProjects.data.length === 0) {
       yield* ui.log.warn('No projects found for your organization.');
       yield* ui.log.info(
-        'Create a project at https://platform.composio.dev, then run `composio init` again.'
+        'Create a project at https://platform.composio.dev, then run `composio dev init` again.'
       );
       yield* ui.outro('');
       return;

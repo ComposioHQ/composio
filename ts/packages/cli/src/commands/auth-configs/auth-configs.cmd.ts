@@ -9,7 +9,7 @@ import { authConfigsCmd$Delete } from './commands/auth-configs.delete.cmd';
  *
  * @example
  * ```bash
- * composio manage auth-configs <command>
+ * composio dev auth-configs <command>
  * ```
  */
 export const authConfigsCmd = Command.make('auth-configs').pipe(

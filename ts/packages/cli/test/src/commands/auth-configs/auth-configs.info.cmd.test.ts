@@ -29,13 +29,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage auth-configs info', () => {
+describe('CLI: composio dev auth-configs info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, authConfigsData }))(
     '[Given] valid ID [Then] displays auth config details',
     it => {
       it.scoped('shows auth config details', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'auth-configs', 'info', 'ac_gmail_default']);
+          yield* cli(['dev', 'auth-configs', 'info', 'ac_gmail_default']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -46,7 +46,7 @@ describe('CLI: composio manage auth-configs info', () => {
           expect(output).toContain('ENABLED');
           expect(output).toContain('Yes'); // is_composio_managed
           // Next step hint
-          expect(output).toContain('composio manage auth-configs delete');
+          expect(output).toContain('composio dev auth-configs delete');
         })
       );
     }
@@ -57,7 +57,7 @@ describe('CLI: composio manage auth-configs info', () => {
     it => {
       it.scoped('shows missing argument warning', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'auth-configs', 'info']);
+          yield* cli(['dev', 'auth-configs', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -72,12 +72,12 @@ describe('CLI: composio manage auth-configs info', () => {
     it => {
       it.scoped('shows not found error', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'auth-configs', 'info', 'ac_nonexistent']);
+          yield* cli(['dev', 'auth-configs', 'info', 'ac_nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
-          expect(output).toContain('composio manage auth-configs list');
+          expect(output).toContain('composio dev auth-configs list');
         })
       );
     }
@@ -86,7 +86,7 @@ describe('CLI: composio manage auth-configs info', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'auth-configs', 'info', 'ac_gmail_default']);
+        yield* cli(['dev', 'auth-configs', 'info', 'ac_gmail_default']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

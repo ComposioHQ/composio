@@ -24,9 +24,9 @@ const limit = Options.integer('limit').pipe(
  *
  * @example
  * ```bash
- * composio manage triggers list
- * composio manage triggers list --toolkits "gmail"
- * composio manage triggers list --toolkits "gmail,slack"
+ * composio dev triggers list
+ * composio dev triggers list --toolkits "gmail"
+ * composio dev triggers list --toolkits "gmail,slack"
  * ```
  */
 export const triggersCmd$List = Command.make('list', { toolkits, limit }, ({ toolkits, limit }) =>
@@ -46,7 +46,7 @@ export const triggersCmd$List = Command.make('list', { toolkits, limit }, ({ too
 
     if (triggerTypes.length === 0) {
       const hint = Option.isSome(toolkits)
-        ? `No trigger types found in toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio manage toolkits list`
+        ? `No trigger types found in toolkit "${toolkits.value}". Verify the toolkit slug with:\n> composio dev toolkits list`
         : 'No trigger types found.';
       yield* ui.log.warn(hint);
       return;
@@ -60,7 +60,7 @@ export const triggersCmd$List = Command.make('list', { toolkits, limit }, ({ too
     const firstSlug = triggerTypes[0]?.slug;
     if (firstSlug) {
       yield* ui.log.step(
-        `To view details of a trigger type:\n> composio manage triggers info "${firstSlug}"`
+        `To view details of a trigger type:\n> composio dev triggers info "${firstSlug}"`
       );
     }
 
