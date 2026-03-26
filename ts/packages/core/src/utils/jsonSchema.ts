@@ -3,6 +3,53 @@ import { JsonSchemaToZodError } from '../errors';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 
 /**
+ * Recursively deduplicates entries in `required` arrays throughout a JSON schema.
+ *
+ * JSON Schema 2020-12 §6.5.3 mandates that elements of `required` must be unique.
+ * Some upstream schemas violate this, which causes strict validators (e.g. the
+ * Anthropic Claude API) to reject the entire tool batch.
+ *
+ * @param schema - A JSON schema (or sub-schema) to sanitize
+ * @returns The same schema structure with all `required` arrays deduplicated
+ */
+export const deduplicateRequiredFields = <T extends Record<string, unknown>>(schema: T): T => {
+  if (!schema || typeof schema !== 'object') {
+    return schema;
+  }
+
+  const result = { ...schema };
+
+  // Deduplicate top-level `required` array
+  if (Array.isArray(result.required)) {
+    result.required = [...new Set(result.required as string[])];
+  }
+
+  // Recurse into `properties`
+  if (result.properties && typeof result.properties === 'object') {
+    const props = result.properties as Record<string, Record<string, unknown>>;
+    result.properties = Object.fromEntries(
+      Object.entries(props).map(([key, prop]) => [key, deduplicateRequiredFields(prop)])
+    );
+  }
+
+  // Recurse into `items` (for array schemas)
+  if (result.items && typeof result.items === 'object' && !Array.isArray(result.items)) {
+    result.items = deduplicateRequiredFields(result.items as Record<string, unknown>);
+  }
+
+  // Recurse into combiners: allOf, anyOf, oneOf
+  for (const combiner of ['allOf', 'anyOf', 'oneOf'] as const) {
+    if (Array.isArray(result[combiner])) {
+      result[combiner] = (result[combiner] as Record<string, unknown>[]).map(sub =>
+        deduplicateRequiredFields(sub)
+      );
+    }
+  }
+
+  return result;
+};
+
+/**
  * Removes all non-required properties from the schema
  *
  * if no items are required, the schema is returned as is

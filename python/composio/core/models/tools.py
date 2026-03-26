@@ -25,6 +25,7 @@ from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
+from composio.utils.shared import deduplicate_required_fields
 from composio.utils.toolkit_version import get_toolkit_version
 
 from ._modifiers import (
@@ -152,13 +153,17 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         try:
             return t.cast(Tool, self._custom_tools[slug])
         except KeyError:
-            return t.cast(
+            tool = t.cast(
                 Tool,
                 self._client.tools.retrieve(
                     tool_slug=slug,
                     toolkit_versions=none_to_omit(self._toolkit_versions),
                 ),
             )
+            tool.input_parameters = deduplicate_required_fields(
+                tool.input_parameters,
+            )
+            return tool
 
     def get_raw_composio_tools(
         self,
@@ -199,6 +204,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     toolkit_versions=none_to_omit(self._toolkit_versions),
                 ).items
             )
+
+        # Deduplicate `required` arrays to comply with JSON Schema 2020-12 §6.5.3
+        for tool in tools_list:
+            tool.input_parameters = deduplicate_required_fields(
+                tool.input_parameters,
+            )
+
         return tools_list
 
     def get_raw_tool_router_meta_tools(

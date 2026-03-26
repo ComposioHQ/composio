@@ -36,6 +36,7 @@ __all__ = [
     "generate_request_id",
     "substitute_reserved_python_keywords",
     "reinstate_reserved_python_keywords",
+    "deduplicate_required_fields",
 ]
 
 reserved_names = ["validate"]
@@ -497,6 +498,46 @@ def get_pydantic_signature_format_from_schema_params(
         all_parameters.append(param)
 
     return all_parameters
+
+
+def deduplicate_required_fields(schema: t.Dict) -> t.Dict:
+    """Recursively deduplicate entries in ``required`` arrays throughout a JSON schema.
+
+    JSON Schema 2020-12 §6.5.3 mandates that elements of ``required`` must be
+    unique.  Some upstream schemas violate this, which causes strict validators
+    (e.g. the Anthropic Claude API) to reject the entire tool batch.
+
+    The schema is shallow-copied at each level so the caller's original dict is
+    not mutated.
+    """
+    if not isinstance(schema, dict):
+        return schema
+
+    result = dict(schema)
+
+    # Deduplicate top-level ``required`` array (preserving order)
+    if isinstance(result.get("required"), list):
+        result["required"] = list(dict.fromkeys(result["required"]))
+
+    # Recurse into ``properties``
+    if isinstance(result.get("properties"), dict):
+        result["properties"] = {
+            k: deduplicate_required_fields(v)
+            for k, v in result["properties"].items()
+        }
+
+    # Recurse into ``items`` (array schemas)
+    if isinstance(result.get("items"), dict):
+        result["items"] = deduplicate_required_fields(result["items"])
+
+    # Recurse into combiners: allOf, anyOf, oneOf
+    for combiner in ("allOf", "anyOf", "oneOf"):
+        if isinstance(result.get(combiner), list):
+            result[combiner] = [
+                deduplicate_required_fields(sub) for sub in result[combiner]
+            ]
+
+    return result
 
 
 def generate_request_id() -> str:
