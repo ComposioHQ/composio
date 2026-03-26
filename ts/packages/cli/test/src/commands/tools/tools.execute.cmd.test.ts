@@ -819,11 +819,9 @@ describe('CLI: composio execute', () => {
         const output = lines.join('\n');
 
         expect(output).toContain('USAGE');
-        expect(output).toContain(
-          'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]'
-        );
+        expect(output).toContain('composio execute <slug> [-d, --data text] [--dry-run]');
         expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
-        expect(output).toContain('--parallel');
+        expect(output).not.toContain('--parallel');
       })
     );
   });

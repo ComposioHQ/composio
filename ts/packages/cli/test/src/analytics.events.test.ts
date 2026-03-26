@@ -24,8 +24,9 @@ describe('CLI analytics execute failure events', () => {
       failureOrigin: 'fast_fail',
     });
 
-    expect(event.properties?.failure_origin).toBe('fast_fail');
-    expect(event.properties?.tool_log_id).toBeUndefined();
+    expect(event).not.toBeNull();
+    expect(event!.properties?.failure_origin).toBe('fast_fail');
+    expect(event!.properties?.tool_log_id).toBeUndefined();
   });
 
   it('marks endpoint tool-not-found failures as main_endpoint and keeps log id', () => {
@@ -41,8 +42,9 @@ describe('CLI analytics execute failure events', () => {
       status: 404,
     });
 
-    expect(event.properties?.failure_origin).toBe('main_endpoint');
-    expect(event.properties?.tool_log_id).toBe('log_123');
+    expect(event).not.toBeNull();
+    expect(event!.properties?.failure_origin).toBe('main_endpoint');
+    expect(event!.properties?.tool_log_id).toBe('log_123');
   });
 
   it('marks endpoint execution failures as main_endpoint and keeps log id', () => {
@@ -57,8 +59,9 @@ describe('CLI analytics execute failure events', () => {
       message: 'Invalid tool arguments',
     });
 
-    expect(event.properties?.failure_origin).toBe('main_endpoint');
-    expect(event.properties?.tool_log_id).toBe('log_456');
+    expect(event).not.toBeNull();
+    expect(event!.properties?.failure_origin).toBe('main_endpoint');
+    expect(event!.properties?.tool_log_id).toBe('log_456');
   });
 
   it('classifies known Hermes tool-not-found codes', () => {
