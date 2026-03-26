@@ -109,6 +109,27 @@ describe('CLI: composio dev connected-accounts link', () => {
       baseConfigProvider: testConfigProvider,
       connectedAccountsData,
       fixture: 'global-test-user-id',
+      terminalUI: RecordingTerminalUI,
+    })
+  )('[Given] --no-browser --no-wait [Then] stdout remains JSON-only', it => {
+    it.scoped('does not emit the raw redirect URL before the pending JSON payload', () =>
+      Effect.gen(function* () {
+        yield* cli(['link', 'gmail', '--no-browser', '--no-wait']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const forcedLines = lines.filter(line => line.startsWith('FORCED:'));
+
+        expect(forcedLines).toHaveLength(1);
+        expect(forcedLines[0]).toContain('"status": "pending"');
+        expect(forcedLines[0]).not.toContain('FORCED:https://app.composio.dev/link?token=');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData,
+      fixture: 'global-test-user-id',
     })
   )('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>

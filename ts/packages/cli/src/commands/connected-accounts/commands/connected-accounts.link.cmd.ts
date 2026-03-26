@@ -46,7 +46,12 @@ const noWait = Options.boolean('no-wait').pipe(
   Options.withDescription('Do not wait for authorization; only print link info')
 );
 
-const showRedirectUrl = (ui: TerminalUI, redirectUrl: string, noBrowser: boolean) =>
+const showRedirectUrl = (
+  ui: TerminalUI,
+  redirectUrl: string,
+  noBrowser: boolean,
+  options?: { readonly emitRaw?: boolean }
+) =>
   Effect.gen(function* () {
     if (noBrowser) {
       yield* ui.log.info('Please authorize using the following URL:');
@@ -55,7 +60,9 @@ const showRedirectUrl = (ui: TerminalUI, redirectUrl: string, noBrowser: boolean
     }
 
     yield* ui.note(redirectUrl, 'Redirect URL');
-    yield* ui.output(redirectUrl, noBrowser ? { force: true } : undefined);
+    if (options?.emitRaw) {
+      yield* ui.output(redirectUrl, noBrowser ? { force: true } : undefined);
+    }
   });
 
 const waitForActiveConnection = (
@@ -66,7 +73,7 @@ const waitForActiveConnection = (
   noBrowser: boolean
 ) =>
   Effect.gen(function* () {
-    yield* showRedirectUrl(ui, redirectUrl, noBrowser);
+    yield* showRedirectUrl(ui, redirectUrl, noBrowser, { emitRaw: noBrowser });
 
     if (!noBrowser) {
       let urlSchemeValid = false;
