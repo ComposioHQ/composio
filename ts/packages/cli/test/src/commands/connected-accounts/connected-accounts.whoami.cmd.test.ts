@@ -50,13 +50,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage connected-accounts whoami', () => {
+describe('CLI: composio dev connected-accounts whoami', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
     '[Given] active connection [Then] shows account details',
     it => {
       it.scoped('displays whoami for active connection', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'whoami', 'con_gmail_active']);
+          yield* cli(['dev', 'connected-accounts', 'whoami', 'con_gmail_active']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -74,7 +74,7 @@ describe('CLI: composio manage connected-accounts whoami', () => {
     it => {
       it.scoped('shows warning for non-ACTIVE connection', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'whoami', 'con_github_expired']);
+          yield* cli(['dev', 'connected-accounts', 'whoami', 'con_github_expired']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -91,12 +91,12 @@ describe('CLI: composio manage connected-accounts whoami', () => {
     it => {
       it.scoped('shows error for nonexistent account', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'whoami', 'con_nonexistent']);
+          yield* cli(['dev', 'connected-accounts', 'whoami', 'con_nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
-          expect(output).toContain('composio manage connected-accounts list');
+          expect(output).toContain('composio dev connected-accounts list');
         })
       );
     }
@@ -107,12 +107,12 @@ describe('CLI: composio manage connected-accounts whoami', () => {
     it => {
       it.scoped('warns about missing argument', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'whoami']);
+          yield* cli(['dev', 'connected-accounts', 'whoami']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Missing required argument');
-          expect(output).toContain('composio manage connected-accounts whoami');
+          expect(output).toContain('composio dev connected-accounts whoami');
         })
       );
     }
@@ -121,7 +121,7 @@ describe('CLI: composio manage connected-accounts whoami', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'connected-accounts', 'whoami', 'con_gmail_active']);
+        yield* cli(['dev', 'connected-accounts', 'whoami', 'con_gmail_active']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

@@ -13,6 +13,9 @@ import {
   resolveCommandProject,
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
+import { commandHintExample, commandHintStep } from 'src/services/command-hints';
+import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
+import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription(
@@ -64,7 +67,7 @@ const runToolsSearch = (params: {
             .filter(Boolean)
         : undefined;
 
-    const searchResponse = yield* ui.withSpinner(
+    const searchResult = yield* ui.withSpinner(
       `Searching tools for "${params.query}"...`,
       Effect.gen(function* () {
         const resolvedProject = yield* resolveCommandProject({
@@ -90,16 +93,34 @@ const runToolsSearch = (params: {
           orgId: resolvedProject.orgId,
           projectId: resolvedProject.projectId,
         });
+        if (resolvedProject.projectType === 'CONSUMER') {
+          yield* primeConsumerConnectedToolkitsCacheInBackground({
+            orgId: resolvedProject.orgId,
+            consumerUserId: resolvedUserId.value,
+          });
+        }
         const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
           toolkits: toolkitList,
         });
-        return yield* Effect.tryPromise(() =>
+        const searchResponse = yield* Effect.tryPromise(() =>
           client.toolRouter.session.search(sessionId, {
             queries: [{ use_case: params.query }],
           })
         );
+        return {
+          searchResponse,
+          historyScope:
+            resolvedProject.projectType === 'CONSUMER'
+              ? {
+                  orgId: resolvedProject.orgId,
+                  consumerUserId: resolvedUserId.value,
+                  toolRouterSessionId: sessionId,
+                }
+              : undefined,
+        };
       })
     );
+    const searchResponse = searchResult.searchResponse;
 
     const toolkitSet = toolkitList && toolkitList.length > 0 ? new Set(toolkitList) : undefined;
 
@@ -169,12 +190,22 @@ const runToolsSearch = (params: {
 
     if (firstSlug) {
       const executeHint = params.rootOnly
-        ? `> composio execute "${firstSlug}" ${firstDataArg}`
-        : `> composio manage tools execute "${firstSlug}" --user-id "<user-id>" ${firstDataArg}`;
+        ? commandHintStep('Execute a tool', 'root.execute', {
+            slug: firstSlug,
+            data: firstDataArg,
+          })
+        : commandHintStep('Test a tool against a playground user', 'dev.playgroundExecute', {
+            slug: firstSlug,
+            userId: '<user-id>',
+            data: firstDataArg,
+          });
       const linkHint = params.rootOnly
-        ? `> composio link <toolkit>`
-        : `> composio manage connected-accounts link <toolkit> --user-id "<user-id>"`;
-      yield* ui.log.step(['Hints:', executeHint, linkHint].join('\n'));
+        ? commandHintStep('Link an account', 'root.link', { toolkit: '<toolkit>' })
+        : commandHintStep('Link an account', 'dev.connectedAccounts.link', {
+            toolkit: '<toolkit>',
+            userId: '<user-id>',
+          });
+      yield* ui.log.step([executeHint, linkHint].join('\n'));
     }
 
     if (searchResponse.error) {
@@ -186,16 +217,23 @@ const runToolsSearch = (params: {
       cta.push({
         action: 'Execute a tool',
         command: params.rootOnly
-          ? `composio execute "${firstSlug}" ${firstDataArg}`
-          : `composio manage tools execute "${firstSlug}" --user-id "<user-id>" ${firstDataArg}`,
+          ? commandHintExample('root.execute', { slug: firstSlug, data: firstDataArg })
+          : commandHintExample('dev.playgroundExecute', {
+              slug: firstSlug,
+              userId: '<user-id>',
+              data: firstDataArg,
+            }),
       });
     }
     if (firstToolkit) {
       cta.push({
         action: 'Connect a user account',
         command: params.rootOnly
-          ? `composio link ${String(firstToolkit).toLowerCase()}`
-          : `composio manage connected-accounts link ${String(firstToolkit).toLowerCase()} --user-id "<user-id>"`,
+          ? commandHintExample('root.link', { toolkit: String(firstToolkit).toLowerCase() })
+          : commandHintExample('dev.connectedAccounts.link', {
+              toolkit: String(firstToolkit).toLowerCase(),
+              userId: '<user-id>',
+            }),
       });
     }
 
@@ -203,6 +241,19 @@ const runToolsSearch = (params: {
       ...searchResponse,
       CTA: cta,
     };
+    yield* appendCliSessionHistory({
+      orgId: searchResult.historyScope?.orgId,
+      consumerUserId: searchResult.historyScope?.consumerUserId,
+      entry: {
+        command: 'search',
+        query: params.query,
+        toolkitFilter: toolkitList ?? [],
+        limit: clampedLimit,
+        resultCount: toolsList.length,
+        toolRouterSessionId: searchResult.historyScope?.toolRouterSessionId,
+        nextSteps: searchResponse.next_steps_guidance,
+      },
+    }).pipe(Effect.catchAll(() => Effect.void));
     yield* ui.output(JSON.stringify(outputForJq, null, 2));
   });
 
@@ -214,11 +265,17 @@ export const toolsCmd$Search = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.',
+      'Find tools by use case. Returns matching tools with slugs you can pass directly to `execute`.',
       '',
-      'Related:',
-      '  composio link <toolkit>',
-      "  composio execute <slug> -d '{}'",
+      'Examples:',
+      '  composio search "send an email"',
+      '  composio search "create issue" --toolkits github',
+      '  composio search "list calendar events" --limit 5',
+      '',
+      'Next steps:',
+      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
+      "  composio tools info <slug>               Inspect a tool's schema before executing",
+      '  composio link <toolkit>                  Connect an account if execute tells you to',
     ].join('\n')
   )
 );
@@ -238,11 +295,17 @@ export const rootToolsCmd$Search = Command.make(
 ).pipe(
   Command.withDescription(
     [
-      'Semantically search tools by use case; returns best-fit tools plus recommended usage guidance.',
+      'Find tools by use case. Returns matching tools with slugs you can pass directly to `execute`.',
       '',
-      'Related:',
-      '  composio link <toolkit>',
-      "  composio execute <slug> -d '{}'",
+      'Examples:',
+      '  composio search "send an email"',
+      '  composio search "create issue" --toolkits github',
+      '  composio search "list calendar events" --limit 5',
+      '',
+      'Next steps:',
+      "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
+      "  composio tools info <slug>               Inspect a tool's schema before executing",
+      '  composio link <toolkit>                  Connect an account if execute tells you to',
     ].join('\n')
   )
 );

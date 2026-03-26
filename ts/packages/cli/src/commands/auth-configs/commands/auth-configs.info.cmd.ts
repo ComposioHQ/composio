@@ -17,7 +17,7 @@ const id = Args.text({ name: 'id' }).pipe(
  *
  * @example
  * ```bash
- * composio manage auth-configs info "ac_1232323"
+ * composio dev auth-configs info "ac_1232323"
  * ```
  */
 export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
@@ -31,7 +31,7 @@ export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
-        'Try specifying an auth config ID, e.g.:\n> composio manage auth-configs info "ac_1232323"\n\nTo find auth config IDs:\n> composio manage auth-configs list'
+        'Try specifying an auth config ID, e.g.:\n> composio dev auth-configs info "ac_1232323"\n\nTo find auth config IDs:\n> composio dev auth-configs list'
       );
       return;
     }
@@ -47,7 +47,7 @@ export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Failed to fetch auth config "${idValue}".`,
-            hint: 'Browse available auth configs:\n> composio manage auth-configs list',
+            hint: 'Browse available auth configs:\n> composio dev auth-configs list',
             fallbackValue: Option.none(),
           })
         )
@@ -65,7 +65,7 @@ export const authConfigsCmd$Info = Command.make('info', { id }, ({ id }) =>
 
     // Next step hint
     yield* ui.log.step(
-      `To delete this auth config:\n> composio manage auth-configs delete "${redactedId}"`
+      `To delete this auth config:\n> composio dev auth-configs delete "${redactedId}"`
     );
 
     yield* ui.output(JSON.stringify(item, null, 2));

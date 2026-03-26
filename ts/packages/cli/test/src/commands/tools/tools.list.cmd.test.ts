@@ -55,30 +55,31 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage tools list', () => {
+describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] no flags [Then] lists all tools',
+    '[Given] toolkit "gmail" [Then] lists gmail tools',
     it => {
       it.scoped('lists all tools', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'list']);
+          yield* cli(['tools', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('GMAIL_SEND_EMAIL');
-          expect(output).toContain('SLACK_SEND_MESSAGE');
-          expect(output).toContain('Listing 3 tools');
+          expect(output).toContain('GMAIL_CREATE_DRAFT');
+          expect(output).not.toContain('SLACK_SEND_MESSAGE');
+          expect(output).toContain('Listing 2 tools');
         })
       );
     }
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] --toolkits "gmail" [Then] lists only gmail tools',
+    '[Given] toolkit "gmail" [Then] lists only gmail tools',
     it => {
       it.scoped('filters by toolkit', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'list', '--toolkits', 'gmail']);
+          yield* cli(['tools', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -96,12 +97,11 @@ describe('CLI: composio manage tools list', () => {
     it => {
       it.scoped('filters by search query', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'list', '--query', 'send']);
+          yield* cli(['tools', 'list', 'gmail', '--query', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('GMAIL_SEND_EMAIL');
-          expect(output).toContain('SLACK_SEND_MESSAGE');
           expect(output).not.toContain('GMAIL_CREATE_DRAFT');
         })
       );
@@ -113,7 +113,7 @@ describe('CLI: composio manage tools list', () => {
     it => {
       it.scoped('respects limit', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'list', '--limit', '2']);
+          yield* cli(['tools', 'list', 'gmail', '--limit', '2']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -126,7 +126,7 @@ describe('CLI: composio manage tools list', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'tools', 'list']);
+        yield* cli(['tools', 'list', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -140,7 +140,7 @@ describe('CLI: composio manage tools list', () => {
     it => {
       it.scoped('shows no tools found', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'list']);
+          yield* cli(['tools', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -155,7 +155,7 @@ describe('CLI: composio manage tools list', () => {
     it => {
       it.scoped('filters by tag', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'list', '--tags', 'email']);
+          yield* cli(['tools', 'list', 'gmail', '--tags', 'email']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -168,16 +168,16 @@ describe('CLI: composio manage tools list', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] --toolkits "nonexistent" [Then] shows no tools found with hint',
+    '[Given] toolkit "nonexistent" [Then] shows no tools found with hint',
     it => {
       it.scoped('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'list', '--toolkits', 'nonexistent']);
+          yield* cli(['tools', 'list', 'nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('No tools found');
-          expect(output).toContain('composio manage toolkits list');
+          expect(output).toContain('composio dev toolkits list');
         })
       );
     }

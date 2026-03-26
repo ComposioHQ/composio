@@ -1,5 +1,5 @@
 /**
- * CLI `composio manage toolkits search` e2e test
+ * CLI `composio dev toolkits search` e2e test
  *
  * Verifies that the search subcommand returns matching toolkits as JSON in piped mode,
  * respects --limit, supports stdout redirection, and handles no-result queries.
@@ -35,16 +35,16 @@ e2e(import.meta.url, {
     let noResultsResult: E2ETestResult;
 
     beforeAll(async () => {
-      validResult = await runCmd('composio manage toolkits search gmail');
-      limitResult = await runCmd('composio manage toolkits search gmail --limit 1');
+      validResult = await runCmd('composio dev toolkits search gmail');
+      limitResult = await runCmd('composio dev toolkits search gmail --limit 1');
       redirectResult = await runCmd({
-        command: 'composio manage toolkits search gmail --limit 1 > out.json',
+        command: 'composio dev toolkits search gmail --limit 1 > out.json',
         files: ['out.json'],
       });
-      noResultsResult = await runCmd('composio manage toolkits search xyznonexistent_abc_12345');
+      noResultsResult = await runCmd('composio dev toolkits search xyznonexistent_abc_12345');
     }, TIMEOUTS.FIXTURE);
 
-    describe('composio manage toolkits search gmail (known query)', () => {
+    describe('composio dev toolkits search gmail (known query)', () => {
       it('exits successfully', () => {
         expect(validResult.exitCode).toBe(0);
       });
@@ -76,7 +76,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio manage toolkits search gmail --limit 1 (with limit)', () => {
+    describe('composio dev toolkits search gmail --limit 1 (with limit)', () => {
       it('exits successfully', () => {
         expect(limitResult.exitCode).toBe(0);
       });
@@ -97,7 +97,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio manage toolkits search gmail --limit 1 > out.json (stdout redirection)', () => {
+    describe('composio dev toolkits search gmail --limit 1 > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });
@@ -118,7 +118,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio manage toolkits search xyznonexistent_abc_12345 (no results)', () => {
+    describe('composio dev toolkits search xyznonexistent_abc_12345 (no results)', () => {
       it('exits successfully', () => {
         expect(noResultsResult.exitCode).toBe(0);
       });

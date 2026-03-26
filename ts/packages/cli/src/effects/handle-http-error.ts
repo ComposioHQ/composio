@@ -25,7 +25,7 @@ const noSuggestions: ReadonlyArray<Suggestion> = [];
  *   Effect.catchTag('services/HttpServerError',
  *     handleHttpServerError(ui, {
  *       fallbackMessage: `Failed to fetch auth config "${id}".`,
- *       hint: 'Browse available auth configs:\n> composio manage auth-configs list',
+ *       hint: 'Browse available auth configs:\n> composio dev auth-configs list',
  *       fallbackValue: Option.none(),
  *     })
  *   )

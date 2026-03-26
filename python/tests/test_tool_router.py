@@ -508,8 +508,45 @@ class TestToolRouter:
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert "workbench" in kwargs
+        assert kwargs["workbench"]["enable"] is True
         assert kwargs["workbench"]["enable_proxy_execution"] is False
         assert kwargs["workbench"]["auto_offload_threshold"] == 300
+
+    def test_create_session_with_workbench_disabled(self, tool_router, mock_client):
+        """Test creating a session with workbench entirely disabled."""
+        session = tool_router.create(
+            user_id="user_123",
+            workbench={"enable": False},
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"]["enable"] is False
+
+    def test_create_session_with_workbench_enabled_and_configured(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session with workbench explicitly enabled and configured."""
+        session = tool_router.create(
+            user_id="user_123",
+            workbench={
+                "enable": True,
+                "enable_proxy_execution": False,
+                "auto_offload_threshold": 20000,
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"]["enable"] is True
+        assert kwargs["workbench"]["enable_proxy_execution"] is False
+        assert kwargs["workbench"]["auto_offload_threshold"] == 20000
 
     def test_create_session_complex_config(self, tool_router, mock_client):
         """Test creating a session with complex configuration."""

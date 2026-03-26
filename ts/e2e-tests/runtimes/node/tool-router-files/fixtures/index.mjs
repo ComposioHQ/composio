@@ -32,7 +32,9 @@ async function main() {
   if (!uploaded.mountRelativePath || !uploaded.downloadUrl) {
     throw new Error('Upload failed: missing mountRelativePath or downloadUrl');
   }
-  const storedPath = uploaded.mountRelativePath.replace(/^\//, '');
+  const candidatePaths = Array.from(
+    new Set([uploaded.mountRelativePath, uploaded.mountRelativePath.replace(/^\/+/, '')]).values()
+  ).filter(Boolean);
   console.log('UPLOAD_OK');
 
   // List files (retry for eventual consistency; omit path for root - SDK normalizes)
@@ -40,8 +42,8 @@ async function main() {
   for (let attempt = 0; attempt < 5; attempt++) {
     const listResult = await files.list();
     const found = listResult.items?.some(
-      (item) =>
-        item.mountRelativePath === storedPath ||
+      item =>
+        candidatePaths.includes(item.mountRelativePath) ||
         item.mountRelativePath === testPath ||
         item.mountRelativePath?.endsWith(testPath) ||
         item.mountRelativePath?.includes(testPath)
@@ -50,36 +52,50 @@ async function main() {
       listOk = true;
       break;
     }
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1000));
   }
   if (listOk) console.log('LIST_OK');
   else console.log('LIST_SKIP'); // eventual consistency
 
   // Download the file (retry for eventual consistency, same as list above)
   let downloaded;
+  let lastDownloadError;
+  let resolvedPath;
   for (let attempt = 0; attempt < 5; attempt++) {
-    try {
-      downloaded = await files.download(storedPath);
+    for (const candidatePath of candidatePaths) {
+      try {
+        const remoteFile = await files.download(candidatePath);
+        const content = await remoteFile.text();
+        if (content !== testContent) {
+          throw new Error(`Download failed: expected "${testContent}", got "${content}"`);
+        }
+        downloaded = remoteFile;
+        resolvedPath = candidatePath;
+        break;
+      } catch (err) {
+        lastDownloadError = err;
+      }
+    }
+    if (downloaded) {
       break;
-    } catch (err) {
-      if (attempt === 4) throw err;
-      await new Promise((r) => setTimeout(r, 1000));
+    }
+    if (attempt < 4) {
+      await new Promise(r => setTimeout(r, 1000));
     }
   }
-  const content = await downloaded.text();
-  if (content !== testContent) {
-    throw new Error(`Download failed: expected "${testContent}", got "${content}"`);
+  if (!downloaded) {
+    throw lastDownloadError ?? new Error('Download failed after retries');
   }
   console.log('DOWNLOAD_OK');
 
   // Delete the file (use path from API response)
-  await files.delete(storedPath);
+  await files.delete(resolvedPath ?? candidatePaths[0]);
   console.log('DELETE_OK');
 
   console.log('ALL_OK');
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.log('ERROR:', err?.message || err);
   process.exit(1);
 });

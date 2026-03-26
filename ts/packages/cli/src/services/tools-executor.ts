@@ -8,30 +8,9 @@ import type {
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { createToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
-  extractMessage,
-  extractSlug,
-  extractApiErrorDetails,
-} from 'src/utils/api-error-extraction';
-
-/** Error slugs that indicate a missing connected account / no active connection. */
-const NO_CONNECTION_SLUGS: ReadonlySet<string> = new Set([
-  'ActionExecute_ConnectedAccountNotFound',
-  'ToolRouterV2_NoActiveConnection',
-]);
-
-export const isNoConnectionSlug = (slug: string | undefined | null): boolean =>
-  slug != null && NO_CONNECTION_SLUGS.has(slug);
-
-export class ActionExecuteConnectedAccountNotFoundError extends Error {
-  readonly details: unknown;
-
-  constructor(details: unknown) {
-    const message = extractMessage(details) ?? 'No connected account found for this user/toolkit.';
-    super(message);
-    this.name = 'ActionExecuteConnectedAccountNotFoundError';
-    this.details = details;
-  }
-}
+  ComposioNoActiveConnectionError,
+  mapComposioError,
+} from 'src/services/composio-error-overrides';
 
 /**
  * Parameters accepted by the Tool Router-based executor.
@@ -133,12 +112,9 @@ export const ToolsExecutorLive = Layer.effect(
           return normalizeResponse(raw);
         }).pipe(
           Effect.catchAll((error): Effect.Effect<never, unknown> => {
-            const apiDetails = extractApiErrorDetails(error);
-            const slugValue = apiDetails?.slug ?? extractSlug(error);
-            if (isNoConnectionSlug(slugValue)) {
-              return Effect.fail(
-                new ActionExecuteConnectedAccountNotFoundError(apiDetails ?? error)
-              );
+            const mapped = mapComposioError({ error, toolSlug: slug });
+            if (mapped.normalized instanceof ComposioNoActiveConnectionError) {
+              return Effect.fail(mapped.normalized);
             }
             return Effect.fail(error);
           })

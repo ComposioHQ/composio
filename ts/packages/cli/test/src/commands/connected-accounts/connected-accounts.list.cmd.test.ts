@@ -67,13 +67,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage connected-accounts list', () => {
+describe('CLI: composio dev connected-accounts list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
     '[Given] no flags [Then] lists all connected accounts',
     it => {
       it.scoped('lists all connected accounts with table', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'list']);
+          yield* cli(['dev', 'connected-accounts', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -91,7 +91,7 @@ describe('CLI: composio manage connected-accounts list', () => {
     it => {
       it.scoped('filters by toolkit', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'list', '--toolkits', 'gmail']);
+          yield* cli(['dev', 'connected-accounts', 'list', '--toolkits', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -108,7 +108,7 @@ describe('CLI: composio manage connected-accounts list', () => {
     it => {
       it.scoped('filters by user ID', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'list', '--user-id', 'default']);
+          yield* cli(['dev', 'connected-accounts', 'list', '--user-id', 'default']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -126,7 +126,7 @@ describe('CLI: composio manage connected-accounts list', () => {
     it => {
       it.scoped('filters by status', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'list', '--status', 'ACTIVE']);
+          yield* cli(['dev', 'connected-accounts', 'list', '--status', 'ACTIVE']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -144,7 +144,7 @@ describe('CLI: composio manage connected-accounts list', () => {
     it => {
       it.scoped('respects limit', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'list', '--limit', '1']);
+          yield* cli(['dev', 'connected-accounts', 'list', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -157,7 +157,7 @@ describe('CLI: composio manage connected-accounts list', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'connected-accounts', 'list']);
+        yield* cli(['dev', 'connected-accounts', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -171,7 +171,7 @@ describe('CLI: composio manage connected-accounts list', () => {
     it => {
       it.scoped('shows no connected accounts found', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'list']);
+          yield* cli(['dev', 'connected-accounts', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -186,12 +186,12 @@ describe('CLI: composio manage connected-accounts list', () => {
     it => {
       it.scoped('shows toolkit hint', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'connected-accounts', 'list', '--toolkits', 'nonexistent']);
+          yield* cli(['dev', 'connected-accounts', 'list', '--toolkits', 'nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('No connected accounts found');
-          expect(output).toContain('composio manage toolkits list');
+          expect(output).toContain('composio dev toolkits list');
         })
       );
     }

@@ -24,8 +24,8 @@ const yes = Options.boolean('yes').pipe(
  *
  * @example
  * ```bash
- * composio manage auth-configs delete "ac_1232323"
- * composio manage auth-configs delete "ac_1232323" --yes
+ * composio dev auth-configs delete "ac_1232323"
+ * composio dev auth-configs delete "ac_1232323" --yes
  * ```
  */
 export const authConfigsCmd$Delete = Command.make('delete', { id, yes }, ({ id, yes }) =>
@@ -39,7 +39,7 @@ export const authConfigsCmd$Delete = Command.make('delete', { id, yes }, ({ id, 
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
-        'Try specifying an auth config ID, e.g.:\n> composio manage auth-configs delete "ac_1232323"\n\nTo find auth config IDs:\n> composio manage auth-configs list'
+        'Try specifying an auth config ID, e.g.:\n> composio dev auth-configs delete "ac_1232323"\n\nTo find auth config IDs:\n> composio dev auth-configs list'
       );
       return;
     }
@@ -66,7 +66,7 @@ export const authConfigsCmd$Delete = Command.make('delete', { id, yes }, ({ id, 
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Failed to delete auth config "${idValue}".`,
-            hint: 'Browse available auth configs:\n> composio manage auth-configs list',
+            hint: 'Browse available auth configs:\n> composio dev auth-configs list',
             fallbackValue: false,
           })
         )

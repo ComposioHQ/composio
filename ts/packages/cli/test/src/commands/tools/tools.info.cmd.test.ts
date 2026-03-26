@@ -49,25 +49,25 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage tools info', () => {
+describe('CLI: composio tools info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays tool info',
     it => {
-      it.scoped('shows tool details with input/output schemas', () =>
+      it.scoped('shows brief tool details and cached schema path', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'info', 'GMAIL_SEND_EMAIL']);
+          yield* cli(['tools', 'info', 'GMAIL_SEND_EMAIL']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Send Email');
           expect(output).toContain('GMAIL_SEND_EMAIL');
-          expect(output).toContain('Input Parameters');
-          expect(output).toContain('recipient');
-          expect(output).toContain('required');
-          expect(output).toContain('Output Parameters');
-          expect(output).toContain('message_id');
-          // Verify next-step hint includes derived toolkit slug
-          expect(output).toContain('composio manage tools list --toolkits "gmail"');
+          expect(output).toContain('Schema Cache');
+          expect(output).toContain('/tool_definitions/GMAIL_SEND_EMAIL.json');
+          expect(output).toContain(
+            "jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}'"
+          );
+          expect(output).toContain('composio execute "GMAIL_SEND_EMAIL" -d');
+          expect(output).toContain('--dry-run');
         })
       );
     }
@@ -78,7 +78,7 @@ describe('CLI: composio manage tools info', () => {
     it => {
       it.scoped('shows missing argument warning', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'info']);
+          yield* cli(['tools', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -93,7 +93,7 @@ describe('CLI: composio manage tools info', () => {
     it => {
       it.scoped('shows not found with suggestions', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'tools', 'info', 'NONEXISTENT_TOOL']);
+          yield* cli(['tools', 'info', 'NONEXISTENT_TOOL']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -106,7 +106,7 @@ describe('CLI: composio manage tools info', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'tools', 'info', 'GMAIL_SEND_EMAIL']);
+        yield* cli(['tools', 'info', 'GMAIL_SEND_EMAIL']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

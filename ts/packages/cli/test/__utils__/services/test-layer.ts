@@ -51,10 +51,12 @@ import type {
   SessionLinkResponse,
   SessionSearchResponse,
   SessionToolkitsResponse,
+  SessionProxyExecuteResponse,
   SessionCreateParams,
   SessionExecuteParams,
   SessionExecuteMetaParams,
   SessionLinkParams,
+  SessionProxyExecuteParams,
   SessionSearchParams,
   SessionToolkitsParams,
 } from '@composio/client/resources/tool-router';
@@ -164,6 +166,11 @@ export interface TestLiveInput {
     ) => Promise<SessionExecuteMetaResponse>;
     /** Override `session.link`. Receives sessionId and params. */
     link?: (sessionId: string, params: SessionLinkParams) => Promise<SessionLinkResponse>;
+    /** Override `session.proxyExecute`. Receives sessionId and params. */
+    proxyExecute?: (
+      sessionId: string,
+      params: SessionProxyExecuteParams
+    ) => Promise<SessionProxyExecuteResponse>;
     /** Override `session.search`. Receives sessionId and params. */
     search?: (sessionId: string, params: SessionSearchParams) => Promise<SessionSearchResponse>;
     /** Override `session.toolkits`. Receives sessionId and optional params. */
@@ -924,6 +931,15 @@ export const TestLayer = (input?: TestLiveInput) =>
           return response;
         },
       },
+      connectedAccounts: {
+        retrieve: async (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            throw new Error(`Connected account "${nanoid}" not found`);
+          }
+          return found;
+        },
+      },
       toolkits: {
         retrieve: async (slug: string) => {
           const detailed = toolkitsData.detailedToolkits.find(
@@ -986,6 +1002,19 @@ export const TestLayer = (input?: TestLiveInput) =>
               connected_account_id: 'con_test_link',
               link_token: 'lt_test_token',
               redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+            })),
+          proxyExecute:
+            toolRouterOverrides?.proxyExecute ??
+            (async (_sessionId: string, params: SessionProxyExecuteParams) => ({
+              status: 200,
+              data: {
+                toolkit_slug: params.toolkit_slug,
+                endpoint: params.endpoint,
+                method: params.method,
+                body: params.body ?? null,
+                parameters: params.parameters ?? [],
+              },
+              headers: {},
             })),
           search: toolRouterOverrides?.search ?? defaultSearchHandler,
           toolkits: toolRouterOverrides?.toolkits ?? defaultToolkitsHandler,

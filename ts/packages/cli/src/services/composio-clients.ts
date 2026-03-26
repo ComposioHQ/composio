@@ -744,6 +744,19 @@ export type ConsumerProjectResolveResponse = Schema.Schema.Type<
   typeof ConsumerProjectResolveResponse
 >;
 
+export const LatestToolVersionResponse = Schema.Struct({
+  tool_slug: Schema.String,
+  version: Schema.String,
+}).annotations({ identifier: 'LatestToolVersionResponse' });
+export type LatestToolVersionResponse = Schema.Schema.Type<typeof LatestToolVersionResponse>;
+
+export const ConsumerConnectedToolkitsResponse = Schema.Struct({
+  toolkits: Schema.Array(Schema.String),
+}).annotations({ identifier: 'ConsumerConnectedToolkitsResponse' });
+export type ConsumerConnectedToolkitsResponse = Schema.Schema.Type<
+  typeof ConsumerConnectedToolkitsResponse
+>;
+
 const extractArrayPayload = (json: unknown): ReadonlyArray<unknown> => {
   if (Array.isArray(json)) return json;
   if (json && typeof json === 'object') {
@@ -1127,6 +1140,97 @@ export const resolveConsumerProject = (params: {
 
     return yield* pipe(
       Schema.decodeUnknown(ConsumerProjectResolveResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+export const getLatestToolVersion = (params: {
+  baseURL: string;
+  apiKey: string;
+  toolSlug: string;
+  orgId?: string;
+  projectId?: string;
+  projectApiKey?: string;
+}): Effect.Effect<LatestToolVersionResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(
+          `${params.baseURL}/api/v3/tools/${encodeURIComponent(params.toolSlug)}/get_latest_version`,
+          {
+            method: 'GET',
+            redirect: 'error',
+            headers: {
+              ...(params.projectApiKey
+                ? ({ 'x-api-key': params.projectApiKey } satisfies Record<string, string>)
+                : ({ 'x-user-api-key': params.apiKey } satisfies Record<string, string>)),
+              ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
+              ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
+              'User-Agent': '@composio/cli',
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(LatestToolVersionResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+export const getConsumerConnectedToolkits = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  consumerUserId: string;
+}): Effect.Effect<ConsumerConnectedToolkitsResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(
+          `${params.baseURL}/api/v3/org/consumer/connected_toolkits?user_id=${encodeURIComponent(params.consumerUserId)}`,
+          {
+            method: 'GET',
+            redirect: 'error',
+            headers: {
+              'x-user-api-key': params.apiKey,
+              'x-org-id': params.orgId,
+              'User-Agent': '@composio/cli',
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(ConsumerConnectedToolkitsResponse)(json),
       Effect.catchTag('ParseError', e => {
         const message = ParseResult.TreeFormatter.formatErrorSync(e);
         return new HttpDecodingError({
