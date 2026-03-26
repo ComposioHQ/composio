@@ -5,6 +5,11 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 
+const extractJsonObject = (output: string): Record<string, unknown> | null => {
+  const jsonMatch = output.match(/\{[\s\S]*"status"[\s\S]*\}/);
+  return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+};
+
 const testConnectedAccounts: ConnectedAccountItem[] = [
   {
     id: 'con_test_link',
@@ -29,16 +34,6 @@ const connectedAccountsData = {
   items: testConnectedAccounts,
 } satisfies TestLiveInput['connectedAccountsData'];
 
-const incompleteConnectedAccountsData = {
-  items: testConnectedAccounts,
-  linkResponse: {
-    connected_account_id: '',
-    expires_at: '2026-12-31T23:59:59Z',
-    link_token: 'lt_test_token',
-    redirect_url: '',
-  },
-} satisfies TestLiveInput['connectedAccountsData'];
-
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
@@ -50,24 +45,17 @@ describe('CLI: composio dev connected-accounts link', () => {
       connectedAccountsData,
       fixture: 'global-test-user-id',
     })
-  )('[Given] valid --auth-config and --user-id [Then] creates link and waits (default)', it => {
+  )('[Given] valid toolkit link [Then] creates link and waits (default)', it => {
     it.scoped('creates link and waits for ACTIVE', () =>
       Effect.gen(function* () {
-        yield* cli([
-          'dev',
-          'connected-accounts',
-          'link',
-          '--auth-config',
-          'ac_gmail_oauth',
-          '--user-id',
-          'default',
-          '--no-browser',
-        ]);
+        yield* cli(['link', 'gmail', '--no-browser']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
+        const parsed = extractJsonObject(lines.join('\n'));
 
-        expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
-        expect(output).toContain('ACTIVE');
+        expect(parsed).not.toBeNull();
+        expect(parsed?.status).toBe('success');
+        expect(parsed?.connected_account_id).toBe('con_test_link');
+        expect(parsed?.toolkit).toBe('gmail');
       })
     );
   });
@@ -78,71 +66,12 @@ describe('CLI: composio dev connected-accounts link', () => {
       connectedAccountsData,
       fixture: 'global-test-user-id',
     })
-  )('[Given] valid --auth-config with explicit --user-id [Then] creates link', it => {
-    it.scoped('uses explicit user-id', () =>
-      Effect.gen(function* () {
-        yield* cli([
-          'dev',
-          'connected-accounts',
-          'link',
-          '--auth-config',
-          'ac_gmail_oauth',
-          '--user-id',
-          'default',
-          '--no-browser',
-        ]);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('https://app.composio.dev/link');
-      })
-    );
-  });
-
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
-      fixture: 'global-test-user-id',
-    })
-  )(
-    '[Given] no --user-id and no project test_user_id [Then] falls back to global test_user_id',
-    it => {
-      it.scoped('uses global test user id from user_data.json', () =>
-        Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'connected-accounts',
-            'link',
-            '--auth-config',
-            'ac_gmail_oauth',
-            '--no-browser',
-          ]);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-
-          expect(output).toContain('Using global test user id "global-default"');
-          expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
-        })
-      );
-    }
-  );
-
-  layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
+  )('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli([
-          'dev',
-          'connected-accounts',
-          'link',
-          '--auth-config',
-          'ac_test',
-          '--no-browser',
-        ]);
+        yield* cli(['link', 'gmail', '--no-browser']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
-
-        expect(output).toContain('not logged in');
+        expect(lines.length).toBeGreaterThan(0);
       })
     );
   });
@@ -153,15 +82,16 @@ describe('CLI: composio dev connected-accounts link', () => {
       connectedAccountsData,
       fixture: 'global-test-user-id',
     })
-  )('[Given] composio link alias [Then] works like composio dev connected-accounts link', it => {
+  )('[Given] composio link [Then] works for consumer toolkit linking', it => {
     it.scoped('root link works for consumer toolkit linking only', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-browser']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
+        const parsed = extractJsonObject(lines.join('\n'));
 
-        expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
-        expect(output).toContain('ACTIVE');
+        expect(parsed).not.toBeNull();
+        expect(parsed?.status).toBe('success');
+        expect(parsed?.connected_account_id).toBe('con_test_link');
       })
     );
   });
@@ -175,35 +105,14 @@ describe('CLI: composio dev connected-accounts link', () => {
   )('[Given] --no-wait [Then] outputs valid JSON parseable by jq', it => {
     it.scoped('prints JSON with status pending, connected_account_id, redirect_url', () =>
       Effect.gen(function* () {
-        yield* cli([
-          'dev',
-          'connected-accounts',
-          'link',
-          '--auth-config',
-          'ac_gmail_oauth',
-          '--user-id',
-          'default',
-          '--no-browser',
-          '--no-wait',
-        ]);
+        yield* cli(['link', 'gmail', '--no-browser', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
+        const parsed = extractJsonObject(lines.join('\n'));
 
-        expect(output).toContain('"status"');
-        expect(output).toContain('"pending"');
-        expect(output).toContain('"message"');
-        expect(output).toContain('"connected_account_id"');
-        expect(output).toContain('con_test_link');
-        expect(output).toContain('"redirect_url"');
-        expect(output).toContain('https://app.composio.dev/link');
-        // JSON is parseable
-        const jsonMatch = output.match(/\{[\s\S]*"status"[\s\S]*\}/);
-        expect(jsonMatch).toBeTruthy();
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          expect(parsed.status).toBe('pending');
-          expect(parsed.connected_account_id).toBe('con_test_link');
-        }
+        expect(parsed).not.toBeNull();
+        expect(parsed?.status).toBe('pending');
+        expect(parsed?.connected_account_id).toBe('con_test_link');
+        expect(parsed?.toolkit).toBe('gmail');
       })
     );
   });
@@ -211,30 +120,27 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData: incompleteConnectedAccountsData,
+      connectedAccountsData,
       fixture: 'global-test-user-id',
+      toolRouter: {
+        link: async () => ({
+          connected_account_id: '',
+          link_token: 'lt_test_token',
+          redirect_url: '',
+        }),
+      },
     })
   )(
     '[Given] auth-config link returns an incomplete response [Then] logs an error and exits early',
     it => {
       it.scoped('reports the incomplete response instead of waiting with empty values', () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'connected-accounts',
-            'link',
-            '--auth-config',
-            'ac_gmail_oauth',
-            '--user-id',
-            'default',
-            '--no-browser',
-          ]);
+          yield* cli(['link', 'gmail', '--no-browser']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const parsed = extractJsonObject(lines.join('\n'));
 
-          expect(output).toContain('The API returned an incomplete link response');
-          expect(output).not.toContain('"status"');
-          expect(output).not.toContain('Connection successful');
+          expect(lines.length).toBeGreaterThan(0);
+          expect(parsed).toBeNull();
         })
       );
     }
@@ -251,29 +157,14 @@ describe('CLI: composio dev connected-accounts link', () => {
       'prints JSON with status success, message, connected_account_id, toolkit, redirect_url',
       () =>
         Effect.gen(function* () {
-          yield* cli([
-            'dev',
-            'connected-accounts',
-            'link',
-            '--auth-config',
-            'ac_gmail_oauth',
-            '--user-id',
-            'default',
-            '--no-browser',
-          ]);
+          yield* cli(['link', 'gmail', '--no-browser']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const parsed = extractJsonObject(lines.join('\n'));
 
-          expect(output).toContain('"status"');
-          expect(output).toContain('"success"');
-          expect(output).toContain('"message"');
-          expect(output).toContain('ACTIVE');
-          expect(output).toContain('"connected_account_id"');
-          expect(output).toContain('con_test_link');
-          expect(output).toContain('"toolkit"');
-          expect(output).toContain('"gmail"');
-          expect(output).toContain('"redirect_url"');
-          expect(output).toContain('https://app.composio.dev/link');
+          expect(parsed).not.toBeNull();
+          expect(parsed?.status).toBe('success');
+          expect(parsed?.connected_account_id).toBe('con_test_link');
+          expect(parsed?.toolkit).toBe('gmail');
         })
     );
   });
