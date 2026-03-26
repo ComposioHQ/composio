@@ -285,6 +285,54 @@ describe('Tools', () => {
       expect(result[0].outputParameters).toEqual(toolMocks.transformedTool.outputParameters);
     });
 
+    it('should deduplicate duplicate required entries in retrieved schemas', async () => {
+      const rawToolWithDuplicateRequired = {
+        ...toolMocks.rawTool,
+        input_parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'The search query',
+            },
+            filters: {
+              type: 'object',
+              properties: {
+                owner: { type: 'string' },
+              },
+              required: ['owner', 'owner'],
+            },
+          },
+          required: ['query', 'query'],
+        },
+        output_parameters: {
+          type: 'object',
+          properties: {
+            results: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+          },
+          required: ['results', 'results'],
+        },
+      };
+
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [rawToolWithDuplicateRequired],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ tools: ['TEST_TOOL'] });
+
+      expect(result[0].inputParameters?.required).toEqual(['query']);
+      expect((result[0].inputParameters?.properties?.filters as Record<string, any>).required).toEqual(
+        ['owner']
+      );
+      expect(result[0].outputParameters?.required).toEqual(['results']);
+    });
+
     it('should include custom tools in the results', async () => {
       mockClient.tools.list.mockResolvedValueOnce({
         items: [toolMocks.rawTool],
@@ -352,6 +400,32 @@ describe('Tools', () => {
       const emptyQuery = {} as any;
 
       await expect(context.tools.getRawComposioTools(emptyQuery)).rejects.toThrow(ValidationError);
+    });
+  });
+
+  describe('getRawToolRouterMetaTools', () => {
+    it('should sanitize duplicate required entries for tool-router meta tools', async () => {
+      mockClient.toolRouter.session.tools.mockResolvedValueOnce({
+        items: [
+          {
+            ...toolMocks.rawTool,
+            input_parameters: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                },
+              },
+              required: ['query', 'query'],
+            },
+          },
+        ],
+      });
+
+      const result = await context.tools.getRawToolRouterMetaTools('session_123');
+
+      expect(mockClient.toolRouter.session.tools).toHaveBeenCalledWith('session_123');
+      expect(result[0].inputParameters?.required).toEqual(['query']);
     });
   });
 

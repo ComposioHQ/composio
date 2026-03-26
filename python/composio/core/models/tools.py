@@ -25,6 +25,7 @@ from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
+from composio.utils.shared import deduplicate_required_fields
 from composio.utils.toolkit_version import get_toolkit_version
 
 from ._modifiers import (
@@ -145,6 +146,12 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 _tools.append(tool)
         return _tools, _custom_tools
 
+    def _sanitize_tool_schema(self, tool: Tool) -> Tool:
+        """Normalize tool schemas before exposing them to providers or callers."""
+        tool.input_parameters = deduplicate_required_fields(tool.input_parameters)
+        tool.output_parameters = deduplicate_required_fields(tool.output_parameters)
+        return tool
+
     def get_raw_composio_tool_by_slug(self, slug: str) -> Tool:
         """
         Returns schema for the given tool slug.
@@ -152,13 +159,14 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         try:
             return t.cast(Tool, self._custom_tools[slug])
         except KeyError:
-            return t.cast(
+            tool = t.cast(
                 Tool,
                 self._client.tools.retrieve(
                     tool_slug=slug,
                     toolkit_versions=none_to_omit(self._toolkit_versions),
                 ),
             )
+            return self._sanitize_tool_schema(tool)
 
     def get_raw_composio_tools(
         self,
@@ -199,7 +207,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     toolkit_versions=none_to_omit(self._toolkit_versions),
                 ).items
             )
-        return tools_list
+        return [self._sanitize_tool_schema(tool) for tool in tools_list]
 
     def get_raw_tool_router_meta_tools(
         self,
@@ -246,7 +254,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         # Fetch meta tools from the API
         tools_response = self._client.tool_router.session.tools(session_id=session_id)
         # Cast to Tool type - session.tools returns compatible Item type from different response schema
-        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
+        tools_list: t.List[Tool] = [
+            self._sanitize_tool_schema(t.cast(Tool, item))
+            for item in tools_response.items
+        ]
 
         # Apply schema modifiers if provided
         if modifiers is not None:

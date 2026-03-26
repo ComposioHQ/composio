@@ -1,5 +1,6 @@
 import ComposioClient from '@composio/client';
 import { FileToolModifier } from '#file_tool_modifier';
+import { deduplicateRequiredFields } from '../utils/jsonSchema';
 import {
   Tool,
   ToolExecuteParams,
@@ -113,8 +114,8 @@ export class Tools<
   ): Tool {
     return ToolSchema.parse({
       ...tool,
-      inputParameters: tool.input_parameters,
-      outputParameters: tool.output_parameters,
+      inputParameters: deduplicateRequiredFields(tool.input_parameters),
+      outputParameters: deduplicateRequiredFields(tool.output_parameters),
       availableVersions: tool.available_versions,
       isDeprecated: tool.deprecated?.is_deprecated ?? false,
       isNoAuth: tool.no_auth,

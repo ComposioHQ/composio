@@ -36,11 +36,32 @@ __all__ = [
     "generate_request_id",
     "substitute_reserved_python_keywords",
     "reinstate_reserved_python_keywords",
+    "deduplicate_required_fields",
 ]
 
 reserved_names = ["validate"]
 
 _OBJ_MARKER = "-_object_-"
+_SCHEMA_OBJECT_KEYS = (
+    "$defs",
+    "definitions",
+    "dependentSchemas",
+    "patternProperties",
+    "properties",
+)
+_SCHEMA_ARRAY_KEYS = ("allOf", "anyOf", "oneOf", "prefixItems")
+_SCHEMA_SINGLE_KEYS = (
+    "additionalProperties",
+    "contains",
+    "else",
+    "if",
+    "items",
+    "not",
+    "propertyNames",
+    "then",
+    "unevaluatedItems",
+    "unevaluatedProperties",
+)
 
 
 def _make_safe_name(name: str) -> str:
@@ -497,6 +518,44 @@ def get_pydantic_signature_format_from_schema_params(
         all_parameters.append(param)
 
     return all_parameters
+
+
+def deduplicate_required_fields(schema: t.Any) -> t.Any:
+    """Recursively deduplicate entries in ``required`` arrays throughout a JSON schema.
+
+    JSON Schema 2020-12 requires ``required`` items to be unique. Some upstream
+    schemas violate this, which causes strict validators to reject the schema.
+
+    The schema is shallow-copied at each level so the caller's original value is
+    not mutated.
+    """
+    if not isinstance(schema, dict):
+        return schema
+
+    result = dict(schema)
+
+    if isinstance(result.get("required"), list):
+        result["required"] = list(dict.fromkeys(result["required"]))
+
+    for key in _SCHEMA_OBJECT_KEYS:
+        if isinstance(result.get(key), dict):
+            result[key] = {
+                child_key: deduplicate_required_fields(child_schema)
+                for child_key, child_schema in result[key].items()
+            }
+
+    for key in _SCHEMA_ARRAY_KEYS:
+        if isinstance(result.get(key), list):
+            result[key] = [
+                deduplicate_required_fields(child_schema)
+                for child_schema in result[key]
+            ]
+
+    for key in _SCHEMA_SINGLE_KEYS:
+        if isinstance(result.get(key), dict):
+            result[key] = deduplicate_required_fields(result[key])
+
+    return result
 
 
 def generate_request_id() -> str:

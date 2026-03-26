@@ -2,6 +2,78 @@ import { z } from 'zod/v3';
 import { JsonSchemaToZodError } from '../errors';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 
+const SCHEMA_OBJECT_KEYS = [
+  '$defs',
+  'definitions',
+  'dependentSchemas',
+  'patternProperties',
+  'properties',
+] as const;
+
+const SCHEMA_ARRAY_KEYS = ['allOf', 'anyOf', 'oneOf', 'prefixItems'] as const;
+
+const SCHEMA_SINGLE_KEYS = [
+  'additionalProperties',
+  'contains',
+  'else',
+  'if',
+  'items',
+  'not',
+  'propertyNames',
+  'then',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+] as const;
+
+/**
+ * Recursively deduplicates entries in `required` arrays throughout a JSON schema.
+ *
+ * JSON Schema 2020-12 requires `required` items to be unique. Some upstream
+ * schemas violate this, which causes strict validators to reject the schema.
+ *
+ * @param schema - A JSON schema or sub-schema to sanitize
+ * @returns A sanitized copy of the schema
+ */
+export const deduplicateRequiredFields = <T>(schema: T): T => {
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+    return schema;
+  }
+
+  const result = { ...(schema as Record<string, unknown>) };
+
+  if (Array.isArray(result.required)) {
+    result.required = [...new Set(result.required)];
+  }
+
+  for (const key of SCHEMA_OBJECT_KEYS) {
+    const value = result[key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = Object.fromEntries(
+        Object.entries(value).map(([childKey, childSchema]) => [
+          childKey,
+          deduplicateRequiredFields(childSchema),
+        ])
+      );
+    }
+  }
+
+  for (const key of SCHEMA_ARRAY_KEYS) {
+    const value = result[key];
+    if (Array.isArray(value)) {
+      result[key] = value.map(item => deduplicateRequiredFields(item));
+    }
+  }
+
+  for (const key of SCHEMA_SINGLE_KEYS) {
+    const value = result[key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = deduplicateRequiredFields(value);
+    }
+  }
+
+  return result as T;
+};
+
 /**
  * Removes all non-required properties from the schema
  *
@@ -77,7 +149,7 @@ export function jsonSchemaToZodSchema<T extends z.ZodTypeAny>(
   }
 ): T {
   try {
-    let schema = jsonSchema;
+    let schema = deduplicateRequiredFields(jsonSchema);
     // Remove all non-required properties from the schema if strict is true
     if (strict && schema) {
       schema = removeNonRequiredProperties(
