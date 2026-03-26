@@ -49,13 +49,13 @@ const noWait = Options.boolean('no-wait').pipe(
 const showRedirectUrl = (ui: TerminalUI, redirectUrl: string, noBrowser: boolean) =>
   Effect.gen(function* () {
     if (noBrowser) {
-      yield* ui.log.info('Open the following URL to continue authorization:');
-      yield* ui.log.message(redirectUrl);
-      yield* ui.output(redirectUrl, { force: true });
-      return;
+      yield* ui.log.info('Please authorize using the following URL:');
+    } else {
+      yield* ui.log.step('Redirecting you to the authorization page');
     }
 
     yield* ui.note(redirectUrl, 'Redirect URL');
+    yield* ui.output(redirectUrl, noBrowser ? { force: true } : undefined);
   });
 
 const waitForActiveConnection = (
