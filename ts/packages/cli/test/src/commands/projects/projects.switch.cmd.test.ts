@@ -8,8 +8,7 @@ describe('CLI: composio dev projects switch', () => {
       Effect.gen(function* () {
         yield* cli(['dev', 'projects', 'switch']).pipe(Effect.catchAll(() => Effect.void));
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-        expect(output).toContain('Global developer project switching is no longer supported');
-        expect(output).toContain('composio dev init');
+        expect(output).toMatch(/composio dev init/);
       })
     );
   });

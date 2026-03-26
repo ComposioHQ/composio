@@ -27,6 +27,7 @@ import {
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
   getToolExecuteValidationFailedEvent,
+  isMaybeToolValidationError,
   isMaybeToolNotFoundError,
 } from 'src/analytics/events';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
@@ -261,10 +262,15 @@ const emitExecuteFailureTelemetry = (params: {
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
+  readonly logId?: string;
   readonly mappedError?: ReturnType<typeof mapComposioError>;
 }) =>
   Effect.gen(function* () {
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
+    const failureOrigin =
+      normalized instanceof ToolInputValidationError || params.stage !== 'execution'
+        ? ('fast_fail' as const)
+        : ('main_endpoint' as const);
 
     if (normalized instanceof ToolInputValidationError) {
       yield* trackCliEventEffect(
@@ -275,6 +281,8 @@ const emitExecuteFailureTelemetry = (params: {
           surface: params.surface,
           projectMode: params.projectMode,
           stage: params.stage === 'dry_run' ? 'dry_run' : 'validation',
+          failureOrigin,
+          logId: params.logId,
         })
       );
       return;
@@ -294,35 +302,60 @@ const emitExecuteFailureTelemetry = (params: {
     const isNoConnectionError =
       normalized instanceof ComposioNoActiveConnectionError || Boolean(mapped.override);
 
-    const event = isMaybeToolNotFoundError({
+    const event = isMaybeToolValidationError({
       message,
       errorSlug,
-      status,
+      apiCode,
     })
-      ? getToolExecuteToolNotFoundEvent({
+      ? getToolExecuteValidationFailedEvent({
           toolSlug: params.toolSlug,
           args: params.args,
+          error: new ToolInputValidationError(params.toolSlug, 'server', [message]),
           surface: params.surface,
           projectMode: params.projectMode,
-          stage: params.stage === 'validation' ? 'execution' : params.stage,
-          errorSlug,
-          status,
-          apiCode,
-          message,
+          stage:
+            params.stage === 'dry_run'
+              ? 'dry_run'
+              : params.stage === 'validation'
+                ? 'execution'
+                : 'execution',
+          failureOrigin,
+          logId: params.logId,
         })
-      : getToolExecuteFailedEvent({
-          toolSlug: params.toolSlug,
-          args: params.args,
-          surface: params.surface,
-          projectMode: params.projectMode,
-          stage: params.stage === 'validation' ? 'execution' : params.stage,
-          errorSlug,
-          status,
-          apiCode,
-          message,
-          errorName: normalized instanceof Error ? normalized.name : undefined,
-          isNoConnectionError,
-        });
+      : isMaybeToolNotFoundError({
+            message,
+            errorSlug,
+            status,
+            apiCode,
+          })
+        ? getToolExecuteToolNotFoundEvent({
+            toolSlug: params.toolSlug,
+            args: params.args,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            stage: params.stage === 'validation' ? 'execution' : params.stage,
+            failureOrigin,
+            logId: params.logId,
+            errorSlug,
+            status,
+            apiCode,
+            message,
+          })
+        : getToolExecuteFailedEvent({
+            toolSlug: params.toolSlug,
+            args: params.args,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            stage: params.stage === 'validation' ? 'execution' : params.stage,
+            failureOrigin,
+            logId: params.logId,
+            errorSlug,
+            status,
+            apiCode,
+            message,
+            errorName: normalized instanceof Error ? normalized.name : undefined,
+            isNoConnectionError,
+          });
 
     yield* trackCliEventEffect(event);
   });
@@ -379,6 +412,7 @@ const handleExecutionError = (
     surface: 'root' | 'dev';
     projectMode: 'consumer' | 'developer';
     stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
+    logId?: string;
   }
 ) =>
   Effect.gen(function* () {
@@ -392,6 +426,7 @@ const handleExecutionError = (
         surface: context.surface,
         projectMode: context.projectMode,
         stage: context.stage,
+        logId: context.logId,
       });
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
@@ -413,6 +448,7 @@ const handleExecutionError = (
       surface: context.surface,
       projectMode: context.projectMode,
       stage: context.stage,
+      logId: context.logId,
       mappedError: mapped,
     });
 
@@ -1039,6 +1075,7 @@ const runExecuteWithSpinner = (params: {
             surface: params.surface,
             projectMode: params.projectMode,
             stage: 'execution',
+            logId: result.logId,
           });
           yield* params.ui.output(JSON.stringify(result, ciRedactReplacer, 2));
           return yield* Effect.fail(new ToolExecutionError(summary.error));
