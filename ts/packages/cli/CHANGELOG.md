@@ -1,5 +1,16 @@
 # @composio/cli
 
+## 0.2.9
+
+### Patch Changes
+
+- 315238c: - Add telemetry worker and improve tool execution UX
+  - Fix `composio link` hanging after auth completes
+  - Add parallel tool execution support
+  - Add ACP-backed subagent execution to `composio run`
+  - Move CLI manage commands under `dev` namespace
+  - Update CLI copy
+
 ## 0.2.8
 
 ### Patch Changes
