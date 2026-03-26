@@ -30,7 +30,10 @@ export interface TerminalUI {
    *
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
-  readonly output: (data: string) => Effect.Effect<void>;
+  readonly output: (
+    data: string,
+    options?: { readonly force?: boolean }
+  ) => Effect.Effect<void>;
 
   /** Display a session start marker (e.g., `┌  title`). Writes to stderr. */
   readonly intro: (title: string) => Effect.Effect<void>;
@@ -153,9 +156,9 @@ const silentSpinnerHandle: SpinnerHandle = {
 };
 
 const makeLive: TerminalUI = {
-  output: data =>
+  output: (data, options) =>
     Effect.sync(() => {
-      if (!isInteractive) {
+      if (options?.force || !isInteractive) {
         process.stdout.write(`${data}\n`);
       }
     }),
