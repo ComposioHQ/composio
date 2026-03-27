@@ -4,6 +4,7 @@ import { Effect, Option } from 'effect';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
 import {
+  ComposioToolkitsRepository,
   getConsumerConnectedToolkits,
   resolveConsumerProject,
 } from 'src/services/composio-clients';
@@ -193,6 +194,12 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       orgId: scope.orgId,
       consumerUserId: scope.consumerUserId,
     });
+    const toolkitsRepository = yield* ComposioToolkitsRepository;
+    const noAuthToolkits = yield* toolkitsRepository.getToolkits().pipe(
+      Effect.map(toolkits =>
+        toolkits.filter(toolkit => toolkit.no_auth).map(toolkit => toolkit.slug.toLowerCase())
+      )
+    );
     const state = yield* readCache();
     const key = cacheKey(scope.orgId, scope.consumerUserId);
     const currentEntry = state[key];
@@ -204,7 +211,11 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
     yield* writeCache({
       ...state,
       [key]: {
-        toolkits: response.toolkits.map(toolkit => toolkit.toLowerCase()),
+        toolkits: [
+          ...new Set(
+            [...response.toolkits, ...noAuthToolkits].map(toolkit => toolkit.toLowerCase())
+          ),
+        ],
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         ...searchSessionFields,
       },
