@@ -7,6 +7,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
+import type { ToolkitDetailed } from 'src/models/toolkits';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -62,6 +63,22 @@ export const toolkitsCmd$Info = Command.make(
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
       const globalTestUserId = userContext.data.testUserId;
+      const fallbackToolkitFromDetailed = (detailedToolkitOpt: Option.Option<ToolkitDetailed>) =>
+        Option.match(detailedToolkitOpt, {
+          onNone: () => undefined,
+          onSome: detailed => ({
+            slug: detailed.slug,
+            name: detailed.name,
+            meta: {
+              description: detailed.meta.description,
+              logo: '',
+            },
+            is_no_auth: detailed.no_auth,
+            enabled: true,
+            connected_account: null,
+            composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
+          }),
+        });
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
         onNone: () => Option.orElse(testUserId, () => globalTestUserId),
@@ -84,32 +101,31 @@ export const toolkitsCmd$Info = Command.make(
             const detailedToolkitOpt = yield* repo
               .getToolkitDetailed(slugValue)
               .pipe(Effect.option);
+            const fallbackToolkit = fallbackToolkitFromDetailed(detailedToolkitOpt);
 
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();
-              const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
-              const sessionToolkits = yield* Effect.tryPromise(() =>
-                client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
+              const sessionToolkit = yield* resolveToolRouterSession(
+                client,
+                resolvedUserId.value
+              ).pipe(
+                Effect.flatMap(({ sessionId }) =>
+                  Effect.tryPromise(() =>
+                    client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
+                  )
+                ),
+                Effect.map(response => response.items[0]),
+                Effect.catchAll(error =>
+                  Effect.logDebug('Failed to fetch session toolkit info:', error).pipe(
+                    Effect.as(undefined)
+                  )
+                )
               );
-              return { toolkit: sessionToolkits.items[0], detailedToolkitOpt };
+
+              return { toolkit: sessionToolkit ?? fallbackToolkit, detailedToolkitOpt };
             }
 
-            const toolkit = Option.match(detailedToolkitOpt, {
-              onNone: () => undefined,
-              onSome: detailed => ({
-                slug: detailed.slug,
-                name: detailed.name,
-                meta: {
-                  description: detailed.meta.description,
-                  logo: '',
-                },
-                is_no_auth: detailed.no_auth,
-                enabled: true,
-                connected_account: null,
-                composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
-              }),
-            });
-            return { toolkit, detailedToolkitOpt };
+            return { toolkit: fallbackToolkit, detailedToolkitOpt };
           })
         )
         .pipe(
@@ -162,9 +178,7 @@ export const toolkitsCmd$Info = Command.make(
       );
 
       // Next step hint
-      yield* ui.log.step(
-        `To list tools in this toolkit:\n> composio tools list "${toolkit.slug}"`
-      );
+      yield* ui.log.step(`To list tools in this toolkit:\n> composio tools list "${toolkit.slug}"`);
 
       yield* ui.output(formatToolkitInfoJson(toolkit, detailedToolkit, allDetails));
     })

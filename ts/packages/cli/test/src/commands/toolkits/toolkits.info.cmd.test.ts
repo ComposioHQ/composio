@@ -176,6 +176,35 @@ describe('CLI: composio dev toolkits info', () => {
     }
   );
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+      toolRouter: {
+        toolkits: async () => ({
+          items: [],
+          total_items: 0,
+          total_pages: 0,
+          next_cursor: null,
+        }),
+      },
+    })
+  )('[Given] session enrichment returns no toolkit rows', it => {
+    it.scoped('falls back to detailed catalog metadata', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'info', 'gmail']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Using global test user id "global-default"');
+        expect(output).toContain('Gmail');
+        expect(output).toContain('20250909');
+        expect(output).toContain('Not connected');
+      })
+    );
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit with no_auth=true',
     it => {
