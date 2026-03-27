@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import process from 'node:process';
-import { jsonSchemaToZodSchema } from '@composio/core';
+import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -22,7 +22,7 @@ const main = async (): Promise<void> => {
   const resultFilePath = readFlag('--result-file');
   const schemaText = fs.readFileSync(schemaFilePath, 'utf8');
   const structuredSchema = JSON.parse(schemaText) as Record<string, unknown>;
-  const toolInputSchema = jsonSchemaToZodSchema(buildStructuredOutputToolSchema(structuredSchema));
+  const toolInputSchema = jsonSchemaToZod(buildStructuredOutputToolSchema(structuredSchema));
 
   const server = new McpServer({
     name: 'composio-subagent-output',

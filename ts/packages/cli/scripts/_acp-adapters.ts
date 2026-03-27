@@ -1,9 +1,7 @@
 import { chmod, copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import process from 'node:process';
 import decompress from 'decompress';
-import { $ } from 'bun';
 import { RUN_CODEX_ACP_BINARY_TARGETS } from '../src/services/run-companion-modules';
 
 const GENERATED_ROOT_DIR = path.resolve('./.generated');
@@ -12,6 +10,7 @@ const ACP_ADAPTERS_MANIFEST_PATH = path.join(GENERATED_ROOT_DIR, 'acp-adapters.m
 const REGISTRY_BASE_URL = 'https://registry.npmjs.org';
 const USER_AGENT = 'composio-cli-acp-vendor/1';
 const ACP_ADAPTERS_PREFIX = 'acp-adapters/';
+const ACP_ADAPTERS_CACHE_FORMAT_VERSION = 2;
 
 type PackageJson = {
   readonly bin?: Readonly<Record<string, string>>;
@@ -26,6 +25,7 @@ type RegistryVersionManifest = {
 };
 
 type AcpAdaptersManifest = {
+  readonly cacheFormatVersion: number;
   readonly claude: {
     readonly packageName: '@zed-industries/claude-code-acp';
     readonly version: string;
@@ -107,6 +107,7 @@ const buildCacheManifest = async (): Promise<AcpAdaptersManifest> => {
   }
 
   return {
+    cacheFormatVersion: ACP_ADAPTERS_CACHE_FORMAT_VERSION,
     claude: {
       packageName: '@zed-industries/claude-code-acp',
       version: claudePackage.version,
@@ -177,20 +178,51 @@ const downloadTarball = async (url: string, targetPath: string): Promise<void> =
   await writeFile(targetPath, new Uint8Array(await response.arrayBuffer()));
 };
 
-const buildClaudeAdapterBundle = async (cacheDir: string): Promise<void> => {
-  const outputPath = path.join(cacheDir, 'claude-code-acp.mjs');
-  const entryPath = await resolveClaudeAdapterEntryPath();
-  const result =
-    await $`${process.execPath} build ${entryPath} --target node --outfile ${outputPath}`.quiet();
-  if (result.exitCode !== 0) {
-    throw new Error('Failed to bundle claude-code-acp.mjs.');
+const bundleBunRuntimeFile = async ({
+  entryPath,
+  outputPath,
+}: {
+  readonly entryPath: string;
+  readonly outputPath: string;
+}): Promise<void> => {
+  const result = await Bun.build({
+    entrypoints: [entryPath],
+    outdir: path.dirname(outputPath),
+    naming: path.basename(outputPath),
+    target: 'bun',
+    format: 'esm',
+    packages: 'bundle',
+    sourcemap: 'none',
+  });
+
+  if (!result.success) {
+    const details = result.logs
+      .map(log => log.message)
+      .filter(message => message.length > 0)
+      .join('\n');
+    throw new Error(
+      details.length > 0
+        ? `Failed to bundle ${path.basename(outputPath)}:\n${details}`
+        : `Failed to bundle ${path.basename(outputPath)}.`
+    );
   }
 
   await chmod(outputPath, 0o755);
+};
+
+const buildClaudeAdapterBundle = async (cacheDir: string): Promise<void> => {
+  const outputPath = path.join(cacheDir, 'claude-code-acp.mjs');
+  const entryPath = await resolveClaudeAdapterEntryPath();
+  await bundleBunRuntimeFile({
+    entryPath,
+    outputPath,
+  });
 
   const cliOutputPath = path.join(cacheDir, 'cli.js');
-  await copyFile(resolveClaudeAgentSdkCliPath(), cliOutputPath);
-  await chmod(cliOutputPath, 0o755);
+  await bundleBunRuntimeFile({
+    entryPath: resolveClaudeAgentSdkCliPath(),
+    outputPath: cliOutputPath,
+  });
 };
 
 const extractCodexBinaryFromTarball = async ({

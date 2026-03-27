@@ -11,6 +11,8 @@ describe('run-subagent-output-mcp source', () => {
 
     expect(source).toContain("from '@modelcontextprotocol/sdk/server/mcp.js'");
     expect(source).toContain("from '@modelcontextprotocol/sdk/server/stdio.js'");
+    expect(source).toContain("from '@composio/json-schema-to-zod'");
+    expect(source).not.toContain("from '@composio/core'");
     expect(source).not.toContain('@modelcontextprotocol/sdk/package.json');
     expect(source).not.toContain('createRequire(import.meta.url)');
   });
