@@ -116,6 +116,23 @@ describe('CLI: composio dev toolkits search', () => {
     }
   );
 
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] --limit 51',
+    it => {
+      it.scoped('rejects limits above the Tool Router maximum', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'search', 'email', '--limit', '51']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain(
+            'Invalid `--limit` value: 51. Expected an integer between 1 and 50.'
+          );
+        })
+      );
+    }
+  );
+
   layer(TestLive())('[Given] no API key', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {

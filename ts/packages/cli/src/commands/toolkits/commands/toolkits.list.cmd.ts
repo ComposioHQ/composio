@@ -7,9 +7,9 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
-import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
+import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
 
 const query = Options.text('query').pipe(
   Options.withDescription('Text search by name, slug, or description'),
@@ -18,7 +18,7 @@ const query = Options.text('query').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+  Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
 );
 
 const connected = Options.boolean('connected').pipe(
@@ -61,7 +61,7 @@ export const toolkitsCmd$List = Command.make(
       const projectContext = yield* ProjectContext;
       const userContext = yield* ComposioUserContext;
 
-      const clampedLimit = clampLimit(limit);
+      const validatedLimit = yield* validateToolkitsLimit(limit);
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
       const globalTestUserId = userContext.data.testUserId;
@@ -91,7 +91,7 @@ export const toolkitsCmd$List = Command.make(
       // The session toolkits call depends on the session ID, so it runs after session creation.
       const catalogEffect = repo.searchToolkits({
         search: Option.getOrUndefined(query),
-        limit: clampedLimit,
+        limit: validatedLimit,
       });
 
       // Resolve session context in parallel with catalog fetch (saves one round trip).
@@ -129,7 +129,7 @@ export const toolkitsCmd$List = Command.make(
         sessionItems = yield* Effect.tryPromise(() =>
           client.toolRouter.session.toolkits(sessionId, {
             search: Option.getOrUndefined(query),
-            limit: clampedLimit,
+            limit: validatedLimit,
             is_connected: Option.getOrUndefined(connected),
           })
         ).pipe(

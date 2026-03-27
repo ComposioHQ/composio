@@ -1,12 +1,12 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsTable, formatToolkitsJson } from '../format';
+import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription('Search query (e.g. "send emails")')
@@ -14,7 +14,7 @@ const query = Args.text({ name: 'query' }).pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(10),
-  Options.withDescription('Number of results per page (1-1000)')
+  Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
 );
 
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
@@ -36,11 +36,11 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
 
-    const clampedLimit = clampLimit(limit);
+    const validatedLimit = yield* validateToolkitsLimit(limit);
 
     const result = yield* ui.withSpinner(
       `Searching toolkits for "${query}"...`,
-      repo.searchToolkits({ search: query, limit: clampedLimit })
+      repo.searchToolkits({ search: query, limit: validatedLimit })
     );
 
     if (result.items.length === 0) {

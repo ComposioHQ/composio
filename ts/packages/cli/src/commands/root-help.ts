@@ -1,5 +1,6 @@
 import { Console, Effect } from 'effect';
 import { bold, dim, gray } from 'src/ui/colors';
+import { TOOLKITS_LIMIT_DESCRIPTION } from './toolkits/limits';
 
 type DetailedCommand = {
   name: string;
@@ -566,7 +567,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     description: 'List available toolkits with connection status.',
     options: [
       { name: '--query <text>', description: 'Text search by name, slug, or description' },
-      { name: '--limit <integer>', description: 'Maximum number of results (1-1000)' },
+      { name: '--limit <integer>', description: TOOLKITS_LIMIT_DESCRIPTION },
       { name: '--user-id <text>', description: 'User ID override' },
     ],
     flags: [{ name: '--connected', description: 'Show only connected toolkits' }],
@@ -581,7 +582,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     usage: 'composio dev toolkits search <query> [--limit integer]',
     description: 'Search toolkits by use case.',
     args: [{ name: '<query>', description: 'Search query' }],
-    options: [{ name: '--limit <integer>', description: 'Number of results' }],
+    options: [{ name: '--limit <integer>', description: TOOLKITS_LIMIT_DESCRIPTION }],
   },
   'dev toolkits version': {
     usage: 'composio dev toolkits version <slug>',
