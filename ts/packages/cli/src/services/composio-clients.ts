@@ -122,6 +122,37 @@ export const retryTransientHttpRead = <A, E, R>(
     )
   );
 
+const getToolkitsBySlugsFromCatalog = <E, R>(
+  getToolkits: () => Effect.Effect<ReadonlyArray<Toolkit>, E, R>,
+  slugs: ReadonlyArray<string>
+): Effect.Effect<ReadonlyArray<Toolkit>, E | InvalidToolkitsError, R> =>
+  retryTransientHttpRead(getToolkits()).pipe(
+    Effect.flatMap(
+      Effect.fn(function* (toolkits) {
+        const normalizedRequested = new Set(slugs.map(slug => EffectString.toLowerCase(slug)));
+        const filteredToolkits = toolkits.filter(toolkit =>
+          normalizedRequested.has(EffectString.toLowerCase(toolkit.slug))
+        );
+        const availableSlugs = toolkits.map(toolkit => EffectString.toLowerCase(toolkit.slug));
+        const resolvedSlugs = new Set(
+          filteredToolkits.map(toolkit => EffectString.toLowerCase(toolkit.slug))
+        );
+        const invalidSlugs = [...normalizedRequested].filter(slug => !resolvedSlugs.has(slug));
+
+        if (invalidSlugs.length > 0) {
+          return yield* Effect.fail(
+            new InvalidToolkitsError({
+              invalidToolkits: invalidSlugs,
+              availableToolkits: availableSlugs,
+            })
+          );
+        }
+
+        return filteredToolkits;
+      })
+    )
+  );
+
 const validateToolkitVersionsImpl = (
   client: {
     toolkits: {
@@ -2067,7 +2098,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
           )
         );
 
-      const getToolkitsBySlugs = (slugs: ReadonlyArray<string>) =>
+      const getToolkitsBySlugsDirect = (slugs: ReadonlyArray<string>) =>
         Effect.all(
           slugs.map(slug =>
             client.toolkits.retrieve(slug).pipe(
@@ -2102,7 +2133,14 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
       return {
         getToolkits: () => retryTransientHttpRead(getToolkits()),
         getToolkitsBySlugs: (slugs: ReadonlyArray<string>) =>
-          retryTransientHttpRead(getToolkitsBySlugs(slugs)),
+          retryTransientHttpRead(getToolkitsBySlugsDirect(slugs)).pipe(
+            Effect.catchAll(error =>
+              Effect.logDebug(
+                'Failed to retrieve toolkit(s) individually, falling back to full catalog:',
+                error
+              ).pipe(Effect.flatMap(() => getToolkitsBySlugsFromCatalog(getToolkits, slugs)))
+            )
+          ),
         getMetrics: () => client.getMetrics(),
         getToolsAsEnums: () => retryTransientHttpRead(client.tools.retrieveEnum()),
         getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
