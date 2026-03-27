@@ -1394,94 +1394,100 @@ const checkConnectedToolkitOrFail = (params: {
     }
   });
 
+const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
+  Effect.gen(function* () {
+    const contexts = yield* Effect.forEach(
+      params.specs,
+      () =>
+        resolveSchemaContext({
+          userId: params.userId,
+          projectName: params.projectName,
+          surface: params.surface,
+          projectMode: params.projectMode,
+          getSchema: params.getSchema,
+          dryRun: params.dryRun,
+          skipConnectionCheck: params.skipConnectionCheck,
+          skipToolParamsCheck: params.skipToolParamsCheck,
+          skipChecks: params.skipChecks,
+        }),
+      { concurrency: 'unbounded' }
+    );
+    const entries = contexts.map((context, index) => ({
+      context,
+      spec: params.specs[index]!,
+    }));
+
+    const ui = contexts[0]?.ui;
+    const results = yield* Effect.forEach(
+      entries,
+      ({ context, spec }) =>
+        Effect.gen(function* () {
+          const definition = yield* getOrFetchToolInputDefinition(spec.slug, {
+            orgId: context.resolvedProject.orgId,
+            projectId: context.resolvedProject.projectId,
+          });
+          return {
+            slug: spec.slug,
+            successful: true,
+            version: definition.version,
+            schemaPath: definition.schemaPath,
+            inputSchema: definition.schema,
+          } satisfies Extract<
+            ParallelExecuteResult,
+            { readonly inputSchema: Record<string, unknown> }
+          >;
+        }).pipe(
+          Effect.catchAll(error => {
+            const mapped = mapComposioError({ error, toolSlug: spec.slug });
+            return Effect.succeed({
+              slug: spec.slug,
+              successful: false,
+              error: mapped.message,
+            } satisfies Extract<ParallelExecuteResult, { readonly successful: false }>);
+          })
+        ),
+      { concurrency: 'unbounded' }
+    );
+
+    if (ui) {
+      for (const result of results) {
+        if (!result.successful) {
+          yield* ui.log.error(`[${result.slug}] ${result.error}`);
+          continue;
+        }
+
+        yield* ui.log.step(`[${result.slug}] Schema fetched: ${result.schemaPath}`);
+      }
+
+      const successful = results.every(result => result.successful);
+      yield* ui.log.message(
+        `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
+      );
+      yield* ui.output(
+        JSON.stringify(
+          {
+            successful,
+            parallel: true,
+            results,
+          },
+          ciRedactReplacer,
+          2
+        )
+      );
+      if (!successful) {
+        return yield* Effect.fail(
+          new ToolExecutionError('One or more parallel tool executions failed.')
+        );
+      }
+    }
+  });
+
 const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
     if (params.getSchema) {
-      const contexts = yield* Effect.forEach(
-        params.specs,
-        () =>
-          resolveSchemaContext({
-            userId: params.userId,
-            projectName: params.projectName,
-            surface: params.surface,
-            projectMode: params.projectMode,
-            getSchema: params.getSchema,
-            dryRun: params.dryRun,
-            skipConnectionCheck: params.skipConnectionCheck,
-            skipToolParamsCheck: params.skipToolParamsCheck,
-            skipChecks: params.skipChecks,
-          }),
-        { concurrency: 'unbounded' }
-      );
-      const entries = contexts.map((context, index) => ({
-        context,
-        spec: params.specs[index]!,
-      }));
-
-      const ui = contexts[0]?.ui;
-      const results = yield* Effect.forEach(
-        entries,
-        ({ context, spec }) =>
-          Effect.gen(function* () {
-            const definition = yield* getOrFetchToolInputDefinition(spec.slug, {
-              orgId: context.resolvedProject.orgId,
-              projectId: context.resolvedProject.projectId,
-            });
-            return {
-              slug: spec.slug,
-              successful: true,
-              version: definition.version,
-              schemaPath: definition.schemaPath,
-              inputSchema: definition.schema,
-            } satisfies Extract<ParallelExecuteResult, { readonly inputSchema: Record<string, unknown> }>;
-          }).pipe(
-            Effect.catchAll(error => {
-              const mapped = mapComposioError({ error, toolSlug: spec.slug });
-              return Effect.succeed({
-                slug: spec.slug,
-                successful: false,
-                error: mapped.message,
-              } satisfies Extract<ParallelExecuteResult, { readonly successful: false }>);
-            })
-          ),
-        { concurrency: 'unbounded' }
-      );
-
-      if (ui) {
-        for (const result of results) {
-          if (!result.successful) {
-            yield* ui.log.error(`[${result.slug}] ${result.error}`);
-            continue;
-          }
-
-          yield* ui.log.step(`[${result.slug}] Schema fetched: ${result.schemaPath}`);
-        }
-
-        const successful = results.every(result => result.successful);
-        yield* ui.log.message(
-          `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
-        );
-        yield* ui.output(
-          JSON.stringify(
-            {
-              successful,
-              parallel: true,
-              results,
-            },
-            ciRedactReplacer,
-            2
-          )
-        );
-        if (!successful) {
-          return yield* Effect.fail(
-            new ToolExecutionError('One or more parallel tool executions failed.')
-          );
-        }
-      }
-
-      return;
+      return yield* runParallelSchemaFetchFromParsed(params);
     }
 
     const contexts = yield* Effect.forEach(
