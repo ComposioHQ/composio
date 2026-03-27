@@ -13,12 +13,10 @@
  */
 
 import process from 'node:process';
-import { mkdir } from 'node:fs/promises';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
-import { teardown } from './_shared';
+import { buildCompanionModules, teardown } from './_shared';
 
 /**
  * All cross-compilation targets and their artifact names.
@@ -72,53 +70,6 @@ function runBunBuild(target: string, outfile: string) {
 
     if (exitCode !== 0) {
       return yield* Effect.fail(new Error(`Failed to build binary for ${target}`));
-    }
-  });
-}
-
-function buildCompanionModules(outputDir: string) {
-  return Effect.gen(function* () {
-    yield* Effect.tryPromise(() => mkdir(outputDir, { recursive: true }));
-
-    for (const name of RUN_COMPANION_MODULE_BASENAMES) {
-      const args = [
-        'bun',
-        'build',
-        `./src/services/${name}.ts`,
-        '--outfile',
-        `${outputDir}/${name}.mjs`,
-        '--format',
-        'esm',
-        '--target',
-        'bun',
-      ] as const satisfies ReadonlyArray<string>;
-
-      const cmd = Command.make(...args);
-      const { exitCode } = yield* cmd.pipe(
-        Command.start,
-        Effect.flatMap(process =>
-          Effect.all(
-            {
-              exitCode: process.exitCode,
-              output: Stream.merge(
-                Stream.decodeText(process.stdout, 'utf-8'),
-                Stream.decodeText(process.stderr, 'utf-8'),
-                { haltStrategy: 'left' }
-              ).pipe(
-                Stream.tap(chunk => Console.log(chunk)),
-                Stream.runDrain
-              ),
-            },
-            {
-              concurrency: 'unbounded',
-            }
-          )
-        )
-      );
-
-      if (exitCode !== 0) {
-        return yield* Effect.fail(new Error(`Failed to build companion module: ${name}`));
-      }
     }
   });
 }

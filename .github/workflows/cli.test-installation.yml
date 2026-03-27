@@ -224,37 +224,32 @@ jobs:
           echo "=== Current PATH before sourcing ==="
           echo "$PATH"
 
-          # Source the appropriate shell config
           if [[ "${{ matrix.shell }}" == "zsh" ]]; then
             if [[ -f ~/.zshrc ]]; then
-              echo "Sourcing ~/.zshrc..."
-              source ~/.zshrc
-              echo "PATH after sourcing .zshrc: $PATH"
+              echo "Testing interactive zsh startup..."
+              if zsh -ic 'echo "PATH after startup: $PATH"; command -v composio; composio --version; composio --help | head -5'; then
+                echo "✅ composio found in PATH via zsh"
+              else
+                echo "❌ composio not found in PATH via zsh"
+                exit 1
+              fi
             else
               echo "❌ ~/.zshrc not found - install script failed to create it"
               exit 1
             fi
           else
             if [[ -f ~/.bashrc ]]; then
-              echo "Sourcing ~/.bashrc..."
-              source ~/.bashrc
-              echo "PATH after sourcing .bashrc: $PATH"
+              echo "Testing interactive bash startup..."
+              if bash -ic 'echo "PATH after startup: $PATH"; command -v composio; composio --version; composio --help | head -5'; then
+                echo "✅ composio found in PATH via bash"
+              else
+                echo "❌ composio not found in PATH via bash"
+                exit 1
+              fi
             else
               echo "❌ ~/.bashrc not found - install script failed to create it"
               exit 1
             fi
-          fi
-
-          # Test if composio is in PATH
-          if command -v composio &> /dev/null; then
-            echo "✅ composio found in PATH"
-            which composio
-            composio --version
-            composio --help | head -5
-          else
-            echo "❌ composio not found in PATH"
-            echo "Final PATH: $PATH"
-            exit 1
           fi
 
       - name: Test shell config updates
