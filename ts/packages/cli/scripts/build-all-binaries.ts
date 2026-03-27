@@ -16,7 +16,7 @@ import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { teardown } from './_shared';
+import { buildCompanionModules, teardown } from './_shared';
 
 /**
  * All cross-compilation targets and their artifact names.
@@ -84,6 +84,10 @@ export function buildAllBinaries() {
       yield* runBunBuild(target, outfile);
       yield* Console.log(`Built: ${outfile}`);
     }
+
+    const companionOutputDir = './dist/binaries/companions';
+    yield* Console.log(`\nBuilding run companion modules in ${companionOutputDir}...`);
+    yield* buildCompanionModules(companionOutputDir);
 
     yield* Console.log(`\nAll ${TARGETS.length} binaries built successfully.`);
   });

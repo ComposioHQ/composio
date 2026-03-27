@@ -10,21 +10,50 @@ import {
 } from 'src/services/consumer-short-term-cache';
 import { TestLive } from 'test/__utils__';
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([
-    ['COMPOSIO_USER_API_KEY', 'test_api_key'],
-    ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
-  ])
-).pipe(extendConfigProvider);
+const makeTestConfigProvider = (entries: Array<[string, string]>) =>
+  ConfigProvider.fromMap(
+    new Map([
+      ['COMPOSIO_USER_API_KEY', 'test_api_key'],
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+      ...entries,
+    ])
+  ).pipe(extendConfigProvider);
+
+const defaultTestConfigProvider = makeTestConfigProvider([]);
+const cacheEnabledTestConfigProvider = makeTestConfigProvider([
+  ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false'],
+]);
 
 describe('consumer short-term cache', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
+  layer(TestLive({ baseConfigProvider: defaultTestConfigProvider }))(
+    '[Given] the default cache config [Then] connected-account cache stays disabled',
+    it => {
+      it.scoped('returns none even after a write is attempted', () =>
+        Effect.gen(function* () {
+          yield* writeConsumerConnectedToolkitsCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+            toolkits: ['github'],
+          });
+
+          const cached = yield* getFreshConsumerConnectedToolkitsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+          });
+
+          expect(cached).toEqual(Option.none());
+        })
+      );
+    }
+  );
+
   layer(
     TestLive({
-      baseConfigProvider: testConfigProvider,
+      baseConfigProvider: cacheEnabledTestConfigProvider,
       toolkitsData: {
         toolkits: [
           {
@@ -88,7 +117,7 @@ describe('consumer short-term cache', () => {
 
   layer(
     TestLive({
-      baseConfigProvider: testConfigProvider,
+      baseConfigProvider: cacheEnabledTestConfigProvider,
       toolkitsData: {
         toolkits: [
           {

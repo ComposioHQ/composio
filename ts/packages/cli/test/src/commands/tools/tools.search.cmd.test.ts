@@ -53,6 +53,49 @@ const testLiveOptions = {
   fixture: 'global-test-user-id' as const,
 };
 
+const extractFirstJsonObject = (output: string): Record<string, unknown> | null => {
+  const start = output.indexOf('{');
+  if (start < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < output.length; i += 1) {
+    const char = output[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return JSON.parse(output.slice(start, i + 1)) as Record<string, unknown>;
+      }
+    }
+  }
+
+  return null;
+};
+
 describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))('[Given] query "send" [Then] returns JSON by default', it => {
     it.scoped('returns JSON payload by default', () =>
@@ -60,18 +103,18 @@ describe('CLI: composio search', () => {
         yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
+        const parsed = extractFirstJsonObject(output);
 
-        expect(output).toContain('"results"');
-        expect(output).toContain('"tool_schemas"');
-        expect(output).toContain('"primary"');
-        expect(output).toContain('"related_tools_path_format"');
-        expect(output).toContain('"connected_toolkits"');
-        expect(output).toContain('"CTA"');
-        expect(output).not.toContain('"session"');
-        expect(output).not.toContain('"time_info"');
-        expect(output).not.toContain('"next_steps_guidance"');
-        expect(output).not.toContain('"success"');
-        expect(output).not.toContain('"error"');
+        expect(parsed).not.toBeNull();
+        expect(parsed).toHaveProperty('results');
+        expect(parsed).toHaveProperty('tool_schemas');
+        expect(parsed).toHaveProperty('connected_toolkits');
+        expect(parsed).toHaveProperty('next_steps');
+        expect(parsed).not.toHaveProperty('session');
+        expect(parsed).not.toHaveProperty('time_info');
+        expect(parsed).not.toHaveProperty('next_steps_guidance');
+        expect(parsed).not.toHaveProperty('success');
+        expect(parsed).not.toHaveProperty('error');
         expect(output).toContain('GMAIL_SEND_EMAIL');
         expect(output).toContain('SLACK_SEND_MESSAGE');
         expect(output).toContain('~/.composio/tool_definitions/GMAIL_SEND_EMAIL.json');
@@ -151,25 +194,27 @@ describe('CLI: composio search', () => {
   );
 
   layer(TestLive(testLiveOptions))(
-    '[Given] search --json [Then] JSON output includes full tool-router payload and CTA',
+    '[Given] search --json [Then] JSON output includes full tool-router payload and next steps',
     it => {
-      it.scoped('prints full search response with CTA for jq', () =>
+      it.scoped('prints full search response with next steps for jq', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send', '--json']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
+          const parsed = extractFirstJsonObject(output);
 
-          expect(output).toContain('"results"');
-          expect(output).toContain('"tool_schemas"');
-          expect(output).toContain('"connected_toolkits"');
-          expect(output).toContain('"CTA"');
-          expect(output).not.toContain('"session"');
-          expect(output).not.toContain('"time_info"');
-          expect(output).not.toContain('"next_steps_guidance"');
-          expect(output).not.toContain('"success"');
-          expect(output).not.toContain('"error"');
+          expect(parsed).not.toBeNull();
+          expect(parsed).toHaveProperty('results');
+          expect(parsed).toHaveProperty('tool_schemas');
+          expect(parsed).toHaveProperty('connected_toolkits');
+          expect(parsed).toHaveProperty('next_steps');
+          expect(parsed).not.toHaveProperty('session');
+          expect(parsed).not.toHaveProperty('time_info');
+          expect(parsed).not.toHaveProperty('next_steps_guidance');
+          expect(parsed).not.toHaveProperty('success');
+          expect(parsed).not.toHaveProperty('error');
           expect(output).toContain('"Execute a tool"');
-          expect(output).toContain('"Connect a user account"');
+          expect(output).toContain('"Link a user account"');
           expect(output).toContain('composio execute');
           expect(output).toContain('composio link gmail');
         })
@@ -244,9 +289,9 @@ describe('CLI: composio search', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
-    '[Given] search with schema properties [Then] CTA has valid payload and lowercase link',
+    '[Given] search with schema properties [Then] next steps have valid payload and lowercase link',
     it => {
-      it.scoped('CTA uses valid payload from input_schema and lowercase toolkit', () =>
+      it.scoped('next steps use valid payload from input_schema and lowercase toolkit', () =>
         Effect.gen(function* () {
           const live = TestLive({
             baseConfigProvider: testConfigProvider,
@@ -277,42 +322,46 @@ describe('CLI: composio search', () => {
           yield* cli(['search', 'send']).pipe(Effect.provide(live));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
+          const parsed = extractFirstJsonObject(output);
+          const nextSteps = parsed?.next_steps as
+            | {
+                steps?: Array<{ action: string; command: string }>;
+              }
+            | undefined;
 
-          const ctaMatch = output.match(/"CTA":\s*\[([\s\S]*?)\]/);
-          expect(ctaMatch).toBeTruthy();
-          const ctaJson = `[${ctaMatch![1]}]`;
-          const cta = JSON.parse(ctaJson) as Array<{ action: string; command: string }>;
+          expect(nextSteps?.steps).toBeTruthy();
 
-          const executeCta = cta.find(c => c.action === 'Execute a tool');
-          expect(executeCta).toBeTruthy();
-          expect(executeCta!.command).toContain('composio execute "GMAIL_SEND_EMAIL"');
-          expect(executeCta!.command).toMatch(/-d '\{"to":"","subject":"","body":""\}'/);
+          const executeStep = nextSteps?.steps?.find(step => step.action === 'Execute a tool');
+          expect(executeStep).toBeTruthy();
+          expect(executeStep!.command).toContain('composio execute "GMAIL_SEND_EMAIL"');
+          expect(executeStep!.command).toMatch(/-d '\{"to":"","subject":"","body":""\}'/);
 
-          const linkCta = cta.find(c => c.action === 'Connect a user account');
-          expect(linkCta).toBeTruthy();
-          expect(linkCta!.command).toBe('composio link gmail');
+          const linkStep = nextSteps?.steps?.find(step => step.action === 'Link a user account');
+          expect(linkStep).toBeTruthy();
+          expect(linkStep!.command).toBe('composio link gmail');
         })
       );
     }
   );
 
   layer(TestLive(testLiveOptions))(
-    '[Given] search with empty schema [Then] CTA execute uses -d "{}"',
+    '[Given] search with empty schema [Then] next steps execute uses -d "{}"',
     it => {
-      it.scoped('CTA uses -d "{}" when no schema properties', () =>
+      it.scoped('next steps use -d "{}" when no schema properties', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
+          const parsed = extractFirstJsonObject(output);
+          const nextSteps = parsed?.next_steps as
+            | {
+                steps?: Array<{ action: string; command: string }>;
+              }
+            | undefined;
 
-          const ctaMatch = output.match(/"CTA":\s*\[([\s\S]*?)\]/);
-          expect(ctaMatch).toBeTruthy();
-          const ctaJson = `[${ctaMatch![1]}]`;
-          const cta = JSON.parse(ctaJson) as Array<{ action: string; command: string }>;
-
-          const executeCta = cta.find(c => c.action === 'Execute a tool');
-          expect(executeCta).toBeTruthy();
-          expect(executeCta!.command).toContain('-d "{}"');
+          const executeStep = nextSteps?.steps?.find(step => step.action === 'Execute a tool');
+          expect(executeStep).toBeTruthy();
+          expect(executeStep!.command).toContain('-d "{}"');
         })
       );
     }

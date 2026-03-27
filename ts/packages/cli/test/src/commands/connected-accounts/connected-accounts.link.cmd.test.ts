@@ -5,6 +5,12 @@ import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { TerminalUI } from 'src/services/terminal-ui';
+import open from 'open';
+import { afterEach, vi } from 'vitest';
+
+vi.mock('open', () => ({
+  default: vi.fn(async () => undefined),
+}));
 
 const extractJsonObject = (output: string): Record<string, unknown> | null => {
   const jsonMatch = output.match(/\{[\s\S]*"status"[\s\S]*\}/);
@@ -70,6 +76,10 @@ const RecordingTerminalUI = TerminalUI.of({
 });
 
 describe('CLI: composio dev connected-accounts link', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -79,7 +89,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   )('[Given] valid toolkit link [Then] creates link and waits (default)', it => {
     it.scoped('creates link and waits for ACTIVE', () =>
       Effect.gen(function* () {
-        yield* cli(['link', 'gmail', '--no-browser']);
+        yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const parsed = extractJsonObject(lines.join('\n'));
 
@@ -87,6 +97,7 @@ describe('CLI: composio dev connected-accounts link', () => {
         expect(parsed?.status).toBe('success');
         expect(parsed?.connected_account_id).toBe('con_test_link');
         expect(parsed?.toolkit).toBe('gmail');
+        expect(vi.mocked(open)).toHaveBeenCalledOnce();
       })
     );
   });
@@ -98,15 +109,24 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
       terminalUI: RecordingTerminalUI,
     })
-  )('[Given] --no-browser [Then] emits a forced raw redirect URL for merged-stream shells', it => {
-    it.scoped('forces the redirect URL through output()', () =>
+  )('[Given] --no-wait [Then] emits a forced JSON payload for merged-stream shells', it => {
+    it.scoped('forces the pending JSON payload through output()', () =>
       Effect.gen(function* () {
-        yield* cli(['link', 'gmail', '--no-browser']);
+        yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
+        const forcedLine = lines
+          .map(line => {
+            try {
+              return JSON.parse(line) as { channel?: string; data?: string };
+            } catch {
+              return null;
+            }
+          })
+          .find(line => line?.channel === 'FORCED');
 
-        expect(output).toContain('"channel":"FORCED"');
-        expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
+        expect(forcedLine).toBeTruthy();
+        expect(forcedLine?.data).toContain('"status": "pending"');
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
   });
@@ -118,10 +138,10 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
       terminalUI: RecordingTerminalUI,
     })
-  )('[Given] --no-browser --no-wait [Then] stdout remains JSON-only', it => {
+  )('[Given] --no-wait [Then] stdout remains JSON-only', it => {
     it.scoped('does not emit the raw redirect URL before the pending JSON payload', () =>
       Effect.gen(function* () {
-        yield* cli(['link', 'gmail', '--no-browser', '--no-wait']);
+        yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const forcedLines = lines
           .map(line => {
@@ -140,18 +160,13 @@ describe('CLI: composio dev connected-accounts link', () => {
     );
   });
 
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
-      fixture: 'global-test-user-id',
-    })
-  )('[Given] no API key [Then] warns user to login', it => {
+  layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['link', 'gmail', '--no-browser']);
+        yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.length).toBeGreaterThan(0);
+        const output = lines.join('\n');
+        expect(output).toContain('not logged in');
       })
     );
   });
@@ -165,7 +180,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   )('[Given] composio link [Then] works for consumer toolkit linking', it => {
     it.scoped('root link works for consumer toolkit linking only', () =>
       Effect.gen(function* () {
-        yield* cli(['link', 'gmail', '--no-browser']);
+        yield* cli(['link', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const parsed = extractJsonObject(lines.join('\n'));
 
@@ -185,7 +200,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   )('[Given] --no-wait [Then] outputs valid JSON parseable by jq', it => {
     it.scoped('prints JSON with status pending, connected_account_id, redirect_url', () =>
       Effect.gen(function* () {
-        yield* cli(['link', 'gmail', '--no-browser', '--no-wait']);
+        yield* cli(['link', 'gmail', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const parsed = extractJsonObject(lines.join('\n'));
 
@@ -215,7 +230,7 @@ describe('CLI: composio dev connected-accounts link', () => {
     it => {
       it.scoped('reports the incomplete response instead of waiting with empty values', () =>
         Effect.gen(function* () {
-          yield* cli(['link', 'gmail', '--no-browser']);
+          yield* cli(['link', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const parsed = extractJsonObject(lines.join('\n'));
 
@@ -237,7 +252,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       'prints JSON with status success, message, connected_account_id, toolkit, redirect_url',
       () =>
         Effect.gen(function* () {
-          yield* cli(['link', 'gmail', '--no-browser']);
+          yield* cli(['link', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const parsed = extractJsonObject(lines.join('\n'));
 

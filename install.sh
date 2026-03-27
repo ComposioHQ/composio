@@ -164,18 +164,52 @@ mkdir -p "$COMPOSIO_INSTALL_DIR" ||
     error "Failed to create install directory \"$COMPOSIO_INSTALL_DIR\""
 
 exe="$COMPOSIO_INSTALL_DIR/composio"
+companion_modules=(
+    "run-subagent-shared.mjs"
+    "run-subagent-acp.mjs"
+    "run-subagent-legacy.mjs"
+)
+release_tag_file="$COMPOSIO_INSTALL_DIR/release-tag.txt"
+
+install_companion_modules() {
+    local source_dir="$1"
+    local installed_count=0
+    local missing=()
+
+    for module in "${companion_modules[@]}"; do
+        if [[ -f "$source_dir/$module" ]]; then
+            mv "$source_dir/$module" "$COMPOSIO_INSTALL_DIR/$module"
+            installed_count=$((installed_count + 1))
+        else
+            missing+=("$module")
+        fi
+    done
+
+    if (( installed_count > 0 && installed_count < ${#companion_modules[@]} )); then
+        error "Downloaded archive is incomplete; missing companion modules: ${missing[*]}"
+    fi
+
+    if (( installed_count == 0 )); then
+        warn "This release archive does not include the companion modules required by 'composio run'. That command may be unavailable in this version."
+    fi
+}
 
 # Handle nested directory structure (composio-<target>/composio)
 if [[ -f "$tmpdir/composio-$target/composio" ]]; then
     mv "$tmpdir/composio-$target/composio" "$exe"
+    install_companion_modules "$tmpdir/composio-$target"
 elif [[ -f "$tmpdir/composio" ]]; then
     mv "$tmpdir/composio" "$exe"
+    install_companion_modules "$tmpdir"
 else
     error 'Binary not found in extracted archive'
 fi
 
 chmod +x "$exe" ||
     error 'Failed to set permissions on executable'
+
+printf '%s\n' "$version" > "$release_tag_file" ||
+    error "Failed to write install metadata to \"$release_tag_file\""
 
 success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")"
 
@@ -239,7 +273,7 @@ else
             else
                 info "PATH already configured in \"$(tildify "$zsh_config")\""
             fi
-            refresh_command="exec $SHELL"
+            refresh_command="source $(tildify "$zsh_config")"
         else
             echo "Manually add the directory to $(tildify "$zsh_config") (or similar):"
             for cmd in "${commands[@]}"; do info_bold "  $cmd"; done

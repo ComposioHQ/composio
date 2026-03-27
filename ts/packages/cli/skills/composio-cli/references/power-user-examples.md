@@ -20,6 +20,14 @@ composio run '
 '
 ```
 
+If the user does not need script logic and just wants a few independent calls, prefer top-level parallel execute instead:
+
+```bash
+composio execute --parallel \
+  GMAIL_FETCH_EMAILS -d '{ max_results: 2 }' \
+  GITHUB_GET_THE_AUTHENTICATED_USER -d '{}'
+```
+
 ## Use `Promise.all` To Fan Out
 
 Fetch from multiple services at once:
@@ -56,6 +64,12 @@ composio run '
 
   console.log(output.data.login);
 '
+```
+
+Batch related discovery work with multiple queries when it keeps the workflow simpler:
+
+```bash
+composio search "send an email" "create a github issue" --toolkits gmail,github
 ```
 
 ## Use `subAgent()` With `z` And `result.prompt()`

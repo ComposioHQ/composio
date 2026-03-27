@@ -10,6 +10,7 @@ export type CommandHintId =
   | 'root.execute'
   | 'root.execute.getSchema'
   | 'root.link'
+  | 'root.orgs.switch'
   | 'dev.init'
   | 'dev.playgroundExecute'
   | 'dev.playgroundExecute.getSchema'
@@ -52,6 +53,10 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
     example: params => `composio link ${getParam(params, 'toolkit', '<toolkit>')}`,
     links: ['root.execute'],
   },
+  'root.orgs.switch': {
+    example: () => 'composio orgs switch',
+    links: ['root.execute'],
+  },
   'dev.init': {
     example: () => 'composio dev init',
     links: ['dev.playgroundExecute', 'dev.logs.tools', 'dev.logs.triggers'],
@@ -67,12 +72,10 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
     links: ['dev.playgroundExecute'],
   },
   'dev.logs.tools': {
-    example: params =>
-      `composio dev logs tools "${getParam(params, 'logId', '<log_id>')}"`,
+    example: params => `composio dev logs tools "${getParam(params, 'logId', '<log_id>')}"`,
   },
   'dev.logs.triggers': {
-    example: params =>
-      `composio dev logs triggers "${getParam(params, 'logId', '<log_id>')}"`,
+    example: params => `composio dev logs triggers "${getParam(params, 'logId', '<log_id>')}"`,
   },
   'dev.orgs.switch': {
     example: () => 'composio dev orgs switch',
@@ -100,11 +103,8 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
 export const commandHintExample = (id: CommandHintId, params?: HintParams): string =>
   COMMAND_HINTS[id].example(params);
 
-export const commandHintStep = (
-  label: string,
-  id: CommandHintId,
-  params?: HintParams
-): string => `${label}:\n> ${commandHintExample(id, params)}`;
+export const commandHintStep = (label: string, id: CommandHintId, params?: HintParams): string =>
+  `${label}:\n> ${commandHintExample(id, params)}`;
 
 export const commandHintLinks = (id: CommandHintId): ReadonlyArray<CommandHintId> =>
   COMMAND_HINTS[id].links ?? [];

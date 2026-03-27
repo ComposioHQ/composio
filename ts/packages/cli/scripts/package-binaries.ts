@@ -21,8 +21,10 @@ import { teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { RUN_COMPANION_MODULE_FILENAMES } from '../src/services/run-companion-modules';
 
 const BINARIES_DIR = './dist/binaries';
+const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
 
 /**
  * Known binary artifact names (without extension).
@@ -46,11 +48,24 @@ export function packageBinaries() {
       return;
     }
 
+    for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+      const companionPath = path.join(COMPANIONS_DIR, fileName);
+      const exists = yield* Effect.tryPromise(() => Bun.file(companionPath).exists());
+      if (!exists) {
+        yield* Console.error(
+          `Missing companion module ${companionPath}. Run build:binary:all before packaging.`
+        );
+        process.exitCode = 1;
+        return;
+      }
+    }
+
     yield* Console.log(`Packaging ${binaries.length} binaries...`);
 
     for (const binary of binaries) {
       const binaryPath = path.join(BINARIES_DIR, binary);
       const zipPath = path.join(BINARIES_DIR, `${binary}.zip`);
+      const absoluteZipPath = path.resolve(zipPath);
 
       // Create nested directory structure: <artifact>/<binary-name>
       const tempDir = path.join(BINARIES_DIR, `_pkg_${binary}`);
@@ -59,7 +74,16 @@ export function packageBinaries() {
       yield* Effect.tryPromise(async () => {
         await $`mkdir -p ${nestedDir}`.quiet();
         await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
-        await $`cd ${tempDir} && zip -r ${path.resolve(zipPath)} ${binary}`.quiet();
+        for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+          await $`cp ${path.join(COMPANIONS_DIR, fileName)} ${nestedDir}/${fileName}`.quiet();
+        }
+        const previousCwd = process.cwd();
+        process.chdir(tempDir);
+        try {
+          await $`zip -r ${absoluteZipPath} ${binary}`.quiet();
+        } finally {
+          process.chdir(previousCwd);
+        }
         await $`rm -rf ${tempDir}`.quiet();
       });
 

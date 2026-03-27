@@ -54,7 +54,7 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'link',
     description: 'Connect your account for a toolkit/app.',
-    usage: 'link [<toolkit>] [--no-browser]',
+    usage: 'link [<toolkit>]',
     options: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
   },
   {
@@ -98,7 +98,7 @@ const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
   {
     name: 'dev',
     description:
-      'Developer workflows and management: init, execute, logs, orgs, projects, toolkits, accounts, and triggers.',
+      'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.',
   },
   {
     name: 'generate',
@@ -112,6 +112,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<CompactCommand> = [
   { name: 'login', description: 'Log in to Composio' },
   { name: 'logout', description: 'Log out from Composio' },
   { name: 'whoami', description: 'Show current account info' },
+  { name: 'orgs', description: 'Manage default organization context (list, switch)' },
   { name: 'version', description: 'Display CLI version' },
   { name: 'upgrade', description: 'Upgrade CLI to the latest version' },
 ];
@@ -255,18 +256,17 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
   },
   link: {
-    usage: 'composio link [<toolkit>] [--no-browser] [--no-wait]',
+    usage: 'composio link [<toolkit>] [--no-wait]',
     description:
       'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf. Opens a browser for OAuth authorization and waits for confirmation.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
     flags: [
-      { name: '--no-browser', description: 'Print the auth URL instead of opening a browser' },
       {
         name: '--no-wait',
         description: 'Print link info and exit without waiting for authorization',
       },
     ],
-    examples: ['composio link github', 'composio link gmail --no-browser'],
+    examples: ['composio link github'],
     seeAlso: [
       'composio search "<query>"               Find tools to use after linking',
       "composio execute <slug> -d '{ ... }'    Execute a tool with your connected account",

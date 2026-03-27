@@ -31,7 +31,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is zsh', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates .zshrc with PATH and completions', () =>
+      it.scoped('[Then] creates .zshrc with PATH only', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/zsh';
@@ -46,14 +46,15 @@ describe('CLI: composio install', () => {
           expect(contents).toContain('# Composio CLI');
           expect(contents).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(contents).toContain('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"');
-          expect(contents).toContain('# Composio CLI completions');
+          expect(contents).not.toContain('# Composio CLI completions');
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('Detected shell: zsh');
           expect(output).toContain('PATH: will add');
-          expect(output).toContain('Completions: will install shell completions');
+          expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Updated');
+          expect(output).toContain('source ~/.zshrc');
         })
       );
     });
@@ -153,7 +154,7 @@ describe('CLI: composio install', () => {
           expect(pathMarkerCount).toBe(1);
 
           const completionsCount = contents.match(/^# Composio CLI completions$/gm)?.length ?? 0;
-          expect(completionsCount).toBe(1);
+          expect(completionsCount).toBe(0);
         })
       );
     });
@@ -180,13 +181,12 @@ describe('CLI: composio install', () => {
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('PATH: already configured');
-          expect(output).toContain('Completions: already configured');
+          expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Shell integration already configured');
 
           // File should not have grown
           const contents = yield* fs.readFileString(rcPath);
           const markerCount = contents.split('# Composio CLI').length - 1;
-          // "# Composio CLI" appears in both the PATH block marker and the completions marker
           expect(markerCount).toBe(2);
         })
       );

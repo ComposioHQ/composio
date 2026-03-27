@@ -1,13 +1,22 @@
+import * as fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import * as os from 'node:os';
+import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
 import type { MasterKind } from 'src/services/master-detector';
+import { resolveRunCompanionModulePath } from 'src/services/run-companion-modules';
 import {
+  ACP_STRUCTURED_OUTPUT_TOOL_NAME,
   AcpInvokeError,
+  buildStructuredRepairPrompt,
   buildStructuredPrompt,
+  buildStructuredToolPrompt,
   finalizeInvokeAgentText,
   toInvokeAgentResponse,
+  unwrapStructuredOutputToolPayload,
+  validateStructuredOutput,
   type HelperDebugLog,
   type InvokeAgentNormalizedOptions,
   type InvokeAgentResponse,
@@ -65,6 +74,134 @@ export const resolveAcpAdapterCommand = (
 };
 
 const chunkFlushPattern = /[\s,.;:!?)\]}"]$/;
+const structuredOutputMcpModulePath = resolveRunCompanionModulePath({
+  callerImportMetaUrl: import.meta.url,
+  execPath: process.execPath,
+  relativeNoExtensionFromCaller: './run-subagent-output-mcp',
+});
+
+const collectToolCallPaths = (value: unknown, results: Set<string>, parentKey?: string): void => {
+  if (typeof value === 'string') {
+    const key = parentKey?.toLowerCase() ?? '';
+    if (
+      key === 'path' ||
+      key === 'file_path' ||
+      key === 'directory' ||
+      key.endsWith('_path') ||
+      key.endsWith('_directory')
+    ) {
+      results.add(value);
+    } else if (key === 'command' || key === 'cmd') {
+      for (const candidatePath of extractPathsFromCommandText(value)) {
+        results.add(candidatePath);
+      }
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    const key = parentKey?.toLowerCase() ?? '';
+    if (
+      key === 'paths' ||
+      key === 'directories' ||
+      key.endsWith('_paths') ||
+      key.endsWith('_directories')
+    ) {
+      for (const entry of value) {
+        if (typeof entry === 'string') {
+          results.add(entry);
+        }
+      }
+      return;
+    }
+
+    for (const entry of value) {
+      collectToolCallPaths(entry, results);
+    }
+    return;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    collectToolCallPaths(nestedValue, results, key);
+  }
+};
+
+const extractPathsFromCommandText = (command: string): ReadonlyArray<string> => {
+  const results = new Set<string>();
+  const matches = command.matchAll(/(^|[\s"'`])((?:~\/|\/)[^\s"'`|&;<>]+)/g);
+  for (const match of matches) {
+    const rawPath = match[2]?.trim();
+    if (!rawPath) {
+      continue;
+    }
+
+    results.add(rawPath.startsWith('~/') ? path.join(os.homedir(), rawPath.slice(2)) : rawPath);
+  }
+
+  return [...results];
+};
+
+const extractToolCallPaths = (
+  toolCall: Pick<acp.RequestPermissionRequest, 'toolCall'>['toolCall']
+): ReadonlyArray<string> => {
+  const paths = new Set<string>();
+  for (const location of toolCall.locations ?? []) {
+    if (typeof location.path === 'string' && location.path.length > 0) {
+      paths.add(location.path);
+    }
+  }
+
+  collectToolCallPaths(toolCall.rawInput, paths);
+  if (typeof toolCall.title === 'string') {
+    for (const candidatePath of extractPathsFromCommandText(toolCall.title)) {
+      paths.add(candidatePath);
+    }
+  }
+  return [...paths];
+};
+
+export const selectPermissionOutcome = (
+  params: Pick<acp.RequestPermissionRequest, 'options' | 'toolCall'>,
+  _allowedReadRoots: ReadonlyArray<string> = []
+): acp.RequestPermissionResponse => {
+  const allowOnce =
+    params.options.find(option => option.kind === 'allow_always') ??
+    params.options.find(option => option.kind === 'allow_once');
+  const rejectOption =
+    params.options.find(option => option.kind === 'reject_once') ??
+    params.options.find(option => option.kind === 'reject_always');
+
+  // Intentionally permissive for `composio run` subAgent sessions. The user is
+  // explicitly opting into local tool access, so prefer broad ACP approval over
+  // heuristic rejections that strand the agent mid-task.
+  if (allowOnce) {
+    return {
+      outcome: {
+        outcome: 'selected',
+        optionId: allowOnce.optionId,
+      },
+    };
+  }
+
+  if (rejectOption) {
+    return {
+      outcome: {
+        outcome: 'selected',
+        optionId: rejectOption.optionId,
+      },
+    };
+  }
+
+  return {
+    outcome: {
+      outcome: 'cancelled',
+    },
+  };
+};
 
 export class BufferedChunkLogger {
   private buffer = '';
@@ -125,7 +262,10 @@ class RunSubAgentClient {
   private readonly messageLogger: BufferedChunkLogger;
   private readonly thoughtLogger: BufferedChunkLogger;
 
-  constructor(private readonly helperDebugLog: HelperDebugLog) {
+  constructor(
+    private readonly helperDebugLog: HelperDebugLog,
+    private readonly allowedReadRoots: ReadonlyArray<string>
+  ) {
     this.messageLogger = new BufferedChunkLogger('subAgent.acp.message', helperDebugLog);
     this.thoughtLogger = new BufferedChunkLogger('subAgent.acp.thought', helperDebugLog);
   }
@@ -133,29 +273,20 @@ class RunSubAgentClient {
   async requestPermission(
     params: acp.RequestPermissionRequest
   ): Promise<acp.RequestPermissionResponse> {
+    const requestedPaths = extractToolCallPaths(params.toolCall);
+    const decision = selectPermissionOutcome(params, this.allowedReadRoots);
     this.helperDebugLog('subAgent.acp.permission', {
       toolCallId: params.toolCall.toolCallId,
+      title: params.toolCall.title ?? null,
+      kind: params.toolCall.kind ?? null,
+      locations: params.toolCall.locations?.map(location => location.path) ?? [],
+      requestedPaths,
+      allowedReadRoots: this.allowedReadRoots,
+      selectedOptionId: decision.outcome.outcome === 'selected' ? decision.outcome.optionId : null,
       options: params.options.map(option => option.kind),
     });
 
-    const rejectOption =
-      params.options.find(option => option.kind === 'reject_once') ??
-      params.options.find(option => option.kind === 'reject_always');
-
-    if (rejectOption) {
-      return {
-        outcome: {
-          outcome: 'selected',
-          optionId: rejectOption.optionId,
-        },
-      };
-    }
-
-    return {
-      outcome: {
-        outcome: 'cancelled',
-      },
-    };
+    return decision;
   }
 
   async sessionUpdate(params: acp.SessionNotification): Promise<void> {
@@ -222,19 +353,121 @@ const createFallbackError = (
   cause?: unknown
 ): AcpInvokeError => new AcpInvokeError(code, message, cause === undefined ? undefined : { cause });
 
+type StructuredOutputMcpContext = {
+  readonly mcpServer: acp.McpServerStdio;
+  readonly resultFilePath: string;
+  readonly cleanup: () => void;
+};
+
+export const createStructuredOutputMcpContext = ({
+  options,
+  helperDebugLog,
+}: {
+  options: InvokeAgentNormalizedOptions;
+  helperDebugLog: HelperDebugLog;
+}): StructuredOutputMcpContext | null => {
+  if (!options.structuredSchema) {
+    return null;
+  }
+
+  let tempDirectory: string | null = null;
+  try {
+    tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-subagent-output-mcp-'));
+    const schemaFilePath = path.join(tempDirectory, 'schema.json');
+    const resultFilePath = path.join(tempDirectory, 'result.json');
+    fs.writeFileSync(schemaFilePath, JSON.stringify(options.structuredSchema), 'utf8');
+
+    helperDebugLog('subAgent.acp.structured_output_tool', {
+      modulePath: structuredOutputMcpModulePath,
+      schemaFilePath,
+      resultFilePath,
+    });
+
+    return {
+      mcpServer: {
+        name: 'composio-structured-output',
+        command: process.execPath,
+        args: [
+          structuredOutputMcpModulePath,
+          '--schema-file',
+          schemaFilePath,
+          '--result-file',
+          resultFilePath,
+        ],
+        env: [
+          {
+            name: 'BUN_BE_BUN',
+            value: '1',
+          },
+        ],
+      },
+      resultFilePath,
+      cleanup: () => {
+        if (tempDirectory) {
+          fs.rmSync(tempDirectory, { recursive: true, force: true });
+        }
+      },
+    };
+  } catch (error) {
+    if (tempDirectory) {
+      fs.rmSync(tempDirectory, { recursive: true, force: true });
+    }
+    helperDebugLog('subAgent.acp.structured_output_tool_failed', {
+      error: error instanceof Error ? error.message : String(error),
+      modulePath: structuredOutputMcpModulePath,
+    });
+    return null;
+  }
+};
+
+const maybeReadStructuredOutputFromTool = ({
+  context,
+  options,
+  helperDebugLog,
+}: {
+  context: StructuredOutputMcpContext | null;
+  options: InvokeAgentNormalizedOptions;
+  helperDebugLog: HelperDebugLog;
+}): unknown | undefined => {
+  if (!context || !options.structuredSchema || !fs.existsSync(context.resultFilePath)) {
+    return undefined;
+  }
+
+  try {
+    const rawPayload = JSON.parse(fs.readFileSync(context.resultFilePath, 'utf8')) as unknown;
+    const parsed = unwrapStructuredOutputToolPayload(rawPayload, options.structuredSchema);
+    helperDebugLog('subAgent.acp.structured_output_tool_result', {
+      resultFilePath: context.resultFilePath,
+    });
+    return validateStructuredOutput(parsed, options);
+  } catch (error) {
+    helperDebugLog('subAgent.acp.structured_output_tool_result_failed', {
+      resultFilePath: context.resultFilePath,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+};
+
 export const invokeAcpSubAgent = async ({
   prompt,
   options,
   master,
   target,
+  allowedReadRoots,
   helperDebugLog,
 }: {
   prompt: string;
   options: InvokeAgentNormalizedOptions;
   master: MasterKind;
   target: InvokeAgentTarget;
+  allowedReadRoots: ReadonlyArray<string>;
   helperDebugLog: HelperDebugLog;
 }): Promise<InvokeAgentResponse> => {
+  const structuredOutputMcp = createStructuredOutputMcpContext({
+    options,
+    helperDebugLog,
+  });
   const resolved = resolveAcpAdapterCommand(target);
   helperDebugLog('subAgent.acp.resolve', {
     target,
@@ -268,7 +501,9 @@ export const invokeAcpSubAgent = async ({
     throw createFallbackError('spawn_failed', `Failed to spawn ${target} ACP adapter.`);
   }
 
-  const client = new RunSubAgentClient(helperDebugLog);
+  const client = new RunSubAgentClient(helperDebugLog, [
+    ...new Set(allowedReadRoots.map(root => path.resolve(root))),
+  ]);
   const stream = acp.ndJsonStream(
     Writable.toWeb(child.stdin) as unknown as WritableStream<Uint8Array>,
     Readable.toWeb(child.stdout) as unknown as ReadableStream<Uint8Array>
@@ -297,7 +532,7 @@ export const invokeAcpSubAgent = async ({
     const session = await connection
       .newSession({
         cwd: process.cwd(),
-        mcpServers: [],
+        mcpServers: structuredOutputMcp ? [structuredOutputMcp.mcpServer] : [],
       })
       .catch(error => {
         throw createFallbackError(
@@ -333,26 +568,36 @@ export const invokeAcpSubAgent = async ({
       }
     }
 
-    const promptText = buildStructuredPrompt(prompt, options.structuredSchema);
-    const response = await connection
-      .prompt({
-        sessionId: session.sessionId,
-        prompt: [{ type: 'text', text: promptText }],
-      })
-      .catch(error => {
-        if (connection.signal.aborted) {
+    const promptText =
+      options.structuredSchema && structuredOutputMcp
+        ? buildStructuredToolPrompt(
+            prompt,
+            options.structuredSchema,
+            ACP_STRUCTURED_OUTPUT_TOOL_NAME
+          )
+        : buildStructuredPrompt(prompt, options.structuredSchema);
+    const runPrompt = async (promptText: string) =>
+      connection
+        .prompt({
+          sessionId: session.sessionId,
+          prompt: [{ type: 'text', text: promptText }],
+        })
+        .catch(error => {
+          if (connection.signal.aborted) {
+            throw createFallbackError(
+              'connection_closed',
+              `${target} ACP connection closed before prompt completion${stderr.trim() ? `: ${stderr.trim()}` : ''}`,
+              error
+            );
+          }
           throw createFallbackError(
-            'connection_closed',
-            `${target} ACP connection closed before prompt completion${stderr.trim() ? `: ${stderr.trim()}` : ''}`,
+            'prompt_failed',
+            `${target} ACP prompt failed${stderr.trim() ? `: ${stderr.trim()}` : ''}`,
             error
           );
-        }
-        throw createFallbackError(
-          'prompt_failed',
-          `${target} ACP prompt failed${stderr.trim() ? `: ${stderr.trim()}` : ''}`,
-          error
-        );
-      });
+        });
+
+    const response = await runPrompt(promptText);
 
     if (response.stopReason === 'cancelled') {
       throw createFallbackError(
@@ -361,9 +606,63 @@ export const invokeAcpSubAgent = async ({
       );
     }
 
-    const payload = finalizeInvokeAgentText(client.getText(), options);
+    const structuredOutput = maybeReadStructuredOutputFromTool({
+      context: structuredOutputMcp,
+      options,
+      helperDebugLog,
+    });
+    if (structuredOutput !== undefined) {
+      return toInvokeAgentResponse(master, target, {
+        result: null,
+        structuredOutput,
+      });
+    }
+
+    let payload: Pick<InvokeAgentResponse, 'result' | 'structuredOutput'>;
+    try {
+      payload = finalizeInvokeAgentText(client.getText(), options);
+    } catch (error) {
+      if (!options.structuredSchema) {
+        throw error;
+      }
+
+      helperDebugLog('subAgent.acp.structured_repair', {
+        target,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+
+      const repairResponse = await runPrompt(
+        buildStructuredRepairPrompt(
+          options.structuredSchema,
+          structuredOutputMcp ? ACP_STRUCTURED_OUTPUT_TOOL_NAME : undefined
+        )
+      );
+
+      if (repairResponse.stopReason === 'cancelled') {
+        throw createFallbackError(
+          'prompt_failed',
+          `${target} ACP repair prompt was cancelled${stderr.trim() ? `: ${stderr.trim()}` : ''}`
+        );
+      }
+
+      const repairedStructuredOutput = maybeReadStructuredOutputFromTool({
+        context: structuredOutputMcp,
+        options,
+        helperDebugLog,
+      });
+      if (repairedStructuredOutput !== undefined) {
+        return toInvokeAgentResponse(master, target, {
+          result: null,
+          structuredOutput: repairedStructuredOutput,
+        });
+      }
+
+      payload = finalizeInvokeAgentText(client.getText(), options);
+    }
+
     return toInvokeAgentResponse(master, target, payload);
   } finally {
+    structuredOutputMcp?.cleanup();
     child.kill();
     await Promise.race([
       closePromise.catch(() => undefined),

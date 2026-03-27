@@ -162,7 +162,7 @@ export const installShellIntegration = (params: {
     // Lazy-import the root command to avoid a circular dependency
     // (index.ts → install.cmd.ts → index.ts).
     let completionScript: string | undefined;
-    if (!params.noCompletions) {
+    if (!params.noCompletions && shell !== 'zsh') {
       const mod = yield* Effect.promise(() => import('src/commands'));
       const lines = yield* getCompletionScript(mod.rootCommand, shell);
       completionScript = lines.length > 0 ? Arr.join(lines, '\n') : undefined;
@@ -191,7 +191,9 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('PATH: already configured');
     }
 
-    if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
+    if (shell === 'zsh') {
+      yield* ui.log.step('Completions: skipped for zsh');
+    } else if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
       blocks.push(config.completionBlock);
       yield* ui.log.step('Completions: will install shell completions');
     } else if (params.noCompletions) {
@@ -222,7 +224,7 @@ export const installShellIntegration = (params: {
 
       yield* ui.log.success(`Updated ${tildify(rcPath, os.homedir)}`);
       yield* ui.note(
-        shell === 'fish' ? `source ${tildify(rcPath, os.homedir)}` : 'exec $SHELL',
+        shell === 'fish' || shell === 'zsh' ? `source ${tildify(rcPath, os.homedir)}` : 'exec $SHELL',
         'Restart your shell to apply changes'
       );
     } else {
