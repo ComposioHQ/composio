@@ -239,6 +239,35 @@ describe('CLI: composio dev toolkits info', () => {
     );
   });
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        toolkits: [],
+        detailedToolkits: [],
+        searchToolkits: params =>
+          Effect.succeed({
+            items: params.search?.toLowerCase() === 'gmail' ? [testToolkits[0]!] : [],
+            total_items: params.search?.toLowerCase() === 'gmail' ? 1 : 0,
+            total_pages: 1,
+            next_cursor: null,
+          }),
+      },
+    })
+  )('[Given] detailed and direct exact lookups are unavailable', it => {
+    it.scoped('falls back to an exact search match for the requested slug', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'info', 'gmail']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Gmail');
+        expect(output).toContain('Email service to send and receive emails');
+        expect(output).toContain('Not connected');
+      })
+    );
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit with no_auth=true',
     it => {
