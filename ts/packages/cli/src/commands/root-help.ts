@@ -191,8 +191,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
   },
   execute: {
-    usage:
-      'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] | composio execute -p <slug> -d <text> <slug> -d <text> ...',
+    usage: 'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]',
     description:
       'Execute a tool by slug. Validates inputs against cached schemas and checks connections automatically — just try it and it will tell you what to fix.',
     args: [

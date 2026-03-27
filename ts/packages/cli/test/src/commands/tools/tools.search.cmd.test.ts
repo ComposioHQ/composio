@@ -526,7 +526,7 @@ describe('CLI: composio search', () => {
             },
           });
 
-          yield* cli(['search', 'send email']).pipe(Effect.provide(live));
+          yield* cli(['search', 'send email', '--human']).pipe(Effect.provide(live));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -543,7 +543,7 @@ describe('CLI: composio search', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['search', 'send']);
+        yield* cli(['search', 'send', '--human']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -594,7 +594,8 @@ describe('CLI: composio search', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('Found 2 tools');
+        expect(output).toContain('"results"');
+        expect(output).toContain('GMAIL_SEND_EMAIL');
         expect(output).not.toContain('Using global test user id');
       })
     );
@@ -605,7 +606,7 @@ describe('CLI: composio search', () => {
     it => {
       it.scoped('search returns matching tools', () =>
         Effect.gen(function* () {
-          yield* cli(['search', 'send']);
+          yield* cli(['search', 'send', '--human']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
