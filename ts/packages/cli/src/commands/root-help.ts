@@ -98,7 +98,7 @@ const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
   {
     name: 'dev',
     description:
-      'Developer workflows and management: init, execute, logs, orgs, projects, toolkits, accounts, and triggers.',
+      'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.',
   },
   {
     name: 'generate',
