@@ -1,9 +1,8 @@
-import path from 'node:path';
 import * as fs from 'node:fs';
-import { createRequire } from 'node:module';
 import process from 'node:process';
-import { pathToFileURL } from 'node:url';
 import { jsonSchemaToZodSchema } from '@composio/core';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   ACP_STRUCTURED_OUTPUT_TOOL_NAME,
   buildStructuredOutputToolSchema,
@@ -18,51 +17,7 @@ const readFlag = (name: string): string => {
   return value;
 };
 
-type McpServerInstance = {
-  registerTool: (
-    name: string,
-    config: {
-      title?: string;
-      description?: string;
-      inputSchema?: unknown;
-    },
-    cb: (payload: unknown) => Promise<{
-      content: Array<{
-        type: string;
-        text: string;
-      }>;
-    }>
-  ) => void;
-  connect: (transport: unknown) => Promise<void>;
-};
-
-type McpServerConstructor = new (serverInfo: {
-  name: string;
-  version: string;
-}) => McpServerInstance;
-
-type StdioServerTransportConstructor = new () => unknown;
-
-const loadMcpSdk = async (): Promise<{
-  McpServer: McpServerConstructor;
-  StdioServerTransport: StdioServerTransportConstructor;
-}> => {
-  const require = createRequire(import.meta.url);
-  const sdkPackageJsonPath = require.resolve('@modelcontextprotocol/sdk/package.json');
-  const sdkDirectory = path.dirname(sdkPackageJsonPath);
-  const [mcpModule, stdioModule] = await Promise.all([
-    import(pathToFileURL(path.join(sdkDirectory, 'dist/esm/server/mcp.js')).href),
-    import(pathToFileURL(path.join(sdkDirectory, 'dist/esm/server/stdio.js')).href),
-  ]);
-
-  return {
-    McpServer: mcpModule.McpServer as McpServerConstructor,
-    StdioServerTransport: stdioModule.StdioServerTransport as StdioServerTransportConstructor,
-  };
-};
-
 const main = async (): Promise<void> => {
-  const { McpServer, StdioServerTransport } = await loadMcpSdk();
   const schemaFilePath = readFlag('--schema-file');
   const resultFilePath = readFlag('--result-file');
   const schemaText = fs.readFileSync(schemaFilePath, 'utf8');
