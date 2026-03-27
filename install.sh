@@ -239,7 +239,7 @@ else
             else
                 info "PATH already configured in \"$(tildify "$zsh_config")\""
             fi
-            refresh_command="exec $SHELL"
+            refresh_command="source $(tildify "$zsh_config")"
         else
             echo "Manually add the directory to $(tildify "$zsh_config") (or similar):"
             for cmd in "${commands[@]}"; do info_bold "  $cmd"; done
