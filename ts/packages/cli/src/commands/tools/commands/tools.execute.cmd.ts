@@ -649,36 +649,6 @@ type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
 
-type ParallelExecuteResult =
-  | {
-      readonly slug: string;
-      readonly successful: true;
-      readonly dryRun: true;
-      readonly arguments: Record<string, unknown>;
-      readonly userId: string;
-      readonly schemaPath?: string;
-      readonly schemaVersion?: string | null;
-    }
-  | {
-      readonly slug: string;
-      readonly successful: true;
-      readonly version: string | null;
-      readonly schemaPath: string;
-      readonly inputSchema: Record<string, unknown>;
-    }
-  | ({
-      readonly slug: string;
-    } & ToolExecuteResponse)
-  | ({
-      readonly slug: string;
-    } & StoredExecuteOutputSummary)
-  | {
-      readonly slug: string;
-      readonly successful: false;
-      readonly error: string;
-      readonly logId?: string;
-    };
-
 type ResolvedExecuteContext = {
   readonly ui: TerminalUI;
   readonly executor: ToolsExecutor;
