@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect } from 'effect';
+import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
@@ -16,6 +17,52 @@ const limit = Options.integer('limit').pipe(
   Options.withDefault(10),
   Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
 );
+
+const filterToolkitsForSearchQuery = (
+  toolkits: ReadonlyArray<Toolkit>,
+  query: string
+): ReadonlyArray<Toolkit> => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return toolkits;
+
+  return toolkits.filter(
+    toolkit =>
+      toolkit.slug.toLowerCase().includes(normalizedQuery) ||
+      toolkit.name.toLowerCase().includes(normalizedQuery) ||
+      toolkit.meta.description.toLowerCase().includes(normalizedQuery)
+  );
+};
+
+const buildCatalogResultFromToolkits = (
+  toolkits: ReadonlyArray<Toolkit>,
+  limit: number
+): ToolkitSearchResult => ({
+  items: toolkits.slice(0, limit),
+  total_items: toolkits.length,
+  total_pages: toolkits.length === 0 ? 0 : Math.ceil(toolkits.length / limit),
+  next_cursor: null,
+});
+
+const searchToolkitsWithFallback = (
+  repo: ComposioToolkitsRepository,
+  query: string,
+  limit: number
+) => {
+  const fallback = repo.getToolkits().pipe(
+    Effect.map(toolkits => filterToolkitsForSearchQuery(toolkits, query)),
+    Effect.map(toolkits => buildCatalogResultFromToolkits(toolkits, limit))
+  );
+
+  return repo.searchToolkits({ search: query, limit }).pipe(
+    Effect.flatMap(result => (result.items.length === 0 ? fallback : Effect.succeed(result))),
+    Effect.catchAll(error =>
+      Effect.logDebug(
+        'Failed to search toolkits catalog, falling back to cached list:',
+        error
+      ).pipe(Effect.flatMap(() => fallback))
+    )
+  );
+};
 
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
 // supports text search. Currently SessionToolsParams has no search capability.
@@ -40,7 +87,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
 
     const result = yield* ui.withSpinner(
       `Searching toolkits for "${query}"...`,
-      repo.searchToolkits({ search: query, limit: validatedLimit })
+      searchToolkitsWithFallback(repo, query, validatedLimit)
     );
 
     if (result.items.length === 0) {

@@ -86,6 +86,34 @@ describe('CLI: composio dev toolkits search', () => {
     }
   );
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        ...toolkitsData,
+        searchToolkits: () =>
+          Effect.succeed({
+            items: [],
+            total_items: 0,
+            total_pages: 0,
+            next_cursor: null,
+          }),
+      },
+    })
+  )('[Given] an empty search response [Then] falls back to cached toolkit filtering', it => {
+    it.scoped('returns matching toolkits from the cached catalog', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'search', 'email', '--limit', '1']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Gmail');
+        expect(output).not.toContain('Slack');
+        expect(output).toContain('Found 1 of 2 toolkits');
+      })
+    );
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] query with no results',
     it => {
