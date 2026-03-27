@@ -16,6 +16,7 @@ import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
+import { USER_COMPOSIO_DIR } from 'src/constants';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -32,7 +33,9 @@ const debug = Options.boolean('debug').pipe(
   Options.withDefault(false)
 );
 const logsOff = Options.boolean('logs-off').pipe(
-  Options.withDescription('Hide the always-on subAgent streaming logs'),
+  Options.withDescription(
+    'Compatibility flag. Helper logs are written to the run log file instead of stderr.'
+  ),
   Options.withDefault(false)
 );
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
@@ -203,6 +206,8 @@ type RunHelperContext = {
   readonly acpOnly?: boolean;
   readonly logsOff?: boolean;
   readonly runOutputDir?: string;
+  readonly runLogFilePath?: string;
+  readonly readAccessRoots?: ReadonlyArray<string>;
 };
 
 // eslint-disable-next-line max-lines-per-function
@@ -239,6 +244,7 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '      target: { type: "string", enum: ["claude", "codex"] },',
   '      result: { description: "Final plain-text result when available." },',
   '      structuredOutput: { description: "Structured output when jsonSchema was requested." },',
+  '      logFilePath: { description: "Path to the local run log file for helper execution details." },',
   '    },',
   '  },',
   '};',
@@ -273,20 +279,12 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  const payload = { phase, label, elapsedMs, ...details };',
   '  console.error(`[perf] ${JSON.stringify(payload)}`);',
   '};',
-  'const helperDebugEnabled = helperContext.debug === true;',
-  'const helperProgressEnabled = helperContext.logsOff !== true;',
   'const sharedRunOutputDir = typeof helperContext.runOutputDir === "string" && helperContext.runOutputDir.length > 0 ? helperContext.runOutputDir : null;',
-  'const helperProgressSteps = new Set([',
-  '  "subAgent.target",',
-  '  "subAgent.acp.message",',
-  '  "subAgent.acp.thought",',
-  '  "subAgent.acp.tool_call",',
-  '  "subAgent.acp.tool_call_update",',
-  '  "subAgent.acp.plan",',
-  '  "subAgent.acp.fallback",',
-  ']);',
-  'const helperDebugUseColor = process.stderr?.isTTY === true && process.env.NO_COLOR !== "1";',
-  'const helperDebugColorize = (line) => helperDebugUseColor ? `\\x1b[90m${line}\\x1b[0m` : line;',
+  'const sharedRunLogFilePath = typeof helperContext.runLogFilePath === "string" && helperContext.runLogFilePath.length > 0 ? helperContext.runLogFilePath : null;',
+  'const appendRunLogLine = (line) => {',
+  '  if (!sharedRunLogFilePath || typeof line !== "string" || line.length === 0) return;',
+  '  fs.appendFileSync(sharedRunLogFilePath, `${line}\\n`, "utf8");',
+  '};',
   'const truncateDebugText = (value, max = 240) => {',
   '  const text = typeof value === "string" ? value : String(value ?? "");',
   '  return text.length > max ? `${text.slice(0, max - 1)}…` : text;',
@@ -369,13 +367,8 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '};',
   'const helperDebugLog = (step, details = {}) => {',
   '  const line = formatHelperDebugEvent(step, details);',
-  '  if (line && (helperDebugEnabled || (helperProgressEnabled && helperProgressSteps.has(step)))) {',
-  '    console.error(helperDebugColorize(line));',
-  '    return;',
-  '  }',
-  '  if (!helperDebugEnabled) return;',
   '  const elapsedMs = Date.now() - perfDebugStart;',
-  '  console.error(helperDebugColorize(`[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`));',
+  '  appendRunLogLine(line ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`);',
   '};',
   'const parseJson = (text) => {',
   '  const value = text.trim();',
@@ -435,7 +428,6 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  return result;',
   '};',
   'const logCliResultPreview = (requestId, command, result) => {',
-  '  if (!helperDebugEnabled) return;',
   '  if (!result || typeof result !== "object") {',
   '    helperDebugLog("cli.result", { requestId, command, preview: result, result: describeDebugValue(result) });',
   '    return;',
@@ -694,18 +686,21 @@ const buildRunInvokeAgentHelpersSource = (): ReadonlyArray<string> => [
   '  if (typeof prompt !== "string" || prompt.trim().length === 0) {',
   '    throw new Error("subAgent() requires a non-empty prompt string.");',
   '  }',
+  '  const logFilePath = typeof helperContext.runLogFilePath === "string" && helperContext.runLogFilePath.length > 0 ? helperContext.runLogFilePath : undefined;',
   '  const normalizedOptions = normalizeInvokeAgentOptions(options);',
   '  const target = resolveInvokeAgentTarget(normalizedOptions.target);',
   '  const master = detectInvokeAgentMaster();',
   '  helperDebugLog("subAgent.target", { requestedTarget: normalizedOptions.target ?? null, resolvedTarget: target, master });',
   '  try {',
-  '    return await invokeAcpSubAgent({',
+  '    const response = await invokeAcpSubAgent({',
   '      prompt: prompt.trim(),',
   '      options: normalizedOptions,',
   '      master,',
   '      target,',
+  '      allowedReadRoots: Array.isArray(helperContext.readAccessRoots) ? helperContext.readAccessRoots : [],',
   '      helperDebugLog,',
   '    });',
+  '    return logFilePath ? { ...response, logFilePath } : response;',
   '  } catch (error) {',
   '    if (!isAcpInvokeError(error)) {',
   '      throw error;',
@@ -714,13 +709,15 @@ const buildRunInvokeAgentHelpersSource = (): ReadonlyArray<string> => [
   '      throw error;',
   '    }',
   '    helperDebugLog("subAgent.acp.fallback", { target, code: error.code, message: error.message });',
-  '    return invokeLegacySubAgent({',
+  '    const response = await invokeLegacySubAgent({',
   '      prompt: prompt.trim(),',
   '      options: normalizedOptions,',
   '      master,',
   '      target,',
+  '      allowedReadRoots: Array.isArray(helperContext.readAccessRoots) ? helperContext.readAccessRoots : [],',
   '      helperDebugLog,',
   '    });',
+  '    return logFilePath ? { ...response, logFilePath } : response;',
   '  }',
   '};',
   'globalThis.subAgent = subAgentImpl;',
@@ -782,6 +779,14 @@ const buildRunProxyHelpersSource = (): ReadonlyArray<string> => [
   '};',
   'Object.defineProperty(globalThis.proxy, "schema", { value: proxySchema });',
   '',
+  'Object.defineProperty(globalThis, "__composioRunContext", {',
+  '  value: Object.freeze({',
+  '    outputDir: sharedRunOutputDir,',
+  '    logFilePath: sharedRunLogFilePath,',
+  '  }),',
+  '  configurable: true,',
+  '});',
+  '',
   'Object.defineProperty(globalThis, "__composioConsumerContext", {',
   '  value: helperContext,',
   '  configurable: true,',
@@ -794,6 +799,7 @@ export const buildRunHelpersSource = (
   context: RunHelperContext = {}
 ): string =>
   [
+    'import * as fs from "node:fs";',
     'import { z } from "zod";',
     `import { isAcpInvokeError } from ${JSON.stringify(subAgentSharedModuleUrl)};`,
     `import { invokeAcpSubAgent } from ${JSON.stringify(subAgentAcpModuleUrl)};`,
@@ -817,13 +823,28 @@ const createRunHelpersPreloadFile = (
     typeof context.runOutputDir === 'string' && context.runOutputDir.length > 0
       ? context.runOutputDir
       : path.join(directory, 'artifacts');
+  const runLogFilePath = path.join(runOutputDir, 'run.log');
+  const readAccessRoots = [
+    ...new Set(
+      [
+        ...(Array.isArray(context.readAccessRoots) ? context.readAccessRoots : []),
+        runOutputDir,
+      ].map(value => path.resolve(value))
+    ),
+  ];
   fs.mkdirSync(runOutputDir, { recursive: true });
+  fs.writeFileSync(runLogFilePath, '', 'utf8');
   fs.writeFileSync(
     preloadPath,
-    buildRunHelpersSource(cliPrefix, { ...context, runOutputDir }),
+    buildRunHelpersSource(cliPrefix, {
+      ...context,
+      runOutputDir,
+      runLogFilePath,
+      readAccessRoots,
+    }),
     'utf8'
   );
-  return { directory, preloadPath, runOutputDir };
+  return { directory, preloadPath, runOutputDir, runLogFilePath };
 };
 
 export const buildRunCommand = ({
@@ -884,11 +905,19 @@ const resolveRunHelperContext = () =>
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
+    const defaultComposioDir = path.join(os.homedir(), USER_COMPOSIO_DIR);
+    const configuredCacheDir =
+      process.env.COMPOSIO_CACHE_DIR?.trim() || process.env.CACHE_DIR?.trim() || defaultComposioDir;
+    const baseReadAccessRoots = [
+      ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
+    ];
+
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
       webURL: userContext.data.webURL,
       orgId,
+      readAccessRoots: baseReadAccessRoots,
     } satisfies RunHelperContext;
 
     if (!apiKey || !orgId) {
@@ -911,6 +940,21 @@ const resolveRunHelperContext = () =>
           consumerUserId: consumerProject.value.consumerUserId,
         }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
       ),
+      readAccessRoots: [
+        ...new Set(
+          [
+            ...baseReadAccessRoots,
+            Option.getOrUndefined(
+              yield* resolveCliSessionArtifacts({
+                orgId,
+                consumerUserId: consumerProject.value.consumerUserId,
+              }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
+            ),
+          ]
+            .filter((value): value is string => typeof value === 'string' && value.length > 0)
+            .map(value => path.resolve(value))
+        ),
+      ],
     } satisfies RunHelperContext;
   });
 
@@ -1033,6 +1077,7 @@ export const runCmd = Command.make('run', {
               debug,
             },
           }).pipe(Effect.catchAll(() => Effect.void));
+          process.stderr.write(`RUN_LOG_FILE=${preload.runLogFilePath}\n`);
           const runCommand = buildRunCommand({
             file,
             args,

@@ -6,6 +6,7 @@ export const RUN_COMPANION_MODULE_BASENAMES = [
   'run-subagent-shared',
   'run-subagent-acp',
   'run-subagent-legacy',
+  'run-subagent-output-mcp',
 ] as const;
 
 export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map(

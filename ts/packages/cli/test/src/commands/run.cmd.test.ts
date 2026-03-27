@@ -12,7 +12,14 @@ import {
   wrapInlineCodeForRun,
 } from 'src/commands/run.cmd';
 import { resolveRunCompanionModulePath } from 'src/services/run-companion-modules';
-import { buildStructuredPrompt, finalizeInvokeAgentText } from 'src/services/run-subagent-shared';
+import {
+  ACP_STRUCTURED_OUTPUT_WRAPPER_KEY,
+  buildStructuredRepairPrompt,
+  buildStructuredOutputToolSchema,
+  buildStructuredPrompt,
+  buildStructuredToolPrompt,
+  finalizeInvokeAgentText,
+} from 'src/services/run-subagent-shared';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 describe('CLI: composio run', () => {
@@ -28,6 +35,9 @@ describe('CLI: composio run', () => {
         Effect.gen(function* () {
           const spawn = vi.fn(() => ({ exited: Promise.resolve(7) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          const stderrWrite = vi
+            .spyOn(process.stderr, 'write')
+            .mockImplementation((() => true) as never);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
@@ -53,6 +63,9 @@ describe('CLI: composio run', () => {
             })
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
+          expect(stderrWrite).toHaveBeenCalledWith(
+            expect.stringMatching(/^RUN_LOG_FILE=.*run\.log\n$/)
+          );
           expect(exit).toHaveBeenCalledWith(7);
         })
     );
@@ -187,8 +200,10 @@ describe('buildRunHelpersSource', () => {
       acpOnly: true,
       logsOff: true,
       dryRun: true,
+      runLogFilePath: '/tmp/composio-run/run.log',
     });
 
+    expect(source).toContain('import * as fs from "node:fs";');
     expect(source).toContain('import { z } from "zod";');
     expect(source).toContain('import { isAcpInvokeError } from "file://');
     expect(source).toContain('import { invokeAcpSubAgent } from "file://');
@@ -204,6 +219,10 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain(
       'const sharedRunOutputDir = typeof helperContext.runOutputDir === "string"'
     );
+    expect(source).toContain(
+      'const sharedRunLogFilePath = typeof helperContext.runLogFilePath === "string"'
+    );
+    expect(source).toContain('const appendRunLogLine = (line) => {');
     expect(source).toContain('COMPOSIO_RUN_OUTPUT_DIR');
     expect(source).toContain('const maybeLoadStoredCliResult = (result) => {');
     expect(source).toContain('storedInFilePath: outputFilePath !== null,');
@@ -217,7 +236,9 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('COMPOSIO_USER_API_KEY');
     expect(source).toContain('"acpOnly":true');
     expect(source).toContain('"logsOff":true');
+    expect(source).toContain('"runLogFilePath":"/tmp/composio-run/run.log"');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');
+    expect(source).toContain('Object.defineProperty(globalThis, "__composioRunContext", {');
     expect(source).toContain('__composioConsumerContext');
     expect(source).toContain('globalThis.execute = async (slug, data = {}) => {');
     expect(source).toContain(
@@ -229,11 +250,15 @@ describe('buildRunHelpersSource', () => {
       'Object.defineProperty(globalThis.subAgent, "schema", { value: subAgentSchema });'
     );
     expect(source).toContain('globalThis.invokeAgent = subAgentImpl;');
-    expect(source).toContain('return await invokeAcpSubAgent({');
+    expect(source).toContain(
+      'const logFilePath = typeof helperContext.runLogFilePath === "string"'
+    );
+    expect(source).toContain('const response = await invokeAcpSubAgent({');
+    expect(source).toContain('return logFilePath ? { ...response, logFilePath } : response;');
     expect(source).toContain('if (!isAcpInvokeError(error)) {');
     expect(source).toContain('if (helperContext.acpOnly === true) {');
     expect(source).toContain('helperDebugLog("subAgent.acp.fallback"');
-    expect(source).toContain('return invokeLegacySubAgent({');
+    expect(source).toContain('const response = await invokeLegacySubAgent({');
     expect(source).toContain('const detectInvokeAgentMaster = () => {');
     expect(source).toContain(
       'throw new Error("subAgent() accepts either options.schema or options.jsonSchema, not both.");'
@@ -275,6 +300,38 @@ describe('run-subagent-shared', () => {
     );
   });
 
+  it('[Given] a non-object structured schema [Then] the MCP output tool schema wraps it under a value key', () => {
+    expect(buildStructuredOutputToolSchema({ type: 'array', items: { type: 'string' } })).toEqual({
+      type: 'object',
+      additionalProperties: false,
+      required: [ACP_STRUCTURED_OUTPUT_WRAPPER_KEY],
+      properties: {
+        [ACP_STRUCTURED_OUTPUT_WRAPPER_KEY]: { type: 'array', items: { type: 'string' } },
+      },
+    });
+  });
+
+  it('[Given] structured tool mode [Then] the prompt instructs the agent to use the output tool', () => {
+    expect(
+      buildStructuredToolPrompt(
+        'Summarize it.',
+        { type: 'array', items: { type: 'string' } },
+        'submit_structured_output'
+      )
+    ).toContain('call the MCP tool `submit_structured_output` exactly once');
+  });
+
+  it('[Given] a repair prompt [Then] it requires no more tools and JSON-only fallback', () => {
+    const prompt = buildStructuredRepairPrompt(
+      { type: 'object', properties: { summary: { type: 'string' } } },
+      'submit_structured_output'
+    );
+
+    expect(prompt).toContain('Your previous response was not valid structured output.');
+    expect(prompt).toContain('Do not read files. Do not run terminal commands.');
+    expect(prompt).toContain('reply with only raw JSON matching the schema');
+  });
+
   it('[Given] Zod-like structured output [Then] it validates and returns structured data', () => {
     const result = finalizeInvokeAgentText('{"ok":true}', {
       structuredSchema: { type: 'object' },
@@ -304,6 +361,48 @@ describe('run-subagent-shared', () => {
         structuredSchema: { type: 'object' },
       })
     ).toThrow('subAgent() expected valid JSON output for structured response.');
+  });
+
+  it('[Given] prose followed by JSON in structured mode [Then] it recovers the final JSON payload', () => {
+    const result = finalizeInvokeAgentText('Reading file now.\n{"ok":true}', {
+      structuredSchema: { type: 'object' },
+      zodSchema: {
+        safeParse: value => ({ success: true as const, data: value }),
+      },
+    });
+
+    expect(result).toEqual({
+      result: null,
+      structuredOutput: { ok: true },
+    });
+  });
+
+  it('[Given] fenced JSON in structured mode [Then] it parses the fenced payload', () => {
+    const result = finalizeInvokeAgentText('```json\n{"ok":true}\n```', {
+      structuredSchema: { type: 'object' },
+      zodSchema: {
+        safeParse: value => ({ success: true as const, data: value }),
+      },
+    });
+
+    expect(result).toEqual({
+      result: null,
+      structuredOutput: { ok: true },
+    });
+  });
+
+  it('[Given] an object containing arrays [Then] it prefers the full object over an inner array', () => {
+    const result = finalizeInvokeAgentText('Working...\n{"summary":"done","urgent":["a","b"]}', {
+      structuredSchema: { type: 'object' },
+      zodSchema: {
+        safeParse: value => ({ success: true as const, data: value }),
+      },
+    });
+
+    expect(result).toEqual({
+      result: null,
+      structuredOutput: { summary: 'done', urgent: ['a', 'b'] },
+    });
   });
 });
 
