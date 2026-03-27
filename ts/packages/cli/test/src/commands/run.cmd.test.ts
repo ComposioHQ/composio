@@ -121,6 +121,52 @@ describe('CLI: composio run', () => {
   });
 
   layer(TestLive())(it => {
+    it.scoped(
+      '[Given] a multiline structured subAgent script [Then] run preserves the inline TypeScript source',
+      () =>
+        Effect.gen(function* () {
+          const script = `
+            const brief = await subAgent(
+              [
+                "Do not read files.",
+                "Do not run terminal commands.",
+                "Do not inspect the workspace.",
+                "Return exactly this structured value:",
+                "{\\"summary\\":\\"ok\\",\\"urgent\\":[\\"a\\",\\"b\\"]}",
+              ].join("\\n"),
+              {
+                target: "codex",
+                schema: z.object({ summary: z.string(), urgent: z.array(z.string()) }),
+              }
+            );
+            console.log(JSON.stringify(brief));
+            console.log(JSON.stringify(brief.structuredOutput));
+          `;
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          vi.stubGlobal('Bun', { spawn });
+
+          yield* cli(['run', '--logs-off', script]);
+
+          expect(spawn).toHaveBeenCalledTimes(1);
+          const spawnConfig = (spawn as any).mock.calls[0][0] as {
+            cmd: string[];
+          };
+          expect(spawnConfig.cmd[3]).toBe('--eval');
+          expect(spawnConfig.cmd[4]).toContain('"Do not run terminal commands."');
+          expect(spawnConfig.cmd[4]).toContain('].join("\\n"),');
+          expect(spawnConfig.cmd[4]).toContain('target: "codex"');
+          expect(spawnConfig.cmd[4]).toContain('console.log(JSON.stringify(brief));');
+          expect(spawnConfig.cmd[4]).toContain(
+            'return (console.log(JSON.stringify(brief.structuredOutput)));'
+          );
+          expect(spawnConfig.cmd[4]).not.toContain('"Do not run terminal\n');
+          expect(exit).toHaveBeenCalledWith(0);
+        })
+    );
+  });
+
+  layer(TestLive())(it => {
     it.scoped('[Given] --file [Then] it forwards file execution to the embedded Bun runtime', () =>
       Effect.gen(function* () {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
