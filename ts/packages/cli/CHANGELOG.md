@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.2.12
+
+### Patch Changes
+
+- 2eee65d: patch
+
 ## 0.2.11
 
 ### Patch Changes
