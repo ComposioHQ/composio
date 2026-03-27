@@ -7,7 +7,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
-import type { ToolkitDetailed } from 'src/models/toolkits';
+import type { Toolkit, ToolkitDetailed } from 'src/models/toolkits';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -63,6 +63,22 @@ export const toolkitsCmd$Info = Command.make(
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
       const globalTestUserId = userContext.data.testUserId;
+      const fallbackToolkitFromCatalog = (catalogToolkitOpt: Option.Option<Toolkit>) =>
+        Option.match(catalogToolkitOpt, {
+          onNone: () => undefined,
+          onSome: toolkit => ({
+            slug: toolkit.slug,
+            name: toolkit.name,
+            meta: {
+              description: toolkit.meta.description,
+              logo: '',
+            },
+            is_no_auth: toolkit.no_auth,
+            enabled: true,
+            connected_account: null,
+            composio_managed_auth_schemes: [...toolkit.composio_managed_auth_schemes],
+          }),
+        });
       const fallbackToolkitFromDetailed = (detailedToolkitOpt: Option.Option<ToolkitDetailed>) =>
         Option.match(detailedToolkitOpt, {
           onNone: () => undefined,
@@ -101,7 +117,19 @@ export const toolkitsCmd$Info = Command.make(
             const detailedToolkitOpt = yield* repo
               .getToolkitDetailed(slugValue)
               .pipe(Effect.option);
-            const fallbackToolkit = fallbackToolkitFromDetailed(detailedToolkitOpt);
+            const catalogToolkitOpt = Option.isSome(detailedToolkitOpt)
+              ? Option.none()
+              : yield* repo.getToolkitsBySlugs([slugValue]).pipe(
+                  Effect.map(toolkits => Option.fromNullable(toolkits[0])),
+                  Effect.catchAll(error =>
+                    Effect.logDebug('Failed to fetch toolkit catalog fallback:', error).pipe(
+                      Effect.as(Option.none())
+                    )
+                  )
+                );
+            const fallbackToolkit =
+              fallbackToolkitFromDetailed(detailedToolkitOpt) ??
+              fallbackToolkitFromCatalog(catalogToolkitOpt);
 
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();

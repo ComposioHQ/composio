@@ -18,7 +18,7 @@ import { Toolkit, Toolkits, ToolkitDetailed, type ToolkitSearchResult } from 'sr
 import { AuthConfigItem, AuthConfigItems } from 'src/models/auth-configs';
 import { ConnectedAccountItem, ConnectedAccountItems } from 'src/models/connected-accounts';
 import { TriggerInstanceItems } from 'src/models/triggers';
-import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
+import { ToolsAsEnums, Tools } from 'src/models/tools';
 import {
   groupByVersion,
   type ToolkitVersionSpec,
@@ -150,6 +150,36 @@ const getToolkitsBySlugsFromCatalog = <E, R>(
 
         return filteredToolkits;
       })
+    )
+  );
+
+const sortBySlug = <A extends { slug: string }>(items: ReadonlyArray<A>): ReadonlyArray<A> => {
+  const orderBySlug = Order.mapInput(Order.string, (item: A) => item.slug);
+  return Array.sort(items, orderBySlug) as ReadonlyArray<A>;
+};
+
+const filterByToolkitSlugPrefixes = <A extends { slug: string }>(
+  items: ReadonlyArray<A>,
+  toolkitSlugs: ReadonlyArray<string>
+): ReadonlyArray<A> => {
+  const prefixes = toolkitSlugs.map(slug => `${EffectString.toUpperCase(slug)}_`);
+
+  return items.filter(item =>
+    prefixes.some(prefix => EffectString.toUpperCase(item.slug).startsWith(prefix))
+  );
+};
+
+const fallbackToFullCatalogRead = <A, E, R>(
+  failureMessage: string,
+  readFiltered: () => Effect.Effect<ReadonlyArray<A>, E, R>,
+  readAll: () => Effect.Effect<ReadonlyArray<A>, E, R>,
+  filterItems: (items: ReadonlyArray<A>) => ReadonlyArray<A>
+): Effect.Effect<ReadonlyArray<A>, E, R> =>
+  retryTransientHttpRead(readFiltered()).pipe(
+    Effect.catchAll(error =>
+      Effect.logDebug(failureMessage, error).pipe(
+        Effect.flatMap(() => retryTransientHttpRead(readAll()).pipe(Effect.map(filterItems)))
+      )
     )
   );
 
@@ -2088,14 +2118,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
       const getToolkits = () =>
         client.toolkits.list().pipe(
           Effect.map(response => response.items),
-          Effect.flatMap(
-            Effect.fn(function* (toolkits) {
-              // Sort apps by slug.
-              // TODO: make sure this happens on the server-side.
-              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
-            })
-          )
+          Effect.map(sortBySlug)
         );
 
       const getToolkitsBySlugsDirect = (slugs: ReadonlyArray<string>) =>
@@ -2119,15 +2142,18 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
             )
           ),
           { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
-        ).pipe(
-          Effect.flatMap(
-            Effect.fn(function* (toolkits) {
-              // Sort apps by slug.
-              // TODO: make sure this happens on the server-side.
-              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
-            })
-          )
+        ).pipe(Effect.map(sortBySlug));
+
+      const getToolsDirect = (toolkitSlugs?: ReadonlyArray<string>) =>
+        client.tools.list(toolkitSlugs ?? []).pipe(
+          Effect.map(response => response.items),
+          Effect.map(sortBySlug)
+        );
+
+      const getTriggerTypesDirect = (toolkitSlugs?: ReadonlyArray<string>) =>
+        client.triggersTypes.list(toolkitSlugs).pipe(
+          Effect.map(response => response.items),
+          Effect.map(sortBySlug)
         );
 
       return {
@@ -2144,50 +2170,33 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getMetrics: () => client.getMetrics(),
         getToolsAsEnums: () => retryTransientHttpRead(client.tools.retrieveEnum()),
         getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
-          retryTransientHttpRead(
-            client.tools.list(toolkitSlugs ?? []).pipe(
-              Effect.map(response => response.items),
-              Effect.flatMap(
-                Effect.fn(function* (tools) {
-                  // Sort apps by slug.
-                  // TODO: make sure this happens on the server-side.
-                  const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                  return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-                })
+          toolkitSlugs && toolkitSlugs.length > 0
+            ? fallbackToFullCatalogRead(
+                'Failed to retrieve filtered tools, falling back to full catalog:',
+                () => getToolsDirect(toolkitSlugs),
+                () => getToolsDirect(),
+                tools => filterByToolkitSlugPrefixes(tools, toolkitSlugs)
               )
-            )
-          ),
+            : retryTransientHttpRead(getToolsDirect()),
         getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
           retryTransientHttpRead(
             client.tools.listByVersionSpecs(specs).pipe(
               Effect.map(response => response.items),
-              Effect.flatMap(
-                Effect.fn(function* (tools) {
-                  // Sort apps by slug.
-                  // TODO: make sure this happens on the server-side.
-                  const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                  return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-                })
-              )
+              Effect.map(sortBySlug)
             )
           ),
         getTriggerTypesAsEnums: () => retryTransientHttpRead(client.triggersTypes.retrieveEnum()),
         getTriggerTypeDetailed: (slug: string) =>
           retryTransientHttpRead(client.triggersTypes.retrieve(slug)),
         getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
-          retryTransientHttpRead(
-            client.triggersTypes.list(toolkitSlugs).pipe(
-              Effect.map(response => response.items),
-              Effect.flatMap(
-                Effect.fn(function* (triggerTypes) {
-                  // Sort apps by slug.
-                  // TODO: make sure this happens on the server-side.
-                  const orderBySlug = Order.mapInput(Order.string, (app: TriggerType) => app.slug);
-                  return Array.sort(triggerTypes, orderBySlug) as ReadonlyArray<TriggerType>;
-                })
+          toolkitSlugs && toolkitSlugs.length > 0
+            ? fallbackToFullCatalogRead(
+                'Failed to retrieve filtered trigger types, falling back to full catalog:',
+                () => getTriggerTypesDirect(toolkitSlugs),
+                () => getTriggerTypesDirect(),
+                triggerTypes => filterByToolkitSlugPrefixes(triggerTypes, toolkitSlugs)
               )
-            )
-          ),
+            : retryTransientHttpRead(getTriggerTypesDirect()),
         /**
          * Validates that the given toolkit slugs are valid by comparing them against the list
          * of available toolkits. Returns the list of valid toolkit slugs (normalized to lowercase).
