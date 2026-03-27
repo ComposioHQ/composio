@@ -14,6 +14,7 @@
  * Output: `dist/binaries/<artifact-name>`
  */
 
+import { mkdir } from 'node:fs/promises';
 import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
@@ -31,6 +32,12 @@ const TARGET_MAP: Record<string, string> = {
 };
 
 const VALID_TARGETS = Object.keys(TARGET_MAP);
+
+const RUN_COMPANION_MODULE_BASENAMES = [
+  'run-subagent-shared',
+  'run-subagent-acp',
+  'run-subagent-legacy',
+] as const;
 
 function parseTarget(): { target: string; artifact: string } {
   const targetIdx = process.argv.indexOf('--target');
@@ -104,6 +111,50 @@ export function buildBinaryCross() {
 
     if (exitCode !== 0) {
       return yield* Effect.fail(new Error(`Failed to cross-compile binary for ${target}`));
+    }
+
+    const companionOutputDir = './dist/binaries/companions';
+    yield* Effect.tryPromise(() => mkdir(companionOutputDir, { recursive: true }));
+
+    for (const name of RUN_COMPANION_MODULE_BASENAMES) {
+      const companionArgs = [
+        'bun',
+        'build',
+        `./src/services/${name}.ts`,
+        '--outfile',
+        `${companionOutputDir}/${name}.mjs`,
+        '--format',
+        'esm',
+        '--target',
+        'bun',
+      ] as const satisfies ReadonlyArray<string>;
+
+      const companionCmd = Command.make(...companionArgs);
+      const { exitCode: companionExitCode } = yield* companionCmd.pipe(
+        Command.start,
+        Effect.flatMap(process =>
+          Effect.all(
+            {
+              exitCode: process.exitCode,
+              output: Stream.merge(
+                Stream.decodeText(process.stdout, 'utf-8'),
+                Stream.decodeText(process.stderr, 'utf-8'),
+                { haltStrategy: 'left' }
+              ).pipe(
+                Stream.tap(chunk => Console.log(chunk)),
+                Stream.runDrain
+              ),
+            },
+            {
+              concurrency: 'unbounded',
+            }
+          )
+        )
+      );
+
+      if (companionExitCode !== 0) {
+        return yield* Effect.fail(new Error(`Failed to build companion module: ${name}`));
+      }
     }
 
     yield* Console.log(`Binary cross-compiled: ${outfile}`);

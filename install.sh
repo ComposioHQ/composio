@@ -164,12 +164,27 @@ mkdir -p "$COMPOSIO_INSTALL_DIR" ||
     error "Failed to create install directory \"$COMPOSIO_INSTALL_DIR\""
 
 exe="$COMPOSIO_INSTALL_DIR/composio"
+companion_modules=(
+    "run-subagent-shared.mjs"
+    "run-subagent-acp.mjs"
+    "run-subagent-legacy.mjs"
+)
 
 # Handle nested directory structure (composio-<target>/composio)
 if [[ -f "$tmpdir/composio-$target/composio" ]]; then
     mv "$tmpdir/composio-$target/composio" "$exe"
+    for module in "${companion_modules[@]}"; do
+        if [[ -f "$tmpdir/composio-$target/$module" ]]; then
+            mv "$tmpdir/composio-$target/$module" "$COMPOSIO_INSTALL_DIR/$module"
+        fi
+    done
 elif [[ -f "$tmpdir/composio" ]]; then
     mv "$tmpdir/composio" "$exe"
+    for module in "${companion_modules[@]}"; do
+        if [[ -f "$tmpdir/$module" ]]; then
+            mv "$tmpdir/$module" "$COMPOSIO_INSTALL_DIR/$module"
+        fi
+    done
 else
     error 'Binary not found in extracted archive'
 fi

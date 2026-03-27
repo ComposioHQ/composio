@@ -80,6 +80,7 @@ jobs:
           rm -rf "$temp_dir"
           mkdir -p "$temp_dir/${{ matrix.artifact }}"
           cp "${{ matrix.artifact }}" "$temp_dir/${{ matrix.artifact }}/composio"
+          cp companions/run-subagent-*.mjs "$temp_dir/${{ matrix.artifact }}/"
           cd "$temp_dir" && zip -r "../${{ matrix.artifact }}.zip" "${{ matrix.artifact }}"
           cd .. && rm -r "$temp_dir"
 
