@@ -649,6 +649,20 @@ type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
 
+type ParallelExecuteResult =
+  | {
+      readonly slug: string;
+      readonly successful: true;
+      readonly version: string | null;
+      readonly schemaPath: string;
+      readonly inputSchema: Record<string, unknown>;
+    }
+  | {
+      readonly slug: string;
+      readonly successful: false;
+      readonly error: string;
+    };
+
 type ResolvedExecuteContext = {
   readonly ui: TerminalUI;
   readonly executor: ToolsExecutor;
@@ -662,6 +676,16 @@ type ResolvedExecuteContext = {
   readonly resolvedUserId: string;
   readonly executeParams: ToolExecuteParams;
   readonly executeOutputDir?: string;
+};
+
+type ResolvedSchemaContext = {
+  readonly ui: TerminalUI;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+    readonly projectType: 'CONSUMER' | 'DEVELOPER';
+    readonly consumerUserId?: string;
+  };
 };
 
 const emitCachedSchema = (
@@ -755,6 +779,21 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         client,
       },
     } satisfies ResolvedExecuteContext;
+  });
+
+const resolveSchemaContext = (params: SharedRunToolsExecuteParams) =>
+  Effect.gen(function* () {
+    const resolvedProject = yield* resolveCommandProject({
+      mode: params.projectMode,
+      projectName:
+        params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
+    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    const ui = yield* TerminalUI;
+
+    return {
+      ui,
+      resolvedProject,
+    } satisfies ResolvedSchemaContext;
   });
 
 const runConnectedToolkitFailFast = (params: {
@@ -1112,8 +1151,8 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
-    const context = yield* resolveExecuteContext(params);
     if (params.getSchema) {
+      const context = yield* resolveSchemaContext(params);
       const definition = yield* getOrFetchToolInputDefinition(params.slug, {
         orgId: context.resolvedProject.orgId,
         projectId: context.resolvedProject.projectId,
@@ -1121,7 +1160,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
         Effect.tapError(error =>
           emitExecuteFailureTelemetry({
             toolSlug: params.slug,
-            args: context.args,
+            args: {},
             error,
             surface: params.surface,
             projectMode: params.projectMode,
@@ -1132,6 +1171,8 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       yield* emitCachedSchema(context.ui, params.slug, definition);
       return;
     }
+
+    const context = yield* resolveExecuteContext(params);
 
     yield* runConnectedToolkitFailFast({
       slug: params.slug,
@@ -1367,9 +1408,101 @@ const checkConnectedToolkitOrFail = (params: {
     }
   });
 
+const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
+  Effect.gen(function* () {
+    const contexts = yield* Effect.forEach(
+      params.specs,
+      () =>
+        resolveSchemaContext({
+          userId: params.userId,
+          projectName: params.projectName,
+          surface: params.surface,
+          projectMode: params.projectMode,
+          getSchema: params.getSchema,
+          dryRun: params.dryRun,
+          skipConnectionCheck: params.skipConnectionCheck,
+          skipToolParamsCheck: params.skipToolParamsCheck,
+          skipChecks: params.skipChecks,
+        }),
+      { concurrency: 'unbounded' }
+    );
+    const entries = contexts.map((context, index) => ({
+      context,
+      spec: params.specs[index]!,
+    }));
+
+    const ui = contexts[0]?.ui;
+    const results = yield* Effect.forEach(
+      entries,
+      ({ context, spec }) =>
+        Effect.gen(function* () {
+          const definition = yield* getOrFetchToolInputDefinition(spec.slug, {
+            orgId: context.resolvedProject.orgId,
+            projectId: context.resolvedProject.projectId,
+          });
+          return {
+            slug: spec.slug,
+            successful: true,
+            version: definition.version,
+            schemaPath: definition.schemaPath,
+            inputSchema: definition.schema,
+          } satisfies Extract<
+            ParallelExecuteResult,
+            { readonly inputSchema: Record<string, unknown> }
+          >;
+        }).pipe(
+          Effect.catchAll(error => {
+            const mapped = mapComposioError({ error, toolSlug: spec.slug });
+            return Effect.succeed({
+              slug: spec.slug,
+              successful: false,
+              error: mapped.message,
+            } satisfies Extract<ParallelExecuteResult, { readonly successful: false }>);
+          })
+        ),
+      { concurrency: 'unbounded' }
+    );
+
+    if (ui) {
+      for (const result of results) {
+        if (!result.successful) {
+          yield* ui.log.error(`[${result.slug}] ${result.error}`);
+          continue;
+        }
+
+        yield* ui.log.step(`[${result.slug}] Schema fetched: ${result.schemaPath}`);
+      }
+
+      const successful = results.every(result => result.successful);
+      yield* ui.log.message(
+        `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
+      );
+      yield* ui.output(
+        JSON.stringify(
+          {
+            successful,
+            parallel: true,
+            results,
+          },
+          ciRedactReplacer,
+          2
+        )
+      );
+      if (!successful) {
+        return yield* Effect.fail(
+          new ToolExecutionError('One or more parallel tool executions failed.')
+        );
+      }
+    }
+  });
+
 const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
+
+    if (params.getSchema) {
+      return yield* runParallelSchemaFetchFromParsed(params);
+    }
 
     const contexts = yield* Effect.forEach(
       params.specs,
@@ -1402,20 +1535,6 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           const toolSlug = spec.slug;
 
           try {
-            if (params.getSchema) {
-              const definition = yield* getOrFetchToolInputDefinition(toolSlug, {
-                orgId: context.resolvedProject.orgId,
-                projectId: context.resolvedProject.projectId,
-              });
-              return {
-                slug: toolSlug,
-                successful: true,
-                version: definition.version,
-                schemaPath: definition.schemaPath,
-                inputSchema: definition.schema,
-              };
-            }
-
             yield* checkConnectedToolkitOrFail({
               slug: toolSlug,
               resolvedProject: context.resolvedProject,
