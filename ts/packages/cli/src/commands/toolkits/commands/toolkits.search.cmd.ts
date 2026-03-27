@@ -19,6 +19,7 @@ const limit = Options.integer('limit').pipe(
 );
 
 const SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
+const EMPTY_TOOLKIT_SEARCH_FALLBACK_TIMEOUT_MS = 5_000;
 
 const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | undefined => {
   const normalizedQuery = query.trim().toLowerCase();
@@ -115,12 +116,32 @@ const searchToolkitsWithFallback = (
     .pipe(
       Effect.map(result => filterToolkitsForSearchQuery(result.items, query)),
       Effect.flatMap(items => {
+        const emptyResult = buildCatalogResultFromToolkits([], limit);
         const hasPreciseMatch = items.some(toolkit => {
           const rank = rankToolkitForSearchQuery(toolkit, query);
           return rank !== undefined && rank <= 1;
         });
 
-        if (items.length === 0 || (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch)) {
+        if (items.length === 0) {
+          return Effect.raceFirst(
+            fallback,
+            Effect.sleep(EMPTY_TOOLKIT_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
+              Effect.zipRight(
+                Effect.logDebug('Timed out confirming empty toolkit search against full catalog.')
+              ),
+              Effect.as(emptyResult)
+            )
+          ).pipe(
+            Effect.catchAll(error =>
+              Effect.logDebug(
+                'Failed to confirm empty toolkit search against full catalog:',
+                error
+              ).pipe(Effect.as(emptyResult))
+            )
+          );
+        }
+
+        if (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch) {
           return fallback;
         }
 

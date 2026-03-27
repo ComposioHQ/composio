@@ -20,7 +20,7 @@ import { Command, Options } from '@effect/cli';
 import { Effect, Option, pipe, Array } from 'effect';
 import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository, retryTransientHttpRead } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
@@ -397,10 +397,17 @@ export function generateTypescriptTypeStubs({
     // Fetch, generate, and write with a spinner that auto-cleans up on error
     yield* ui.useMakeSpinner('Fetching data from Composio API...', spinner =>
       Effect.gen(function* () {
-        const { toolkits, triggerTypes, typeableTools, versionMap } = yield* toolkitSlugsFilter !==
-        null
-          ? fetchFilteredData(client, toolkitSlugsFilter, typeTools, validatedOverrides, spinner)
-          : fetchAllData(client, typeTools, validatedOverrides, spinner);
+        const fetchEffect =
+          toolkitSlugsFilter !== null
+            ? fetchFilteredData(client, toolkitSlugsFilter, typeTools, validatedOverrides, spinner)
+            : fetchAllData(client, typeTools, validatedOverrides, spinner);
+
+        // Retry the full metadata fetch once more when the upstream API is transiently unavailable.
+        // This keeps live generation resilient without changing invalid-input behavior.
+        const { toolkits, triggerTypes, typeableTools, versionMap } = yield* retryTransientHttpRead(
+          fetchEffect,
+          [1_000, 2_500]
+        );
 
         yield* spinner.message('Generating TypeScript type stubs...');
         const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });

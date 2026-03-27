@@ -33,20 +33,42 @@ if (existsSync(GENERATED_DIR)) {
 
 // Test 1: Run composio generate ts --toolkits hackernews --output-dir ./generated
 console.log('Test 1: Running composio generate ts --toolkits hackernews --output-dir ./generated...');
-try {
-  // Use the composio CLI binary built and installed to /usr/local/bin in the Dockerfile
-  execSync(`composio generate ts --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
-    cwd: __dirname,
-    stdio: 'inherit',
-    env: { ...process.env, FORCE_COLOR: '0' },
-  });
+function runGenerateTs(attempt) {
+  try {
+    // Use the composio CLI binary built and installed to /usr/local/bin in the Dockerfile.
+    // Capture output so transient CI failures surface the actual CLI stderr in the test logs.
+    execSync(`composio generate ts --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
+      cwd: __dirname,
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      env: { ...process.env, FORCE_COLOR: '0' },
+    });
+  } catch (error) {
+    const stdout = error.stdout?.toString?.() || error.stdout || '';
+    const stderr = error.stderr?.toString?.() || error.stderr || '';
 
-  console.log('✅ Test 1 passed: composio generate ts succeeded\n');
-} catch (error) {
-  console.error('❌ Test 1 failed: composio generate ts threw an error');
-  console.error(error.message);
-  process.exit(1);
+    console.error(`❌ Test 1 failed on attempt ${attempt}: composio generate ts threw an error`);
+    if (stdout) {
+      console.error('stdout:');
+      console.error(stdout);
+    }
+    if (stderr) {
+      console.error('stderr:');
+      console.error(stderr);
+    }
+    console.error(error.message);
+
+    if (attempt < 2) {
+      console.error('Retrying Test 1 once...');
+      return runGenerateTs(attempt + 1);
+    }
+
+    process.exit(1);
+  }
 }
+
+runGenerateTs(1);
+console.log('✅ Test 1 passed: composio generate ts succeeded\n');
 
 // Test 2: Verify generated files exist
 console.log('Test 2: Verifying generated files exist...');

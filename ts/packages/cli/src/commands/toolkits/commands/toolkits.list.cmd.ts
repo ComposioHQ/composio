@@ -23,6 +23,7 @@ const limit = Options.integer('limit').pipe(
 );
 
 const LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
+const EMPTY_LIST_SEARCH_FALLBACK_TIMEOUT_MS = 5_000;
 
 const connected = Options.boolean('connected').pipe(
   Options.withDescription('Filter to connected toolkits only'),
@@ -126,6 +127,7 @@ const getCatalogToolkitsWithFallback = (
     .pipe(
       Effect.map(result => filterToolkitsForListQuery(result.items, query)),
       Effect.flatMap(items => {
+        const emptyResult = buildCatalogResultFromToolkits([], limit);
         const hasPreciseMatch = items.some(toolkit => {
           const normalizedQuery = query.trim().toLowerCase();
           const slug = toolkit.slug.toLowerCase();
@@ -138,7 +140,28 @@ const getCatalogToolkitsWithFallback = (
           );
         });
 
-        if (items.length === 0 || (shouldRequirePreciseListMatch(query) && !hasPreciseMatch)) {
+        if (items.length === 0) {
+          return Effect.raceFirst(
+            fallback,
+            Effect.sleep(EMPTY_LIST_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
+              Effect.zipRight(
+                Effect.logDebug(
+                  'Timed out confirming empty toolkit list search against full catalog.'
+                )
+              ),
+              Effect.as(emptyResult)
+            )
+          ).pipe(
+            Effect.catchAll(error =>
+              Effect.logDebug(
+                'Failed to confirm empty toolkit list search against full catalog:',
+                error
+              ).pipe(Effect.as(emptyResult))
+            )
+          );
+        }
+
+        if (shouldRequirePreciseListMatch(query) && !hasPreciseMatch) {
           return fallback;
         }
 
