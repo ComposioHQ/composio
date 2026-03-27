@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatToolLogInfo, formatToolLogsTable } from '../format';
 import { commandHintStep } from 'src/services/command-hints';
@@ -55,7 +55,7 @@ const to = Options.integer('to').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Number of logs to fetch (1-1000)')
+  Options.withDescription(formatLimitDescription('Number of logs to fetch'))
 );
 
 const caseSensitive = Options.boolean('case-sensitive').pipe(
@@ -166,9 +166,9 @@ export const logsCmd$Tools = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
+      const validatedLimit = yield* validateLimit(limit);
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      const clampedLimit = clampLimit(limit);
       const shorthandSearchParams = buildToolLogShorthandSearchParams({
         tool: Option.getOrUndefined(tool),
         toolkit: Option.getOrUndefined(toolkit),
@@ -202,7 +202,7 @@ export const logsCmd$Tools = Command.make(
             cursor: Option.getOrUndefined(cursor) ?? null,
             from: Option.getOrUndefined(from),
             to: Option.getOrUndefined(to),
-            limit: clampedLimit,
+            limit: validatedLimit,
             case_sensitive: caseSensitive,
             search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
           })

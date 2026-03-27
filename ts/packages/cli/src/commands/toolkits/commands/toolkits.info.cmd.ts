@@ -202,24 +202,25 @@ export const toolkitsCmd$Info = Command.make(
               )
             );
 
-            const sessionToolkitEffect = Effect.gen(function* () {
-              const client = yield* clientSingleton.get();
-              return yield* getOptionalValueWithTimeout(
-                resolveToolRouterSession(client, effectiveUserId).pipe(
-                  Effect.flatMap(({ sessionId }) =>
-                    Effect.tryPromise(() =>
-                      client.toolRouter.session.toolkits(sessionId, {
-                        toolkits: [slugValue],
-                      })
-                    )
-                  ),
-                  Effect.map(response => response.items[0])
-                ),
-                TOOLKIT_INFO_SESSION_TIMEOUT_MS,
-                `Timed out fetching session toolkit info for "${slugValue}".`,
-                'Failed to fetch session toolkit info:'
-              );
-            });
+            const sessionToolkitEffect = getOptionalValueWithTimeout(
+              clientSingleton.get().pipe(
+                Effect.flatMap(client =>
+                  resolveToolRouterSession(client, effectiveUserId).pipe(
+                    Effect.flatMap(({ sessionId }) =>
+                      Effect.tryPromise(() =>
+                        client.toolRouter.session.toolkits(sessionId, {
+                          toolkits: [slugValue],
+                        })
+                      )
+                    ),
+                    Effect.map(response => response.items[0])
+                  )
+                )
+              ),
+              TOOLKIT_INFO_SESSION_TIMEOUT_MS,
+              `Timed out fetching session toolkit info for "${slugValue}".`,
+              'Failed to fetch session toolkit info:'
+            );
 
             const cachedCatalogToolkitOptEffect = yield* Effect.cached(catalogToolkitOptEffect);
             const cachedSessionToolkitEffect = yield* Effect.cached(sessionToolkitEffect);

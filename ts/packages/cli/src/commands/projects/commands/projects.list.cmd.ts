@@ -4,7 +4,7 @@ import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { listOrganizationProjects } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 
 const orgId = Options.text('org-id').pipe(
   Options.optional,
@@ -13,7 +13,7 @@ const orgId = Options.text('org-id').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(50),
-  Options.withDescription('Max projects to fetch from API (default: 50)')
+  Options.withDescription(formatLimitDescription('Max projects to fetch from API'))
 );
 
 export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId, limit }) =>
@@ -36,14 +36,14 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
       return;
     }
 
-    const clampedLimit = clampLimit(limit);
+    const validatedLimit = yield* validateLimit(limit);
     const projects = yield* ui.withSpinner(
       'Loading projects...',
       listOrganizationProjects({
         baseURL: ctx.data.baseURL,
         apiKey,
         orgId: resolvedOrgId,
-        limit: clampedLimit,
+        limit: validatedLimit,
       }),
       {
         successMessage: result => `Loaded ${result.data.length} projects`,

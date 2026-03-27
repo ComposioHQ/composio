@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
 
@@ -30,7 +30,7 @@ const status = Options.choice('status', [
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+  Options.withDescription(formatLimitDescription('Number of results per page'))
 );
 
 /**
@@ -52,6 +52,7 @@ export const connectedAccountsCmd$List = Command.make(
 
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
+      const validatedLimit = yield* validateLimit(limit);
 
       const toolkitSlugs = Option.isSome(toolkits)
         ? toolkits.value.split(',').map(s => s.trim())
@@ -63,7 +64,7 @@ export const connectedAccountsCmd$List = Command.make(
           toolkit_slugs: toolkitSlugs,
           user_ids: Option.isSome(userId) ? [userId.value] : undefined,
           statuses: Option.isSome(status) ? [status.value] : undefined,
-          limit: clampLimit(limit),
+          limit: validatedLimit,
         })
       );
 

@@ -4,7 +4,7 @@ import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import {
   formatTriggersStatusJson,
   formatTriggersStatusTable,
@@ -48,7 +48,7 @@ const showDisabled = Options.boolean('show-disabled').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+  Options.withDescription(formatLimitDescription('Number of results per page'))
 );
 
 const csvOption = (opt: Option.Option<string>): string[] | undefined =>
@@ -78,6 +78,7 @@ export const triggersCmd$Status = Command.make(
       const connectedAccountIdsList = csvOption(connectedAccountIds);
       const triggerNamesList = csvOption(triggerNames)?.map(name => name.toUpperCase());
       const toolkitsList = csvOption(toolkits)?.map(slug => slug.toLowerCase());
+      const validatedLimit = yield* validateLimit(limit);
 
       const resultOpt = yield* ui
         .withSpinner(
@@ -88,7 +89,7 @@ export const triggersCmd$Status = Command.make(
             trigger_ids: csvOption(triggerIds),
             trigger_names: triggerNamesList,
             show_disabled: showDisabled,
-            limit: clampLimit(limit),
+            limit: validatedLimit,
           })
         )
         .pipe(

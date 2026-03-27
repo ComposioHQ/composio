@@ -4,11 +4,11 @@ import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { listOrganizations } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(50),
-  Options.withDescription('Max organizations to fetch from API (default: 50)')
+  Options.withDescription(formatLimitDescription('Max organizations to fetch from API'))
 );
 
 export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
@@ -23,7 +23,7 @@ export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
       return;
     }
 
-    const clampedLimit = clampLimit(limit);
+    const validatedLimit = yield* validateLimit(limit);
     const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
 
     yield* ui.intro(`composio dev orgs list`);
@@ -33,7 +33,7 @@ export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>
       listOrganizations({
         baseURL: ctx.data.baseURL,
         apiKey,
-        limit: clampedLimit,
+        limit: validatedLimit,
       }),
       {
         successMessage: result => `Loaded ${result.data.length} orgs`,

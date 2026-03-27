@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
 import { formatAuthConfigsTable, formatAuthConfigsJson } from '../format';
 
@@ -21,7 +21,7 @@ const query = Options.text('query').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+  Options.withDescription(formatLimitDescription('Number of results per page'))
 );
 
 /**
@@ -43,13 +43,14 @@ export const authConfigsCmd$List = Command.make(
 
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
+      const validatedLimit = yield* validateLimit(limit);
 
       const result = yield* ui.withSpinner(
         'Fetching auth configs...',
         repo.listAuthConfigs({
           search: Option.getOrUndefined(query),
           toolkit_slug: Option.getOrUndefined(toolkits),
-          limit: clampLimit(limit),
+          limit: validatedLimit,
         })
       );
 

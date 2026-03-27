@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import { formatTriggerTypesJson, formatTriggerTypesTable } from '../format';
 import { parseCsv } from '../parse-csv';
 
@@ -16,7 +16,7 @@ const toolkits = Options.text('toolkits').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Maximum number of trigger types to show (1-1000)')
+  Options.withDescription(formatLimitDescription('Maximum number of trigger types to show'))
 );
 
 /**
@@ -36,13 +36,13 @@ export const triggersCmd$List = Command.make('list', { toolkits, limit }, ({ too
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
     const toolkitFilters = Option.isSome(toolkits) ? parseCsv(toolkits.value) : undefined;
-    const clampedLimit = clampLimit(limit);
+    const validatedLimit = yield* validateLimit(limit);
 
     const allTriggerTypes = yield* ui.withSpinner(
       'Fetching trigger types...',
       repo.getTriggerTypes(toolkitFilters)
     );
-    const triggerTypes = allTriggerTypes.slice(0, clampedLimit);
+    const triggerTypes = allTriggerTypes.slice(0, validatedLimit);
 
     if (triggerTypes.length === 0) {
       const hint = Option.isSome(toolkits)

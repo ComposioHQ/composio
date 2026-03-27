@@ -1,5 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, Effect, Layer } from 'effect';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -238,6 +239,39 @@ describe('CLI: composio dev toolkits info', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] session client resolution fails',
+    it => {
+      it.scoped('still falls back to catalog metadata', () =>
+        Effect.gen(function* () {
+          const live = Layer.mergeAll(
+            TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }),
+            Layer.succeed(
+              ComposioClientSingleton,
+              new ComposioClientSingleton({
+                get: Effect.fn(function* () {
+                  return yield* Effect.fail(new Error('client resolution failed'));
+                }),
+                getFor: Effect.fn(function* () {
+                  return yield* Effect.fail(new Error('client resolution failed'));
+                }),
+              })
+            )
+          );
+
+          yield* cli(['dev', 'toolkits', 'info', 'gmail']).pipe(Effect.provide(live));
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Gmail');
+          expect(output).toContain('Email service to send and receive emails');
+          expect(output).toContain('20250909');
+          expect(output).toContain('Not connected');
+        })
+      );
+    }
+  );
 
   layer(
     TestLive({

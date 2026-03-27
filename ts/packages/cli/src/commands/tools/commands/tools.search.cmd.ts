@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { buildMinimalPayloadFromSchema } from 'src/ui/build-minimal-payload';
 import { formatToolsTable } from '../format';
@@ -45,7 +45,7 @@ const projectName = Options.text('project-name').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(10),
-  Options.withDescription('Number of results per page (1-1000)')
+  Options.withDescription(formatLimitDescription('Number of results per page'))
 );
 
 const json = Options.boolean('json').pipe(
@@ -306,7 +306,7 @@ const runToolsSearch = (params: {
     const ui = yield* TerminalUI;
     const userContext = yield* ComposioUserContext;
 
-    const clampedLimit = clampLimit(params.limit);
+    const validatedLimit = yield* validateLimit(params.limit);
     const emitHuman = params.human;
     const emitJson = params.json || !emitHuman;
     const queries = params.query.map(q => q.trim()).filter(Boolean);
@@ -395,7 +395,7 @@ const runToolsSearch = (params: {
         result,
         toolSchemas: searchResponse.tool_schemas,
         toolkitSet,
-        limit: clampedLimit,
+        limit: validatedLimit,
       }),
     }));
 
@@ -451,7 +451,7 @@ const runToolsSearch = (params: {
         query: queries.join(' | '),
         queries,
         toolkitFilter: toolkitList ?? [],
-        limit: clampedLimit,
+        limit: validatedLimit,
         resultCount: totalToolCount,
         toolRouterSessionId: searchResult.historyScope?.toolRouterSessionId,
         nextSteps: searchResponse.next_steps_guidance,

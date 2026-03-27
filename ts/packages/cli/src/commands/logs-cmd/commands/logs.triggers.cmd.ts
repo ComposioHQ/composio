@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
 import { commandHintStep } from 'src/services/command-hints';
@@ -56,7 +56,7 @@ const to = Options.integer('to').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Number of logs to fetch (1-1000)')
+  Options.withDescription(formatLimitDescription('Number of logs to fetch'))
 );
 
 const time = Options.choice('time', ['5m', '30m', '6h', '1d', '1w', '1month', '1y'] as const).pipe(
@@ -122,9 +122,9 @@ export const logsCmd$Triggers = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
+      const validatedLimit = yield* validateLimit(limit);
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.get();
-      const clampedLimit = clampLimit(limit);
       const shorthandSearchParams = [
         ...(Option.isSome(trigger)
           ? parseCsv(trigger.value).map(value => toSearchParam('trigger_name', value))
@@ -170,7 +170,7 @@ export const logsCmd$Triggers = Command.make(
             cursor: Option.getOrUndefined(cursor),
             from: Option.getOrUndefined(from),
             to: Option.getOrUndefined(to),
-            limit: clampedLimit,
+            limit: validatedLimit,
             time: Option.getOrUndefined(time),
             search: Option.getOrUndefined(search),
             include_payload: includePayload,

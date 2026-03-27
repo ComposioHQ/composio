@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { clampLimit } from 'src/ui/clamp-limit';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import { formatToolsTable, formatToolsJson } from '../format';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
@@ -22,7 +22,7 @@ const tags = Options.text('tags').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+  Options.withDescription(formatLimitDescription('Number of results per page'))
 );
 
 /**
@@ -45,7 +45,7 @@ export const toolsCmd$List = Command.make(
       const ui = yield* TerminalUI;
       const repo = yield* ComposioToolkitsRepository;
 
-      const clampedLimit = clampLimit(limit);
+      const validatedLimit = yield* validateLimit(limit);
 
       const result = yield* ui.withSpinner(
         'Fetching tools...',
@@ -53,7 +53,7 @@ export const toolsCmd$List = Command.make(
           search: Option.getOrUndefined(query),
           toolkit_slug: toolkit,
           tags: Option.getOrUndefined(tags),
-          limit: clampedLimit,
+          limit: validatedLimit,
         })
       );
 

@@ -1,5 +1,6 @@
 import { Console, Effect } from 'effect';
 import { bold, dim, gray } from 'src/ui/colors';
+import { formatLimitDescription } from 'src/ui/clamp-limit';
 import { TOOLKITS_LIMIT_DESCRIPTION } from './toolkits/limits';
 
 type DetailedCommand = {
@@ -14,6 +15,16 @@ type CompactCommand = {
   description: string;
 };
 
+const MAX_RESULTS_LIMIT_DESCRIPTION = formatLimitDescription('Maximum number of results');
+const RESULTS_PER_PAGE_LIMIT_DESCRIPTION = formatLimitDescription('Number of results per page');
+const NUMBER_OF_RESULTS_LIMIT_DESCRIPTION = formatLimitDescription('Number of results');
+const MAX_TRIGGER_TYPES_LIMIT_DESCRIPTION = formatLimitDescription(
+  'Maximum number of trigger types to show'
+);
+const MAX_ORGS_LIMIT_DESCRIPTION = formatLimitDescription('Max organizations to fetch from API');
+const MAX_PROJECTS_LIMIT_DESCRIPTION = formatLimitDescription('Max projects to fetch from API');
+const LOGS_LIMIT_DESCRIPTION = formatLimitDescription('Number of logs to fetch');
+
 // ── Core workflow commands ──────────────────────────────────────────────
 
 const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
@@ -27,7 +38,7 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
         description: 'One or more semantic use-case queries (e.g. "send emails" "github issues")',
       },
       { name: '--toolkits', description: 'Filter by toolkit slugs, comma-separated' },
-      { name: '--limit', description: 'Maximum number of results (1-1000)' },
+      { name: '--limit', description: MAX_RESULTS_LIMIT_DESCRIPTION },
       { name: '--human', description: 'Show formatted output instead of default JSON' },
     ],
   },
@@ -168,7 +179,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs, comma-separated' },
-      { name: '--limit <integer>', description: 'Maximum number of results (1-1000)' },
+      { name: '--limit <integer>', description: MAX_RESULTS_LIMIT_DESCRIPTION },
       { name: '--human', description: 'Show formatted human-readable search output' },
     ],
     examples: [
@@ -290,7 +301,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '-f, --file <text>', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running them' },
       { name: '--debug', description: 'Log helper steps while the script runs' },
-      { name: '--logs-off', description: 'Hide the always-on experimental_subAgent streaming logs' },
+      {
+        name: '--logs-off',
+        description: 'Hide the always-on experimental_subAgent streaming logs',
+      },
     ],
     flags: [
       { name: '--skip-connection-check', description: 'Skip the connected-account check' },
@@ -499,7 +513,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     options: [
       { name: '--query <text>', description: 'Text search by name, slug, or description' },
       { name: '--tags <text>', description: 'Filter by tags (e.g. "important")' },
-      { name: '--limit <integer>', description: 'Maximum number of results (1-1000)' },
+      { name: '--limit <integer>', description: RESULTS_PER_PAGE_LIMIT_DESCRIPTION },
     ],
   },
   'tools info': {
@@ -661,7 +675,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
       { name: '--query <text>', description: 'Search text' },
-      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--limit <integer>', description: NUMBER_OF_RESULTS_LIMIT_DESCRIPTION },
     ],
   },
   'dev auth-configs info': {
@@ -695,7 +709,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
       { name: '--user-id <text>', description: 'Filter by user id' },
       { name: '--status <text>', description: 'Filter by status (ACTIVE, FAILED, EXPIRED, etc.)' },
-      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--limit <integer>', description: NUMBER_OF_RESULTS_LIMIT_DESCRIPTION },
     ],
   },
   'dev connected-accounts info': {
@@ -719,7 +733,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     description: 'List available trigger types.',
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
-      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--limit <integer>', description: MAX_TRIGGER_TYPES_LIMIT_DESCRIPTION },
     ],
   },
   'dev triggers info': {
@@ -737,7 +751,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
       { name: '--trigger-ids <text>', description: 'Filter by trigger IDs' },
       { name: '--trigger-names <text>', description: 'Filter by trigger names' },
-      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--limit <integer>', description: NUMBER_OF_RESULTS_LIMIT_DESCRIPTION },
     ],
     flags: [{ name: '--show-disabled', description: 'Include disabled triggers' }],
   },
@@ -770,14 +784,14 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   'dev orgs list': {
     usage: 'composio dev orgs list [--limit integer]',
     description: 'List organizations and show current global selection.',
-    options: [{ name: '--limit <integer>', description: 'Number of results' }],
+    options: [{ name: '--limit <integer>', description: MAX_ORGS_LIMIT_DESCRIPTION }],
   },
   'dev orgs switch': {
     usage: 'composio dev orgs switch [--org-id text] [--limit integer]',
     description: 'Switch default organization context.',
     options: [
       { name: '--org-id <text>', description: 'Organization ID to switch to' },
-      { name: '--limit <integer>', description: 'Number of orgs to show in picker' },
+      { name: '--limit <integer>', description: MAX_ORGS_LIMIT_DESCRIPTION },
     ],
   },
   'dev projects list': {
@@ -785,7 +799,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     description: 'List developer projects for the current organization.',
     options: [
       { name: '--org-id <text>', description: 'Organization ID override' },
-      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--limit <integer>', description: MAX_PROJECTS_LIMIT_DESCRIPTION },
     ],
   },
 
@@ -801,7 +815,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--tool <text>', description: 'Filter by tool slug' },
       { name: '--status <text>', description: 'Filter by status' },
       { name: '--user-id <text>', description: 'Filter by user id' },
-      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--limit <integer>', description: LOGS_LIMIT_DESCRIPTION },
       { name: '--from <integer>', description: 'Start timestamp (epoch ms)' },
       { name: '--to <integer>', description: 'End timestamp (epoch ms)' },
     ],
@@ -817,7 +831,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--trigger-id <text>', description: 'Filter by trigger id' },
       { name: '--user-id <text>', description: 'Filter by user id' },
       { name: '--connected-account-id <text>', description: 'Filter by connected account id' },
-      { name: '--limit <integer>', description: 'Number of results' },
+      { name: '--limit <integer>', description: LOGS_LIMIT_DESCRIPTION },
       { name: '--time <period>', description: 'Time window (5m, 30m, 6h, 1d, 1w, 1month, 1y)' },
       { name: '--search <text>', description: 'Search in log content' },
     ],

@@ -4,6 +4,7 @@ import { requireAuth } from 'src/effects/require-auth';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 
 const orgId = Options.text('org-id').pipe(
   Options.optional,
@@ -12,7 +13,7 @@ const orgId = Options.text('org-id').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(50),
-  Options.withDescription('Max orgs to fetch from API (default: 50)')
+  Options.withDescription(formatLimitDescription('Max orgs to fetch from API'))
 );
 
 export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId, limit }) =>
@@ -35,11 +36,12 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
       'Global defaults'
     );
 
+    const validatedLimit = yield* validateLimit(limit);
     const result = yield* runOrgSelection({
       apiKey,
       baseURL: ctx.data.baseURL,
       explicitOrgId: Option.getOrUndefined(orgId),
-      limit,
+      limit: validatedLimit,
     });
 
     if (!result) {

@@ -1,14 +1,10 @@
-import { Effect } from 'effect';
+import { formatLimitDescription } from 'src/ui/clamp-limit';
 
-export const TOOLKITS_LIMIT_MIN = 1;
-export const TOOLKITS_LIMIT_MAX = 50;
+export {
+  CLI_LIMIT_MAX as TOOLKITS_LIMIT_MAX,
+  CLI_LIMIT_MIN as TOOLKITS_LIMIT_MIN,
+  formatInvalidLimitMessage as formatInvalidToolkitsLimitMessage,
+  validateLimit as validateToolkitsLimit,
+} from 'src/ui/clamp-limit';
 
-export const TOOLKITS_LIMIT_DESCRIPTION = `Number of results per page (${TOOLKITS_LIMIT_MIN}-${TOOLKITS_LIMIT_MAX})`;
-
-export const formatInvalidToolkitsLimitMessage = (limit: number): string =>
-  `Invalid \`--limit\` value: ${limit}. Expected an integer between ${TOOLKITS_LIMIT_MIN} and ${TOOLKITS_LIMIT_MAX}.`;
-
-export const validateToolkitsLimit = (limit: number) =>
-  limit >= TOOLKITS_LIMIT_MIN && limit <= TOOLKITS_LIMIT_MAX
-    ? Effect.succeed(limit)
-    : Effect.fail(new Error(formatInvalidToolkitsLimitMessage(limit)));
+export const TOOLKITS_LIMIT_DESCRIPTION = formatLimitDescription('Number of results per page');
