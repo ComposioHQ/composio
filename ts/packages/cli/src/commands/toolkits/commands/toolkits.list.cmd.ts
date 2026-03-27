@@ -95,6 +95,22 @@ const buildCatalogResultFromToolkits = (
   next_cursor: null,
 });
 
+const confirmCatalogListFallbackOrEmpty = (
+  fallback: Effect.Effect<ToolkitSearchResult, unknown, never>,
+  emptyResult: ToolkitSearchResult,
+  timeoutMessage: string,
+  failureMessage: string
+) =>
+  Effect.raceFirst(
+    fallback,
+    Effect.sleep(EMPTY_LIST_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
+      Effect.zipRight(Effect.logDebug(timeoutMessage)),
+      Effect.as(emptyResult)
+    )
+  ).pipe(
+    Effect.catchAll(error => Effect.logDebug(failureMessage, error).pipe(Effect.as(emptyResult)))
+  );
+
 const shouldRequirePreciseListMatch = (query?: string): boolean => {
   const normalizedQuery = query?.trim();
   return (
@@ -141,28 +157,21 @@ const getCatalogToolkitsWithFallback = (
         });
 
         if (items.length === 0) {
-          return Effect.raceFirst(
+          return confirmCatalogListFallbackOrEmpty(
             fallback,
-            Effect.sleep(EMPTY_LIST_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
-              Effect.zipRight(
-                Effect.logDebug(
-                  'Timed out confirming empty toolkit list search against full catalog.'
-                )
-              ),
-              Effect.as(emptyResult)
-            )
-          ).pipe(
-            Effect.catchAll(error =>
-              Effect.logDebug(
-                'Failed to confirm empty toolkit list search against full catalog:',
-                error
-              ).pipe(Effect.as(emptyResult))
-            )
+            emptyResult,
+            'Timed out confirming empty toolkit list search against full catalog.',
+            'Failed to confirm empty toolkit list search against full catalog:'
           );
         }
 
         if (shouldRequirePreciseListMatch(query) && !hasPreciseMatch) {
-          return fallback;
+          return confirmCatalogListFallbackOrEmpty(
+            fallback,
+            emptyResult,
+            'Timed out confirming precise toolkit list match against full catalog.',
+            'Failed to confirm precise toolkit list match against full catalog:'
+          );
         }
 
         return Effect.succeed(buildCatalogResultFromToolkits(items, limit));

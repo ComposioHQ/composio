@@ -20,6 +20,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const GENERATED_DIR = join(__dirname, 'generated');
+const GENERATE_TS_TIMEOUT_MS = 90_000;
+const TSC_TIMEOUT_MS = 60_000;
 
 console.log('🧪 Testing TypeScript .mjs import resolution with moduleResolution: "nodenext"...\n');
 console.log(`Node.js version: ${process.version}`);
@@ -35,6 +37,10 @@ if (existsSync(GENERATED_DIR)) {
 console.log('Test 1: Running composio generate ts --toolkits hackernews --output-dir ./generated...');
 function runGenerateTs(attempt) {
   try {
+    if (existsSync(GENERATED_DIR)) {
+      rmSync(GENERATED_DIR, { recursive: true, force: true });
+    }
+
     // Use the composio CLI binary built and installed to /usr/local/bin in the Dockerfile.
     // Capture output so transient CI failures surface the actual CLI stderr in the test logs.
     execSync(`composio generate ts --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
@@ -42,12 +48,17 @@ function runGenerateTs(attempt) {
       stdio: 'pipe',
       encoding: 'utf-8',
       env: { ...process.env, FORCE_COLOR: '0' },
+      timeout: GENERATE_TS_TIMEOUT_MS,
     });
   } catch (error) {
     const stdout = error.stdout?.toString?.() || error.stdout || '';
     const stderr = error.stderr?.toString?.() || error.stderr || '';
+    const timedOut = error.signal === 'SIGTERM' || error.code === 'ETIMEDOUT';
 
     console.error(`❌ Test 1 failed on attempt ${attempt}: composio generate ts threw an error`);
+    if (timedOut) {
+      console.error(`command timed out after ${GENERATE_TS_TIMEOUT_MS}ms`);
+    }
     if (stdout) {
       console.error('stdout:');
       console.error(stdout);
@@ -98,6 +109,7 @@ try {
     cwd: __dirname,
     stdio: 'pipe',
     encoding: 'utf-8',
+    timeout: TSC_TIMEOUT_MS,
   });
 
   console.log('✅ Test 3 passed: TypeScript compilation succeeded');

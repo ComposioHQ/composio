@@ -20,7 +20,11 @@ import { Command, Options } from '@effect/cli';
 import { Effect, Option, pipe, Array } from 'effect';
 import { Match } from 'effect';
 import { FileSystem } from '@effect/platform';
-import { ComposioToolkitsRepository, retryTransientHttpRead } from 'src/services/composio-clients';
+import {
+  ComposioToolkitsRepository,
+  HttpServerError,
+  retryTransientHttpRead,
+} from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
@@ -101,6 +105,27 @@ type FetchResult = {
   /** Map of lowercase toolkit slug to version (only includes non-'latest' versions) */
   versionMap: ToolkitVersionOverrides;
 };
+
+const GENERATE_FETCH_TIMEOUT_MS = 60_000;
+
+const failWithTransientFetchTimeout = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  timeoutMs: number,
+  timeoutMessage: string
+): Effect.Effect<A, E | HttpServerError, R> =>
+  Effect.raceFirst(
+    effect,
+    Effect.sleep(timeoutMs).pipe(
+      Effect.flatMap(() =>
+        Effect.fail(
+          new HttpServerError({
+            status: 408,
+            cause: timeoutMessage,
+          })
+        )
+      )
+    )
+  );
 
 /**
  * Fetches data for specific toolkits when --toolkits filter is provided.
@@ -405,7 +430,11 @@ export function generateTypescriptTypeStubs({
         // Retry the full metadata fetch once more when the upstream API is transiently unavailable.
         // This keeps live generation resilient without changing invalid-input behavior.
         const { toolkits, triggerTypes, typeableTools, versionMap } = yield* retryTransientHttpRead(
-          fetchEffect,
+          failWithTransientFetchTimeout(
+            fetchEffect,
+            GENERATE_FETCH_TIMEOUT_MS,
+            `Timed out fetching toolkit metadata after ${GENERATE_FETCH_TIMEOUT_MS}ms`
+          ),
           [1_000, 2_500]
         );
 

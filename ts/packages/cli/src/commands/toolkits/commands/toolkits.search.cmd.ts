@@ -82,6 +82,22 @@ const buildCatalogResultFromToolkits = (
   next_cursor: null,
 });
 
+const confirmCatalogSearchFallbackOrEmpty = (
+  fallback: Effect.Effect<ToolkitSearchResult, unknown, never>,
+  emptyResult: ToolkitSearchResult,
+  timeoutMessage: string,
+  failureMessage: string
+) =>
+  Effect.raceFirst(
+    fallback,
+    Effect.sleep(EMPTY_TOOLKIT_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
+      Effect.zipRight(Effect.logDebug(timeoutMessage)),
+      Effect.as(emptyResult)
+    )
+  ).pipe(
+    Effect.catchAll(error => Effect.logDebug(failureMessage, error).pipe(Effect.as(emptyResult)))
+  );
+
 const searchToolkitsFromCatalog = (
   repo: ComposioToolkitsRepository,
   query: string,
@@ -123,26 +139,21 @@ const searchToolkitsWithFallback = (
         });
 
         if (items.length === 0) {
-          return Effect.raceFirst(
+          return confirmCatalogSearchFallbackOrEmpty(
             fallback,
-            Effect.sleep(EMPTY_TOOLKIT_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
-              Effect.zipRight(
-                Effect.logDebug('Timed out confirming empty toolkit search against full catalog.')
-              ),
-              Effect.as(emptyResult)
-            )
-          ).pipe(
-            Effect.catchAll(error =>
-              Effect.logDebug(
-                'Failed to confirm empty toolkit search against full catalog:',
-                error
-              ).pipe(Effect.as(emptyResult))
-            )
+            emptyResult,
+            'Timed out confirming empty toolkit search against full catalog.',
+            'Failed to confirm empty toolkit search against full catalog:'
           );
         }
 
         if (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch) {
-          return fallback;
+          return confirmCatalogSearchFallbackOrEmpty(
+            fallback,
+            emptyResult,
+            'Timed out confirming precise toolkit search match against full catalog.',
+            'Failed to confirm precise toolkit search match against full catalog:'
+          );
         }
 
         return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
