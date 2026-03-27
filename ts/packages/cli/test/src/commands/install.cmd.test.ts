@@ -52,8 +52,9 @@ describe('CLI: composio install', () => {
           const output = lines.join('\n');
           expect(output).toContain('Detected shell: zsh');
           expect(output).toContain('PATH: will add');
-          expect(output).toContain('Completions: skipped by default (pass --completions to enable)');
+          expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Updated');
+          expect(output).toContain('source ~/.zshrc');
         })
       );
     });
@@ -110,13 +111,13 @@ describe('CLI: composio install', () => {
       it.scoped('[Then] writes PATH block and installs completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
-          process.env.SHELL = '/bin/zsh';
+          process.env.SHELL = '/bin/bash';
           process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
 
           yield* cli(['install', '--completions']);
 
           const fs = yield* FileSystem.FileSystem;
-          const rcPath = path.join(os.homedir, '.zshrc');
+          const rcPath = path.join(os.homedir, '.bashrc');
           const contents = yield* fs.readFileString(rcPath);
 
           expect(contents).toContain('# Composio CLI');
@@ -151,7 +152,7 @@ describe('CLI: composio install', () => {
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
-          expect(output).toContain('Completions: skipped by default (pass --completions to enable)');
+          expect(output).toContain('Completions: skipped for zsh');
         })
       );
     });
@@ -162,7 +163,7 @@ describe('CLI: composio install', () => {
       it.scoped('[Then] does not duplicate entries', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
-          process.env.SHELL = '/bin/zsh';
+          process.env.SHELL = '/bin/bash';
           process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
 
           // Run install twice
@@ -170,7 +171,7 @@ describe('CLI: composio install', () => {
           yield* cli(['install', '--completions']);
 
           const fs = yield* FileSystem.FileSystem;
-          const rcPath = path.join(os.homedir, '.zshrc');
+          const rcPath = path.join(os.homedir, '.bashrc');
           const contents = yield* fs.readFileString(rcPath);
 
           // Count occurrences of each marker — should be exactly 1
@@ -206,13 +207,12 @@ describe('CLI: composio install', () => {
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('PATH: already configured');
-          expect(output).toContain('Completions: already configured');
+          expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Shell integration already configured');
 
           // File should not have grown
           const contents = yield* fs.readFileString(rcPath);
           const markerCount = contents.split('# Composio CLI').length - 1;
-          // "# Composio CLI" appears in both the PATH block marker and the completions marker
           expect(markerCount).toBe(2);
         })
       );

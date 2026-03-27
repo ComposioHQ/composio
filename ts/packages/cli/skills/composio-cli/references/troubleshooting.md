@@ -66,9 +66,10 @@ Fix:
 ```bash
 composio search "create a github issue"
 composio search "send an email" --toolkits gmail
+composio search "send an email" "create a github issue"
 ```
 
-Use `composio tools list <toolkit>` only when the user already knows the toolkit and needs to browse the available slugs manually.
+Use multiple queries in one `search` call when the user is exploring several related tasks at once. Use `composio tools list <toolkit>` only when the user already knows the toolkit and needs to browse the available slugs manually.
 
 ## Confusion About Required Inputs
 
@@ -85,6 +86,23 @@ composio execute GITHUB_CREATE_AN_ISSUE --skip-connection-check --dry-run -d '{ 
 ```
 
 Use `composio tools info <slug>` only when the user wants a compact summary of a known slug and the `execute --get-schema` output is still not enough.
+
+## Several Independent Tool Calls
+
+Symptoms:
+
+- the user wants to run multiple unrelated tools in one step
+- the user is about to write a script only to execute a few independent calls
+
+Fix:
+
+```bash
+composio execute --parallel \
+  GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hi" }' \
+  GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'
+```
+
+Escalate to `composio run` only when the user needs control flow, loops, `Promise.all`, `search()` inside a script, `proxy()`, or `subAgent()`.
 
 ## `tools info` And `tools list` Are Fallbacks
 

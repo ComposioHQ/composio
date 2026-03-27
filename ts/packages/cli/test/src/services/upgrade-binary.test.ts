@@ -58,6 +58,21 @@ const runUpgrade = (configEntries: ReadonlyArray<[string, string]>) =>
     Effect.runPromise
   );
 
+const runUpgradeSuccess = (configEntries: ReadonlyArray<[string, string]>) =>
+  Effect.gen(function* () {
+    const service = yield* UpgradeBinary;
+    return yield* service.upgrade();
+  }).pipe(
+    Effect.provide(UpgradeBinary.Default),
+    Effect.provide(FetchHttpClient.layer),
+    Effect.provide(BunFileSystem.layer),
+    Effect.provide(TerminalUINoop),
+    Effect.provide(NodeOsTest),
+    Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
+    Effect.scoped,
+    Effect.runPromise
+  );
+
 describe('UpgradeBinary', () => {
   it('wraps non-2xx releases fetch failures with fetch context (no tag branch)', async () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
@@ -146,6 +161,94 @@ describe('UpgradeBinary', () => {
           expect(receivedPath).toBe(
             `/repos/test-owner/test-repo/releases/tags/${encodeURIComponent(tag)}`
           );
+        }
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('skips newer releases that do not yet contain a binary for the current platform', async () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    try {
+      await withHttpServer(
+        (req, res) => {
+          if (req.url === '/repos/test-owner/test-repo/releases?per_page=100') {
+            res.writeHead(200, { 'content-type': 'application/json' });
+            res.end(
+              JSON.stringify([
+                {
+                  tag_name: '@composio/cli@9.9.9',
+                  prerelease: false,
+                  draft: false,
+                  assets: [],
+                },
+                {
+                  tag_name: '@composio/cli@0.0.1',
+                  prerelease: false,
+                  draft: false,
+                  assets: [],
+                },
+              ])
+            );
+            return;
+          }
+
+          res.writeHead(404, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ message: 'not found' }));
+        },
+        async apiBaseUrl => {
+          const result = await runUpgradeSuccess([
+            ['GITHUB_API_BASE_URL', apiBaseUrl],
+            ['GITHUB_OWNER', 'test-owner'],
+            ['GITHUB_REPO', 'test-repo'],
+          ]);
+
+          expect(result).toBeUndefined();
+        }
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('treats an explicitly requested release without binaries as no upgrade', async () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    try {
+      await withHttpServer(
+        (req, res) => {
+          if (
+            req.url ===
+            `/repos/test-owner/test-repo/releases/tags/${encodeURIComponent('@composio/cli@9.9.9')}`
+          ) {
+            res.writeHead(200, { 'content-type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                tag_name: '@composio/cli@9.9.9',
+                prerelease: false,
+                draft: false,
+                assets: [],
+              })
+            );
+            return;
+          }
+
+          res.writeHead(404, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ message: 'not found' }));
+        },
+        async apiBaseUrl => {
+          const result = await runUpgradeSuccess([
+            ['GITHUB_API_BASE_URL', apiBaseUrl],
+            ['GITHUB_OWNER', 'test-owner'],
+            ['GITHUB_REPO', 'test-repo'],
+            ['GITHUB_TAG', '@composio/cli@9.9.9'],
+          ]);
+
+          expect(result).toBeUndefined();
         }
       );
     } finally {
