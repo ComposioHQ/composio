@@ -59,7 +59,11 @@ type ConsumerShortTermCacheState = Record<
 >;
 
 const ensureAnalyticsDir = () => {
-  fs.mkdirSync(analyticsDir(), { recursive: true });
+  try {
+    fs.mkdirSync(analyticsDir(), { recursive: true });
+  } catch {
+    // Non-fatal — analytics directory creation may fail in sandboxed environments.
+  }
 };
 
 const encodeBase64Url = (value: string): string => {

@@ -189,7 +189,7 @@ type StoredExecuteOutputSummary = {
   readonly logId: string;
   readonly storedInFile: true;
   readonly tokenCount: number;
-  readonly outputFilePath: string;
+  readonly outputFilePath: string | undefined;
 };
 
 const serializeExecuteOutput = (result: unknown): string =>

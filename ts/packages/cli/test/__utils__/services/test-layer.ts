@@ -873,7 +873,9 @@ export const TestLayer = (input?: TestLiveInput) =>
           primary_tool_slugs: matchedTools.map(tool => tool.slug),
           related_tool_slugs: [],
           toolkits: Array.from(
-            new Set(matchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean))
+            new Set(
+              matchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
+            )
           ),
           matchedTools,
         };
@@ -1109,6 +1111,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       BunContext.layer,
       MockTerminal.layer,
       BunPath.layer,
+      FetchHttpClient.layer,
       ConsumerProjectResolveFetchMock,
       StdinTest,
       TerminalUILayer,

@@ -100,8 +100,10 @@ const writeCache = (state: CacheState) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const cacheDir = yield* setupCacheDir;
-    yield* fs.makeDirectory(cacheDir, { recursive: true });
-    yield* fs.writeFileString(cachePath(cacheDir), JSON.stringify(state, null, 2));
+    yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catchAll(() => Effect.void));
+    yield* fs
+      .writeFileString(cachePath(cacheDir), JSON.stringify(state, null, 2))
+      .pipe(Effect.catchAll(() => Effect.void));
   });
 
 export const getFreshConsumerConnectedToolkitsFromCache = (params: {

@@ -411,8 +411,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   // ── Account commands ──────────────────────────────────────────────────
 
   login: {
-    usage: 'composio login [--no-browser] [--no-wait] [--key text] [-y, --yes]',
-    description: 'Log in to the Composio CLI session.',
+    usage:
+      'composio login [--no-browser] [--no-wait] [--key text] [-y, --yes] [--no-skill-install]',
+    description:
+      'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
     options: [
       {
         name: '--key <text>',
@@ -423,6 +425,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--no-browser', description: 'Login without browser interaction' },
       { name: '--no-wait', description: 'Print login URL and session info, then exit' },
       { name: '-y, --yes', description: 'Skip org picker; use session default org' },
+      {
+        name: '--no-skill-install',
+        description: 'Skip installing the composio-cli skill for Claude Code',
+      },
     ],
   },
   logout: {
@@ -440,6 +446,39 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   upgrade: {
     usage: 'composio upgrade',
     description: 'Upgrade your Composio CLI to the latest available version.',
+  },
+  files: {
+    usage: 'composio files',
+    description: 'Where the Composio CLI stores data on disk.',
+    examples: [
+      '~/.composio/',
+      '  CLI configuration and cache directory.',
+      '  user_data.json        Your auth state (API key, org, base URL)',
+      '  toolkits.json         Cached toolkit list from the API',
+      '  tools.json            Cached tool definitions',
+      '  trigger-types.json    Cached trigger type definitions',
+      '  consumer-short-term-cache.json   Per-org connected toolkits cache (15-min TTL)',
+      '  analytics.json        Anonymous install ID for telemetry',
+      '',
+      '  All caches are safe to delete — they will be re-fetched on next use.',
+      '',
+      '$TMPDIR/composio/   (or COMPOSIO_SESSION_DIR / COMPOSIO_CACHE_DIR)',
+      '  Session artifacts directory. Each CLI session gets a unique subdirectory',
+      '  scoped to your working directory. Stores session history and files',
+      '  created during `run` and `execute` (e.g. large tool outputs).',
+      '  Use `composio artifacts cwd` to print the current session path.',
+      '',
+      '.composio/   (per-project, optional)',
+      '  Per-directory project config. Scoped to the nearest parent that has one.',
+      '  .env             Allows COMPOSIO_ORG_ID and COMPOSIO_PROJECT_ID overrides',
+      '  project.json     Project context (org, project binding)',
+      '',
+      'Environment variables that control paths:',
+      '  COMPOSIO_SESSION_DIR     Override session artifacts root',
+      '  COMPOSIO_CACHE_DIR       Override cache directory (also used for artifacts fallback)',
+      '  COMPOSIO_CACHE_DIR is useful in sandboxed environments where ~/.composio or',
+      '  $TMPDIR may not be writable.',
+    ],
   },
 
   // ── Tools commands ────────────────────────────────────────────────────
@@ -865,6 +904,29 @@ export function printSubcommandHelp(cmd: string): Effect.Effect<void> {
   return Console.log(renderSubcommandHelp(help));
 }
 
+/**
+ * Match the command name from argv without requiring --help at the end.
+ * Used to print contextual help alongside error messages.
+ */
+export function matchCommandFromArgv(argv: ReadonlyArray<string>): string | undefined {
+  const args = argv.slice(2).filter(a => a !== '--help' && a !== '-h' && !a.startsWith('--'));
+  // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
+  for (let len = Math.min(args.length, 3); len > 0; len--) {
+    const key = args.slice(0, len).join(' ');
+    if (key in SUBCOMMAND_HELP) return key;
+  }
+  return undefined;
+}
+
+/**
+ * Get rendered help text for a command, or undefined if not found.
+ */
+export function getCommandHelpText(cmd: string): string | undefined {
+  const help = SUBCOMMAND_HELP[cmd];
+  if (!help) return undefined;
+  return renderSubcommandHelp(help);
+}
+
 // ── Main help output ───────────────────────────────────────────────────
 
 /**
@@ -896,14 +958,19 @@ export function printRootHelp(): Effect.Effect<void> {
     ...renderCompactCommands(OTHER_COMMANDS),
     '',
     bold('EXAMPLES'),
-    `  ${dim('# Find a tool')}`,
-    `  ${name} search "create github issue"`,
+    `  ${dim('# Find tools — supports multiple queries at once')}`,
+    `  ${name} search "send an email" "create github issue"`,
+    `  ${name} search "list calendar events" --toolkits google_calendar --limit 5`,
     '',
-    `  ${dim('# Connect your GitHub account')}`,
+    `  ${dim('# Connect your account for a toolkit')}`,
     `  ${name} link github`,
     '',
     `  ${dim('# Execute a tool')}`,
-    `  ${name} execute GITHUB_CREATE_ISSUE -d '{ repo: "owner/repo", title: "Bug" }'`,
+    `  ${name} execute GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
+    '',
+    `  ${dim('# Execute multiple tools in parallel')}`,
+    `  ${name} execute -p GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hi" }' \\`,
+    `                     SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL -d '{ channel: "general", text: "Hello" }'`,
     '',
     `  ${dim('# Call an API directly through proxy')}`,
     `  ${name} proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail`,
@@ -911,11 +978,35 @@ export function printRootHelp(): Effect.Effect<void> {
     `  ${dim('# Run a script with injected helpers')}`,
     `  ${name} run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
     '',
+    `  ${dim('# Run a multi-step script with Promise.all')}`,
+    `  ${name} run '`,
+    `    const [emails, issues] = await Promise.all([`,
+    `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
+    `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "acme", repo: "app", state: "open" }),`,
+    `    ]);`,
+    `    const brief = await subAgent(\`Summarize:\\n\${emails.prompt()}\\n\${issues.prompt()}\`);`,
+    `    console.log(brief);`,
+    `  '`,
+    '',
     bold('DEVELOPER COMMANDS'),
     ...renderCompactCommands(DEVELOPER_COMMANDS),
     '',
     bold('ACCOUNT'),
     ...renderCompactCommands(ACCOUNT_COMMANDS),
+    '',
+    bold('FILES') + dim('  (composio files --help)'),
+    `  ${bold('~/.composio/')}`,
+    `    CLI configuration and cache directory. Contains your auth state`,
+    `    (user_data.json), cached tool definitions (tools.json, toolkits.json),`,
+    `    trigger types, and per-org consumer caches. These caches speed up`,
+    `    repeated commands — safe to delete, they will be re-fetched on next use.`,
+    '',
+    `  ${bold('/tmp/composio/')}`,
+    `    Session artifacts directory. Each CLI session gets a unique subdirectory`,
+    `    scoped to your working directory. Stores session history and files`,
+    `    created during ${bold('run')} and ${bold('execute')} commands (e.g. downloaded attachments,`,
+    `    generated outputs). Use \`${name} artifacts cwd\` to print the path for`,
+    `    the current directory's session.`,
     '',
     bold('FLAGS'),
     '  -h, --help     Show help for command',
