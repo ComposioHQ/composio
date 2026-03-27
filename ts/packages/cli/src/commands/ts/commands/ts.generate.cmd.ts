@@ -166,7 +166,7 @@ function fetchFilteredData(
           Match.exhaustive
         ),
       ],
-      { concurrency: 'unbounded' }
+      { concurrency: 1 }
     );
 
     yield* spinner.message(
@@ -192,7 +192,7 @@ function fetchAllDataFastPath(
   spinner: SpinnerHandle
 ): Effect.Effect<FetchResult, Error, never> {
   return Effect.gen(function* () {
-    // Fetch all data in parallel
+    // Serialize metadata reads to reduce transient API failures in CI and fresh environments.
     // Note: getToolsAsEnums is only called when typeTools === false
     const [allToolkits, allTriggerTypes, allTypeableTools] = yield* Effect.all(
       [
@@ -218,7 +218,7 @@ function fetchAllDataFastPath(
           Match.exhaustive
         ),
       ],
-      { concurrency: 'unbounded' }
+      { concurrency: 1 }
     );
 
     yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);
@@ -255,7 +255,7 @@ function fetchAllDataWithOverrides(
     // Build the version map (only includes non-'latest' versions)
     const versionMap = buildVersionMapFromSpecs(versionSpecs);
 
-    // 3. Fetch trigger types and tools in parallel
+    // 3. Serialize trigger/tool reads to avoid bursty metadata requests.
     const [allTriggerTypes, allTypeableTools] = yield* Effect.all(
       [
         Effect.logDebug('Fetching all trigger types...').pipe(
@@ -278,7 +278,7 @@ function fetchAllDataWithOverrides(
           Match.exhaustive
         ),
       ],
-      { concurrency: 'unbounded' }
+      { concurrency: 1 }
     );
 
     yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);

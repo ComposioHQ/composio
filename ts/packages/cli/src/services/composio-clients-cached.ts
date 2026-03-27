@@ -65,7 +65,7 @@ function createCachedEffect<T, E, R>(
         Effect.asSome,
         Effect.catchAll(error => {
           // Log cache read/parse errors but don't fail - fall through to computation
-          return Effect.logWarning(`Failed to read/parse cache ${cacheFilePath}: ${error}`).pipe(
+          return Effect.logDebug(`Failed to read/parse cache ${cacheFilePath}: ${error}`).pipe(
             Effect.as(Option.none<T>())
           );
         })
@@ -89,7 +89,7 @@ function createCachedEffect<T, E, R>(
       yield* encoder(result).pipe(
         Effect.flatMap(content => fs.writeFileString(cacheFilePath, content)),
         Effect.catchAll(error =>
-          Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
+          Effect.logDebug(`Failed to write to cache ${cacheFilePath}: ${error}`)
         )
       );
     }
@@ -100,7 +100,7 @@ function createCachedEffect<T, E, R>(
   // Handle any cache errors by falling back to the original computation
   const handledCacheEffect = cacheEffect.pipe(
     Effect.catchAll(error =>
-      Effect.logWarning(`Cache operation failed: ${error}`).pipe(Effect.flatMap(() => computation))
+      Effect.logDebug(`Cache operation failed: ${error}`).pipe(Effect.flatMap(() => computation))
     )
   );
 

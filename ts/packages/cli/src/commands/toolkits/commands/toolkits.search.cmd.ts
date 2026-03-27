@@ -43,26 +43,15 @@ const buildCatalogResultFromToolkits = (
   next_cursor: null,
 });
 
-const searchToolkitsWithFallback = (
+const searchToolkitsFromCatalog = (
   repo: ComposioToolkitsRepository,
   query: string,
   limit: number
-) => {
-  const fallback = repo.getToolkits().pipe(
+) =>
+  repo.getToolkits().pipe(
     Effect.map(toolkits => filterToolkitsForSearchQuery(toolkits, query)),
     Effect.map(toolkits => buildCatalogResultFromToolkits(toolkits, limit))
   );
-
-  return repo.searchToolkits({ search: query, limit }).pipe(
-    Effect.flatMap(result => (result.items.length === 0 ? fallback : Effect.succeed(result))),
-    Effect.catchAll(error =>
-      Effect.logDebug(
-        'Failed to search toolkits catalog, falling back to cached list:',
-        error
-      ).pipe(Effect.flatMap(() => fallback))
-    )
-  );
-};
 
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
 // supports text search. Currently SessionToolsParams has no search capability.
@@ -87,7 +76,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
 
     const result = yield* ui.withSpinner(
       `Searching toolkits for "${query}"...`,
-      searchToolkitsWithFallback(repo, query, validatedLimit)
+      searchToolkitsFromCatalog(repo, query, validatedLimit)
     );
 
     if (result.items.length === 0) {

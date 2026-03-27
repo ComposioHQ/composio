@@ -89,7 +89,7 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
 export type HttpError = HttpServerError | HttpDecodingError;
 
 const TRANSIENT_HTTP_RETRYABLE_STATUSES = new Set([408, 429]);
-const TRANSIENT_HTTP_RETRY_DELAYS = [200, 600] as const;
+const TRANSIENT_HTTP_RETRY_DELAYS = [500, 1500, 3000] as const;
 
 export const isTransientHttpServerError = (error: unknown): error is HttpServerError =>
   error instanceof HttpServerError &&

@@ -31,7 +31,8 @@ describe('retryTransientHttpRead', () => {
         return attempts < 3
           ? Effect.fail(new HttpServerError({ status: 503, cause: 'unavailable' }))
           : Effect.succeed('ok');
-      })
+      }),
+      [1, 1]
     );
 
     await expect(Effect.runPromise(program)).resolves.toBe('ok');
@@ -45,7 +46,8 @@ describe('retryTransientHttpRead', () => {
       Effect.suspend(() => {
         attempts += 1;
         return Effect.fail(new HttpServerError({ status: 400, cause: 'bad request' }));
-      })
+      }),
+      [1, 1]
     );
 
     await expect(Effect.runPromise(Effect.flip(program))).resolves.toMatchObject({ status: 400 });
