@@ -148,9 +148,14 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
     def _sanitize_tool_schema(self, tool: Tool) -> Tool:
         """Normalize tool schemas before exposing them to providers or callers."""
-        tool.input_parameters = deduplicate_required_fields(tool.input_parameters)
-        tool.output_parameters = deduplicate_required_fields(tool.output_parameters)
-        return tool
+        sanitized_tool = tool.model_copy(deep=True)
+        sanitized_tool.input_parameters = deduplicate_required_fields(
+            sanitized_tool.input_parameters
+        )
+        sanitized_tool.output_parameters = deduplicate_required_fields(
+            sanitized_tool.output_parameters
+        )
+        return sanitized_tool
 
     def get_raw_composio_tool_by_slug(self, slug: str) -> Tool:
         """
