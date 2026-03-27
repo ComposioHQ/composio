@@ -30,6 +30,8 @@ const allDetails = Options.boolean('all').pipe(
 
 const TOOLKIT_INFO_METADATA_TIMEOUT_MS = 10_000;
 const TOOLKIT_INFO_SESSION_TIMEOUT_MS = 10_000;
+const TOOLKIT_INFO_EXACT_LOOKUP_TIMEOUT_MS = 30_000;
+const TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS = 10_000;
 const TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS = 5_000;
 const TOOLKIT_INFO_SEARCH_FALLBACK_LIMIT = 50;
 
@@ -174,7 +176,7 @@ export const toolkitsCmd$Info = Command.make(
                       repo
                         .getToolkitsBySlugs([slugValue])
                         .pipe(Effect.map(toolkits => findToolkitBySlug(toolkits, slugValue))),
-                      TOOLKIT_INFO_METADATA_TIMEOUT_MS,
+                      TOOLKIT_INFO_EXACT_LOOKUP_TIMEOUT_MS,
                       `Timed out fetching toolkit "${slugValue}" by slug.`,
                       'Failed to fetch toolkit by slug:'
                     ).pipe(Effect.map(Option.flatten)),
@@ -185,7 +187,7 @@ export const toolkitsCmd$Info = Command.make(
                           limit: TOOLKIT_INFO_SEARCH_FALLBACK_LIMIT,
                         })
                         .pipe(Effect.map(result => findToolkitBySlug(result.items, slugValue))),
-                      TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS,
+                      TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS,
                       `Timed out fetching toolkit search fallback for "${slugValue}".`,
                       'Failed to fetch toolkit search fallback:'
                     ).pipe(Effect.map(Option.flatten)),
