@@ -76,13 +76,13 @@ const parseLastJson = (lines: ReadonlyArray<string>) => {
   throw new Error('Expected JSON output but none found');
 };
 
-describe('CLI: composio manage toolkits version', () => {
+describe('CLI: composio dev toolkits version', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] shows latest and last 20 versions',
     it => {
       it.scoped('prints latest version and truncates to last 20', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'toolkits', 'version', 'gmail']);
+          yield* cli(['dev', 'toolkits', 'version', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           const json = parseLastJson(lines);
@@ -105,12 +105,12 @@ describe('CLI: composio manage toolkits version', () => {
     it => {
       it.scoped('prints fetch failure and browse hint', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'toolkits', 'version', 'unknown']).pipe(Effect.either);
+          yield* cli(['dev', 'toolkits', 'version', 'unknown']).pipe(Effect.either);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('Toolkit "unknown" not found');
-          expect(output).toContain('composio manage toolkits list');
+          expect(output).toContain('composio dev toolkits list');
         })
       );
     }
@@ -119,7 +119,7 @@ describe('CLI: composio manage toolkits version', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'toolkits', 'version', 'gmail']);
+        yield* cli(['dev', 'toolkits', 'version', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

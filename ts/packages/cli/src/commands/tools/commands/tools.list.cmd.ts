@@ -59,7 +59,7 @@ export const toolsCmd$List = Command.make(
 
       if (result.items.length === 0) {
         yield* ui.log.warn(
-          `No tools found in toolkit "${toolkit}". Verify the toolkit slug with:\n> composio manage toolkits list`
+          `No tools found in toolkit "${toolkit}". Verify the toolkit slug with:\n> composio dev toolkits list`
         );
         return;
       }

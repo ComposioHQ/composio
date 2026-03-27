@@ -37,7 +37,7 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               );
               yield* ui.log.step(
                 [
-                  commandHintStep('To switch orgs', 'manage.orgs.switch'),
+                  commandHintStep('To switch orgs', 'dev.orgs.switch'),
                   commandHintStep('To set up developer project context', 'dev.init'),
                 ].join('\n\n')
               );

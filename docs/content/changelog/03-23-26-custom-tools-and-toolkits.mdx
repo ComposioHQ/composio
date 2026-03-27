@@ -11,12 +11,16 @@ You can now create custom tools and toolkits that run locally alongside remote C
 | Package | Version |
 |---------|---------|
 | @composio/core | v0.6.6 |
+| composio | v0.11.4 |
 
 ---
 
 ## What's New
 
-Custom tools support three patterns — standalone tools for internal logic, extension tools that wrap Composio toolkit APIs with business logic, and custom toolkits that group related tools.
+Custom tools support three patterns — standalone tools for internal logic, extension tools that wrap Composio toolkit APIs with business logic, and custom toolkits that group related tools. TypeScript uses builder functions with Zod schemas; Python uses decorators with Pydantic annotations.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
 
 ```typescript
 import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
@@ -86,18 +90,101 @@ const session = await composio.create("user_1", {
 const tools = await session.tools(); // Includes both remote and custom tools
 ```
 
+</Tab>
+<Tab value="Python">
+
+```python
+import base64
+
+from pydantic import BaseModel, Field
+
+from composio import Composio
+
+
+composio = Composio(api_key="your_api_key")
+
+
+class UserLookupInput(BaseModel):
+    user_id: str = Field(description="User ID")
+
+
+@composio.experimental.tool()
+def get_user_profile(input: UserLookupInput, ctx):
+    """Retrieve the current user's profile from the internal directory."""
+    profiles = {
+        "user_1": {"name": "Alice Johnson", "tier": "enterprise"},
+    }
+    return profiles.get(input.user_id, {})
+
+
+class PromoEmailInput(BaseModel):
+    to: str = Field(description="Recipient email")
+
+
+@composio.experimental.tool(extends_toolkit="gmail")
+def send_promo_email(input: PromoEmailInput, ctx):
+    """Send the standard promotional email to a recipient."""
+    raw = base64.urlsafe_b64encode(
+        (
+            f"To: {input.to}\r\n"
+            "Subject: Try MyApp Pro\r\n"
+            "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
+            "Free for 14 days."
+        ).encode()
+    ).decode().rstrip("=")
+    res = ctx.proxy_execute(
+        toolkit="gmail",
+        endpoint="https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        method="POST",
+        body={"raw": raw},
+    )
+    return {"status": res.status, "to": input.to}
+
+
+user_management = composio.experimental.Toolkit(
+    slug="USER_MANAGEMENT",
+    name="User management",
+    description="Manage user roles and permissions",
+)
+
+
+class AssignRoleInput(BaseModel):
+    user_id: str = Field(description="Target user ID")
+    role: str = Field(description="Role to assign")
+
+
+@user_management.tool()
+def assign_role(input: AssignRoleInput, ctx):
+    """Assign a role to a user in the internal system."""
+    return {"user_id": input.user_id, "role": input.role, "assigned": True}
+
+
+session = composio.create(
+    user_id="user_1",
+    toolkits=["gmail"],
+    experimental={
+        "custom_tools": [get_user_profile, send_promo_email],
+        "custom_toolkits": [user_management],
+    },
+)
+
+tools = session.tools()  # Includes both remote and custom tools
+```
+
+</Tab>
+</Tabs>
+
 ### SessionContext
 
 Every custom tool's `execute` receives `(input, ctx)`:
 
-- **`ctx.userId`** — the user ID for the current session
-- **`ctx.proxyExecute(params)`** — authenticated HTTP request via Composio's auth layer
-- **`ctx.execute(toolSlug, args)`** — execute any Composio native tool from within your custom tool
+- **TypeScript** — `ctx.userId`, `ctx.proxyExecute(params)`, `ctx.execute(toolSlug, args)`
+- **Python** — `ctx.user_id`, `ctx.proxy_execute(...)`, `ctx.execute(tool_slug, arguments)`
 
 ---
 
 ## Limitations
 
 - **Native tools only** — custom tools work with `session.tools()`. MCP support is coming soon.
-- **TypeScript only** — Python support is not yet available.
-- **Experimental API** — the `experimental_` prefix and session option may change.
+- **Experimental API** — the custom tool APIs and session `experimental` option may change.
+- **SDK-specific DX is intentional** — TypeScript uses builder helpers and Zod. Python uses decorators, docstrings, and Pydantic annotations.

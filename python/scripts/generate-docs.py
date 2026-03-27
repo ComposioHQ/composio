@@ -52,6 +52,13 @@ EXPECTED_CLASSES = {
     "MCP": "mcp",
 }
 
+# Additional public-facing classes worth documenting even though they are not
+# exposed as direct properties on ``Composio``.
+ADDITIONAL_CLASSES = {
+    "ToolRouterSession": "core.models.tool_router_session",
+    "SessionContextImpl": "core.models.session_context",
+}
+
 # Modules to search for classes
 CLASS_MODULES = [
     "core.models.tools",
@@ -265,23 +272,51 @@ def generate_class_mdx(
 
     source_link = info.get("source_link", "")
 
-    # Properties - as table for Composio class
-    if prop_to_class:
-        prop_rows = []
-        for prop in info["properties"]:
-            prop_name = prop["name"]
-            if prop_name in prop_to_class:
-                class_name = prop_to_class[prop_name]
-                link = f"/reference/sdk-reference/python/{to_kebab_case(class_name)}"
-                prop_rows.append(f"| [`{prop_name}`]({link}) | `{class_name}` |")
+    # Properties
+    property_rows = []
+    if info["properties"]:
+        if prop_to_class:
+            for prop in info["properties"]:
+                prop_name = prop["name"]
+                if prop_name in prop_to_class:
+                    class_name = prop_to_class[prop_name]
+                    link = (
+                        f"/reference/sdk-reference/python/{to_kebab_case(class_name)}"
+                    )
+                    property_rows.append(
+                        {
+                            "name": f"[`{prop_name}`]({link})",
+                            "type": f"`{class_name}`",
+                            "description": prop["description"],
+                        }
+                    )
+        elif info["name"] in ADDITIONAL_CLASSES:
+            for prop in info["properties"]:
+                property_rows.append(
+                    {
+                        "name": f"`{prop['name']}`",
+                        "type": f"`{prop['type']}`",
+                        "description": prop["description"],
+                    }
+                )
 
-        if prop_rows:
-            lines.append("## Properties")
-            lines.append("")
+    if property_rows:
+        include_descriptions = any(row["description"] for row in property_rows)
+        lines.append("## Properties")
+        lines.append("")
+        if include_descriptions:
+            lines.append("| Name | Type | Description |")
+            lines.append("|------|------|-------------|")
+            for row in property_rows:
+                lines.append(
+                    f"| {row['name']} | {row['type']} | {row['description']} |"
+                )
+        else:
             lines.append("| Name | Type |")
             lines.append("|------|------|")
-            lines.extend(prop_rows)
-            lines.append("")
+            for row in property_rows:
+                lines.append(f"| {row['name']} | {row['type']} |")
+        lines.append("")
 
     # Methods
     if info["methods"]:
@@ -488,6 +523,27 @@ def main():
                         }
                         prop_to_class[prop_name] = class_name
                         print(f"  Found {class_name} (via composio.{prop_name})")
+        except (KeyError, AttributeError):
+            continue
+
+    # Add standalone public-facing classes that are not surfaced via a direct
+    # ``composio.<property>`` access pattern.
+    for class_name, module_name in ADDITIONAL_CLASSES.items():
+        try:
+            parts = module_name.split(".")
+            current = package
+            for part in parts:
+                current = current.members[part]
+
+            if class_name in current.members:
+                cls = current.members[class_name]
+                if isinstance(cls, griffe.Class):
+                    classes_to_doc[class_name] = {
+                        "cls": cls,
+                        "access": None,
+                        "prop": None,
+                    }
+                    print(f"  Found {class_name}")
         except (KeyError, AttributeError):
             continue
 

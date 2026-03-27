@@ -53,7 +53,7 @@ const data = Options.text('data').pipe(
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
   Options.withDefault(false),
   Options.withDescription(
-    'Skip the short-lived linked-account fail-fast check if you just connected an account'
+    'Skip the short-lived connected-account fail-fast check if you just connected an account'
   )
 );
 
@@ -253,7 +253,7 @@ export const proxyCmd = Command.make('proxy', {
 }).pipe(
   Command.withDescription(
     [
-      'curl-like access to any toolkit API through Composio using your linked account.',
+      'curl-like access to any toolkit API through Composio using your connected account.',
       'Composio handles authentication — just provide the full URL and toolkit.',
       '',
       'Examples:',

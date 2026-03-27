@@ -1,7 +1,6 @@
 import { Command } from '@effect/cli';
 import { triggersCmd$Info } from './commands/triggers.info.cmd';
 import { triggersCmd$List } from './commands/triggers.list.cmd';
-import { triggersCmd$Listen } from './commands/triggers.listen.cmd';
 import { triggersCmd$Status } from './commands/triggers.status.cmd';
 import { triggersCmd$Create } from './commands/triggers.create.cmd';
 import { triggersCmd$Enable } from './commands/triggers.enable.cmd';
@@ -13,7 +12,7 @@ import { triggersCmd$Delete } from './commands/triggers.delete.cmd';
  *
  * @example
  * ```bash
- * composio manage triggers <command>
+ * composio dev triggers <command>
  * ```
  */
 export const triggersCmd = Command.make('triggers').pipe(
@@ -21,7 +20,6 @@ export const triggersCmd = Command.make('triggers').pipe(
   Command.withSubcommands([
     triggersCmd$List,
     triggersCmd$Info,
-    triggersCmd$Listen,
     triggersCmd$Status,
     triggersCmd$Create,
     triggersCmd$Enable,

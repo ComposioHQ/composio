@@ -114,7 +114,7 @@ const storeCredentials = (params: {
     yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
     if (!skipHints) {
       yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
-      yield* ui.log.info(commandHintStep('Switch your default org later', 'manage.orgs.switch'));
+      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
     }
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
@@ -246,7 +246,7 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         })
       );
       yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
-      yield* ui.log.info(commandHintStep('Switch your default org later', 'manage.orgs.switch'));
+      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
       yield* ui.outro("You're all set!");
     }
   });
@@ -406,7 +406,7 @@ export const browserLogin = (params: {
         })
       );
       yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
-      yield* ui.log.info(commandHintStep('Switch your default org later', 'manage.orgs.switch'));
+      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
       yield* ui.outro("You're all set!");
     }
   });

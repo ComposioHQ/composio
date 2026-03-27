@@ -40,13 +40,13 @@ const customCredentials = Options.text('custom-credentials').pipe(
  * @example
  * ```bash
  * # Composio-managed defaults
- * composio manage auth-configs create "my-gmail-config" --toolkit "gmail"
+ * composio dev auth-configs create "my-gmail-config" --toolkit "gmail"
  *
  * # Custom auth with specific scheme
- * composio manage auth-configs create "custom-gmail" --toolkit "gmail" --auth-scheme "OAUTH2" --scopes "send_email"
+ * composio dev auth-configs create "custom-gmail" --toolkit "gmail" --auth-scheme "OAUTH2" --scopes "send_email"
  *
  * # White-labeling with custom credentials
- * composio manage auth-configs create "custom-gmail" --toolkit "gmail" --auth-scheme "OAUTH2" --custom-credentials '{"client_id":"...","client_secret":"..."}'
+ * composio dev auth-configs create "custom-gmail" --toolkit "gmail" --auth-scheme "OAUTH2" --custom-credentials '{"client_id":"...","client_secret":"..."}'
  * ```
  */
 export const authConfigsCmd$Create = Command.make(
@@ -67,7 +67,7 @@ export const authConfigsCmd$Create = Command.make(
         } catch {
           yield* ui.log.error('Invalid JSON in --custom-credentials. Please provide valid JSON.');
           yield* ui.log.step(
-            'Example:\n> composio manage auth-configs create "name" --toolkit "gmail" --custom-credentials \'{"client_id":"...","client_secret":"..."}\''
+            'Example:\n> composio dev auth-configs create "name" --toolkit "gmail" --custom-credentials \'{"client_id":"...","client_secret":"..."}\''
           );
           return;
         }
@@ -117,7 +117,7 @@ export const authConfigsCmd$Create = Command.make(
             'services/HttpServerError',
             handleHttpServerError(ui, {
               fallbackMessage: 'Failed to create auth config.',
-              hint: `Check available auth schemes for "${toolkit}":\n> composio manage toolkits info "${toolkit}"`,
+              hint: `Check available auth schemes for "${toolkit}":\n> composio dev toolkits info "${toolkit}"`,
               fallbackValue: Option.none(),
             })
           )
@@ -135,7 +135,7 @@ export const authConfigsCmd$Create = Command.make(
       const redactedId = redact({ value: result.auth_config.id, prefix: 'ac_' });
 
       // Next step hint
-      yield* ui.log.step(`To view details:\n> composio manage auth-configs info "${redactedId}"`);
+      yield* ui.log.step(`To view details:\n> composio dev auth-configs info "${redactedId}"`);
 
       yield* ui.output(JSON.stringify(result, null, 2));
     })

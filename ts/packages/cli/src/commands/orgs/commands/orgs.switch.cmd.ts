@@ -21,7 +21,7 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
 
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
-    yield* ui.intro('composio manage orgs switch');
+    yield* ui.intro('composio dev orgs switch');
 
     const apiKey = Option.getOrUndefined(ctx.data.apiKey);
     if (!apiKey) {

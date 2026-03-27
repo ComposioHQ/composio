@@ -46,13 +46,13 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage triggers list', () => {
+describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no flags [Then] lists all trigger types',
     it => {
       it.scoped('lists all trigger types', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'list']);
+          yield* cli(['dev', 'triggers', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -69,7 +69,7 @@ describe('CLI: composio manage triggers list', () => {
     it => {
       it.scoped('filters by toolkit', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'list', '--toolkits', 'gmail']);
+          yield* cli(['dev', 'triggers', 'list', '--toolkits', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -87,7 +87,7 @@ describe('CLI: composio manage triggers list', () => {
     it => {
       it.scoped('uses singular form for one result', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'list', '--limit', '1']);
+          yield* cli(['dev', 'triggers', 'list', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -103,11 +103,11 @@ describe('CLI: composio manage triggers list', () => {
     it => {
       it.scoped('shows hint to view trigger details', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'list']);
+          yield* cli(['dev', 'triggers', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('composio manage triggers info');
+          expect(output).toContain('composio dev triggers info');
         })
       );
     }
@@ -116,7 +116,7 @@ describe('CLI: composio manage triggers list', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['manage', 'triggers', 'list']);
+        yield* cli(['dev', 'triggers', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -130,7 +130,7 @@ describe('CLI: composio manage triggers list', () => {
     it => {
       it.scoped('shows no trigger types found', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'list']);
+          yield* cli(['dev', 'triggers', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -145,12 +145,12 @@ describe('CLI: composio manage triggers list', () => {
     it => {
       it.scoped('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'list', '--toolkits', 'nonexistent']);
+          yield* cli(['dev', 'triggers', 'list', '--toolkits', 'nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('No trigger types found');
-          expect(output).toContain('composio manage toolkits list');
+          expect(output).toContain('composio dev toolkits list');
         })
       );
     }

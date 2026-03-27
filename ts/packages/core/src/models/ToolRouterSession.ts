@@ -115,7 +115,7 @@ export class ToolRouterSession<
       if (!this.config?.provider) {
         throw new Error(
           'A provider is required when using custom tools with session.tools(). ' +
-          'Pass a provider in the Composio constructor.'
+            'Pass a provider in the Composio constructor.'
         );
       }
       return this.config.provider.wrapTools(tools, routingExecuteFn) as ReturnType<
@@ -313,7 +313,9 @@ export class ToolRouterSession<
    * @param params - Proxy request parameters (toolkit, endpoint, method, body, headers/query params)
    * @returns The proxied API response with status, data, headers
    */
-  async proxyExecute(params: SessionProxyExecuteParams): Promise<ToolRouterSessionProxyExecuteResponse> {
+  async proxyExecute(
+    params: SessionProxyExecuteParams
+  ): Promise<ToolRouterSessionProxyExecuteResponse> {
     const validated = SessionProxyExecuteParamsSchema.safeParse(params);
     if (!validated.success) {
       throw new ValidationError('Invalid proxy execute parameters', { cause: validated.error });
@@ -329,14 +331,16 @@ export class ToolRouterSession<
       status: response.status,
       data: response.data,
       headers: response.headers,
-      ...(response.binary_data ? {
-        binaryData: {
-          contentType: response.binary_data.content_type,
-          size: response.binary_data.size,
-          url: response.binary_data.url,
-          expiresAt: response.binary_data.expires_at,
-        },
-      } : {}),
+      ...(response.binary_data
+        ? {
+            binaryData: {
+              contentType: response.binary_data.content_type,
+              size: response.binary_data.size,
+              url: response.binary_data.url,
+              expiresAt: response.binary_data.expires_at,
+            },
+          }
+        : {}),
     };
   }
 
@@ -432,8 +436,16 @@ export class ToolRouterSession<
     }
 
     // Merge results into the backend's results[] format.
-    const remoteData = (remoteResult?.data ?? {}) as Record<string, unknown>;
-    const remoteResults = (Array.isArray(remoteData.results) ? remoteData.results : []) as unknown[];
+    const remoteData = (
+      remoteResult?.data &&
+      typeof remoteResult.data === 'object' &&
+      !Array.isArray(remoteResult.data)
+        ? remoteResult.data
+        : {}
+    ) as Record<string, unknown>;
+    const remoteResults = (
+      Array.isArray(remoteData.results) ? remoteData.results : []
+    ) as unknown[];
 
     // Build local result entries matching backend format
     const localEntries = localResults.map(({ index, result }) => ({
@@ -451,19 +463,36 @@ export class ToolRouterSession<
       ...(remoteResults as Array<Record<string, unknown>>),
       ...localEntries,
     ];
-    const allResults = merged.map((entry, i): Record<string, unknown> => ({
-      ...entry,
-      index: i,
-    }));
-    const hasAnyError = localResults.some(r => r.result.error) || !!remoteResult?.error;
+    const allResults = merged.map(
+      (entry, i): Record<string, unknown> => ({
+        ...entry,
+        index: i,
+      })
+    );
+    const failedCount = allResults.filter(r => r.error).length;
+    const mergedData: Record<string, unknown> = {
+      ...remoteData,
+      results: allResults,
+    };
+    if (
+      localEntries.length > 0 &&
+      ['total_count', 'success_count', 'error_count'].some(key => key in remoteData)
+    ) {
+      mergedData.total_count = allResults.length;
+      mergedData.success_count = allResults.length - failedCount;
+      mergedData.error_count = failedCount;
+    }
+    const remoteError = typeof remoteResult?.error === 'string' ? remoteResult.error : null;
+    const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
 
     return {
-      data: { ...remoteData, results: allResults },
+      data: mergedData,
       error: hasAnyError
-        ? `${allResults.filter(r => r.error).length} out of ${allResults.length} tools failed`
+        ? remoteError && failedCount === 0
+          ? remoteError
+          : `${failedCount} out of ${allResults.length} tools failed`
         : null,
       successful: !hasAnyError,
     };
   }
-
 }

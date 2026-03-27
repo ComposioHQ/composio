@@ -42,10 +42,10 @@ const userId = Options.text('user-id').pipe(
  *
  * @example
  * ```bash
- * composio manage toolkits list
- * composio manage toolkits list --query "email"
- * composio manage toolkits list --connected
- * composio manage toolkits list --user-id "alice"
+ * composio dev toolkits list
+ * composio dev toolkits list --query "email"
+ * composio dev toolkits list --connected
+ * composio dev toolkits list --user-id "alice"
  * ```
  */
 export const toolkitsCmd$List = Command.make(
@@ -178,7 +178,7 @@ export const toolkitsCmd$List = Command.make(
       const firstSlug = unified[0]?.slug;
       if (firstSlug) {
         yield* ui.log.step(
-          `To view details of a toolkit:\n> composio manage toolkits info "${firstSlug}"`
+          `To view details of a toolkit:\n> composio dev toolkits info "${firstSlug}"`
         );
       }
       yield* ui.output(formatToolkitsJson(unified));

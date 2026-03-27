@@ -7,14 +7,14 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio manage triggers mutations', () => {
+describe('CLI: composio dev triggers mutations', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider }))(
     '[Given] create with valid args [Then] creates trigger',
     it => {
       it.scoped('creates trigger and prints id', () =>
         Effect.gen(function* () {
           yield* cli([
-            'manage',
+            'dev',
             'triggers',
             'create',
             'GMAIL_NEW_GMAIL_MESSAGE',
@@ -37,7 +37,7 @@ describe('CLI: composio manage triggers mutations', () => {
       it.scoped('rejects invalid trigger config JSON', () =>
         Effect.gen(function* () {
           yield* cli([
-            'manage',
+            'dev',
             'triggers',
             'create',
             'GMAIL_NEW_GMAIL_MESSAGE',
@@ -58,7 +58,7 @@ describe('CLI: composio manage triggers mutations', () => {
     it => {
       it.scoped('enables trigger successfully', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'enable', 'trg_123']);
+          yield* cli(['dev', 'triggers', 'enable', 'trg_123']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           expect(output).toContain('enabled');
@@ -72,7 +72,7 @@ describe('CLI: composio manage triggers mutations', () => {
     it => {
       it.scoped('disables trigger successfully', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'disable', 'trg_123']);
+          yield* cli(['dev', 'triggers', 'disable', 'trg_123']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           expect(output).toContain('disabled');
@@ -86,7 +86,7 @@ describe('CLI: composio manage triggers mutations', () => {
     it => {
       it.scoped('deletes trigger successfully', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'delete', 'trg_123', '--yes']);
+          yield* cli(['dev', 'triggers', 'delete', 'trg_123', '--yes']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           expect(output).toContain('deleted');
@@ -101,7 +101,7 @@ describe('CLI: composio manage triggers mutations', () => {
       it.scoped('rejects array JSON in --trigger-config', () =>
         Effect.gen(function* () {
           yield* cli([
-            'manage',
+            'dev',
             'triggers',
             'create',
             'GMAIL_NEW_GMAIL_MESSAGE',
@@ -118,7 +118,7 @@ describe('CLI: composio manage triggers mutations', () => {
       it.scoped('rejects number JSON in --trigger-config', () =>
         Effect.gen(function* () {
           yield* cli([
-            'manage',
+            'dev',
             'triggers',
             'create',
             'GMAIL_NEW_GMAIL_MESSAGE',
@@ -139,7 +139,7 @@ describe('CLI: composio manage triggers mutations', () => {
     it => {
       it.scoped('shows missing id warning', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'enable']);
+          yield* cli(['dev', 'triggers', 'enable']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           expect(output).toContain('Missing required argument');
@@ -153,7 +153,7 @@ describe('CLI: composio manage triggers mutations', () => {
     it => {
       it.scoped('shows missing id warning', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'disable']);
+          yield* cli(['dev', 'triggers', 'disable']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           expect(output).toContain('Missing required argument');
@@ -167,7 +167,7 @@ describe('CLI: composio manage triggers mutations', () => {
     it => {
       it.scoped('shows missing id warning', () =>
         Effect.gen(function* () {
-          yield* cli(['manage', 'triggers', 'delete']);
+          yield* cli(['dev', 'triggers', 'delete']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           expect(output).toContain('Missing required argument');

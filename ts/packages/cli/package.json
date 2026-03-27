@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli",
-  "version": "0.2.7",
+  "version": "0.2.9",
   "description": "Composio CLI",
   "main": "./dist/bin.mjs",
   "private": true,
@@ -67,6 +67,9 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@agentclientprotocol/sdk": "^0.16.1",
+    "@zed-industries/claude-code-acp": "^0.16.2",
+    "@zed-industries/codex-acp": "^0.10.0",
     "@clack/core": "catalog:",
     "@clack/prompts": "catalog:",
     "@composio/client": "catalog:",
