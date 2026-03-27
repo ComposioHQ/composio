@@ -268,6 +268,51 @@ describe('CLI: composio dev toolkits info', () => {
     );
   });
 
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        toolkits: [],
+        detailedToolkits: [],
+      },
+      toolRouter: {
+        toolkits: async () => ({
+          items: [
+            {
+              slug: 'gmail',
+              name: 'Gmail',
+              meta: {
+                description: 'Email service to send and receive emails',
+                logo: '',
+              },
+              is_no_auth: false,
+              enabled: true,
+              connected_account: null,
+              composio_managed_auth_schemes: ['OAUTH2'],
+            },
+          ],
+          current_page: 1,
+          total_items: 1,
+          total_pages: 1,
+          next_cursor: null,
+        }),
+      },
+    })
+  )('[Given] no configured user id and catalog metadata is unavailable', it => {
+    it.scoped('falls back to the default user session toolkit metadata', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'info', 'gmail']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Using default user id "default"');
+        expect(output).toContain('Gmail');
+        expect(output).toContain('Email service to send and receive emails');
+        expect(output).toContain('Connection Status: Not connected');
+      })
+    );
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit with no_auth=true',
     it => {
