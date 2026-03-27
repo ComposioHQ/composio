@@ -32,7 +32,7 @@
     "clean": "git clean -xdf node_modules",
     "build": "pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck"
+    "typecheck": "tsgo --noEmit --skipLibCheck"
   },
   "keywords": [
     "composio",

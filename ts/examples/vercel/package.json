@@ -9,7 +9,7 @@
     "start": "bun src/ai.ts",
     "start:stream": "bun src/stream.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "typecheck": "tsc --noEmit -p ./tsconfig.json"
+    "typecheck": "tsgo --noEmit -p ./tsconfig.json"
   },
   "keywords": [],
   "author": "",

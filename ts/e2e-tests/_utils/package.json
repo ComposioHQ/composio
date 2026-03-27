@@ -22,7 +22,7 @@
   "scripts": {
     "docker:build": "bun run scripts/docker-build.ts",
     "docker:clean": "bun run scripts/docker-clean.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "devDependencies": {
     "typescript": "catalog:"

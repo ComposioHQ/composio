@@ -66,13 +66,13 @@ try {
   process.exit(1);
 }
 
-// Test 3: Run tsc --noEmit to check TypeScript compilation
-console.log('Test 3: Running tsc --noEmit to verify TypeScript compilation...');
+// Test 3: Run tsgo --noEmit to check TypeScript compilation
+console.log('Test 3: Running tsgo --noEmit to verify TypeScript compilation...');
 console.log('Expected: FAILURE with TS2307 if importExtension is "mjs"');
 console.log('Expected: SUCCESS if importExtension is "js"\n');
 
 try {
-  execSync('npx tsc --noEmit', {
+  execSync('npx tsgo --noEmit', {
     cwd: __dirname,
     stdio: 'pipe',
     encoding: 'utf-8',

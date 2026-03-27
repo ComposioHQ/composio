@@ -133,7 +133,7 @@
     "clean": "git clean -xdf node_modules",
     "build": "pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "typecheck": "tsgo --noEmit --skipLibCheck && tsgo --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],
