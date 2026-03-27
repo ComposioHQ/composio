@@ -479,14 +479,6 @@ for (const result of results.results) {
 }
 ```
 
-You can also pass multiple queries directly. The SDK sends them as a single batched search request, and `results.results` is returned in the same query order.
-
-```typescript
-const results = await session.search({
-  query: ['send an email via gmail', 'create a github issue'],
-});
-```
-
 ### `proxyExecute()`
 
 Proxy an API call through Composio's auth layer using the session's connected account. The backend resolves the connected account from the toolkit within the session.
@@ -983,7 +975,7 @@ interface ToolRouterSession {
     arguments?: Record<string, unknown>
   ) => Promise<ToolRouterSessionExecuteResponse>;
   search: (params: {
-    query: string | string[];
+    query: string;
     toolkits?: string[];
   }) => Promise<ToolRouterSessionSearchResponse>;
   proxyExecute: (

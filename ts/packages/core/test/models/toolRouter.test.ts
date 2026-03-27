@@ -1918,39 +1918,6 @@ describe('ToolRouter', () => {
       });
     });
 
-    it('should batch multiple queries without requiring a parallel flag', async () => {
-      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      mockClient.toolRouter.session.search.mockResolvedValueOnce({
-        ...mockSearchResponse,
-        results: [
-          mockSearchResponse.results[0],
-          {
-            ...mockSearchResponse.results[0],
-            index: 1,
-            use_case: 'create github issue',
-            primary_tool_slugs: ['GITHUB_CREATE_ISSUE'],
-          },
-        ],
-      });
-
-      const session = await toolRouter.create(userId);
-      const result = await session.search({
-        query: ['send emails', 'create github issue'],
-      });
-
-      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(sessionId, {
-        queries: [{ use_case: 'send emails' }, { use_case: 'create github issue' }],
-      });
-      expect(result.results.map(item => item.useCase)).toEqual([
-        'send emails',
-        'create github issue',
-      ]);
-      expect(result.results.map(item => item.primaryToolSlugs)).toEqual([
-        ['GMAIL_SEND_EMAIL'],
-        ['GITHUB_CREATE_ISSUE'],
-      ]);
-    });
-
     it('should propagate search API errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
       mockClient.toolRouter.session.search.mockRejectedValueOnce(new Error('Search failed'));
