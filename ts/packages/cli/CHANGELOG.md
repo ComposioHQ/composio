@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.2.13
+
+### Patch Changes
+
+- cb02575: fix(cli): harden run subagent structured output and logfile path propagation
+
 ## 0.2.12
 
 ### Patch Changes
