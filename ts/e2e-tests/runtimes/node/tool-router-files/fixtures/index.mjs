@@ -11,6 +11,8 @@ if (!apiKey) {
 }
 
 const composio = new Composio({ apiKey });
+const MAX_FILES_RETRIES = 10;
+const FILES_RETRY_DELAY_MS = 1000;
 
 async function main() {
   // Create a session (hackernews is public, no auth needed; files mount is always available)
@@ -39,30 +41,40 @@ async function main() {
 
   // List files (retry for eventual consistency; omit path for root - SDK normalizes)
   let listOk = false;
-  for (let attempt = 0; attempt < 5; attempt++) {
+  let listedPath;
+  for (let attempt = 0; attempt < MAX_FILES_RETRIES; attempt++) {
     const listResult = await files.list();
-    const found = listResult.items?.some(
+    const foundItem = listResult.items?.find(
       item =>
         candidatePaths.includes(item.mountRelativePath) ||
         item.mountRelativePath === testPath ||
         item.mountRelativePath?.endsWith(testPath) ||
         item.mountRelativePath?.includes(testPath)
     );
-    if (found) {
+    if (foundItem) {
       listOk = true;
+      listedPath = foundItem.mountRelativePath;
       break;
     }
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, FILES_RETRY_DELAY_MS));
   }
   if (listOk) console.log('LIST_OK');
   else console.log('LIST_SKIP'); // eventual consistency
+
+  const downloadCandidatePaths = Array.from(
+    new Set([
+      listedPath,
+      listedPath?.replace(/^\/+/, ''),
+      ...candidatePaths,
+    ]).values()
+  ).filter(Boolean);
 
   // Download the file (retry for eventual consistency, same as list above)
   let downloaded;
   let lastDownloadError;
   let resolvedPath;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    for (const candidatePath of candidatePaths) {
+  for (let attempt = 0; attempt < MAX_FILES_RETRIES; attempt++) {
+    for (const candidatePath of downloadCandidatePaths) {
       try {
         const remoteFile = await files.download(candidatePath);
         const content = await remoteFile.text();
@@ -79,8 +91,8 @@ async function main() {
     if (downloaded) {
       break;
     }
-    if (attempt < 4) {
-      await new Promise(r => setTimeout(r, 1000));
+    if (attempt < MAX_FILES_RETRIES - 1) {
+      await new Promise(r => setTimeout(r, FILES_RETRY_DELAY_MS));
     }
   }
   if (!downloaded) {
@@ -89,7 +101,7 @@ async function main() {
   console.log('DOWNLOAD_OK');
 
   // Delete the file (use path from API response)
-  await files.delete(resolvedPath ?? candidatePaths[0]);
+  await files.delete(resolvedPath ?? downloadCandidatePaths[0]);
   console.log('DELETE_OK');
 
   console.log('ALL_OK');
