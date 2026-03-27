@@ -85,7 +85,7 @@ const invokeClaudeLegacy = async (
   const result = await runExternalCommandText(args, helperDebugLog);
   const parsed = parseJson(result.stdout.trim());
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('claude returned non-JSON output in subAgent().');
+    throw new Error('claude returned non-JSON output in experimental_subAgent().');
   }
 
   const payload =

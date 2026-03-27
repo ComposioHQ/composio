@@ -1,6 +1,6 @@
 # Power-User Examples
 
-Load this file when the user needs more than one top-level command, wants to script workflows, or wants to use `subAgent()` inside `composio run`.
+Load this file when the user needs more than one top-level command, wants to script workflows, or wants to use `experimental_subAgent()` inside `composio run`.
 
 ## Use `run` To Chain Tool Calls
 
@@ -72,7 +72,7 @@ Batch related discovery work with multiple queries when it keeps the workflow si
 composio search "send an email" "create a github issue" --toolkits gmail,github
 ```
 
-## Use `subAgent()` With `z` And `result.prompt()`
+## Use `experimental_subAgent()` With `z` And `result.prompt()`
 
 Turn a tool result into structured output:
 
@@ -80,7 +80,7 @@ Turn a tool result into structured output:
 composio run --logs-off '
   const emails = await execute("GMAIL_FETCH_EMAILS", { max_results: 2 });
 
-  const brief = await subAgent(
+  const brief = await experimental_subAgent(
     `Return only valid JSON matching the schema. Summarize these emails in one sentence and report how many items were returned.\n\n${emails.prompt()}`,
     {
       schema: z.object({
@@ -94,7 +94,7 @@ composio run --logs-off '
 '
 ```
 
-Use `result.prompt()` when the helper result is too noisy for a raw object dump but you still want to feed it into `subAgent()`.
+Use `result.prompt()` when the helper result is too noisy for a raw object dump but you still want to feed it into `experimental_subAgent()`.
 
 ## Use `proxy()` For Raw API Access
 
@@ -130,7 +130,7 @@ composio run '
 
 - Use `--dry-run` to preview every `execute()` call in the script.
 - Use `--debug` to see helper steps while the script runs.
-- Use `--logs-off` when `subAgent()` streaming logs are too noisy for the task.
+- Use `--logs-off` when `experimental_subAgent()` streaming logs are too noisy for the task.
 
 Example:
 

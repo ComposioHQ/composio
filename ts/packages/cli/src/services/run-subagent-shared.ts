@@ -223,7 +223,7 @@ export const validateStructuredOutput = (
     const validation = options.zodSchema.safeParse(parsed);
     if (!validation.success) {
       throw new Error(
-        `subAgent() structured output failed schema validation: ${summarizeValidationError(validation.error)}`
+        `experimental_subAgent() structured output failed schema validation: ${summarizeValidationError(validation.error)}`
       );
     }
 
@@ -376,7 +376,7 @@ export const finalizeInvokeAgentText = (
   let parsed: unknown;
   parsed = tryParseStructuredJson(trimmed);
   if (parsed === undefined) {
-    throw new Error('subAgent() expected valid JSON output for structured response.');
+    throw new Error('experimental_subAgent() expected valid JSON output for structured response.');
   }
 
   return {

@@ -79,7 +79,7 @@ const main = async (): Promise<void> => {
     {
       title: 'Submit structured output',
       description:
-        'Submit the final structured subAgent output. Call this exactly once when the task is complete.',
+        'Submit the final structured experimental_subAgent output. Call this exactly once when the task is complete.',
       inputSchema: toolInputSchema,
     },
     async (payload: unknown) => {

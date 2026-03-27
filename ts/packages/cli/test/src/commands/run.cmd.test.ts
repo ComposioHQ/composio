@@ -170,7 +170,7 @@ describe('CLI: composio run', () => {
 
   layer(TestLive())(it => {
     it.scoped(
-      '[Given] run help [Then] it documents injected execute, search, proxy, subAgent, and z helpers',
+      '[Given] run help [Then] it documents injected execute, search, proxy, experimental_subAgent, and z helpers',
       () =>
         Effect.gen(function* () {
           yield* cli(['run', '--help']);
@@ -183,7 +183,7 @@ describe('CLI: composio run', () => {
           expect(output).toContain('--skip-tool-params-check');
           expect(output).toContain('--skip-checks');
           expect(output).toContain('--logs-off');
-          expect(output).toContain('subAgent');
+          expect(output).toContain('experimental_subAgent');
           expect(output).toContain('schema: z.object');
           expect(output).toContain('INJECTED HELPERS');
           expect(output).toContain('Global from zod');
@@ -234,7 +234,9 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('storedInFilePath: outputFilePath !== null,');
     expect(source).toContain('outputFilePath,');
     expect(source).toContain('const formatHelperDebugEvent = (step, details = {}) => {');
-    expect(source).toContain('return `[subAgent] triggered with ${details.resolvedTarget}`;');
+    expect(source).toContain(
+      'return `[experimental_subAgent] triggered with ${details.resolvedTarget}`;'
+    );
     expect(source).toContain('const logCliResultPreview = (requestId, command, result) => {');
     expect(source).toContain('helperDebugLog("cli.result", {');
     expect(source).toContain('helperDebugLog("cli.result.stored_in_file"');
@@ -251,11 +253,11 @@ describe('buildRunHelpersSource', () => {
       'if (result && typeof result === "object" && result.successful === false) {'
     );
     expect(source).toContain('Object.assign(error, { result, slug });');
-    expect(source).toContain('globalThis.subAgent = subAgentImpl;');
+    expect(source).toContain('globalThis.experimental_subAgent = experimentalSubAgentImpl;');
     expect(source).toContain(
-      'Object.defineProperty(globalThis.subAgent, "schema", { value: subAgentSchema });'
+      'Object.defineProperty(globalThis.experimental_subAgent, "schema", { value: experimentalSubAgentSchema });'
     );
-    expect(source).toContain('globalThis.invokeAgent = subAgentImpl;');
+    expect(source).toContain('globalThis.invokeAgent = experimentalSubAgentImpl;');
     expect(source).toContain(
       'const logFilePath = typeof helperContext.runLogFilePath === "string"'
     );
@@ -267,12 +269,12 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('const response = await invokeLegacySubAgent({');
     expect(source).toContain('const detectInvokeAgentMaster = () => {');
     expect(source).toContain(
-      'throw new Error("subAgent() accepts either options.schema or options.jsonSchema, not both.");'
+      'throw new Error("experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.");'
     );
     expect(source).toContain('const inputSchema = options.schema ?? options.jsonSchema;');
     expect(source).toContain('if (typeof z.toJSONSchema !== "function") {');
     expect(source).toContain(
-      'subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
+      'experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
     );
     expect(source).toContain('let zodSchema;');
     expect(source).toContain('zodSchema = inputSchema;');
@@ -366,7 +368,7 @@ describe('run-subagent-shared', () => {
       finalizeInvokeAgentText('not-json', {
         structuredSchema: { type: 'object' },
       })
-    ).toThrow('subAgent() expected valid JSON output for structured response.');
+    ).toThrow('experimental_subAgent() expected valid JSON output for structured response.');
   });
 
   it('[Given] prose followed by JSON in structured mode [Then] it recovers the final JSON payload', () => {

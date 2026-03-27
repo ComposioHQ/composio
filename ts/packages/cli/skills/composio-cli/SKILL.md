@@ -80,7 +80,7 @@ composio proxy https://api.github.com/user --toolkit github --method GET </dev/n
 
 > **For programmatic calls, LLM workflows, or anything beyond a single tool call — use `composio run`.**
 
-`composio run` executes an inline JavaScript snippet with authenticated `execute()`, `search()`, `proxy()`, and `subAgent()` helpers pre-injected. No SDK setup required.
+`composio run` executes an inline JavaScript snippet with authenticated `execute()`, `search()`, `proxy()`, and the experimental `experimental_subAgent()` helper pre-injected. No SDK setup required.
 
 Chain multiple tools:
 
@@ -111,7 +111,7 @@ Feed tool output into an LLM and get structured JSON back:
 ```bash
 composio run --logs-off '
   const emails = await execute("GMAIL_FETCH_EMAILS", { max_results: 5 });
-  const brief = await subAgent(
+  const brief = await experimental_subAgent(
     `Summarize these emails and count them.\n\n${emails.prompt()}`,
     { schema: z.object({ summary: z.string(), count: z.number() }) }
   );

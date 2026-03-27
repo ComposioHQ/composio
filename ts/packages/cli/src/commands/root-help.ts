@@ -60,7 +60,7 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'run',
     description:
-      'Run inline TS/JS code with shimmed CLI commands; injected execute(), search(), proxy(), subAgent(), and z (zod).',
+      'Run inline TS/JS code with shimmed CLI commands; injected execute(), search(), proxy(), experimental_subAgent(), and z (zod).',
     usage: 'run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]',
     options: [
       { name: '<code>', description: 'Inline Bun ESNext code to evaluate' },
@@ -281,7 +281,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '-f, --file <text>', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running them' },
       { name: '--debug', description: 'Log helper steps while the script runs' },
-      { name: '--logs-off', description: 'Hide the always-on subAgent streaming logs' },
+      { name: '--logs-off', description: 'Hide the always-on experimental_subAgent streaming logs' },
     ],
     flags: [
       { name: '--skip-connection-check', description: 'Skip the connected-account check' },
@@ -299,8 +299,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: 'search(query, opts?)', description: 'Find tools — same as `composio search`' },
       { name: 'proxy(toolkit)', description: 'Returns a fetch() bound to your connected account' },
       {
-        name: 'subAgent(prompt, opts?)',
-        description: 'Spawn a sub-agent (Claude/Codex) with optional structured output',
+        name: 'experimental_subAgent(prompt, opts?)',
+        description: 'Experimental sub-agent helper (Claude/Codex) with optional structured output',
       },
       {
         name: 'result.prompt()',
@@ -351,7 +351,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       `  console.log(await f("https://gmail.googleapis.com/gmail/v1/users/me/profile"));`,
       `'`,
       '',
-      '# subAgent + z + result.prompt() — structured output from a sub-agent',
+      '# experimental_subAgent + z + result.prompt() — structured output from a sub-agent',
       `composio run '`,
       `  const [emails, issues] = await Promise.all([`,
       `    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
@@ -359,7 +359,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       `  ]);`,
       `  // result.prompt() serializes helper output for LLM consumption`,
       `  // z is a global from zod for defining structured output schemas`,
-      `  const brief = await subAgent(`,
+      `  const brief = await experimental_subAgent(`,
       `    \`Summarize these emails and issues.\\n\\n\${emails.prompt()}\\n\\n\${issues.prompt()}\`,`,
       `    { schema: z.object({ summary: z.string(), urgent: z.array(z.string()) }) }`,
       `  );`,
@@ -984,7 +984,7 @@ export function printRootHelp(): Effect.Effect<void> {
     `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
     `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "acme", repo: "app", state: "open" }),`,
     `    ]);`,
-    `    const brief = await subAgent(\`Summarize:\\n\${emails.prompt()}\\n\${issues.prompt()}\`);`,
+    `    const brief = await experimental_subAgent(\`Summarize:\\n\${emails.prompt()}\\n\${issues.prompt()}\`);`,
     `    console.log(brief);`,
     `  '`,
     '',
