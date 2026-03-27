@@ -7,7 +7,7 @@ import {
   Array,
   Order,
   ParseResult,
-  String,
+  String as EffectString,
   Stream,
   Sink,
   SynchronizedRef,
@@ -88,6 +88,38 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
 
 export type HttpError = HttpServerError | HttpDecodingError;
 
+const TRANSIENT_HTTP_RETRYABLE_STATUSES = new Set([408, 429]);
+const TRANSIENT_HTTP_RETRY_DELAYS = [200, 600] as const;
+
+export const isTransientHttpServerError = (error: unknown): error is HttpServerError =>
+  error instanceof HttpServerError &&
+  (error.status === undefined ||
+    TRANSIENT_HTTP_RETRYABLE_STATUSES.has(error.status) ||
+    error.status >= 500);
+
+export const retryTransientHttpRead = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  delays: ReadonlyArray<number> = TRANSIENT_HTTP_RETRY_DELAYS
+): Effect.Effect<A, E, R> =>
+  Effect.suspend(() =>
+    effect.pipe(
+      Effect.catchAll(error => {
+        const [nextDelay, ...remainingDelays] = delays;
+
+        if (!nextDelay || !isTransientHttpServerError(error)) {
+          return Effect.fail(error);
+        }
+
+        return Effect.logDebug(
+          `Retrying transient HTTP read after ${nextDelay}ms (${error.status ?? 'network'})`
+        ).pipe(
+          Effect.zipRight(Effect.sleep(nextDelay)),
+          Effect.zipRight(retryTransientHttpRead(effect, remainingDelays))
+        );
+      })
+    )
+  );
+
 const validateToolkitVersionsImpl = (
   client: {
     toolkits: {
@@ -115,7 +147,7 @@ const validateToolkitVersionsImpl = (
       const overridesToValidate: Array<[toolkit: string, requestedVersion: string]> = [];
 
       if (relevantToolkits) {
-        const relevantSet = new Set(relevantToolkits.map(s => String.toLowerCase(s)));
+        const relevantSet = new Set(relevantToolkits.map(s => EffectString.toLowerCase(s)));
 
         for (const [toolkit, version] of overrides) {
           if (relevantSet.has(toolkit)) {
@@ -1276,9 +1308,9 @@ export const findDeveloperProjectByName = (params: {
       limit: params.limit,
     });
 
-    const normalizedName = String.toLowerCase(params.name.trim());
+    const normalizedName = EffectString.toLowerCase(params.name.trim());
     const matches = projects.data.filter(
-      project => String.toLowerCase(project.name) === normalizedName
+      project => EffectString.toLowerCase(project.name) === normalizedName
     );
 
     if (matches.length === 0) {
@@ -2033,11 +2065,6 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
           )
         );
 
-      /**
-       * Fetches specific toolkits by their slugs.
-       * Makes parallel API calls to retrieve each toolkit.
-       * @param slugs - Array of toolkit slugs to fetch
-       */
       const getToolkitsBySlugs = (slugs: ReadonlyArray<string>) =>
         Effect.all(
           slugs.map(slug =>
@@ -2071,65 +2098,54 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         );
 
       return {
-        getToolkits,
-        getToolkitsBySlugs,
+        getToolkits: () => retryTransientHttpRead(getToolkits()),
+        getToolkitsBySlugs: (slugs: ReadonlyArray<string>) =>
+          retryTransientHttpRead(getToolkitsBySlugs(slugs)),
         getMetrics: () => client.getMetrics(),
-        getToolsAsEnums: () => client.tools.retrieveEnum(),
-        /**
-         * Fetches tools with optional toolkit filtering.
-         * When toolkitSlugs is provided, fetches all matching tools.
-         * @param toolkitSlugs - Optional array of toolkit slugs to filter by
-         */
+        getToolsAsEnums: () => retryTransientHttpRead(client.tools.retrieveEnum()),
         getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
-          client.tools.list(toolkitSlugs ?? []).pipe(
-            Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (tools) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-              })
+          retryTransientHttpRead(
+            client.tools.list(toolkitSlugs ?? []).pipe(
+              Effect.map(response => response.items),
+              Effect.flatMap(
+                Effect.fn(function* (tools) {
+                  // Sort apps by slug.
+                  // TODO: make sure this happens on the server-side.
+                  const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
+                  return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
+                })
+              )
             )
           ),
-        /**
-         * Fetches tools with per-toolkit version support.
-         * Groups toolkits by version and makes separate API calls for each group.
-         * @param specs - Array of { toolkitSlug, toolkitVersion } specifications
-         */
         getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
-          client.tools.listByVersionSpecs(specs).pipe(
-            Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (tools) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-              })
+          retryTransientHttpRead(
+            client.tools.listByVersionSpecs(specs).pipe(
+              Effect.map(response => response.items),
+              Effect.flatMap(
+                Effect.fn(function* (tools) {
+                  // Sort apps by slug.
+                  // TODO: make sure this happens on the server-side.
+                  const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
+                  return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
+                })
+              )
             )
           ),
-        getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
-        /**
-         * Retrieves detailed info about a single trigger type by slug.
-         * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
-         */
-        getTriggerTypeDetailed: (slug: string) => client.triggersTypes.retrieve(slug),
-        /**
-         * Fetches trigger types with optional toolkit filtering.
-         * When toolkitSlugs is provided, fetches all matching trigger types.
-         * @param toolkitSlugs - Optional array of toolkit slugs to filter by
-         */
+        getTriggerTypesAsEnums: () => retryTransientHttpRead(client.triggersTypes.retrieveEnum()),
+        getTriggerTypeDetailed: (slug: string) =>
+          retryTransientHttpRead(client.triggersTypes.retrieve(slug)),
         getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
-          client.triggersTypes.list(toolkitSlugs).pipe(
-            Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (triggerTypes) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: TriggerType) => app.slug);
-                return Array.sort(triggerTypes, orderBySlug) as ReadonlyArray<TriggerType>;
-              })
+          retryTransientHttpRead(
+            client.triggersTypes.list(toolkitSlugs).pipe(
+              Effect.map(response => response.items),
+              Effect.flatMap(
+                Effect.fn(function* (triggerTypes) {
+                  // Sort apps by slug.
+                  // TODO: make sure this happens on the server-side.
+                  const orderBySlug = Order.mapInput(Order.string, (app: TriggerType) => app.slug);
+                  return Array.sort(triggerTypes, orderBySlug) as ReadonlyArray<TriggerType>;
+                })
+              )
             )
           ),
         /**
@@ -2145,11 +2161,13 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         > =>
           Effect.gen(function* () {
             // Normalize input slugs to lowercase for comparison
-            const normalizedInputSlugs = toolkitSlugs.map(slug => String.toLowerCase(slug));
+            const normalizedInputSlugs = toolkitSlugs.map(slug => EffectString.toLowerCase(slug));
 
             // Fetch all available toolkits
             const allToolkits = yield* getToolkits();
-            const availableSlugs = allToolkits.map(toolkit => String.toLowerCase(toolkit.slug));
+            const availableSlugs = allToolkits.map(toolkit =>
+              EffectString.toLowerCase(toolkit.slug)
+            );
 
             // Find invalid slugs
             const invalidSlugs = normalizedInputSlugs.filter(
@@ -2176,8 +2194,10 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
           toolkits: ReadonlyArray<Toolkit>,
           toolkitSlugs: ReadonlyArray<string>
         ): ReadonlyArray<Toolkit> => {
-          const normalizedSlugs = new Set(toolkitSlugs.map(slug => String.toLowerCase(slug)));
-          return toolkits.filter(toolkit => normalizedSlugs.has(String.toLowerCase(toolkit.slug)));
+          const normalizedSlugs = new Set(toolkitSlugs.map(slug => EffectString.toLowerCase(slug)));
+          return toolkits.filter(toolkit =>
+            normalizedSlugs.has(EffectString.toLowerCase(toolkit.slug))
+          );
         },
         /**
          * Validates that the requested toolkit versions exist in the API's available_versions.
@@ -2206,12 +2226,13 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
           category?: string;
           limit?: number;
           cursor?: string;
-        }) => client.toolkits.search(params),
+        }) => retryTransientHttpRead(client.toolkits.search(params)),
         /**
          * Retrieves detailed toolkit info including auth_config_details.
          * @param slug - Toolkit slug
          */
-        getToolkitDetailed: (slug: string) => client.toolkits.retrieveDetailed(slug),
+        getToolkitDetailed: (slug: string) =>
+          retryTransientHttpRead(client.toolkits.retrieveDetailed(slug)),
         /**
          * Searches tools with optional filters. Returns a single page of results.
          * @param params - Search/filter parameters
