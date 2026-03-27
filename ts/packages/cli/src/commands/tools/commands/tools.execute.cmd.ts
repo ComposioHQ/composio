@@ -649,36 +649,6 @@ type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
 
-type ParallelExecuteResult =
-  | {
-      readonly slug: string;
-      readonly successful: true;
-      readonly dryRun: true;
-      readonly arguments: Record<string, unknown>;
-      readonly userId: string;
-      readonly schemaPath?: string;
-      readonly schemaVersion?: string | null;
-    }
-  | {
-      readonly slug: string;
-      readonly successful: true;
-      readonly version: string | null;
-      readonly schemaPath: string;
-      readonly inputSchema: Record<string, unknown>;
-    }
-  | ({
-      readonly slug: string;
-    } & ToolExecuteResponse)
-  | ({
-      readonly slug: string;
-    } & StoredExecuteOutputSummary)
-  | {
-      readonly slug: string;
-      readonly successful: false;
-      readonly error: string;
-      readonly logId?: string;
-    };
-
 type ResolvedExecuteContext = {
   readonly ui: TerminalUI;
   readonly executor: ToolsExecutor;
@@ -1599,6 +1569,7 @@ export const runParallelToolsExecuteFromArgv = (argv: ReadonlyArray<string>) => 
     catch: error => (error instanceof Error ? error : new Error(String(error))),
   }).pipe(Effect.flatMap(runParallelToolsExecuteFromParsed));
 };
+
 export const rootToolsCmd$Execute = Command.make(
   'execute',
   { slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks },
@@ -1624,10 +1595,12 @@ export const rootToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute --parallel GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com" }\'  GITHUB_CREATE_AN_ISSUE -d \'{ owner: "acme", repo: "app", title: "Bug" }\'',
       "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
       '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
       '',
       'Flags:',
+      '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
       '  --skip-connection-check     Skip the connected-account check',
       '  --skip-tool-params-check    Skip input validation against cached schema',
       '  --skip-checks               Skip both checks above',
@@ -1688,6 +1661,9 @@ export const devToolsCmd$Execute = Command.make(
       '  composio dev playground-execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --get-schema',
+      '',
+      'Flags:',
+      '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
     ].join('\n')
   )
 );
