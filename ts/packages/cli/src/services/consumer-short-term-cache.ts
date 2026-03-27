@@ -105,6 +105,21 @@ const writeCache = (state: CacheState) =>
     yield* fs.writeFileString(cachePath(cacheDir), JSON.stringify(state, null, 2));
   });
 
+const getAlwaysConnectedNoAuthToolkits = () =>
+  Effect.gen(function* () {
+    const toolkitsRepository = yield* ComposioToolkitsRepository;
+    const toolkits = yield* toolkitsRepository.getToolkits();
+
+    return toolkits
+      .filter(toolkit => toolkit.no_auth)
+      .map(toolkit => toolkit.slug.toLowerCase());
+  });
+
+const normalizeCachedToolkits = (
+  toolkits: ReadonlyArray<string>,
+  noAuthToolkits: ReadonlyArray<string>
+) => [...new Set([...toolkits, ...noAuthToolkits].map(toolkit => toolkit.toLowerCase()))];
+
 export const getFreshConsumerConnectedToolkitsFromCache = (params: {
   orgId: string;
   consumerUserId: string;
@@ -194,12 +209,7 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       orgId: scope.orgId,
       consumerUserId: scope.consumerUserId,
     });
-    const toolkitsRepository = yield* ComposioToolkitsRepository;
-    const noAuthToolkits = yield* toolkitsRepository.getToolkits().pipe(
-      Effect.map(toolkits =>
-        toolkits.filter(toolkit => toolkit.no_auth).map(toolkit => toolkit.slug.toLowerCase())
-      )
-    );
+    const noAuthToolkits = yield* getAlwaysConnectedNoAuthToolkits();
     const state = yield* readCache();
     const key = cacheKey(scope.orgId, scope.consumerUserId);
     const currentEntry = state[key];
@@ -211,11 +221,7 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
     yield* writeCache({
       ...state,
       [key]: {
-        toolkits: [
-          ...new Set(
-            [...response.toolkits, ...noAuthToolkits].map(toolkit => toolkit.toLowerCase())
-          ),
-        ],
+        toolkits: normalizeCachedToolkits(response.toolkits, noAuthToolkits),
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         ...searchSessionFields,
       },
@@ -228,6 +234,7 @@ export const writeConsumerConnectedToolkitsCache = (params: {
   readonly toolkits: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
+    const noAuthToolkits = yield* getAlwaysConnectedNoAuthToolkits();
     const state = yield* readCache();
     const key = cacheKey(params.orgId, params.consumerUserId);
     const currentEntry = state[key];
@@ -240,7 +247,7 @@ export const writeConsumerConnectedToolkitsCache = (params: {
     yield* writeCache({
       ...state,
       [key]: {
-        toolkits: [...new Set(params.toolkits.map(toolkit => toolkit.toLowerCase()))],
+        toolkits: normalizeCachedToolkits(params.toolkits, noAuthToolkits),
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         ...searchSessionFields,
       },
