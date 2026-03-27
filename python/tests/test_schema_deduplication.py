@@ -117,6 +117,23 @@ def test_get_raw_composio_tool_by_slug_deduplicates_input_and_output_schemas():
     assert tool.output_parameters["required"] == ["results"]
 
 
+def test_get_raw_composio_tool_by_slug_deduplicates_custom_tool_schema():
+    mock_client = Mock()
+    tools = create_tools_instance(mock_client)
+
+    custom_tool_info = create_mock_tool(slug="CUSTOM_TOOL", toolkit_slug="custom")
+    mock_custom_tool = Mock(info=custom_tool_info)
+    tools._custom_tools.custom_tools_registry = {"CUSTOM_TOOL": mock_custom_tool}
+
+    tool = tools.get_raw_composio_tool_by_slug("CUSTOM_TOOL")
+
+    assert tool is not custom_tool_info
+    assert tool.input_parameters["required"] == ["query"]
+    assert tool.output_parameters["required"] == ["results"]
+    assert custom_tool_info.input_parameters["required"] == ["query", "query"]
+    assert custom_tool_info.output_parameters["required"] == ["results", "results"]
+
+
 def test_get_raw_composio_tools_deduplicates_each_retrieved_tool():
     mock_client = Mock()
     mock_client.tools.list.return_value = Mock(

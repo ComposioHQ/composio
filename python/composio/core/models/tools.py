@@ -162,7 +162,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         Returns schema for the given tool slug.
         """
         try:
-            return t.cast(Tool, self._custom_tools[slug])
+            return self._sanitize_tool_schema(self._custom_tools[slug].info)
         except KeyError:
             tool = t.cast(
                 Tool,
