@@ -169,6 +169,7 @@ companion_modules=(
     "run-subagent-acp.mjs"
     "run-subagent-legacy.mjs"
 )
+release_tag_file="$COMPOSIO_INSTALL_DIR/release-tag.txt"
 
 install_companion_modules() {
     local source_dir="$1"
@@ -206,6 +207,9 @@ fi
 
 chmod +x "$exe" ||
     error 'Failed to set permissions on executable'
+
+printf '%s\n' "$version" > "$release_tag_file" ||
+    error "Failed to write install metadata to \"$release_tag_file\""
 
 success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")"
 

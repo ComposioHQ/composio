@@ -6,12 +6,16 @@ import { pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
+import { APP_VERSION } from 'src/constants';
 import { resolveCommandProject } from 'src/services/command-project';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 import { detectMaster, type MasterKind } from 'src/services/master-detector';
-import { resolveRunCompanionModulePath } from 'src/services/run-companion-modules';
+import {
+  repairMissingInstalledRunCompanionModules,
+  resolveRunCompanionModulePath,
+} from 'src/services/run-companion-modules';
 import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
@@ -161,27 +165,35 @@ export const inferCliInvocationPrefix = (
     : [process.execPath];
 };
 
-const subAgentSharedModuleUrl = pathToFileURL(
-  resolveRunCompanionModulePath({
-    callerImportMetaUrl: import.meta.url,
-    execPath: process.execPath,
-    relativeNoExtensionFromCaller: '../services/run-subagent-shared',
-  })
-).href;
-const subAgentAcpModuleUrl = pathToFileURL(
-  resolveRunCompanionModulePath({
-    callerImportMetaUrl: import.meta.url,
-    execPath: process.execPath,
-    relativeNoExtensionFromCaller: '../services/run-subagent-acp',
-  })
-).href;
-const subAgentLegacyModuleUrl = pathToFileURL(
-  resolveRunCompanionModulePath({
-    callerImportMetaUrl: import.meta.url,
-    execPath: process.execPath,
-    relativeNoExtensionFromCaller: '../services/run-subagent-legacy',
-  })
-).href;
+type RunHelperModuleUrls = {
+  readonly subAgentSharedModuleUrl: string;
+  readonly subAgentAcpModuleUrl: string;
+  readonly subAgentLegacyModuleUrl: string;
+};
+
+const resolveRunHelperModuleUrls = (): RunHelperModuleUrls => ({
+  subAgentSharedModuleUrl: pathToFileURL(
+    resolveRunCompanionModulePath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+    })
+  ).href,
+  subAgentAcpModuleUrl: pathToFileURL(
+    resolveRunCompanionModulePath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativeNoExtensionFromCaller: '../services/run-subagent-acp',
+    })
+  ).href,
+  subAgentLegacyModuleUrl: pathToFileURL(
+    resolveRunCompanionModulePath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativeNoExtensionFromCaller: '../services/run-subagent-legacy',
+    })
+  ).href,
+});
 
 type RunHelperContext = {
   readonly apiKey?: string;
@@ -791,13 +803,14 @@ const buildRunProxyHelpersSource = (): ReadonlyArray<string> => [
 
 export const buildRunHelpersSource = (
   cliPrefix: ReadonlyArray<string>,
-  context: RunHelperContext = {}
+  context: RunHelperContext = {},
+  moduleUrls: RunHelperModuleUrls = resolveRunHelperModuleUrls()
 ): string =>
   [
     'import { z } from "zod";',
-    `import { isAcpInvokeError } from ${JSON.stringify(subAgentSharedModuleUrl)};`,
-    `import { invokeAcpSubAgent } from ${JSON.stringify(subAgentAcpModuleUrl)};`,
-    `import { invokeLegacySubAgent } from ${JSON.stringify(subAgentLegacyModuleUrl)};`,
+    `import { isAcpInvokeError } from ${JSON.stringify(moduleUrls.subAgentSharedModuleUrl)};`,
+    `import { invokeAcpSubAgent } from ${JSON.stringify(moduleUrls.subAgentAcpModuleUrl)};`,
+    `import { invokeLegacySubAgent } from ${JSON.stringify(moduleUrls.subAgentLegacyModuleUrl)};`,
     '',
     `const cliPrefix = ${JSON.stringify(cliPrefix)};`,
     `const helperContext = ${JSON.stringify(context)};`,
@@ -809,7 +822,8 @@ export const buildRunHelpersSource = (
 
 const createRunHelpersPreloadFile = (
   cliPrefix: ReadonlyArray<string>,
-  context: RunHelperContext
+  context: RunHelperContext,
+  moduleUrls: RunHelperModuleUrls
 ) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-'));
   const preloadPath = path.join(directory, 'globals.mjs');
@@ -820,7 +834,7 @@ const createRunHelpersPreloadFile = (
   fs.mkdirSync(runOutputDir, { recursive: true });
   fs.writeFileSync(
     preloadPath,
-    buildRunHelpersSource(cliPrefix, { ...context, runOutputDir }),
+    buildRunHelpersSource(cliPrefix, { ...context, runOutputDir }, moduleUrls),
     'utf8'
   );
   return { directory, preloadPath, runOutputDir };
@@ -1019,7 +1033,28 @@ export const runCmd = Command.make('run', {
           skipToolParamsCheck,
           skipChecks,
         };
-        const preload = createRunHelpersPreloadFile(inferCliInvocationPrefix(), helperContext);
+        const runHelperModuleUrls = yield* Effect.tryPromise({
+          try: async () => {
+            await repairMissingInstalledRunCompanionModules({
+              callerImportMetaUrl: import.meta.url,
+              execPath: process.execPath,
+              appVersion: APP_VERSION,
+            });
+
+            return resolveRunHelperModuleUrls();
+          },
+          catch: error =>
+            new Error(
+              error instanceof Error
+                ? error.message
+                : `Failed to prepare the modules required by 'composio run': ${String(error)}`
+            ),
+        });
+        const preload = createRunHelpersPreloadFile(
+          inferCliInvocationPrefix(),
+          helperContext,
+          runHelperModuleUrls
+        );
         let cleanupPaths: ReadonlyArray<string> = [];
         try {
           yield* appendCliSessionHistory({

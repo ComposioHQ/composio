@@ -11,7 +11,13 @@ import {
   inferCliInvocationPrefix,
   wrapInlineCodeForRun,
 } from 'src/commands/run.cmd';
-import { resolveRunCompanionModulePath } from 'src/services/run-companion-modules';
+import {
+  RUN_COMPANION_MODULE_FILENAMES,
+  listMissingInstalledRunCompanionModules,
+  readInstalledReleaseTag,
+  resolveRunCompanionModulePath,
+  writeInstalledReleaseTag,
+} from 'src/services/run-companion-modules';
 import { buildStructuredPrompt, finalizeInvokeAgentText } from 'src/services/run-subagent-shared';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -345,6 +351,27 @@ describe('resolveRunCompanionModulePath', () => {
         relativeNoExtensionFromCaller: '../services/run-subagent-shared',
       })
     ).toBe(companionPath);
+  });
+});
+
+describe('run companion install metadata', () => {
+  it('[Given] an installed release tag file [Then] run helpers can read it back from the install dir', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-release-tag-'));
+    const execPath = path.join(tempDir, 'composio');
+
+    writeInstalledReleaseTag(tempDir, '@composio/cli@0.2.12');
+
+    expect(readInstalledReleaseTag(execPath)).toBe('@composio/cli@0.2.12');
+  });
+
+  it('[Given] a partial companion install [Then] it reports only the missing companion files', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-'));
+    const execPath = path.join(tempDir, 'composio');
+    fs.writeFileSync(path.join(tempDir, RUN_COMPANION_MODULE_FILENAMES[0]!), '', 'utf8');
+
+    expect(listMissingInstalledRunCompanionModules(execPath)).toEqual(
+      RUN_COMPANION_MODULE_FILENAMES.slice(1)
+    );
   });
 });
 
