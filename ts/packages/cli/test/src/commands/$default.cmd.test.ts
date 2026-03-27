@@ -40,6 +40,18 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
+    it.scoped('[Given] no args [Then] prints help message', () =>
+      Effect.gen(function* () {
+        yield* cli([]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        expect(output).toContain('Usage:');
+        expect(output).toContain('composio');
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
     it.scoped('[Given] --help flag [Then] prints help message', () =>
       Effect.gen(function* () {
         const args = ['--help'];

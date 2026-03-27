@@ -1,5 +1,6 @@
 import { Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
+import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
@@ -23,13 +24,25 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
       yield* ctx.data.apiKey.pipe(
         Option.match({
           onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
-          onSome: () =>
+          onSome: apiKey =>
             Effect.gen(function* () {
               const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
               const testUserId = Option.getOrUndefined(ctx.data.testUserId);
+              const sessionInfo = yield* getSessionInfoByUserApiKey({
+                baseURL: ctx.data.baseURL,
+                userApiKey: apiKey,
+              }).pipe(Effect.option);
+              const email = Option.map(sessionInfo, info => info.org_member.email).pipe(
+                Option.getOrUndefined
+              );
+              const orgName = Option.map(sessionInfo, info => info.project.org.name).pipe(
+                Option.getOrUndefined
+              );
 
               yield* ui.note(
                 [
+                  `Email: ${email ?? 'unknown'}`,
+                  `Default Org: ${orgName ?? 'unknown'}`,
                   `Default Org ID: ${defaultOrgId ?? 'not set'}`,
                   `Test User ID: ${testUserId ?? 'not set'}`,
                 ].join('\n'),
@@ -43,6 +56,8 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               );
               yield* ui.output(
                 JSON.stringify({
+                  email: email ?? null,
+                  default_org_name: orgName ?? null,
                   default_org_id: defaultOrgId ?? null,
                   test_user_id: testUserId ?? null,
                 })
