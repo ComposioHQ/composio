@@ -6,9 +6,9 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
-import { extractMessage } from 'src/utils/api-error-extraction';
+import { extractMessage, extractSlug } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import {
   resolveCommandProject,
   formatResolveCommandProjectError,
@@ -166,6 +166,40 @@ const validateLinkResponse = (
       connectedAccountId,
       redirectUrl,
     });
+  });
+
+const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boolean) =>
+  Effect.gen(function* () {
+    const userContext = yield* ComposioUserContext;
+    const webURL = userContext.data.webURL.replace(/\/+$/, '');
+    const apiKey = Option.getOrUndefined(userContext.data.apiKey);
+
+    let orgSlug = '~';
+    if (apiKey) {
+      const sessionInfo = yield* getSessionInfoByUserApiKey({
+        baseURL: userContext.data.baseURL,
+        userApiKey: apiKey,
+      }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+
+      if (sessionInfo?.project.org.name) {
+        orgSlug = sessionInfo.project.org.name;
+      }
+    }
+
+    const dashboardUrl = `${webURL}/${orgSlug}/~/connect/apps/${toolkitSlug}?open=true`;
+
+    yield* ui.log.warn(
+      `Composio does not manage auth for "${toolkitSlug}" — opening the dashboard to connect manually.`
+    );
+
+    if (!noBrowser) {
+      yield* Effect.tryPromise(() => open(dashboardUrl, { wait: false })).pipe(
+        Effect.catchAll(() => ui.log.warn('Could not open the browser automatically.'))
+      );
+    }
+
+    yield* ui.note(dashboardUrl, 'Dashboard URL');
+    yield* ui.output(dashboardUrl, noBrowser ? { force: true } : undefined);
   });
 
 const runConnectedAccountsLink = (params: {
@@ -345,6 +379,13 @@ const runConnectedAccountsLink = (params: {
         Effect.asSome,
         Effect.catchAll(error =>
           Effect.gen(function* () {
+            const slug = extractSlug(error);
+
+            if (slug === 'ToolRouterV2_NoManagedAuth') {
+              yield* handleNoManagedAuth(ui, toolkitSlug, params.noBrowser);
+              return Option.none();
+            }
+
             const message =
               extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`;
             yield* ui.log.error(message);

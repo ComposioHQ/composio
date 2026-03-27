@@ -24,24 +24,34 @@ export type ApiErrorDetails = {
  */
 export const extractMessage = (value: unknown): string | undefined => {
   if (typeof value === 'string') return value;
-  if (value instanceof Error) return value.message;
+
+  // Walk the .cause / .error chain to find the deepest meaningful message.
+  // Effect's UnknownException stores the real error in .cause; the Composio SDK
+  // stores the API response body in .error (which itself has .error.message).
+  // We prefer the deepest message because outer wrappers often have generic
+  // messages like "An unknown error occurred in Effect.tryPromise".
   if (value && typeof value === 'object') {
+    // Try .cause chain first (Effect's UnknownException → real SDK error)
+    if ('cause' in value) {
+      const causeMsg = extractMessage((value as { cause?: unknown }).cause);
+      if (causeMsg) return causeMsg;
+    }
+
+    // Try .error chain (SDK error → API response body → nested .error.message)
+    if ('error' in value) {
+      const inner = (value as { error?: unknown }).error;
+      const innerMsg = extractMessage(inner);
+      if (innerMsg) return innerMsg;
+    }
+
+    // Fall back to the wrapper's own message
     if ('message' in value && typeof (value as { message?: unknown }).message === 'string') {
       return (value as { message: string }).message;
     }
-    if ('error' in value) {
-      const inner = (value as { error?: unknown }).error;
-      if (typeof inner === 'string') return inner;
-      if (
-        inner &&
-        typeof inner === 'object' &&
-        'message' in inner &&
-        typeof (inner as { message?: unknown }).message === 'string'
-      ) {
-        return (inner as { message: string }).message;
-      }
-    }
   }
+
+  if (value instanceof Error) return value.message;
+
   return undefined;
 };
 
