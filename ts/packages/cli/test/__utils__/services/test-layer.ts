@@ -18,12 +18,13 @@ import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
-import type { Toolkits, ToolkitDetailed } from 'src/models/toolkits';
+import type { Toolkits, ToolkitDetailed, ToolkitSearchResult } from 'src/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
   ComposioToolkitsRepository,
+  type HttpError,
   HttpServerError,
   InvalidToolkitsError,
   InvalidToolkitVersionsError,
@@ -60,6 +61,7 @@ import type {
   SessionSearchParams,
   SessionToolkitsParams,
 } from '@composio/client/resources/tool-router';
+import type { NoSuchElementException } from 'effect/Cause';
 import { Stdin } from 'src/services/stdin';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
@@ -89,6 +91,12 @@ export interface TestLiveInput {
     tools?: Tools;
     triggerTypesAsEnums?: TriggerTypesAsEnums;
     triggerTypes?: TriggerTypes;
+    searchToolkits?: (params: {
+      search?: string;
+      category?: string;
+      limit?: number;
+      cursor?: string;
+    }) => Effect.Effect<ToolkitSearchResult, HttpError | NoSuchElementException>;
   };
 
   /**
@@ -449,6 +457,10 @@ export const TestLayer = (input?: TestLiveInput) =>
           limit?: number;
           cursor?: string;
         }) => {
+          if (toolkitsData.searchToolkits) {
+            return toolkitsData.searchToolkits(params);
+          }
+
           let results = [...toolkitsData.toolkits];
 
           if (params.search) {

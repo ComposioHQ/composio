@@ -8,6 +8,7 @@ import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/service
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { extractMessage } from 'src/utils/api-error-extraction';
+import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
 import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
 import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
 
@@ -32,6 +33,52 @@ const userId = Options.text('user-id').pipe(
     'User ID for connection status (falls back to project/global test_user_id)'
   )
 );
+
+export const filterToolkitsForListQuery = (
+  toolkits: ReadonlyArray<Toolkit>,
+  query?: string
+): ReadonlyArray<Toolkit> => {
+  const normalizedQuery = query?.trim().toLowerCase();
+  if (!normalizedQuery) return toolkits;
+
+  return toolkits.filter(
+    toolkit =>
+      toolkit.slug.toLowerCase().includes(normalizedQuery) ||
+      toolkit.name.toLowerCase().includes(normalizedQuery) ||
+      toolkit.meta.description.toLowerCase().includes(normalizedQuery)
+  );
+};
+
+const buildCatalogResultFromToolkits = (
+  toolkits: ReadonlyArray<Toolkit>,
+  limit: number
+): ToolkitSearchResult => ({
+  items: toolkits.slice(0, limit),
+  total_items: toolkits.length,
+  total_pages: toolkits.length === 0 ? 0 : Math.ceil(toolkits.length / limit),
+  next_cursor: null,
+});
+
+const getCatalogToolkitsWithFallback = (
+  repo: ComposioToolkitsRepository,
+  query: string | undefined,
+  limit: number
+) => {
+  const fallback = repo.getToolkits().pipe(
+    Effect.map(toolkits => filterToolkitsForListQuery(toolkits, query)),
+    Effect.map(toolkits => buildCatalogResultFromToolkits(toolkits, limit))
+  );
+
+  return repo.searchToolkits({ search: query, limit }).pipe(
+    Effect.flatMap(result => (result.items.length === 0 ? fallback : Effect.succeed(result))),
+    Effect.catchAll(error =>
+      Effect.logDebug(
+        'Failed to search toolkits catalog, falling back to cached list:',
+        error
+      ).pipe(Effect.flatMap(() => fallback))
+    )
+  );
+};
 
 /**
  * List available toolkits with connection status.
@@ -87,12 +134,11 @@ export const toolkitsCmd$List = Command.make(
         );
       }
 
+      const queryValue = Option.getOrUndefined(query);
+
       // Fetch catalog data (always) and session context (when user ID available) in parallel.
       // The session toolkits call depends on the session ID, so it runs after session creation.
-      const catalogEffect = repo.searchToolkits({
-        search: Option.getOrUndefined(query),
-        limit: validatedLimit,
-      });
+      const catalogEffect = getCatalogToolkitsWithFallback(repo, queryValue, validatedLimit);
 
       // Resolve session context in parallel with catalog fetch (saves one round trip).
       const sessionContextEffect = Option.isSome(resolvedUserId)
@@ -128,7 +174,7 @@ export const toolkitsCmd$List = Command.make(
         const { client, sessionId } = sessionContext;
         sessionItems = yield* Effect.tryPromise(() =>
           client.toolRouter.session.toolkits(sessionId, {
-            search: Option.getOrUndefined(query),
+            search: queryValue,
             limit: validatedLimit,
             is_connected: Option.getOrUndefined(connected),
           })

@@ -1,9 +1,11 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
+import { filterToolkitsForListQuery } from 'src/commands/toolkits/commands/toolkits.list.cmd';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
+import { it } from 'vitest';
 
 const testToolkits: Toolkits = [
   {
@@ -68,6 +70,16 @@ const testConfigProvider = ConfigProvider.fromMap(
 ).pipe(extendConfigProvider);
 
 describe('CLI: composio dev toolkits list', () => {
+  it('[Given] a partial list query [Then] it filters by slug, name, or description without fuzzy matches', () => {
+    expect(filterToolkitsForListQuery(testToolkits, 'gmai').map(toolkit => toolkit.slug)).toEqual([
+      'gmail',
+    ]);
+    expect(filterToolkitsForListQuery(testToolkits, 'Email').map(toolkit => toolkit.slug)).toEqual([
+      'gmail',
+    ]);
+    expect(filterToolkitsForListQuery(testToolkits, 'gmal')).toEqual([]);
+  });
+
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no flags [Then] lists all toolkits with unified table',
     it => {
@@ -126,6 +138,34 @@ describe('CLI: composio dev toolkits list', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        ...toolkitsData,
+        searchToolkits: () =>
+          Effect.succeed({
+            items: [],
+            total_items: 0,
+            total_pages: 0,
+            next_cursor: null,
+          }),
+      },
+    })
+  )('[Given] an empty search response [Then] falls back to cached toolkit filtering', it => {
+    it.scoped('returns matching toolkits from the cached catalog', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'list', '--query', 'gmai', '--limit', '1']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Gmail');
+        expect(output).not.toContain('GitHub');
+        expect(output).toContain('Listing 1 of 1 toolkits');
+      })
+    );
+  });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --query "email"',
