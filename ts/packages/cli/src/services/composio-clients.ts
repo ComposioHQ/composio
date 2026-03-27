@@ -89,7 +89,9 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
 export type HttpError = HttpServerError | HttpDecodingError;
 
 const TRANSIENT_HTTP_RETRYABLE_STATUSES = new Set([408, 429]);
-const TRANSIENT_HTTP_RETRY_DELAYS = [500, 1500, 3000] as const;
+// Fresh CI environments occasionally hit short-lived 429/5xx bursts on catalog reads.
+// Use a wider backoff window so read-heavy commands can recover without surfacing flaky failures.
+const TRANSIENT_HTTP_RETRY_DELAYS = [1000, 2500, 5000, 10000] as const;
 
 export const isTransientHttpServerError = (error: unknown): error is HttpServerError =>
   error instanceof HttpServerError &&
