@@ -31,7 +31,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is zsh', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates .zshrc with PATH and completions', () =>
+      it.scoped('[Then] creates .zshrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/zsh';
@@ -46,13 +46,13 @@ describe('CLI: composio install', () => {
           expect(contents).toContain('# Composio CLI');
           expect(contents).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(contents).toContain('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"');
-          expect(contents).toContain('# Composio CLI completions');
+          expect(contents).not.toContain('# Composio CLI completions');
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('Detected shell: zsh');
           expect(output).toContain('PATH: will add');
-          expect(output).toContain('Completions: will install shell completions');
+          expect(output).toContain('Completions: skipped by default (pass --completions to enable)');
           expect(output).toContain('Updated');
         })
       );
@@ -61,7 +61,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is bash', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates .bashrc with PATH and completions', () =>
+      it.scoped('[Then] creates .bashrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/bash';
@@ -76,7 +76,7 @@ describe('CLI: composio install', () => {
           expect(contents).toContain('# Composio CLI');
           expect(contents).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(contents).toContain('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"');
-          expect(contents).toContain('# Composio CLI completions');
+          expect(contents).not.toContain('# Composio CLI completions');
         })
       );
     });
@@ -84,7 +84,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is fish', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates config.fish with PATH and completions', () =>
+      it.scoped('[Then] creates config.fish with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/usr/bin/fish';
@@ -99,7 +99,33 @@ describe('CLI: composio install', () => {
           expect(contents).toContain('# Composio CLI');
           expect(contents).toContain('set --export COMPOSIO_INSTALL_DIR');
           expect(contents).toContain('set --export PATH $COMPOSIO_INSTALL_DIR $PATH');
+          expect(contents).not.toContain('# Composio CLI completions');
+        })
+      );
+    });
+  });
+
+  describe('[When] --completions is passed', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] writes PATH block and installs completions', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          process.env.SHELL = '/bin/zsh';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          yield* cli(['install', '--completions']);
+
+          const fs = yield* FileSystem.FileSystem;
+          const rcPath = path.join(os.homedir, '.zshrc');
+          const contents = yield* fs.readFileString(rcPath);
+
+          expect(contents).toContain('# Composio CLI');
+          expect(contents).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(contents).toContain('# Composio CLI completions');
+
+          const lines = yield* MockConsole.getLines();
+          const output = lines.join('\n');
+          expect(output).toContain('Completions: will install shell completions');
         })
       );
     });
@@ -125,7 +151,7 @@ describe('CLI: composio install', () => {
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
-          expect(output).toContain('Completions: skipped (--no-completions)');
+          expect(output).toContain('Completions: skipped by default (pass --completions to enable)');
         })
       );
     });
@@ -140,8 +166,8 @@ describe('CLI: composio install', () => {
           process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
 
           // Run install twice
-          yield* cli(['install']);
-          yield* cli(['install']);
+          yield* cli(['install', '--completions']);
+          yield* cli(['install', '--completions']);
 
           const fs = yield* FileSystem.FileSystem;
           const rcPath = path.join(os.homedir, '.zshrc');
@@ -175,7 +201,7 @@ describe('CLI: composio install', () => {
             '# existing config\n# Composio CLI\nexport COMPOSIO_INSTALL_DIR=/old\n# Composio CLI completions\n_composio() {}\n'
           );
 
-          yield* cli(['install']);
+          yield* cli(['install', '--completions']);
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
