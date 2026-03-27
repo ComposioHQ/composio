@@ -191,13 +191,13 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('PATH: already configured');
     }
 
-    if (shell === 'zsh') {
+    if (params.noCompletions) {
+      yield* ui.log.step('Completions: skipped (--no-completions)');
+    } else if (shell === 'zsh') {
       yield* ui.log.step('Completions: skipped for zsh');
     } else if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
       blocks.push(config.completionBlock);
       yield* ui.log.step('Completions: will install shell completions');
-    } else if (params.noCompletions) {
-      yield* ui.log.step('Completions: skipped (--no-completions)');
     } else if (!config.completionBlock) {
       yield* ui.log.step('Completions: not available for this shell');
     } else {
@@ -224,7 +224,9 @@ export const installShellIntegration = (params: {
 
       yield* ui.log.success(`Updated ${tildify(rcPath, os.homedir)}`);
       yield* ui.note(
-        shell === 'fish' || shell === 'zsh' ? `source ${tildify(rcPath, os.homedir)}` : 'exec $SHELL',
+        shell === 'fish' || shell === 'zsh'
+          ? `source ${tildify(rcPath, os.homedir)}`
+          : 'exec $SHELL',
         'Restart your shell to apply changes'
       );
     } else {
