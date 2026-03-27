@@ -7,6 +7,23 @@ import type { Toolkits } from 'src/models/toolkits';
 
 const testToolkits: Toolkits = [
   {
+    name: 'BigMailer',
+    slug: 'bigmailer',
+    auth_schemes: ['OAUTH2'],
+    composio_managed_auth_schemes: ['OAUTH2'],
+    is_local_toolkit: false,
+    no_auth: false,
+    meta: {
+      description: 'Bulk outreach suite with Gmail sync',
+      categories: [],
+      created_at: new Date('2024-05-03T11:44:32.061Z') as any,
+      updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+      available_versions: [],
+      tools_count: 12,
+      triggers_count: 0,
+    },
+  },
+  {
     name: 'Gmail',
     slug: 'gmail',
     auth_schemes: ['OAUTH2'],
@@ -97,7 +114,24 @@ describe('CLI: composio dev toolkits search', () => {
 
           expect(output).toContain('Gmail');
           expect(output).not.toContain('Slack');
-          expect(output).toContain('Found 1 of 1 toolkits');
+          expect(output).toContain('Found 1 of 2 toolkits');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] an exact slug query with broader description matches',
+    it => {
+      it.scoped('ranks the exact toolkit match first', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'search', 'gmail', '--limit', '1']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Gmail');
+          expect(output).not.toContain('BigMailer');
+          expect(output).toContain('Found 1 of 2 toolkits');
         })
       );
     }

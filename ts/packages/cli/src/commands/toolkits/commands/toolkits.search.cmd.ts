@@ -25,12 +25,42 @@ const filterToolkitsForSearchQuery = (
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return toolkits;
 
-  return toolkits.filter(
-    toolkit =>
-      toolkit.slug.toLowerCase().includes(normalizedQuery) ||
-      toolkit.name.toLowerCase().includes(normalizedQuery) ||
-      toolkit.meta.description.toLowerCase().includes(normalizedQuery)
-  );
+  const rankMatch = (value: string) => {
+    const normalizedValue = value.toLowerCase();
+    if (normalizedValue === normalizedQuery) return 0;
+    if (normalizedValue.startsWith(normalizedQuery)) return 1;
+
+    const words = normalizedValue.split(/[^a-z0-9]+/).filter(Boolean);
+    if (words.some(word => word === normalizedQuery)) return 2;
+    if (words.some(word => word.startsWith(normalizedQuery))) return 3;
+    if (normalizedValue.includes(normalizedQuery)) return 4;
+
+    return undefined;
+  };
+
+  return toolkits
+    .map(toolkit => {
+      const slugRank = rankMatch(toolkit.slug);
+      const nameRank = rankMatch(toolkit.name);
+      const descriptionRank = rankMatch(toolkit.meta.description);
+
+      const bestRank = [slugRank, nameRank, descriptionRank].reduce<number | undefined>(
+        (currentBest, candidate) => {
+          if (candidate === undefined) return currentBest;
+          if (currentBest === undefined) return candidate;
+          return Math.min(currentBest, candidate);
+        },
+        undefined
+      );
+
+      return bestRank === undefined ? undefined : { toolkit, bestRank };
+    })
+    .filter((value): value is { toolkit: Toolkit; bestRank: number } => value !== undefined)
+    .sort((left, right) => {
+      if (left.bestRank !== right.bestRank) return left.bestRank - right.bestRank;
+      return left.toolkit.slug.localeCompare(right.toolkit.slug);
+    })
+    .map(({ toolkit }) => toolkit);
 };
 
 const buildCatalogResultFromToolkits = (
