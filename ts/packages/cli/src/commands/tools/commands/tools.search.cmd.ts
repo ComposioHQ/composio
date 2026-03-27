@@ -146,15 +146,26 @@ const collectToolsForResult = (params: {
   return toolsList;
 };
 
-const buildSearchCta = (params: {
+const buildSearchNextSteps = (params: {
   firstSlug?: string;
   firstToolkit?: string;
   firstDataArg: string;
   rootOnly: boolean;
 }) => {
-  const cta: Array<{ action: string; command: string }> = [];
+  const steps: Array<{ action: string; command: string }> = [];
+  if (params.firstToolkit) {
+    steps.push({
+      action: 'Link a user account',
+      command: params.rootOnly
+        ? commandHintExample('root.link', { toolkit: String(params.firstToolkit).toLowerCase() })
+        : commandHintExample('dev.connectedAccounts.link', {
+            toolkit: String(params.firstToolkit).toLowerCase(),
+            userId: '<user-id>',
+          }),
+    });
+  }
   if (params.firstSlug) {
-    cta.push({
+    steps.push({
       action: 'Execute a tool',
       command: params.rootOnly
         ? commandHintExample('root.execute', { slug: params.firstSlug, data: params.firstDataArg })
@@ -165,25 +176,14 @@ const buildSearchCta = (params: {
           }),
     });
   }
-  if (params.firstToolkit) {
-    cta.push({
-      action: 'Connect a user account',
-      command: params.rootOnly
-        ? commandHintExample('root.link', { toolkit: String(params.firstToolkit).toLowerCase() })
-        : commandHintExample('dev.connectedAccounts.link', {
-            toolkit: String(params.firstToolkit).toLowerCase(),
-            userId: '<user-id>',
-          }),
-    });
-  }
-  return cta;
+  return steps;
 };
 
 const buildSearchJsonPayload = (params: {
   searchResponse: SearchResponseRecord;
   cacheScope: { orgId?: string; consumerUserId?: string };
   projectScope: { orgId: string; projectId: string };
-  cta: Array<{ action: string; command: string }>;
+  nextSteps: Array<{ action: string; command: string }>;
 }) =>
   Effect.gen(function* () {
     const cacheDir = yield* setupCacheDir;
@@ -222,7 +222,11 @@ const buildSearchJsonPayload = (params: {
       },
       connected_toolkits: connectedToolkits,
       ...(params.searchResponse.error ? { error: params.searchResponse.error } : {}),
-      CTA: params.cta,
+      next_steps: {
+        guidance:
+          'You can directly proceed with these steps without waiting for the user to ask. Link accounts first if needed, then execute tools.',
+        steps: params.nextSteps,
+      },
     } as const;
   });
 
@@ -262,6 +266,12 @@ const emitHumanSearchOutput = (params: {
     }
 
     if (params.firstSlug) {
+      const linkHint = params.rootOnly
+        ? commandHintStep('Link an account', 'root.link', { toolkit: '<toolkit>' })
+        : commandHintStep('Link an account', 'dev.connectedAccounts.link', {
+            toolkit: '<toolkit>',
+            userId: '<user-id>',
+          });
       const executeHint = params.rootOnly
         ? commandHintStep('Execute a tool', 'root.execute', {
             slug: params.firstSlug,
@@ -272,13 +282,7 @@ const emitHumanSearchOutput = (params: {
             userId: '<user-id>',
             data: params.firstDataArg,
           });
-      const linkHint = params.rootOnly
-        ? commandHintStep('Link an account', 'root.link', { toolkit: '<toolkit>' })
-        : commandHintStep('Link an account', 'dev.connectedAccounts.link', {
-            toolkit: '<toolkit>',
-            userId: '<user-id>',
-          });
-      yield* params.ui.log.step([executeHint, linkHint].join('\n'));
+      yield* params.ui.log.step([linkHint, executeHint].join('\n'));
     }
 
     if (params.error) {
@@ -422,7 +426,7 @@ const runToolsSearch = (params: {
     const firstDataArg =
       Object.keys(firstPayload).length === 0 ? '-d "{}"' : `-d '${firstPayloadJson}'`;
 
-    const cta = buildSearchCta({
+    const nextSteps = buildSearchNextSteps({
       firstSlug,
       firstToolkit,
       firstDataArg,
@@ -436,7 +440,7 @@ const runToolsSearch = (params: {
         consumerUserId: searchResult.historyScope?.consumerUserId,
       },
       projectScope: searchResult.projectScope,
-      cta,
+      nextSteps,
     });
 
     yield* appendCliSessionHistory({
@@ -490,9 +494,9 @@ export const toolsCmd$Search = Command.make(
       '  composio search "list calendar events" --limit 5',
       '',
       'Next steps:',
+      '  composio link <toolkit>                  Connect an account before executing tools',
       "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
       "  composio tools info <slug>               Inspect a tool's schema before executing",
-      '  composio link <toolkit>                  Connect an account if execute tells you to',
     ].join('\n')
   )
 );
@@ -524,9 +528,9 @@ export const rootToolsCmd$Search = Command.make(
       '  composio search "list calendar events" --limit 5',
       '',
       'Next steps:',
+      '  composio link <toolkit>                  Connect an account before executing tools',
       "  composio execute <slug> -d '{ ... }'    Run a tool from the results",
       "  composio tools info <slug>               Inspect a tool's schema before executing",
-      '  composio link <toolkit>                  Connect an account if execute tells you to',
     ].join('\n')
   )
 );
