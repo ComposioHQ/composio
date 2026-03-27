@@ -24,7 +24,7 @@ const limit = Options.integer('limit').pipe(
 
 const LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
 const LIST_SEARCH_ENDPOINT_TIMEOUT_MS = 10_000;
-const EMPTY_LIST_SEARCH_FALLBACK_TIMEOUT_MS = 5_000;
+const LIST_CATALOG_FALLBACK_TIMEOUT_MS = 30_000;
 
 const connected = Options.boolean('connected').pipe(
   Options.withDescription('Filter to connected toolkits only'),
@@ -96,20 +96,23 @@ const buildCatalogResultFromToolkits = (
   next_cursor: null,
 });
 
-const confirmCatalogListFallbackOrEmpty = (
-  fallback: Effect.Effect<ToolkitSearchResult, unknown, never>,
-  emptyResult: ToolkitSearchResult,
+const getOptionalResultWithTimeout = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  timeoutMs: number,
   timeoutMessage: string,
   failureMessage: string
 ) =>
   Effect.raceFirst(
-    fallback,
-    Effect.sleep(EMPTY_LIST_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
+    effect.pipe(
+      Effect.asSome,
+      Effect.catchAll(error =>
+        Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
+      )
+    ),
+    Effect.sleep(timeoutMs).pipe(
       Effect.zipRight(Effect.logDebug(timeoutMessage)),
-      Effect.as(emptyResult)
+      Effect.as(Option.none<A>())
     )
-  ).pipe(
-    Effect.catchAll(error => Effect.logDebug(failureMessage, error).pipe(Effect.as(emptyResult)))
   );
 
 const shouldRequirePreciseListMatch = (query?: string): boolean => {
@@ -137,76 +140,59 @@ const getCatalogToolkitsWithFallback = (
   }
 
   const emptyResult = buildCatalogResultFromToolkits([], limit);
-  const fallbackOrEmpty = (timeoutMessage: string, failureMessage: string) =>
-    confirmCatalogListFallbackOrEmpty(fallback, emptyResult, timeoutMessage, failureMessage);
+  const fallbackResult = getOptionalResultWithTimeout(
+    fallback,
+    LIST_CATALOG_FALLBACK_TIMEOUT_MS,
+    'Timed out filtering toolkit list against the full catalog.',
+    'Failed to filter toolkit list against the full catalog:'
+  ).pipe(Effect.map(option => Option.getOrElse(option, () => emptyResult)));
 
-  const directSearch = repo
-    .searchToolkits({
-      search: query,
-      limit: LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT,
-    })
-    .pipe(
-      Effect.map(result => filterToolkitsForListQuery(result.items, query)),
-      Effect.flatMap(items => {
-        const hasPreciseMatch = items.some(toolkit => {
-          const normalizedQuery = query.trim().toLowerCase();
-          const slug = toolkit.slug.toLowerCase();
-          const name = toolkit.name.toLowerCase();
-          return (
-            slug === normalizedQuery ||
-            slug.startsWith(normalizedQuery) ||
-            name === normalizedQuery ||
-            name.startsWith(normalizedQuery)
-          );
-        });
+  const directSearchPreferred = getOptionalResultWithTimeout(
+    repo
+      .searchToolkits({
+        search: query,
+        limit: LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT,
+      })
+      .pipe(Effect.map(result => filterToolkitsForListQuery(result.items, query))),
+    LIST_SEARCH_ENDPOINT_TIMEOUT_MS,
+    'Timed out searching toolkits directly for list; waiting on full catalog fallback.',
+    'Failed to search toolkits directly for list; waiting on full catalog fallback:'
+  ).pipe(
+    Effect.flatMap(
+      Option.match({
+        onNone: () => Effect.never,
+        onSome: items => {
+          const hasPreciseMatch = items.some(toolkit => {
+            const normalizedQuery = query.trim().toLowerCase();
+            const slug = toolkit.slug.toLowerCase();
+            const name = toolkit.name.toLowerCase();
+            return (
+              slug === normalizedQuery ||
+              slug.startsWith(normalizedQuery) ||
+              name === normalizedQuery ||
+              name.startsWith(normalizedQuery)
+            );
+          });
 
-        if (items.length === 0) {
-          return fallbackOrEmpty(
-            'Timed out confirming empty toolkit list search against full catalog.',
-            'Failed to confirm empty toolkit list search against full catalog:'
-          );
-        }
+          if (items.length === 0) {
+            return Effect.logDebug(
+              'Direct toolkit list search returned no items; waiting on full catalog fallback.'
+            ).pipe(Effect.zipRight(Effect.never));
+          }
 
-        if (shouldRequirePreciseListMatch(query) && !hasPreciseMatch) {
-          return fallbackOrEmpty(
-            'Timed out confirming precise toolkit list match against full catalog.',
-            'Failed to confirm precise toolkit list match against full catalog:'
-          );
-        }
+          if (shouldRequirePreciseListMatch(query) && !hasPreciseMatch) {
+            return Effect.logDebug(
+              'Direct toolkit list search returned only imprecise matches; waiting on full catalog fallback.'
+            ).pipe(Effect.zipRight(Effect.never));
+          }
 
-        return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
-      }),
-      Effect.catchAll(error =>
-        Effect.logDebug(
-          'Failed to search toolkits directly for list, falling back to full catalog:',
-          error
-        ).pipe(
-          Effect.flatMap(() =>
-            fallbackOrEmpty(
-              'Timed out rebuilding toolkit list from full catalog after direct search failure.',
-              'Failed to rebuild toolkit list from full catalog after direct search failure:'
-            )
-          )
-        )
-      )
-    );
-
-  return Effect.raceFirst(
-    directSearch,
-    Effect.sleep(LIST_SEARCH_ENDPOINT_TIMEOUT_MS).pipe(
-      Effect.zipRight(
-        Effect.logDebug(
-          'Timed out searching toolkits directly for list, falling back to full catalog.'
-        )
-      ),
-      Effect.flatMap(() =>
-        fallbackOrEmpty(
-          'Timed out rebuilding toolkit list from full catalog after direct search timeout.',
-          'Failed to rebuild toolkit list from full catalog after direct search timeout:'
-        )
-      )
+          return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
+        },
+      })
     )
   );
+
+  return Effect.raceFirst(directSearchPreferred, fallbackResult);
 };
 
 /**

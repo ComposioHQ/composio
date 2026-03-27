@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -20,7 +20,7 @@ const limit = Options.integer('limit').pipe(
 
 const SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
 const SEARCH_ENDPOINT_TIMEOUT_MS = 10_000;
-const EMPTY_TOOLKIT_SEARCH_FALLBACK_TIMEOUT_MS = 5_000;
+const SEARCH_CATALOG_FALLBACK_TIMEOUT_MS = 30_000;
 
 const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | undefined => {
   const normalizedQuery = query.trim().toLowerCase();
@@ -83,20 +83,23 @@ const buildCatalogResultFromToolkits = (
   next_cursor: null,
 });
 
-const confirmCatalogSearchFallbackOrEmpty = (
-  fallback: Effect.Effect<ToolkitSearchResult, unknown, never>,
-  emptyResult: ToolkitSearchResult,
+const getOptionalResultWithTimeout = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  timeoutMs: number,
   timeoutMessage: string,
   failureMessage: string
 ) =>
   Effect.raceFirst(
-    fallback,
-    Effect.sleep(EMPTY_TOOLKIT_SEARCH_FALLBACK_TIMEOUT_MS).pipe(
+    effect.pipe(
+      Effect.asSome,
+      Effect.catchAll(error =>
+        Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
+      )
+    ),
+    Effect.sleep(timeoutMs).pipe(
       Effect.zipRight(Effect.logDebug(timeoutMessage)),
-      Effect.as(emptyResult)
+      Effect.as(Option.none<A>())
     )
-  ).pipe(
-    Effect.catchAll(error => Effect.logDebug(failureMessage, error).pipe(Effect.as(emptyResult)))
   );
 
 const searchToolkitsFromCatalog = (
@@ -125,67 +128,52 @@ const searchToolkitsWithFallback = (
 ) => {
   const fallback = searchToolkitsFromCatalog(repo, query, limit);
   const emptyResult = buildCatalogResultFromToolkits([], limit);
-  const fallbackOrEmpty = (timeoutMessage: string, failureMessage: string) =>
-    confirmCatalogSearchFallbackOrEmpty(fallback, emptyResult, timeoutMessage, failureMessage);
+  const fallbackResult = getOptionalResultWithTimeout(
+    fallback,
+    SEARCH_CATALOG_FALLBACK_TIMEOUT_MS,
+    'Timed out filtering toolkit search results against the full catalog.',
+    'Failed to filter toolkit search results against the full catalog:'
+  ).pipe(Effect.map(option => Option.getOrElse(option, () => emptyResult)));
 
-  const directSearch = repo
-    .searchToolkits({
-      search: query,
-      limit: SEARCH_ENDPOINT_CANDIDATE_LIMIT,
-    })
-    .pipe(
-      Effect.map(result => filterToolkitsForSearchQuery(result.items, query)),
-      Effect.flatMap(items => {
-        const hasPreciseMatch = items.some(toolkit => {
-          const rank = rankToolkitForSearchQuery(toolkit, query);
-          return rank !== undefined && rank <= 1;
-        });
+  const directSearchPreferred = getOptionalResultWithTimeout(
+    repo
+      .searchToolkits({
+        search: query,
+        limit: SEARCH_ENDPOINT_CANDIDATE_LIMIT,
+      })
+      .pipe(Effect.map(result => filterToolkitsForSearchQuery(result.items, query))),
+    SEARCH_ENDPOINT_TIMEOUT_MS,
+    'Timed out searching toolkits directly; waiting on full catalog fallback.',
+    'Failed to search toolkits directly; waiting on full catalog fallback:'
+  ).pipe(
+    Effect.flatMap(
+      Option.match({
+        onNone: () => Effect.never,
+        onSome: items => {
+          const hasPreciseMatch = items.some(toolkit => {
+            const rank = rankToolkitForSearchQuery(toolkit, query);
+            return rank !== undefined && rank <= 1;
+          });
 
-        if (items.length === 0) {
-          return fallbackOrEmpty(
-            'Timed out confirming empty toolkit search against full catalog.',
-            'Failed to confirm empty toolkit search against full catalog:'
-          );
-        }
+          if (items.length === 0) {
+            return Effect.logDebug(
+              'Direct toolkit search returned no items; waiting on full catalog fallback.'
+            ).pipe(Effect.zipRight(Effect.never));
+          }
 
-        if (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch) {
-          return fallbackOrEmpty(
-            'Timed out confirming precise toolkit search match against full catalog.',
-            'Failed to confirm precise toolkit search match against full catalog:'
-          );
-        }
+          if (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch) {
+            return Effect.logDebug(
+              'Direct toolkit search returned only imprecise matches; waiting on full catalog fallback.'
+            ).pipe(Effect.zipRight(Effect.never));
+          }
 
-        return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
-      }),
-      Effect.catchAll(error =>
-        Effect.logDebug(
-          'Failed to search toolkits directly, falling back to full catalog:',
-          error
-        ).pipe(
-          Effect.flatMap(() =>
-            fallbackOrEmpty(
-              'Timed out rebuilding toolkit search results from full catalog after direct search failure.',
-              'Failed to rebuild toolkit search results from full catalog after direct search failure:'
-            )
-          )
-        )
-      )
-    );
-
-  return Effect.raceFirst(
-    directSearch,
-    Effect.sleep(SEARCH_ENDPOINT_TIMEOUT_MS).pipe(
-      Effect.zipRight(
-        Effect.logDebug('Timed out searching toolkits directly, falling back to full catalog.')
-      ),
-      Effect.flatMap(() =>
-        fallbackOrEmpty(
-          'Timed out rebuilding toolkit search results from full catalog after direct search timeout.',
-          'Failed to rebuild toolkit search results from full catalog after direct search timeout:'
-        )
-      )
+          return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
+        },
+      })
     )
   );
+
+  return Effect.raceFirst(directSearchPreferred, fallbackResult);
 };
 
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
