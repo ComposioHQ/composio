@@ -8,11 +8,31 @@ import type { AnalyticsEnvelope, TrackEvent } from './types';
 import * as constants from 'src/constants';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
+const INTERNAL_CODACT_FAILURE_WORKER_FLAG = '__codact-failure-worker';
 const COMPOSIO_DIR = '.composio';
 const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_ANALYTICS_PATH = '/api/v3/cli/analytics';
+const CLI_CODACT_FAILURES_PATH = '/api/v3/cli/codact_failures';
 const TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
+
+export type CliCodactFailureType = 'wrong_tool_slug' | 'wrong_tool_input_param';
+
+export type CliCodactFailureToolInfo = {
+  readonly toolkit?: string;
+  readonly tool?: {
+    readonly slug: string;
+    readonly version: string;
+  };
+};
+
+export type CliCodactFailure = {
+  readonly failureType: CliCodactFailureType;
+  readonly toolInfo?: CliCodactFailureToolInfo;
+  readonly ctx: Record<string, unknown>;
+  readonly session?: Record<string, unknown>;
+  readonly requestId?: string;
+};
 
 const truthy = (value: string | undefined): boolean =>
   value === '1' || value === 'true' || value === 'yes' || value === 'on';
@@ -165,7 +185,7 @@ const getUserApiKey = (): string | null => {
 
 const cwdHash = (cwd: string): string => djb2Hash(cwd).toString(36);
 
-const getCurrentCwdSessionId = (): string | undefined => {
+export const getCurrentCwdSessionId = (): string | undefined => {
   try {
     const raw = fs.readFileSync(consumerShortTermCachePath(), 'utf8');
     const parsed = JSON.parse(raw) as ConsumerShortTermCacheState;
@@ -202,7 +222,7 @@ const withCliSessionId = (event: TrackEvent): TrackEvent => {
   };
 };
 
-const readApiBaseUrl = (): string | null => {
+export const readApiBaseUrl = (): string | null => {
   const envBaseUrl = process.env.COMPOSIO_BASE_URL?.trim();
   if (envBaseUrl) {
     return envBaseUrl.replace(/\/+$/u, '');
@@ -226,7 +246,12 @@ const getAnalyticsEndpoint = (): string | null => {
   return baseUrl ? `${baseUrl}${CLI_ANALYTICS_PATH}` : null;
 };
 
-const shouldDisableAnalytics = (): boolean =>
+const getCliCodactFailuresEndpoint = (): string | null => {
+  const baseUrl = readApiBaseUrl();
+  return baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null;
+};
+
+export const shouldDisableAnalytics = (): boolean =>
   truthy(process.env.COMPOSIO_CLI_TELEMETRY_DISABLED) ||
   truthy(process.env.TELEMETRY_DISABLED) ||
   truthy(process.env.COMPOSIO_DISABLE_TELEMETRY) ||
@@ -285,6 +310,70 @@ const captureToComposioAnalytics = async (envelope: AnalyticsEnvelope): Promise<
   });
 };
 
+export const createCliCodactFailureBody = (
+  failure: CliCodactFailure
+): {
+  failure_type: CliCodactFailureType;
+  tool_info?: CliCodactFailureToolInfo;
+  ctx: Record<string, unknown>;
+  session: Record<string, unknown>;
+  request_id?: string;
+} => ({
+  failure_type: failure.failureType,
+  ...(failure.toolInfo ? { tool_info: failure.toolInfo } : {}),
+  ctx: failure.ctx,
+  session: {
+    source: 'cli',
+    id: getCurrentCwdSessionId(),
+    cli_version: constants.APP_VERSION,
+    invocation_origin: process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli',
+    parent_run_id: process.env.COMPOSIO_CLI_PARENT_RUN_ID,
+    ...(failure.session ?? {}),
+  },
+  ...(failure.requestId ? { request_id: failure.requestId } : {}),
+});
+
+const captureToComposioCodactFailures = async (failure: CliCodactFailure): Promise<void> => {
+  const endpoint = getCliCodactFailuresEndpoint();
+  if (!endpoint || shouldDisableAnalytics()) {
+    telemetryDebugLog('codact_delivery_skipped', {
+      reason: shouldDisableAnalytics() ? 'disabled' : 'missing_endpoint',
+      endpoint,
+      failureType: failure.failureType,
+    });
+    return;
+  }
+
+  const userApiKey = getUserApiKey();
+  if (!userApiKey) {
+    telemetryDebugLog('codact_delivery_skipped', {
+      reason: 'missing_user_api_key',
+      endpoint,
+      failureType: failure.failureType,
+    });
+    return;
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-api-key': userApiKey,
+    },
+    body: JSON.stringify(createCliCodactFailureBody(failure)),
+  });
+  const responseBody =
+    !response.ok && isTelemetryDebugEnabled() ? await response.text() : undefined;
+
+  telemetryDebugLog(response.ok ? 'codact_delivery_succeeded' : 'codact_delivery_failed', {
+    endpoint,
+    failureType: failure.failureType,
+    status: response.status,
+    ok: response.ok,
+    responseBody: responseBody?.slice(0, 1000),
+  });
+};
+
 export const trackCliEvent = (event: TrackEvent): void => {
   const endpoint = getAnalyticsEndpoint();
   if (!event) {
@@ -337,33 +426,130 @@ export const trackCliEvent = (event: TrackEvent): void => {
 
 export const trackCliEventEffect = (event: TrackEvent) => Effect.sync(() => trackCliEvent(event));
 
-const getAnalyticsWorkerFlagIndex = (argv: ReadonlyArray<string>): number =>
-  argv.findIndex(token => token === INTERNAL_ANALYTICS_WORKER_FLAG);
+export const trackCliCodactFailure = (failure: CliCodactFailure): void => {
+  const endpoint = getCliCodactFailuresEndpoint();
+  const userApiKey = getUserApiKey();
+  if (shouldDisableAnalytics() || !endpoint || !userApiKey) {
+    telemetryDebugLog('codact_skip', {
+      reason: shouldDisableAnalytics()
+        ? 'disabled'
+        : !endpoint
+          ? 'missing_endpoint'
+          : 'missing_user_api_key',
+      failureType: failure.failureType,
+      endpoint,
+    });
+    return;
+  }
 
-export const isAnalyticsWorkerInvocation = (argv: ReadonlyArray<string>): boolean =>
-  getAnalyticsWorkerFlagIndex(argv) >= 0;
+  try {
+    const encodedPayload = encodeBase64Url(JSON.stringify(createCliCodactFailureBody(failure)));
+    const { command, args } = getWorkerSpawnArgsForFlag(
+      INTERNAL_CODACT_FAILURE_WORKER_FLAG,
+      encodedPayload
+    );
+    const child = spawn(command, args, {
+      detached: true,
+      stdio: isTelemetryDebugEnabled() ? ['ignore', 'ignore', 'inherit'] : 'ignore',
+      env: {
+        ...process.env,
+        COMPOSIO_CLI_ANALYTICS_WORKER: '1',
+      },
+    });
+    child.unref();
+  } catch {
+    // Best-effort — codact failure tracking must never break CLI execution.
+  }
+};
 
-export const runAnalyticsWorkerFromArgv = async (argv: ReadonlyArray<string>): Promise<void> => {
-  const flagIndex = getAnalyticsWorkerFlagIndex(argv);
-  const encodedPayload = flagIndex >= 0 ? argv[flagIndex + 1] : undefined;
+export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
+  Effect.sync(() => trackCliCodactFailure(failure));
+
+const getWorkerSpawnArgsForFlag = (
+  workerFlag: string,
+  encodedPayload: string
+): { command: string; args: string[] } => {
+  const maybeScriptPath = process.argv[1];
+  const scriptPathLooksReal =
+    typeof maybeScriptPath === 'string' &&
+    maybeScriptPath.length > 0 &&
+    fs.existsSync(maybeScriptPath) &&
+    /\.(?:[cm]?[jt]s|mjs|mts|cts)$/u.test(maybeScriptPath);
+
+  return scriptPathLooksReal
+    ? {
+        command: process.execPath,
+        args: [maybeScriptPath, workerFlag, encodedPayload],
+      }
+    : {
+        command: process.execPath,
+        args: [workerFlag, encodedPayload],
+      };
+};
+
+const getWorkerFlagIndex = (argv: ReadonlyArray<string>, flag: string): number =>
+  argv.findIndex(token => token === flag);
+
+export const isBackgroundWorkerInvocation = (argv: ReadonlyArray<string>): boolean =>
+  getWorkerFlagIndex(argv, INTERNAL_ANALYTICS_WORKER_FLAG) >= 0 ||
+  getWorkerFlagIndex(argv, INTERNAL_CODACT_FAILURE_WORKER_FLAG) >= 0;
+
+export const runBackgroundWorkerFromArgv = async (argv: ReadonlyArray<string>): Promise<void> => {
+  const analyticsFlagIndex = getWorkerFlagIndex(argv, INTERNAL_ANALYTICS_WORKER_FLAG);
+  if (analyticsFlagIndex >= 0) {
+    const encodedPayload = argv[analyticsFlagIndex + 1];
+    if (!encodedPayload) {
+      return;
+    }
+
+    try {
+      const decoded = decodeBase64Url(encodedPayload);
+      const envelope = JSON.parse(decoded) as AnalyticsEnvelope;
+      if (typeof envelope?.event !== 'string' || envelope.event.length === 0) {
+        return;
+      }
+      await captureToComposioAnalytics(envelope);
+    } catch (error) {
+      telemetryDebugLog('delivery_error', {
+        error:
+          error instanceof Error
+            ? { name: error.name, message: error.message }
+            : { message: String(error) },
+      });
+    }
+    return;
+  }
+
+  const codactFlagIndex = getWorkerFlagIndex(argv, INTERNAL_CODACT_FAILURE_WORKER_FLAG);
+  if (codactFlagIndex < 0) {
+    return;
+  }
+
+  const encodedPayload = argv[codactFlagIndex + 1];
   if (!encodedPayload) {
     return;
   }
 
   try {
     const decoded = decodeBase64Url(encodedPayload);
-    const envelope = JSON.parse(decoded) as AnalyticsEnvelope;
-    if (typeof envelope?.event !== 'string' || envelope.event.length === 0) {
+    const body = JSON.parse(decoded) as ReturnType<typeof createCliCodactFailureBody>;
+    if (body?.failure_type !== 'wrong_tool_slug' && body?.failure_type !== 'wrong_tool_input_param') {
       return;
     }
-    await captureToComposioAnalytics(envelope);
+
+    await captureToComposioCodactFailures({
+      failureType: body.failure_type,
+      toolInfo: body.tool_info,
+      ctx: body.ctx,
+      session: body.session,
+      requestId: body.request_id,
+    });
   } catch (error) {
-    telemetryDebugLog('delivery_error', {
+    telemetryDebugLog('codact_delivery_error', {
       error:
         error instanceof Error
           ? { name: error.name, message: error.message }
           : { message: String(error) },
     });
-    // Analytics must never break CLI execution.
   }
 };

@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { isAnalyticsWorkerInvocation, runAnalyticsWorkerFromArgv } from 'src/analytics/dispatch';
+import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
 
 const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
 const CLI_TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
@@ -16,8 +16,8 @@ const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
   return normalizedArgv;
 };
 
-if (isAnalyticsWorkerInvocation(process.argv)) {
-  void runAnalyticsWorkerFromArgv(process.argv).finally(() => {
+if (isBackgroundWorkerInvocation(process.argv)) {
+  void runBackgroundWorkerFromArgv(process.argv).finally(() => {
     process.exit(0);
   });
 } else {

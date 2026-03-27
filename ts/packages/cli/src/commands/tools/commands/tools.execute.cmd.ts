@@ -22,7 +22,7 @@ import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
-import { trackCliEventEffect } from 'src/analytics/dispatch';
+import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
 import {
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
@@ -53,6 +53,7 @@ import {
   mapComposioError,
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
+import * as constants from 'src/constants';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -285,6 +286,27 @@ const emitExecuteFailureTelemetry = (params: {
           logId: params.logId,
         })
       );
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_input_param',
+        toolInfo: {
+          ...(toolkitFromToolSlug(params.toolSlug)
+            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
+            : {}),
+        },
+        ctx: {
+          tool_slug: params.toolSlug,
+          issues: [...normalized.issues].slice(0, 50),
+          schema_path: normalized.schemaPath,
+          stage: params.stage === 'dry_run' ? 'dry_run' : 'validation',
+        },
+        session: {
+          source: 'cli',
+          command_path: params.surface === 'root' ? 'execute' : 'dev playground-execute',
+          project_mode: params.projectMode,
+          surface: params.surface,
+          cli_version: constants.APP_VERSION,
+        },
+      });
       return;
     }
 
@@ -358,6 +380,78 @@ const emitExecuteFailureTelemetry = (params: {
           });
 
     yield* trackCliEventEffect(event);
+
+    if (isNoConnectionError) {
+      return;
+    }
+
+    if (
+      isMaybeToolValidationError({
+        message,
+        errorSlug,
+        apiCode,
+      })
+    ) {
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_input_param',
+        toolInfo: {
+          ...(toolkitFromToolSlug(params.toolSlug)
+            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
+            : {}),
+        },
+        ctx: {
+          tool_slug: params.toolSlug,
+          error_slug: errorSlug,
+          api_error_code: apiCode,
+          http_status: status,
+          error_message: message,
+          stage: params.stage === 'dry_run' ? 'dry_run' : 'execution',
+        },
+        session: {
+          source: 'cli',
+          command_path: params.surface === 'root' ? 'execute' : 'dev playground-execute',
+          project_mode: params.projectMode,
+          surface: params.surface,
+          cli_version: constants.APP_VERSION,
+        },
+        requestId: apiDetails?.request_id,
+      });
+      return;
+    }
+
+    if (
+      isMaybeToolNotFoundError({
+        message,
+        errorSlug,
+        status,
+        apiCode,
+      })
+    ) {
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_slug',
+        toolInfo: {
+          ...(toolkitFromToolSlug(params.toolSlug)
+            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
+            : {}),
+        },
+        ctx: {
+          invalid_tool_slug: params.toolSlug,
+          error_slug: errorSlug,
+          api_error_code: apiCode,
+          http_status: status,
+          error_message: message,
+          stage: params.stage === 'validation' ? 'execution' : params.stage,
+        },
+        session: {
+          source: 'cli',
+          command_path: params.surface === 'root' ? 'execute' : 'dev playground-execute',
+          project_mode: params.projectMode,
+          surface: params.surface,
+          cli_version: constants.APP_VERSION,
+        },
+        requestId: apiDetails?.request_id,
+      });
+    }
   });
 
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
