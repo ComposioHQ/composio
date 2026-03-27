@@ -22,6 +22,8 @@ const limit = Options.integer('limit').pipe(
   Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
 );
 
+const LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
+
 const connected = Options.boolean('connected').pipe(
   Options.withDescription('Filter to connected toolkits only'),
   Options.optional
@@ -41,34 +43,37 @@ export const filterToolkitsForListQuery = (
   const normalizedQuery = query?.trim().toLowerCase();
   if (!normalizedQuery) return toolkits;
 
-  const rankMatch = (value: string) => {
-    const normalizedValue = value.toLowerCase();
-    if (normalizedValue === normalizedQuery) return 0;
-    if (normalizedValue.startsWith(normalizedQuery)) return 1;
+  const rankMatch = (toolkit: Toolkit): number | undefined => {
+    const rankValue = (value: string) => {
+      const normalizedValue = value.toLowerCase();
+      if (normalizedValue === normalizedQuery) return 0;
+      if (normalizedValue.startsWith(normalizedQuery)) return 1;
 
-    const words = normalizedValue.split(/[^a-z0-9]+/).filter(Boolean);
-    if (words.some(word => word === normalizedQuery)) return 2;
-    if (words.some(word => word.startsWith(normalizedQuery))) return 3;
-    if (normalizedValue.includes(normalizedQuery)) return 4;
+      const words = normalizedValue.split(/[^a-z0-9]+/).filter(Boolean);
+      if (words.some(word => word === normalizedQuery)) return 2;
+      if (words.some(word => word.startsWith(normalizedQuery))) return 3;
+      if (normalizedValue.includes(normalizedQuery)) return 4;
 
-    return undefined;
+      return undefined;
+    };
+
+    const slugRank = rankValue(toolkit.slug);
+    const nameRank = rankValue(toolkit.name);
+    const descriptionRank = rankValue(toolkit.meta.description);
+
+    return [slugRank, nameRank, descriptionRank].reduce<number | undefined>(
+      (currentBest, candidate) => {
+        if (candidate === undefined) return currentBest;
+        if (currentBest === undefined) return candidate;
+        return Math.min(currentBest, candidate);
+      },
+      undefined
+    );
   };
 
   return toolkits
     .map(toolkit => {
-      const slugRank = rankMatch(toolkit.slug);
-      const nameRank = rankMatch(toolkit.name);
-      const descriptionRank = rankMatch(toolkit.meta.description);
-
-      const bestRank = [slugRank, nameRank, descriptionRank].reduce<number | undefined>(
-        (currentBest, candidate) => {
-          if (candidate === undefined) return currentBest;
-          if (currentBest === undefined) return candidate;
-          return Math.min(currentBest, candidate);
-        },
-        undefined
-      );
-
+      const bestRank = rankMatch(toolkit);
       return bestRank === undefined ? undefined : { toolkit, bestRank };
     })
     .filter((value): value is { toolkit: Toolkit; bestRank: number } => value !== undefined)
@@ -89,15 +94,64 @@ const buildCatalogResultFromToolkits = (
   next_cursor: null,
 });
 
+const shouldRequirePreciseListMatch = (query?: string): boolean => {
+  const normalizedQuery = query?.trim();
+  return (
+    normalizedQuery !== undefined &&
+    normalizedQuery.length > 0 &&
+    !/\s/.test(normalizedQuery) &&
+    /^[a-z0-9_-]+$/i.test(normalizedQuery)
+  );
+};
+
 const getCatalogToolkitsWithFallback = (
   repo: ComposioToolkitsRepository,
   query: string | undefined,
   limit: number
-) =>
-  repo.getToolkits().pipe(
+) => {
+  const fallback = repo.getToolkits().pipe(
     Effect.map(toolkits => filterToolkitsForListQuery(toolkits, query)),
     Effect.map(toolkits => buildCatalogResultFromToolkits(toolkits, limit))
   );
+
+  if (!query) {
+    return fallback;
+  }
+
+  return repo
+    .searchToolkits({
+      search: query,
+      limit: LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT,
+    })
+    .pipe(
+      Effect.map(result => filterToolkitsForListQuery(result.items, query)),
+      Effect.flatMap(items => {
+        const hasPreciseMatch = items.some(toolkit => {
+          const normalizedQuery = query.trim().toLowerCase();
+          const slug = toolkit.slug.toLowerCase();
+          const name = toolkit.name.toLowerCase();
+          return (
+            slug === normalizedQuery ||
+            slug.startsWith(normalizedQuery) ||
+            name === normalizedQuery ||
+            name.startsWith(normalizedQuery)
+          );
+        });
+
+        if (items.length === 0 || (shouldRequirePreciseListMatch(query) && !hasPreciseMatch)) {
+          return fallback;
+        }
+
+        return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
+      }),
+      Effect.catchAll(error =>
+        Effect.logDebug(
+          'Failed to search toolkits directly for list, falling back to full catalog:',
+          error
+        ).pipe(Effect.flatMap(() => fallback))
+      )
+    );
+};
 
 /**
  * List available toolkits with connection status.
