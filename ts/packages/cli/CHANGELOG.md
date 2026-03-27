@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.2.16
+
+### Patch Changes
+
+- b763753: fix: bundle bun support files into CLI binary so standalone builds work without external bun dependencies
+
 ## 0.2.15
 
 ### Patch Changes
