@@ -18,12 +18,11 @@ const limit = Options.integer('limit').pipe(
   Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
 );
 
-const filterToolkitsForSearchQuery = (
-  toolkits: ReadonlyArray<Toolkit>,
-  query: string
-): ReadonlyArray<Toolkit> => {
+const SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
+
+const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | undefined => {
   const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return toolkits;
+  if (!normalizedQuery) return 0;
 
   const rankMatch = (value: string) => {
     const normalizedValue = value.toLowerCase();
@@ -38,21 +37,30 @@ const filterToolkitsForSearchQuery = (
     return undefined;
   };
 
+  const slugRank = rankMatch(toolkit.slug);
+  const nameRank = rankMatch(toolkit.name);
+  const descriptionRank = rankMatch(toolkit.meta.description);
+
+  return [slugRank, nameRank, descriptionRank].reduce<number | undefined>(
+    (currentBest, candidate) => {
+      if (candidate === undefined) return currentBest;
+      if (currentBest === undefined) return candidate;
+      return Math.min(currentBest, candidate);
+    },
+    undefined
+  );
+};
+
+const filterToolkitsForSearchQuery = (
+  toolkits: ReadonlyArray<Toolkit>,
+  query: string
+): ReadonlyArray<Toolkit> => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return toolkits;
+
   return toolkits
     .map(toolkit => {
-      const slugRank = rankMatch(toolkit.slug);
-      const nameRank = rankMatch(toolkit.name);
-      const descriptionRank = rankMatch(toolkit.meta.description);
-
-      const bestRank = [slugRank, nameRank, descriptionRank].reduce<number | undefined>(
-        (currentBest, candidate) => {
-          if (candidate === undefined) return currentBest;
-          if (currentBest === undefined) return candidate;
-          return Math.min(currentBest, candidate);
-        },
-        undefined
-      );
-
+      const bestRank = rankToolkitForSearchQuery(toolkit, normalizedQuery);
       return bestRank === undefined ? undefined : { toolkit, bestRank };
     })
     .filter((value): value is { toolkit: Toolkit; bestRank: number } => value !== undefined)
@@ -83,6 +91,50 @@ const searchToolkitsFromCatalog = (
     Effect.map(toolkits => buildCatalogResultFromToolkits(toolkits, limit))
   );
 
+const shouldRequirePreciseSearchMatch = (query: string): boolean => {
+  const normalizedQuery = query.trim();
+  return (
+    normalizedQuery.length > 0 &&
+    !/\s/.test(normalizedQuery) &&
+    /^[a-z0-9_-]+$/i.test(normalizedQuery)
+  );
+};
+
+const searchToolkitsWithFallback = (
+  repo: ComposioToolkitsRepository,
+  query: string,
+  limit: number
+) => {
+  const fallback = searchToolkitsFromCatalog(repo, query, limit);
+
+  return repo
+    .searchToolkits({
+      search: query,
+      limit: SEARCH_ENDPOINT_CANDIDATE_LIMIT,
+    })
+    .pipe(
+      Effect.map(result => filterToolkitsForSearchQuery(result.items, query)),
+      Effect.flatMap(items => {
+        const hasPreciseMatch = items.some(toolkit => {
+          const rank = rankToolkitForSearchQuery(toolkit, query);
+          return rank !== undefined && rank <= 1;
+        });
+
+        if (items.length === 0 || (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch)) {
+          return fallback;
+        }
+
+        return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
+      }),
+      Effect.catchAll(error =>
+        Effect.logDebug(
+          'Failed to search toolkits directly, falling back to full catalog:',
+          error
+        ).pipe(Effect.flatMap(() => fallback))
+      )
+    );
+};
+
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
 // supports text search. Currently SessionToolsParams has no search capability.
 
@@ -106,7 +158,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
 
     const result = yield* ui.withSpinner(
       `Searching toolkits for "${query}"...`,
-      searchToolkitsFromCatalog(repo, query, validatedLimit)
+      searchToolkitsWithFallback(repo, query, validatedLimit)
     );
 
     if (result.items.length === 0) {
