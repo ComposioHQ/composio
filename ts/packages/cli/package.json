@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli",
-  "version": "0.2.9",
+  "version": "0.2.15",
   "description": "Composio CLI",
   "main": "./dist/bin.mjs",
   "private": true,
@@ -78,6 +78,7 @@
     "@effect/cli": "catalog:",
     "@effect/platform-bun": "catalog:",
     "@effect/platform-node-shared": "catalog:",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "ansis": "^4.1.0",
     "comment-json": "^4.2.5",
     "decompress": "^4.2.1",

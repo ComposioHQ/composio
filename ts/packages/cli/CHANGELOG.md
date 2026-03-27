@@ -1,5 +1,55 @@
 # @composio/cli
 
+## 0.2.15
+
+### Patch Changes
+
+- 51c4e09: fix: bundle MCP server into subagent helper via static imports so it works with standalone CLI binaries without repo-local node_modules; fix codact failures not being reported by dispatching them through a dedicated background worker and wiring up the `tools execute` command to capture wrong-slug and wrong-param failures
+
+## 0.2.14
+
+### Patch Changes
+
+- 5a3c661: Change `composio install` to skip shell completions by default and require `--completions` to install them explicitly. Also keep the skipped-completions logging consistent.
+
+## 0.2.13
+
+### Patch Changes
+
+- cb02575: fix(cli): harden run subagent structured output and logfile path propagation
+
+## 0.2.12
+
+### Patch Changes
+
+- 2eee65d: patch
+
+## 0.2.11
+
+### Patch Changes
+
+- 77904b0: Fix link behavior, disable caching, improve search steps
+
+## 0.2.10
+
+### Patch Changes
+
+- b301069: ### Bug fixes & hardening
+  - Fix no-browser link flow to print raw redirect URLs
+  - Harden session artifacts, analytics dir creation, and consumer cache for sandboxed environments (wrap filesystem ops in try/catch, respect `COMPOSIO_SESSION_DIR` / `COMPOSIO_CACHE_DIR` env vars)
+  - Fix stale/broken symlink handling in skill installer (use `lstatSync` instead of `existsSync`)
+  - Fix `detectMaster` parameter type to avoid type conflict from bun env augmentation
+
+  ### New features
+  - Add parallel execute support and help examples
+  - Add batched multi-query tool search
+  - Allow `execute --get-schema` without user context
+  - Cache no-auth toolkits as connected
+  - Report execute failure origin and tool log IDs
+  - Add skill installer during `composio login` (with `--no-skill-install` opt-out)
+  - Add contextual help on CLI errors and unknown arguments
+  - Add `composio files` subcommand help and richer examples in root help output
+
 ## 0.2.9
 
 ### Patch Changes

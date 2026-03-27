@@ -1,8 +1,8 @@
 # @composio/cli
 
-> A tool for managing Composio.dev projects in Python and TypeScript.
+> A CLI for discovering tools, executing them, connecting accounts, scripting workflows, and generating type stubs.
 
-This package defines the Composio CLI used to interact with the Composio Platform. It provides a powerful and flexible way to manage and execute tools, handle authentication, and integrate with various platforms and frameworks.
+This package defines the Composio CLI used to interact with the Composio platform. It supports root workflows for searching and executing tools, plus developer-oriented `dev` commands for project, trigger, log, and connected-account management.
 
 ## Overview
 
@@ -25,18 +25,23 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 
 ## 🧭 Commands
 
-| Command                                                                                                                | Description                                                                                                        |
-| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `composio version`                                                                                                     | Display the current CLI version.                                                                                   |
-| `composio whoami`                                                                                                      | Show the currently logged-in user/account.                                                                         |
-| `composio login [--no-browser] [--no-wait] [--key text]`                                                               | Log in to the Composio SDK.                                                                                        |
-| `composio logout`                                                                                                      | Log out from the Composio SDK.                                                                                     |
-| `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`                               | Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers. |
-| `composio py`                                                                                                          | Python project-specific commands.                                                                                  |
-| `composio py generate [-o, --output-dir <directory>] [--toolkits <toolkit>]`                                           | Generate Python type stubs for toolkits, tools, and triggers from the Composio API.                                |
-| `composio ts`                                                                                                          | TypeScript project-specific commands.                                                                              |
-| `composio ts generate [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]` | Generate TypeScript types for toolkits, tools, and triggers from the Composio API.                                 |
-| `composio upgrade`                                                                                                     | Self-update the Composio CLI if a new release is out.                                                              |
+- `composio version`: Display the current CLI version.
+- `composio whoami`: Show the currently logged-in user/account.
+- `composio login [--no-browser] [--no-wait] [--key text] [-y, --yes] [--no-skill-install]`: Log in to the Composio CLI session.
+- `composio logout`: Log out from the Composio CLI session.
+- `composio orgs list|switch`: Inspect and switch your default organization context.
+- `composio search <query...> [--toolkits text] [--limit integer] [--human]`: Find tools by use case across toolkits/apps.
+- `composio execute <slug> [-d, --data text] [--dry-run] [--get-schema]`: Execute a tool by slug, with schema and connection checks.
+- `composio link [<toolkit>] [--no-wait]`: Connect an account for a toolkit/app.
+- `composio run <code> [-- ...args]` or `composio run --file <path> [-- ...args]`: Run inline or file-based TS/JS workflows with Composio helpers injected.
+- `composio proxy <url> --toolkit <toolkit> [-X method] [-H header]... [-d data]`: Call a toolkit API directly through Composio using a connected account.
+- `composio tools list|info`: Inspect available tools and their cached schemas.
+- `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
+- `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.
+- `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
+- `composio generate py [-o, --output-dir <directory>] [--toolkits <toolkit>]`: Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
+- `composio generate ts [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]`: Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
+- `composio upgrade`: Self-update the Composio CLI if a new release is out.
 
 ## Configuration
 
@@ -45,16 +50,16 @@ Additionally, for storing and retrieving user session context, a `user_data.json
 
 By default, this file is stored in `~/.composio`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
 
-| Environment Variable   | User JSON config | Description                                                        | Default                       |
-| ---------------------- | ---------------- | ------------------------------------------------------------------ | ----------------------------- |
-| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None                          |
-| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | https://backend.composio.dev  |
+| Environment Variable   | User JSON config | Description                                                        | Default                         |
+| ---------------------- | ---------------- | ------------------------------------------------------------------ | ------------------------------- |
+| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None                            |
+| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | https://backend.composio.dev    |
 | COMPOSIO_WEB_URL       | `web_url`        | The base URL of the Composio web app                               | https://dashboard.composio.dev/ |
-| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio                   |
-| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None                          |
-| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None                          |
-| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses       | None                          |
-| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)   | None                          |
+| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio                     |
+| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None                            |
+| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None                            |
+| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses       | None                            |
+| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)   | None                            |
 
 Additionally, `composio upgrade` supports the following environment variables:
 
@@ -156,7 +161,7 @@ bun cli
 For instance, to generate type stubs for a TypeScript project, you can run:
 
 ```bash
-bun cli ts generate
+bun cli generate ts
 ```
 
 ### Test

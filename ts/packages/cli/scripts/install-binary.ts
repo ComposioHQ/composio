@@ -4,7 +4,9 @@ import { BunContext, BunRuntime } from '@effect/platform-bun';
 import { teardown } from './_shared';
 import path from 'node:path';
 import os from 'node:os';
+import { mkdir } from 'node:fs/promises';
 import { $ } from 'bun';
+import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/run-companion-modules';
 
 /**
  * Usage: `COMPOSIO_INSTALL_DIR=<INSTALL_DIR> bun scripts/build-binary.ts <BINARY_PATH>`
@@ -24,7 +26,23 @@ export function installBinary() {
 
     yield* Effect.logDebug(`Installing binary in ${installDir}`);
 
+    yield* Effect.tryPromise(() => mkdir(installDir, { recursive: true }));
     yield* Effect.tryPromise(() => $`cp ${binaryPath} ${installDir}/composio`.quiet());
+
+    const sourceDirectory = path.dirname(path.resolve(binaryPath));
+    const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(sourceDirectory);
+
+    for (const relativePath of companionRelativePaths) {
+      const sourcePath = path.join(sourceDirectory, relativePath);
+      const targetPath = path.join(installDir, relativePath);
+      yield* Effect.tryPromise(async () => {
+        if (!(await Bun.file(sourcePath).exists())) {
+          throw new Error(`Missing companion module: ${sourcePath}`);
+        }
+        await $`mkdir -p ${path.dirname(targetPath)}`.quiet();
+        await $`cp ${sourcePath} ${targetPath}`.quiet();
+      });
+    }
 
     yield* Console.log('Binary successfully installed in', installDir);
   });

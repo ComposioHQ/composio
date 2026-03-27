@@ -22,11 +22,12 @@ import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { ProjectContext } from 'src/services/project-context';
-import { trackCliEventEffect } from 'src/analytics/dispatch';
+import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
 import {
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
   getToolExecuteValidationFailedEvent,
+  isMaybeToolValidationError,
   isMaybeToolNotFoundError,
 } from 'src/analytics/events';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
@@ -52,6 +53,7 @@ import {
   mapComposioError,
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
+import * as constants from 'src/constants';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -209,7 +211,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       logId: '',
       storedInFile: true,
       tokenCount: getExecuteOutputEncoder().encode(json).length,
-      outputFilePath,
+      outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
 
@@ -261,10 +263,15 @@ const emitExecuteFailureTelemetry = (params: {
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
+  readonly logId?: string;
   readonly mappedError?: ReturnType<typeof mapComposioError>;
 }) =>
   Effect.gen(function* () {
     const normalized = params.mappedError?.normalized ?? normalizeCliError(params.error);
+    const failureOrigin =
+      normalized instanceof ToolInputValidationError || params.stage !== 'execution'
+        ? ('fast_fail' as const)
+        : ('main_endpoint' as const);
 
     if (normalized instanceof ToolInputValidationError) {
       yield* trackCliEventEffect(
@@ -275,8 +282,31 @@ const emitExecuteFailureTelemetry = (params: {
           surface: params.surface,
           projectMode: params.projectMode,
           stage: params.stage === 'dry_run' ? 'dry_run' : 'validation',
+          failureOrigin,
+          logId: params.logId,
         })
       );
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_input_param',
+        toolInfo: {
+          ...(toolkitFromToolSlug(params.toolSlug)
+            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
+            : {}),
+        },
+        ctx: {
+          tool_slug: params.toolSlug,
+          issues: [...normalized.issues].slice(0, 50),
+          schema_path: normalized.schemaPath,
+          stage: params.stage === 'dry_run' ? 'dry_run' : 'validation',
+        },
+        session: {
+          source: 'cli',
+          command_path: params.surface === 'root' ? 'execute' : 'dev playground-execute',
+          project_mode: params.projectMode,
+          surface: params.surface,
+          cli_version: constants.APP_VERSION,
+        },
+      });
       return;
     }
 
@@ -294,37 +324,134 @@ const emitExecuteFailureTelemetry = (params: {
     const isNoConnectionError =
       normalized instanceof ComposioNoActiveConnectionError || Boolean(mapped.override);
 
-    const event = isMaybeToolNotFoundError({
+    const event = isMaybeToolValidationError({
       message,
       errorSlug,
-      status,
+      apiCode,
     })
-      ? getToolExecuteToolNotFoundEvent({
+      ? getToolExecuteValidationFailedEvent({
           toolSlug: params.toolSlug,
           args: params.args,
+          error: new ToolInputValidationError(params.toolSlug, 'server', [message]),
           surface: params.surface,
           projectMode: params.projectMode,
-          stage: params.stage === 'validation' ? 'execution' : params.stage,
-          errorSlug,
-          status,
-          apiCode,
-          message,
+          stage:
+            params.stage === 'dry_run'
+              ? 'dry_run'
+              : params.stage === 'validation'
+                ? 'execution'
+                : 'execution',
+          failureOrigin,
+          logId: params.logId,
         })
-      : getToolExecuteFailedEvent({
-          toolSlug: params.toolSlug,
-          args: params.args,
-          surface: params.surface,
-          projectMode: params.projectMode,
-          stage: params.stage === 'validation' ? 'execution' : params.stage,
-          errorSlug,
-          status,
-          apiCode,
-          message,
-          errorName: normalized instanceof Error ? normalized.name : undefined,
-          isNoConnectionError,
-        });
+      : isMaybeToolNotFoundError({
+            message,
+            errorSlug,
+            status,
+            apiCode,
+          })
+        ? getToolExecuteToolNotFoundEvent({
+            toolSlug: params.toolSlug,
+            args: params.args,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            stage: params.stage === 'validation' ? 'execution' : params.stage,
+            failureOrigin,
+            logId: params.logId,
+            errorSlug,
+            status,
+            apiCode,
+            message,
+          })
+        : getToolExecuteFailedEvent({
+            toolSlug: params.toolSlug,
+            args: params.args,
+            surface: params.surface,
+            projectMode: params.projectMode,
+            stage: params.stage === 'validation' ? 'execution' : params.stage,
+            failureOrigin,
+            logId: params.logId,
+            errorSlug,
+            status,
+            apiCode,
+            message,
+            errorName: normalized instanceof Error ? normalized.name : undefined,
+            isNoConnectionError,
+          });
 
     yield* trackCliEventEffect(event);
+
+    if (isNoConnectionError) {
+      return;
+    }
+
+    if (
+      isMaybeToolValidationError({
+        message,
+        errorSlug,
+        apiCode,
+      })
+    ) {
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_input_param',
+        toolInfo: {
+          ...(toolkitFromToolSlug(params.toolSlug)
+            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
+            : {}),
+        },
+        ctx: {
+          tool_slug: params.toolSlug,
+          error_slug: errorSlug,
+          api_error_code: apiCode,
+          http_status: status,
+          error_message: message,
+          stage: params.stage === 'dry_run' ? 'dry_run' : 'execution',
+        },
+        session: {
+          source: 'cli',
+          command_path: params.surface === 'root' ? 'execute' : 'dev playground-execute',
+          project_mode: params.projectMode,
+          surface: params.surface,
+          cli_version: constants.APP_VERSION,
+        },
+        requestId: apiDetails?.request_id,
+      });
+      return;
+    }
+
+    if (
+      isMaybeToolNotFoundError({
+        message,
+        errorSlug,
+        status,
+        apiCode,
+      })
+    ) {
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_slug',
+        toolInfo: {
+          ...(toolkitFromToolSlug(params.toolSlug)
+            ? { toolkit: toolkitFromToolSlug(params.toolSlug) }
+            : {}),
+        },
+        ctx: {
+          invalid_tool_slug: params.toolSlug,
+          error_slug: errorSlug,
+          api_error_code: apiCode,
+          http_status: status,
+          error_message: message,
+          stage: params.stage === 'validation' ? 'execution' : params.stage,
+        },
+        session: {
+          source: 'cli',
+          command_path: params.surface === 'root' ? 'execute' : 'dev playground-execute',
+          project_mode: params.projectMode,
+          surface: params.surface,
+          cli_version: constants.APP_VERSION,
+        },
+        requestId: apiDetails?.request_id,
+      });
+    }
   });
 
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
@@ -379,6 +506,7 @@ const handleExecutionError = (
     surface: 'root' | 'dev';
     projectMode: 'consumer' | 'developer';
     stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
+    logId?: string;
   }
 ) =>
   Effect.gen(function* () {
@@ -392,6 +520,7 @@ const handleExecutionError = (
         surface: context.surface,
         projectMode: context.projectMode,
         stage: context.stage,
+        logId: context.logId,
       });
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
@@ -413,6 +542,7 @@ const handleExecutionError = (
       surface: context.surface,
       projectMode: context.projectMode,
       stage: context.stage,
+      logId: context.logId,
       mappedError: mapped,
     });
 
@@ -617,30 +747,14 @@ type ParallelExecuteResult =
   | {
       readonly slug: string;
       readonly successful: true;
-      readonly dryRun: true;
-      readonly arguments: Record<string, unknown>;
-      readonly userId: string;
-      readonly schemaPath?: string;
-      readonly schemaVersion?: string | null;
-    }
-  | {
-      readonly slug: string;
-      readonly successful: true;
       readonly version: string | null;
       readonly schemaPath: string;
       readonly inputSchema: Record<string, unknown>;
     }
-  | ({
-      readonly slug: string;
-    } & ToolExecuteResponse)
-  | ({
-      readonly slug: string;
-    } & StoredExecuteOutputSummary)
   | {
       readonly slug: string;
       readonly successful: false;
       readonly error: string;
-      readonly logId?: string;
     };
 
 type ResolvedExecuteContext = {
@@ -656,6 +770,16 @@ type ResolvedExecuteContext = {
   readonly resolvedUserId: string;
   readonly executeParams: ToolExecuteParams;
   readonly executeOutputDir?: string;
+};
+
+type ResolvedSchemaContext = {
+  readonly ui: TerminalUI;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+    readonly projectType: 'CONSUMER' | 'DEVELOPER';
+    readonly consumerUserId?: string;
+  };
 };
 
 const emitCachedSchema = (
@@ -749,6 +873,21 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         client,
       },
     } satisfies ResolvedExecuteContext;
+  });
+
+const resolveSchemaContext = (params: SharedRunToolsExecuteParams) =>
+  Effect.gen(function* () {
+    const resolvedProject = yield* resolveCommandProject({
+      mode: params.projectMode,
+      projectName:
+        params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
+    }).pipe(Effect.mapError(formatResolveCommandProjectError));
+    const ui = yield* TerminalUI;
+
+    return {
+      ui,
+      resolvedProject,
+    } satisfies ResolvedSchemaContext;
   });
 
 const runConnectedToolkitFailFast = (params: {
@@ -1039,6 +1178,7 @@ const runExecuteWithSpinner = (params: {
             surface: params.surface,
             projectMode: params.projectMode,
             stage: 'execution',
+            logId: result.logId,
           });
           yield* params.ui.output(JSON.stringify(result, ciRedactReplacer, 2));
           return yield* Effect.fail(new ToolExecutionError(summary.error));
@@ -1105,8 +1245,8 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
-    const context = yield* resolveExecuteContext(params);
     if (params.getSchema) {
+      const context = yield* resolveSchemaContext(params);
       const definition = yield* getOrFetchToolInputDefinition(params.slug, {
         orgId: context.resolvedProject.orgId,
         projectId: context.resolvedProject.projectId,
@@ -1114,7 +1254,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
         Effect.tapError(error =>
           emitExecuteFailureTelemetry({
             toolSlug: params.slug,
-            args: context.args,
+            args: {},
             error,
             surface: params.surface,
             projectMode: params.projectMode,
@@ -1125,6 +1265,8 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       yield* emitCachedSchema(context.ui, params.slug, definition);
       return;
     }
+
+    const context = yield* resolveExecuteContext(params);
 
     yield* runConnectedToolkitFailFast({
       slug: params.slug,
@@ -1360,9 +1502,101 @@ const checkConnectedToolkitOrFail = (params: {
     }
   });
 
+const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
+  Effect.gen(function* () {
+    const contexts = yield* Effect.forEach(
+      params.specs,
+      () =>
+        resolveSchemaContext({
+          userId: params.userId,
+          projectName: params.projectName,
+          surface: params.surface,
+          projectMode: params.projectMode,
+          getSchema: params.getSchema,
+          dryRun: params.dryRun,
+          skipConnectionCheck: params.skipConnectionCheck,
+          skipToolParamsCheck: params.skipToolParamsCheck,
+          skipChecks: params.skipChecks,
+        }),
+      { concurrency: 'unbounded' }
+    );
+    const entries = contexts.map((context, index) => ({
+      context,
+      spec: params.specs[index]!,
+    }));
+
+    const ui = contexts[0]?.ui;
+    const results = yield* Effect.forEach(
+      entries,
+      ({ context, spec }) =>
+        Effect.gen(function* () {
+          const definition = yield* getOrFetchToolInputDefinition(spec.slug, {
+            orgId: context.resolvedProject.orgId,
+            projectId: context.resolvedProject.projectId,
+          });
+          return {
+            slug: spec.slug,
+            successful: true,
+            version: definition.version,
+            schemaPath: definition.schemaPath,
+            inputSchema: definition.schema,
+          } satisfies Extract<
+            ParallelExecuteResult,
+            { readonly inputSchema: Record<string, unknown> }
+          >;
+        }).pipe(
+          Effect.catchAll(error => {
+            const mapped = mapComposioError({ error, toolSlug: spec.slug });
+            return Effect.succeed({
+              slug: spec.slug,
+              successful: false,
+              error: mapped.message,
+            } satisfies Extract<ParallelExecuteResult, { readonly successful: false }>);
+          })
+        ),
+      { concurrency: 'unbounded' }
+    );
+
+    if (ui) {
+      for (const result of results) {
+        if (!result.successful) {
+          yield* ui.log.error(`[${result.slug}] ${result.error}`);
+          continue;
+        }
+
+        yield* ui.log.step(`[${result.slug}] Schema fetched: ${result.schemaPath}`);
+      }
+
+      const successful = results.every(result => result.successful);
+      yield* ui.log.message(
+        `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
+      );
+      yield* ui.output(
+        JSON.stringify(
+          {
+            successful,
+            parallel: true,
+            results,
+          },
+          ciRedactReplacer,
+          2
+        )
+      );
+      if (!successful) {
+        return yield* Effect.fail(
+          new ToolExecutionError('One or more parallel tool executions failed.')
+        );
+      }
+    }
+  });
+
 const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
+
+    if (params.getSchema) {
+      return yield* runParallelSchemaFetchFromParsed(params);
+    }
 
     const contexts = yield* Effect.forEach(
       params.specs,
@@ -1395,20 +1629,6 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           const toolSlug = spec.slug;
 
           try {
-            if (params.getSchema) {
-              const definition = yield* getOrFetchToolInputDefinition(toolSlug, {
-                orgId: context.resolvedProject.orgId,
-                projectId: context.resolvedProject.projectId,
-              });
-              return {
-                slug: toolSlug,
-                successful: true,
-                version: definition.version,
-                schemaPath: definition.schemaPath,
-                inputSchema: definition.schema,
-              };
-            }
-
             yield* checkConnectedToolkitOrFail({
               slug: toolSlug,
               resolvedProject: context.resolvedProject,
@@ -1562,6 +1782,7 @@ export const runParallelToolsExecuteFromArgv = (argv: ReadonlyArray<string>) => 
     catch: error => (error instanceof Error ? error : new Error(String(error))),
   }).pipe(Effect.flatMap(runParallelToolsExecuteFromParsed));
 };
+
 export const rootToolsCmd$Execute = Command.make(
   'execute',
   { slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks },
@@ -1587,10 +1808,12 @@ export const rootToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute --parallel GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com" }\'  GITHUB_CREATE_AN_ISSUE -d \'{ owner: "acme", repo: "app", title: "Bug" }\'',
       "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
       '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
       '',
       'Flags:',
+      '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
       '  --skip-connection-check     Skip the connected-account check',
       '  --skip-tool-params-check    Skip input validation against cached schema',
       '  --skip-checks               Skip both checks above',
@@ -1651,6 +1874,9 @@ export const devToolsCmd$Execute = Command.make(
       '  composio dev playground-execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --get-schema',
+      '',
+      'Flags:',
+      '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
     ].join('\n')
   )
 );

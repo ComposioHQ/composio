@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Reusable Dockerfile for Node.js e2e tests
 # Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.19.0 -t test-name .
 #
@@ -15,16 +14,13 @@ ENV PATH="$BUN_INSTALL/bin:$PNPM_HOME:$PATH"
 
 WORKDIR /app
 
-# Install system dependencies with cache mounts
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && \
+# Install system dependencies
+RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl unzip && \
     rm -rf /var/lib/apt/lists/*
 
-# Install corepack (for pnpm) with npm cache mount
-RUN --mount=type=cache,target=/root/.npm \
-    npm i -g corepack@latest && \
+# Install corepack (for pnpm)
+RUN npm i -g corepack@latest && \
     corepack enable
 
 # Install bun (version from .bun-version)

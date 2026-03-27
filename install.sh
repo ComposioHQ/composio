@@ -164,18 +164,46 @@ mkdir -p "$COMPOSIO_INSTALL_DIR" ||
     error "Failed to create install directory \"$COMPOSIO_INSTALL_DIR\""
 
 exe="$COMPOSIO_INSTALL_DIR/composio"
+release_tag_file="$COMPOSIO_INSTALL_DIR/release-tag.txt"
+
+install_bundle_support_files() {
+    local source_dir="$1"
+    local installed_count=0
+
+    while IFS= read -r -d '' source_path; do
+        local relative_path=${source_path#"$source_dir"/}
+        local target_path="$COMPOSIO_INSTALL_DIR/$relative_path"
+
+        mkdir -p "$(dirname "$target_path")" ||
+            error "Failed to create support file directory \"$(dirname "$target_path")\""
+
+        mv "$source_path" "$target_path" ||
+            error "Failed to install support file \"$relative_path\""
+
+        installed_count=$((installed_count + 1))
+    done < <(find "$source_dir" -mindepth 1 -type f ! -path "$source_dir/composio" -print0)
+
+    if (( installed_count == 0 )); then
+        warn "This release archive does not include any bundled support files beyond the main binary. Some CLI features may be unavailable in this version."
+    fi
+}
 
 # Handle nested directory structure (composio-<target>/composio)
 if [[ -f "$tmpdir/composio-$target/composio" ]]; then
     mv "$tmpdir/composio-$target/composio" "$exe"
+    install_bundle_support_files "$tmpdir/composio-$target"
 elif [[ -f "$tmpdir/composio" ]]; then
     mv "$tmpdir/composio" "$exe"
+    install_bundle_support_files "$tmpdir"
 else
     error 'Binary not found in extracted archive'
 fi
 
 chmod +x "$exe" ||
     error 'Failed to set permissions on executable'
+
+printf '%s\n' "$version" > "$release_tag_file" ||
+    error "Failed to write install metadata to \"$release_tag_file\""
 
 success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")"
 
@@ -239,7 +267,7 @@ else
             else
                 info "PATH already configured in \"$(tildify "$zsh_config")\""
             fi
-            refresh_command="exec $SHELL"
+            refresh_command="source $(tildify "$zsh_config")"
         else
             echo "Manually add the directory to $(tildify "$zsh_config") (or similar):"
             for cmd in "${commands[@]}"; do info_bold "  $cmd"; done

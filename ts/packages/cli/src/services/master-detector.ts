@@ -1,9 +1,9 @@
 export type MasterKind = 'claude' | 'codex' | 'user';
 
-const hasEnvPrefix = (env: NodeJS.ProcessEnv, prefix: string): boolean =>
+const hasEnvPrefix = (env: Record<string, string | undefined>, prefix: string): boolean =>
   Object.keys(env).some(key => key.startsWith(prefix));
 
-export const detectMaster = (env: NodeJS.ProcessEnv = process.env): MasterKind => {
+export const detectMaster = (env: Record<string, string | undefined> = process.env): MasterKind => {
   if (hasEnvPrefix(env, 'CODEX_')) {
     return 'codex';
   }

@@ -1,10 +1,18 @@
 ---
 title: CLI
-description: Install the Composio CLI to manage toolkits, execute tools, handle authentication, and generate type-safe code from the terminal.
+description: Install the Composio CLI to search for tools, inspect schemas, execute them, connect accounts, script workflows, and generate type-safe code from the terminal.
 keywords: [cli, command line, terminal, toolkits, tools, authentication, generate types]
 ---
 
-The Composio CLI lets you manage toolkits, execute tools, handle auth, inspect logs, and generate type-safe code from the terminal.
+The Composio CLI is best understood as a workflow tool, not just a list of commands.
+
+The default flow is:
+
+1. If you already know the tool slug, start with `composio execute`.
+2. If you do not know the slug, use `composio search`.
+3. If the inputs are unclear, use `composio execute --get-schema` or `--dry-run`.
+4. If `execute` reports that the toolkit is not connected, run `composio link` and retry.
+5. Use `composio run` for multi-step workflows and `composio proxy` for raw API calls.
 
 ## Installation
 
@@ -18,100 +26,214 @@ curl -fsSL https://composio.dev/install | bash
 # Authenticate with Composio
 composio login
 
-# Initialize a project in the current directory
-composio init
-
-# Check your account
+# Inspect your current session
 composio whoami
 ```
 
 `composio login` opens a browser-based flow, then prompts you to choose your default organization and project. Use `composio login -y` to skip the picker and use session defaults for non-interactive runs.
 
-`composio whoami` shows account and workspace context, and does not include API keys in display or JSON output.
+`composio whoami` shows account and workspace context and does not include API keys in display or JSON output.
 
-## Search and execute a tool
+## Execute a tool
+
+`composio execute` is the main command for actually running tools.
 
 ```bash
-# Connect your GitHub account
+# Execute a tool directly
+composio execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
+
+# Validate without executing
+composio execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER --dry-run -d '{"owner":"composiohq","repo":"composio"}'
+
+# Read arguments from a file
+composio execute GITHUB_CREATE_ISSUE -d @issue.json
+
+# Read arguments from stdin
+cat issue.json | composio execute GITHUB_CREATE_ISSUE -d -
+```
+
+The `-d` / `--data` flag accepts:
+
+- JSON
+- JS-style object literals
+- `@file`
+- `-` for stdin
+
+By default, `execute` does two useful checks for you:
+
+- validates arguments against the cached tool schema
+- checks whether the required toolkit account is connected
+
+If you just need a schema or a safe preview, stay inside `execute`:
+
+```bash
+composio execute GITHUB_CREATE_ISSUE --get-schema
+composio execute GITHUB_CREATE_ISSUE --skip-connection-check --dry-run -d '{ owner: "acme", repo: "app", title: "Bug report", body: "Steps to reproduce..." }'
+```
+
+If the command output is very large, the CLI may store it in the session artifacts directory instead of printing everything inline. Use `composio artifacts cwd` to find that directory for the current working tree.
+
+If you need several independent tool calls and do not need script logic, use top-level parallel execute instead of jumping straight to `run`:
+
+```bash
+composio execute --parallel \
+  GMAIL_FETCH_EMAILS -d '{ max_results: 2 }' \
+  GITHUB_GET_THE_AUTHENTICATED_USER -d '{}'
+```
+
+## Search for the right slug
+
+Use `composio search` only when the slug is unknown.
+
+```bash
+composio search "create a github issue"
+composio search "send an email" --toolkits gmail
+composio search "send an email" "create a github issue"
+composio search "my emails" "my github issues" --toolkits gmail,github
+```
+
+Use multiple quoted queries when you are exploring several related tasks at once. Read the returned slugs, choose the best match, then move back to `execute`.
+
+Use `--human` when you want a readable summary in the terminal. Leave it off when you want JSON output for scripting.
+
+## Inspect a known slug
+
+Use `composio tools info` as a compact fallback when you already know the slug and want a quick summary:
+
+```bash
+composio tools info GITHUB_CREATE_ISSUE
+composio tools list gmail
+```
+
+For most execution questions, `composio execute --get-schema` or `--dry-run` is a better first step than `tools info`.
+
+## Connect accounts with link
+
+`composio link` connects an external account for a toolkit such as GitHub, Gmail, or Slack.
+
+```bash
 composio link github
 
-# Print connect URL + JSON and exit immediately (no wait)
+# Print the auth URL and exit immediately
 composio link github --no-wait
+```
 
-# Search for tools
-composio search "star a github repo"
+You usually do not start with `link`. The normal flow is to try `execute` first. If the CLI tells you there is no active connection for the toolkit, run `link` and retry the exact same command.
 
-# Look up a tool's input schema
-composio manage tools info GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER
+## End-to-end flow
 
-# Execute a tool (star the Composio repo!)
+```bash
+composio search "star a github repo" --human
+composio tools info GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER
+composio execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER --dry-run -d '{"owner":"composiohq","repo":"composio"}'
+composio link github
 composio execute GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER -d '{"owner":"composiohq","repo":"composio"}'
 ```
 
-## Set up and listen to triggers
+## Script multi-step workflows with run
+
+Use `composio run` when one tool call is not enough and you want to stay inside the CLI.
+
+The runtime injects helpers that mirror the CLI:
+
+- `execute(slug, data?)`
+- `search(query, opts?)`
+- `proxy(toolkit)`
+- `experimental_subAgent(prompt, opts?)`
+- `z`
+
+Examples:
 
 ```bash
-# Find your connected account ID
-composio manage connected-accounts list --toolkits github
+# Inline workflow
+composio run '
+  const issue = await execute("GITHUB_CREATE_ISSUE", {
+    owner: "acme",
+    repo: "app",
+    title: "Bug report",
+    body: "Steps to reproduce..."
+  });
+  console.log(issue);
+'
 
-# Create a trigger for star events on your repo
-composio manage triggers create GITHUB_STAR_ADDED_EVENT --connected-account-id your-connected-account-id --trigger-config '{"owner":"your-username","repo":"your-repo"}'
-
-# Listen to all GitHub trigger events on your account in real time
-composio listen --toolkits github --table
+# Run a workflow from a file
+composio run --file ./workflow.ts -- --repo composiohq/composio
 ```
 
-## Available commands
+Use `run` when you want loops, conditionals, `Promise.all`, `search()` inside a script, `proxy()`, `experimental_subAgent()`, or a reusable workflow file.
+
+## Call raw APIs with proxy
+
+Use `composio proxy` when you want authenticated access to a toolkit API endpoint directly rather than going through a dedicated Composio tool.
+
+```bash
+composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
+composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'
+```
+
+Use `proxy` when:
+
+- there is no dedicated tool for the endpoint you need
+- you already know the exact API endpoint to call
+- you want Composio to handle auth while you keep full control over the request
+
+## Developer project commands
+
+Use the `dev` namespace only for developer-project setup and inspection commands, not for the normal consumer-style search and execute flow.
+
+```bash
+# Initialize local developer project context
+composio dev init
+
+# Execute a tool against a playground user
+composio dev playground-execute GITHUB_CREATE_ISSUE --user-id demo-user -d '{"owner":"acme","repo":"app","title":"Bug"}'
+
+# Inspect triggers and logs
+composio dev listen --toolkits github --table
+composio dev logs tools
+composio dev logs triggers
+```
+
+## Command summary
 
 Run `composio <command> --help` for detailed usage and flags.
 
-<div className="cli-commands">
-
-| Command | Subcommands | Description |
-| --- | --- | --- |
-| `composio login` | | Authenticate with your Composio account and select default org/project |
-| `composio logout` | | Remove stored authentication |
-| `composio whoami` | | Display your account and workspace information (without API keys) |
-| `composio init` | | Initialize a Composio project in the current directory |
-| `composio search` | | Search for tools by use-case query (alias for `manage tools search`) |
-| `composio execute` | | Execute a tool by slug (alias for `manage tools execute`) |
-| `composio link` | | Connect an account for a toolkit (alias for `manage connected-accounts link`) |
-| `composio listen` | | Listen to trigger events in real time (alias for `manage triggers listen`) |
-| `composio manage toolkits` | `list`, `search`, `info`, `version` | Discover and inspect toolkits |
-| `composio manage tools` | `list`, `search`, `info`, `execute` | Discover, inspect, and execute tools |
-| `composio manage connected-accounts` | `list`, `info`, `whoami`, `link`, `delete` | Manage connected accounts |
-| `composio manage auth-configs` | `list`, `info`, `create`, `delete` | Manage auth configurations |
-| `composio manage triggers` | `list`, `info`, `create`, `status`, `listen`, `enable`, `disable`, `delete` | Subscribe to events and manage trigger instances |
-| `composio manage logs` | `tools`, `triggers` | Inspect tool and trigger execution logs |
-| `composio generate ts` | `(options)` | Generate TypeScript type stubs |
-| `composio generate py` | `(options)` | Generate Python type stubs |
-| `composio upgrade` | | Upgrade CLI to the latest version |
-| `composio version` | | Display the current CLI version |
-
-</div>
+- `composio execute`: First choice when the slug is known.
+- `composio search`: Discovery step when the slug is unknown.
+- `composio link`: Recovery step when a toolkit account is missing.
+- `composio run`: Programmatic workflows and LLM-driven scripting.
+- `composio proxy`: Raw authenticated API access.
+- `composio dev`: Developer-project commands only.
 
 ## Global flags
 
-| Flag | Description |
-| --- | --- |
-| `--log-level <level>` | Set log level: `silent`, `error`, `warn`, `info`, `debug` |
-| `--help` | Show help for any command |
+| Flag                  | Description                                                                         |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `--log-level <level>` | Set log level: `all`, `trace`, `debug`, `info`, `warning`, `error`, `fatal`, `none` |
+| `--help`              | Show help for any command                                                           |
 
 ## Environment variables
 
-| Variable | Description |
-| --- | --- |
-| `COMPOSIO_API_KEY` | Your Composio API key |
-| `COMPOSIO_BASE_URL` | Custom API base URL |
-| `COMPOSIO_LOG_LEVEL` | Logging level: `silent`, `error`, `warn`, `info`, `debug` |
-| `COMPOSIO_DISABLE_TELEMETRY` | Set to `"true"` to disable telemetry |
-| `COMPOSIO_TOOLKIT_VERSION_{TOOLKIT}` | Override toolkit version (e.g., `COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00`) |
-| `COMPOSIO_WEBHOOK_SECRET` | Signing secret for trigger webhook forwarding |
+| Variable                             | Description                                                                  |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| `COMPOSIO_API_KEY`                   | Your Composio API key                                                        |
+| `COMPOSIO_BASE_URL`                  | Custom API base URL                                                          |
+| `COMPOSIO_WEB_URL`                   | Custom Composio dashboard URL                                                |
+| `COMPOSIO_CACHE_DIR`                 | Override the CLI cache directory                                             |
+| `COMPOSIO_SESSION_DIR`               | Override the session artifacts root directory                                |
+| `COMPOSIO_LOG_LEVEL`                 | Default logging level                                                        |
+| `COMPOSIO_DISABLE_TELEMETRY`         | Set to `"true"` to disable telemetry                                         |
+| `COMPOSIO_TOOLKIT_VERSION_{TOOLKIT}` | Override toolkit version (e.g. `COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00`) |
+| `COMPOSIO_WEBHOOK_SECRET`            | Signing secret for trigger webhook forwarding                                |
+| `FORCE_USE_CACHE`                    | Force cache-first reads for generated toolkit and tool metadata              |
+| `DEBUG_OVERRIDE_VERSION`             | Override the target CLI version during upgrade debugging                     |
 
 ## Generate type definitions
 
 <Callout type="info">
-Type generation is only useful if you're using [direct tool execution](/docs/tools-direct/executing-tools). If you're using sessions with meta tools, you don't need this.
+  Type generation is only useful if you're using [direct tool
+  execution](/docs/tools-direct/executing-tools). If you're using sessions with meta tools, you
+  don't need this.
 </Callout>
 
 Generate TypeScript or Python type definitions for Composio tools. These types provide autocomplete and type safety when using direct tool execution (`composio.tools.execute()`).
@@ -120,7 +242,7 @@ Generate TypeScript or Python type definitions for Composio tools. These types p
 composio generate
 ```
 
-The CLI auto-detects your project language. For explicit control, use `composio generate ts` or `composio generate py`.
+The CLI auto-detects your project language. When no `--output-dir` is provided, TypeScript generation writes to the project default location and emits transpiled JavaScript alongside TypeScript. For explicit control, use `composio generate ts` or `composio generate py`.
 
 <Tabs items={['TypeScript', 'Python']}>
   <Tab value="TypeScript">
@@ -135,6 +257,7 @@ The CLI auto-detects your project language. For explicit control, use `composio 
     | `--transpiled` | Emit transpiled JavaScript alongside TypeScript |
     | `--type-tools` | Generate typed schemas for each tool (slower) |
     | `--toolkits <names>` | Only generate for specific toolkits (repeatable) |
+
   </Tab>
   <Tab value="Python">
     ```bash
@@ -145,5 +268,6 @@ The CLI auto-detects your project language. For explicit control, use `composio 
     | --- | --- |
     | `-o`, `--output-dir <dir>` | Output directory |
     | `--toolkits <names>` | Only generate for specific toolkits (repeatable) |
+
   </Tab>
 </Tabs>

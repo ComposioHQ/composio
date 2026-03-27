@@ -431,7 +431,10 @@ const detectLanguage = (fs: FileSystem.FileSystem, cwd: string) =>
       if (evidence.strongPy)
         return { language: 'python' as const, rootDir: dir, evidence } as const;
 
-      const weakCandidate = pickBestWeak(evidence, depth);
+      // Only allow weak detection at the requested cwd. Walking weak signals up
+      // arbitrary ancestor directories causes false positives in temp dirs and
+      // other shared parent paths outside the actual project.
+      const weakCandidate = depth === 0 ? pickBestWeak(evidence, depth) : null;
       if (weakCandidate && (!bestWeak || weakCandidate.score > bestWeak.score))
         bestWeak = weakCandidate;
     }

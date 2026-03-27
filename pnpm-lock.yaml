@@ -1070,6 +1070,9 @@ importers:
       '@effect/platform-node-shared':
         specifier: 'catalog:'
         version: 0.57.1(@effect/cluster@0.56.4(@effect/platform@0.94.5(effect@3.19.18))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(@effect/workflow@0.16.0(@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(@effect/platform@0.94.5(effect@3.19.18))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(effect@3.19.18))(effect@3.19.18))(@effect/platform@0.94.5(effect@3.19.18))(@effect/rpc@0.73.2(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(@effect/sql@0.49.0(@effect/experimental@0.58.0(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(@effect/platform@0.94.5(effect@3.19.18))(effect@3.19.18))(effect@3.19.18)
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
       '@zed-industries/claude-code-acp':
         specifier: ^0.16.2
         version: 0.16.2(@cfworker/json-schema@4.1.1)(zod@4.3.6)

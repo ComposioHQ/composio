@@ -12,6 +12,10 @@ import decompress from 'decompress';
 import type { Predicate } from 'effect/Predicate';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
+import {
+  collectExpectedRunCompanionAssetRelativePaths,
+  writeInstalledReleaseTag,
+} from './run-companion-modules';
 
 export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinaryError')<{
   readonly cause?: unknown;
@@ -34,6 +38,12 @@ type GitHubRelease = {
 };
 
 const CLI_RELEASE_TAG_PATTERN = /^@composio\/cli@\d+\.\d+\.\d+.*$/;
+
+const getBinaryAssetName = (platformArch: PlatformArch) =>
+  `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
+
+const hasPlatformBinaryAsset = (release: GitHubRelease, platformArch: PlatformArch) =>
+  release.assets.some(asset => asset.name === getBinaryAssetName(platformArch));
 
 // Service to manage CLI binary upgrades
 export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/UpgradeBinary', {
@@ -97,7 +107,9 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         )) as T;
       });
 
-    const fetchLatestRelease = (): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+    const fetchLatestRelease = (
+      platformArch: PlatformArch
+    ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         const release = yield* githubConfig.TAG.pipe(
           Option.match({
@@ -142,8 +154,24 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                 );
               }
 
-              let latest = cliReleases[0];
-              for (const release of cliReleases.slice(1)) {
+              const cliReleasesWithBinary = cliReleases.filter(release =>
+                hasPlatformBinaryAsset(release, platformArch)
+              );
+
+              if (cliReleasesWithBinary.length === 0) {
+                return yield* Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: new Error(
+                      `No package-scoped CLI releases found with ${getBinaryAssetName(platformArch)}`
+                    ),
+                    message:
+                      'Failed to determine latest CLI release from @composio/cli tags on GitHub',
+                  })
+                );
+              }
+
+              let latest = cliReleasesWithBinary[0];
+              for (const release of cliReleasesWithBinary.slice(1)) {
                 const comparison = yield* semverComparator(latest.tag_name, release.tag_name).pipe(
                   Effect.mapError(
                     error =>
@@ -204,7 +232,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           `Looking up binary for ${platformArch.platform}-${platformArch.arch}`
         );
 
-        const binaryName = `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
+        const binaryName = getBinaryAssetName(platformArch);
 
         const asset = release.assets.find(asset => asset.name === binaryName);
         if (!asset) {
@@ -345,11 +373,12 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     const extractBinary = (
       { name, data }: { name: string; data: Uint8Array },
       tempDir: string
-    ): Effect.Effect<string, UpgradeBinaryError, never> =>
+    ): Effect.Effect<{ binaryPath: string; packageDir: string }, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         const zipPath = path.join(tempDir, name);
         const extractDir = path.join(tempDir, 'extract');
-        const binaryPath = path.join(extractDir, path.parse(name).name, CLI_BINARY_NAME);
+        const packageDir = path.join(extractDir, path.parse(name).name);
+        const binaryPath = path.join(packageDir, CLI_BINARY_NAME);
 
         yield* Effect.logDebug(`Download zip to ${extractDir}`);
 
@@ -414,7 +443,10 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           )
         );
 
-        return binaryPath;
+        return {
+          binaryPath,
+          packageDir,
+        };
       });
 
     /**
@@ -444,7 +476,10 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
      */
     const replaceBinary = (
       sourcePath: string,
-      targetPath: string
+      targetPath: string,
+      options: {
+        releaseTag?: string;
+      } = {}
     ): Effect.Effect<void, UpgradeBinaryError> =>
       Effect.gen(function* () {
         yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
@@ -463,6 +498,64 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               )
             )
           );
+
+        const sourceDirectory = path.dirname(sourcePath);
+        const targetDirectory = path.dirname(targetPath);
+        const companionRelativePaths =
+          collectExpectedRunCompanionAssetRelativePaths(sourceDirectory);
+        for (const relativePath of companionRelativePaths) {
+          const sourceCompanion = path.join(sourceDirectory, relativePath);
+          const sourceExists = yield* fs
+            .exists(sourceCompanion)
+            .pipe(Effect.catchAll(() => Effect.succeed(false)));
+
+          if (!sourceExists) {
+            return yield* Effect.fail(
+              new UpgradeBinaryError({
+                cause: new Error(`Missing companion module: ${sourceCompanion}`),
+                message: 'Downloaded binary package is incomplete',
+              })
+            );
+          }
+
+          const targetCompanion = path.join(targetDirectory, relativePath);
+          yield* fs.makeDirectory(path.dirname(targetCompanion), { recursive: true }).pipe(
+            Effect.catchAll(error =>
+              Effect.fail(
+                new UpgradeBinaryError({
+                  cause: error as Error,
+                  message: `Failed to create companion module directory: ${relativePath}`,
+                })
+              )
+            )
+          );
+
+          yield* fs
+            .copy(sourceCompanion, targetCompanion, {
+              overwrite: true,
+            })
+            .pipe(
+              Effect.catchAll(error =>
+                Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: error as Error,
+                    message: `Failed to replace companion module: ${relativePath}`,
+                  })
+                )
+              )
+            );
+        }
+
+        if (options.releaseTag) {
+          yield* Effect.try({
+            try: () => writeInstalledReleaseTag(targetDirectory, options.releaseTag!),
+            catch: error =>
+              new UpgradeBinaryError({
+                cause: error as Error,
+                message: 'Failed to update installed release metadata',
+              }),
+          });
+        }
       });
 
     /**
@@ -482,12 +575,13 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           yield* ui.log.info(`New local version available (current: ${APP_VERSION})`);
           yield* replaceBinary(upgradeTargetOpt.value, currentPath);
           yield* ui.outro('Upgrade completed');
-          return;
+          return undefined;
         }
 
         const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
           Effect.gen(function* () {
-            const release = yield* fetchLatestRelease();
+            const platformArch = yield* detectPlatform;
+            const release = yield* fetchLatestRelease(platformArch);
             const updateAvailable = yield* isUpdateAvailable(release);
             if (!updateAvailable) {
               yield* spinner.stop('You are already running the latest version!');
@@ -498,7 +592,6 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               `New version available: ${release.tag_name} (current: ${APP_VERSION}). Downloading...`
             );
 
-            const platformArch = yield* detectPlatform;
             const { name, data } = yield* downloadBinary(release, platformArch);
 
             yield* spinner.message('Verifying checksum...');
@@ -531,17 +624,21 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                 )
               );
 
-            const extractedBinaryPath = yield* extractBinary({ name, data }, tmpDir);
-            yield* replaceBinary(extractedBinaryPath, currentPath);
+            const extractedBinary = yield* extractBinary({ name, data }, tmpDir);
+            yield* replaceBinary(extractedBinary.binaryPath, currentPath, {
+              releaseTag: release.tag_name,
+            });
 
             yield* spinner.stop('Upgrade completed!');
-            return true;
+            return release.tag_name;
           })
         );
 
         yield* ui.outro(
           didUpgrade ? 'Restart your terminal to use the new version.' : 'No upgrade needed.'
         );
+
+        return didUpgrade || undefined; // release tag string, or undefined if no upgrade
       });
 
     return {

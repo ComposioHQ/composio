@@ -30,6 +30,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
             WEB_URL: 'https://dashboard.composio.dev/',
           })
         );
@@ -57,6 +58,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
             WEB_URL: 'https://dashboard.composio.dev/',
           })
         );
@@ -86,6 +88,33 @@ describe('Config', () => {
             LOG_LEVEL: Option.some(LogLevel.Info),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          })
+        );
+      });
+
+      it('[When] COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE is "false"', () => {
+        const map = new Map([['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false']]) satisfies Map<
+          string,
+          string
+        >;
+
+        const actual = Effect.runSync(
+          withMapConfigProvider(map)(Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct)))
+        );
+
+        assertEquals(
+          actual,
+          Data.struct({
+            USER_API_KEY: Option.none(),
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://dashboard.composio.dev/',
+            CACHE_DIR: Option.none(),
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: false,
           })
         );
       });
@@ -108,6 +137,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -130,6 +160,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -155,6 +186,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -180,6 +212,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -202,6 +235,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -312,6 +346,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -337,6 +372,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -363,6 +399,30 @@ describe('Config', () => {
             LOG_LEVEL: Option.some(LogLevel.Info),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
+          })
+        );
+      });
+
+      it('[When] COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE is "false"', () => {
+        vi.stubEnv('COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false');
+
+        const actual = Effect.runSync(
+          withEnvConfigProvider(Config.all(APP_CONFIG).pipe(Effect.andThen(Data.struct)))
+        );
+
+        assertEquals(
+          actual,
+          Data.struct({
+            USER_API_KEY: Option.none(),
+            ENVIRONMENT: Option.none(),
+            BASE_URL: 'https://backend.composio.dev',
+            WEB_URL: 'https://dashboard.composio.dev/',
+            CACHE_DIR: Option.none(),
+            LOG_LEVEL: Option.none(),
+            ORG_ID: Option.none(),
+            PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: false,
           })
         );
       });
@@ -385,6 +445,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
@@ -409,6 +470,7 @@ describe('Config', () => {
             LOG_LEVEL: Option.none(),
             ORG_ID: Option.none(),
             PROJECT_ID: Option.none(),
+            DISABLE_CONNECTED_ACCOUNT_CACHE: true,
           })
         );
       });
