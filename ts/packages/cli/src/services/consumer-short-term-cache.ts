@@ -211,6 +211,31 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
     });
   });
 
+export const writeConsumerConnectedToolkitsCache = (params: {
+  readonly orgId: string;
+  readonly consumerUserId: string;
+  readonly toolkits: ReadonlyArray<string>;
+}) =>
+  Effect.gen(function* () {
+    const state = yield* readCache();
+    const key = cacheKey(params.orgId, params.consumerUserId);
+    const currentEntry = state[key];
+    const proc = yield* NodeProcess;
+    const searchSessionFields = resolveSearchSessionMetadata({
+      currentEntry,
+      cwd: proc.cwd,
+    });
+
+    yield* writeCache({
+      ...state,
+      [key]: {
+        toolkits: [...new Set(params.toolkits.map(toolkit => toolkit.toLowerCase()))],
+        expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        ...searchSessionFields,
+      },
+    });
+  });
+
 export const primeConsumerConnectedToolkitsCacheInBackground = (params?: {
   readonly orgId?: string;
   readonly consumerUserId?: string;

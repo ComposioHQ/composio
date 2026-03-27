@@ -145,9 +145,9 @@ type SubcommandHelp = {
 
 const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   search: {
-    usage: 'composio search <query...> [--toolkits text] [--limit integer]',
+    usage: 'composio search <query...> [--toolkits text] [--limit integer] [--human]',
     description:
-      'Find tools by use case. Returns matching tools with slugs you can pass directly to execute.',
+      'Find tools by use case. Defaults to JSON output; use --human for formatted output.',
     args: [
       {
         name: '<query...>',
@@ -158,12 +158,14 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs, comma-separated' },
       { name: '--limit <integer>', description: 'Maximum number of results (1-1000)' },
+      { name: '--human', description: 'Show formatted human-readable search output' },
     ],
     examples: [
       '# Find tools for a use case',
       'composio search "send an email"',
       'composio search "send an email" "create github issue"',
       'composio search "create issue" --toolkits github',
+      'composio search "send an email" --human',
       '',
       '# Cross-app workflow discovery',
       'composio search "post a message to a slack channel"',
