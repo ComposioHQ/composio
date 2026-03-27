@@ -195,6 +195,7 @@ runWithArgs.pipe(
   ),
   Effect.catchIf(ValidationError.isValidationError, error => {
     const text = HelpDoc.toAnsiText(error.error).trim();
+    const errorEffect = text.length > 0 ? Console.error(text) : Effect.void;
     const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
     const tipEffect =
       flagMatch && valueOptionNames.has(flagMatch[1])
@@ -203,7 +204,13 @@ runWithArgs.pipe(
     const cmdName = matchCommandFromArgv(process.argv);
     const helpText = cmdName ? getCommandHelpText(cmdName) : undefined;
     const helpEffect = helpText ? Console.error(helpText) : Effect.void;
-    return Effect.all([tipEffect, helpEffect], { discard: true });
+    return Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
+      Effect.tap(() =>
+        Effect.sync(() => {
+          process.exitCode = 1;
+        })
+      )
+    );
   }),
   Effect.withSpan('composio-cli', {
     attributes: {
