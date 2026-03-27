@@ -48,6 +48,9 @@ export const RUN_CODEX_ACP_BINARY_TARGETS = [
 ] as const;
 export const RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS = [
   'acp-adapters/claude-code-acp.mjs',
+  // cli.js from @anthropic-ai/claude-agent-sdk must live next to claude-code-acp.mjs.
+  // The bundled adapter uses import.meta.url to locate it at runtime.
+  'acp-adapters/cli.js',
   ...RUN_CODEX_ACP_BINARY_TARGETS.map(target => target.relativePath),
 ] as const;
 
