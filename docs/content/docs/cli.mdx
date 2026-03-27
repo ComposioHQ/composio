@@ -139,7 +139,7 @@ The runtime injects helpers that mirror the CLI:
 - `execute(slug, data?)`
 - `search(query, opts?)`
 - `proxy(toolkit)`
-- `subAgent(prompt, opts?)`
+- `experimental_subAgent(prompt, opts?)`
 - `z`
 
 Examples:
@@ -160,7 +160,7 @@ composio run '
 composio run --file ./workflow.ts -- --repo composiohq/composio
 ```
 
-Use `run` when you want loops, conditionals, `Promise.all`, `search()` inside a script, `proxy()`, or a reusable workflow file.
+Use `run` when you want loops, conditionals, `Promise.all`, `search()` inside a script, `proxy()`, `experimental_subAgent()`, or a reusable workflow file.
 
 ## Call raw APIs with proxy
 
