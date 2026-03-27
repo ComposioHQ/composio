@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
@@ -11,6 +11,7 @@ import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 import { detectMaster, type MasterKind } from 'src/services/master-detector';
+import { resolveRunCompanionModulePath } from 'src/services/run-companion-modules';
 import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
@@ -160,46 +161,26 @@ export const inferCliInvocationPrefix = (
     : [process.execPath];
 };
 
-const resolveSiblingModulePath = (relativeNoExtensionFromRunCmd: string): string => {
-  const currentFilePath = fileURLToPath(import.meta.url);
-  const currentDirectory = path.dirname(currentFilePath);
-
-  // Source (.ts) — running from `bun src/bin.ts`
-  const tsPath = path.resolve(currentDirectory, `${relativeNoExtensionFromRunCmd}.ts`);
-  if (fs.existsSync(tsPath)) {
-    return tsPath;
-  }
-
-  // Built (.js) — running from `bun dist/bin.mjs`
-  const jsPath = path.resolve(currentDirectory, `${relativeNoExtensionFromRunCmd}.js`);
-  if (fs.existsSync(jsPath)) {
-    return jsPath;
-  }
-
-  // Compiled binary — import.meta.url points to /$bunfs/, files live next to the executable
-  const baseName = path.basename(relativeNoExtensionFromRunCmd);
-  const exeDir = path.dirname(process.execPath);
-  const mjsPath = path.resolve(exeDir, `${baseName}.mjs`);
-  if (fs.existsSync(mjsPath)) {
-    return mjsPath;
-  }
-  const exeJsPath = path.resolve(exeDir, `${baseName}.js`);
-  if (fs.existsSync(exeJsPath)) {
-    return exeJsPath;
-  }
-
-  // Fallback — return the .js path (will error at runtime with a clear module-not-found)
-  return jsPath;
-};
-
 const subAgentSharedModuleUrl = pathToFileURL(
-  resolveSiblingModulePath('../services/run-subagent-shared')
+  resolveRunCompanionModulePath({
+    callerImportMetaUrl: import.meta.url,
+    execPath: process.execPath,
+    relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+  })
 ).href;
 const subAgentAcpModuleUrl = pathToFileURL(
-  resolveSiblingModulePath('../services/run-subagent-acp')
+  resolveRunCompanionModulePath({
+    callerImportMetaUrl: import.meta.url,
+    execPath: process.execPath,
+    relativeNoExtensionFromCaller: '../services/run-subagent-acp',
+  })
 ).href;
 const subAgentLegacyModuleUrl = pathToFileURL(
-  resolveSiblingModulePath('../services/run-subagent-legacy')
+  resolveRunCompanionModulePath({
+    callerImportMetaUrl: import.meta.url,
+    execPath: process.execPath,
+    relativeNoExtensionFromCaller: '../services/run-subagent-legacy',
+  })
 ).href;
 
 type RunHelperContext = {

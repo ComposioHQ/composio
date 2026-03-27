@@ -12,6 +12,7 @@ import decompress from 'decompress';
 import type { Predicate } from 'effect/Predicate';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
+import { RUN_COMPANION_MODULE_FILENAMES } from './run-companion-modules';
 
 export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinaryError')<{
   readonly cause?: unknown;
@@ -345,11 +346,12 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     const extractBinary = (
       { name, data }: { name: string; data: Uint8Array },
       tempDir: string
-    ): Effect.Effect<string, UpgradeBinaryError, never> =>
+    ): Effect.Effect<{ binaryPath: string; packageDir: string }, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         const zipPath = path.join(tempDir, name);
         const extractDir = path.join(tempDir, 'extract');
-        const binaryPath = path.join(extractDir, path.parse(name).name, CLI_BINARY_NAME);
+        const packageDir = path.join(extractDir, path.parse(name).name);
+        const binaryPath = path.join(packageDir, CLI_BINARY_NAME);
 
         yield* Effect.logDebug(`Download zip to ${extractDir}`);
 
@@ -414,7 +416,10 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           )
         );
 
-        return binaryPath;
+        return {
+          binaryPath,
+          packageDir,
+        };
       });
 
     /**
@@ -463,6 +468,40 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               )
             )
           );
+
+        const sourceDirectory = path.dirname(sourcePath);
+        const targetDirectory = path.dirname(targetPath);
+
+        for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+          const sourceCompanion = path.join(sourceDirectory, fileName);
+          const sourceExists = yield* fs
+            .exists(sourceCompanion)
+            .pipe(Effect.catchAll(() => Effect.succeed(false)));
+
+          if (!sourceExists) {
+            return yield* Effect.fail(
+              new UpgradeBinaryError({
+                cause: new Error(`Missing companion module: ${sourceCompanion}`),
+                message: 'Downloaded binary package is incomplete',
+              })
+            );
+          }
+
+          yield* fs
+            .copy(sourceCompanion, path.join(targetDirectory, fileName), {
+              overwrite: true,
+            })
+            .pipe(
+              Effect.catchAll(error =>
+                Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: error as Error,
+                    message: `Failed to replace companion module: ${fileName}`,
+                  })
+                )
+              )
+            );
+        }
       });
 
     /**
@@ -531,8 +570,8 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                 )
               );
 
-            const extractedBinaryPath = yield* extractBinary({ name, data }, tmpDir);
-            yield* replaceBinary(extractedBinaryPath, currentPath);
+            const extractedBinary = yield* extractBinary({ name, data }, tmpDir);
+            yield* replaceBinary(extractedBinary.binaryPath, currentPath);
 
             yield* spinner.stop('Upgrade completed!');
             return release.tag_name;

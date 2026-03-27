@@ -2,6 +2,7 @@ import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
+import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
 import { teardown } from './_shared';
 
 /**
@@ -76,18 +77,11 @@ export function buildBinary() {
     // Build companion modules that `composio run` imports in the child process.
     // These cannot live inside the compiled binary because they run in a separate
     // Bun process via the --preload globals file.
-    const companionModules = [
-      'src/services/run-subagent-shared.ts',
-      'src/services/run-subagent-acp.ts',
-      'src/services/run-subagent-legacy.ts',
-    ] as const;
-
-    for (const entry of companionModules) {
-      const name = entry.replace(/^.*\//, '').replace(/\.ts$/, '');
+    for (const name of RUN_COMPANION_MODULE_BASENAMES) {
       const companionArgs = [
         'bun',
         'build',
-        `./${entry}`,
+        `./src/services/${name}.ts`,
         '--outfile',
         `./dist/${name}.mjs`,
         '--format',

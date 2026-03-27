@@ -119,8 +119,8 @@ const storeCredentials = (params: {
     const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
     yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
     if (!skipHints) {
-      yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
-      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
+      yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
+      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
     }
 
     // Emit structured JSON for piped/scripted consumption (agent-native)
@@ -251,8 +251,8 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
           org_name: finalOrgName,
         })
       );
-      yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
-      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
+      yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
+      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
       yield* ui.outro("You're all set!");
     }
   });
@@ -411,8 +411,8 @@ export const browserLogin = (params: {
           org_name: finalOrgName,
         })
       );
-      yield* ui.log.info(commandHintStep('Set up developer project context', 'dev.init'));
-      yield* ui.log.info(commandHintStep('Switch your default org later', 'dev.orgs.switch'));
+      yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
+      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
       yield* ui.outro("You're all set!");
     }
   });

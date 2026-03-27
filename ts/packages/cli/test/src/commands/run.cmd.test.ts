@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { afterEach, it, vi } from 'vitest';
@@ -10,6 +11,7 @@ import {
   inferCliInvocationPrefix,
   wrapInlineCodeForRun,
 } from 'src/commands/run.cmd';
+import { resolveRunCompanionModulePath } from 'src/services/run-companion-modules';
 import { buildStructuredPrompt, finalizeInvokeAgentText } from 'src/services/run-subagent-shared';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -308,6 +310,41 @@ describe('run-subagent-shared', () => {
 describe('inferCliInvocationPrefix', () => {
   it('[Given] a compiled bunfs entrypoint [Then] it falls back to the binary path only', () => {
     expect(inferCliInvocationPrefix(['node', '/$bunfs/root/composio'])).toEqual([process.execPath]);
+  });
+});
+
+describe('resolveRunCompanionModulePath', () => {
+  it('[Given] a bundled dist chunk [Then] it resolves sibling companion modules in dist', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-dist-'));
+    const callerPath = path.join(tempDir, 'commands-abc.mjs');
+    const servicesDir = path.join(tempDir, 'services');
+    const companionPath = path.join(servicesDir, 'run-subagent-shared.mjs');
+    fs.writeFileSync(callerPath, '', 'utf8');
+    fs.mkdirSync(servicesDir);
+    fs.writeFileSync(companionPath, '', 'utf8');
+
+    expect(
+      resolveRunCompanionModulePath({
+        callerImportMetaUrl: pathToFileURL(callerPath).href,
+        execPath: '/tmp/composio',
+        relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+      })
+    ).toBe(companionPath);
+  });
+
+  it('[Given] a compiled bunfs caller [Then] it falls back to modules next to the binary', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-bin-'));
+    const execPath = path.join(tempDir, 'composio');
+    const companionPath = path.join(tempDir, 'run-subagent-shared.mjs');
+    fs.writeFileSync(companionPath, '', 'utf8');
+
+    expect(
+      resolveRunCompanionModulePath({
+        callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+        execPath,
+        relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+      })
+    ).toBe(companionPath);
   });
 });
 
