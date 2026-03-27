@@ -148,19 +148,19 @@ jobs:
 
           # Verify installation
           source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
-          export PATH="$HOME/.composio/bin:$PATH"
+          export PATH="$HOME/.composio:$PATH"
 
           # Check if binary exists
-          if [[ -f "$HOME/.composio/bin/composio" ]]; then
+          if [[ -f "$HOME/.composio/composio" ]]; then
             echo "✅ Binary installed successfully"
-            ls -la "$HOME/.composio/bin/composio"
+            ls -la "$HOME/.composio/composio"
           else
             echo "❌ Binary not found"
             exit 1
           fi
 
           # Test binary execution
-          if "$HOME/.composio/bin/composio" --version; then
+          if "$HOME/.composio/composio" --version; then
             echo "✅ Binary executes successfully"
           else
             echo "❌ Binary execution failed"
@@ -179,19 +179,19 @@ jobs:
 
           # Verify installation
           source ~/.bashrc 2>/dev/null || source ~/.zshrc 2>/dev/null || true
-          export PATH="$HOME/.composio/bin:$PATH"
+          export PATH="$HOME/.composio:$PATH"
 
           # Check if binary exists
-          if [[ -f "$HOME/.composio/bin/composio" ]]; then
+          if [[ -f "$HOME/.composio/composio" ]]; then
             echo "✅ Binary installed successfully"
-            ls -la "$HOME/.composio/bin/composio"
+            ls -la "$HOME/.composio/composio"
           else
             echo "❌ Binary not found"
             exit 1
           fi
 
           # Test binary execution
-          if "$HOME/.composio/bin/composio" --version; then
+          if "$HOME/.composio/composio" --version; then
             echo "✅ Binary executes successfully"
           else
             echo "❌ Binary execution failed"
@@ -219,7 +219,7 @@ jobs:
           fi
 
           echo "=== Installation directory ==="
-          ls -la ~/.composio/bin/ || echo "~/.composio/bin/ not found"
+          ls -la ~/.composio/ || echo "~/.composio/ not found"
 
           echo "=== Current PATH before sourcing ==="
           echo "$PATH"
@@ -262,28 +262,28 @@ jobs:
           echo "Checking shell configuration updates..."
 
           if [[ "${{ matrix.shell }}" == "zsh" ]]; then
-            if grep -q "COMPOSIO_INSTALL" ~/.zshrc; then
+            if grep -q "COMPOSIO_INSTALL_DIR" ~/.zshrc; then
               echo "✅ .zshrc updated with COMPOSIO_INSTALL"
             else
               echo "❌ .zshrc not updated"
               exit 1
             fi
             
-            if grep -q "COMPOSIO_INSTALL/bin" ~/.zshrc; then
+            if grep -q 'PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.zshrc; then
               echo "✅ .zshrc updated with PATH"
             else
               echo "❌ .zshrc PATH not updated"
               exit 1
             fi
           else
-            if grep -q "COMPOSIO_INSTALL" ~/.bashrc; then
+            if grep -q "COMPOSIO_INSTALL_DIR" ~/.bashrc; then
               echo "✅ .bashrc updated with COMPOSIO_INSTALL"
             else
               echo "❌ .bashrc not updated"
               exit 1
             fi
             
-            if grep -q "COMPOSIO_INSTALL/bin" ~/.bashrc; then
+            if grep -q 'PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.bashrc; then
               echo "✅ .bashrc updated with PATH"
             else
               echo "❌ .bashrc PATH not updated"
@@ -300,7 +300,7 @@ jobs:
           rm -rf ~/.composio
 
           # Test with custom directory using the same version as the workflow
-          export COMPOSIO_INSTALL="/tmp/custom-composio"
+          export COMPOSIO_INSTALL_DIR="/tmp/custom-composio"
           if [[ "${{ steps.release_target.outputs.use_latest }}" == "true" ]]; then
             bash install.sh
           else
@@ -309,16 +309,16 @@ jobs:
           fi
 
           # Verify custom installation
-          if [[ -f "/tmp/custom-composio/bin/composio" ]]; then
+          if [[ -f "/tmp/custom-composio/composio" ]]; then
             echo "✅ Custom directory installation successful"
-            ls -la "/tmp/custom-composio/bin/composio"
+            ls -la "/tmp/custom-composio/composio"
           else
             echo "❌ Custom directory installation failed"
             exit 1
           fi
 
           # Test execution
-          if "/tmp/custom-composio/bin/composio" --version; then
+          if "/tmp/custom-composio/composio" --version; then
             echo "✅ Custom installation executes successfully"
           else
             echo "❌ Custom installation execution failed"
@@ -333,7 +333,7 @@ jobs:
           rm -rf ~/.composio /tmp/custom-composio
 
           # Check if binary is gone
-          if [[ ! -f "$HOME/.composio/bin/composio" ]]; then
+          if [[ ! -f "$HOME/.composio/composio" ]]; then
             echo "✅ Binary removed successfully"
           else
             echo "❌ Binary removal failed"
