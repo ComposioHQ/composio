@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.2.11
+
+### Patch Changes
+
+- 77904b0: Fix link behavior, disable caching, improve search steps
+
 ## 0.2.10
 
 ### Patch Changes
