@@ -69,7 +69,10 @@ describe('CLI: shared --limit validation', () => {
             return;
           }
 
-          expect(Cause.squash(exit.cause).message).toContain(invalidLimitMessage);
+          const squashed = Cause.squash(exit.cause);
+          const message = squashed instanceof Error ? squashed.message : String(squashed);
+
+          expect(message).toContain(invalidLimitMessage);
         })
       );
     }

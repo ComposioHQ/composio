@@ -249,14 +249,13 @@ describe('CLI: composio dev toolkits info', () => {
             TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }),
             Layer.succeed(
               ComposioClientSingleton,
+              // Partial mock: override singleton resolution to simulate a
+              // client bootstrap failure without rebuilding the entire service.
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               new ComposioClientSingleton({
-                get: Effect.fn(function* () {
-                  return yield* Effect.fail(new Error('client resolution failed'));
-                }),
-                getFor: Effect.fn(function* () {
-                  return yield* Effect.fail(new Error('client resolution failed'));
-                }),
-              })
+                get: () => Effect.fail(new Error('client resolution failed')),
+                getFor: () => Effect.fail(new Error('client resolution failed')),
+              } as any)
             )
           );
 
