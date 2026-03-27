@@ -188,7 +188,9 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return args.length === 1 && (args[0] === '--help' || args[0] === '-h');
+  return (
+    args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'))
+  );
 };
 
 const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {

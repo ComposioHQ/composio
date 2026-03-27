@@ -42,6 +42,23 @@ const noSkillInstall = Options.boolean('no-skill-install').pipe(
   Options.withDescription('Skip installing the composio-cli skill for Claude Code')
 );
 
+const formatLoginSuccessMessage = (params: {
+  email?: string;
+  orgName?: string;
+}): string => {
+  const { email, orgName } = params;
+  if (email && orgName) {
+    return `Logged in as ${email} in "${orgName}"`;
+  }
+  if (email) {
+    return `Logged in as ${email}`;
+  }
+  if (orgName) {
+    return `Logged in successfully in "${orgName}"`;
+  }
+  return 'Logged in successfully';
+};
+
 /**
  * Verifies credentials via session/info and stores them.
  *
@@ -117,7 +134,8 @@ const storeCredentials = (params: {
     });
 
     const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
-    yield* ui.log.success(email ? `Logged in as ${email}` : 'Logged in successfully');
+    const orgName = sessionInfo?.project.org.name || undefined;
+    yield* ui.log.success(formatLoginSuccessMessage({ email, orgName }));
     if (!skipHints) {
       yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
       yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
@@ -240,7 +258,12 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
-        yield* ui.log.success(`Default org set to "${result.name}".`);
+        yield* ui.log.success(
+          formatLoginSuccessMessage({
+            email: uakSessionInfo.org_member.email || linkedSession.account.email || undefined,
+            orgName: result.name,
+          })
+        );
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
@@ -400,7 +423,12 @@ export const browserLogin = (params: {
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
-        yield* ui.log.success(`Default org set to "${result.name}".`);
+        yield* ui.log.success(
+          formatLoginSuccessMessage({
+            email: uakSessionInfo.org_member.email || linkedSession.account.email || undefined,
+            orgName: result.name,
+          })
+        );
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';

@@ -12,7 +12,7 @@ import decompress from 'decompress';
 import type { Predicate } from 'effect/Predicate';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
-import { RUN_COMPANION_MODULE_FILENAMES } from './run-companion-modules';
+import { RUN_COMPANION_MODULE_FILENAMES, writeInstalledReleaseTag } from './run-companion-modules';
 
 export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinaryError')<{
   readonly cause?: unknown;
@@ -449,7 +449,10 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
      */
     const replaceBinary = (
       sourcePath: string,
-      targetPath: string
+      targetPath: string,
+      options: {
+        releaseTag?: string;
+      } = {}
     ): Effect.Effect<void, UpgradeBinaryError> =>
       Effect.gen(function* () {
         yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
@@ -501,6 +504,17 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                 )
               )
             );
+        }
+
+        if (options.releaseTag) {
+          yield* Effect.try({
+            try: () => writeInstalledReleaseTag(targetDirectory, options.releaseTag!),
+            catch: error =>
+              new UpgradeBinaryError({
+                cause: error as Error,
+                message: 'Failed to update installed release metadata',
+              }),
+          });
         }
       });
 
@@ -571,7 +585,9 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               );
 
             const extractedBinary = yield* extractBinary({ name, data }, tmpDir);
-            yield* replaceBinary(extractedBinary.binaryPath, currentPath);
+            yield* replaceBinary(extractedBinary.binaryPath, currentPath, {
+              releaseTag: release.tag_name,
+            });
 
             yield* spinner.stop('Upgrade completed!');
             return release.tag_name;
