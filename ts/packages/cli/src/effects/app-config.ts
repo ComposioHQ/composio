@@ -10,6 +10,7 @@ type APP_CONFIG = Config.Config.Wrap<{
   LOG_LEVEL: Option.Option<LogLevel.LogLevel>;
   ORG_ID: Option.Option<string>;
   PROJECT_ID: Option.Option<string>;
+  DISABLE_CONNECTED_ACCOUNT_CACHE: boolean;
 }>;
 
 /**
@@ -65,4 +66,9 @@ export const APP_CONFIG = {
 
   // The project ID for multi-project auth (overrides file-based config)
   PROJECT_ID: Config.option(Config.string('PROJECT_ID')),
+
+  // Disable connected account cache (defaults to true — cache is off by default)
+  DISABLE_CONNECTED_ACCOUNT_CACHE: Config.boolean('DISABLE_CONNECTED_ACCOUNT_CACHE').pipe(
+    Config.withDefault(true)
+  ),
 } satisfies APP_CONFIG;

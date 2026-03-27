@@ -24,6 +24,7 @@ import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
+import { orgsCmd } from './orgs/orgs.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -51,6 +52,7 @@ const $cmd = $defaultCmd.pipe(
     rootConnectedAccountsCmd$Link,
     rootToolsCmd$Execute,
     generateCmd,
+    orgsCmd,
   ])
 );
 export const rootCommand = $cmd;
