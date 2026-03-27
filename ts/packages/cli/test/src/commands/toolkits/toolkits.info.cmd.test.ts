@@ -184,6 +184,7 @@ describe('CLI: composio dev toolkits info', () => {
       toolRouter: {
         toolkits: async () => ({
           items: [],
+          current_page: 1,
           total_items: 0,
           total_pages: 0,
           next_cursor: null,
