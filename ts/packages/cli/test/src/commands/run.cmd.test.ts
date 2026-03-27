@@ -122,11 +122,11 @@ describe('CLI: composio run', () => {
 
   layer(TestLive())(it => {
     it.scoped(
-      '[Given] a multiline structured subAgent script [Then] run preserves the inline TypeScript source',
+      '[Given] a multiline structured experimental_subAgent script [Then] run preserves the inline TypeScript source',
       () =>
         Effect.gen(function* () {
           const script = `
-            const brief = await subAgent(
+            const brief = await experimental_subAgent(
               [
                 "Do not read files.",
                 "Do not run terminal commands.",
@@ -153,6 +153,7 @@ describe('CLI: composio run', () => {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
+          expect(spawnConfig.cmd[4]).toContain('const brief = await experimental_subAgent(');
           expect(spawnConfig.cmd[4]).toContain('"Do not run terminal commands."');
           expect(spawnConfig.cmd[4]).toContain('].join("\\n"),');
           expect(spawnConfig.cmd[4]).toContain('target: "codex"');

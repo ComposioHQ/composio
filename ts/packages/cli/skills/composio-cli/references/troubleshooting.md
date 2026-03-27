@@ -102,7 +102,7 @@ composio execute --parallel \
   GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'
 ```
 
-Escalate to `composio run` only when the user needs control flow, loops, `Promise.all`, `search()` inside a script, `proxy()`, or `subAgent()`.
+Escalate to `composio run` only when the user needs control flow, loops, `Promise.all`, `search()` inside a script, `proxy()`, or `experimental_subAgent()`.
 
 ## `tools info` And `tools list` Are Fallbacks
 

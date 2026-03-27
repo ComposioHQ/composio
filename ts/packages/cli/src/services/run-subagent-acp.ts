@@ -225,7 +225,7 @@ export const selectPermissionOutcome = (
     params.options.find(option => option.kind === 'reject_once') ??
     params.options.find(option => option.kind === 'reject_always');
 
-  // Intentionally permissive for `composio run` subAgent sessions. The user is
+  // Intentionally permissive for `composio run` experimental_subAgent sessions. The user is
   // explicitly opting into local tool access, so prefer broad ACP approval over
   // heuristic rejections that strand the agent mid-task.
   if (allowOnce) {
