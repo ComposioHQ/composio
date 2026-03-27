@@ -22,7 +22,7 @@ export type ApiErrorDetails = {
  * Extract a human-readable message from an unknown error value.
  * Checks `.message`, then `.error` (string or `.error.message`).
  */
-export const extractMessage = (value: unknown): string | undefined => {
+export const extractMessage = (value: unknown, seen?: Set<unknown>): string | undefined => {
   if (typeof value === 'string') return value;
 
   // Walk the .cause / .error chain to find the deepest meaningful message.
@@ -31,16 +31,20 @@ export const extractMessage = (value: unknown): string | undefined => {
   // We prefer the deepest message because outer wrappers often have generic
   // messages like "An unknown error occurred in Effect.tryPromise".
   if (value && typeof value === 'object') {
+    const visited = seen ?? new Set<unknown>();
+    if (visited.has(value)) return undefined;
+    visited.add(value);
+
     // Try .cause chain first (Effect's UnknownException → real SDK error)
     if ('cause' in value) {
-      const causeMsg = extractMessage((value as { cause?: unknown }).cause);
+      const causeMsg = extractMessage((value as { cause?: unknown }).cause, visited);
       if (causeMsg) return causeMsg;
     }
 
     // Try .error chain (SDK error → API response body → nested .error.message)
     if ('error' in value) {
       const inner = (value as { error?: unknown }).error;
-      const innerMsg = extractMessage(inner);
+      const innerMsg = extractMessage(inner, visited);
       if (innerMsg) return innerMsg;
     }
 

@@ -15,6 +15,8 @@ export const upgradeCmd = Command.make('upgrade', {}, () =>
   Effect.gen(function* () {
     const upgradeBinary = yield* UpgradeBinary;
     const newReleaseTag = yield* upgradeBinary.upgrade();
-    yield* installSkillSafe({ releaseTag: newReleaseTag });
+    if (newReleaseTag) {
+      yield* installSkillSafe({ releaseTag: newReleaseTag });
+    }
   })
 ).pipe(Command.withDescription('Upgrade your Composio CLI to the latest available version.'));
