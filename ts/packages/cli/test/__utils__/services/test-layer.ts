@@ -857,18 +857,31 @@ export const TestLayer = (input?: TestLiveInput) =>
       _sessionId: string,
       params: SessionSearchParams
     ): Promise<SessionSearchResponse> => {
-      const queryUseCase = params.queries[0]?.use_case ?? '';
-      const normalizedQuery = queryUseCase.toLowerCase();
-      const matchedTools = toolkitsData.tools.filter(
-        tool =>
-          tool.name.toLowerCase().includes(normalizedQuery) ||
-          tool.slug.toLowerCase().includes(normalizedQuery) ||
-          tool.description.toLowerCase().includes(normalizedQuery)
-      );
+      const results = params.queries.map((query, index) => {
+        const queryUseCase = query.use_case ?? '';
+        const normalizedQuery = queryUseCase.toLowerCase();
+        const matchedTools = toolkitsData.tools.filter(
+          tool =>
+            tool.name.toLowerCase().includes(normalizedQuery) ||
+            tool.slug.toLowerCase().includes(normalizedQuery) ||
+            tool.description.toLowerCase().includes(normalizedQuery)
+        );
 
-      const primaryToolSlugs = matchedTools.map(tool => tool.slug);
+        return {
+          index: index + 1,
+          use_case: queryUseCase,
+          primary_tool_slugs: matchedTools.map(tool => tool.slug),
+          related_tool_slugs: [],
+          toolkits: Array.from(
+            new Set(matchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean))
+          ),
+          matchedTools,
+        };
+      });
+
+      const allMatchedTools = results.flatMap(result => result.matchedTools);
       const toolSchemas = Object.fromEntries(
-        matchedTools.map(tool => [
+        allMatchedTools.map(tool => [
           tool.slug,
           {
             tool_slug: tool.slug,
@@ -882,7 +895,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       );
       const toolkitConnectionStatuses = Array.from(
         new Set(
-          matchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
+          allMatchedTools.map(tool => tool.slug.split('_')[0]?.toLowerCase() ?? '').filter(Boolean)
         )
       ).map(toolkitSlug => ({
         toolkit: toolkitSlug,
@@ -894,15 +907,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       return {
         success: true,
         error: null,
-        results: [
-          {
-            index: 1,
-            use_case: queryUseCase,
-            primary_tool_slugs: primaryToolSlugs,
-            related_tool_slugs: [],
-            toolkits: toolkitConnectionStatuses.map(t => t.toolkit),
-          },
-        ],
+        results: results.map(({ matchedTools: _matchedTools, ...result }) => result),
         tool_schemas: toolSchemas,
         toolkit_connection_statuses: toolkitConnectionStatuses,
         next_steps_guidance: [],

@@ -447,7 +447,7 @@ export interface SessionExperimental {
 }
 
 export type ToolRouterSessionSearchFn = (params: {
-  query: string;
+  query: string | string[];
   toolkits?: string[];
 }) => Promise<ToolRouterSessionSearchResponse>;
 

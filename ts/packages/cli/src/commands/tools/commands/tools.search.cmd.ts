@@ -17,9 +17,9 @@ import { commandHintExample, commandHintStep } from 'src/services/command-hints'
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
 
-const query = Args.text({ name: 'query' }).pipe(
+const query = Args.repeated(Args.text({ name: 'query' })).pipe(
   Args.withDescription(
-    'Semantic use-case query (e.g. "onboard a new GitHub repo and notify Slack").'
+    'One or more semantic use-case queries (e.g. "onboard a new GitHub repo", "notify Slack").'
   )
 );
 
@@ -43,8 +43,56 @@ const limit = Options.integer('limit').pipe(
   Options.withDescription('Number of results per page (1-1000)')
 );
 
+type SearchToolSchema = {
+  tool_slug: string;
+  toolkit: string;
+  description?: string;
+  input_schema?: Record<string, unknown>;
+  output_schema?: Record<string, unknown>;
+};
+
+const collectToolsForResult = (params: {
+  result: {
+    primary_tool_slugs: string[];
+    related_tool_slugs: string[];
+  };
+  toolSchemas: Record<string, SearchToolSchema>;
+  toolkitSet?: Set<string>;
+  limit: number;
+}): Tool[] => {
+  const mergedSlugs: string[] = [];
+  const seen = new Set<string>();
+  for (const slug of [...params.result.primary_tool_slugs, ...params.result.related_tool_slugs]) {
+    if (!seen.has(slug)) {
+      seen.add(slug);
+      mergedSlugs.push(slug);
+    }
+  }
+
+  const toolsList: Tool[] = [];
+  for (const slug of mergedSlugs) {
+    const schema = params.toolSchemas[slug];
+    if (!schema) continue;
+    if (params.toolkitSet && !params.toolkitSet.has(schema.toolkit.toLowerCase())) continue;
+
+    toolsList.push({
+      slug: schema.tool_slug,
+      name: schema.tool_slug,
+      description: schema.description ?? '',
+      tags: [],
+      available_versions: [],
+      input_parameters: (schema.input_schema ?? {}) as Record<string, unknown>,
+      output_parameters: (schema.output_schema ?? {}) as Record<string, unknown>,
+    } as Tool);
+
+    if (toolsList.length >= params.limit) break;
+  }
+
+  return toolsList;
+};
+
 const runToolsSearch = (params: {
-  query: string;
+  query: ReadonlyArray<string>;
   toolkits: Option.Option<string>;
   userId: Option.Option<string>;
   projectName: Option.Option<string>;
@@ -58,6 +106,10 @@ const runToolsSearch = (params: {
     const userContext = yield* ComposioUserContext;
 
     const clampedLimit = clampLimit(params.limit);
+    const queries = params.query.map(q => q.trim()).filter(Boolean);
+    if (queries.length === 0) {
+      return yield* Effect.fail(new Error('At least one query is required.'));
+    }
     const toolkitFilter = Option.getOrUndefined(params.toolkits);
     const toolkitList =
       toolkitFilter && toolkitFilter.trim().length > 0
@@ -68,7 +120,9 @@ const runToolsSearch = (params: {
         : undefined;
 
     const searchResult = yield* ui.withSpinner(
-      `Searching tools for "${params.query}"...`,
+      queries.length === 1
+        ? `Searching tools for "${queries[0]}"...`
+        : `Searching tools for ${queries.length} queries...`,
       Effect.gen(function* () {
         const resolvedProject = yield* resolveCommandProject({
           mode: 'consumer',
@@ -104,7 +158,7 @@ const runToolsSearch = (params: {
         });
         const searchResponse = yield* Effect.tryPromise(() =>
           client.toolRouter.session.search(sessionId, {
-            queries: [{ use_case: params.query }],
+            queries: queries.map(query => ({ use_case: query })),
           })
         );
         return {
@@ -124,58 +178,50 @@ const runToolsSearch = (params: {
 
     const toolkitSet = toolkitList && toolkitList.length > 0 ? new Set(toolkitList) : undefined;
 
-    const mergedSlugs: string[] = [];
-    const seen = new Set<string>();
-    for (const item of searchResponse.results) {
-      for (const slug of [...item.primary_tool_slugs, ...item.related_tool_slugs]) {
-        if (!seen.has(slug)) {
-          seen.add(slug);
-          mergedSlugs.push(slug);
-        }
-      }
-    }
+    const resultsWithTools = searchResponse.results.map(result => ({
+      result,
+      tools: collectToolsForResult({
+        result,
+        toolSchemas: searchResponse.tool_schemas,
+        toolkitSet,
+        limit: clampedLimit,
+      }),
+    }));
 
-    const toolsList: Tool[] = [];
-    for (const slug of mergedSlugs) {
-      const schema = searchResponse.tool_schemas[slug];
-      if (!schema) continue;
-      if (toolkitSet && !toolkitSet.has(schema.toolkit.toLowerCase())) continue;
-
-      toolsList.push({
-        slug: schema.tool_slug,
-        name: schema.tool_slug,
-        description: schema.description ?? '',
-        tags: [],
-        available_versions: [],
-        input_parameters: (schema.input_schema ?? {}) as Record<string, unknown>,
-        output_parameters: (schema.output_schema ?? {}) as Record<string, unknown>,
-      } as Tool);
-
-      if (toolsList.length >= clampedLimit) break;
-    }
-
-    if (toolsList.length === 0) {
-      yield* ui.log.warn(`No tools found matching "${params.query}". Try broadening your search.`);
+    const totalToolCount = resultsWithTools.reduce((sum, item) => sum + item.tools.length, 0);
+    if (totalToolCount === 0) {
+      const description =
+        queries.length === 1 ? `"${queries[0]}"` : `the provided ${queries.length} queries`;
+      yield* ui.log.warn(`No tools found matching ${description}. Try broadening your search.`);
       return;
     }
 
-    const showing = toolsList.length;
-    yield* ui.log.info(`Found ${showing} tools\n\n${formatToolsTable(toolsList)}`);
+    for (const { result, tools } of resultsWithTools) {
+      if (queries.length > 1) {
+        yield* ui.log.info(`Results for "${result.use_case}"`);
+      }
 
-    const planSteps = Array.from(
-      new Set(searchResponse.results.flatMap(result => result.recommended_plan_steps ?? []))
-    );
-    if (planSteps.length > 0) {
-      yield* ui.log.info(`Plan:\n${planSteps.map((step, i) => `${i + 1}. ${step}`).join('\n')}`);
-    } else if (searchResponse.next_steps_guidance.length > 0) {
-      yield* ui.log.info(
-        `Plan:\n${searchResponse.next_steps_guidance
-          .map((step, i) => `${i + 1}. ${step}`)
-          .join('\n')}`
-      );
+      if (tools.length === 0) {
+        yield* ui.log.warn(`No tools found for "${result.use_case}".`);
+        continue;
+      }
+
+      yield* ui.log.info(`Found ${tools.length} tools\n\n${formatToolsTable(tools)}`);
+
+      const planSteps = Array.from(new Set(result.recommended_plan_steps ?? []));
+      if (planSteps.length > 0) {
+        yield* ui.log.info(`Plan:\n${planSteps.map((step, i) => `${i + 1}. ${step}`).join('\n')}`);
+      } else if (queries.length === 1 && searchResponse.next_steps_guidance.length > 0) {
+        yield* ui.log.info(
+          `Plan:\n${searchResponse.next_steps_guidance
+            .map((step, i) => `${i + 1}. ${step}`)
+            .join('\n')}`
+        );
+      }
     }
 
-    const firstSlug = toolsList[0]?.slug;
+    const firstToolsList = resultsWithTools.find(item => item.tools.length > 0)?.tools ?? [];
+    const firstSlug = firstToolsList[0]?.slug;
     const firstSchema =
       firstSlug && searchResponse.tool_schemas[firstSlug]
         ? searchResponse.tool_schemas[firstSlug]
@@ -246,10 +292,11 @@ const runToolsSearch = (params: {
       consumerUserId: searchResult.historyScope?.consumerUserId,
       entry: {
         command: 'search',
-        query: params.query,
+        query: queries.join(' | '),
+        queries,
         toolkitFilter: toolkitList ?? [],
         limit: clampedLimit,
-        resultCount: toolsList.length,
+        resultCount: totalToolCount,
         toolRouterSessionId: searchResult.historyScope?.toolRouterSessionId,
         nextSteps: searchResponse.next_steps_guidance,
       },
@@ -269,6 +316,7 @@ export const toolsCmd$Search = Command.make(
       '',
       'Examples:',
       '  composio search "send an email"',
+      '  composio search "send an email" "create a github issue"',
       '  composio search "create issue" --toolkits github',
       '  composio search "list calendar events" --limit 5',
       '',
@@ -299,6 +347,7 @@ export const rootToolsCmd$Search = Command.make(
       '',
       'Examples:',
       '  composio search "send an email"',
+      '  composio search "send an email" "create a github issue"',
       '  composio search "create issue" --toolkits github',
       '  composio search "list calendar events" --limit 5',
       '',

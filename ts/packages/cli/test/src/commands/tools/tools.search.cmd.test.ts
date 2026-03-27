@@ -70,6 +70,25 @@ describe('CLI: composio search', () => {
   });
 
   layer(TestLive(testLiveOptions))(
+    '[Given] multiple queries [Then] the CLI renders multiple response sections',
+    it => {
+      it.scoped('renders one response block per query', () =>
+        Effect.gen(function* () {
+          yield* cli(['search', 'send', 'create issue']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Results for "send"');
+          expect(output).toContain('Results for "create issue"');
+          expect(output).toContain('GMAIL_SEND_EMAIL');
+          expect(output).toContain('SLACK_SEND_MESSAGE');
+          expect(output).toContain('GITHUB_CREATE_ISSUE');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
     '[Given] query with no results [Then] shows not found message',
     it => {
       it.scoped('shows not found message', () =>
@@ -275,6 +294,79 @@ describe('CLI: composio search', () => {
 
           expect(createParams?.toolkits).toEqual({ enable: ['gmail', 'outlook'] });
           expect(searchParams?.queries[0]?.use_case).toBe('send');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] multiple queries [Then] search passes all queries to the tool-router session',
+    it => {
+      it.scoped('passes batched queries without a parallel flag', () =>
+        Effect.gen(function* () {
+          let searchParams: SessionSearchParams | undefined;
+
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            toolkitsData,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              search: async (_sessionId, params) => {
+                searchParams = params;
+                return {
+                  success: true,
+                  error: null,
+                  results: params.queries.map((query, index) => ({
+                    index: index + 1,
+                    use_case: query.use_case ?? '',
+                    primary_tool_slugs:
+                      query.use_case === 'create issue'
+                        ? ['GITHUB_CREATE_ISSUE']
+                        : ['GMAIL_SEND_EMAIL'],
+                    related_tool_slugs: [],
+                    toolkits: query.use_case === 'create issue' ? ['github'] : ['gmail'],
+                  })),
+                  tool_schemas: {
+                    GMAIL_SEND_EMAIL: {
+                      tool_slug: 'GMAIL_SEND_EMAIL',
+                      toolkit: 'gmail',
+                      description: 'Sends an email',
+                      hasFullSchema: true,
+                      input_schema: { type: 'object', properties: {} },
+                      output_schema: { type: 'object', properties: {} },
+                    },
+                    GITHUB_CREATE_ISSUE: {
+                      tool_slug: 'GITHUB_CREATE_ISSUE',
+                      toolkit: 'github',
+                      description: 'Creates a GitHub issue',
+                      hasFullSchema: true,
+                      input_schema: { type: 'object', properties: {} },
+                      output_schema: { type: 'object', properties: {} },
+                    },
+                  },
+                  toolkit_connection_statuses: [],
+                  next_steps_guidance: [],
+                  session: {
+                    id: 'trs_test_session',
+                    generate_id: false,
+                    instructions: 'Reuse this session id for follow-up calls.',
+                  },
+                  time_info: {
+                    current_time_utc: '2026-01-01T00:00:00.000Z',
+                    current_time_utc_epoch_seconds: 1767225600,
+                    message: 'UTC time',
+                  },
+                };
+              },
+            },
+          });
+
+          yield* cli(['search', 'send', 'create issue']).pipe(Effect.provide(live));
+
+          expect(searchParams?.queries.map(query => query.use_case)).toEqual([
+            'send',
+            'create issue',
+          ]);
         })
       );
     }

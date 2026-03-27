@@ -260,11 +260,15 @@ export class ToolRouterSession<
    * Returns relevant tools for the given query with schemas and guidance.
    */
   async search(params: {
-    query: string;
+    query: string | string[];
     toolkits?: string[];
   }): Promise<ToolRouterSessionSearchResponse> {
+    const queries = (Array.isArray(params.query) ? params.query : [params.query]).map(query => ({
+      use_case: query,
+    }));
+
     const response = await this.client.toolRouter.session.search(this.sessionId, {
-      queries: [{ use_case: params.query }],
+      queries,
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
     });
     const transformed = transformSearchResponse(response);
