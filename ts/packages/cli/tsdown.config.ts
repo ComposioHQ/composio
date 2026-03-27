@@ -13,6 +13,12 @@ export default defineConfig({
   format: ['esm'],
   tsconfig: './tsconfig.src.json',
   external: undefined,
+  noExternal: [
+    '@composio/core',
+    /^zod(?:\/.*)?$/,
+    /^@agentclientprotocol\/sdk(?:\/.*)?$/,
+    /^@modelcontextprotocol\/sdk(?:\/.*)?$/,
+  ],
   publint: undefined,
   attw: undefined,
 });

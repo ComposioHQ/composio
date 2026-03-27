@@ -16,6 +16,182 @@ export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map
 );
 
 export const RUN_COMPANION_RELEASE_TAG_FILENAME = 'release-tag.txt';
+export const RUN_CODEX_ACP_BINARY_TARGETS = [
+  {
+    platform: 'darwin',
+    arch: 'arm64',
+    packageName: '@zed-industries/codex-acp-darwin-arm64',
+    binaryFileName: 'codex-acp',
+    relativePath: 'acp-adapters/codex/darwin-arm64/codex-acp',
+  },
+  {
+    platform: 'darwin',
+    arch: 'x64',
+    packageName: '@zed-industries/codex-acp-darwin-x64',
+    binaryFileName: 'codex-acp',
+    relativePath: 'acp-adapters/codex/darwin-x64/codex-acp',
+  },
+  {
+    platform: 'linux',
+    arch: 'arm64',
+    packageName: '@zed-industries/codex-acp-linux-arm64',
+    binaryFileName: 'codex-acp',
+    relativePath: 'acp-adapters/codex/linux-arm64/codex-acp',
+  },
+  {
+    platform: 'linux',
+    arch: 'x64',
+    packageName: '@zed-industries/codex-acp-linux-x64',
+    binaryFileName: 'codex-acp',
+    relativePath: 'acp-adapters/codex/linux-x64/codex-acp',
+  },
+] as const;
+export const RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS = [
+  'acp-adapters/claude-code-acp.mjs',
+  ...RUN_CODEX_ACP_BINARY_TARGETS.map(target => target.relativePath),
+] as const;
+
+const relativeImportPattern =
+  /(?:import\s+(?:[^'"]+?\s+from\s+)?|export\s+\*\s+from\s+|import\s*\()\s*["'](\.{1,2}\/[^"']+?\.mjs)["']/g;
+
+const isImportGraphFile = (relativePath: string) => /\.(?:m?js|ts)$/.test(relativePath);
+
+const collectRelativeImportPaths = ({
+  rootDir,
+  relativePath,
+  collected,
+  recordMissingPaths = false,
+}: {
+  rootDir: string;
+  relativePath: string;
+  collected: Set<string>;
+  recordMissingPaths?: boolean;
+}): void => {
+  const normalizedRelativePath = relativePath.replaceAll(path.sep, '/');
+  if (collected.has(normalizedRelativePath)) {
+    return;
+  }
+
+  const absolutePath = path.join(rootDir, normalizedRelativePath);
+  const exists = fs.existsSync(absolutePath);
+  if (!exists && !recordMissingPaths) {
+    return;
+  }
+
+  collected.add(normalizedRelativePath);
+  if (!exists) {
+    return;
+  }
+
+  if (!isImportGraphFile(normalizedRelativePath)) {
+    return;
+  }
+
+  const source = fs.readFileSync(absolutePath, 'utf8');
+  for (const match of source.matchAll(relativeImportPattern)) {
+    const specifier = match[1];
+    if (!specifier) {
+      continue;
+    }
+
+    const dependencyRelativePath = path
+      .relative(rootDir, path.resolve(path.dirname(absolutePath), specifier))
+      .replaceAll(path.sep, '/');
+
+    collectRelativeImportPaths({
+      rootDir,
+      relativePath: dependencyRelativePath,
+      collected,
+      recordMissingPaths,
+    });
+  }
+};
+
+export const collectRunCompanionAssetRelativePaths = (rootDir: string): ReadonlyArray<string> => {
+  const collected = new Set<string>();
+
+  for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+    collectRelativeImportPaths({
+      rootDir,
+      relativePath: fileName,
+      collected,
+    });
+  }
+
+  if (collected.size === 0) {
+    for (const baseName of RUN_COMPANION_MODULE_BASENAMES) {
+      collectRelativeImportPaths({
+        rootDir,
+        relativePath: path.posix.join('services', `${baseName}.mjs`),
+        collected,
+      });
+    }
+  }
+
+  for (const relativePath of RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS) {
+    collectRelativeImportPaths({
+      rootDir,
+      relativePath,
+      collected,
+    });
+  }
+
+  return [...collected].sort();
+};
+
+export const resolveRunCompanionAssetPath = ({
+  callerImportMetaUrl,
+  execPath,
+  relativePathFromRoot,
+}: {
+  callerImportMetaUrl: string;
+  execPath: string;
+  relativePathFromRoot: string;
+}): string | null => {
+  const currentFilePath = fileURLToPath(callerImportMetaUrl);
+  const currentDirectory = path.dirname(currentFilePath);
+  const executableDirectory = path.dirname(execPath);
+
+  const candidates = [
+    path.resolve(currentDirectory, relativePathFromRoot),
+    path.resolve(currentDirectory, '..', relativePathFromRoot),
+    path.resolve(executableDirectory, relativePathFromRoot),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
+export const collectExpectedRunCompanionAssetRelativePaths = (
+  rootDir: string
+): ReadonlyArray<string> => {
+  const collected = new Set<string>();
+
+  for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
+    collectRelativeImportPaths({
+      rootDir,
+      relativePath: fileName,
+      collected,
+      recordMissingPaths: true,
+    });
+  }
+
+  for (const relativePath of RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS) {
+    collectRelativeImportPaths({
+      rootDir,
+      relativePath,
+      collected,
+      recordMissingPaths: true,
+    });
+  }
+
+  return [...collected].sort();
+};
 
 type GitHubReleaseAsset = {
   name: string;
@@ -80,8 +256,8 @@ export const writeInstalledReleaseTag = (installDir: string, releaseTag: string)
 
 export const listMissingInstalledRunCompanionModules = (execPath: string) => {
   const installDirectory = resolveCompanionInstallDirectory(execPath);
-  return RUN_COMPANION_MODULE_FILENAMES.filter(
-    fileName => !fs.existsSync(path.join(installDirectory, fileName))
+  return collectExpectedRunCompanionAssetRelativePaths(installDirectory).filter(
+    relativePath => !fs.existsSync(path.join(installDirectory, relativePath))
   );
 };
 
@@ -264,15 +440,19 @@ export const repairMissingInstalledRunCompanionModules = async ({
     await decompress(archivePath, extractDirectory);
 
     const installDirectory = resolveCompanionInstallDirectory(execPath);
-    for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
-      const sourcePath = path.join(packageDirectory, fileName);
+    const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(packageDirectory);
+
+    for (const relativePath of companionRelativePaths) {
+      const sourcePath = path.join(packageDirectory, relativePath);
       if (!fs.existsSync(sourcePath)) {
         throw new Error(
-          `Release ${release.tag_name} is missing ${fileName}; cannot restore the files required by 'composio run'.`
+          `Release ${release.tag_name} is missing ${relativePath}; cannot restore the files required by 'composio run'.`
         );
       }
 
-      fs.copyFileSync(sourcePath, path.join(installDirectory, fileName));
+      const targetPath = path.join(installDirectory, relativePath);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.copyFileSync(sourcePath, targetPath);
     }
 
     writeInstalledReleaseTag(installDirectory, release.tag_name);

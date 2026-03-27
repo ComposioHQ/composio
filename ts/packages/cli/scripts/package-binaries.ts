@@ -21,7 +21,7 @@ import { teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { RUN_COMPANION_MODULE_FILENAMES } from '../src/services/run-companion-modules';
+import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/run-companion-modules';
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
@@ -48,8 +48,17 @@ export function packageBinaries() {
       return;
     }
 
-    for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
-      const companionPath = path.join(COMPANIONS_DIR, fileName);
+    const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(COMPANIONS_DIR);
+    if (companionRelativePaths.length === 0) {
+      yield* Console.error(
+        `Missing companion modules in ${COMPANIONS_DIR}. Run build:binary:all before packaging.`
+      );
+      process.exitCode = 1;
+      return;
+    }
+
+    for (const relativePath of companionRelativePaths) {
+      const companionPath = path.join(COMPANIONS_DIR, relativePath);
       const exists = yield* Effect.tryPromise(() => Bun.file(companionPath).exists());
       if (!exists) {
         yield* Console.error(
@@ -74,8 +83,10 @@ export function packageBinaries() {
       yield* Effect.tryPromise(async () => {
         await $`mkdir -p ${nestedDir}`.quiet();
         await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
-        for (const fileName of RUN_COMPANION_MODULE_FILENAMES) {
-          await $`cp ${path.join(COMPANIONS_DIR, fileName)} ${nestedDir}/${fileName}`.quiet();
+        for (const relativePath of companionRelativePaths) {
+          const targetDirectory = path.dirname(path.join(nestedDir, relativePath));
+          await $`mkdir -p ${targetDirectory}`.quiet();
+          await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${path.join(nestedDir, relativePath)}`.quiet();
         }
         const previousCwd = process.cwd();
         process.chdir(tempDir);

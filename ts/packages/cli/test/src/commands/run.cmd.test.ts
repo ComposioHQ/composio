@@ -13,6 +13,7 @@ import {
 } from 'src/commands/run.cmd';
 import {
   RUN_COMPANION_MODULE_FILENAMES,
+  RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS,
   listMissingInstalledRunCompanionModules,
   readInstalledReleaseTag,
   resolveRunCompanionModulePath,
@@ -471,7 +472,62 @@ describe('run companion install metadata', () => {
     fs.writeFileSync(path.join(tempDir, RUN_COMPANION_MODULE_FILENAMES[0]!), '', 'utf8');
 
     expect(listMissingInstalledRunCompanionModules(execPath)).toEqual(
-      RUN_COMPANION_MODULE_FILENAMES.slice(1)
+      [...RUN_COMPANION_MODULE_FILENAMES.slice(1), ...RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS]
+        .slice()
+        .sort()
+    );
+  });
+
+  it('[Given] a nested companion dependency is missing [Then] it reports the missing helper asset', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-nested-'));
+    const execPath = path.join(tempDir, 'composio');
+    const servicesDir = path.join(tempDir, 'services');
+    fs.mkdirSync(servicesDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-shared.mjs'),
+      'export * from "./services/run-subagent-shared.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-acp.mjs'),
+      'export * from "./services/run-subagent-acp.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-legacy.mjs'),
+      'export * from "./services/run-subagent-legacy.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-output-mcp.mjs'),
+      'export * from "./services/run-subagent-output-mcp.mjs";\n',
+      'utf8'
+    );
+
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-shared.mjs'),
+      'export const x = 1;\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-acp.mjs'),
+      'export * from "../run-companion-modules-abc123.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-legacy.mjs'),
+      'export const y = 1;\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
+      'export const z = 1;\n',
+      'utf8'
+    );
+
+    expect(listMissingInstalledRunCompanionModules(execPath)).toContain(
+      'run-companion-modules-abc123.mjs'
     );
   });
 });

@@ -1,9 +1,51 @@
-import { mkdir } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import * as path from 'node:path';
 import process from 'node:process';
-import { Command } from '@effect/platform';
-import { Cause, Console, Effect, Exit, Stream } from 'effect';
+import { gunzipSync } from 'node:zlib';
+import { Cause, Effect, Exit } from 'effect';
 import type { Teardown } from '@effect/platform/Runtime';
-import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
+import {
+  collectRunCompanionAssetRelativePaths,
+  RUN_COMPANION_MODULE_BASENAMES,
+} from '../src/services/run-companion-modules';
+
+const ACP_ADAPTERS_SOURCE_DIR = path.resolve('./acp-adapters');
+
+const copyDirectoryRecursive = async (sourceDir: string, targetDir: string): Promise<void> => {
+  await mkdir(targetDir, { recursive: true });
+
+  for (const entry of await readdir(sourceDir, { withFileTypes: true })) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const targetPath = path.join(targetDir, entry.name);
+
+    if (entry.isDirectory()) {
+      await copyDirectoryRecursive(sourcePath, targetPath);
+      continue;
+    }
+
+    if (entry.name.endsWith('.gz')) {
+      const decompressedTargetPath = targetPath.slice(0, -3);
+      await writeFile(decompressedTargetPath, gunzipSync(await readFile(sourcePath)));
+      await chmod(decompressedTargetPath, 0o755);
+      continue;
+    }
+
+    await copyFile(sourcePath, targetPath);
+    const mode = (await stat(sourcePath)).mode & 0o777;
+    await chmod(targetPath, mode || 0o755);
+  }
+};
+
+const copyBundledAcpAdapters = async (outputDir: string): Promise<void> => {
+  const claudeAdapterPath = path.join(ACP_ADAPTERS_SOURCE_DIR, 'claude-code-acp.mjs');
+  if (!(await Bun.file(claudeAdapterPath).exists())) {
+    throw new Error(
+      `Missing bundled ACP adapter assets in ${ACP_ADAPTERS_SOURCE_DIR}. Regenerate the vendored adapters before building binaries.`
+    );
+  }
+
+  await copyDirectoryRecursive(ACP_ADAPTERS_SOURCE_DIR, path.join(outputDir, 'acp-adapters'));
+};
 
 /**
  * Shared teardown for all CLI scripts.
@@ -17,52 +59,40 @@ export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: n
   onExit(shouldFail ? errorCode : 0);
 };
 
-type LoggedCommandArgs = readonly [string, ...string[]];
-
-const runLoggedCommand = (args: LoggedCommandArgs) =>
-  Command.make(...args).pipe(
-    Command.start,
-    Effect.flatMap(process =>
-      Effect.all(
-        {
-          exitCode: process.exitCode,
-          output: Stream.merge(
-            Stream.decodeText(process.stdout, 'utf-8'),
-            Stream.decodeText(process.stderr, 'utf-8'),
-            { haltStrategy: 'left' }
-          ).pipe(
-            Stream.tap(chunk => Console.log(chunk)),
-            Stream.runDrain
-          ),
-        },
-        {
-          concurrency: 'unbounded',
-        }
-      )
-    ),
-    Effect.map(({ exitCode }) => exitCode)
-  );
-
 export const buildCompanionModules = (outputDir: string) =>
   Effect.gen(function* () {
     yield* Effect.tryPromise(() => mkdir(outputDir, { recursive: true }));
 
-    for (const name of RUN_COMPANION_MODULE_BASENAMES) {
-      const args = [
-        'bun',
-        'build',
-        `./src/services/${name}.ts`,
-        '--outfile',
-        `${outputDir}/${name}.mjs`,
-        '--format',
-        'esm',
-        '--target',
-        'bun',
-      ] as const satisfies LoggedCommandArgs;
-
-      const exitCode = yield* runLoggedCommand(args);
-      if (exitCode !== 0) {
-        return yield* Effect.fail(new Error(`Failed to build companion module: ${name}`));
-      }
+    const compiledRootDir = path.resolve('./dist');
+    const companionRelativePaths = collectRunCompanionAssetRelativePaths(compiledRootDir);
+    if (companionRelativePaths.length === 0) {
+      return yield* Effect.fail(
+        new Error('Missing compiled run companion modules. Run `pnpm build:packages` first.')
+      );
     }
+
+    for (const relativePath of companionRelativePaths) {
+      const sourcePath = path.join(compiledRootDir, relativePath);
+      const targetPath = path.join(outputDir, relativePath);
+
+      yield* Effect.tryPromise(async () => {
+        if (!(await Bun.file(sourcePath).exists())) {
+          throw new Error(`Missing companion module: ${sourcePath}`);
+        }
+        if (path.resolve(sourcePath) === path.resolve(targetPath)) {
+          return;
+        }
+
+        await mkdir(path.dirname(targetPath), { recursive: true });
+        await copyFile(sourcePath, targetPath);
+      });
+    }
+
+    for (const name of RUN_COMPANION_MODULE_BASENAMES) {
+      const wrapperPath = path.join(outputDir, `${name}.mjs`);
+      const wrapperSource = `export * from "./services/${name}.mjs";\n`;
+      yield* Effect.tryPromise(() => writeFile(wrapperPath, wrapperSource, 'utf8'));
+    }
+
+    yield* Effect.tryPromise(() => copyBundledAcpAdapters(outputDir));
   });

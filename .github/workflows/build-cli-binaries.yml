@@ -72,17 +72,8 @@ jobs:
           ./dist/binaries/${{ matrix.artifact }} --help | head -5
 
       - name: Create archive
-        working-directory: ts/packages/cli/dist/binaries
-        run: |
-          # Create subdirectory structure expected by install script
-          # Use a temp directory name to avoid name collision with the binary file
-          temp_dir="archive-${{ matrix.artifact }}"
-          rm -rf "$temp_dir"
-          mkdir -p "$temp_dir/${{ matrix.artifact }}"
-          cp "${{ matrix.artifact }}" "$temp_dir/${{ matrix.artifact }}/composio"
-          cp companions/run-subagent-*.mjs "$temp_dir/${{ matrix.artifact }}/"
-          cd "$temp_dir" && zip -r "../${{ matrix.artifact }}.zip" "${{ matrix.artifact }}"
-          cd .. && rm -r "$temp_dir"
+        working-directory: ts/packages/cli
+        run: pnpm build:binary:package
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6

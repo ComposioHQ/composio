@@ -6,7 +6,11 @@ import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
 import type { MasterKind } from 'src/services/master-detector';
-import { resolveRunCompanionModulePath } from 'src/services/run-companion-modules';
+import {
+  resolveRunCompanionAssetPath,
+  resolveRunCompanionModulePath,
+  RUN_CODEX_ACP_BINARY_TARGETS,
+} from 'src/services/run-companion-modules';
 import {
   ACP_STRUCTURED_OUTPUT_TOOL_NAME,
   AcpInvokeError,
@@ -23,7 +27,30 @@ import {
   type InvokeAgentTarget,
 } from 'src/services/run-subagent-shared';
 
-const resolveBundledAdapter = (target: InvokeAgentTarget): string | null => {
+const resolveShippedAdapterAsset = (target: InvokeAgentTarget): string | null => {
+  if (target === 'claude') {
+    return resolveRunCompanionAssetPath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativePathFromRoot: 'acp-adapters/claude-code-acp.mjs',
+    });
+  }
+
+  const binaryTarget = RUN_CODEX_ACP_BINARY_TARGETS.find(
+    candidate => candidate.platform === process.platform && candidate.arch === process.arch
+  );
+  if (!binaryTarget) {
+    return null;
+  }
+
+  return resolveRunCompanionAssetPath({
+    callerImportMetaUrl: import.meta.url,
+    execPath: process.execPath,
+    relativePathFromRoot: binaryTarget.relativePath,
+  });
+};
+
+const resolveInstalledAdapter = (target: InvokeAgentTarget): string | null => {
   const specifier =
     target === 'claude'
       ? '@zed-industries/claude-code-acp/dist/index.js'
@@ -40,22 +67,45 @@ export const resolveAcpAdapterCommand = (
   target: InvokeAgentTarget
 ): {
   readonly cmd: ReadonlyArray<string>;
-  readonly source: 'bundled' | 'which' | 'npx';
+  readonly env?: Readonly<Record<string, string>>;
+  readonly source: 'shipped' | 'bundled' | 'which' | 'npx';
 } => {
   const binary = target === 'claude' ? 'claude-code-acp' : 'codex-acp';
   const packageName =
     target === 'claude' ? '@zed-industries/claude-code-acp' : '@zed-industries/codex-acp';
 
-  // 1. Try the bundled dependency first (no npx overhead)
-  const bundled = resolveBundledAdapter(target);
+  // 1. Prefer shipped companion assets next to the CLI binary / dist bundle.
+  const shipped = resolveShippedAdapterAsset(target);
+  if (shipped) {
+    if (target === 'codex') {
+      return {
+        cmd: [shipped],
+        source: 'shipped',
+      };
+    }
+
+    return {
+      cmd: [process.execPath, shipped],
+      env: {
+        BUN_BE_BUN: '1',
+      },
+      source: 'shipped',
+    };
+  }
+
+  // 2. Try the installed dependency bundle next (no npx overhead).
+  const bundled = resolveInstalledAdapter(target);
   if (bundled) {
     return {
       cmd: [process.execPath, bundled],
+      env: {
+        BUN_BE_BUN: '1',
+      },
       source: 'bundled',
     };
   }
 
-  // 2. Check if the binary is on PATH
+  // 3. Check if the binary is on PATH.
   if (typeof Bun !== 'undefined' && typeof Bun.which === 'function') {
     const resolved = Bun.which(binary);
     if (resolved) {
@@ -66,7 +116,7 @@ export const resolveAcpAdapterCommand = (
     }
   }
 
-  // 3. Fall back to npx
+  // 4. Fall back to npx.
   return {
     cmd: [process.platform === 'win32' ? 'npx.cmd' : 'npx', '-y', packageName],
     source: 'npx',
@@ -479,7 +529,12 @@ export const invokeAcpSubAgent = async ({
   const { CLAUDECODE: _, ...childEnv } = process.env;
   const child = spawn(resolved.cmd[0]!, resolved.cmd.slice(1), {
     cwd: process.cwd(),
-    env: childEnv,
+    env: resolved.env
+      ? {
+          ...childEnv,
+          ...resolved.env,
+        }
+      : childEnv,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
