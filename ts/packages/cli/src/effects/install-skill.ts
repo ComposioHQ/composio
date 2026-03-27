@@ -125,10 +125,11 @@ export const installSkill = Effect.gen(function* () {
  * Wrapped version that catches all errors and logs a warning instead of failing.
  */
 export const installSkillSafe = installSkill.pipe(
-  Effect.catchAll(error =>
+  Effect.sandbox,
+  Effect.catchAll(cause =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
-      yield* Effect.logDebug('Skill install failed:', error);
+      yield* Effect.logDebug('Skill install failed:', cause);
       yield* ui.log.warn('Could not install Claude Code skill (non-fatal)');
     })
   )

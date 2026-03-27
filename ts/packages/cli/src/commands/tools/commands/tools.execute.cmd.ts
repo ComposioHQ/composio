@@ -189,7 +189,7 @@ type StoredExecuteOutputSummary = {
   readonly logId: string;
   readonly storedInFile: true;
   readonly tokenCount: number;
-  readonly outputFilePath: string | undefined;
+  readonly outputFilePath: string;
 };
 
 const serializeExecuteOutput = (result: unknown): string =>
@@ -210,7 +210,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       logId: '',
       storedInFile: true,
       tokenCount: getExecuteOutputEncoder().encode(json).length,
-      outputFilePath,
+      outputFilePath: outputFilePath ?? '(could not write to disk)',
     } satisfies StoredExecuteOutputSummary;
   });
 
