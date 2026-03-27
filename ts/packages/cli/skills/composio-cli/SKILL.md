@@ -8,9 +8,10 @@ description: Help users operate the published Composio CLI to find the right too
 ## Default Workflow
 
 1. Start with `composio execute <slug>` whenever the slug is known.
-2. If `execute` says the toolkit is not connected, run `composio link <toolkit>` and retry.
-3. If the arguments are unclear, run `composio execute <slug> --get-schema` or `--dry-run` before guessing.
-4. Reach for `composio search "<task>"` only when the slug is unknown.
+2. If several independent tool calls must happen at once, use `composio execute -p/--parallel` with repeated `<slug> -d <json>` groups.
+3. If `execute` says the toolkit is not connected, run `composio link <toolkit>` and retry.
+4. If the arguments are unclear, run `composio execute <slug> --get-schema` or `--dry-run` before guessing.
+5. Reach for `composio search "<task>"` only when the slug is unknown. `search` accepts one or more queries, so batch related discovery work into a single command when useful.
 
 ## `execute` — Run A Tool
 
@@ -37,14 +38,24 @@ composio execute GITHUB_CREATE_AN_ISSUE -d @issue.json
 cat issue.json | composio execute GITHUB_CREATE_AN_ISSUE -d -
 ```
 
+Run independent tool calls in parallel:
+
+```bash
+composio execute --parallel \
+  GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hi" }' \
+  GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'
+```
+
 ## `search` — Find The Slug
 
 ```bash
 composio search "create a github issue"
 composio search "send an email" --toolkits gmail
+composio search "send an email" "create a github issue"
+composio search "my emails" "my github issues" --toolkits gmail,github
 ```
 
-Read the returned slugs, choose the best match, and move back to `execute`.
+Use multiple quoted queries when the user is exploring more than one task or a small cross-app workflow. Read the returned slugs, choose the best match, and move back to `execute`.
 
 ## `link` — Connect An Account
 
@@ -81,6 +92,8 @@ composio run '
 '
 ```
 
+Use top-level `execute --parallel` when the user just needs a few independent tool calls and does not need script logic, loops, or output plumbing.
+
 Fan out with `Promise.all`:
 
 ```bash
@@ -106,7 +119,7 @@ composio run --logs-off '
 '
 ```
 
-For more patterns — `proxy()` inside scripts, `search()` inside scripts, mixed `execute()` + `proxy()`, and `--dry-run`/`--debug` flags — load [references/power-user-examples.md](references/power-user-examples.md).
+For more patterns — multi-query top-level `search`, `proxy()` inside scripts, mixed `execute()` + `proxy()`, and `--dry-run`/`--debug` flags — load [references/power-user-examples.md](references/power-user-examples.md).
 
 ## Auth
 
