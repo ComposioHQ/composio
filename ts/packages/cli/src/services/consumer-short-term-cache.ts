@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
-import { Config, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
+import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
 import {
@@ -10,12 +11,6 @@ import {
 } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
 import { ComposioUserContext } from 'src/services/user-context';
-import * as constants from 'src/constants';
-
-const isCacheDisabled = Config.boolean('DISABLE_CONNECTED_ACCOUNT_CACHE').pipe(
-  Config.withDefault(true),
-  Config.nested(constants.APP_ENV_CONFIG_KEY_PREFIX)
-);
 
 const CACHE_FILE = 'consumer-short-term-cache.json';
 const CACHE_TTL_MS = 15 * 60 * 1000;
@@ -131,7 +126,7 @@ export const getFreshConsumerConnectedToolkitsFromCache = (params: {
   consumerUserId: string;
 }) =>
   Effect.gen(function* () {
-    const disabled = yield* isCacheDisabled;
+    const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
     if (disabled) {
       return Option.none<ReadonlyArray<string>>();
     }
@@ -202,7 +197,7 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
   readonly consumerUserId?: string;
 }) =>
   Effect.gen(function* () {
-    const disabled = yield* isCacheDisabled;
+    const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
     if (disabled) return;
     const scope = yield* resolveConsumerScope(params);
     if (!scope?.consumerUserId) {
@@ -246,7 +241,7 @@ export const writeConsumerConnectedToolkitsCache = (params: {
   readonly toolkits: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
-    const disabled = yield* isCacheDisabled;
+    const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
     if (disabled) return;
     const noAuthToolkits = yield* getAlwaysConnectedNoAuthToolkits();
     const state = yield* readCache();
@@ -283,7 +278,7 @@ export const getOrCreateProbablyMyCliSessionIdForCurrentCwd = (params?: {
   readonly consumerUserId?: string;
 }) =>
   Effect.gen(function* () {
-    const disabled = yield* isCacheDisabled;
+    const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
     if (disabled) return Option.none<string>();
     const scope = yield* resolveConsumerScope(params);
     if (!scope?.consumerUserId) {
