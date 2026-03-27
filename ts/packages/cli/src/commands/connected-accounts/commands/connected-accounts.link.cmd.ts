@@ -46,6 +46,25 @@ const noWait = Options.boolean('no-wait').pipe(
   Options.withDescription('Do not wait for authorization; only print link info')
 );
 
+const showRedirectUrl = (
+  ui: TerminalUI,
+  redirectUrl: string,
+  noBrowser: boolean,
+  options?: { readonly emitRaw?: boolean }
+) =>
+  Effect.gen(function* () {
+    if (noBrowser) {
+      yield* ui.log.info('Please authorize using the following URL:');
+    } else {
+      yield* ui.log.step('Redirecting you to the authorization page');
+    }
+
+    yield* ui.note(redirectUrl, 'Redirect URL');
+    if (options?.emitRaw) {
+      yield* ui.output(redirectUrl, noBrowser ? { force: true } : undefined);
+    }
+  });
+
 const waitForActiveConnection = (
   ui: TerminalUI,
   client: RawComposioClient,
@@ -54,7 +73,7 @@ const waitForActiveConnection = (
   noBrowser: boolean
 ) =>
   Effect.gen(function* () {
-    yield* ui.note(redirectUrl, 'Redirect URL');
+    yield* showRedirectUrl(ui, redirectUrl, noBrowser, { emitRaw: noBrowser });
 
     if (!noBrowser) {
       let urlSchemeValid = false;
@@ -265,7 +284,7 @@ const runConnectedAccountsLink = (params: {
 
       const { connectedAccountId: connId, redirectUrl } = validatedLink.value;
       if (params.noWait) {
-        yield* ui.note(redirectUrl, 'Redirect URL');
+        yield* showRedirectUrl(ui, redirectUrl, params.noBrowser);
         yield* ui.output(
           JSON.stringify(
             {
@@ -277,7 +296,8 @@ const runConnectedAccountsLink = (params: {
             },
             null,
             2
-          )
+          ),
+          { force: true }
         );
       } else {
         yield* waitForActiveConnection(ui, client, connId, redirectUrl, params.noBrowser);
@@ -344,7 +364,7 @@ const runConnectedAccountsLink = (params: {
     yield* invalidateConsumerConnectedToolkitsCache().pipe(Effect.catchAll(() => Effect.void));
 
     if (params.noWait) {
-      yield* ui.note(redirectUrl, 'Redirect URL');
+      yield* showRedirectUrl(ui, redirectUrl, params.noBrowser);
       yield* ui.output(
         JSON.stringify(
           {
@@ -357,7 +377,8 @@ const runConnectedAccountsLink = (params: {
           },
           null,
           2
-        )
+        ),
+        { force: true }
       );
       yield* appendCliSessionHistory({
         orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,

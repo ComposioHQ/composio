@@ -72,6 +72,21 @@ const KNOWN_COMMAND_TOKENS = new Set([
 ]);
 
 const TOOL_NOT_FOUND_PATTERN = /\btool\b.*\bnot found\b/i;
+const TOOL_NOT_FOUND_CODES: ReadonlySet<number> = new Set([
+  1147, // MCP_ToolNotFound
+  1800, // ActionExecute_ToolNotFound
+  2301, // Labs_ToolNotFound
+  2306, // Labs_InvalidToolName
+  2401, // Tool_ToolNotFound
+  3703, // ComposioTools_ToolNotFound
+  4301, // ToolRouterV2_ToolNotFound
+]);
+const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
+  1142, // MCP_ValidationError
+  1149, // MCP_InvalidParameter
+  1607, // Upstream_ValidationError
+  3702, // ComposioTools_ValidationError
+]);
 const getInvocationOrigin = (): string => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli';
 const getParentRunId = (): string | undefined => process.env.COMPOSIO_CLI_PARENT_RUN_ID;
 
@@ -493,6 +508,8 @@ export const getToolExecuteValidationFailedEvent = (params: {
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'dry_run' | 'validation' | 'execution';
+  readonly failureOrigin: 'fast_fail' | 'main_endpoint';
+  readonly logId?: string;
 }): TrackEvent => ({
   name: CLI_ANALYTICS_EVENTS.CLI_TOOL_INVOCATION_VALIDATION_FAILED,
   properties: {
@@ -503,6 +520,8 @@ export const getToolExecuteValidationFailedEvent = (params: {
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
+    failure_origin: params.failureOrigin,
+    tool_log_id: params.logId,
     issue_count: params.error.issues.length,
     issue_locations: extractIssueLocations(params.error.issues),
     unknown_keys: extractUnknownKeys(params.error.issues),
@@ -515,10 +534,24 @@ export const isMaybeToolNotFoundError = (params: {
   readonly message?: string;
   readonly errorSlug?: string;
   readonly status?: number;
+  readonly apiCode?: number;
 }): boolean =>
+  (typeof params.apiCode === 'number' && TOOL_NOT_FOUND_CODES.has(params.apiCode)) ||
   params.status === 404 ||
   params.errorSlug?.toLowerCase().includes('notfound') === true ||
   TOOL_NOT_FOUND_PATTERN.test(params.message ?? '');
+
+export const isMaybeToolValidationError = (params: {
+  readonly message?: string;
+  readonly errorSlug?: string;
+  readonly apiCode?: number;
+}): boolean =>
+  (typeof params.apiCode === 'number' && TOOL_VALIDATION_CODES.has(params.apiCode)) ||
+  params.errorSlug?.toLowerCase().includes('validation') === true ||
+  params.errorSlug?.toLowerCase().includes('invalidparameter') === true ||
+  /\bvalidation\b/i.test(params.message ?? '') ||
+  /\binvalid parameter\b/i.test(params.message ?? '') ||
+  /\binvalid argument\b/i.test(params.message ?? '');
 
 export const getToolExecuteToolNotFoundEvent = (params: {
   readonly toolSlug: string;
@@ -526,6 +559,8 @@ export const getToolExecuteToolNotFoundEvent = (params: {
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
+  readonly failureOrigin: 'fast_fail' | 'main_endpoint';
+  readonly logId?: string;
   readonly errorSlug?: string;
   readonly status?: number;
   readonly apiCode?: number;
@@ -540,6 +575,8 @@ export const getToolExecuteToolNotFoundEvent = (params: {
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
+    failure_origin: params.failureOrigin,
+    tool_log_id: params.logId,
     error_slug: params.errorSlug,
     http_status: params.status,
     api_error_code: params.apiCode,
@@ -554,6 +591,8 @@ export const getToolExecuteFailedEvent = (params: {
   readonly surface: 'root' | 'dev';
   readonly projectMode: 'consumer' | 'developer';
   readonly stage: 'schema_fetch' | 'dry_run' | 'execution';
+  readonly failureOrigin: 'fast_fail' | 'main_endpoint';
+  readonly logId?: string;
   readonly errorSlug?: string;
   readonly status?: number;
   readonly apiCode?: number;
@@ -570,6 +609,8 @@ export const getToolExecuteFailedEvent = (params: {
     surface: params.surface,
     project_mode: params.projectMode,
     stage: params.stage,
+    failure_origin: params.failureOrigin,
+    tool_log_id: params.logId,
     error_slug: params.errorSlug,
     http_status: params.status,
     api_error_code: params.apiCode,
