@@ -1,5 +1,11 @@
 # @composio/cli
 
+## 0.2.14
+
+### Patch Changes
+
+- 5a3c661: Change `composio install` to skip shell completions by default and require `--completions` to install them explicitly. Also keep the skipped-completions logging consistent.
+
 ## 0.2.13
 
 ### Patch Changes
