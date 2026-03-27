@@ -54,42 +54,71 @@ const testLiveOptions = {
 };
 
 describe('CLI: composio search', () => {
-  layer(TestLive(testLiveOptions))('[Given] query "send" [Then] returns matching tools', it => {
-    it.scoped('returns matching tools', () =>
+  layer(TestLive(testLiveOptions))('[Given] query "send" [Then] returns JSON by default', it => {
+    it.scoped('returns JSON payload by default', () =>
       Effect.gen(function* () {
         yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
+        expect(output).toContain('"results"');
+        expect(output).toContain('"tool_schemas"');
+        expect(output).toContain('"primary"');
+        expect(output).toContain('"related_tools_path_format"');
+        expect(output).toContain('"connected_toolkits"');
+        expect(output).toContain('"CTA"');
+        expect(output).not.toContain('"session"');
+        expect(output).not.toContain('"time_info"');
+        expect(output).not.toContain('"next_steps_guidance"');
+        expect(output).not.toContain('"success"');
+        expect(output).not.toContain('"error"');
         expect(output).toContain('GMAIL_SEND_EMAIL');
         expect(output).toContain('SLACK_SEND_MESSAGE');
-        expect(output).not.toContain('GITHUB_CREATE_ISSUE');
-        expect(output).toContain('Found 2 tools');
+        expect(output).toContain('~/.composio/tool_definitions/GMAIL_SEND_EMAIL.json');
       })
     );
   });
 
   layer(TestLive(testLiveOptions))(
-    '[Given] query with no results [Then] shows not found message',
+    '[Given] multiple queries [Then] the CLI returns a batched JSON response',
     it => {
-      it.scoped('shows not found message', () =>
+      it.scoped('returns batched results in JSON', () =>
         Effect.gen(function* () {
-          yield* cli(['search', 'nonexistent_query']);
+          yield* cli(['search', 'send', 'create issue']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('No tools found');
+          expect(output).toContain('"use_case": "send"');
+          expect(output).toContain('"use_case": "create issue"');
+          expect(output).toContain('GMAIL_SEND_EMAIL');
+          expect(output).toContain('SLACK_SEND_MESSAGE');
+          expect(output).toContain('GITHUB_CREATE_ISSUE');
         })
       );
     }
   );
 
   layer(TestLive(testLiveOptions))(
-    '[Given] query "send" --toolkits "gmail" [Then] scopes to toolkit',
+    '[Given] query with no results [Then] shows not found message',
+    it => {
+      it.scoped('shows empty json output', () =>
+        Effect.gen(function* () {
+          yield* cli(['search', 'nonexistent_query']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('[]');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] query "send" --toolkits "gmail" --human [Then] scopes to toolkit',
     it => {
       it.scoped('scopes search to toolkit', () =>
         Effect.gen(function* () {
-          yield* cli(['search', 'send', '--toolkits', 'gmail']);
+          yield* cli(['search', 'send', '--toolkits', 'gmail', '--human']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
           const humanOutput = output.split('\n{')[0] ?? output;
@@ -103,24 +132,112 @@ describe('CLI: composio search', () => {
   );
 
   layer(TestLive(testLiveOptions))(
-    '[Given] tools search [Then] JSON output includes full tool-router payload and CTA',
+    '[Given] search --human [Then] it stays human-readable and omits raw JSON',
+    it => {
+      it.scoped('does not print raw JSON in human mode', () =>
+        Effect.gen(function* () {
+          yield* cli(['search', 'send', '--human']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).not.toContain('"results"');
+          expect(output).not.toContain('"tool_schemas"');
+          expect(output).toContain('Found 2 tools');
+          expect(output).toContain('composio execute');
+          expect(output).toContain('composio link <toolkit>');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] search --json [Then] JSON output includes full tool-router payload and CTA',
     it => {
       it.scoped('prints full search response with CTA for jq', () =>
         Effect.gen(function* () {
-          yield* cli(['search', 'send']);
+          yield* cli(['search', 'send', '--json']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
           expect(output).toContain('"results"');
           expect(output).toContain('"tool_schemas"');
-          expect(output).toContain('"toolkit_connection_statuses"');
-          expect(output).toContain('"session"');
-          expect(output).toContain('"time_info"');
+          expect(output).toContain('"connected_toolkits"');
           expect(output).toContain('"CTA"');
+          expect(output).not.toContain('"session"');
+          expect(output).not.toContain('"time_info"');
+          expect(output).not.toContain('"next_steps_guidance"');
+          expect(output).not.toContain('"success"');
+          expect(output).not.toContain('"error"');
           expect(output).toContain('"Execute a tool"');
           expect(output).toContain('"Connect a user account"');
           expect(output).toContain('composio execute');
           expect(output).toContain('composio link gmail');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] search results with workbench snippets [Then] snippets are removed from JSON output',
+    it => {
+      it.scoped('omits workbench snippets and emits schema/cache references', () =>
+        Effect.gen(function* () {
+          const live = TestLive({
+            ...testLiveOptions,
+            toolRouter: {
+              search: async (_sessionId, params) => ({
+                success: true,
+                error: null,
+                results: [
+                  {
+                    index: 1,
+                    use_case: params.queries[0]?.use_case ?? '',
+                    primary_tool_slugs: ['GMAIL_SEND_EMAIL'],
+                    related_tool_slugs: [],
+                    toolkits: ['gmail'],
+                    reference_workbench_snippets: [{ description: 'snippet', code: 'print("hi")' }],
+                  },
+                ],
+                tool_schemas: {
+                  GMAIL_SEND_EMAIL: {
+                    tool_slug: 'GMAIL_SEND_EMAIL',
+                    toolkit: 'gmail',
+                    description: 'Sends an email',
+                    hasFullSchema: true,
+                    input_schema: { type: 'object', properties: {} },
+                    output_schema: { type: 'object', properties: {} },
+                  },
+                },
+                toolkit_connection_statuses: [
+                  {
+                    toolkit: 'gmail',
+                    description: 'gmail toolkit',
+                    has_active_connection: false,
+                    status_message: 'No active connection',
+                  },
+                ],
+                next_steps_guidance: [],
+                session: {
+                  id: 'trs_test_session',
+                  generate_id: false,
+                  instructions: 'Reuse this session id for follow-up calls.',
+                },
+                time_info: {
+                  current_time_utc: '2026-01-01T00:00:00.000Z',
+                  current_time_utc_epoch_seconds: 1767225600,
+                  message: 'UTC time',
+                },
+              }),
+            },
+          });
+
+          yield* cli(['search', 'send']).pipe(Effect.provide(live));
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).not.toContain('reference_workbench_snippets');
+          expect(output).toContain('~/.composio/tool_definitions/GMAIL_SEND_EMAIL.json');
+          expect(output).toContain('"related_tools_path_format"');
         })
       );
     }
@@ -281,6 +398,79 @@ describe('CLI: composio search', () => {
   );
 
   layer(TestLive(testLiveOptions))(
+    '[Given] multiple queries [Then] search passes all queries to the tool-router session',
+    it => {
+      it.scoped('passes batched queries without a parallel flag', () =>
+        Effect.gen(function* () {
+          let searchParams: SessionSearchParams | undefined;
+
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            toolkitsData,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              search: async (_sessionId, params) => {
+                searchParams = params;
+                return {
+                  success: true,
+                  error: null,
+                  results: params.queries.map((query, index) => ({
+                    index: index + 1,
+                    use_case: query.use_case ?? '',
+                    primary_tool_slugs:
+                      query.use_case === 'create issue'
+                        ? ['GITHUB_CREATE_ISSUE']
+                        : ['GMAIL_SEND_EMAIL'],
+                    related_tool_slugs: [],
+                    toolkits: query.use_case === 'create issue' ? ['github'] : ['gmail'],
+                  })),
+                  tool_schemas: {
+                    GMAIL_SEND_EMAIL: {
+                      tool_slug: 'GMAIL_SEND_EMAIL',
+                      toolkit: 'gmail',
+                      description: 'Sends an email',
+                      hasFullSchema: true,
+                      input_schema: { type: 'object', properties: {} },
+                      output_schema: { type: 'object', properties: {} },
+                    },
+                    GITHUB_CREATE_ISSUE: {
+                      tool_slug: 'GITHUB_CREATE_ISSUE',
+                      toolkit: 'github',
+                      description: 'Creates a GitHub issue',
+                      hasFullSchema: true,
+                      input_schema: { type: 'object', properties: {} },
+                      output_schema: { type: 'object', properties: {} },
+                    },
+                  },
+                  toolkit_connection_statuses: [],
+                  next_steps_guidance: [],
+                  session: {
+                    id: 'trs_test_session',
+                    generate_id: false,
+                    instructions: 'Reuse this session id for follow-up calls.',
+                  },
+                  time_info: {
+                    current_time_utc: '2026-01-01T00:00:00.000Z',
+                    current_time_utc_epoch_seconds: 1767225600,
+                    message: 'UTC time',
+                  },
+                };
+              },
+            },
+          });
+
+          yield* cli(['search', 'send', 'create issue']).pipe(Effect.provide(live));
+
+          expect(searchParams?.queries.map(query => query.use_case)).toEqual([
+            'send',
+            'create issue',
+          ]);
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
     '[Given] search response with recommended plan [Then] it prints plan and execute hint',
     it => {
       it.scoped('prints plan and command hints', () =>
@@ -336,7 +526,7 @@ describe('CLI: composio search', () => {
             },
           });
 
-          yield* cli(['search', 'send email']).pipe(Effect.provide(live));
+          yield* cli(['search', 'send email', '--human']).pipe(Effect.provide(live));
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -353,7 +543,7 @@ describe('CLI: composio search', () => {
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['search', 'send']);
+        yield* cli(['search', 'send', '--human']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -404,7 +594,8 @@ describe('CLI: composio search', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('Found 2 tools');
+        expect(output).toContain('"results"');
+        expect(output).toContain('GMAIL_SEND_EMAIL');
         expect(output).not.toContain('Using global test user id');
       })
     );
@@ -415,7 +606,7 @@ describe('CLI: composio search', () => {
     it => {
       it.scoped('search returns matching tools', () =>
         Effect.gen(function* () {
-          yield* cli(['search', 'send']);
+          yield* cli(['search', 'send', '--human']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 

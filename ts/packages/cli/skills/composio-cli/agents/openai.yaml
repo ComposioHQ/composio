@@ -1,0 +1,4 @@
+interface:
+  display_name: "Composio CLI"
+  short_description: "Execute-first help for the Composio CLI"
+  default_prompt: "Use $composio-cli to find the right Composio CLI command and run it safely."

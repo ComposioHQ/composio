@@ -12,6 +12,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
+import { installSkillSafe } from 'src/effects/install-skill';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
@@ -34,6 +35,11 @@ const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
   Options.withDescription('Skip org picker; use session default org')
+);
+
+const noSkillInstall = Options.boolean('no-skill-install').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Skip installing the composio-cli skill for Claude Code')
 );
 
 /**
@@ -433,8 +439,8 @@ export const browserLogin = (params: {
  */
 export const loginCmd = Command.make(
   'login',
-  { noBrowser, noWait, key: keyOpt, yes: yesOpt },
-  ({ noBrowser, noWait, key, yes }) =>
+  { noBrowser, noWait, key: keyOpt, yes: yesOpt, noSkillInstall },
+  ({ noBrowser, noWait, key, yes, noSkillInstall }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
@@ -447,6 +453,9 @@ export const loginCmd = Command.make(
           noWait,
           skipOrgProjectPicker: true,
         });
+        if (!noSkillInstall) {
+          yield* installSkillSafe();
+        }
         return;
       }
 
@@ -467,5 +476,9 @@ export const loginCmd = Command.make(
         noWait,
         skipOrgProjectPicker: yes,
       });
+
+      if (!noSkillInstall && !noWait) {
+        yield* installSkillSafe();
+      }
     })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

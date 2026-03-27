@@ -119,6 +119,11 @@ jobs:
       - name: Display checksums
         run: cat ts/packages/cli/dist/binaries/checksums.txt
 
+      - name: Package skill files
+        working-directory: ts/packages/cli
+        run: |
+          cd skills && zip -r ../dist/binaries/composio-skill.zip composio-cli/
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

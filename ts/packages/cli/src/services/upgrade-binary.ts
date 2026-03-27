@@ -482,7 +482,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           yield* ui.log.info(`New local version available (current: ${APP_VERSION})`);
           yield* replaceBinary(upgradeTargetOpt.value, currentPath);
           yield* ui.outro('Upgrade completed');
-          return;
+          return undefined;
         }
 
         const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
@@ -535,13 +535,15 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             yield* replaceBinary(extractedBinaryPath, currentPath);
 
             yield* spinner.stop('Upgrade completed!');
-            return true;
+            return release.tag_name;
           })
         );
 
         yield* ui.outro(
           didUpgrade ? 'Restart your terminal to use the new version.' : 'No upgrade needed.'
         );
+
+        return didUpgrade || undefined; // release tag string, or undefined if no upgrade
       });
 
     return {
