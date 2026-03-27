@@ -454,7 +454,7 @@ export const loginCmd = Command.make(
           skipOrgProjectPicker: true,
         });
         if (!noSkillInstall) {
-          yield* installSkillSafe;
+          yield* installSkillSafe();
         }
         return;
       }
@@ -478,7 +478,7 @@ export const loginCmd = Command.make(
       });
 
       if (!noSkillInstall && !noWait) {
-        yield* installSkillSafe;
+        yield* installSkillSafe();
       }
     })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));
