@@ -191,11 +191,11 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('PATH: already configured');
     }
 
-    if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
+    if (params.noCompletions) {
+      yield* ui.log.step('Completions: skipped (--no-completions)');
+    } else if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
       blocks.push(config.completionBlock);
       yield* ui.log.step('Completions: will install shell completions');
-    } else if (params.noCompletions) {
-      yield* ui.log.step('Completions: skipped (--no-completions)');
     } else if (!config.completionBlock) {
       yield* ui.log.step('Completions: not available for this shell');
     } else {
