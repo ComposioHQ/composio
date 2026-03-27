@@ -393,6 +393,9 @@ const runConnectedAccountsLink = (params: {
             yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
             return Option.none();
           })
+        ),
+        Effect.tap(() =>
+          invalidateConsumerConnectedToolkitsCache().pipe(Effect.catchAll(() => Effect.void))
         )
       );
 
@@ -402,7 +405,6 @@ const runConnectedAccountsLink = (params: {
     if (Option.isNone(validatedLink)) return;
 
     const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
-    yield* invalidateConsumerConnectedToolkitsCache().pipe(Effect.catchAll(() => Effect.void));
 
     if (params.noWait) {
       yield* showRedirectUrl(ui, redirectUrl, params.noBrowser);
