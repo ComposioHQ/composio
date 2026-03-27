@@ -28,6 +28,39 @@ const allDetails = Options.boolean('all').pipe(
   Options.withDescription('Show all available toolkit details, including auth config fields')
 );
 
+const TOOLKIT_INFO_METADATA_TIMEOUT_MS = 10_000;
+const TOOLKIT_INFO_SESSION_TIMEOUT_MS = 10_000;
+const TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS = 5_000;
+
+const getOptionalResultWithTimeout = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  timeoutMs: number,
+  timeoutMessage: string,
+  failureMessage: string
+): Effect.Effect<Option.Option<A>, never, R> =>
+  Effect.raceFirst(
+    effect.pipe(
+      Effect.asSome,
+      Effect.catchAll(error =>
+        Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
+      )
+    ),
+    Effect.sleep(timeoutMs).pipe(
+      Effect.zipRight(Effect.logDebug(timeoutMessage)),
+      Effect.as(Option.none<A>())
+    )
+  );
+
+const getOptionalValueWithTimeout = <A, E, R>(
+  effect: Effect.Effect<A, E, R>,
+  timeoutMs: number,
+  timeoutMessage: string,
+  failureMessage: string
+): Effect.Effect<A | undefined, never, R> =>
+  getOptionalResultWithTimeout(effect, timeoutMs, timeoutMessage, failureMessage).pipe(
+    Effect.map(Option.getOrUndefined)
+  );
+
 /**
  * View details of a specific toolkit including connection status.
  *
@@ -114,40 +147,46 @@ export const toolkitsCmd$Info = Command.make(
         .withSpinner(
           `Fetching toolkit "${slugValue}"...`,
           Effect.gen(function* () {
-            const detailedToolkitOpt = yield* repo
-              .getToolkitDetailed(slugValue)
-              .pipe(Effect.option);
+            const detailedToolkitOpt = yield* getOptionalResultWithTimeout(
+              repo.getToolkitDetailed(slugValue),
+              TOOLKIT_INFO_METADATA_TIMEOUT_MS,
+              `Timed out fetching detailed toolkit info for "${slugValue}".`,
+              'Failed to fetch detailed toolkit info:'
+            );
             const catalogToolkitOpt = Option.isSome(detailedToolkitOpt)
               ? Option.none()
-              : yield* repo.getToolkitsBySlugs([slugValue]).pipe(
-                  Effect.map(toolkits => Option.fromNullable(toolkits[0])),
-                  Effect.catchAll(error =>
-                    Effect.logDebug('Failed to fetch toolkit catalog fallback:', error).pipe(
-                      Effect.as(Option.none())
+              : yield* getOptionalResultWithTimeout(
+                  repo.getToolkitsBySlugs([slugValue]).pipe(
+                    Effect.map(toolkits => Option.fromNullable(toolkits[0])),
+                    Effect.flatMap(
+                      Option.match({
+                        onNone: () => Effect.succeed(Option.none<Toolkit>()),
+                        onSome: toolkit => Effect.succeed(Option.some(toolkit)),
+                      })
                     )
-                  )
-                );
+                  ),
+                  TOOLKIT_INFO_METADATA_TIMEOUT_MS,
+                  `Timed out fetching toolkit catalog fallback for "${slugValue}".`,
+                  'Failed to fetch toolkit catalog fallback:'
+                ).pipe(Effect.map(Option.flatten));
             const fallbackToolkit =
               fallbackToolkitFromDetailed(detailedToolkitOpt) ??
               fallbackToolkitFromCatalog(catalogToolkitOpt);
 
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();
-              const sessionToolkit = yield* resolveToolRouterSession(
-                client,
-                resolvedUserId.value
-              ).pipe(
-                Effect.flatMap(({ sessionId }) =>
-                  Effect.tryPromise(() =>
-                    client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
-                  )
+              const sessionToolkit = yield* getOptionalValueWithTimeout(
+                resolveToolRouterSession(client, resolvedUserId.value).pipe(
+                  Effect.flatMap(({ sessionId }) =>
+                    Effect.tryPromise(() =>
+                      client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
+                    )
+                  ),
+                  Effect.map(response => response.items[0])
                 ),
-                Effect.map(response => response.items[0]),
-                Effect.catchAll(error =>
-                  Effect.logDebug('Failed to fetch session toolkit info:', error).pipe(
-                    Effect.as(undefined)
-                  )
-                )
+                TOOLKIT_INFO_SESSION_TIMEOUT_MS,
+                `Timed out fetching session toolkit info for "${slugValue}".`,
+                'Failed to fetch session toolkit info:'
               );
 
               return { toolkit: sessionToolkit ?? fallbackToolkit, detailedToolkitOpt };
@@ -181,19 +220,31 @@ export const toolkitsCmd$Info = Command.make(
         yield* ui.log.warn(`Toolkit "${slugValue}" not found.`);
 
         // "Did you mean?" suggestions via legacy search
-        const suggestions = yield* repo.searchToolkits({ search: slugValue, limit: 3 }).pipe(
-          Effect.map(r =>
-            r.items.map(s => ({
-              label: `${s.slug} — ${s.meta.description}`,
-              command: `> composio dev toolkits info "${s.slug}"`,
-            }))
+        const suggestions = yield* getOptionalResultWithTimeout(
+          repo.searchToolkits({ search: slugValue, limit: 3 }).pipe(
+            Effect.map(r =>
+              r.items.map(s => ({
+                label: `${s.slug} — ${s.meta.description}`,
+                command: `> composio dev toolkits info "${s.slug}"`,
+              }))
+            )
           ),
-          Effect.catchAll(() => Effect.succeed([] as { label: string; command: string }[]))
+          TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS,
+          `Timed out fetching toolkit suggestions for "${slugValue}".`,
+          'Failed to fetch toolkit suggestions:'
         );
 
-        const [first] = suggestions;
+        const [first] = Option.getOrElse(
+          suggestions,
+          () => [] as { label: string; command: string }[]
+        );
         if (first) {
-          const lines = suggestions.map(s => `  ${s.label}`).join('\n');
+          const lines = Option.getOrElse(
+            suggestions,
+            () => [] as { label: string; command: string }[]
+          )
+            .map(s => `  ${s.label}`)
+            .join('\n');
           yield* ui.log.step(`Did you mean?\n${lines}\n\n${first.command}`);
         } else {
           yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
