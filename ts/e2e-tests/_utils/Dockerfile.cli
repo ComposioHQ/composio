@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Reusable Dockerfile for CLI e2e tests (debian runtime)
 # Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 -t test-name .
 
