@@ -5,29 +5,14 @@ description: Help users operate the published Composio CLI to find the right too
 
 # Composio CLI
 
-Use the shortest loop that gets the job done: `execute` first, `search` when the slug is unknown, `link` when a connection is missing, then retry `execute`.
-
-## Use The Default Workflow
+## Default Workflow
 
 1. Start with `composio execute <slug>` whenever the slug is known.
-2. Let `execute` do the work. It already validates inputs and checks connection state.
-3. If `execute` says the toolkit is not connected, run `composio link <toolkit>` and retry.
-4. If the arguments are unclear, run `composio execute <slug> --get-schema` or `--dry-run` before guessing.
-5. Reach for `composio search "<task>"` only when the slug is unknown.
+2. If `execute` says the toolkit is not connected, run `composio link <toolkit>` and retry.
+3. If the arguments are unclear, run `composio execute <slug> --get-schema` or `--dry-run` before guessing.
+4. Reach for `composio search "<task>"` only when the slug is unknown.
 
-## Treat Auth As A Footnote
-
-Use auth checks as quick preflight, not as the main workflow.
-
-```bash
-composio whoami
-```
-
-If `composio whoami` fails, run `composio login` and then move straight back to `execute`.
-
-## Use `execute` First
-
-Run a known slug:
+## `execute` — Run A Tool
 
 ```bash
 composio execute GITHUB_GET_THE_AUTHENTICATED_USER -d '{}'
@@ -48,60 +33,31 @@ composio execute GITHUB_CREATE_AN_ISSUE --skip-connection-check --dry-run -d '{ 
 Pass data from a file or stdin:
 
 ```bash
-composio execute GITHUB_CREATE_AN_ISSUE --skip-connection-check --dry-run -d @issue.json
-cat issue.json | composio execute GITHUB_CREATE_AN_ISSUE --skip-connection-check --dry-run -d -
+composio execute GITHUB_CREATE_AN_ISSUE -d @issue.json
+cat issue.json | composio execute GITHUB_CREATE_AN_ISSUE -d -
 ```
 
-Recover from missing connections:
-
-```bash
-composio execute GMAIL_FETCH_EMAILS -d '{ max_results: 1 }'
-composio link gmail --no-browser
-```
-
-After the auth flow completes, rerun the original `execute` command.
-
-Prefer `composio tools info` and `composio tools list` only when `search`, `--get-schema`, or the error message still leave the user stuck.
-
-## Use `search` To Find The Slug
-
-When the user knows the task but not the tool name, search first and then execute the best match.
+## `search` — Find The Slug
 
 ```bash
 composio search "create a github issue"
 composio search "send an email" --toolkits gmail
 ```
 
-Read the returned slugs, choose the best match, and immediately move back to `execute`.
+Read the returned slugs, choose the best match, and move back to `execute`.
 
-## Use `link` Only To Unblock `execute`
+## `link` — Connect An Account
 
-Use `link` when `execute` reports that the toolkit is not connected, or when the user explicitly wants to authorize an account.
+Use `link` when `execute` reports the toolkit is not connected, or the user wants to authorize an account.
 
 ```bash
 composio link gmail
 composio link googlecalendar --no-browser
 ```
 
-After linking, retry the original `execute` command instead of changing strategies.
+After linking, retry the original `execute` command.
 
-## Use Power Tools Deliberately
-
-Use `composio run` when one tool call is not enough and the user needs chaining, batching, lightweight automation, or sub-agent orchestration.
-
-```bash
-composio run '
-  const [me, emails] = await Promise.all([
-    execute("GITHUB_GET_THE_AUTHENTICATED_USER"),
-    execute("GMAIL_FETCH_EMAILS", { max_results: 1 }),
-  ]);
-
-  console.log({
-    login: me.data.login,
-    fetchedEmails: !!emails.data,
-  });
-'
-```
+## `proxy` — Raw API Access
 
 Use `composio proxy` when the toolkit supports a raw API operation that is easier than finding a dedicated tool.
 
@@ -109,7 +65,55 @@ Use `composio proxy` when the toolkit supports a raw API operation that is easie
 composio proxy https://api.github.com/user --toolkit github --method GET </dev/null
 ```
 
-For richer `run`, `subAgent()`, `result.prompt()`, `Promise.all`, and mixed `execute()` plus `proxy()` patterns, load [references/power-user-examples.md](references/power-user-examples.md).
+## `run` — Scripting, LLMs, and Programmatic Workflows
+
+> **For programmatic calls, LLM workflows, or anything beyond a single tool call — use `composio run`.**
+
+`composio run` executes an inline JavaScript snippet with authenticated `execute()`, `search()`, `proxy()`, and `subAgent()` helpers pre-injected. No SDK setup required.
+
+Chain multiple tools:
+
+```bash
+composio run '
+  const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER");
+  const emails = await execute("GMAIL_FETCH_EMAILS", { max_results: 1 });
+  console.log({ login: me.data.login, fetchedEmails: !!emails.data });
+'
+```
+
+Fan out with `Promise.all`:
+
+```bash
+composio run '
+  const [me, emails] = await Promise.all([
+    execute("GITHUB_GET_THE_AUTHENTICATED_USER"),
+    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),
+  ]);
+  console.log({ login: me.data.login, emailCount: emails.data.messages?.length });
+'
+```
+
+Feed tool output into an LLM and get structured JSON back:
+
+```bash
+composio run --logs-off '
+  const emails = await execute("GMAIL_FETCH_EMAILS", { max_results: 5 });
+  const brief = await subAgent(
+    `Summarize these emails and count them.\n\n${emails.prompt()}`,
+    { schema: z.object({ summary: z.string(), count: z.number() }) }
+  );
+  console.log(brief.structuredOutput);
+'
+```
+
+For more patterns — `proxy()` inside scripts, `search()` inside scripts, mixed `execute()` + `proxy()`, and `--dry-run`/`--debug` flags — load [references/power-user-examples.md](references/power-user-examples.md).
+
+## Auth
+
+```bash
+composio whoami   # check current session
+composio login    # authenticate if whoami fails
+```
 
 ## Escalate Only When Needed
 
