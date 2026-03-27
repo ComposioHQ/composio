@@ -252,6 +252,65 @@ jobs:
             fi
           fi
 
+      - name: Test bundled support files
+        shell: bash
+        run: |
+          echo "Checking bundled support files..."
+
+          install_dir="${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
+          release_tag=$(cat "$install_dir/release-tag.txt")
+
+          platform=$(uname -ms)
+          case $platform in
+          'Darwin x86_64')  target=darwin-x64 ;;
+          'Darwin arm64')   target=darwin-aarch64 ;;
+          'Linux aarch64' | 'Linux arm64')
+                            target=linux-aarch64 ;;
+          'Linux x86_64')   target=linux-x64 ;;
+          *)                echo "❌ Unsupported platform: $platform"; exit 1 ;;
+          esac
+
+          if [[ $target = darwin-x64 ]]; then
+            if [[ $(sysctl -n sysctl.proc_translated 2>/dev/null) = 1 ]]; then
+              target=darwin-aarch64
+            fi
+          fi
+
+          archive_name="composio-$target.zip"
+          archive_url="https://github.com/ComposioHQ/composio/releases/download/$release_tag/$archive_name"
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          curl --fail --silent --location --output "$tmpdir/$archive_name" "$archive_url"
+
+          mapfile -t expected_paths < <(
+            unzip -Z1 "$tmpdir/$archive_name" \
+              | grep -v '/$' \
+              | sed "s#^composio-$target/##" \
+              | grep -v '^composio$' \
+              | sort
+          )
+
+          if [[ ${#expected_paths[@]} -eq 0 ]]; then
+            echo "❌ No bundled support files found in $archive_name"
+            exit 1
+          fi
+
+          missing_paths=()
+          for relative_path in "${expected_paths[@]}"; do
+            if [[ -f "$install_dir/$relative_path" ]]; then
+              echo "✅ Found $relative_path"
+            else
+              missing_paths+=("$relative_path")
+            fi
+          done
+
+          if [[ ${#missing_paths[@]} -gt 0 ]]; then
+            printf '❌ Missing bundled support files after install:\n' >&2
+            printf '  %s\n' "${missing_paths[@]}" >&2
+            exit 1
+          fi
+
       - name: Test shell config updates
         run: |
           echo "Checking shell configuration updates..."
@@ -264,7 +323,7 @@ jobs:
               exit 1
             fi
             
-            if grep -q 'PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.zshrc; then
+            if grep -q 'export PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.zshrc; then
               echo "✅ .zshrc updated with PATH"
             else
               echo "❌ .zshrc PATH not updated"
@@ -278,7 +337,7 @@ jobs:
               exit 1
             fi
             
-            if grep -q 'PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.bashrc; then
+            if grep -q 'export PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.bashrc; then
               echo "✅ .bashrc updated with PATH"
             else
               echo "❌ .bashrc PATH not updated"
