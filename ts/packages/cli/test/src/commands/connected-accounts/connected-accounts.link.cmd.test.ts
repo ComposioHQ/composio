@@ -40,7 +40,13 @@ const testConfigProvider = ConfigProvider.fromMap(
 ).pipe(extendConfigProvider);
 
 const RecordingTerminalUI = TerminalUI.of({
-  output: (data, options) => Console.log(`${options?.force ? 'FORCED' : 'NORMAL'}:${data}`),
+  output: (data, options) =>
+    Console.log(
+      JSON.stringify({
+        channel: options?.force ? 'FORCED' : 'NORMAL',
+        data,
+      })
+    ),
   intro: title => Console.log(title),
   outro: message => Console.log(message),
   log: {
@@ -99,7 +105,8 @@ describe('CLI: composio dev connected-accounts link', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('FORCED:https://app.composio.dev/link?token=lt_test_token');
+        expect(output).toContain('"channel":"FORCED"');
+        expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
       })
     );
   });
@@ -116,11 +123,19 @@ describe('CLI: composio dev connected-accounts link', () => {
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--no-browser', '--no-wait']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const forcedLines = lines.filter(line => line.startsWith('FORCED:'));
+        const forcedLines = lines
+          .map(line => {
+            try {
+              return JSON.parse(line) as { channel?: string; data?: string };
+            } catch {
+              return null;
+            }
+          })
+          .filter(line => line?.channel === 'FORCED');
 
         expect(forcedLines).toHaveLength(1);
-        expect(forcedLines[0]).toContain('"status": "pending"');
-        expect(forcedLines[0]).not.toContain('FORCED:https://app.composio.dev/link?token=');
+        expect(forcedLines[0]?.data).toContain('"status": "pending"');
+        expect(forcedLines[0]?.data?.trim().startsWith('{')).toBe(true);
       })
     );
   });
