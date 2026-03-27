@@ -1689,7 +1689,6 @@ export const devToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio dev playground-execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
-      '  composio dev playground-execute --parallel GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com" }\'  GITHUB_CREATE_AN_ISSUE -d \'{ owner: "acme", repo: "app", title: "Bug" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --get-schema',
       '',
