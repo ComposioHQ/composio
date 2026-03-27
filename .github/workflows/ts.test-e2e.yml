@@ -57,8 +57,10 @@ jobs:
             -t "composio-e2e-node:${{ matrix.node-version }}" \
             .
 
+      # These suites share the same Composio credentials and can transiently fail
+      # when Turbo fans them out in parallel.
       - name: Run Node.js E2E Tests
-        run: pnpm run test:e2e:node
+        run: pnpm exec turbo test:e2e:node --concurrency=1 --filter='@e2e-tests/node-*'
 
   # Deno E2E tests, running in Docker to isolate environment
   # Each test suite defines its own versions.deno in e2e.test.ts
@@ -145,8 +147,9 @@ jobs:
             -t "composio-e2e-cli:${CLI_VERSION}" \
             .
 
+      # Serialize API-backed CLI E2E suites to avoid transient backend/cache failures.
       - name: Run CLI E2E Tests
-        run: pnpm run test:e2e:cli
+        run: pnpm exec turbo test:e2e:cli --concurrency=1 --filter='@e2e-tests/cli-*'
 
   # Cloudflare Workerd E2E tests
   test-e2e-cloudflare:
