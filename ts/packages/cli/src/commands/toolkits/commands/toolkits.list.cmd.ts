@@ -103,15 +103,19 @@ const getOptionalResultWithTimeout = <A, E, R>(
   failureMessage: string
 ) =>
   Effect.raceFirst(
-    effect.pipe(
-      Effect.asSome,
-      Effect.catchAll(error =>
-        Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
+    Effect.disconnect(
+      effect.pipe(
+        Effect.asSome,
+        Effect.catchAll(error =>
+          Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
+        )
       )
     ),
-    Effect.sleep(timeoutMs).pipe(
-      Effect.zipRight(Effect.logDebug(timeoutMessage)),
-      Effect.as(Option.none<A>())
+    Effect.disconnect(
+      Effect.sleep(timeoutMs).pipe(
+        Effect.zipRight(Effect.logDebug(timeoutMessage)),
+        Effect.as(Option.none<A>())
+      )
     )
   );
 
@@ -192,7 +196,10 @@ const getCatalogToolkitsWithFallback = (
     )
   );
 
-  return Effect.raceFirst(directSearchPreferred, fallbackResult);
+  return Effect.raceFirst(
+    Effect.disconnect(directSearchPreferred),
+    Effect.disconnect(fallbackResult)
+  );
 };
 
 /**

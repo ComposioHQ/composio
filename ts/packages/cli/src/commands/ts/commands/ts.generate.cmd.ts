@@ -114,14 +114,16 @@ const failWithTransientFetchTimeout = <A, E, R>(
   timeoutMessage: string
 ): Effect.Effect<A, E | HttpServerError, R> =>
   Effect.raceFirst(
-    effect,
-    Effect.sleep(timeoutMs).pipe(
-      Effect.flatMap(() =>
-        Effect.fail(
-          new HttpServerError({
-            status: 408,
-            cause: timeoutMessage,
-          })
+    Effect.disconnect(effect),
+    Effect.disconnect(
+      Effect.sleep(timeoutMs).pipe(
+        Effect.flatMap(() =>
+          Effect.fail(
+            new HttpServerError({
+              status: 408,
+              cause: timeoutMessage,
+            })
+          )
         )
       )
     )
