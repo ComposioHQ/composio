@@ -105,6 +105,7 @@ const layers = Layer.mergeAll(
   ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
+  FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
   Logger.pretty

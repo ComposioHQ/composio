@@ -100,19 +100,23 @@ export const installSkill = Effect.gen(function* () {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 
-  // Create symlink for Claude Code if it doesn't already exist
+  // Create symlink for Claude Code — always replace any existing entry
   fs.mkdirSync(path.join(home, '.claude', 'skills'), { recursive: true });
-  if (fs.existsSync(claudeSkillLink)) {
-    // Remove stale symlink or directory
+  try {
     const stat = fs.lstatSync(claudeSkillLink);
+    // Entry exists (symlink, broken symlink, or directory) — remove it
     if (stat.isSymbolicLink()) {
       fs.unlinkSync(claudeSkillLink);
+    } else if (stat.isDirectory()) {
+      fs.rmSync(claudeSkillLink, { recursive: true, force: true });
+    } else {
+      fs.unlinkSync(claudeSkillLink);
     }
+  } catch {
+    // lstatSync throws if nothing exists at the path — that's fine
   }
-  if (!fs.existsSync(claudeSkillLink)) {
-    const relativeTarget = path.relative(path.dirname(claudeSkillLink), agentSkillDir);
-    fs.symlinkSync(relativeTarget, claudeSkillLink);
-  }
+  const relativeTarget = path.relative(path.dirname(claudeSkillLink), agentSkillDir);
+  fs.symlinkSync(relativeTarget, claudeSkillLink);
 
   yield* ui.log.success('Installed composio-cli skill for Claude Code');
 });
