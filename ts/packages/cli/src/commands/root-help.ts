@@ -19,24 +19,33 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'search',
     description: 'Find tools by use case across all toolkits/apps.',
-    usage: 'search <query> [--toolkits text] [--limit integer]',
+    usage: 'search <query...> [--toolkits text] [--limit integer] [--human]',
     options: [
-      { name: '<query>', description: 'Semantic use-case query (e.g. "send emails")' },
+      {
+        name: '<query...>',
+        description: 'One or more semantic use-case queries (e.g. "send emails" "github issues")',
+      },
       { name: '--toolkits', description: 'Filter by toolkit slugs, comma-separated' },
       { name: '--limit', description: 'Maximum number of results (1-1000)' },
+      { name: '--human', description: 'Show formatted output instead of default JSON' },
     ],
   },
   {
     name: 'execute',
     description:
       'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
-    usage: 'execute <slug> [-d, --data text] [--dry-run] [--get-schema]',
+    usage:
+      'execute <slug> [-d, --data text] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
         name: '-d, --data',
         description:
           'JSON or JS-style object arguments, e.g. -d \'{ repo: "foo" }\', @file, or - for stdin',
+      },
+      {
+        name: '-p, --parallel',
+        description: 'Execute repeated <slug> -d <text> pairs concurrently',
       },
       { name: '--dry-run', description: 'Validate and preview the tool call without executing it' },
       { name: '--get-schema', description: 'Fetch and print the raw tool schema' },
@@ -145,23 +154,28 @@ type SubcommandHelp = {
 
 const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   search: {
-    usage: 'composio search <query> [--toolkits text] [--limit integer]',
+    usage: 'composio search <query...> [--toolkits text] [--limit integer] [--human]',
     description:
-      'Find tools by use case. Returns matching tools with slugs you can pass directly to execute.',
+      'Find tools by use case. Defaults to JSON output; use --human for formatted output.',
     args: [
       {
-        name: '<query>',
-        description: 'Semantic use-case query (e.g. "send an email", "create github issue")',
+        name: '<query...>',
+        description:
+          'One or more semantic use-case queries (e.g. "send an email", "create github issue")',
       },
     ],
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs, comma-separated' },
       { name: '--limit <integer>', description: 'Maximum number of results (1-1000)' },
+      { name: '--human', description: 'Show formatted human-readable search output' },
     ],
     examples: [
       '# Find tools for a use case',
       'composio search "send an email"',
+      'composio search "send an email" "create github issue"',
+      'composio search "my emails" "my github issues" --toolkits gmail,github',
       'composio search "create issue" --toolkits github',
+      'composio search "send an email" --human',
       '',
       '# Cross-app workflow discovery',
       'composio search "post a message to a slack channel"',
@@ -180,7 +194,13 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     usage: 'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]',
     description:
       'Execute a tool by slug. Validates inputs against cached schemas and checks connections automatically — just try it and it will tell you what to fix.',
-    args: [{ name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' }],
+    args: [
+      {
+        name: '<slug>',
+        description:
+          'Tool slug for single execute, or repeated <slug> -d <text> pairs when using -p/--parallel',
+      },
+    ],
     options: [
       {
         name: '-d, --data <text>',
@@ -225,7 +245,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio execute GITHUB_CREATE_ISSUE -d @issue.json',
       '',
       '# Execute multiple tools concurrently',
-      `composio execute --parallel GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com" }'  GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
+      `composio execute -p GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com" }' GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
     ],
     seeAlso: [
       'composio search "<query>"               Find tool slugs by use case',
