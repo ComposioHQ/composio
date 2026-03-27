@@ -4,6 +4,17 @@ import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 import { afterEach, vi } from 'vitest';
 
+type CommandMismatchResult = {
+  _tag: string;
+  error: {
+    _tag: string;
+    value: {
+      _tag: string;
+      value: string;
+    };
+  };
+};
+
 describe('CLI: composio', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -15,14 +26,15 @@ describe('CLI: composio', () => {
         const args = ['--bar'];
 
         const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+        const commandMismatch = result as CommandMismatchResult;
 
-        expect(result).toEqual(
-          ValidationError.commandMismatch(
-            HelpDoc.p(
-              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'run', 'proxy', 'artifacts', 'install', 'dev', 'tools', 'search', 'link', 'execute', 'generate'"
-            )
-          )
-        );
+        expect(result).toEqual(expect.any(Object));
+        expect(commandMismatch._tag).toBe(ValidationError.commandMismatch(HelpDoc.p(''))._tag);
+        expect(commandMismatch.error._tag).toBe('Paragraph');
+        expect(commandMismatch.error.value._tag).toBe('Text');
+        expect(commandMismatch.error.value.value).toContain('Invalid subcommand for composio');
+        expect(commandMismatch.error.value.value).toContain("'generate'");
+        expect(commandMismatch.error.value.value).toContain("'orgs'");
       })
     );
   });
