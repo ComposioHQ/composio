@@ -23,6 +23,7 @@ const limit = Options.integer('limit').pipe(
 );
 
 const LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
+const LIST_SEARCH_ENDPOINT_TIMEOUT_MS = 10_000;
 const EMPTY_LIST_SEARCH_FALLBACK_TIMEOUT_MS = 5_000;
 
 const connected = Options.boolean('connected').pipe(
@@ -135,7 +136,11 @@ const getCatalogToolkitsWithFallback = (
     return fallback;
   }
 
-  return repo
+  const emptyResult = buildCatalogResultFromToolkits([], limit);
+  const fallbackOrEmpty = (timeoutMessage: string, failureMessage: string) =>
+    confirmCatalogListFallbackOrEmpty(fallback, emptyResult, timeoutMessage, failureMessage);
+
+  const directSearch = repo
     .searchToolkits({
       search: query,
       limit: LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT,
@@ -143,7 +148,6 @@ const getCatalogToolkitsWithFallback = (
     .pipe(
       Effect.map(result => filterToolkitsForListQuery(result.items, query)),
       Effect.flatMap(items => {
-        const emptyResult = buildCatalogResultFromToolkits([], limit);
         const hasPreciseMatch = items.some(toolkit => {
           const normalizedQuery = query.trim().toLowerCase();
           const slug = toolkit.slug.toLowerCase();
@@ -157,18 +161,14 @@ const getCatalogToolkitsWithFallback = (
         });
 
         if (items.length === 0) {
-          return confirmCatalogListFallbackOrEmpty(
-            fallback,
-            emptyResult,
+          return fallbackOrEmpty(
             'Timed out confirming empty toolkit list search against full catalog.',
             'Failed to confirm empty toolkit list search against full catalog:'
           );
         }
 
         if (shouldRequirePreciseListMatch(query) && !hasPreciseMatch) {
-          return confirmCatalogListFallbackOrEmpty(
-            fallback,
-            emptyResult,
+          return fallbackOrEmpty(
             'Timed out confirming precise toolkit list match against full catalog.',
             'Failed to confirm precise toolkit list match against full catalog:'
           );
@@ -180,9 +180,33 @@ const getCatalogToolkitsWithFallback = (
         Effect.logDebug(
           'Failed to search toolkits directly for list, falling back to full catalog:',
           error
-        ).pipe(Effect.flatMap(() => fallback))
+        ).pipe(
+          Effect.flatMap(() =>
+            fallbackOrEmpty(
+              'Timed out rebuilding toolkit list from full catalog after direct search failure.',
+              'Failed to rebuild toolkit list from full catalog after direct search failure:'
+            )
+          )
+        )
       )
     );
+
+  return Effect.raceFirst(
+    directSearch,
+    Effect.sleep(LIST_SEARCH_ENDPOINT_TIMEOUT_MS).pipe(
+      Effect.zipRight(
+        Effect.logDebug(
+          'Timed out searching toolkits directly for list, falling back to full catalog.'
+        )
+      ),
+      Effect.flatMap(() =>
+        fallbackOrEmpty(
+          'Timed out rebuilding toolkit list from full catalog after direct search timeout.',
+          'Failed to rebuild toolkit list from full catalog after direct search timeout:'
+        )
+      )
+    )
+  );
 };
 
 /**

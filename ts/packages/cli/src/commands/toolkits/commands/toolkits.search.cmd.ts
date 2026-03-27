@@ -19,6 +19,7 @@ const limit = Options.integer('limit').pipe(
 );
 
 const SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
+const SEARCH_ENDPOINT_TIMEOUT_MS = 10_000;
 const EMPTY_TOOLKIT_SEARCH_FALLBACK_TIMEOUT_MS = 5_000;
 
 const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | undefined => {
@@ -123,8 +124,11 @@ const searchToolkitsWithFallback = (
   limit: number
 ) => {
   const fallback = searchToolkitsFromCatalog(repo, query, limit);
+  const emptyResult = buildCatalogResultFromToolkits([], limit);
+  const fallbackOrEmpty = (timeoutMessage: string, failureMessage: string) =>
+    confirmCatalogSearchFallbackOrEmpty(fallback, emptyResult, timeoutMessage, failureMessage);
 
-  return repo
+  const directSearch = repo
     .searchToolkits({
       search: query,
       limit: SEARCH_ENDPOINT_CANDIDATE_LIMIT,
@@ -132,25 +136,20 @@ const searchToolkitsWithFallback = (
     .pipe(
       Effect.map(result => filterToolkitsForSearchQuery(result.items, query)),
       Effect.flatMap(items => {
-        const emptyResult = buildCatalogResultFromToolkits([], limit);
         const hasPreciseMatch = items.some(toolkit => {
           const rank = rankToolkitForSearchQuery(toolkit, query);
           return rank !== undefined && rank <= 1;
         });
 
         if (items.length === 0) {
-          return confirmCatalogSearchFallbackOrEmpty(
-            fallback,
-            emptyResult,
+          return fallbackOrEmpty(
             'Timed out confirming empty toolkit search against full catalog.',
             'Failed to confirm empty toolkit search against full catalog:'
           );
         }
 
         if (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch) {
-          return confirmCatalogSearchFallbackOrEmpty(
-            fallback,
-            emptyResult,
+          return fallbackOrEmpty(
             'Timed out confirming precise toolkit search match against full catalog.',
             'Failed to confirm precise toolkit search match against full catalog:'
           );
@@ -162,9 +161,31 @@ const searchToolkitsWithFallback = (
         Effect.logDebug(
           'Failed to search toolkits directly, falling back to full catalog:',
           error
-        ).pipe(Effect.flatMap(() => fallback))
+        ).pipe(
+          Effect.flatMap(() =>
+            fallbackOrEmpty(
+              'Timed out rebuilding toolkit search results from full catalog after direct search failure.',
+              'Failed to rebuild toolkit search results from full catalog after direct search failure:'
+            )
+          )
+        )
       )
     );
+
+  return Effect.raceFirst(
+    directSearch,
+    Effect.sleep(SEARCH_ENDPOINT_TIMEOUT_MS).pipe(
+      Effect.zipRight(
+        Effect.logDebug('Timed out searching toolkits directly, falling back to full catalog.')
+      ),
+      Effect.flatMap(() =>
+        fallbackOrEmpty(
+          'Timed out rebuilding toolkit search results from full catalog after direct search timeout.',
+          'Failed to rebuild toolkit search results from full catalog after direct search timeout:'
+        )
+      )
+    )
+  );
 };
 
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
