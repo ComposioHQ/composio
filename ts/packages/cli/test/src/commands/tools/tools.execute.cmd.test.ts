@@ -667,6 +667,7 @@ describe('CLI: composio execute', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      fixture: 'user-config-with-global-context',
       stdin: { isTTY: true, data: '' },
       toolkitsData: {
         tools: [

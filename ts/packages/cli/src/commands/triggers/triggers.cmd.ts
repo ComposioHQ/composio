@@ -6,6 +6,7 @@ import { triggersCmd$Create } from './commands/triggers.create.cmd';
 import { triggersCmd$Enable } from './commands/triggers.enable.cmd';
 import { triggersCmd$Disable } from './commands/triggers.disable.cmd';
 import { triggersCmd$Delete } from './commands/triggers.delete.cmd';
+import { triggersCmd$Listen } from './commands/triggers.listen.cmd';
 
 /**
  * CLI entry point for realtime trigger commands.
@@ -18,6 +19,7 @@ import { triggersCmd$Delete } from './commands/triggers.delete.cmd';
 export const triggersCmd = Command.make('triggers').pipe(
   Command.withDescription('Inspect and subscribe to trigger events.'),
   Command.withSubcommands([
+    triggersCmd$Listen,
     triggersCmd$List,
     triggersCmd$Info,
     triggersCmd$Status,

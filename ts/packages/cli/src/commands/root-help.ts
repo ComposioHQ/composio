@@ -219,6 +219,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
         name: '--dry-run',
         description: 'Validate and preview the tool call without executing',
       },
+      {
+        name: '--parallel',
+        description: 'Execute repeated slug/data groups in a single command',
+      },
     ],
     flags: [
       { name: '--skip-connection-check', description: 'Skip the connected-account check' },
