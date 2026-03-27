@@ -1,32 +1,13 @@
-import { chmod, copyFile, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
+import { chmod, copyFile, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import process from 'node:process';
-import { gunzipSync } from 'node:zlib';
 import { Cause, Effect, Exit } from 'effect';
 import type { Teardown } from '@effect/platform/Runtime';
 import {
   collectRunCompanionAssetRelativePaths,
   RUN_COMPANION_MODULE_BASENAMES,
 } from '../src/services/run-companion-modules';
-
-const ACP_ADAPTERS_SOURCE_DIR = path.resolve('./acp-adapters');
-
-/**
- * Resolves the path to `cli.js` from `@anthropic-ai/claude-agent-sdk`.
- *
- * The bundled `claude-code-acp.mjs` adapter uses `import.meta.url` to locate
- * `cli.js` at runtime (it expects it in the same directory as the adapter).
- * We resolve it via the transitive dependency chain so the correct version
- * that matches the bundled adapter is always used.
- */
-const resolveClaudeAgentSdkCliPath = (): string => {
-  const req = createRequire(import.meta.url);
-  const claudeCodeAcpPkg = req.resolve('@zed-industries/claude-code-acp/package.json');
-  const req2 = createRequire(claudeCodeAcpPkg);
-  const agentSdkPkg = req2.resolve('@anthropic-ai/claude-agent-sdk/package.json');
-  return path.join(path.dirname(agentSdkPkg), 'cli.js');
-};
+import { materializeAcpAdaptersCache } from './_acp-adapters';
 
 const copyDirectoryRecursive = async (sourceDir: string, targetDir: string): Promise<void> => {
   await mkdir(targetDir, { recursive: true });
@@ -40,13 +21,6 @@ const copyDirectoryRecursive = async (sourceDir: string, targetDir: string): Pro
       continue;
     }
 
-    if (entry.name.endsWith('.gz')) {
-      const decompressedTargetPath = targetPath.slice(0, -3);
-      await writeFile(decompressedTargetPath, gunzipSync(await readFile(sourcePath)));
-      await chmod(decompressedTargetPath, 0o755);
-      continue;
-    }
-
     await copyFile(sourcePath, targetPath);
     const mode = (await stat(sourcePath)).mode & 0o777;
     await chmod(targetPath, mode || 0o755);
@@ -54,24 +28,9 @@ const copyDirectoryRecursive = async (sourceDir: string, targetDir: string): Pro
 };
 
 const copyBundledAcpAdapters = async (outputDir: string): Promise<void> => {
-  const claudeAdapterPath = path.join(ACP_ADAPTERS_SOURCE_DIR, 'claude-code-acp.mjs');
-  if (!(await Bun.file(claudeAdapterPath).exists())) {
-    throw new Error(
-      `Missing bundled ACP adapter assets in ${ACP_ADAPTERS_SOURCE_DIR}. Regenerate the vendored adapters before building binaries.`
-    );
-  }
-
+  const acpAdaptersCacheDir = await materializeAcpAdaptersCache();
   const acpOutputDir = path.join(outputDir, 'acp-adapters');
-  await copyDirectoryRecursive(ACP_ADAPTERS_SOURCE_DIR, acpOutputDir);
-
-  // The bundled claude-code-acp.mjs adapter uses `import.meta.url` to resolve
-  // `cli.js` at runtime — it expects it in the same directory as the adapter.
-  // Copy it from the @anthropic-ai/claude-agent-sdk package so the packaged
-  // binary is self-contained and does not depend on any system installation.
-  const cliSrcPath = resolveClaudeAgentSdkCliPath();
-  const cliDstPath = path.join(acpOutputDir, 'cli.js');
-  await copyFile(cliSrcPath, cliDstPath);
-  await chmod(cliDstPath, 0o755);
+  await copyDirectoryRecursive(acpAdaptersCacheDir, acpOutputDir);
 };
 
 /**
