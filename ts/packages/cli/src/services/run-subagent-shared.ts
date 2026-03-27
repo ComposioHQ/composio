@@ -373,8 +373,7 @@ export const finalizeInvokeAgentText = (
     };
   }
 
-  let parsed: unknown;
-  parsed = tryParseStructuredJson(trimmed);
+  const parsed = tryParseStructuredJson(trimmed);
   if (parsed === undefined) {
     throw new Error('experimental_subAgent() expected valid JSON output for structured response.');
   }

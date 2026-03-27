@@ -4,7 +4,6 @@ import * as path from 'node:path';
 import { spawn } from 'node:child_process';
 import type { MasterKind } from 'src/services/master-detector';
 import {
-  finalizeInvokeAgentText,
   parseJson,
   toInvokeAgentResponse,
   type HelperDebugLog,
