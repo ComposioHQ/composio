@@ -5,11 +5,7 @@ import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
-import {
-  ToolRouterCreateSessionConfig,
-  Session,
-  ToolRouterToolkitsOptions,
-} from '../../src/types/toolRouter.types';
+import { ToolRouterCreateSessionConfig, Session } from '../../src/types/toolRouter.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -1600,7 +1596,7 @@ describe('ToolRouter', () => {
       const result = await session.toolkits({
         limit: 10,
         cursor: 'cursor_alias',
-      } as ToolRouterToolkitsOptions);
+      });
 
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: 'cursor_alias',
@@ -1618,7 +1614,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.toolkits({
         page: 2,
-      } as ToolRouterToolkitsOptions);
+      });
 
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: Buffer.from('2-20').toString('base64'),
@@ -1636,13 +1632,47 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.toolkits({
         offset: 20,
-      } as ToolRouterToolkitsOptions);
+      });
 
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: Buffer.from('2-20').toString('base64'),
         limit: 20,
         toolkits: undefined,
         is_connected: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should not send a cursor for page 1', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({ page: 1 });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: undefined,
+        limit: 20,
+        toolkits: undefined,
+        is_connected: undefined,
+        search: undefined,
+      });
+
+      expect(result.items).toHaveLength(3);
+    });
+
+    it('should not send a cursor for offset 0', async () => {
+      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.toolkits({ offset: 0 });
+
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
+        cursor: undefined,
+        limit: 20,
+        toolkits: undefined,
+        is_connected: undefined,
+        search: undefined,
       });
 
       expect(result.items).toHaveLength(3);
@@ -1904,7 +1934,7 @@ describe('ToolRouter', () => {
         session.toolkits({
           cursor: 'cursor_abc',
           page: 2,
-        } as ToolRouterToolkitsOptions)
+        })
       ).rejects.toThrow('Use only one pagination strategy');
     });
 
@@ -1915,7 +1945,7 @@ describe('ToolRouter', () => {
         session.toolkits({
           offset: 21,
           limit: 20,
-        } as ToolRouterToolkitsOptions)
+        })
       ).rejects.toThrow('offset must be a multiple of limit (20)');
     });
   });

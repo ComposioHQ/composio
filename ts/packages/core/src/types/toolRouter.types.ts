@@ -334,11 +334,11 @@ export const ToolRouterToolkitsOptionsSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
-    const cursorValues = [value.nextCursor, value.cursor].filter(
-      (cursor): cursor is string => cursor !== undefined
-    );
-
-    if (new Set(cursorValues).size > 1) {
+    if (
+      value.cursor !== undefined &&
+      value.nextCursor !== undefined &&
+      value.cursor !== value.nextCursor
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['cursor'],
@@ -346,11 +346,11 @@ export const ToolRouterToolkitsOptionsSchema = z
       });
     }
 
-    const paginationStrategies = Number(cursorValues.length > 0);
-    const pageStrategies = Number(value.page !== undefined);
-    const offsetStrategies = Number(value.offset !== undefined);
+    const hasCursor = value.cursor !== undefined || value.nextCursor !== undefined;
+    const hasPage = value.page !== undefined;
+    const hasOffset = value.offset !== undefined;
 
-    if (paginationStrategies + pageStrategies + offsetStrategies > 1) {
+    if ((hasCursor && hasPage) || (hasCursor && hasOffset) || (hasPage && hasOffset)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['cursor'],

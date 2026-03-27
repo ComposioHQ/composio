@@ -40,28 +40,25 @@ import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
 import { findCustomTool, executeCustomTool } from './customToolExecution';
 import { transformProxyParams } from './proxyParamsTransform';
-import { uint8ArrayToBase64 } from '../utils/buffer';
-
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
 
 function encodeToolkitPaginationCursor(page: number, limit: number): string {
-  return uint8ArrayToBase64(new TextEncoder().encode(`${page}-${limit}`));
+  return btoa(`${page}-${limit}`);
 }
 
 function normalizeToolkitPagination(options: ToolRouterToolkitsOptions): {
   cursor?: string;
   limit?: number;
 } {
+  // When a cursor is provided directly, pass it through as-is.
   const cursor = options.nextCursor ?? options.cursor;
   if (cursor !== undefined) {
-    return {
-      cursor,
-      limit: options.limit,
-    };
+    return { cursor, limit: options.limit };
   }
 
+  const limit = options.limit ?? DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT;
+
   if (options.page !== undefined) {
-    const limit = options.limit ?? DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT;
     return {
       cursor: options.page > 1 ? encodeToolkitPaginationCursor(options.page, limit) : undefined,
       limit,
@@ -69,7 +66,6 @@ function normalizeToolkitPagination(options: ToolRouterToolkitsOptions): {
   }
 
   if (options.offset !== undefined) {
-    const limit = options.limit ?? DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT;
     const page = Math.floor(options.offset / limit) + 1;
     return {
       cursor: page > 1 ? encodeToolkitPaginationCursor(page, limit) : undefined,
@@ -77,10 +73,7 @@ function normalizeToolkitPagination(options: ToolRouterToolkitsOptions): {
     };
   }
 
-  return {
-    cursor: undefined,
-    limit: options.limit,
-  };
+  return { cursor: undefined, limit: options.limit };
 }
 
 export class ToolRouterSession<
