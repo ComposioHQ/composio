@@ -577,6 +577,59 @@ describe('run companion install metadata', () => {
       'run-companion-modules-abc123.mjs'
     );
   });
+
+  it('[Given] a named re-export dependency is missing [Then] it reports the missing helper asset', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-reexport-'));
+    const execPath = path.join(tempDir, 'composio');
+    const servicesDir = path.join(tempDir, 'services');
+    fs.mkdirSync(servicesDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-shared.mjs'),
+      'export * from "./services/run-subagent-shared.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-acp.mjs'),
+      'export * from "./services/run-subagent-acp.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-legacy.mjs'),
+      'export * from "./services/run-subagent-legacy.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tempDir, 'run-subagent-output-mcp.mjs'),
+      'export * from "./services/run-subagent-output-mcp.mjs";\n',
+      'utf8'
+    );
+
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-shared.mjs'),
+      'export const sharedValue = 1;\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-acp.mjs'),
+      'export { helperValue } from "../run-companion-modules-def456.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-legacy.mjs'),
+      'export const legacyValue = 1;\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-subagent-output-mcp.mjs'),
+      'export const outputValue = 1;\n',
+      'utf8'
+    );
+
+    expect(listMissingInstalledRunCompanionModules(execPath)).toContain(
+      'run-companion-modules-def456.mjs'
+    );
+  });
 });
 
 describe('extractInlineExecuteToolSlugs', () => {

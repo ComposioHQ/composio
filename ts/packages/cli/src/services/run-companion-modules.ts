@@ -55,7 +55,7 @@ export const RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS = [
 ] as const;
 
 const relativeImportPattern =
-  /(?:import\s+(?:[^'"]+?\s+from\s+)?|export\s+\*\s+from\s+|import\s*\()\s*["'](\.{1,2}\/[^"']+?\.mjs)["']/g;
+  /(?:import\s+(?:[^'"]+?\s+from\s+)?|export\s+(?:\*\s+from\s+|\{[^}]+\}\s+from\s+)|import\s*\()\s*["'](\.{1,2}\/[^"']+?\.mjs)["']/g;
 
 const isImportGraphFile = (relativePath: string) => /\.(?:m?js|ts)$/.test(relativePath);
 

@@ -49,14 +49,6 @@ export function packageBinaries() {
     }
 
     const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(COMPANIONS_DIR);
-    if (companionRelativePaths.length === 0) {
-      yield* Console.error(
-        `Missing companion modules in ${COMPANIONS_DIR}. Run build:binary:all before packaging.`
-      );
-      process.exitCode = 1;
-      return;
-    }
-
     for (const relativePath of companionRelativePaths) {
       const companionPath = path.join(COMPANIONS_DIR, relativePath);
       const exists = yield* Effect.tryPromise(() => Bun.file(companionPath).exists());

@@ -31,9 +31,6 @@ export function installBinary() {
 
     const sourceDirectory = path.dirname(path.resolve(binaryPath));
     const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(sourceDirectory);
-    if (companionRelativePaths.length === 0) {
-      return yield* Effect.fail(new Error(`Missing companion modules in: ${sourceDirectory}`));
-    }
 
     for (const relativePath of companionRelativePaths) {
       const sourcePath = path.join(sourceDirectory, relativePath);

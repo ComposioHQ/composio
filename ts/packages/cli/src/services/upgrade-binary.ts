@@ -39,6 +39,12 @@ type GitHubRelease = {
 
 const CLI_RELEASE_TAG_PATTERN = /^@composio\/cli@\d+\.\d+\.\d+.*$/;
 
+const getBinaryAssetName = (platformArch: PlatformArch) =>
+  `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
+
+const hasPlatformBinaryAsset = (release: GitHubRelease, platformArch: PlatformArch) =>
+  release.assets.some(asset => asset.name === getBinaryAssetName(platformArch));
+
 // Service to manage CLI binary upgrades
 export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/UpgradeBinary', {
   accessors: true,
@@ -101,7 +107,9 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         )) as T;
       });
 
-    const fetchLatestRelease = (): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
+    const fetchLatestRelease = (
+      platformArch: PlatformArch
+    ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         const release = yield* githubConfig.TAG.pipe(
           Option.match({
@@ -146,8 +154,24 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                 );
               }
 
-              let latest = cliReleases[0];
-              for (const release of cliReleases.slice(1)) {
+              const cliReleasesWithBinary = cliReleases.filter(release =>
+                hasPlatformBinaryAsset(release, platformArch)
+              );
+
+              if (cliReleasesWithBinary.length === 0) {
+                return yield* Effect.fail(
+                  new UpgradeBinaryError({
+                    cause: new Error(
+                      `No package-scoped CLI releases found with ${getBinaryAssetName(platformArch)}`
+                    ),
+                    message:
+                      'Failed to determine latest CLI release from @composio/cli tags on GitHub',
+                  })
+                );
+              }
+
+              let latest = cliReleasesWithBinary[0];
+              for (const release of cliReleasesWithBinary.slice(1)) {
                 const comparison = yield* semverComparator(latest.tag_name, release.tag_name).pipe(
                   Effect.mapError(
                     error =>
@@ -208,7 +232,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           `Looking up binary for ${platformArch.platform}-${platformArch.arch}`
         );
 
-        const binaryName = `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
+        const binaryName = getBinaryAssetName(platformArch);
 
         const asset = release.assets.find(asset => asset.name === binaryName);
         if (!asset) {
@@ -479,15 +503,6 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const targetDirectory = path.dirname(targetPath);
         const companionRelativePaths =
           collectExpectedRunCompanionAssetRelativePaths(sourceDirectory);
-        if (companionRelativePaths.length === 0) {
-          return yield* Effect.fail(
-            new UpgradeBinaryError({
-              cause: new Error(`Missing companion modules in: ${sourceDirectory}`),
-              message: 'Downloaded binary package is incomplete',
-            })
-          );
-        }
-
         for (const relativePath of companionRelativePaths) {
           const sourceCompanion = path.join(sourceDirectory, relativePath);
           const sourceExists = yield* fs
@@ -565,7 +580,8 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
         const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
           Effect.gen(function* () {
-            const release = yield* fetchLatestRelease();
+            const platformArch = yield* detectPlatform;
+            const release = yield* fetchLatestRelease(platformArch);
             const updateAvailable = yield* isUpdateAvailable(release);
             if (!updateAvailable) {
               yield* spinner.stop('You are already running the latest version!');
@@ -576,7 +592,6 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               `New version available: ${release.tag_name} (current: ${APP_VERSION}). Downloading...`
             );
 
-            const platformArch = yield* detectPlatform;
             const { name, data } = yield* downloadBinary(release, platformArch);
 
             yield* spinner.message('Verifying checksum...');
