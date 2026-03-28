@@ -1,0 +1,93 @@
+name: Changelog Date Check
+
+on:
+  pull_request:
+    branches: [next]
+    paths:
+      - 'docs/content/changelog/**.mdx'
+
+jobs:
+  validate-changelog-date:
+    name: Validate Changelog Date
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Get changed changelog files
+        id: changed
+        run: |
+          FILES=$(gh pr diff "${{ github.event.pull_request.number }}" --name-only | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          if [ -z "$FILES" ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$FILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate changelog dates
+        if: steps.changed.outputs.found == 'true'
+        run: |
+          TODAY_UTC=$(date -u +%Y-%m-%d)
+          YESTERDAY_UTC=$(date -u -d "yesterday" +%Y-%m-%d)
+          ERRORS=""
+
+          echo "UTC today:     $TODAY_UTC"
+          echo "UTC yesterday: $YESTERDAY_UTC"
+          echo ""
+
+          while IFS= read -r FILE; do
+            [ -z "$FILE" ] && continue
+            BASENAME=$(basename "$FILE" .mdx)
+
+            echo "Checking: $FILE"
+
+            # Extract MM-DD-YY from filename (first 8 chars, e.g. 03-28-26)
+            FILENAME_DATE_RAW=$(echo "$BASENAME" | grep -oP '^\d{2}-\d{2}-\d{2}')
+            if [ -z "$FILENAME_DATE_RAW" ]; then
+              ERRORS="${ERRORS}\n❌ $FILE — filename does not start with a MM-DD-YY date"
+              continue
+            fi
+
+            # Convert MM-DD-YY to YYYY-MM-DD
+            MM=$(echo "$FILENAME_DATE_RAW" | cut -d'-' -f1)
+            DD=$(echo "$FILENAME_DATE_RAW" | cut -d'-' -f2)
+            YY=$(echo "$FILENAME_DATE_RAW" | cut -d'-' -f3)
+            FILENAME_DATE="20${YY}-${MM}-${DD}"
+
+            # Extract date from frontmatter
+            FRONTMATTER_DATE=$(grep '^date:' "$FILE" | head -1 | sed 's/^date: *["\x27]*//' | sed 's/["\x27]*$//')
+
+            # Check filename date matches frontmatter date
+            if [ -n "$FRONTMATTER_DATE" ] && [ "$FILENAME_DATE" != "$FRONTMATTER_DATE" ]; then
+              ERRORS="${ERRORS}\n❌ $FILE — filename date ($FILENAME_DATE) does not match frontmatter date ($FRONTMATTER_DATE)"
+            fi
+
+            # Check date is not stale (must be today or yesterday UTC)
+            if [ "$FILENAME_DATE" != "$TODAY_UTC" ] && [ "$FILENAME_DATE" != "$YESTERDAY_UTC" ]; then
+              ERRORS="${ERRORS}\n❌ $FILE — date $FILENAME_DATE is stale. Changelog dates must be today ($TODAY_UTC) or yesterday ($YESTERDAY_UTC). Please rename the file and update the frontmatter date."
+            fi
+
+            echo "   filename date:     $FILENAME_DATE"
+            echo "   frontmatter date:  $FRONTMATTER_DATE"
+            echo ""
+          done <<< "${{ steps.changed.outputs.files }}"
+
+          if [ -n "$ERRORS" ]; then
+            echo ""
+            echo "========================================="
+            echo "CHANGELOG DATE VALIDATION FAILED"
+            echo "========================================="
+            echo -e "$ERRORS"
+            echo ""
+            echo "Changelog filenames must use today's date."
+            echo "Format: MM-DD-YY-optional-slug.mdx"
+            echo "========================================="
+            exit 1
+          fi
+
+          echo "✅ All changelog dates are valid"
