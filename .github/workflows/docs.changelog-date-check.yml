@@ -30,6 +30,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Validate changelog dates
+        id: validate
         if: steps.changed.outputs.found == 'true'
         run: |
           TODAY_UTC=$(date -u +%Y-%m-%d)
@@ -49,7 +50,7 @@ jobs:
             # Extract MM-DD-YY from filename (first 8 chars, e.g. 03-28-26)
             FILENAME_DATE_RAW=$(echo "$BASENAME" | grep -oP '^\d{2}-\d{2}-\d{2}')
             if [ -z "$FILENAME_DATE_RAW" ]; then
-              ERRORS="${ERRORS}\n❌ $FILE — filename does not start with a MM-DD-YY date"
+              ERRORS="${ERRORS}\n- $FILE — filename does not start with a MM-DD-YY date"
               continue
             fi
 
@@ -64,12 +65,12 @@ jobs:
 
             # Check filename date matches frontmatter date
             if [ -n "$FRONTMATTER_DATE" ] && [ "$FILENAME_DATE" != "$FRONTMATTER_DATE" ]; then
-              ERRORS="${ERRORS}\n❌ $FILE — filename date ($FILENAME_DATE) does not match frontmatter date ($FRONTMATTER_DATE)"
+              ERRORS="${ERRORS}\n- $FILE — filename date ($FILENAME_DATE) does not match frontmatter date ($FRONTMATTER_DATE)"
             fi
 
             # Check date is not stale (must be today or yesterday UTC)
             if [ "$FILENAME_DATE" != "$TODAY_UTC" ] && [ "$FILENAME_DATE" != "$YESTERDAY_UTC" ]; then
-              ERRORS="${ERRORS}\n❌ $FILE — date $FILENAME_DATE is stale. Changelog dates must be today ($TODAY_UTC) or yesterday ($YESTERDAY_UTC). Please rename the file and update the frontmatter date."
+              ERRORS="${ERRORS}\n- $FILE — date $FILENAME_DATE is stale (expected $TODAY_UTC or $YESTERDAY_UTC)"
             fi
 
             echo "   filename date:     $FILENAME_DATE"
@@ -87,7 +88,24 @@ jobs:
             echo "Changelog filenames must use today's date."
             echo "Format: MM-DD-YY-optional-slug.mdx"
             echo "========================================="
+
+            # Save errors for Slack notification
+            echo "errors<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$ERRORS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
             exit 1
           fi
 
           echo "✅ All changelog dates are valid"
+
+      - name: Alert pod-dx on Slack
+        if: failure() && steps.validate.outcome == 'failure'
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        with:
+          payload: |
+            {
+              "text": "*Stale Changelog Date Detected*\n\nPR: <${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}>\nAuthor: ${{ github.event.pull_request.user.login }}\n\nErrors:\n${{ steps.validate.outputs.errors }}\n\nPlease update the changelog filename and frontmatter date before merging."
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
