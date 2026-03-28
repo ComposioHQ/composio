@@ -1,5 +1,8 @@
-# Tool consolidation and improved enum naming
-
+---
+title: "Tool Consolidation and Improved Enum Naming"
+description: "Consolidated overlapping tools, deprecated redundant ones, and renamed 1,545 enum slugs across 24 toolkits for better agent clarity"
+date: "2026-03-28"
+---
 We've completed a major effort to make Composio tools more agent-friendly. This release consolidates overlapping tools, deprecates redundant ones, and renames enum slugs to be cleaner and more intuitive for AI agents.
 
 ## What's changing?
@@ -30,7 +33,7 @@ If you are pinning tool enums by name in your code, check the tables below for a
 
 These tools still work but now point to a recommended replacement. Migrate when convenient.
 
-<AccordionGroup>
+<Accordions>
 <Accordion title="Gmail (1 deprecated)">
 
 | Deprecated Tool | Use Instead |
@@ -228,7 +231,7 @@ No high-usage tools deprecated. Overlapping tools were consolidated (see removed
 | `GEMINI_GET_VIDEOS_OPERATION` | `GEMINI_WAIT_FOR_VIDEO` |
 
 </Accordion>
-</AccordionGroup>
+</Accordions>
 
 ---
 
@@ -236,7 +239,7 @@ No high-usage tools deprecated. Overlapping tools were consolidated (see removed
 
 These tools have been removed because their functionality is fully covered by other existing tools. If you were using any of these, switch to the canonical tool for that operation.
 
-<AccordionGroup>
+<Accordions>
 <Accordion title="Google Drive (35 removed)">
 
 `GOOGLEDRIVE_ADD_SHARED_DRIVE_MEMBER`, `GOOGLEDRIVE_COPY_FILE_V2`, `GOOGLEDRIVE_INSERT_COMMENT`, `GOOGLEDRIVE_DELETE_FILE`, `GOOGLEDRIVE_DELETE_PERMISSION_V2`, `GOOGLEDRIVE_DELETE_REPLY_V2`, `GOOGLEDRIVE_DELETE_TEAM_DRIVE_V2`, `GOOGLEDRIVE_GET_ABOUT_V2`, `GOOGLEDRIVE_GET_CHANGES_START_PAGE_TOKEN_V2`, `GOOGLEDRIVE_GET_PERMISSION_V2`, `GOOGLEDRIVE_GET_REVISION_V2`, `GOOGLEDRIVE_GET_TEAM_DRIVE_V2`, `GOOGLEDRIVE_INSERT_FILE`, `GOOGLEDRIVE_INSERT_PERMISSION`, `GOOGLEDRIVE_LIST_CHANGES_V2`, `GOOGLEDRIVE_LIST_CHILDREN_V2`, `GOOGLEDRIVE_LIST_DRIVE_COMMENTS`, `GOOGLEDRIVE_LIST_DRIVE_REPLIES`, `GOOGLEDRIVE_LIST_FILE_LABELS_V2`, `GOOGLEDRIVE_LIST_PARENTS_V2`, `GOOGLEDRIVE_LIST_PERMISSIONS_V2`, `GOOGLEDRIVE_LIST_REVISIONS_V2`, `GOOGLEDRIVE_LIST_TEAM_DRIVES_V2`, `GOOGLEDRIVE_PATCH_COMMENT`, `GOOGLEDRIVE_STOP_CHANNEL_V2`, `GOOGLEDRIVE_TOUCH_FILE_V2`, `GOOGLEDRIVE_TRASH_FILE_V2`, `GOOGLEDRIVE_UPDATE_COMMENT_V2`, `GOOGLEDRIVE_UPDATE_DRIVE_V2`, `GOOGLEDRIVE_UPDATE_PERMISSION_V2`, `GOOGLEDRIVE_UPDATE_REPLY_V2`, `GOOGLEDRIVE_UPDATE_TEAM_DRIVE_V2`, `GOOGLEDRIVE_UPLOAD_MEDIA_FILE`, `GOOGLEDRIVE_WATCH_CHANGES_V2`, `GOOGLEDRIVE_WATCH_FILE_V2`
@@ -304,7 +307,7 @@ Removed duplicate API endpoint wrappers including: `STRIPE_CREATE_BILLING_CREDIT
 | **Slack** | `SLACK_CLEAR_STATUS`, `SLACK_SET_STATUS`, `SLACK_SLACK_TEST_AUTH` |
 
 </Accordion>
-</AccordionGroup>
+</Accordions>
 
 ---
 
@@ -312,7 +315,7 @@ Removed duplicate API endpoint wrappers including: `STRIPE_CREATE_BILLING_CREDIT
 
 We've renamed 1,545 tool enum slugs to be more concise and agent-friendly. Old slugs contained verbose patterns like `DELETE_A_GIST`, `GET_A_CODESPACE_FOR_THE_AUTHENTICATED_USER`, or `ADD_MEMBERS_FOR_PROJECT`. New slugs follow a cleaner `APP_VERB_NOUN` convention: `DELETE_GIST`, `GET_CODESPACE`, `ADD_MEMBERS_TO_PROJECT`.
 
-<AccordionGroup>
+<Accordions>
 <Accordion title="GitHub (158 renamed)">
 
 | Old Enum | New Enum |
@@ -814,7 +817,7 @@ And 13 more — removing redundant `DRIVE_` from names.
 | `GOOGLEDOCS_GET_CHARTS_FROM_SPREADSHEET` | `GOOGLEDOCS_LIST_SPREADSHEET_CHARTS` |
 
 </Accordion>
-</AccordionGroup>
+</Accordions>
 
 ---
 
