@@ -18,7 +18,7 @@ jobs:
         id: changed
         run: |
           # Get all changelog files in the PR diff
-          ALL_FILES=$(gh pr diff "${{ github.event.pull_request.number }}" --name-only | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+          ALL_FILES=$(gh pr diff "$PR_NUMBER" --name-only | grep '^docs/content/changelog/.*\.mdx$' || echo "")
 
           if [ -z "$ALL_FILES" ]; then
             echo "found=false" >> $GITHUB_OUTPUT
@@ -28,7 +28,7 @@ jobs:
           echo "found=true" >> $GITHUB_OUTPUT
 
           # Separate into new vs modified files using the merge base
-          BASE_SHA=$(gh pr view "${{ github.event.pull_request.number }}" --json baseRefOid -q .baseRefOid)
+          BASE_SHA=$(gh pr view "$PR_NUMBER" --json baseRefOid -q .baseRefOid)
           NEW_FILES=""
           MODIFIED_FILES=""
 
@@ -70,6 +70,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
       - name: Validate new changelog dates
         id: validate
@@ -90,7 +91,7 @@ jobs:
             echo "Checking: $FILE"
 
             # Extract MM-DD-YY from filename (first 8 chars, e.g. 03-28-26)
-            FILENAME_DATE_RAW=$(echo "$BASENAME" | grep -oP '^\d{2}-\d{2}-\d{2}')
+            FILENAME_DATE_RAW=$(echo "$BASENAME" | grep -oP '^\d{2}-\d{2}-\d{2}' || true)
             if [ -z "$FILENAME_DATE_RAW" ]; then
               ERRORS="${ERRORS}\n- $FILE — filename does not start with a MM-DD-YY date"
               continue
@@ -103,7 +104,7 @@ jobs:
             FILENAME_DATE="20${YY}-${MM}-${DD}"
 
             # Extract date from frontmatter
-            FRONTMATTER_DATE=$(grep '^date:' "$FILE" | head -1 | sed 's/^date: *["\x27]*//' | sed 's/["\x27]*$//')
+            FRONTMATTER_DATE=$(grep '^date:' "$FILE" | head -1 | sed 's/^date: *["\x27]*//' | sed 's/["\x27]*$//' || true)
 
             # Check filename date matches frontmatter date
             if [ -n "$FRONTMATTER_DATE" ] && [ "$FILENAME_DATE" != "$FRONTMATTER_DATE" ]; then
@@ -118,7 +119,7 @@ jobs:
             echo "   filename date:     $FILENAME_DATE"
             echo "   frontmatter date:  $FRONTMATTER_DATE"
             echo ""
-          done <<< "${{ steps.changed.outputs.new_files }}"
+          done <<< "$NEW_FILES"
 
           if [ -n "$ERRORS" ]; then
             echo ""
@@ -131,34 +132,51 @@ jobs:
             echo "Format: MM-DD-YY-optional-slug.mdx"
             echo "========================================="
 
-            # Save errors for Slack notification
-            echo "errors<<EOF" >> $GITHUB_OUTPUT
-            echo -e "$ERRORS" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            # Save errors for Slack notification (single line for JSON safety)
+            ERRORS_ONELINE=$(echo -e "$ERRORS" | tr '\n' ' ')
+            echo "errors=$ERRORS_ONELINE" >> $GITHUB_OUTPUT
 
             exit 1
           fi
 
-          echo "✅ All new changelog dates are valid"
+          echo "All new changelog dates are valid"
+        env:
+          NEW_FILES: ${{ steps.changed.outputs.new_files }}
 
       - name: Alert pod-dx — stale date
         if: failure() && steps.validate.outcome == 'failure'
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
-        with:
-          payload: |
-            {
-              "text": "*Stale Changelog Date Detected*\n\nPR: <${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}>\nAuthor: ${{ github.event.pull_request.user.login }}\n\nErrors:\n${{ steps.validate.outputs.errors }}\n\nPlease update the changelog filename and frontmatter date before merging."
-            }
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg pr_url "$PR_URL" \
+            --arg pr_num "$PR_NUM" \
+            --arg pr_title "$PR_TITLE" \
+            --arg author "$PR_AUTHOR" \
+            --arg errors "$ERRORS" \
+            '{text: "*Stale Changelog Date Detected*\n\nPR: <\($pr_url)|#\($pr_num) — \($pr_title)>\nAuthor: \($author)\n\nErrors: \($errors)\n\nPlease update the changelog filename and frontmatter date before merging."}')
+          curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          ERRORS: ${{ steps.validate.outputs.errors }}
 
       - name: Alert pod-dx — old changelog edited
         if: always() && steps.changed.outputs.has_modified == 'true'
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
-        with:
-          payload: |
-            {
-              "text": "*Old Changelog Edited*\n\nPR: <${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}>\nAuthor: ${{ github.event.pull_request.user.login }}\n\nModified files:\n${{ steps.changed.outputs.modified_files }}\n\nPlease review — edits to published changelogs may need extra attention."
-            }
+        run: |
+          PAYLOAD=$(jq -n \
+            --arg pr_url "$PR_URL" \
+            --arg pr_num "$PR_NUM" \
+            --arg pr_title "$PR_TITLE" \
+            --arg author "$PR_AUTHOR" \
+            --arg files "$MODIFIED_FILES" \
+            '{text: "*Old Changelog Edited*\n\nPR: <\($pr_url)|#\($pr_num) — \($pr_title)>\nAuthor: \($author)\n\nModified files: \($files)\n\nPlease review — edits to published changelogs may need extra attention."}')
+          curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          MODIFIED_FILES: ${{ steps.changed.outputs.modified_files }}
