@@ -14,24 +14,66 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Get changed changelog files
+      - name: Classify changed changelog files
         id: changed
         run: |
-          FILES=$(gh pr diff "${{ github.event.pull_request.number }}" --name-only | grep '^docs/content/changelog/.*\.mdx$' || echo "")
-          if [ -z "$FILES" ]; then
+          # Get all changelog files in the PR diff
+          ALL_FILES=$(gh pr diff "${{ github.event.pull_request.number }}" --name-only | grep '^docs/content/changelog/.*\.mdx$' || echo "")
+
+          if [ -z "$ALL_FILES" ]; then
             echo "found=false" >> $GITHUB_OUTPUT
-          else
-            echo "found=true" >> $GITHUB_OUTPUT
-            echo "files<<EOF" >> $GITHUB_OUTPUT
-            echo "$FILES" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "found=true" >> $GITHUB_OUTPUT
+
+          # Separate into new vs modified files using the merge base
+          BASE_SHA=$(gh pr view "${{ github.event.pull_request.number }}" --json baseRefOid -q .baseRefOid)
+          NEW_FILES=""
+          MODIFIED_FILES=""
+
+          while IFS= read -r FILE; do
+            [ -z "$FILE" ] && continue
+            if git cat-file -e "${BASE_SHA}:${FILE}" 2>/dev/null; then
+              MODIFIED_FILES="${MODIFIED_FILES}${FILE}\n"
+            else
+              NEW_FILES="${NEW_FILES}${FILE}\n"
+            fi
+          done <<< "$ALL_FILES"
+
+          # Trim trailing newlines
+          NEW_FILES=$(echo -e "$NEW_FILES" | sed '/^$/d')
+          MODIFIED_FILES=$(echo -e "$MODIFIED_FILES" | sed '/^$/d')
+
+          echo "New files:"
+          echo "$NEW_FILES"
+          echo ""
+          echo "Modified files:"
+          echo "$MODIFIED_FILES"
+
+          if [ -n "$NEW_FILES" ]; then
+            echo "has_new=true" >> $GITHUB_OUTPUT
+            echo "new_files<<EOF" >> $GITHUB_OUTPUT
+            echo "$NEW_FILES" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has_new=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ -n "$MODIFIED_FILES" ]; then
+            echo "has_modified=true" >> $GITHUB_OUTPUT
+            echo "modified_files<<EOF" >> $GITHUB_OUTPUT
+            echo "$MODIFIED_FILES" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has_modified=false" >> $GITHUB_OUTPUT
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Validate changelog dates
+      - name: Validate new changelog dates
         id: validate
-        if: steps.changed.outputs.found == 'true'
+        if: steps.changed.outputs.has_new == 'true'
         run: |
           TODAY_UTC=$(date -u +%Y-%m-%d)
           YESTERDAY_UTC=$(date -u -d "yesterday" +%Y-%m-%d)
@@ -76,7 +118,7 @@ jobs:
             echo "   filename date:     $FILENAME_DATE"
             echo "   frontmatter date:  $FRONTMATTER_DATE"
             echo ""
-          done <<< "${{ steps.changed.outputs.files }}"
+          done <<< "${{ steps.changed.outputs.new_files }}"
 
           if [ -n "$ERRORS" ]; then
             echo ""
@@ -97,15 +139,26 @@ jobs:
             exit 1
           fi
 
-          echo "✅ All changelog dates are valid"
+          echo "✅ All new changelog dates are valid"
 
-      - name: Alert pod-dx on Slack
+      - name: Alert pod-dx — stale date
         if: failure() && steps.validate.outcome == 'failure'
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
           payload: |
             {
               "text": "*Stale Changelog Date Detected*\n\nPR: <${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}>\nAuthor: ${{ github.event.pull_request.user.login }}\n\nErrors:\n${{ steps.validate.outputs.errors }}\n\nPlease update the changelog filename and frontmatter date before merging."
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+
+      - name: Alert pod-dx — old changelog edited
+        if: always() && steps.changed.outputs.has_modified == 'true'
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        with:
+          payload: |
+            {
+              "text": "*Old Changelog Edited*\n\nPR: <${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}>\nAuthor: ${{ github.event.pull_request.user.login }}\n\nModified files:\n${{ steps.changed.outputs.modified_files }}\n\nPlease review — edits to published changelogs may need extra attention."
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
