@@ -18,6 +18,7 @@ import {
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
+import { sanitizeSchemaPropertyKeys, restoreOriginalKeys } from './sanitize-keys';
 
 export type AnthropicMcpServerGetResponse = {
   type: 'url';
@@ -58,6 +59,13 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
+  /**
+   * @internal
+   * Stores reverse key mappings per tool slug.
+   * When property keys are truncated to comply with Anthropic's 64-char limit,
+   * this map allows restoring original keys during tool execution.
+   */
+  private _toolKeyMaps: Map<string, Map<string, string>> = new Map();
 
   /**
    * Creates a new instance of the AnthropicProvider.
@@ -118,14 +126,28 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: ComposioTool): AnthropicTool {
+    const rawSchema = (tool.inputParameters || {
+      type: 'object',
+      properties: {},
+      required: [],
+    }) as InputSchema;
+
+    // Sanitize property keys to comply with Anthropic's 64-character limit.
+    // See: https://github.com/ComposioHQ/composio/issues/2330
+    const { schema: sanitizedSchema, keyMap } = sanitizeSchemaPropertyKeys(rawSchema);
+
+    // Store the reverse key mapping so executeToolCall can restore original keys.
+    if (keyMap.size > 0) {
+      this._toolKeyMaps.set(tool.slug, keyMap);
+      logger.debug(
+        `Sanitized ${keyMap.size} property key(s) for tool "${tool.slug}" to comply with Anthropic's 64-char limit`
+      );
+    }
+
     return {
       name: tool.slug,
       description: tool.description || '',
-      input_schema: (tool.inputParameters || {
-        type: 'object',
-        properties: {},
-        required: [],
-      }) as InputSchema,
+      input_schema: sanitizedSchema as InputSchema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
@@ -210,8 +232,12 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    // Restore original property keys if they were sanitized during wrapTool.
+    const keyMap = this._toolKeyMaps.get(toolUse.name);
+    const args = keyMap ? restoreOriginalKeys(toolUse.input, keyMap) : toolUse.input;
+
     const payload: ToolExecuteParams = {
-      arguments: toolUse.input,
+      arguments: args,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,
