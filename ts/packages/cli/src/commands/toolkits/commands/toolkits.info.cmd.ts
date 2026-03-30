@@ -28,11 +28,11 @@ const allDetails = Options.boolean('all').pipe(
   Options.withDescription('Show all available toolkit details, including auth config fields')
 );
 
-const TOOLKIT_INFO_METADATA_TIMEOUT_MS = 10_000;
+const TOOLKIT_INFO_METADATA_TIMEOUT_MS = 30_000;
 const TOOLKIT_INFO_SESSION_TIMEOUT_MS = 20_000;
 const TOOLKIT_INFO_EXACT_LOOKUP_TIMEOUT_MS = 30_000;
-const TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS = 10_000;
-const TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS = 5_000;
+const TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS = 20_000;
+const TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS = 10_000;
 const TOOLKIT_INFO_SEARCH_FALLBACK_LIMIT = 50;
 
 const getOptionalResultWithTimeout = <A, E, R>(
