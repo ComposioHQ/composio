@@ -2,8 +2,7 @@
  * CLI `composio dev toolkits search` e2e test
  *
  * Verifies that the search subcommand returns matching toolkits as JSON in piped mode,
- * respects --limit, supports stdout redirection, and handles no-result queries
- * against a toolkit discovered from the current environment.
+ * respects --limit, supports stdout redirection, and handles no-result queries.
  */
 
 import {
@@ -22,50 +21,6 @@ declare module 'bun' {
   }
 }
 
-type ToolkitCandidate = {
-  name: string;
-  slug: string;
-};
-
-const TOOLKIT_CANDIDATES = [
-  'hackernews',
-  'github',
-  'gmail',
-  'slack',
-  'notion',
-  'linear',
-  'discord',
-  'googlecalendar',
-  'googledocs',
-  'hubspot',
-] as const;
-
-const discoverToolkitCandidate = async (
-  runCmd: (command: string) => Promise<E2ETestResult>
-): Promise<ToolkitCandidate> => {
-  for (const slug of TOOLKIT_CANDIDATES) {
-    const result = await runCmd(`composio dev toolkits info ${slug}`);
-
-    if (result.exitCode !== 0 || sanitizeOutput(result.stdout) === '') {
-      continue;
-    }
-
-    const item = parseJsonStdout(result) as { name?: string; slug?: string };
-    if (item.slug !== slug || typeof item.name !== 'string') {
-      continue;
-    }
-
-    return {
-      name: item.name,
-      slug,
-    };
-  }
-
-  throw new Error(
-    `Expected one of these toolkit slugs to resolve: ${TOOLKIT_CANDIDATES.join(', ')}`
-  );
-};
-
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
@@ -78,23 +33,20 @@ e2e(import.meta.url, {
     let limitResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let noResultsResult: E2ETestResult;
-    let candidate: ToolkitCandidate;
 
     beforeAll(async () => {
-      candidate = await discoverToolkitCandidate(runCmd);
-
       [validResult, limitResult, redirectResult, noResultsResult] = await Promise.all([
-        runCmd(`composio dev toolkits search ${candidate.slug}`),
-        runCmd(`composio dev toolkits search ${candidate.slug} --limit 1`),
+        runCmd('composio dev toolkits search gmail'),
+        runCmd('composio dev toolkits search gmail --limit 1'),
         runCmd({
-          command: `composio dev toolkits search ${candidate.slug} --limit 1 > out.json`,
+          command: 'composio dev toolkits search gmail --limit 1 > out.json',
           files: ['out.json'],
         }),
         runCmd('composio dev toolkits search xyznonexistent_abc_12345'),
       ]);
     }, TIMEOUTS.FIXTURE * 2);
 
-    describe('composio dev toolkits search <slug> (discovered query)', () => {
+    describe('composio dev toolkits search gmail (known query)', () => {
       it('exits successfully', () => {
         expect(validResult.exitCode).toBe(0);
       });
@@ -109,9 +61,9 @@ e2e(import.meta.url, {
         expect((items as Array<unknown>).length).toBeGreaterThanOrEqual(1);
       });
 
-      it('first element has the discovered slug', () => {
+      it('first element has slug "gmail"', () => {
         const items = parseJsonStdout(validResult) as Array<{ slug: string }>;
-        expect(items[0].slug).toBe(candidate.slug);
+        expect(items[0].slug).toBe('gmail');
       });
 
       it('each element has the expected shape', () => {
@@ -126,7 +78,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio dev toolkits search <slug> --limit 1 (with limit)', () => {
+    describe('composio dev toolkits search gmail --limit 1 (with limit)', () => {
       it('exits successfully', () => {
         expect(limitResult.exitCode).toBe(0);
       });
@@ -141,13 +93,13 @@ e2e(import.meta.url, {
         expect(items as Array<unknown>).toHaveLength(1);
       });
 
-      it('the element has the discovered slug', () => {
+      it('the element has slug "gmail"', () => {
         const items = parseJsonStdout(limitResult) as Array<{ slug: string }>;
-        expect(items[0].slug).toBe(candidate.slug);
+        expect(items[0].slug).toBe('gmail');
       });
     });
 
-    describe('composio dev toolkits search <slug> --limit 1 > out.json (stdout redirection)', () => {
+    describe('composio dev toolkits search gmail --limit 1 > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });
@@ -160,11 +112,11 @@ e2e(import.meta.url, {
         expect(redirectResult.stderr).toBe('');
       });
 
-      it('out.json contains a JSON array with the discovered slug', () => {
+      it('out.json contains a JSON array with slug "gmail"', () => {
         const items = JSON.parse(sanitizeOutput(redirectResult.files['out.json']));
         expect(Array.isArray(items)).toBe(true);
         expect(items).toHaveLength(1);
-        expect(items[0].slug).toBe(candidate.slug);
+        expect(items[0].slug).toBe('gmail');
       });
     });
 

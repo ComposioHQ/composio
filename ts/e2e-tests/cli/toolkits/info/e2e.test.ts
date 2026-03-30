@@ -2,8 +2,7 @@
  * CLI `composio dev toolkits info` e2e test
  *
  * Verifies that the info subcommand returns detailed toolkit JSON in piped mode,
- * handles invalid slugs gracefully, and supports stdout redirection
- * against a toolkit discovered from the current environment.
+ * handles invalid slugs gracefully, and supports stdout redirection.
  */
 
 import {
@@ -22,50 +21,6 @@ declare module 'bun' {
   }
 }
 
-type ToolkitCandidate = {
-  name: string;
-  slug: string;
-};
-
-const TOOLKIT_CANDIDATES = [
-  'hackernews',
-  'github',
-  'gmail',
-  'slack',
-  'notion',
-  'linear',
-  'discord',
-  'googlecalendar',
-  'googledocs',
-  'hubspot',
-] as const;
-
-const discoverToolkitCandidate = async (
-  runCmd: (command: string) => Promise<E2ETestResult>
-): Promise<ToolkitCandidate> => {
-  for (const slug of TOOLKIT_CANDIDATES) {
-    const result = await runCmd(`composio dev toolkits info ${slug}`);
-
-    if (result.exitCode !== 0 || sanitizeOutput(result.stdout) === '') {
-      continue;
-    }
-
-    const item = parseJsonStdout(result) as { name?: string; slug?: string };
-    if (item.slug !== slug || typeof item.name !== 'string') {
-      continue;
-    }
-
-    return {
-      name: item.name,
-      slug,
-    };
-  }
-
-  throw new Error(
-    `Expected one of these toolkit slugs to resolve: ${TOOLKIT_CANDIDATES.join(', ')}`
-  );
-};
-
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
@@ -78,21 +33,18 @@ e2e(import.meta.url, {
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let invalidResult: E2ETestResult;
     let missingSlugResult: E2ETestResult;
-    let candidate: ToolkitCandidate;
 
     beforeAll(async () => {
-      candidate = await discoverToolkitCandidate(runCmd);
-
-      validResult = await runCmd(`composio dev toolkits info ${candidate.slug}`);
+      validResult = await runCmd('composio dev toolkits info gmail');
       redirectResult = await runCmd({
-        command: `composio dev toolkits info ${candidate.slug} > out.json`,
+        command: 'composio dev toolkits info gmail > out.json',
         files: ['out.json'],
       });
       invalidResult = await runCmd('composio dev toolkits info nonexistent_toolkit_xyz12345');
       missingSlugResult = await runCmd('composio dev toolkits info');
     }, TIMEOUTS.FIXTURE);
 
-    describe('composio dev toolkits info <slug> (valid slug)', () => {
+    describe('composio dev toolkits info gmail (valid slug)', () => {
       it('exits successfully', () => {
         expect(validResult.exitCode).toBe(0);
       });
@@ -107,10 +59,10 @@ e2e(import.meta.url, {
         expect(Array.isArray(obj)).toBe(false);
       });
 
-      it('has the discovered name and slug', () => {
+      it('has the correct name and slug', () => {
         const obj = parseJsonStdout(validResult) as Record<string, unknown>;
-        expect(obj.name).toBe(candidate.name);
-        expect(obj.slug).toBe(candidate.slug);
+        expect(obj.name).toBe('Gmail');
+        expect(obj.slug).toBe('gmail');
       });
 
       it('has meta with description and logo', () => {
@@ -137,7 +89,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio dev toolkits info <slug> > out.json (stdout redirection)', () => {
+    describe('composio dev toolkits info gmail > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });
@@ -150,10 +102,10 @@ e2e(import.meta.url, {
         expect(redirectResult.stderr).toBe('');
       });
 
-      it('out.json contains valid JSON with the discovered slug', () => {
+      it('out.json contains valid JSON with slug "gmail"', () => {
         const content = redirectResult.files['out.json'];
         const obj = JSON.parse(sanitizeOutput(content));
-        expect(obj.slug).toBe(candidate.slug);
+        expect(obj.slug).toBe('gmail');
       });
     });
 
