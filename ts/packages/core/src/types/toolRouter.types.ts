@@ -320,6 +320,7 @@ export type ToolRouterAuthorizeFn = (
 ) => Promise<ConnectionRequest>;
 
 export const DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT = 20;
+export const MAX_TOOL_ROUTER_TOOLKITS_LIMIT = 50;
 
 export const ToolRouterToolkitsOptionsSchema = z
   .object({
@@ -328,7 +329,7 @@ export const ToolRouterToolkitsOptionsSchema = z
     cursor: z.string().optional(),
     page: z.number().int().min(1).optional(),
     offset: z.number().int().min(0).optional(),
-    limit: z.number().int().positive().optional(),
+    limit: z.number().int().positive().max(MAX_TOOL_ROUTER_TOOLKITS_LIMIT).optional(),
     isConnected: z.boolean().optional(),
     search: z.string().optional(),
   })

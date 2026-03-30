@@ -1948,6 +1948,18 @@ describe('ToolRouter', () => {
         })
       ).rejects.toThrow('offset must be a multiple of limit (20)');
     });
+
+    it('should throw validation error for limits above the backend maximum', async () => {
+      const session = await toolRouter.create(userId);
+
+      await expect(
+        session.toolkits({
+          limit: 51,
+        })
+      ).rejects.toThrow('Number must be less than or equal to 50');
+
+      expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
+    });
   });
 
   describe('search function', () => {
