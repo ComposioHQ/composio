@@ -14,72 +14,20 @@
 
 import assert from 'node:assert';
 import { execSync } from 'node:child_process';
-import { existsSync, rmSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const GENERATED_DIR = join(__dirname, 'generated');
-const GENERATE_TS_TIMEOUT_MS = 90_000;
+const SHARED_ROOT = join(__dirname, '.e2e-scratch', '.composio-e2e-mjs-import');
+const GENERATED_DIR = join(SHARED_ROOT, 'generated');
+const TSCONFIG_PATH = join(SHARED_ROOT, 'tsconfig.json');
 const TSC_TIMEOUT_MS = 60_000;
 
 console.log('🧪 Testing TypeScript .mjs import resolution with moduleResolution: "nodenext"...\n');
 console.log(`Node.js version: ${process.version}`);
 console.log(`Working directory: ${__dirname}\n`);
-
-// Cleanup generated directory if it exists
-if (existsSync(GENERATED_DIR)) {
-  console.log('Cleaning up previous generated files...');
-  rmSync(GENERATED_DIR, { recursive: true });
-}
-
-// Test 1: Run composio generate ts --toolkits hackernews --output-dir ./generated
-console.log('Test 1: Running composio generate ts --toolkits hackernews --output-dir ./generated...');
-function runGenerateTs(attempt) {
-  try {
-    if (existsSync(GENERATED_DIR)) {
-      rmSync(GENERATED_DIR, { recursive: true, force: true });
-    }
-
-    // Use the composio CLI binary built and installed to /usr/local/bin in the Dockerfile.
-    // Capture output so transient CI failures surface the actual CLI stderr in the test logs.
-    execSync(`composio generate ts --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
-      cwd: __dirname,
-      stdio: 'pipe',
-      encoding: 'utf-8',
-      env: { ...process.env, FORCE_COLOR: '0' },
-      timeout: GENERATE_TS_TIMEOUT_MS,
-    });
-  } catch (error) {
-    const stdout = error.stdout?.toString?.() || error.stdout || '';
-    const stderr = error.stderr?.toString?.() || error.stderr || '';
-    const timedOut = error.signal === 'SIGTERM' || error.code === 'ETIMEDOUT';
-
-    console.error(`❌ Test 1 failed on attempt ${attempt}: composio generate ts threw an error`);
-    if (timedOut) {
-      console.error(`command timed out after ${GENERATE_TS_TIMEOUT_MS}ms`);
-    }
-    if (stdout) {
-      console.error('stdout:');
-      console.error(stdout);
-    }
-    if (stderr) {
-      console.error('stderr:');
-      console.error(stderr);
-    }
-    console.error(error.message);
-
-    if (attempt < 2) {
-      console.error('Retrying Test 1 once...');
-      return runGenerateTs(attempt + 1);
-    }
-
-    process.exit(1);
-  }
-}
-
-runGenerateTs(1);
-console.log('✅ Test 1 passed: composio generate ts succeeded\n');
+console.log(`Shared workspace: ${SHARED_ROOT}\n`);
 
 // Test 2: Verify generated files exist
 console.log('Test 2: Verifying generated files exist...');
@@ -105,7 +53,7 @@ console.log('Expected: FAILURE with TS2307 if importExtension is "mjs"');
 console.log('Expected: SUCCESS if importExtension is "js"\n');
 
 try {
-  execSync('npx tsc --noEmit', {
+  execSync(`npx tsc --noEmit -p ${TSCONFIG_PATH}`, {
     cwd: __dirname,
     stdio: 'pipe',
     encoding: 'utf-8',

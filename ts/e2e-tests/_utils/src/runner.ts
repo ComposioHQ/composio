@@ -248,6 +248,11 @@ function buildContainerEnv(
     Object.assign(env, explicitEnv);
   }
 
+  // Keep CLI output deterministic in Docker e2e unless a test opts back in.
+  if (env.COMPOSIO_DISABLE_UPDATE_CHECK === undefined) {
+    env.COMPOSIO_DISABLE_UPDATE_CHECK = 'true';
+  }
+
   return env;
 }
 
@@ -508,12 +513,16 @@ function createNodeDockerExecutors(
     }
 
     const volumeName = generateVolumeName(suiteName, nodeVersion);
+    const scratchVolumeName = generateVolumeName(`${suiteName}-scratch`, nodeVersion);
     const containerBaseName = `${containerPrefix}-${Date.now()}`;
     const volumeTarget = `${effectiveCwd.startsWith('/') ? effectiveCwd : `/app/${effectiveCwd}`}/node_modules`;
+    const scratchTarget = `${effectiveCwd.startsWith('/') ? effectiveCwd : `/app/${effectiveCwd}`}/.e2e-scratch`;
 
     try {
       await createVolume(volumeName);
+      await createVolume(scratchVolumeName);
       await initializeVolumeOwnership(volumeName, imageTag, 'node');
+      await initializeVolumeOwnership(scratchVolumeName, imageTag, 'node');
 
       const setupContainerName = `${containerBaseName}-setup`;
       const setupStartTime = Date.now();
@@ -523,7 +532,10 @@ function createNodeDockerExecutors(
         cwd: effectiveCwd,
         env: containerEnv,
         name: setupContainerName,
-        volumes: [{ volume: volumeName, target: volumeTarget, readonly: false }],
+        volumes: [
+          { volume: volumeName, target: volumeTarget, readonly: false },
+          { volume: scratchVolumeName, target: scratchTarget, readonly: false },
+        ],
       });
       const setupDurationMs = Date.now() - setupStartTime;
 
@@ -547,7 +559,10 @@ function createNodeDockerExecutors(
         cwd: effectiveCwd,
         env: containerEnv,
         name: fixtureContainerName,
-        volumes: [{ volume: volumeName, target: volumeTarget, readonly: true }],
+        volumes: [
+          { volume: volumeName, target: volumeTarget, readonly: true },
+          { volume: scratchVolumeName, target: scratchTarget, readonly: true },
+        ],
       });
       const fixtureDurationMs = Date.now() - fixtureStartTime;
 
@@ -566,6 +581,7 @@ function createNodeDockerExecutors(
       return { ...fixtureResult, setup: setupResult };
     } finally {
       await removeVolume(volumeName);
+      await removeVolume(scratchVolumeName);
     }
   }
 

@@ -20,9 +20,14 @@ import { APP_VERSION, GITHUB_REPO } from '../constants';
  *   `tags/@composio/cli@` so only CLI tags are returned (tiny payload,
  *   no monorepo noise). The result is cached to ~/.composio/update-check.json
  *   and refreshed at most once every 24 hours.
+ *
+ *   Set COMPOSIO_DISABLE_UPDATE_CHECK=true to suppress both the cached notice
+ *   and the background fetch. This keeps e2e and other non-interactive
+ *   environments deterministic.
  */
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const DISABLE_UPDATE_CHECK_ENV_VAR = 'COMPOSIO_DISABLE_UPDATE_CHECK';
 
 /** Matches `refs/tags/@composio/cli@<semver>` — excludes prereleases. */
 const CLI_REF_RE = /^refs\/tags\/@composio\/cli@(\d+\.\d+\.\d+)$/;
@@ -54,6 +59,10 @@ const defaultConfig: UpdateCheckConfig = {
   accessToken: process.env.COMPOSIO_GITHUB_ACCESS_TOKEN,
   fetchFn: fetch,
 };
+
+function isUpdateCheckDisabled(): boolean {
+  return process.env[DISABLE_UPDATE_CHECK_ENV_VAR] === 'true';
+}
 
 // ── Pure helpers ────────────────────────────────────────────────────────
 
@@ -183,10 +192,16 @@ const _checker = createUpdateChecker(defaultConfig);
 
 /** Print upgrade hint to stderr if a newer version is cached. */
 export function showUpdateNotice(): void {
+  if (isUpdateCheckDisabled()) {
+    return;
+  }
   _checker.showUpdateNotice();
 }
 
 /** Fire-and-forget background fetch to GitHub. */
 export function checkForUpdateInBackground(): void {
+  if (isUpdateCheckDisabled()) {
+    return;
+  }
   _checker.checkForUpdate();
 }
