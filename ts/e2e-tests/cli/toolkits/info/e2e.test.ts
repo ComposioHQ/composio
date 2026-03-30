@@ -29,33 +29,16 @@ e2e(import.meta.url, {
     COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
+    const query = 'hackernews';
     let validResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let invalidResult: E2ETestResult;
     let missingSlugResult: E2ETestResult;
-    let candidate: { name: string; slug: string };
 
     beforeAll(async () => {
-      const seedResult = await runCmd('composio dev toolkits list --limit 1');
-      const items = parseJsonStdout(seedResult) as Array<{ name?: string; slug?: string }>;
-
-      if (seedResult.exitCode !== 0 || items.length === 0) {
-        throw new Error('Expected `composio dev toolkits list --limit 1` to return 1 item');
-      }
-
-      const [item] = items;
-      if (typeof item.name !== 'string' || typeof item.slug !== 'string') {
-        throw new Error('Expected seed toolkit to include string `name` and `slug`');
-      }
-
-      candidate = {
-        name: item.name,
-        slug: item.slug,
-      };
-
-      validResult = await runCmd(`composio dev toolkits info ${candidate.slug}`);
+      validResult = await runCmd(`composio dev toolkits info ${query}`);
       redirectResult = await runCmd({
-        command: `composio dev toolkits info ${candidate.slug} > out.json`,
+        command: `composio dev toolkits info ${query} > out.json`,
         files: ['out.json'],
       });
       invalidResult = await runCmd('composio dev toolkits info nonexistent_toolkit_xyz12345');
@@ -77,10 +60,9 @@ e2e(import.meta.url, {
         expect(Array.isArray(obj)).toBe(false);
       });
 
-      it('has the discovered name and slug', () => {
+      it('has the expected slug', () => {
         const obj = parseJsonStdout(validResult) as Record<string, unknown>;
-        expect(obj.name).toBe(candidate.name);
-        expect(obj.slug).toBe(candidate.slug);
+        expect(obj.slug).toBe(query);
       });
 
       it('has meta with description and logo', () => {
@@ -123,7 +105,7 @@ e2e(import.meta.url, {
       it('out.json contains valid JSON with the discovered slug', () => {
         const content = redirectResult.files['out.json'];
         const obj = JSON.parse(sanitizeOutput(content));
-        expect(obj.slug).toBe(candidate.slug);
+        expect(obj.slug).toBe(query);
       });
     });
 

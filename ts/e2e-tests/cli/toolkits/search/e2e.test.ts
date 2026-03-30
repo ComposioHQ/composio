@@ -29,37 +29,21 @@ e2e(import.meta.url, {
     COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
+    const query = 'hackernews';
     let validResult: E2ETestResult;
     let limitResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let noResultsResult: E2ETestResult;
-    let candidate: { slug: string };
 
     beforeAll(async () => {
-      const seedResult = await runCmd('composio dev toolkits list --limit 1');
-      const items = parseJsonStdout(seedResult) as Array<{ slug?: string }>;
-
-      if (seedResult.exitCode !== 0 || items.length === 0) {
-        throw new Error('Expected `composio dev toolkits list --limit 1` to return 1 item');
-      }
-
-      const [item] = items;
-      if (typeof item.slug !== 'string') {
-        throw new Error('Expected seed toolkit to include a string `slug`');
-      }
-
-      candidate = {
-        slug: item.slug,
-      };
-
       [validResult, limitResult, redirectResult, noResultsResult] = await Promise.all([
-        runCmd(`composio dev toolkits search ${candidate.slug}`),
-        runCmd(`composio dev toolkits search ${candidate.slug} --limit 1`),
+        runCmd(`composio dev toolkits search ${query}`),
+        runCmd(`composio dev toolkits search ${query} --limit 1`),
         runCmd({
-          command: `composio dev toolkits search ${candidate.slug} --limit 1 > out.json`,
+          command: `composio dev toolkits search ${query} --limit 1 > out.json`,
           files: ['out.json'],
         }),
-        runCmd(`composio dev toolkits search ${candidate.slug}_xyznonexistent_abc_12345`),
+        runCmd('composio dev toolkits search xyznonexistent_abc_12345'),
       ]);
     }, TIMEOUTS.FIXTURE * 2);
 
@@ -80,7 +64,7 @@ e2e(import.meta.url, {
 
       it('returns the discovered toolkit', () => {
         const items = parseJsonStdout(validResult) as Array<Record<string, unknown>>;
-        expect(items[0]?.slug).toBe(candidate.slug);
+        expect(items[0]?.slug).toBe(query);
       });
 
       it('each element has the expected shape', () => {
@@ -110,7 +94,7 @@ e2e(import.meta.url, {
 
       it('returns the discovered toolkit', () => {
         const items = parseJsonStdout(limitResult) as Array<Record<string, unknown>>;
-        expect(items[0]?.slug).toBe(candidate.slug);
+        expect(items[0]?.slug).toBe(query);
       });
     });
 
@@ -131,7 +115,7 @@ e2e(import.meta.url, {
         const items = JSON.parse(sanitizeOutput(redirectResult.files['out.json']));
         expect(Array.isArray(items)).toBe(true);
         expect(items).toHaveLength(1);
-        expect(items[0]?.slug).toBe(candidate.slug);
+        expect(items[0]?.slug).toBe(query);
       });
     });
 
