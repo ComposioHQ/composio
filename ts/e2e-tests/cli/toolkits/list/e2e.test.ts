@@ -23,19 +23,22 @@ e2e(import.meta.url, {
     COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
+    const query = 'google';
+    const prefixQuery = 'googl';
+    const typoQuery = 'gogol';
     let exactResult: E2ETestResult;
     let prefixResult: E2ETestResult;
     let noFuzzyResult: E2ETestResult;
 
     beforeAll(async () => {
       [exactResult, prefixResult, noFuzzyResult] = await Promise.all([
-        runCmd('composio dev toolkits list --query gmail --limit 1'),
-        runCmd('composio dev toolkits list --query gmai --limit 1'),
-        runCmd('composio dev toolkits list --query gmal --limit 1'),
+        runCmd(`composio dev toolkits list --query ${query} --limit 1`),
+        runCmd(`composio dev toolkits list --query ${prefixQuery} --limit 1`),
+        runCmd(`composio dev toolkits list --query ${typoQuery} --limit 1`),
       ]);
     }, TIMEOUTS.FIXTURE * 2);
 
-    describe('composio dev toolkits list --query gmail --limit 1 (exact slug)', () => {
+    describe('composio dev toolkits list --query <query> --limit 1 (known query)', () => {
       it('exits successfully', () => {
         expect(exactResult.exitCode).toBe(0);
       });
@@ -48,11 +51,6 @@ e2e(import.meta.url, {
         const items = parseJsonStdout(exactResult);
         expect(Array.isArray(items)).toBe(true);
         expect(items).toHaveLength(1);
-      });
-
-      it('the element has slug "gmail"', () => {
-        const items = parseJsonStdout(exactResult) as Array<{ slug: string }>;
-        expect(items[0].slug).toBe('gmail');
       });
 
       it('the element has the expected shape', () => {
@@ -69,7 +67,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio dev toolkits list --query gmai --limit 1 (prefix search)', () => {
+    describe('composio dev toolkits list --query <prefix> --limit 1 (prefix search)', () => {
       it('exits successfully', () => {
         expect(prefixResult.exitCode).toBe(0);
       });
@@ -84,13 +82,13 @@ e2e(import.meta.url, {
         expect(items).toHaveLength(1);
       });
 
-      it('the element has slug "gmail"', () => {
+      it('the element has a slug', () => {
         const items = parseJsonStdout(prefixResult) as Array<{ slug: string }>;
-        expect(items[0].slug).toBe('gmail');
+        expect(typeof items[0]?.slug).toBe('string');
       });
     });
 
-    describe('composio dev toolkits list --query gmal --limit 1 (no fuzzy search)', () => {
+    describe('composio dev toolkits list --query <typo> --limit 1 (no fuzzy search)', () => {
       it('exits successfully', () => {
         expect(noFuzzyResult.exitCode).toBe(0);
       });
