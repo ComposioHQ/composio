@@ -37,7 +37,7 @@ catalog:
   openai: ^6.16.0
   pnpm: ^10.28.0
   publint: ^0.3.16
-  tsdown: ^0.18.4
+  tsdown: ^0.21.7
   tsx: ^4.20.5
   typescript: ^5.9.2
   uuid: ^13.0.0

@@ -96,19 +96,10 @@ export class MastraProvider extends BaseAgenticProvider<
       mode: 'jsonSchema',
     });
 
-    const outputSchema = applyCompatLayer({
-      schema: tool.outputParameters ?? {},
-      compatLayers: [],
-      mode: 'jsonSchema',
-    });
-
     const mastraTool = createTool({
       id: tool.slug,
       description: tool.description ?? '',
-      // @ts-ignore
       inputSchema,
-      // @ts-ignore
-      outputSchema,
       execute: async (inputData, _context) => {
         const result = await executeTool(tool.slug, inputData as Record<string, unknown>);
         return result;
