@@ -9,6 +9,6 @@
     "noEmit": true
   },
   "include": [
-    "generated"
+    "fixture-generated"
   ]
 }
