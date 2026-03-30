@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown';
-import { baseConfig } from '../../../tsdown.config.base.ts';
+import { baseConfig } from '../../../tsdown.config.base';
 
 export default defineConfig({
   ...baseConfig,
@@ -12,13 +12,19 @@ export default defineConfig({
   ],
   format: ['esm'],
   tsconfig: './tsconfig.src.json',
-  external: undefined,
-  noExternal: [
-    '@composio/core',
-    /^zod(?:\/.*)?$/,
-    /^@agentclientprotocol\/sdk(?:\/.*)?$/,
-    /^@modelcontextprotocol\/sdk(?:\/.*)?$/,
-  ],
+  /**
+   * Bundle these deps (overrides base `neverBundle` for @composio/core / zod).
+   * Keep `node:` built-ins external.
+   */
+  deps: {
+    neverBundle: [/^node:/],
+    alwaysBundle: [
+      '@composio/core',
+      /^zod(?:\/.*)?$/,
+      /^@agentclientprotocol\/sdk(?:\/.*)?$/,
+      /^@modelcontextprotocol\/sdk(?:\/.*)?$/,
+    ],
+  },
   publint: undefined,
   attw: undefined,
 });

@@ -35,7 +35,7 @@
   },
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build": "pnpm exec tsdown --config-loader unrun",
     "test": "vitest run"
   },
   "files": [

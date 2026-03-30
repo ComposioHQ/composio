@@ -29,7 +29,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm exec tsdown",
+    "build": "pnpm exec tsdown --config-loader unrun",
     "test": "vitest run"
   },
   "keywords": [
