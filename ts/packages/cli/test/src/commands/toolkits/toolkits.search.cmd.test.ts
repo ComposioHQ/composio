@@ -4,6 +4,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { ToolkitDetailed, Toolkits } from 'src/models/toolkits';
+import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 
 const testToolkits: Toolkits = [
   {
@@ -113,6 +114,19 @@ const gmailDetailedToolkit: ToolkitDetailed = {
   ],
 };
 
+const gmailSessionToolkit: SessionToolkitsResponse.Item = {
+  slug: 'gmail',
+  name: 'Gmail',
+  meta: {
+    description: 'Email service to send and receive emails',
+    logo: '',
+  },
+  is_no_auth: false,
+  enabled: true,
+  connected_account: null,
+  composio_managed_auth_schemes: ['OAUTH2'],
+};
+
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
@@ -204,6 +218,41 @@ describe('CLI: composio dev toolkits search', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        searchToolkits: () =>
+          Effect.succeed({
+            items: [],
+            total_items: 0,
+            total_pages: 0,
+            next_cursor: null,
+          }),
+      },
+      toolRouter: {
+        toolkits: async () => ({
+          items: [gmailSessionToolkit],
+          current_page: 1,
+          total_items: 1,
+          total_pages: 1,
+          next_cursor: null,
+        }),
+      },
+    })
+  )('[Given] no catalog results [Then] falls back to Tool Router session toolkits', it => {
+    it.scoped('returns matching toolkits from the session fallback', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'search', 'gmai', '--limit', '1']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Gmail');
+        expect(output).toContain('Found 1 of 1 toolkits');
+      })
+    );
+  });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] a matching query with --limit 1',

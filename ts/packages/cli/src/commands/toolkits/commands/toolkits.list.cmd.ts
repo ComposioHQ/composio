@@ -15,6 +15,7 @@ import {
   formatToolkitsTable,
   toolkitFromDetailed,
 } from '../format';
+import { fetchSessionToolkitFallback } from '../session-fallback';
 import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
 
 const query = Options.text('query').pipe(
@@ -32,6 +33,7 @@ const LIST_EXACT_MATCH_TIMEOUT_MS = 15_000;
 const LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
 const LIST_SEARCH_ENDPOINT_TIMEOUT_MS = 20_000;
 const LIST_CATALOG_FALLBACK_TIMEOUT_MS = 60_000;
+const LIST_SESSION_FALLBACK_TIMEOUT_MS = 45_000;
 
 const connected = Options.boolean('connected').pipe(
   Options.withDescription('Filter to connected toolkits only'),
@@ -333,6 +335,45 @@ export const toolkitsCmd$List = Command.make(
       );
 
       if (catalogResult.items.length === 0) {
+        if (queryValue) {
+          const fallbackUserId = Option.getOrElse(resolvedUserId, () => 'default');
+          const sessionFallback = yield* getOptionalResultWithTimeout(
+            fetchSessionToolkitFallback({
+              clientSingleton,
+              userId: fallbackUserId,
+              query: queryValue,
+              filter: filterToolkitsForListQuery,
+            }),
+            LIST_SESSION_FALLBACK_TIMEOUT_MS,
+            'Timed out retrieving toolkit list from Tool Router session fallback.',
+            'Failed to retrieve toolkit list from Tool Router session fallback:'
+          ).pipe(Effect.map(Option.getOrUndefined));
+
+          if (sessionFallback && sessionFallback.catalogToolkits.length > 0) {
+            const fallbackCatalogResult = buildCatalogResultFromToolkits(
+              sessionFallback.catalogToolkits,
+              validatedLimit
+            );
+            const fallbackUnified = mergeToolkitData(
+              fallbackCatalogResult.items,
+              sessionFallback.sessionItems
+            );
+
+            yield* ui.log.info(
+              `Listing ${fallbackUnified.length} of ${fallbackCatalogResult.total_items} toolkits\n\n${formatToolkitsTable(fallbackUnified)}`
+            );
+
+            const firstSlug = fallbackUnified[0]?.slug;
+            if (firstSlug) {
+              yield* ui.log.step(
+                `To view details of a toolkit:\n> composio dev toolkits info "${firstSlug}"`
+              );
+            }
+            yield* ui.output(formatToolkitsJson(fallbackUnified));
+            return;
+          }
+        }
+
         yield* ui.log.warn('No toolkits found. Try broadening your search.');
         yield* ui.output('[]');
         return;

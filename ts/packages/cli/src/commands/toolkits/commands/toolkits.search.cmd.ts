@@ -2,7 +2,7 @@ import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { extractMessage } from 'src/utils/api-error-extraction';
@@ -12,6 +12,7 @@ import {
   formatToolkitsJson,
   toolkitFromDetailed,
 } from '../format';
+import { fetchSessionToolkitFallback } from '../session-fallback';
 import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
 
 const query = Args.text({ name: 'query' }).pipe(
@@ -28,6 +29,7 @@ const SEARCH_EXACT_MATCH_TIMEOUT_MS = 15_000;
 const SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
 const SEARCH_ENDPOINT_TIMEOUT_MS = 20_000;
 const SEARCH_CATALOG_FALLBACK_TIMEOUT_MS = 60_000;
+const SEARCH_SESSION_FALLBACK_TIMEOUT_MS = 45_000;
 
 const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | undefined => {
   const normalizedQuery = query.trim().toLowerCase();
@@ -254,13 +256,37 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
 
     const ui = yield* TerminalUI;
     const repo = yield* ComposioToolkitsRepository;
+    const clientSingleton = yield* ComposioClientSingleton;
 
     const validatedLimit = yield* validateToolkitsLimit(limit);
 
-    const result = yield* ui.withSpinner(
+    let result = yield* ui.withSpinner(
       `Searching toolkits for "${query}"...`,
       searchToolkitsWithFallback(repo, query, validatedLimit)
     );
+
+    let sessionFallbackItems:
+      | ReadonlyArray<import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item>
+      | undefined;
+
+    if (result.items.length === 0) {
+      const sessionFallback = yield* getOptionalResultWithTimeout(
+        fetchSessionToolkitFallback({
+          clientSingleton,
+          userId: 'default',
+          query,
+          filter: filterToolkitsForSearchQuery,
+        }),
+        SEARCH_SESSION_FALLBACK_TIMEOUT_MS,
+        'Timed out retrieving toolkit search results from Tool Router session fallback.',
+        'Failed to retrieve toolkit search results from Tool Router session fallback:'
+      ).pipe(Effect.map(Option.getOrUndefined));
+
+      if (sessionFallback && sessionFallback.catalogToolkits.length > 0) {
+        result = buildCatalogResultFromToolkits(sessionFallback.catalogToolkits, validatedLimit);
+        sessionFallbackItems = sessionFallback.sessionItems;
+      }
+    }
 
     if (result.items.length === 0) {
       yield* ui.log.warn(`No toolkits found matching "${query}". Try broadening your search.`);
@@ -271,7 +297,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
     const showing = result.items.length;
     const total = result.total_items;
 
-    const unified = mergeToolkitData(result.items);
+    const unified = mergeToolkitData(result.items, sessionFallbackItems);
 
     yield* ui.log.info(`Found ${showing} of ${total} toolkits\n\n${formatToolkitsTable(unified)}`);
 

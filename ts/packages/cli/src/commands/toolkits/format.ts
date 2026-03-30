@@ -74,6 +74,32 @@ export function toolkitFromDetailed(toolkit: ToolkitDetailed): Toolkit {
   };
 }
 
+export function toolkitFromSession(toolkit: SessionToolkitItem): Toolkit {
+  const fallbackDate = new Date(
+    '1970-01-01T00:00:00.000Z'
+  ) as unknown as Toolkit['meta']['created_at'];
+
+  return {
+    name: toolkit.name,
+    slug: toolkit.slug,
+    auth_schemes: toolkit.connected_account?.auth_config?.auth_scheme
+      ? [toolkit.connected_account.auth_config.auth_scheme]
+      : [],
+    composio_managed_auth_schemes: [...toolkit.composio_managed_auth_schemes],
+    is_local_toolkit: false,
+    meta: {
+      description: toolkit.meta.description,
+      categories: [],
+      created_at: fallbackDate,
+      updated_at: fallbackDate,
+      available_versions: [],
+      tools_count: 0,
+      triggers_count: 0,
+    },
+    no_auth: toolkit.is_no_auth,
+  };
+}
+
 /**
  * Build unified toolkit items from catalog data, optionally enriched with
  * session connection data (keyed by slug).
