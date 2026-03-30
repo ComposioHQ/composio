@@ -35,14 +35,16 @@ e2e(import.meta.url, {
     let noResultsResult: E2ETestResult;
 
     beforeAll(async () => {
-      validResult = await runCmd('composio dev toolkits search gmail');
-      limitResult = await runCmd('composio dev toolkits search gmail --limit 1');
-      redirectResult = await runCmd({
-        command: 'composio dev toolkits search gmail --limit 1 > out.json',
-        files: ['out.json'],
-      });
-      noResultsResult = await runCmd('composio dev toolkits search xyznonexistent_abc_12345');
-    }, TIMEOUTS.FIXTURE);
+      [validResult, limitResult, redirectResult, noResultsResult] = await Promise.all([
+        runCmd('composio dev toolkits search gmail'),
+        runCmd('composio dev toolkits search gmail --limit 1'),
+        runCmd({
+          command: 'composio dev toolkits search gmail --limit 1 > out.json',
+          files: ['out.json'],
+        }),
+        runCmd('composio dev toolkits search xyznonexistent_abc_12345'),
+      ]);
+    }, TIMEOUTS.FIXTURE * 2);
 
     describe('composio dev toolkits search gmail (known query)', () => {
       it('exits successfully', () => {

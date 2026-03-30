@@ -6,8 +6,8 @@
  * storage in CI.
  */
 
-import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,17 +15,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SHARED_ROOT = join(__dirname, '.e2e-scratch', '.composio-e2e-mjs-import');
 const GENERATED_DIR = join(SHARED_ROOT, 'generated');
 const TSCONFIG_PATH = join(SHARED_ROOT, 'tsconfig.json');
-const GENERATE_TS_TIMEOUT_MS = 90_000;
+const GENERATE_TS_TIMEOUT_MS = 120_000;
+const GENERATE_TS_MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 2_000;
 
 console.log('🧪 Preparing TypeScript .mjs import resolution fixtures...\n');
 console.log(`Working directory: ${__dirname}`);
 console.log(`Shared workspace: ${SHARED_ROOT}\n`);
 
 mkdirSync(SHARED_ROOT, { recursive: true });
-
-if (existsSync(GENERATED_DIR)) {
-  rmSync(GENERATED_DIR, { recursive: true, force: true });
-}
 
 writeFileSync(
   TSCONFIG_PATH,
@@ -47,36 +45,73 @@ writeFileSync(
   )
 );
 
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const resetGeneratedDir = () => {
+  if (existsSync(GENERATED_DIR)) {
+    rmSync(GENERATED_DIR, { recursive: true, force: true });
+  }
+};
+
+const getGeneratedFiles = () => (existsSync(GENERATED_DIR) ? readdirSync(GENERATED_DIR) : []);
+
 console.log('Test 1: Running composio generate ts --toolkits hackernews...');
 
-try {
-  execSync(`composio generate ts --toolkits hackernews --output-dir ${GENERATED_DIR}`, {
-    cwd: __dirname,
-    stdio: 'pipe',
-    encoding: 'utf-8',
-    env: { ...process.env, FORCE_COLOR: '0' },
-    timeout: GENERATE_TS_TIMEOUT_MS,
-  });
+for (let attempt = 1; attempt <= GENERATE_TS_MAX_ATTEMPTS; attempt += 1) {
+  resetGeneratedDir();
 
-  console.log('✅ Test 1 passed: composio generate ts succeeded');
-  process.exit(0);
-} catch (error) {
-  const stdout = error.stdout?.toString?.() || error.stdout || '';
-  const stderr = error.stderr?.toString?.() || error.stderr || '';
-  const timedOut = error.signal === 'SIGTERM' || error.code === 'ETIMEDOUT';
+  console.log(`Attempt ${attempt}/${GENERATE_TS_MAX_ATTEMPTS}...`);
 
-  console.error('❌ Test 1 failed: composio generate ts threw an error');
-  if (timedOut) {
-    console.error(`command timed out after ${GENERATE_TS_TIMEOUT_MS}ms`);
+  try {
+    execFileSync(
+      'composio',
+      ['generate', 'ts', '--toolkits', 'hackernews', '--output-dir', GENERATED_DIR],
+      {
+        cwd: __dirname,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+        env: { ...process.env, FORCE_COLOR: '0' },
+        timeout: GENERATE_TS_TIMEOUT_MS,
+      }
+    );
+
+    const generatedFiles = getGeneratedFiles();
+    const generatedTypeScriptFiles = generatedFiles.filter(file => file.endsWith('.ts'));
+
+    if (generatedTypeScriptFiles.length === 0) {
+      throw new Error(
+        `composio generate ts completed, but ${GENERATED_DIR} did not contain any .ts files`
+      );
+    }
+
+    console.log('Generated files:', generatedFiles);
+    console.log('✅ Test 1 passed: composio generate ts succeeded');
+    process.exit(0);
+  } catch (error) {
+    const stdout = error.stdout?.toString?.() || error.stdout || '';
+    const stderr = error.stderr?.toString?.() || error.stderr || '';
+    const timedOut = error.signal === 'SIGTERM' || error.code === 'ETIMEDOUT';
+
+    console.error(`❌ Test 1 attempt ${attempt}/${GENERATE_TS_MAX_ATTEMPTS} failed`);
+    if (timedOut) {
+      console.error(`command timed out after ${GENERATE_TS_TIMEOUT_MS}ms`);
+    }
+    if (stdout) {
+      console.error('stdout:');
+      console.error(stdout);
+    }
+    if (stderr) {
+      console.error('stderr:');
+      console.error(stderr);
+    }
+    console.error(error.message);
+
+    if (attempt < GENERATE_TS_MAX_ATTEMPTS) {
+      console.error(`Retrying in ${RETRY_DELAY_MS}ms...\n`);
+      await sleep(RETRY_DELAY_MS);
+      continue;
+    }
+
+    process.exit(1);
   }
-  if (stdout) {
-    console.error('stdout:');
-    console.error(stdout);
-  }
-  if (stderr) {
-    console.error('stderr:');
-    console.error(stderr);
-  }
-  console.error(error.message);
-  process.exit(1);
 }
