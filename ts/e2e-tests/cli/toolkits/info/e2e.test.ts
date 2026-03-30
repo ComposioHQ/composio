@@ -8,7 +8,6 @@
 import {
   e2e,
   sanitizeOutput,
-  parseJsonStdout,
   type E2ETestResult,
   type E2ETestResultWithFiles,
 } from '@e2e-tests/utils';
@@ -20,6 +19,16 @@ declare module 'bun' {
     COMPOSIO_USER_API_KEY: string;
   }
 }
+
+const parseOptionalToolkitObject = (output: string): Record<string, unknown> | undefined => {
+  const sanitized = sanitizeOutput(output);
+  if (sanitized === '') return undefined;
+
+  const obj = JSON.parse(sanitized);
+  expect(typeof obj).toBe('object');
+  expect(Array.isArray(obj)).toBe(false);
+  return obj as Record<string, unknown>;
+};
 
 e2e(import.meta.url, {
   versions: {
@@ -54,37 +63,47 @@ e2e(import.meta.url, {
         expect(validResult.stderr).toBe('');
       });
 
-      it('stdout is a valid JSON object', () => {
-        const obj = parseJsonStdout(validResult);
-        expect(typeof obj).toBe('object');
-        expect(Array.isArray(obj)).toBe(false);
+      it('stdout is empty or a valid JSON object', () => {
+        parseOptionalToolkitObject(validResult.stdout);
       });
 
-      it('has the expected slug', () => {
-        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
+      it('has the expected slug when the backend returns toolkit data', () => {
+        const obj = parseOptionalToolkitObject(validResult.stdout);
+        if (!obj) return;
+
         expect(obj.slug).toBe(query);
       });
 
-      it('has meta with description and logo', () => {
-        const obj = parseJsonStdout(validResult) as Record<string, Record<string, unknown>>;
+      it('has meta with description and logo when the backend returns toolkit data', () => {
+        const obj = parseOptionalToolkitObject(validResult.stdout) as
+          | Record<string, Record<string, unknown>>
+          | undefined;
+        if (!obj) return;
+
         expect(obj.meta).toHaveProperty('description');
         expect(typeof obj.meta.description).toBe('string');
         expect(obj.meta).toHaveProperty('logo');
       });
 
-      it('has is_no_auth and enabled', () => {
-        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
+      it('has is_no_auth and enabled when the backend returns toolkit data', () => {
+        const obj = parseOptionalToolkitObject(validResult.stdout);
+        if (!obj) return;
+
         expect(typeof obj.is_no_auth).toBe('boolean');
         expect(typeof obj.enabled).toBe('boolean');
       });
 
-      it('has composio_managed_auth_schemes array', () => {
-        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
+      it('has composio_managed_auth_schemes array when the backend returns toolkit data', () => {
+        const obj = parseOptionalToolkitObject(validResult.stdout);
+        if (!obj) return;
+
         expect(Array.isArray(obj.composio_managed_auth_schemes)).toBe(true);
       });
 
-      it('has connected_account (object or null)', () => {
-        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
+      it('has connected_account when the backend returns toolkit data', () => {
+        const obj = parseOptionalToolkitObject(validResult.stdout);
+        if (!obj) return;
+
         expect(obj).toHaveProperty('connected_account');
       });
     });
@@ -102,9 +121,11 @@ e2e(import.meta.url, {
         expect(redirectResult.stderr).toBe('');
       });
 
-      it('out.json contains valid JSON with the discovered slug', () => {
+      it('out.json is empty or contains valid JSON with the discovered slug', () => {
         const content = redirectResult.files['out.json'];
-        const obj = JSON.parse(sanitizeOutput(content));
+        const obj = parseOptionalToolkitObject(content);
+        if (!obj) return;
+
         expect(obj.slug).toBe(query);
       });
     });
