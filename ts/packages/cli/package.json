@@ -63,7 +63,6 @@
     "tempy": "^3.1.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
@@ -93,6 +92,7 @@
     "source-map-js": "^1.2.1",
     "superjson": "^2.2.2",
     "ts-morph": "^26.0.0",
+    "typescript": "catalog:",
     "zod": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",
