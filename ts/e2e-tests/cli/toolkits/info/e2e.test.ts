@@ -29,7 +29,6 @@ e2e(import.meta.url, {
     COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
-    const query = 'google';
     let validResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let invalidResult: E2ETestResult;
@@ -37,11 +36,11 @@ e2e(import.meta.url, {
     let candidate: { name: string; slug: string };
 
     beforeAll(async () => {
-      const seedResult = await runCmd(`composio dev toolkits list --query ${query} --limit 1`);
+      const seedResult = await runCmd('composio dev toolkits list --limit 1');
       const items = parseJsonStdout(seedResult) as Array<{ name?: string; slug?: string }>;
 
       if (seedResult.exitCode !== 0 || items.length === 0) {
-        throw new Error(`Expected \`composio dev toolkits list --query ${query} --limit 1\` to return 1 item`);
+        throw new Error('Expected `composio dev toolkits list --limit 1` to return 1 item');
       }
 
       const [item] = items;
