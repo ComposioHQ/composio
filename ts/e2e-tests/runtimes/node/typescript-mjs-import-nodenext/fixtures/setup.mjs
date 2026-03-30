@@ -17,6 +17,7 @@ const GENERATED_DIR = join(SHARED_ROOT, 'generated');
 const TSCONFIG_PATH = join(SHARED_ROOT, 'tsconfig.json');
 const GENERATE_TS_TIMEOUT_MS = 90_000;
 const GENERATE_TS_MAX_ATTEMPTS = 2;
+const TOOLKIT_DISCOVERY_TIMEOUT_MS = 30_000;
 const RETRY_DELAY_MS = 2_000;
 
 console.log('🧪 Preparing TypeScript .mjs import resolution fixtures...\n');
@@ -55,7 +56,35 @@ const resetGeneratedDir = () => {
 
 const getGeneratedFiles = () => (existsSync(GENERATED_DIR) ? readdirSync(GENERATED_DIR) : []);
 
-console.log('Test 1: Running composio generate ts --toolkits hackernews...');
+const discoverToolkitSlug = () => {
+  const stdout = execFileSync('composio', ['dev', 'toolkits', 'list', '--limit', '50'], {
+    cwd: __dirname,
+    stdio: 'pipe',
+    encoding: 'utf-8',
+    env: { ...process.env, FORCE_COLOR: '0' },
+    timeout: TOOLKIT_DISCOVERY_TIMEOUT_MS,
+  });
+
+  const items = JSON.parse(stdout);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('`composio dev toolkits list --limit 50` returned no toolkits');
+  }
+
+  const candidate =
+    items.find(item => typeof item?.slug === 'string' && (item?.tools_count ?? 0) > 0) ??
+    items[0];
+
+  if (typeof candidate?.slug !== 'string' || candidate.slug.length === 0) {
+    throw new Error('Unable to discover a toolkit slug for `composio generate ts`');
+  }
+
+  return candidate.slug;
+};
+
+const selectedToolkitSlug = discoverToolkitSlug();
+
+console.log(`Test 1: Running composio generate ts --toolkits ${selectedToolkitSlug}...`);
 
 for (let attempt = 1; attempt <= GENERATE_TS_MAX_ATTEMPTS; attempt += 1) {
   resetGeneratedDir();
@@ -65,7 +94,7 @@ for (let attempt = 1; attempt <= GENERATE_TS_MAX_ATTEMPTS; attempt += 1) {
   try {
     execFileSync(
       'composio',
-      ['generate', 'ts', '--toolkits', 'hackernews', '--output-dir', GENERATED_DIR],
+      ['generate', 'ts', '--toolkits', selectedToolkitSlug, '--output-dir', GENERATED_DIR],
       {
         cwd: __dirname,
         stdio: 'pipe',
@@ -85,6 +114,7 @@ for (let attempt = 1; attempt <= GENERATE_TS_MAX_ATTEMPTS; attempt += 1) {
     }
 
     console.log('Generated files:', generatedFiles);
+    console.log(`Selected toolkit: ${selectedToolkitSlug}`);
     console.log('✅ Test 1 passed: composio generate ts succeeded');
     process.exit(0);
   } catch (error) {

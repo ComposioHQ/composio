@@ -2,7 +2,8 @@
  * CLI `composio dev toolkits info` e2e test
  *
  * Verifies that the info subcommand returns detailed toolkit JSON in piped mode,
- * handles invalid slugs gracefully, and supports stdout redirection.
+ * handles invalid slugs gracefully, and supports stdout redirection
+ * against a toolkit discovered from the current environment.
  */
 
 import {
@@ -21,6 +22,33 @@ declare module 'bun' {
   }
 }
 
+type ToolkitCandidate = {
+  name: string;
+  slug: string;
+};
+
+const pickToolkitCandidate = (result: E2ETestResult): ToolkitCandidate => {
+  const items = parseJsonStdout(result) as Array<{
+    name: string;
+    slug: string;
+    tools_count?: number;
+  }>;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error('Expected `composio dev toolkits list --limit 50` to return at least 1 item');
+  }
+
+  const preferred =
+    items.find(item => item.slug.length >= 4 && (item.tools_count ?? 0) > 0) ??
+    items.find(item => item.slug.length >= 4) ??
+    items[0];
+
+  return {
+    name: preferred.name,
+    slug: preferred.slug,
+  };
+};
+
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
@@ -29,22 +57,43 @@ e2e(import.meta.url, {
     COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
+    let seedResult: E2ETestResult;
     let validResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let invalidResult: E2ETestResult;
     let missingSlugResult: E2ETestResult;
+    let candidate: ToolkitCandidate;
 
     beforeAll(async () => {
-      validResult = await runCmd('composio dev toolkits info gmail');
+      seedResult = await runCmd('composio dev toolkits list --limit 50');
+      candidate = pickToolkitCandidate(seedResult);
+
+      validResult = await runCmd(`composio dev toolkits info ${candidate.slug}`);
       redirectResult = await runCmd({
-        command: 'composio dev toolkits info gmail > out.json',
+        command: `composio dev toolkits info ${candidate.slug} > out.json`,
         files: ['out.json'],
       });
       invalidResult = await runCmd('composio dev toolkits info nonexistent_toolkit_xyz12345');
       missingSlugResult = await runCmd('composio dev toolkits info');
     }, TIMEOUTS.FIXTURE);
 
-    describe('composio dev toolkits info gmail (valid slug)', () => {
+    describe('composio dev toolkits list --limit 50 (seed query)', () => {
+      it('exits successfully', () => {
+        expect(seedResult.exitCode).toBe(0);
+      });
+
+      it('stderr is empty', () => {
+        expect(seedResult.stderr).toBe('');
+      });
+
+      it('stdout contains at least 1 toolkit', () => {
+        const items = parseJsonStdout(seedResult);
+        expect(Array.isArray(items)).toBe(true);
+        expect((items as Array<unknown>).length).toBeGreaterThanOrEqual(1);
+      });
+    });
+
+    describe('composio dev toolkits info <slug> (valid slug)', () => {
       it('exits successfully', () => {
         expect(validResult.exitCode).toBe(0);
       });
@@ -59,10 +108,10 @@ e2e(import.meta.url, {
         expect(Array.isArray(obj)).toBe(false);
       });
 
-      it('has the correct name and slug', () => {
+      it('has the discovered name and slug', () => {
         const obj = parseJsonStdout(validResult) as Record<string, unknown>;
-        expect(obj.name).toBe('Gmail');
-        expect(obj.slug).toBe('gmail');
+        expect(obj.name).toBe(candidate.name);
+        expect(obj.slug).toBe(candidate.slug);
       });
 
       it('has meta with description and logo', () => {
@@ -89,7 +138,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio dev toolkits info gmail > out.json (stdout redirection)', () => {
+    describe('composio dev toolkits info <slug> > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });
@@ -102,10 +151,10 @@ e2e(import.meta.url, {
         expect(redirectResult.stderr).toBe('');
       });
 
-      it('out.json contains valid JSON with slug "gmail"', () => {
+      it('out.json contains valid JSON with the discovered slug', () => {
         const content = redirectResult.files['out.json'];
         const obj = JSON.parse(sanitizeOutput(content));
-        expect(obj.slug).toBe('gmail');
+        expect(obj.slug).toBe(candidate.slug);
       });
     });
 
