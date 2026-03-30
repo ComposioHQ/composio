@@ -158,7 +158,7 @@ export const toolkitsCmd$Info = Command.make(
         yield* ui.log.warn(`Using global test user id "${globalTestUserId.value}"`);
       } else if (Option.isNone(userId) && Option.isSome(resolvedUserId)) {
         yield* ui.log.info(
-          `Using default user id "${effectiveUserId}"; showing toolkit details without connection status.`
+          `Using default user id "${effectiveUserId}"; connection status may reflect that user's session.`
         );
       }
 

@@ -338,7 +338,9 @@ describe('CLI: composio dev toolkits info', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(output).toContain('Using default user id "default"');
+        expect(output).toContain(
+          `Using default user id "default"; connection status may reflect that user's session.`
+        );
         expect(output).toContain('Gmail');
         expect(output).toContain('Email service to send and receive emails');
         expect(output).toContain('Connection Status: Not connected');

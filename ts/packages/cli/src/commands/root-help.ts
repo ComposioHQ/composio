@@ -222,7 +222,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       },
       {
         name: '-p, --parallel',
-        description: 'Execute repeated TOOL_SLUG -d <text> groups concurrently',
+        description: 'Execute repeated <slug> and -d/--data groups in parallel',
       },
       {
         name: '--get-schema',
@@ -231,11 +231,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       {
         name: '--dry-run',
         description: 'Validate and preview the tool call without executing',
-      },
-      {
-        name: '--parallel',
-        description:
-          'Execute repeated <slug> and -d/--data groups in parallel (see the command source examples)',
       },
     ],
     flags: [

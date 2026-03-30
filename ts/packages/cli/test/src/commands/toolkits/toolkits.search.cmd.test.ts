@@ -150,41 +150,57 @@ describe('CLI: composio dev toolkits search', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] a partial query',
-    it => {
-      it.scoped('matches toolkits with client-side filtering', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'search', 'gmai', '--limit', '1']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        ...toolkitsData,
+        searchToolkits: () =>
+          Effect.succeed({
+            items: [testToolkits[1]!, testToolkits[2]!],
+            total_items: 2,
+            total_pages: 1,
+            next_cursor: null,
+          }),
+      },
+    })
+  )('[Given] semantic backend matches without lexical overlap', it => {
+    it.scoped('preserves backend semantic results instead of filtering them locally', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'search', 'inbox automation']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
 
-          expect(output).toContain('Gmail');
-          expect(output).not.toContain('Slack');
-          expect(output).toContain('Found 1 of 2 toolkits');
-        })
-      );
-    }
-  );
+        expect(output).toContain('Gmail');
+        expect(output).toContain('Outlook');
+        expect(output).toContain('Found 2 of 2 toolkits');
+      })
+    );
+  });
 
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
       toolkitsData: {
         ...toolkitsData,
-        detailedToolkits: [gmailDetailedToolkit],
+        searchToolkits: () =>
+          Effect.succeed({
+            items: [] as Toolkits,
+            total_items: 0,
+            total_pages: 0,
+            next_cursor: null,
+          }),
       },
     })
-  )('[Given] an exact slug query with broader description matches', it => {
-    it.scoped('ranks the exact toolkit match first', () =>
+  )('[Given] a partial slug query with no backend matches', it => {
+    it.scoped('uses the local slug fallback without overriding semantic results', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'toolkits', 'search', 'gmail', '--limit', '1']);
+        yield* cli(['dev', 'toolkits', 'search', 'gmai', '--limit', '1']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
         expect(output).toContain('Gmail');
-        expect(output).not.toContain('BigMailer');
-        expect(output).toContain('Found 1 of 1 toolkits');
+        expect(output).toContain('Found 1 of 2 toolkits');
       })
     );
   });
@@ -257,7 +273,7 @@ describe('CLI: composio dev toolkits search', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] a matching query with --limit 1',
     it => {
-      it.scoped('respects the limit after client-side filtering', () =>
+      it.scoped('respects the backend search limit', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'search', 'email', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

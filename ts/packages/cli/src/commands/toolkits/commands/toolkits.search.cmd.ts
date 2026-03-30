@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
+import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -26,12 +27,15 @@ const limit = Options.integer('limit').pipe(
 
 const SINGLE_TOOLKIT_QUERY_PATTERN = /^[a-z0-9_-]+$/i;
 const SEARCH_EXACT_MATCH_TIMEOUT_MS = 15_000;
-const SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
-const SEARCH_ENDPOINT_TIMEOUT_MS = 20_000;
 const SEARCH_CATALOG_FALLBACK_TIMEOUT_MS = 60_000;
 const SEARCH_SESSION_FALLBACK_TIMEOUT_MS = 45_000;
 
-const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | undefined => {
+type SearchToolkitsWithFallbackResult = {
+  readonly result: ToolkitSearchResult;
+  readonly sessionFallbackItems?: ReadonlyArray<SessionToolkitsResponse.Item>;
+};
+
+const rankToolkitForFallbackQuery = (toolkit: Toolkit, query: string): number | undefined => {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return 0;
 
@@ -62,7 +66,7 @@ const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | un
   );
 };
 
-const filterToolkitsForSearchQuery = (
+const filterToolkitsForFallbackQuery = (
   toolkits: ReadonlyArray<Toolkit>,
   query: string
 ): ReadonlyArray<Toolkit> => {
@@ -71,7 +75,7 @@ const filterToolkitsForSearchQuery = (
 
   return toolkits
     .map(toolkit => {
-      const bestRank = rankToolkitForSearchQuery(toolkit, normalizedQuery);
+      const bestRank = rankToolkitForFallbackQuery(toolkit, normalizedQuery);
       return bestRank === undefined ? undefined : { toolkit, bestRank };
     })
     .filter((value): value is { toolkit: Toolkit; bestRank: number } => value !== undefined)
@@ -128,14 +132,14 @@ const getExactToolkitSearchMatch = (
   return getOptionalResultWithTimeout(
     repo.getToolkitDetailed(normalizedQuery).pipe(
       Effect.map(toolkitFromDetailed),
-      Effect.map(toolkit => filterToolkitsForSearchQuery([toolkit], normalizedQuery)),
+      Effect.map(toolkit => filterToolkitsForFallbackQuery([toolkit], normalizedQuery)),
       Effect.catchTag('services/HttpServerError', error =>
         error.status === 404 ? Effect.succeed([] as ReadonlyArray<Toolkit>) : Effect.fail(error)
       )
     ),
     SEARCH_EXACT_MATCH_TIMEOUT_MS,
-    'Timed out retrieving exact toolkit search match; falling back to broader search.',
-    'Failed to retrieve exact toolkit search match; falling back to broader search:'
+    'Timed out retrieving exact toolkit search fallback.',
+    'Failed to retrieve exact toolkit search fallback:'
   ).pipe(
     Effect.map(
       Option.flatMap(items =>
@@ -147,17 +151,29 @@ const getExactToolkitSearchMatch = (
   );
 };
 
-const searchToolkitsFromCatalog = (
+const getCatalogToolkitSearchMatch = (
   repo: ComposioToolkitsRepository,
   query: string,
   limit: number
 ) =>
-  repo.getToolkits().pipe(
-    Effect.map(toolkits => filterToolkitsForSearchQuery(toolkits, query)),
-    Effect.map(toolkits => buildCatalogResultFromToolkits(toolkits, limit))
+  getOptionalResultWithTimeout(
+    repo
+      .getToolkits()
+      .pipe(Effect.map(toolkits => filterToolkitsForFallbackQuery(toolkits, query))),
+    SEARCH_CATALOG_FALLBACK_TIMEOUT_MS,
+    'Timed out filtering toolkit fallback results against the local catalog.',
+    'Failed to filter toolkit fallback results against the local catalog:'
+  ).pipe(
+    Effect.map(
+      Option.flatMap(items =>
+        items.length === 0
+          ? Option.none<ToolkitSearchResult>()
+          : Option.some(buildCatalogResultFromToolkits(items, limit))
+      )
+    )
   );
 
-const shouldRequirePreciseSearchMatch = (query: string): boolean => {
+const shouldUseLocalSearchFallback = (query: string): boolean => {
   const normalizedQuery = query.trim();
   return (
     normalizedQuery.length > 0 &&
@@ -168,75 +184,59 @@ const shouldRequirePreciseSearchMatch = (query: string): boolean => {
 
 const searchToolkitsWithFallback = (
   repo: ComposioToolkitsRepository,
+  clientSingleton: ComposioClientSingleton,
   query: string,
   limit: number
-) => {
-  const fallback = searchToolkitsFromCatalog(repo, query, limit);
-  const emptyResult = buildCatalogResultFromToolkits([], limit);
-  const fallbackResult = getOptionalResultWithTimeout(
-    fallback,
-    SEARCH_CATALOG_FALLBACK_TIMEOUT_MS,
-    'Timed out filtering toolkit search results against the full catalog.',
-    'Failed to filter toolkit search results against the full catalog:'
-  ).pipe(Effect.map(option => Option.getOrElse(option, () => emptyResult)));
+): Effect.Effect<SearchToolkitsWithFallbackResult, unknown> =>
+  Effect.gen(function* () {
+    const directResult = yield* repo.searchToolkits({
+      search: query,
+      limit,
+    });
 
-  const directSearchPreferred = getOptionalResultWithTimeout(
-    repo
-      .searchToolkits({
-        search: query,
-        limit: SEARCH_ENDPOINT_CANDIDATE_LIMIT,
-      })
-      .pipe(Effect.map(result => filterToolkitsForSearchQuery(result.items, query))),
-    SEARCH_ENDPOINT_TIMEOUT_MS,
-    'Timed out searching toolkits directly; waiting on full catalog fallback.',
-    'Failed to search toolkits directly; waiting on full catalog fallback:'
-  ).pipe(
-    Effect.flatMap(
-      Option.match({
-        onNone: () => Effect.never,
-        onSome: items => {
-          const hasPreciseMatch = items.some(toolkit => {
-            const rank = rankToolkitForSearchQuery(toolkit, query);
-            return rank !== undefined && rank <= 1;
-          });
+    if (directResult.items.length > 0 || !shouldUseLocalSearchFallback(query)) {
+      return {
+        result: directResult,
+      };
+    }
 
-          if (items.length === 0) {
-            return Effect.logDebug(
-              'Direct toolkit search returned no items; waiting on full catalog fallback.'
-            ).pipe(Effect.zipRight(Effect.never));
-          }
+    const exactMatchResult = yield* getExactToolkitSearchMatch(repo, query, limit);
+    if (Option.isSome(exactMatchResult)) {
+      return {
+        result: exactMatchResult.value,
+      };
+    }
 
-          if (shouldRequirePreciseSearchMatch(query) && !hasPreciseMatch) {
-            return Effect.logDebug(
-              'Direct toolkit search returned only imprecise matches; waiting on full catalog fallback.'
-            ).pipe(Effect.zipRight(Effect.never));
-          }
+    const catalogFallbackResult = yield* getCatalogToolkitSearchMatch(repo, query, limit);
+    if (Option.isSome(catalogFallbackResult)) {
+      return {
+        result: catalogFallbackResult.value,
+      };
+    }
 
-          return Effect.succeed(buildCatalogResultFromToolkits(items, limit));
-        },
-      })
-    )
-  );
+    const sessionFallback = yield* getOptionalResultWithTimeout(
+      fetchSessionToolkitFallback({
+        clientSingleton,
+        userId: 'default',
+        query,
+        filter: filterToolkitsForFallbackQuery,
+      }),
+      SEARCH_SESSION_FALLBACK_TIMEOUT_MS,
+      'Timed out retrieving toolkit search results from Tool Router session fallback.',
+      'Failed to retrieve toolkit search results from Tool Router session fallback:'
+    ).pipe(Effect.map(Option.getOrUndefined));
 
-  const exactMatchPreferred = getExactToolkitSearchMatch(repo, query, limit);
-  const broaderSearch = Effect.raceFirst(
-    Effect.disconnect(directSearchPreferred),
-    Effect.disconnect(fallbackResult)
-  );
+    if (sessionFallback && sessionFallback.catalogToolkits.length > 0) {
+      return {
+        result: buildCatalogResultFromToolkits(sessionFallback.catalogToolkits, limit),
+        sessionFallbackItems: sessionFallback.sessionItems,
+      };
+    }
 
-  if (!shouldRequirePreciseSearchMatch(query)) {
-    return broaderSearch;
-  }
-
-  return exactMatchPreferred.pipe(
-    Effect.flatMap(
-      Option.match({
-        onNone: () => broaderSearch,
-        onSome: result => Effect.succeed(result),
-      })
-    )
-  );
-};
+    return {
+      result: directResult,
+    };
+  });
 
 // TODO(tool-router-migration): migrate to Tool Router when the session toolkits endpoint
 // supports text search. Currently SessionToolsParams has no search capability.
@@ -260,33 +260,10 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
 
     const validatedLimit = yield* validateToolkitsLimit(limit);
 
-    let result = yield* ui.withSpinner(
+    const { result, sessionFallbackItems } = yield* ui.withSpinner(
       `Searching toolkits for "${query}"...`,
-      searchToolkitsWithFallback(repo, query, validatedLimit)
+      searchToolkitsWithFallback(repo, clientSingleton, query, validatedLimit)
     );
-
-    let sessionFallbackItems:
-      | ReadonlyArray<import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item>
-      | undefined;
-
-    if (result.items.length === 0) {
-      const sessionFallback = yield* getOptionalResultWithTimeout(
-        fetchSessionToolkitFallback({
-          clientSingleton,
-          userId: 'default',
-          query,
-          filter: filterToolkitsForSearchQuery,
-        }),
-        SEARCH_SESSION_FALLBACK_TIMEOUT_MS,
-        'Timed out retrieving toolkit search results from Tool Router session fallback.',
-        'Failed to retrieve toolkit search results from Tool Router session fallback:'
-      ).pipe(Effect.map(Option.getOrUndefined));
-
-      if (sessionFallback && sessionFallback.catalogToolkits.length > 0) {
-        result = buildCatalogResultFromToolkits(sessionFallback.catalogToolkits, validatedLimit);
-        sessionFallbackItems = sessionFallback.sessionItems;
-      }
-    }
 
     if (result.items.length === 0) {
       yield* ui.log.warn(`No toolkits found matching "${query}". Try broadening your search.`);
