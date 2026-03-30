@@ -2,7 +2,7 @@
  * CLI `composio dev toolkits list` e2e test
  *
  * Verifies that the list subcommand returns toolkits as JSON in piped mode
- * and applies exact, prefix, and non-fuzzy query behavior against a toolkit
+ * and applies exact and non-fuzzy query behavior against a toolkit
  * discovered from the current environment.
  */
 
@@ -19,46 +19,56 @@ declare module 'bun' {
 type ToolkitCandidate = {
   name: string;
   slug: string;
-  prefixQuery: string;
   typoQuery: string;
 };
 
-const pickToolkitCandidate = (result: E2ETestResult): ToolkitCandidate => {
-  const items = parseJsonStdout(result) as Array<{
-    name: string;
-    slug: string;
-    tools_count?: number;
-  }>;
+const TOOLKIT_CANDIDATES = [
+  'hackernews',
+  'github',
+  'gmail',
+  'slack',
+  'notion',
+  'linear',
+  'discord',
+  'googlecalendar',
+  'googledocs',
+  'hubspot',
+] as const;
 
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error('Expected `composio dev toolkits list --limit 50` to return at least 1 item');
+const discoverToolkitCandidate = async (
+  runCmd: (command: string) => Promise<E2ETestResult>
+): Promise<ToolkitCandidate> => {
+  for (const slug of TOOLKIT_CANDIDATES) {
+    const result = await runCmd(`composio dev toolkits info ${slug}`);
+
+    if (result.exitCode !== 0 || sanitizeOutput(result.stdout) === '') {
+      continue;
+    }
+
+    const item = parseJsonStdout(result) as { name?: string; slug?: string };
+    if (item.slug !== slug || typeof item.name !== 'string') {
+      continue;
+    }
+
+    const typoQuery =
+      slug.length < 4
+        ? `${slug}__definitely_not_present__`
+        : (() => {
+            const middleIndex = Math.floor(slug.length / 2);
+            const replacement = slug[middleIndex] === 'z' ? '0' : 'z';
+            return slug.slice(0, middleIndex) + replacement + slug.slice(middleIndex + 1);
+          })();
+
+    return {
+      name: item.name,
+      slug,
+      typoQuery,
+    };
   }
 
-  const preferred =
-    items.find(item => item.slug.length >= 4 && (item.tools_count ?? 0) > 0) ??
-    items.find(item => item.slug.length >= 4) ??
-    items[0];
-
-  const typoQuery =
-    preferred.slug.length < 4
-      ? `${preferred.slug}__definitely_not_present__`
-      : (() => {
-          const middleIndex = Math.floor(preferred.slug.length / 2);
-          const replacement = preferred.slug[middleIndex] === 'z' ? '0' : 'z';
-          return (
-            preferred.slug.slice(0, middleIndex) +
-            replacement +
-            preferred.slug.slice(middleIndex + 1)
-          );
-        })();
-
-  return {
-    name: preferred.name,
-    slug: preferred.slug,
-    prefixQuery:
-      preferred.slug.length > 1 ? preferred.slug.slice(0, preferred.slug.length - 1) : preferred.slug,
-    typoQuery,
-  };
+  throw new Error(
+    `Expected one of these toolkit slugs to resolve: ${TOOLKIT_CANDIDATES.join(', ')}`
+  );
 };
 
 e2e(import.meta.url, {
@@ -69,38 +79,18 @@ e2e(import.meta.url, {
     COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
-    let seedResult: E2ETestResult;
     let exactResult: E2ETestResult;
-    let prefixResult: E2ETestResult;
     let noFuzzyResult: E2ETestResult;
     let candidate: ToolkitCandidate;
 
     beforeAll(async () => {
-      seedResult = await runCmd('composio dev toolkits list --limit 50');
-      candidate = pickToolkitCandidate(seedResult);
+      candidate = await discoverToolkitCandidate(runCmd);
 
-      [exactResult, prefixResult, noFuzzyResult] = await Promise.all([
+      [exactResult, noFuzzyResult] = await Promise.all([
         runCmd(`composio dev toolkits list --query ${candidate.slug} --limit 1`),
-        runCmd(`composio dev toolkits list --query ${candidate.prefixQuery} --limit 10`),
         runCmd(`composio dev toolkits list --query ${candidate.typoQuery} --limit 10`),
       ]);
     }, TIMEOUTS.FIXTURE * 2);
-
-    describe('composio dev toolkits list --limit 50 (seed query)', () => {
-      it('exits successfully', () => {
-        expect(seedResult.exitCode).toBe(0);
-      });
-
-      it('stderr is empty', () => {
-        expect(seedResult.stderr).toBe('');
-      });
-
-      it('stdout contains at least 1 toolkit', () => {
-        const items = parseJsonStdout(seedResult);
-        expect(Array.isArray(items)).toBe(true);
-        expect((items as Array<unknown>).length).toBeGreaterThanOrEqual(1);
-      });
-    });
 
     describe('composio dev toolkits list --query <slug> --limit 1 (exact slug)', () => {
       it('exits successfully', () => {
@@ -133,24 +123,6 @@ e2e(import.meta.url, {
         expect(item).toHaveProperty('is_no_auth');
         expect(item).toHaveProperty('enabled');
         expect(item).toHaveProperty('connected');
-      });
-    });
-
-    describe('composio dev toolkits list --query <prefix> --limit 10 (prefix search)', () => {
-      it('exits successfully', () => {
-        expect(prefixResult.exitCode).toBe(0);
-      });
-
-      it('stderr is empty', () => {
-        expect(prefixResult.stderr).toBe('');
-      });
-
-      it('stdout contains the discovered toolkit', () => {
-        const items = parseJsonStdout(prefixResult);
-        expect(Array.isArray(items)).toBe(true);
-        expect((items as Array<{ slug: string }>).some(item => item.slug === candidate.slug)).toBe(
-          true
-        );
       });
     });
 

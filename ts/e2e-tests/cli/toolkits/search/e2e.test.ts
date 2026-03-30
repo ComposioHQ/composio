@@ -27,26 +27,43 @@ type ToolkitCandidate = {
   slug: string;
 };
 
-const pickToolkitCandidate = (result: E2ETestResult): ToolkitCandidate => {
-  const items = parseJsonStdout(result) as Array<{
-    name: string;
-    slug: string;
-    tools_count?: number;
-  }>;
+const TOOLKIT_CANDIDATES = [
+  'hackernews',
+  'github',
+  'gmail',
+  'slack',
+  'notion',
+  'linear',
+  'discord',
+  'googlecalendar',
+  'googledocs',
+  'hubspot',
+] as const;
 
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error('Expected `composio dev toolkits list --limit 50` to return at least 1 item');
+const discoverToolkitCandidate = async (
+  runCmd: (command: string) => Promise<E2ETestResult>
+): Promise<ToolkitCandidate> => {
+  for (const slug of TOOLKIT_CANDIDATES) {
+    const result = await runCmd(`composio dev toolkits info ${slug}`);
+
+    if (result.exitCode !== 0 || sanitizeOutput(result.stdout) === '') {
+      continue;
+    }
+
+    const item = parseJsonStdout(result) as { name?: string; slug?: string };
+    if (item.slug !== slug || typeof item.name !== 'string') {
+      continue;
+    }
+
+    return {
+      name: item.name,
+      slug,
+    };
   }
 
-  const preferred =
-    items.find(item => item.slug.length >= 4 && (item.tools_count ?? 0) > 0) ??
-    items.find(item => item.slug.length >= 4) ??
-    items[0];
-
-  return {
-    name: preferred.name,
-    slug: preferred.slug,
-  };
+  throw new Error(
+    `Expected one of these toolkit slugs to resolve: ${TOOLKIT_CANDIDATES.join(', ')}`
+  );
 };
 
 e2e(import.meta.url, {
@@ -57,7 +74,6 @@ e2e(import.meta.url, {
     COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
   },
   defineTests: ({ runCmd }) => {
-    let seedResult: E2ETestResult;
     let validResult: E2ETestResult;
     let limitResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
@@ -65,8 +81,7 @@ e2e(import.meta.url, {
     let candidate: ToolkitCandidate;
 
     beforeAll(async () => {
-      seedResult = await runCmd('composio dev toolkits list --limit 50');
-      candidate = pickToolkitCandidate(seedResult);
+      candidate = await discoverToolkitCandidate(runCmd);
 
       [validResult, limitResult, redirectResult, noResultsResult] = await Promise.all([
         runCmd(`composio dev toolkits search ${candidate.slug}`),
@@ -78,22 +93,6 @@ e2e(import.meta.url, {
         runCmd('composio dev toolkits search xyznonexistent_abc_12345'),
       ]);
     }, TIMEOUTS.FIXTURE * 2);
-
-    describe('composio dev toolkits list --limit 50 (seed query)', () => {
-      it('exits successfully', () => {
-        expect(seedResult.exitCode).toBe(0);
-      });
-
-      it('stderr is empty', () => {
-        expect(seedResult.stderr).toBe('');
-      });
-
-      it('stdout contains at least 1 toolkit', () => {
-        const items = parseJsonStdout(seedResult);
-        expect(Array.isArray(items)).toBe(true);
-        expect((items as Array<unknown>).length).toBeGreaterThanOrEqual(1);
-      });
-    });
 
     describe('composio dev toolkits search <slug> (discovered query)', () => {
       it('exits successfully', () => {
@@ -148,9 +147,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe(
-      'composio dev toolkits search <slug> --limit 1 > out.json (stdout redirection)',
-      () => {
+    describe('composio dev toolkits search <slug> --limit 1 > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });

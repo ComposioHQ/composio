@@ -17,8 +17,19 @@ const GENERATED_DIR = join(SHARED_ROOT, 'generated');
 const TSCONFIG_PATH = join(SHARED_ROOT, 'tsconfig.json');
 const GENERATE_TS_TIMEOUT_MS = 90_000;
 const GENERATE_TS_MAX_ATTEMPTS = 2;
-const TOOLKIT_DISCOVERY_TIMEOUT_MS = 30_000;
 const RETRY_DELAY_MS = 2_000;
+const TOOLKIT_CANDIDATES = [
+  'hackernews',
+  'github',
+  'gmail',
+  'slack',
+  'notion',
+  'linear',
+  'discord',
+  'googlecalendar',
+  'googledocs',
+  'hubspot',
+];
 
 console.log('🧪 Preparing TypeScript .mjs import resolution fixtures...\n');
 console.log(`Working directory: ${__dirname}`);
@@ -56,92 +67,65 @@ const resetGeneratedDir = () => {
 
 const getGeneratedFiles = () => (existsSync(GENERATED_DIR) ? readdirSync(GENERATED_DIR) : []);
 
-const discoverToolkitSlug = () => {
-  const stdout = execFileSync('composio', ['dev', 'toolkits', 'list', '--limit', '50'], {
-    cwd: __dirname,
-    stdio: 'pipe',
-    encoding: 'utf-8',
-    env: { ...process.env, FORCE_COLOR: '0' },
-    timeout: TOOLKIT_DISCOVERY_TIMEOUT_MS,
-  });
-
-  const items = JSON.parse(stdout);
-
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error('`composio dev toolkits list --limit 50` returned no toolkits');
-  }
-
-  const candidate =
-    items.find(item => typeof item?.slug === 'string' && (item?.tools_count ?? 0) > 0) ??
-    items[0];
-
-  if (typeof candidate?.slug !== 'string' || candidate.slug.length === 0) {
-    throw new Error('Unable to discover a toolkit slug for `composio generate ts`');
-  }
-
-  return candidate.slug;
-};
-
-const selectedToolkitSlug = discoverToolkitSlug();
-
-console.log(`Test 1: Running composio generate ts --toolkits ${selectedToolkitSlug}...`);
-
 for (let attempt = 1; attempt <= GENERATE_TS_MAX_ATTEMPTS; attempt += 1) {
-  resetGeneratedDir();
-
   console.log(`Attempt ${attempt}/${GENERATE_TS_MAX_ATTEMPTS}...`);
 
-  try {
-    execFileSync(
-      'composio',
-      ['generate', 'ts', '--toolkits', selectedToolkitSlug, '--output-dir', GENERATED_DIR],
-      {
+  for (const toolkitSlug of TOOLKIT_CANDIDATES) {
+    resetGeneratedDir();
+
+    console.log(`Test 1: Running composio generate ts --toolkits ${toolkitSlug}...`);
+
+    try {
+      execFileSync('composio', ['generate', 'ts', '--toolkits', toolkitSlug, '--output-dir', GENERATED_DIR], {
         cwd: __dirname,
         stdio: 'pipe',
         encoding: 'utf-8',
         env: { ...process.env, FORCE_COLOR: '0' },
         timeout: GENERATE_TS_TIMEOUT_MS,
+      });
+
+      const generatedFiles = getGeneratedFiles();
+      const generatedTypeScriptFiles = generatedFiles.filter(file => file.endsWith('.ts'));
+
+      if (generatedTypeScriptFiles.length === 0) {
+        throw new Error(
+          `composio generate ts completed, but ${GENERATED_DIR} did not contain any .ts files`
+        );
       }
-    );
 
-    const generatedFiles = getGeneratedFiles();
-    const generatedTypeScriptFiles = generatedFiles.filter(file => file.endsWith('.ts'));
+      console.log('Generated files:', generatedFiles);
+      console.log(`Selected toolkit: ${toolkitSlug}`);
+      console.log('✅ Test 1 passed: composio generate ts succeeded');
+      process.exit(0);
+    } catch (error) {
+      const stdout = error.stdout?.toString?.() || error.stdout || '';
+      const stderr = error.stderr?.toString?.() || error.stderr || '';
+      const timedOut = error.signal === 'SIGTERM' || error.code === 'ETIMEDOUT';
 
-    if (generatedTypeScriptFiles.length === 0) {
-      throw new Error(
-        `composio generate ts completed, but ${GENERATED_DIR} did not contain any .ts files`
+      console.error(
+        `❌ Test 1 candidate ${toolkitSlug} failed on attempt ${attempt}/${GENERATE_TS_MAX_ATTEMPTS}`
       );
+      if (timedOut) {
+        console.error(`command timed out after ${GENERATE_TS_TIMEOUT_MS}ms`);
+      }
+      if (stdout) {
+        console.error('stdout:');
+        console.error(stdout);
+      }
+      if (stderr) {
+        console.error('stderr:');
+        console.error(stderr);
+      }
+      console.error(error.message);
     }
-
-    console.log('Generated files:', generatedFiles);
-    console.log(`Selected toolkit: ${selectedToolkitSlug}`);
-    console.log('✅ Test 1 passed: composio generate ts succeeded');
-    process.exit(0);
-  } catch (error) {
-    const stdout = error.stdout?.toString?.() || error.stdout || '';
-    const stderr = error.stderr?.toString?.() || error.stderr || '';
-    const timedOut = error.signal === 'SIGTERM' || error.code === 'ETIMEDOUT';
-
-    console.error(`❌ Test 1 attempt ${attempt}/${GENERATE_TS_MAX_ATTEMPTS} failed`);
-    if (timedOut) {
-      console.error(`command timed out after ${GENERATE_TS_TIMEOUT_MS}ms`);
-    }
-    if (stdout) {
-      console.error('stdout:');
-      console.error(stdout);
-    }
-    if (stderr) {
-      console.error('stderr:');
-      console.error(stderr);
-    }
-    console.error(error.message);
-
-    if (attempt < GENERATE_TS_MAX_ATTEMPTS) {
-      console.error(`Retrying in ${RETRY_DELAY_MS}ms...\n`);
-      await sleep(RETRY_DELAY_MS);
-      continue;
-    }
-
-    process.exit(1);
   }
+
+  if (attempt < GENERATE_TS_MAX_ATTEMPTS) {
+    console.error(`Retrying in ${RETRY_DELAY_MS}ms...\n`);
+    await sleep(RETRY_DELAY_MS);
+    continue;
+  }
+
+  console.error(`Unable to generate TypeScript sources for any toolkit: ${TOOLKIT_CANDIDATES.join(', ')}`);
+  process.exit(1);
 }
