@@ -65,16 +65,66 @@ const isMetaToolSlug = (slug: string): slug is SessionExecuteMetaParams['slug'] 
   META_TOOL_SLUGS.has(slug);
 
 /**
+ * Detect in-band error indicators in the response data.
+ *
+ * Some external services (e.g. Metabase) return HTTP 200 with the error
+ * embedded inside the data payload instead of setting the top-level `error`
+ * field.  When the top-level `error` is null we inspect the data for common
+ * failure markers so the CLI can surface these instead of silently reporting
+ * success with empty results.
+ */
+const detectInBandError = (data: Record<string, unknown>): string | null => {
+  // Check for a "status" field set to an explicit failure value.
+  if (typeof data.status === 'string') {
+    const status = data.status.toLowerCase();
+    if (status === 'failed' || status === 'error') {
+      const message =
+        typeof data.error === 'string'
+          ? data.error
+          : typeof data.message === 'string'
+            ? data.message
+            : `Tool returned status: ${data.status}`;
+      return message;
+    }
+  }
+
+  // Check for a top-level "successfull" or "successful" boolean set to false.
+  if (data.successfull === false || data.successful === false) {
+    const message =
+      typeof data.error === 'string'
+        ? data.error
+        : typeof data.message === 'string'
+          ? data.message
+          : 'Tool execution returned unsuccessful';
+    return message;
+  }
+
+  return null;
+};
+
+/**
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
   raw: SessionExecuteResponse | SessionExecuteMetaResponse
-): ToolExecuteResponse => ({
-  successful: raw.error === null,
-  data: raw.data,
-  error: raw.error,
-  logId: raw.log_id,
-});
+): ToolExecuteResponse => {
+  if (raw.error !== null) {
+    return {
+      successful: false,
+      data: raw.data,
+      error: raw.error,
+      logId: raw.log_id,
+    };
+  }
+
+  const inBandError = detectInBandError(raw.data);
+  return {
+    successful: inBandError === null,
+    data: raw.data,
+    error: inBandError,
+    logId: raw.log_id,
+  };
+};
 
 export const ToolsExecutorLive = Layer.effect(
   ToolsExecutor,

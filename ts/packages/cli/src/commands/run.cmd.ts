@@ -677,7 +677,13 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  }',
   '  if (data !== undefined) {',
   '    const serialized = typeof data === "string" ? data : JSON.stringify(data);',
-  '    args.push("--data", serialized);',
+  '    if (sharedRunOutputDir) {',
+  '      const tmpFile = `${sharedRunOutputDir}/execute-data-${slug}-${Date.now()}.json`;',
+  '      fs.writeFileSync(tmpFile, serialized, "utf8");',
+  '      args.push("--data", `@${tmpFile}`);',
+  '    } else {',
+  '      args.push("--data", serialized);',
+  '    }',
   '  }',
   '  const result = await runCliJson(args);',
   '  if (result && typeof result === "object" && result.successful === false) {',
@@ -850,12 +856,16 @@ const createRunHelpersPreloadFile = (
   fs.writeFileSync(runLogFilePath, '', 'utf8');
   fs.writeFileSync(
     preloadPath,
-    buildRunHelpersSource(cliPrefix, {
-      ...context,
-      runOutputDir,
-      runLogFilePath,
-      readAccessRoots,
-    }, moduleUrls),
+    buildRunHelpersSource(
+      cliPrefix,
+      {
+        ...context,
+        runOutputDir,
+        runLogFilePath,
+        readAccessRoots,
+      },
+      moduleUrls
+    ),
     'utf8'
   );
   return { directory, preloadPath, runOutputDir, runLogFilePath };
