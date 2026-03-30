@@ -113,7 +113,6 @@ describe('MastraProvider', () => {
         id: mockTool.slug,
         description: mockTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
 
@@ -135,7 +134,6 @@ describe('MastraProvider', () => {
         id: toolWithoutInputParams.slug,
         description: toolWithoutInputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
 
@@ -157,7 +155,6 @@ describe('MastraProvider', () => {
         id: toolWithoutOutputParams.slug,
         description: toolWithoutOutputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: {} },
         execute: expect.any(Function),
       });
 
@@ -179,7 +176,6 @@ describe('MastraProvider', () => {
         id: toolWithoutDescription.slug,
         description: '',
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
 
@@ -289,14 +285,12 @@ describe('MastraProvider', () => {
         id: mockTool.slug,
         description: mockTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
       expect(createTool).toHaveBeenCalledWith({
         id: anotherTool.slug,
         description: anotherTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: anotherTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: anotherTool.outputParameters },
         execute: expect.any(Function),
       });
     });
@@ -400,7 +394,7 @@ describe('MastraProvider', () => {
       expect(wrapped).toHaveProperty('id');
       expect(wrapped).toHaveProperty('description');
       expect(wrapped).toHaveProperty('inputSchema');
-      expect(wrapped).toHaveProperty('outputSchema');
+      expect(wrapped.outputSchema).toBeUndefined();
       expect(wrapped).toHaveProperty('execute');
 
       // The execute property should be a function
@@ -434,7 +428,6 @@ describe('MastraProvider', () => {
         id: 'minimal-tool',
         description: 'A minimal tool',
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: {} },
         execute: expect.any(Function),
       });
 
@@ -540,7 +533,6 @@ describe('MastraProvider', () => {
             additionalProperties: false,
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
     });
@@ -589,7 +581,6 @@ describe('MastraProvider', () => {
             required: ['required_field'],
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
     });
@@ -618,7 +609,6 @@ describe('MastraProvider', () => {
             description: 'A string parameter',
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
     });
@@ -638,7 +628,6 @@ describe('MastraProvider', () => {
         id: toolWithoutInputParams.slug,
         description: toolWithoutInputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
         execute: expect.any(Function),
       });
     });
