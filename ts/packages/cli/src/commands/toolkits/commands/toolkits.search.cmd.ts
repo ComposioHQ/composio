@@ -6,7 +6,12 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { extractMessage } from 'src/utils/api-error-extraction';
-import { mergeToolkitData, formatToolkitsTable, formatToolkitsJson } from '../format';
+import {
+  mergeToolkitData,
+  formatToolkitsTable,
+  formatToolkitsJson,
+  toolkitFromDetailed,
+} from '../format';
 import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
 
 const query = Args.text({ name: 'query' }).pipe(
@@ -115,28 +120,27 @@ const getExactToolkitSearchMatch = (
 ) => {
   const normalizedQuery = query.trim().toLowerCase();
   if (!SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)) {
-    return Effect.never;
+    return Effect.succeed(Option.none<ToolkitSearchResult>());
   }
 
   return getOptionalResultWithTimeout(
-    repo.getToolkitsBySlugs([normalizedQuery]).pipe(
-      Effect.map(toolkits => filterToolkitsForSearchQuery(toolkits, normalizedQuery)),
-      Effect.catchTag('services/InvalidToolkitsError', () =>
-        Effect.succeed([] as ReadonlyArray<Toolkit>)
+    repo.getToolkitDetailed(normalizedQuery).pipe(
+      Effect.map(toolkitFromDetailed),
+      Effect.map(toolkit => filterToolkitsForSearchQuery([toolkit], normalizedQuery)),
+      Effect.catchTag('services/HttpServerError', error =>
+        error.status === 404 ? Effect.succeed([] as ReadonlyArray<Toolkit>) : Effect.fail(error)
       )
     ),
     SEARCH_EXACT_MATCH_TIMEOUT_MS,
     'Timed out retrieving exact toolkit search match; falling back to broader search.',
     'Failed to retrieve exact toolkit search match; falling back to broader search:'
   ).pipe(
-    Effect.flatMap(
-      Option.match({
-        onNone: () => Effect.never,
-        onSome: items =>
-          items.length === 0
-            ? Effect.never
-            : Effect.succeed(buildCatalogResultFromToolkits(items, limit)),
-      })
+    Effect.map(
+      Option.flatMap(items =>
+        items.length === 0
+          ? Option.none<ToolkitSearchResult>()
+          : Option.some(buildCatalogResultFromToolkits(items, limit))
+      )
     )
   );
 };
@@ -213,11 +217,21 @@ const searchToolkitsWithFallback = (
   );
 
   const exactMatchPreferred = getExactToolkitSearchMatch(repo, query, limit);
+  const broaderSearch = Effect.raceFirst(
+    Effect.disconnect(directSearchPreferred),
+    Effect.disconnect(fallbackResult)
+  );
 
-  return Effect.raceFirst(
-    Effect.disconnect(exactMatchPreferred),
-    Effect.disconnect(
-      Effect.raceFirst(Effect.disconnect(directSearchPreferred), Effect.disconnect(fallbackResult))
+  if (!shouldRequirePreciseSearchMatch(query)) {
+    return broaderSearch;
+  }
+
+  return exactMatchPreferred.pipe(
+    Effect.flatMap(
+      Option.match({
+        onNone: () => broaderSearch,
+        onSome: result => Effect.succeed(result),
+      })
     )
   );
 };

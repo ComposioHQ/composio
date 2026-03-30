@@ -4,7 +4,7 @@ import { filterToolkitsForListQuery } from 'src/commands/toolkits/commands/toolk
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import type { Toolkits } from 'src/models/toolkits';
+import type { ToolkitDetailed, Toolkits } from 'src/models/toolkits';
 import { it } from 'vitest';
 
 const testToolkits: Toolkits = [
@@ -64,6 +64,39 @@ const testToolkits: Toolkits = [
 const toolkitsData = {
   toolkits: testToolkits,
 } satisfies TestLiveInput['toolkitsData'];
+
+const gmailDetailedToolkit: ToolkitDetailed = {
+  name: 'Gmail',
+  slug: 'gmail',
+  is_local_toolkit: false,
+  composio_managed_auth_schemes: ['OAUTH2'],
+  no_auth: false,
+  meta: {
+    description: 'Email service to send and receive emails',
+    categories: [],
+    created_at: new Date('2024-05-03T11:44:32.061Z') as any,
+    updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
+    available_versions: ['20250101', '20250909'],
+    tools_count: 36,
+    triggers_count: 2,
+  },
+  auth_config_details: [
+    {
+      mode: 'OAUTH2',
+      name: 'OAuth 2.0',
+      fields: {
+        auth_config_creation: {
+          required: [],
+          optional: [],
+        },
+        connected_account_initiation: {
+          required: [],
+          optional: [],
+        },
+      },
+    },
+  ],
+};
 
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
@@ -162,6 +195,33 @@ describe('CLI: composio dev toolkits list', () => {
 
         expect(output).toContain('Gmail');
         expect(output).not.toContain('GitHub');
+        expect(output).toContain('Listing 1 of 1 toolkits');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: {
+        detailedToolkits: [gmailDetailedToolkit],
+        searchToolkits: () =>
+          Effect.succeed({
+            items: [],
+            total_items: 0,
+            total_pages: 0,
+            next_cursor: null,
+          }),
+      },
+    })
+  )('[Given] an exact slug query with no catalog data [Then] uses detailed toolkit lookup', it => {
+    it.scoped('returns the exact toolkit without depending on catalog fallbacks', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'list', '--query', 'gmail', '--limit', '1']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Gmail');
         expect(output).toContain('Listing 1 of 1 toolkits');
       })
     );

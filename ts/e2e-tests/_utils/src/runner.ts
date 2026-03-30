@@ -1,6 +1,7 @@
 import { describe, beforeAll, afterAll, it } from 'bun:test';
 import { $ } from 'bun';
 import { appendFile, writeFile, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import type {
@@ -34,7 +35,12 @@ import {
   runCliContainer,
 } from './image-lifecycle';
 import { WELL_KNOWN_ENV_VARS } from './const';
-import { createVolume, generateVolumeName, initializeVolumeOwnership, removeVolume } from './volume';
+import {
+  createVolume,
+  generateVolumeName,
+  initializeVolumeOwnership,
+  removeVolume,
+} from './volume';
 
 // ============================================================================
 // DEBUG.log Manager - Structured logging for e2e test output
@@ -193,11 +199,7 @@ class DebugLogManager {
     const totalDurationMs = endTime.getTime() - this.startTime.getTime();
     const totalDurationSec = (totalDurationMs / 1000).toFixed(2);
 
-    const lines: string[] = [
-      divider,
-      'Summary',
-      divider,
-    ];
+    const lines: string[] = [divider, 'Summary', divider];
 
     for (const result of this.versionResults) {
       const runtimeLabel =
@@ -210,7 +212,9 @@ class DebugLogManager {
         const versionDurationSec = result.totalDurationMs
           ? (result.totalDurationMs / 1000).toFixed(2)
           : '?';
-        lines.push(`${runtimeLabel} ${result.version}: ${status} (${phaseCount} phases, ${versionDurationSec}s total)`);
+        lines.push(
+          `${runtimeLabel} ${result.version}: ${status} (${phaseCount} phases, ${versionDurationSec}s total)`
+        );
       }
     }
 
@@ -227,7 +231,6 @@ class DebugLogManager {
 // ============================================================================
 // Container environment utilities
 // ============================================================================
-
 
 /**
  * Builds environment variables to pass to the container.
@@ -278,7 +281,7 @@ function validateRequiredEnvVars(
   if (missingVars.length > 0) {
     throw new Error(
       `[${suiteName}] Missing required environment variables: ${missingVars.join(', ')}\n` +
-      `Set these variables before running the tests, or remove them from E2EConfig.env if not required.`
+        `Set these variables before running the tests, or remove them from E2EConfig.env if not required.`
     );
   }
 }
@@ -389,7 +392,7 @@ function createRunCmd(options: {
   return async (input: RunCmdInput) => {
     const { command, files } = normalizeRunCmdInput(input);
     const shouldCapture = Array.isArray(files) && files.length > 0;
-    const containerName = `${containerPrefix}-${Date.now()}`;
+    const containerName = `${containerPrefix}-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const startTime = Date.now();
 
     const result = await runContainer({
@@ -503,9 +506,16 @@ function createNodeDockerExecutors(
    * With setup: Creates a Docker volume, runs setup command with volume mounted
    * read-write, then runs the fixture with volume mounted read-only.
    */
-  function runFixture<const F extends string>(options: { filename: NonEmptyString<F> }): Promise<E2ETestResult>;
-  function runFixture<const F extends string, const S extends string>(options: { filename: NonEmptyString<F>; setup: NonEmptyString<S> }): Promise<E2ETestResultWithSetup>;
-  async function runFixture(options: RunFixtureOptions): Promise<E2ETestResult | E2ETestResultWithSetup> {
+  function runFixture<const F extends string>(options: {
+    filename: NonEmptyString<F>;
+  }): Promise<E2ETestResult>;
+  function runFixture<const F extends string, const S extends string>(options: {
+    filename: NonEmptyString<F>;
+    setup: NonEmptyString<S>;
+  }): Promise<E2ETestResultWithSetup>;
+  async function runFixture(
+    options: RunFixtureOptions
+  ): Promise<E2ETestResult | E2ETestResultWithSetup> {
     const { filename, setup } = options;
 
     if (!setup) {
@@ -631,8 +641,13 @@ function createDenoDockerExecutors(
   });
 
   function runFixture(options: { filename: string }): Promise<E2ETestResult>;
-  function runFixture(options: { filename: string; setup: string }): Promise<E2ETestResultWithSetup>;
-  async function runFixture(options: RunFixtureOptions): Promise<E2ETestResult | E2ETestResultWithSetup> {
+  function runFixture(options: {
+    filename: string;
+    setup: string;
+  }): Promise<E2ETestResultWithSetup>;
+  async function runFixture(
+    options: RunFixtureOptions
+  ): Promise<E2ETestResult | E2ETestResultWithSetup> {
     const { filename, setup } = options;
     // Deno scripts need explicit 'deno run' with permissions
     const denoRunCmd = `deno run --allow-all ${filename}`;
@@ -895,13 +910,20 @@ export function runE2E(config: RunE2EInternalConfig): void {
 
         beforeAll(async () => {
           const imageTag = await ensureNodeImage(nodeVersionMeta.value, { repoRoot });
-          executors = createNodeDockerExecutors(config, nodeVersionMeta.value, imageTag, repoRoot, logManager);
+          executors = createNodeDockerExecutors(
+            config,
+            nodeVersionMeta.value,
+            imageTag,
+            repoRoot,
+            logManager
+          );
         }, 600_000);
 
         defineTests({
           runtime: 'node',
           runCmd: ((cmd: RunCmdInput) => executors.runCmd(cmd)) as DefineTestsContext['runCmd'],
-          runFixture: ((opts: RunFixtureOptions) => executors.runFixture(opts)) as DefineTestsContext['runFixture'],
+          runFixture: ((opts: RunFixtureOptions) =>
+            executors.runFixture(opts)) as DefineTestsContext['runFixture'],
         });
 
         afterAll(async () => {
@@ -939,13 +961,20 @@ export function runE2E(config: RunE2EInternalConfig): void {
 
         beforeAll(async () => {
           const imageTag = await ensureDenoImage(denoVersionMeta.value, { repoRoot });
-          executors = createDenoDockerExecutors(config, denoVersionMeta.value, imageTag, repoRoot, logManager);
+          executors = createDenoDockerExecutors(
+            config,
+            denoVersionMeta.value,
+            imageTag,
+            repoRoot,
+            logManager
+          );
         }, 600_000);
 
         defineTests({
           runtime: 'deno',
           runCmd: ((cmd: RunCmdInput) => executors.runCmd(cmd)) as DefineTestsContext['runCmd'],
-          runFixture: ((opts: RunFixtureOptions) => executors.runFixture(opts)) as DefineTestsContext['runFixture'],
+          runFixture: ((opts: RunFixtureOptions) =>
+            executors.runFixture(opts)) as DefineTestsContext['runFixture'],
         });
 
         afterAll(async () => {
@@ -983,13 +1012,20 @@ export function runE2E(config: RunE2EInternalConfig): void {
 
         beforeAll(async () => {
           const imageTag = await ensureCliImage(cliVersionMeta.value, { repoRoot });
-          executors = createCliDockerExecutors(config, cliVersionMeta.value, imageTag, repoRoot, logManager);
+          executors = createCliDockerExecutors(
+            config,
+            cliVersionMeta.value,
+            imageTag,
+            repoRoot,
+            logManager
+          );
         }, 600_000);
 
         defineTests({
           runtime: 'cli',
           runCmd: ((cmd: RunCmdInput) => executors.runCmd(cmd)) as DefineTestsContext['runCmd'],
-          runFixture: ((opts: RunFixtureOptions) => executors.runFixture(opts)) as DefineTestsContext['runFixture'],
+          runFixture: ((opts: RunFixtureOptions) =>
+            executors.runFixture(opts)) as DefineTestsContext['runFixture'],
         });
 
         afterAll(async () => {

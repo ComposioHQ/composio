@@ -54,6 +54,26 @@ export interface UnifiedToolkit {
   } | null;
 }
 
+export function toolkitFromDetailed(toolkit: ToolkitDetailed): Toolkit {
+  return {
+    name: toolkit.name,
+    slug: toolkit.slug,
+    auth_schemes: [...new Set(toolkit.auth_config_details.map(detail => detail.mode))],
+    composio_managed_auth_schemes: [...toolkit.composio_managed_auth_schemes],
+    is_local_toolkit: toolkit.is_local_toolkit,
+    meta: {
+      description: toolkit.meta.description,
+      categories: [...toolkit.meta.categories],
+      created_at: toolkit.meta.created_at,
+      updated_at: toolkit.meta.updated_at,
+      available_versions: [...toolkit.meta.available_versions],
+      tools_count: toolkit.meta.tools_count,
+      triggers_count: toolkit.meta.triggers_count,
+    },
+    no_auth: toolkit.no_auth,
+  };
+}
+
 /**
  * Build unified toolkit items from catalog data, optionally enriched with
  * session connection data (keyed by slug).
