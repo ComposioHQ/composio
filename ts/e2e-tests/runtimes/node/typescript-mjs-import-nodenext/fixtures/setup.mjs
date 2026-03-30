@@ -15,8 +15,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SHARED_ROOT = join(__dirname, '.e2e-scratch', '.composio-e2e-mjs-import');
 const GENERATED_DIR = join(SHARED_ROOT, 'generated');
 const TSCONFIG_PATH = join(SHARED_ROOT, 'tsconfig.json');
-const GENERATE_TS_TIMEOUT_MS = 120_000;
-const GENERATE_TS_MAX_ATTEMPTS = 3;
+const GENERATE_TS_TIMEOUT_MS = 90_000;
+const GENERATE_TS_MAX_ATTEMPTS = 2;
 const RETRY_DELAY_MS = 2_000;
 
 console.log('🧪 Preparing TypeScript .mjs import resolution fixtures...\n');

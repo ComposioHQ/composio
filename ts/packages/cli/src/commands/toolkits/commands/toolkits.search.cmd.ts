@@ -18,9 +18,11 @@ const limit = Options.integer('limit').pipe(
   Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
 );
 
+const SINGLE_TOOLKIT_QUERY_PATTERN = /^[a-z0-9_-]+$/i;
+const SEARCH_EXACT_MATCH_TIMEOUT_MS = 15_000;
 const SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
-const SEARCH_ENDPOINT_TIMEOUT_MS = 10_000;
-const SEARCH_CATALOG_FALLBACK_TIMEOUT_MS = 30_000;
+const SEARCH_ENDPOINT_TIMEOUT_MS = 20_000;
+const SEARCH_CATALOG_FALLBACK_TIMEOUT_MS = 60_000;
 
 const rankToolkitForSearchQuery = (toolkit: Toolkit, query: string): number | undefined => {
   const normalizedQuery = query.trim().toLowerCase();
@@ -106,6 +108,39 @@ const getOptionalResultWithTimeout = <A, E, R>(
     )
   );
 
+const getExactToolkitSearchMatch = (
+  repo: ComposioToolkitsRepository,
+  query: string,
+  limit: number
+) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)) {
+    return Effect.never;
+  }
+
+  return getOptionalResultWithTimeout(
+    repo.getToolkitsBySlugs([normalizedQuery]).pipe(
+      Effect.map(toolkits => filterToolkitsForSearchQuery(toolkits, normalizedQuery)),
+      Effect.catchTag('services/InvalidToolkitsError', () =>
+        Effect.succeed([] as ReadonlyArray<Toolkit>)
+      )
+    ),
+    SEARCH_EXACT_MATCH_TIMEOUT_MS,
+    'Timed out retrieving exact toolkit search match; falling back to broader search.',
+    'Failed to retrieve exact toolkit search match; falling back to broader search:'
+  ).pipe(
+    Effect.flatMap(
+      Option.match({
+        onNone: () => Effect.never,
+        onSome: items =>
+          items.length === 0
+            ? Effect.never
+            : Effect.succeed(buildCatalogResultFromToolkits(items, limit)),
+      })
+    )
+  );
+};
+
 const searchToolkitsFromCatalog = (
   repo: ComposioToolkitsRepository,
   query: string,
@@ -121,7 +156,7 @@ const shouldRequirePreciseSearchMatch = (query: string): boolean => {
   return (
     normalizedQuery.length > 0 &&
     !/\s/.test(normalizedQuery) &&
-    /^[a-z0-9_-]+$/i.test(normalizedQuery)
+    SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)
   );
 };
 
@@ -177,9 +212,13 @@ const searchToolkitsWithFallback = (
     )
   );
 
+  const exactMatchPreferred = getExactToolkitSearchMatch(repo, query, limit);
+
   return Effect.raceFirst(
-    Effect.disconnect(directSearchPreferred),
-    Effect.disconnect(fallbackResult)
+    Effect.disconnect(exactMatchPreferred),
+    Effect.disconnect(
+      Effect.raceFirst(Effect.disconnect(directSearchPreferred), Effect.disconnect(fallbackResult))
+    )
   );
 };
 

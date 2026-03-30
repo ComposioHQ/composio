@@ -131,7 +131,7 @@ describe('CLI: composio dev toolkits search', () => {
 
           expect(output).toContain('Gmail');
           expect(output).not.toContain('BigMailer');
-          expect(output).toContain('Found 1 of 2 toolkits');
+          expect(output).toContain('Found 1 of 1 toolkits');
         })
       );
     }

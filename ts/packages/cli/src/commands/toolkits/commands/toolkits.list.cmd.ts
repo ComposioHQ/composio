@@ -22,9 +22,11 @@ const limit = Options.integer('limit').pipe(
   Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
 );
 
+const SINGLE_TOOLKIT_QUERY_PATTERN = /^[a-z0-9_-]+$/i;
+const LIST_EXACT_MATCH_TIMEOUT_MS = 15_000;
 const LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
-const LIST_SEARCH_ENDPOINT_TIMEOUT_MS = 10_000;
-const LIST_CATALOG_FALLBACK_TIMEOUT_MS = 30_000;
+const LIST_SEARCH_ENDPOINT_TIMEOUT_MS = 20_000;
+const LIST_CATALOG_FALLBACK_TIMEOUT_MS = 60_000;
 
 const connected = Options.boolean('connected').pipe(
   Options.withDescription('Filter to connected toolkits only'),
@@ -119,13 +121,46 @@ const getOptionalResultWithTimeout = <A, E, R>(
     )
   );
 
+const getExactToolkitListMatch = (
+  repo: ComposioToolkitsRepository,
+  query: string,
+  limit: number
+) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)) {
+    return Effect.never;
+  }
+
+  return getOptionalResultWithTimeout(
+    repo.getToolkitsBySlugs([normalizedQuery]).pipe(
+      Effect.map(toolkits => filterToolkitsForListQuery(toolkits, normalizedQuery)),
+      Effect.catchTag('services/InvalidToolkitsError', () =>
+        Effect.succeed([] as ReadonlyArray<Toolkit>)
+      )
+    ),
+    LIST_EXACT_MATCH_TIMEOUT_MS,
+    'Timed out retrieving exact toolkit list match; falling back to broader search.',
+    'Failed to retrieve exact toolkit list match; falling back to broader search:'
+  ).pipe(
+    Effect.flatMap(
+      Option.match({
+        onNone: () => Effect.never,
+        onSome: items =>
+          items.length === 0
+            ? Effect.never
+            : Effect.succeed(buildCatalogResultFromToolkits(items, limit)),
+      })
+    )
+  );
+};
+
 const shouldRequirePreciseListMatch = (query?: string): boolean => {
   const normalizedQuery = query?.trim();
   return (
     normalizedQuery !== undefined &&
     normalizedQuery.length > 0 &&
     !/\s/.test(normalizedQuery) &&
-    /^[a-z0-9_-]+$/i.test(normalizedQuery)
+    SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)
   );
 };
 
@@ -196,9 +231,13 @@ const getCatalogToolkitsWithFallback = (
     )
   );
 
+  const exactMatchPreferred = getExactToolkitListMatch(repo, query, limit);
+
   return Effect.raceFirst(
-    Effect.disconnect(directSearchPreferred),
-    Effect.disconnect(fallbackResult)
+    Effect.disconnect(exactMatchPreferred),
+    Effect.disconnect(
+      Effect.raceFirst(Effect.disconnect(directSearchPreferred), Effect.disconnect(fallbackResult))
+    )
   );
 };
 

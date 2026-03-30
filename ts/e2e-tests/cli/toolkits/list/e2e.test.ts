@@ -28,10 +28,12 @@ e2e(import.meta.url, {
     let noFuzzyResult: E2ETestResult;
 
     beforeAll(async () => {
-      exactResult = await runCmd('composio dev toolkits list --query gmail --limit 1');
-      prefixResult = await runCmd('composio dev toolkits list --query gmai --limit 1');
-      noFuzzyResult = await runCmd('composio dev toolkits list --query gmal --limit 1');
-    }, TIMEOUTS.FIXTURE);
+      [exactResult, prefixResult, noFuzzyResult] = await Promise.all([
+        runCmd('composio dev toolkits list --query gmail --limit 1'),
+        runCmd('composio dev toolkits list --query gmai --limit 1'),
+        runCmd('composio dev toolkits list --query gmal --limit 1'),
+      ]);
+    }, TIMEOUTS.FIXTURE * 2);
 
     describe('composio dev toolkits list --query gmail --limit 1 (exact slug)', () => {
       it('exits successfully', () => {
