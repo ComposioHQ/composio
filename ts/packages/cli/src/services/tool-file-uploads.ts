@@ -178,7 +178,8 @@ const uploadFile = async (params: {
   readonly client: RawComposioClient;
 }) => {
   const fileData = await readUploadSource(params.file);
-  const md5 = new Bun.CryptoHasher('md5').update(fileData.bytes).digest('hex');
+  const { createHash } = await import('node:crypto');
+  const md5 = createHash('md5').update(fileData.bytes).digest('hex');
   const presigned = await params.client.files.createPresignedURL({
     filename: fileData.fileName,
     mimetype: fileData.mimeType,

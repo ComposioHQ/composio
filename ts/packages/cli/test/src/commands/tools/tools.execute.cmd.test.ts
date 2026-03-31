@@ -694,11 +694,19 @@ describe('CLI: composio execute', () => {
           const tempFile = path.join(os.tmpdir(), `composio-upload-${Date.now()}.txt`);
           fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
 
-          const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-            new Response(null, {
-              status: 200,
-            })
-          );
+          const originalFetch = globalThis.fetch;
+          const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url =
+              typeof input === 'string'
+                ? input
+                : input instanceof URL
+                  ? input.toString()
+                  : input.url;
+            if (url === 'https://s3.test.composio.dev/upload') {
+              return Promise.resolve(new Response(null, { status: 200 }));
+            }
+            return originalFetch(input, init);
+          });
 
           yield* cli([
             'execute',
@@ -785,13 +793,24 @@ describe('CLI: composio execute', () => {
           const tempFile = path.join(os.tmpdir(), `composio-inject-${Date.now()}.png`);
           fs.writeFileSync(tempFile, 'png-binary-ish', 'utf8');
 
-          const fetchSpy = vi
-            .spyOn(globalThis, 'fetch')
-            .mockResolvedValue(new Response(null, { status: 200 }));
+          const originalFetch = globalThis.fetch;
+          const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url =
+              typeof input === 'string'
+                ? input
+                : input instanceof URL
+                  ? input.toString()
+                  : input.url;
+            if (url === 'https://s3.test.composio.dev/upload') {
+              return Promise.resolve(new Response(null, { status: 200 }));
+            }
+            return originalFetch(input, init);
+          });
 
           yield* cli([
             'execute',
             'SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK',
+            '--skip-connection-check',
             '--file',
             tempFile,
             '-d',
