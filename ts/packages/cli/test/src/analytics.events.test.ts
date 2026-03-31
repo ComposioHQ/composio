@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
@@ -92,5 +93,36 @@ describe('CLI analytics execute failure events', () => {
         message: 'random',
       })
     ).toBe(true);
+  });
+
+  it('builds the CLI codact failure body using backend field names', () => {
+    const body = createCliCodactFailureBody({
+      failureType: 'wrong_tool_slug',
+      toolInfo: {
+        toolkit: 'github',
+      },
+      ctx: {
+        invalid_tool_slug: 'GITHUB_MAKE_ISSUE',
+      },
+      session: {
+        command_path: 'execute',
+      },
+      requestId: 'req_123',
+    });
+
+    expect(body).toMatchObject({
+      failure_type: 'wrong_tool_slug',
+      tool_info: {
+        toolkit: 'github',
+      },
+      ctx: {
+        invalid_tool_slug: 'GITHUB_MAKE_ISSUE',
+      },
+      session: {
+        source: 'cli',
+        command_path: 'execute',
+      },
+      request_id: 'req_123',
+    });
   });
 });

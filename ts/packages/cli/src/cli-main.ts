@@ -6,6 +6,7 @@ import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { rootCommand, runWithConfig } from 'src/commands';
+import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
 import { BaseConfigProviderLive, ConfigLive, extendConfigProvider } from 'src/services/config';
@@ -104,6 +105,7 @@ const layers = Layer.mergeAll(
   ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
+  FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
   Logger.pretty
@@ -193,11 +195,22 @@ runWithArgs.pipe(
   ),
   Effect.catchIf(ValidationError.isValidationError, error => {
     const text = HelpDoc.toAnsiText(error.error).trim();
+    const errorEffect = text.length > 0 ? Console.error(text) : Effect.void;
     const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
-    if (flagMatch && valueOptionNames.has(flagMatch[1])) {
-      return Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`);
-    }
-    return Effect.void;
+    const tipEffect =
+      flagMatch && valueOptionNames.has(flagMatch[1])
+        ? Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
+        : Effect.void;
+    const cmdName = matchCommandFromArgv(process.argv);
+    const helpText = cmdName ? getCommandHelpText(cmdName) : undefined;
+    const helpEffect = helpText ? Console.error(helpText) : Effect.void;
+    return Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
+      Effect.tap(() =>
+        Effect.sync(() => {
+          process.exitCode = 1;
+        })
+      )
+    );
   }),
   Effect.withSpan('composio-cli', {
     attributes: {
@@ -225,6 +238,11 @@ runWithArgs.pipe(
         ).trim();
         if (message.length > 0) {
           yield* Console.error(message);
+          const cmdName = matchCommandFromArgv(process.argv);
+          const helpText = cmdName ? getCommandHelpText(cmdName) : undefined;
+          if (helpText) {
+            yield* Console.error(helpText);
+          }
           process.exitCode = 1;
         }
       }

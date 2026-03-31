@@ -2,19 +2,25 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
+import { APP_VERSION } from 'src/constants';
 import { resolveCommandProject } from 'src/services/command-project';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 import { detectMaster, type MasterKind } from 'src/services/master-detector';
 import {
+  repairMissingInstalledRunCompanionModules,
+  resolveRunCompanionModulePath,
+} from 'src/services/run-companion-modules';
+import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
+import { USER_COMPOSIO_DIR } from 'src/constants';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -31,7 +37,9 @@ const debug = Options.boolean('debug').pipe(
   Options.withDefault(false)
 );
 const logsOff = Options.boolean('logs-off').pipe(
-  Options.withDescription('Hide the always-on subAgent streaming logs'),
+  Options.withDescription(
+    'Compatibility flag. Helper logs are written to the run log file instead of stderr.'
+  ),
   Options.withDefault(false)
 );
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
@@ -160,47 +168,35 @@ export const inferCliInvocationPrefix = (
     : [process.execPath];
 };
 
-const resolveSiblingModulePath = (relativeNoExtensionFromRunCmd: string): string => {
-  const currentFilePath = fileURLToPath(import.meta.url);
-  const currentDirectory = path.dirname(currentFilePath);
-
-  // Source (.ts) — running from `bun src/bin.ts`
-  const tsPath = path.resolve(currentDirectory, `${relativeNoExtensionFromRunCmd}.ts`);
-  if (fs.existsSync(tsPath)) {
-    return tsPath;
-  }
-
-  // Built (.js) — running from `bun dist/bin.mjs`
-  const jsPath = path.resolve(currentDirectory, `${relativeNoExtensionFromRunCmd}.js`);
-  if (fs.existsSync(jsPath)) {
-    return jsPath;
-  }
-
-  // Compiled binary — import.meta.url points to /$bunfs/, files live next to the executable
-  const baseName = path.basename(relativeNoExtensionFromRunCmd);
-  const exeDir = path.dirname(process.execPath);
-  const mjsPath = path.resolve(exeDir, `${baseName}.mjs`);
-  if (fs.existsSync(mjsPath)) {
-    return mjsPath;
-  }
-  const exeJsPath = path.resolve(exeDir, `${baseName}.js`);
-  if (fs.existsSync(exeJsPath)) {
-    return exeJsPath;
-  }
-
-  // Fallback — return the .js path (will error at runtime with a clear module-not-found)
-  return jsPath;
+type RunHelperModuleUrls = {
+  readonly subAgentSharedModuleUrl: string;
+  readonly subAgentAcpModuleUrl: string;
+  readonly subAgentLegacyModuleUrl: string;
 };
 
-const subAgentSharedModuleUrl = pathToFileURL(
-  resolveSiblingModulePath('../services/run-subagent-shared')
-).href;
-const subAgentAcpModuleUrl = pathToFileURL(
-  resolveSiblingModulePath('../services/run-subagent-acp')
-).href;
-const subAgentLegacyModuleUrl = pathToFileURL(
-  resolveSiblingModulePath('../services/run-subagent-legacy')
-).href;
+const resolveRunHelperModuleUrls = (): RunHelperModuleUrls => ({
+  subAgentSharedModuleUrl: pathToFileURL(
+    resolveRunCompanionModulePath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativeNoExtensionFromCaller: '../services/run-subagent-shared',
+    })
+  ).href,
+  subAgentAcpModuleUrl: pathToFileURL(
+    resolveRunCompanionModulePath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativeNoExtensionFromCaller: '../services/run-subagent-acp',
+    })
+  ).href,
+  subAgentLegacyModuleUrl: pathToFileURL(
+    resolveRunCompanionModulePath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativeNoExtensionFromCaller: '../services/run-subagent-legacy',
+    })
+  ).href,
+});
 
 type RunHelperContext = {
   readonly apiKey?: string;
@@ -222,6 +218,8 @@ type RunHelperContext = {
   readonly acpOnly?: boolean;
   readonly logsOff?: boolean;
   readonly runOutputDir?: string;
+  readonly runLogFilePath?: string;
+  readonly readAccessRoots?: ReadonlyArray<string>;
 };
 
 // eslint-disable-next-line max-lines-per-function
@@ -234,9 +232,9 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   'let perfDebugSeq = 0;',
   'const proxySessionCache = new Map();',
   'const composioBaseURL = (helperContext.baseURL || "https://backend.composio.dev").replace(/\\/$/, "");',
-  'const subAgentSchema = {',
+  'const experimentalSubAgentSchema = {',
   '  type: "function",',
-  '  description: "Prompt a sub-agent from the same agent family as the current main agent (Codex -> Codex, Claude -> Claude) and return its final response.",',
+  '  description: "Experimental helper: prompt a sub-agent from the same agent family as the current main agent (Codex -> Codex, Claude -> Claude) and return its final response.",',
   '  parameters: {',
   '    type: "object",',
   '    additionalProperties: false,',
@@ -258,6 +256,7 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '      target: { type: "string", enum: ["claude", "codex"] },',
   '      result: { description: "Final plain-text result when available." },',
   '      structuredOutput: { description: "Structured output when jsonSchema was requested." },',
+  '      logFilePath: { description: "Path to the local run log file for helper execution details." },',
   '    },',
   '  },',
   '};',
@@ -292,20 +291,12 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  const payload = { phase, label, elapsedMs, ...details };',
   '  console.error(`[perf] ${JSON.stringify(payload)}`);',
   '};',
-  'const helperDebugEnabled = helperContext.debug === true;',
-  'const helperProgressEnabled = helperContext.logsOff !== true;',
   'const sharedRunOutputDir = typeof helperContext.runOutputDir === "string" && helperContext.runOutputDir.length > 0 ? helperContext.runOutputDir : null;',
-  'const helperProgressSteps = new Set([',
-  '  "subAgent.target",',
-  '  "subAgent.acp.message",',
-  '  "subAgent.acp.thought",',
-  '  "subAgent.acp.tool_call",',
-  '  "subAgent.acp.tool_call_update",',
-  '  "subAgent.acp.plan",',
-  '  "subAgent.acp.fallback",',
-  ']);',
-  'const helperDebugUseColor = process.stderr?.isTTY === true && process.env.NO_COLOR !== "1";',
-  'const helperDebugColorize = (line) => helperDebugUseColor ? `\\x1b[90m${line}\\x1b[0m` : line;',
+  'const sharedRunLogFilePath = typeof helperContext.runLogFilePath === "string" && helperContext.runLogFilePath.length > 0 ? helperContext.runLogFilePath : null;',
+  'const appendRunLogLine = (line) => {',
+  '  if (!sharedRunLogFilePath || typeof line !== "string" || line.length === 0) return;',
+  '  fs.appendFileSync(sharedRunLogFilePath, `${line}\\n`, "utf8");',
+  '};',
   'const truncateDebugText = (value, max = 240) => {',
   '  const text = typeof value === "string" ? value : String(value ?? "");',
   '  return text.length > max ? `${text.slice(0, max - 1)}…` : text;',
@@ -329,42 +320,42 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   'const formatHelperDebugEvent = (step, details = {}) => {',
   '  switch (step) {',
   '    case "subAgent.target":',
-  '      return `[subAgent] triggered with ${details.resolvedTarget}`;',
+  '      return `[experimental_subAgent] triggered with ${details.resolvedTarget}`;',
   '    case "subAgent.acp.resolve":',
-  '      return `[subAgent] ACP via ${details.source} (${details.target})`;',
+  '      return `[experimental_subAgent] ACP via ${details.source} (${details.target})`;',
   '    case "subAgent.acp.initialized":',
-  '      return `[subAgent] ACP initialized (${details.target})`;',
+  '      return `[experimental_subAgent] ACP initialized (${details.target})`;',
   '    case "subAgent.acp.session":',
-  '      return `[subAgent] session ready (${details.target})`;',
+  '      return `[experimental_subAgent] session ready (${details.target})`;',
   '    case "subAgent.acp.model":',
   '      return details.applied === true',
-  '        ? `[subAgent] model=${details.model}`',
-  '        : `[subAgent] model unchanged (${details.model})`;',
+  '        ? `[experimental_subAgent] model=${details.model}`',
+  '        : `[experimental_subAgent] model unchanged (${details.model})`;',
   '    case "subAgent.acp.message": {',
   '      const text = previewDebugValue(details.text);',
-  '      return text ? `[subAgent] ${text}` : null;',
+  '      return text ? `[experimental_subAgent] ${text}` : null;',
   '    }',
   '    case "subAgent.acp.thought": {',
   '      const text = previewDebugValue(details.text);',
-  '      return text ? `[subAgent:thinking] ${text}` : null;',
+  '      return text ? `[experimental_subAgent:thinking] ${text}` : null;',
   '    }',
   '    case "subAgent.acp.tool_call": {',
   '      const where = Array.isArray(details.locations) && details.locations.length > 0 ? ` ${details.locations.slice(0, 2).join(", ")}` : "";',
-  '      return `[subAgent:tool] ${details.status || "pending"} ${details.title || details.kind || "tool"}${where}`;',
+  '      return `[experimental_subAgent:tool] ${details.status || "pending"} ${details.title || details.kind || "tool"}${where}`;',
   '    }',
   '    case "subAgent.acp.tool_call_update": {',
   '      const where = Array.isArray(details.locations) && details.locations.length > 0 ? ` ${details.locations.slice(0, 2).join(", ")}` : "";',
   '      const preview = previewDebugValue(details.rawOutput);',
-  '      return `[subAgent:tool] ${details.status || "update"} ${details.title || details.toolCallId || details.kind || "tool"}${where}${preview ? ` -> ${preview}` : ""}`;',
+  '      return `[experimental_subAgent:tool] ${details.status || "update"} ${details.title || details.toolCallId || details.kind || "tool"}${where}${preview ? ` -> ${preview}` : ""}`;',
   '    }',
   '    case "subAgent.acp.plan": {',
   '      const entries = Array.isArray(details.entries) ? details.entries : [];',
-  '      if (entries.length === 0) return "[subAgent:plan] updated";',
+  '      if (entries.length === 0) return "[experimental_subAgent:plan] updated";',
   '      const summary = entries.slice(0, 3).map((entry) => `${entry.status}:${truncateDebugText(entry.content || "", 48)}`).join(" | ");',
-  '      return `[subAgent:plan] ${summary}`;',
+  '      return `[experimental_subAgent:plan] ${summary}`;',
   '    }',
   '    case "subAgent.acp.fallback":',
-  '      return `[subAgent] ACP fallback (${details.code})`;',
+  '      return `[experimental_subAgent] ACP fallback (${details.code})`;',
   '    case "execute.prepare":',
   '      return `[execute] ${details.slug}`;',
   '    case "search.prepare":',
@@ -388,13 +379,8 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '};',
   'const helperDebugLog = (step, details = {}) => {',
   '  const line = formatHelperDebugEvent(step, details);',
-  '  if (line && (helperDebugEnabled || (helperProgressEnabled && helperProgressSteps.has(step)))) {',
-  '    console.error(helperDebugColorize(line));',
-  '    return;',
-  '  }',
-  '  if (!helperDebugEnabled) return;',
   '  const elapsedMs = Date.now() - perfDebugStart;',
-  '  console.error(helperDebugColorize(`[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`));',
+  '  appendRunLogLine(line ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`);',
   '};',
   'const parseJson = (text) => {',
   '  const value = text.trim();',
@@ -454,7 +440,6 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  return result;',
   '};',
   'const logCliResultPreview = (requestId, command, result) => {',
-  '  if (!helperDebugEnabled) return;',
   '  if (!result || typeof result !== "object") {',
   '    helperDebugLog("cli.result", { requestId, command, preview: result, result: describeDebugValue(result) });',
   '    return;',
@@ -486,14 +471,14 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  if (detected === "codex" || detected === "claude") return detected;',
   '  if (typeof Bun.which === "function" && Bun.which("codex")) return "codex";',
   '  if (typeof Bun.which === "function" && Bun.which("claude")) return "claude";',
-  '  throw new Error("subAgent() could not determine an agent CLI. Current master is user; install codex or claude, or pass { target: \\"codex\\" | \\"claude\\" }.");',
+  '  throw new Error("experimental_subAgent() could not determine an agent CLI. Current master is user; install codex or claude, or pass { target: \\"codex\\" | \\"claude\\" }.");',
   '};',
   'const normalizeInvokeAgentOptions = (options = {}) => {',
   '  if (options == null || typeof options !== "object" || Array.isArray(options)) {',
-  '    throw new Error("subAgent() options must be an object when provided.");',
+  '    throw new Error("experimental_subAgent() options must be an object when provided.");',
   '  }',
   '  if (options.schema !== undefined && options.jsonSchema !== undefined) {',
-  '    throw new Error("subAgent() accepts either options.schema or options.jsonSchema, not both.");',
+  '    throw new Error("experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.");',
   '  }',
   '  const inputSchema = options.schema ?? options.jsonSchema;',
   '  let structuredSchema;',
@@ -501,14 +486,14 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
   '  if (inputSchema !== undefined) {',
   '    if (inputSchema && typeof inputSchema.safeParse === "function" && inputSchema._def) {',
   '      if (typeof z.toJSONSchema !== "function") {',
-  '        throw new Error("subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.");',
+  '        throw new Error("experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.");',
   '      }',
   '      zodSchema = inputSchema;',
   '      structuredSchema = z.toJSONSchema(inputSchema);',
   '    } else if (typeof inputSchema === "object" && inputSchema !== null && !Array.isArray(inputSchema)) {',
   '      structuredSchema = inputSchema;',
   '    } else {',
-  '      throw new Error("subAgent() schema must be a Zod schema or JSON Schema object.");',
+  '      throw new Error("experimental_subAgent() schema must be a Zod schema or JSON Schema object.");',
   '    }',
   '  }',
   '  return { ...options, structuredSchema, zodSchema };',
@@ -709,22 +694,25 @@ const buildRunBaseHelpersSource = (): ReadonlyArray<string> => [
 ];
 
 const buildRunInvokeAgentHelpersSource = (): ReadonlyArray<string> => [
-  'const subAgentImpl = async (prompt, options = {}) => {',
+  'const experimentalSubAgentImpl = async (prompt, options = {}) => {',
   '  if (typeof prompt !== "string" || prompt.trim().length === 0) {',
-  '    throw new Error("subAgent() requires a non-empty prompt string.");',
+  '    throw new Error("experimental_subAgent() requires a non-empty prompt string.");',
   '  }',
+  '  const logFilePath = typeof helperContext.runLogFilePath === "string" && helperContext.runLogFilePath.length > 0 ? helperContext.runLogFilePath : undefined;',
   '  const normalizedOptions = normalizeInvokeAgentOptions(options);',
   '  const target = resolveInvokeAgentTarget(normalizedOptions.target);',
   '  const master = detectInvokeAgentMaster();',
   '  helperDebugLog("subAgent.target", { requestedTarget: normalizedOptions.target ?? null, resolvedTarget: target, master });',
   '  try {',
-  '    return await invokeAcpSubAgent({',
+  '    const response = await invokeAcpSubAgent({',
   '      prompt: prompt.trim(),',
   '      options: normalizedOptions,',
   '      master,',
   '      target,',
+  '      allowedReadRoots: Array.isArray(helperContext.readAccessRoots) ? helperContext.readAccessRoots : [],',
   '      helperDebugLog,',
   '    });',
+  '    return logFilePath ? { ...response, logFilePath } : response;',
   '  } catch (error) {',
   '    if (!isAcpInvokeError(error)) {',
   '      throw error;',
@@ -733,19 +721,21 @@ const buildRunInvokeAgentHelpersSource = (): ReadonlyArray<string> => [
   '      throw error;',
   '    }',
   '    helperDebugLog("subAgent.acp.fallback", { target, code: error.code, message: error.message });',
-  '    return invokeLegacySubAgent({',
+  '    const response = await invokeLegacySubAgent({',
   '      prompt: prompt.trim(),',
   '      options: normalizedOptions,',
   '      master,',
   '      target,',
+  '      allowedReadRoots: Array.isArray(helperContext.readAccessRoots) ? helperContext.readAccessRoots : [],',
   '      helperDebugLog,',
   '    });',
+  '    return logFilePath ? { ...response, logFilePath } : response;',
   '  }',
   '};',
-  'globalThis.subAgent = subAgentImpl;',
-  'Object.defineProperty(globalThis.subAgent, "schema", { value: subAgentSchema });',
-  'globalThis.invokeAgent = subAgentImpl;',
-  'Object.defineProperty(globalThis.invokeAgent, "schema", { value: subAgentSchema });',
+  'globalThis.experimental_subAgent = experimentalSubAgentImpl;',
+  'Object.defineProperty(globalThis.experimental_subAgent, "schema", { value: experimentalSubAgentSchema });',
+  'globalThis.invokeAgent = experimentalSubAgentImpl;',
+  'Object.defineProperty(globalThis.invokeAgent, "schema", { value: experimentalSubAgentSchema });',
   '',
 ];
 
@@ -801,6 +791,14 @@ const buildRunProxyHelpersSource = (): ReadonlyArray<string> => [
   '};',
   'Object.defineProperty(globalThis.proxy, "schema", { value: proxySchema });',
   '',
+  'Object.defineProperty(globalThis, "__composioRunContext", {',
+  '  value: Object.freeze({',
+  '    outputDir: sharedRunOutputDir,',
+  '    logFilePath: sharedRunLogFilePath,',
+  '  }),',
+  '  configurable: true,',
+  '});',
+  '',
   'Object.defineProperty(globalThis, "__composioConsumerContext", {',
   '  value: helperContext,',
   '  configurable: true,',
@@ -810,13 +808,15 @@ const buildRunProxyHelpersSource = (): ReadonlyArray<string> => [
 
 export const buildRunHelpersSource = (
   cliPrefix: ReadonlyArray<string>,
-  context: RunHelperContext = {}
+  context: RunHelperContext = {},
+  moduleUrls: RunHelperModuleUrls = resolveRunHelperModuleUrls()
 ): string =>
   [
+    'import * as fs from "node:fs";',
     'import { z } from "zod";',
-    `import { isAcpInvokeError } from ${JSON.stringify(subAgentSharedModuleUrl)};`,
-    `import { invokeAcpSubAgent } from ${JSON.stringify(subAgentAcpModuleUrl)};`,
-    `import { invokeLegacySubAgent } from ${JSON.stringify(subAgentLegacyModuleUrl)};`,
+    `import { isAcpInvokeError } from ${JSON.stringify(moduleUrls.subAgentSharedModuleUrl)};`,
+    `import { invokeAcpSubAgent } from ${JSON.stringify(moduleUrls.subAgentAcpModuleUrl)};`,
+    `import { invokeLegacySubAgent } from ${JSON.stringify(moduleUrls.subAgentLegacyModuleUrl)};`,
     '',
     `const cliPrefix = ${JSON.stringify(cliPrefix)};`,
     `const helperContext = ${JSON.stringify(context)};`,
@@ -828,7 +828,8 @@ export const buildRunHelpersSource = (
 
 const createRunHelpersPreloadFile = (
   cliPrefix: ReadonlyArray<string>,
-  context: RunHelperContext
+  context: RunHelperContext,
+  moduleUrls: RunHelperModuleUrls
 ) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-'));
   const preloadPath = path.join(directory, 'globals.mjs');
@@ -836,13 +837,28 @@ const createRunHelpersPreloadFile = (
     typeof context.runOutputDir === 'string' && context.runOutputDir.length > 0
       ? context.runOutputDir
       : path.join(directory, 'artifacts');
+  const runLogFilePath = path.join(runOutputDir, 'run.log');
+  const readAccessRoots = [
+    ...new Set(
+      [
+        ...(Array.isArray(context.readAccessRoots) ? context.readAccessRoots : []),
+        runOutputDir,
+      ].map(value => path.resolve(value))
+    ),
+  ];
   fs.mkdirSync(runOutputDir, { recursive: true });
+  fs.writeFileSync(runLogFilePath, '', 'utf8');
   fs.writeFileSync(
     preloadPath,
-    buildRunHelpersSource(cliPrefix, { ...context, runOutputDir }),
+    buildRunHelpersSource(cliPrefix, {
+      ...context,
+      runOutputDir,
+      runLogFilePath,
+      readAccessRoots,
+    }, moduleUrls),
     'utf8'
   );
-  return { directory, preloadPath, runOutputDir };
+  return { directory, preloadPath, runOutputDir, runLogFilePath };
 };
 
 export const buildRunCommand = ({
@@ -903,11 +919,19 @@ const resolveRunHelperContext = () =>
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
+    const defaultComposioDir = path.join(os.homedir(), USER_COMPOSIO_DIR);
+    const configuredCacheDir =
+      process.env.COMPOSIO_CACHE_DIR?.trim() || process.env.CACHE_DIR?.trim() || defaultComposioDir;
+    const baseReadAccessRoots = [
+      ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
+    ];
+
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
       webURL: userContext.data.webURL,
       orgId,
+      readAccessRoots: baseReadAccessRoots,
     } satisfies RunHelperContext;
 
     if (!apiKey || !orgId) {
@@ -930,6 +954,21 @@ const resolveRunHelperContext = () =>
           consumerUserId: consumerProject.value.consumerUserId,
         }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
       ),
+      readAccessRoots: [
+        ...new Set(
+          [
+            ...baseReadAccessRoots,
+            Option.getOrUndefined(
+              yield* resolveCliSessionArtifacts({
+                orgId,
+                consumerUserId: consumerProject.value.consumerUserId,
+              }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
+            ),
+          ]
+            .filter((value): value is string => typeof value === 'string' && value.length > 0)
+            .map(value => path.resolve(value))
+        ),
+      ],
     } satisfies RunHelperContext;
   });
 
@@ -956,7 +995,7 @@ export const runCmd = Command.make('run', {
       `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
       `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "composiohq", repo: "composio", state: "open" }),`,
       `    ]);`,
-      `    const brief = await subAgent(`,
+      `    const brief = await experimental_subAgent(`,
       `      \`Create a morning brief from these emails and issues.\\n\\n\${emails.prompt()}\\n\\n\${issues.prompt()}\`,`,
       `      {`,
       `        schema: z.object({`,
@@ -973,9 +1012,9 @@ export const runCmd = Command.make('run', {
       'Injected helpers (behave like their CLI counterparts):',
       '  execute(slug, data?)          Same as `composio execute` — returns parsed JSON',
       '  search(query, options?)        Same as `composio search` — returns matching tools',
-      '  subAgent(prompt, options?)     Spawn a powerful sub-agent from the same agent family as your current main agent',
+      '  experimental_subAgent(prompt, options?) Experimental helper to spawn a powerful sub-agent from the same agent family as your current main agent',
       '                                 (Codex -> Codex, Claude -> Claude) with optional Zod structured output',
-      '  result.prompt()                Prompt-safe serialization of a helper result, ideal for subAgent(...)',
+      '  result.prompt()                Prompt-safe serialization of a helper result, ideal for experimental_subAgent(...)',
       '  const f = await proxy(toolkit) Same as `composio proxy` — returns a fetch function',
       '                                 Example: const f = await proxy("gmail")',
       '                                          const me = await f("https://gmail.googleapis.com/gmail/v1/users/me/profile")',
@@ -986,7 +1025,7 @@ export const runCmd = Command.make('run', {
       'Flags:',
       '  --debug                     Log helper steps while the script runs',
       '  --dry-run                   Preview execute() calls without running them',
-      '  --logs-off                  Hide the always-on subAgent streaming logs',
+      '  --logs-off                  Hide the always-on experimental_subAgent streaming logs',
       '  --skip-connection-check     Skip the connected-account check',
       '  --skip-tool-params-check    Skip input validation against cached schema',
       '  --skip-checks               Skip both checks above',
@@ -1038,7 +1077,28 @@ export const runCmd = Command.make('run', {
           skipToolParamsCheck,
           skipChecks,
         };
-        const preload = createRunHelpersPreloadFile(inferCliInvocationPrefix(), helperContext);
+        const runHelperModuleUrls = yield* Effect.tryPromise({
+          try: async () => {
+            await repairMissingInstalledRunCompanionModules({
+              callerImportMetaUrl: import.meta.url,
+              execPath: process.execPath,
+              appVersion: APP_VERSION,
+            });
+
+            return resolveRunHelperModuleUrls();
+          },
+          catch: error =>
+            new Error(
+              error instanceof Error
+                ? error.message
+                : `Failed to prepare the modules required by 'composio run': ${String(error)}`
+            ),
+        });
+        const preload = createRunHelpersPreloadFile(
+          inferCliInvocationPrefix(),
+          helperContext,
+          runHelperModuleUrls
+        );
         let cleanupPaths: ReadonlyArray<string> = [];
         try {
           yield* appendCliSessionHistory({
@@ -1052,6 +1112,7 @@ export const runCmd = Command.make('run', {
               debug,
             },
           }).pipe(Effect.catchAll(() => Effect.void));
+          process.stderr.write(`RUN_LOG_FILE=${preload.runLogFilePath}\n`);
           const runCommand = buildRunCommand({
             file,
             args,

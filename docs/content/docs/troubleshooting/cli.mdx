@@ -44,6 +44,12 @@ For CI/CD, use environment variable:
 export COMPOSIO_API_KEY="your-api-key"
 ```
 
+If a toolkit account is missing or expired, reconnect it directly:
+
+```bash
+composio link github
+```
+
 ## Type generation issues
 
 ### Project type not detected
@@ -63,6 +69,12 @@ Specify output directory explicitly:
 composio generate --output-dir ./my-types
 ```
 
+If project auto-detection is wrong, initialize local developer context first or use the language-specific command explicitly:
+
+```bash
+composio dev init
+```
+
 ## Debug CLI issues
 
 Enable debug logging:
@@ -80,7 +92,9 @@ composio version
 ## Common issues
 
 - **API key not found**: Run `composio login`
+- **Toolkit account not connected**: Run `composio link <toolkit>`
 - **Project type detection fails**: Use language-specific commands or ensure you're in project root
+- **Developer commands fail due to missing project context**: Run `composio dev init`
 - **Network timeout**: Check internet connection and proxy settings
 - **Permission denied**: Check directory write permissions
 

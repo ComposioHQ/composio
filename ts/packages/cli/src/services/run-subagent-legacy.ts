@@ -4,7 +4,6 @@ import * as path from 'node:path';
 import { spawn } from 'node:child_process';
 import type { MasterKind } from 'src/services/master-detector';
 import {
-  finalizeInvokeAgentText,
   parseJson,
   toInvokeAgentResponse,
   type HelperDebugLog,
@@ -85,7 +84,7 @@ const invokeClaudeLegacy = async (
   const result = await runExternalCommandText(args, helperDebugLog);
   const parsed = parseJson(result.stdout.trim());
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('claude returned non-JSON output in subAgent().');
+    throw new Error('claude returned non-JSON output in experimental_subAgent().');
   }
 
   const payload =

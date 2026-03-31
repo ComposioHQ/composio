@@ -299,6 +299,52 @@
               "https://www.googleapis.com/auth/gmail.modify"
             ]
           },
+          "scope_requirements": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "all_of": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "any_of": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "minItems": 1
+                        }
+                      },
+                      "required": [
+                        "any_of"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "all_of"
+            ],
+            "description": "Structured scope requirements for the tool. Null means the tool is legacy and only exposes flat scopes.",
+            "example": {
+              "all_of": [
+                "read:user",
+                {
+                  "any_of": [
+                    "repo",
+                    "public_repo"
+                  ]
+                }
+              ]
+            }
+          },
           "tags": {
             "type": "array",
             "items": {
@@ -385,6 +431,7 @@
           "version",
           "output_parameters",
           "scopes",
+          "scope_requirements",
           "tags",
           "is_deprecated",
           "deprecated"
@@ -8815,6 +8862,16 @@
               }
             }
           },
+          "408": {
+            "description": "Request timeout - Tool execution exceeded the maximum allowed time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "410": {
             "description": "Gone - Tool has been deprecated and is no longer available",
             "content": {
@@ -9808,6 +9865,16 @@
               }
             }
           },
+          "408": {
+            "description": "Request timeout",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "410": {
             "description": "Gone",
             "content": {
@@ -10129,7 +10196,8 @@
                           "state": {
                             "type": "object",
                             "additionalProperties": {},
-                            "description": "State of the trigger instance"
+                            "description": "DEPRECATED: This field exposes internal state and will be removed in a future version.",
+                            "deprecated": true
                           },
                           "updated_at": {
                             "type": "string",
@@ -14401,11 +14469,18 @@
                         "default": false,
                         "description": "When true, the COMPOSIO_WAIT_FOR_CONNECTIONS tool is available for agents to poll connection status after sharing auth URLs. Default is false (disabled). May not work reliably with GPT models.",
                         "example": false
+                      },
+                      "enable_connection_removal": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": true,
+                        "description": "Enable the \"remove\" action in COMPOSIO_MANAGE_CONNECTIONS to allow deleting connected accounts. Default true."
                       }
                     },
                     "default": {
                       "enable": true,
-                      "enable_wait_for_connections": false
+                      "enable_wait_for_connections": false,
+                      "enable_connection_removal": true
                     },
                     "additionalProperties": false,
                     "description": "Configuration for connection management settings"
@@ -15121,6 +15196,11 @@
                               "type": "boolean",
                               "default": false,
                               "description": "Enable the COMPOSIO_WAIT_FOR_CONNECTIONS tool for polling connection status. Default false. May not work reliably with GPT models."
+                            },
+                            "enable_connection_removal": {
+                              "type": "boolean",
+                              "default": true,
+                              "description": "Enable the \"remove\" action in COMPOSIO_MANAGE_CONNECTIONS. Default true."
                             }
                           },
                           "description": "Manage connections configuration"
@@ -15387,7 +15467,7 @@
                               "original_slug"
                             ]
                           },
-                          "description": "Custom tools — standalone or extending Composio toolkits"
+                          "description": "Custom tools \u2014 standalone or extending Composio toolkits"
                         }
                       },
                       "description": "Experimental features including the generated system prompt. Only returned on session creation, not on GET.",
@@ -15505,6 +15585,11 @@
                         "environment": "production"
                       }
                     }
+                  },
+                  "account": {
+                    "type": "string",
+                    "description": "Account identifier to specify which connected account to use. Use the account ID (e.g. \"coup_hurricane_dal_analytical\") or an alias. When omitted with a single account, the default is used. When omitted with multiple accounts, an error lists available accounts.",
+                    "example": "coup_hurricane_dal_analytical"
                   }
                 },
                 "required": [
@@ -15583,6 +15668,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload too large",
             "content": {
               "application/json": {
                 "schema": {
@@ -15753,6 +15848,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -15914,6 +16019,11 @@
                               "type": "boolean",
                               "default": false,
                               "description": "Enable the COMPOSIO_WAIT_FOR_CONNECTIONS tool for polling connection status. Default false. May not work reliably with GPT models."
+                            },
+                            "enable_connection_removal": {
+                              "type": "boolean",
+                              "default": true,
+                              "description": "Enable the \"remove\" action in COMPOSIO_MANAGE_CONNECTIONS. Default true."
                             }
                           },
                           "description": "Manage connections configuration"
@@ -16180,7 +16290,7 @@
                               "original_slug"
                             ]
                           },
-                          "description": "Custom tools — standalone or extending Composio toolkits"
+                          "description": "Custom tools \u2014 standalone or extending Composio toolkits"
                         }
                       },
                       "description": "Experimental features",
@@ -16387,7 +16497,7 @@
     "/api/v3/tool_router/session/{session_id}/proxy_execute": {
       "post": {
         "summary": "Execute proxy request within a tool router session",
-        "description": "Execute any native API call on a toolkit with authentication automatically injected from Composio. This endpoint proxies HTTP requests to third-party APIs using connected account credentials resolved from the session context. Provide the toolkit slug, API endpoint, and HTTP method — Composio handles authentication injection, abstracting away credential management. Supports all HTTP methods, custom headers/query parameters, and binary request/response bodies.",
+        "description": "Execute any native API call on a toolkit with authentication automatically injected from Composio. This endpoint proxies HTTP requests to third-party APIs using connected account credentials resolved from the session context. Provide the toolkit slug, API endpoint, and HTTP method \u2014 Composio handles authentication injection, abstracting away credential management. Supports all HTTP methods, custom headers/query parameters, and binary request/response bodies.",
         "tags": [
           "Tool Router"
         ],
@@ -16899,6 +17009,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -17165,6 +17285,16 @@
               }
             }
           },
+          "413": {
+            "description": "Payload too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -17408,6 +17538,53 @@
                             "additionalProperties": {},
                             "description": "Information about the currently connected user (email, name, etc.)"
                           },
+                          "accounts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "Unique identifier for this account"
+                                },
+                                "alias": {
+                                  "type": "string",
+                                  "description": "User-assigned alias for this account"
+                                },
+                                "user_info": {
+                                  "type": "object",
+                                  "additionalProperties": {},
+                                  "description": "Information about the connected user (email, name, etc.)"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "description": "Connection status (e.g., \"active\")"
+                                },
+                                "created_at": {
+                                  "type": "string",
+                                  "description": "ISO 8601 timestamp of when the account was connected"
+                                },
+                                "is_default": {
+                                  "type": "boolean",
+                                  "description": "Whether this is the default account for the toolkit"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "status",
+                                "created_at",
+                                "is_default"
+                              ]
+                            },
+                            "description": "List of connected accounts for this toolkit. Present when multi-account is enabled."
+                          },
+                          "account_selection": {
+                            "type": "string",
+                            "enum": [
+                              "required"
+                            ],
+                            "description": "When \"required\", the agent must specify which account to use. Present only when multiple accounts exist."
+                          },
                           "status_message": {
                             "type": "string",
                             "description": "Human-readable message about the connection status and next steps"
@@ -17599,6 +17776,16 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload too large",
             "content": {
               "application/json": {
                 "schema": {
@@ -18009,7 +18196,7 @@
                   "properties": {
                     "upload_url": {
                       "type": "string",
-                      "description": "Presigned upload URL — PUT the file content here"
+                      "description": "Presigned upload URL \u2014 PUT the file content here"
                     },
                     "mount_relative_path": {
                       "type": "string",
@@ -18080,7 +18267,7 @@
     "/api/v3/tool_router/session/{session_id}/mounts/{mount_id}/delete": {
       "post": {
         "summary": "Delete a file from a session mount",
-        "description": "Deletes a file from a workbench session storage mount. S3 delete is idempotent — deleting a non-existent file succeeds silently.",
+        "description": "Deletes a file from a workbench session storage mount. S3 delete is idempotent \u2014 deleting a non-existent file succeeds silently.",
         "tags": [
           "Tool Router"
         ],

@@ -438,7 +438,7 @@ describe('CLI: composio execute', () => {
         expect(output.logId).toBe('log_large_output');
         expect(output.tokenCount).toBeGreaterThan(10_000);
         expect(output.outputFilePath).toMatch(
-          /^\/tmp\/composio\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/
+          /composio\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/
         );
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
         const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
@@ -663,6 +663,73 @@ describe('CLI: composio execute', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'user-config-with-global-context',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Create Issue',
+            slug: 'GITHUB_CREATE_AN_ISSUE',
+            description: 'Create a GitHub issue',
+            tags: ['github'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                owner: { type: 'string' },
+                repo: { type: 'string' },
+                title: { type: 'string' },
+                body: { type: 'string' },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {
+                html_url: { type: 'string' },
+              },
+            },
+          },
+        ],
+      },
+    })
+  )(
+    '[Given] composio execute --get-schema without a configured test user id [Then] it still works',
+    it => {
+      it.scoped('does not require execution user context for schema fetches', () =>
+        Effect.gen(function* () {
+          const cacheDir = yield* setupCacheDir;
+          const schemaPath = `${cacheDir}/tool_definitions/GITHUB_CREATE_AN_ISSUE.json`;
+
+          yield* cli(['execute', 'GITHUB_CREATE_AN_ISSUE', '--get-schema']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines) as unknown as {
+            slug: string;
+            version: string | null;
+            schemaPath: string;
+            inputSchema: Record<string, unknown>;
+          };
+
+          expect(output.slug).toBe('GITHUB_CREATE_AN_ISSUE');
+          expect(output.version).toBe('20260316_00');
+          expect(output.schemaPath).toBe(schemaPath);
+          expect(output.inputSchema).toEqual({
+            type: 'object',
+            properties: {
+              owner: { type: 'string' },
+              repo: { type: 'string' },
+              title: { type: 'string' },
+              body: { type: 'string' },
+            },
+          });
+          expect(fs.existsSync(schemaPath)).toBe(true);
+        })
+      );
+    }
+  );
 
   layer(
     TestLive({

@@ -42,11 +42,11 @@ catalog:
   typescript: ^5.9.2
   uuid: ^13.0.0
   vitest: ^3.2.4
-  wrangler: ^4.37.0
+  wrangler: ^4.78.0
   zod: ^4.1.0
   zod-to-json-schema: ^3.25.1
 
-minimumReleaseAge: 300
+minimumReleaseAge: 4320
 
 minimumReleaseAgeExclude:
   - '@composio/client'

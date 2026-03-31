@@ -12,8 +12,13 @@ import { getCompletionScript } from 'src/effects/shell-completions';
 // Options
 // ---------------------------------------------------------------------------
 
+const completionsOpt = Options.boolean('completions').pipe(
+  Options.withDescription('Install shell completions.'),
+  Options.withDefault(false)
+);
+
 const noCompletionsOpt = Options.boolean('no-completions').pipe(
-  Options.withDescription('Skip shell completions setup.'),
+  Options.withDescription('Deprecated: shell completions are skipped by default.'),
   Options.withDefault(false)
 );
 
@@ -122,7 +127,7 @@ const tildify = (p: string, homedir: string): string =>
 // ---------------------------------------------------------------------------
 
 export const installShellIntegration = (params: {
-  readonly noCompletions: boolean;
+  readonly completions: boolean;
 }): Effect.Effect<void, PlatformError, TerminalUI | NodeOs | FileSystem.FileSystem> =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -162,7 +167,7 @@ export const installShellIntegration = (params: {
     // Lazy-import the root command to avoid a circular dependency
     // (index.ts → install.cmd.ts → index.ts).
     let completionScript: string | undefined;
-    if (!params.noCompletions) {
+    if (params.completions && shell !== 'zsh') {
       const mod = yield* Effect.promise(() => import('src/commands'));
       const lines = yield* getCompletionScript(mod.rootCommand, shell);
       completionScript = lines.length > 0 ? Arr.join(lines, '\n') : undefined;
@@ -191,11 +196,13 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('PATH: already configured');
     }
 
-    if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
+    if (shell === 'zsh') {
+      yield* ui.log.step('Completions: skipped for zsh');
+    } else if (!params.completions) {
+      yield* ui.log.step('Completions: skipped by default (pass --completions to enable)');
+    } else if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
       blocks.push(config.completionBlock);
       yield* ui.log.step('Completions: will install shell completions');
-    } else if (params.noCompletions) {
-      yield* ui.log.step('Completions: skipped (--no-completions)');
     } else if (!config.completionBlock) {
       yield* ui.log.step('Completions: not available for this shell');
     } else {
@@ -222,7 +229,9 @@ export const installShellIntegration = (params: {
 
       yield* ui.log.success(`Updated ${tildify(rcPath, os.homedir)}`);
       yield* ui.note(
-        shell === 'fish' ? `source ${tildify(rcPath, os.homedir)}` : 'exec $SHELL',
+        shell === 'fish' || shell === 'zsh'
+          ? `source ${tildify(rcPath, os.homedir)}`
+          : 'exec $SHELL',
         'Restart your shell to apply changes'
       );
     } else {
@@ -242,11 +251,13 @@ export const installShellIntegration = (params: {
  * @example
  * ```bash
  * composio install
+ * composio install --completions
  * composio install --no-completions
  * ```
  */
 export const installCmd = Command.make(
   'install',
-  { noCompletions: noCompletionsOpt },
-  ({ noCompletions }) => installShellIntegration({ noCompletions })
+  { completions: completionsOpt, noCompletions: noCompletionsOpt },
+  ({ completions, noCompletions }) =>
+    installShellIntegration({ completions: completions && !noCompletions })
 ).pipe(Command.withDescription('Set up shell integration (PATH and completions).'));

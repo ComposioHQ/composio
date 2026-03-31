@@ -19,24 +19,33 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'search',
     description: 'Find tools by use case across all toolkits/apps.',
-    usage: 'search <query> [--toolkits text] [--limit integer]',
+    usage: 'search <query...> [--toolkits text] [--limit integer] [--human]',
     options: [
-      { name: '<query>', description: 'Semantic use-case query (e.g. "send emails")' },
+      {
+        name: '<query...>',
+        description: 'One or more semantic use-case queries (e.g. "send emails" "github issues")',
+      },
       { name: '--toolkits', description: 'Filter by toolkit slugs, comma-separated' },
       { name: '--limit', description: 'Maximum number of results (1-1000)' },
+      { name: '--human', description: 'Show formatted output instead of default JSON' },
     ],
   },
   {
     name: 'execute',
     description:
       'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
-    usage: 'execute <slug> [-d, --data text] [--dry-run] [--get-schema]',
+    usage:
+      'execute <slug> [-d, --data text] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
         name: '-d, --data',
         description:
           'JSON or JS-style object arguments, e.g. -d \'{ repo: "foo" }\', @file, or - for stdin',
+      },
+      {
+        name: '-p, --parallel',
+        description: 'Execute repeated <slug> -d <text> pairs concurrently',
       },
       { name: '--dry-run', description: 'Validate and preview the tool call without executing it' },
       { name: '--get-schema', description: 'Fetch and print the raw tool schema' },
@@ -45,13 +54,13 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'link',
     description: 'Connect your account for a toolkit/app.',
-    usage: 'link [<toolkit>] [--no-browser]',
+    usage: 'link [<toolkit>]',
     options: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
   },
   {
     name: 'run',
     description:
-      'Run inline TS/JS code with shimmed CLI commands; injected execute(), search(), proxy(), subAgent(), and z (zod).',
+      'Run inline TS/JS code with shimmed CLI commands; injected execute(), search(), proxy(), experimental_subAgent(), and z (zod).',
     usage: 'run <code> [-- ...args] | run [-f, --file text] [-- ...args] [--dry-run]',
     options: [
       { name: '<code>', description: 'Inline Bun ESNext code to evaluate' },
@@ -89,7 +98,7 @@ const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
   {
     name: 'dev',
     description:
-      'Developer workflows and management: init, execute, logs, orgs, projects, toolkits, accounts, and triggers.',
+      'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.',
   },
   {
     name: 'generate',
@@ -103,6 +112,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<CompactCommand> = [
   { name: 'login', description: 'Log in to Composio' },
   { name: 'logout', description: 'Log out from Composio' },
   { name: 'whoami', description: 'Show current account info' },
+  { name: 'orgs', description: 'Manage default organization context (list, switch)' },
   { name: 'version', description: 'Display CLI version' },
   { name: 'upgrade', description: 'Upgrade CLI to the latest version' },
 ];
@@ -145,23 +155,28 @@ type SubcommandHelp = {
 
 const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   search: {
-    usage: 'composio search <query> [--toolkits text] [--limit integer]',
+    usage: 'composio search <query...> [--toolkits text] [--limit integer] [--human]',
     description:
-      'Find tools by use case. Returns matching tools with slugs you can pass directly to execute.',
+      'Find tools by use case. Defaults to JSON output; use --human for formatted output.',
     args: [
       {
-        name: '<query>',
-        description: 'Semantic use-case query (e.g. "send an email", "create github issue")',
+        name: '<query...>',
+        description:
+          'One or more semantic use-case queries (e.g. "send an email", "create github issue")',
       },
     ],
     options: [
       { name: '--toolkits <text>', description: 'Filter by toolkit slugs, comma-separated' },
       { name: '--limit <integer>', description: 'Maximum number of results (1-1000)' },
+      { name: '--human', description: 'Show formatted human-readable search output' },
     ],
     examples: [
       '# Find tools for a use case',
       'composio search "send an email"',
+      'composio search "send an email" "create github issue"',
+      'composio search "my emails" "my github issues" --toolkits gmail,github',
       'composio search "create issue" --toolkits github',
+      'composio search "send an email" --human',
       '',
       '# Cross-app workflow discovery',
       'composio search "post a message to a slack channel"',
@@ -180,7 +195,13 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     usage: 'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]',
     description:
       'Execute a tool by slug. Validates inputs against cached schemas and checks connections automatically — just try it and it will tell you what to fix.',
-    args: [{ name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' }],
+    args: [
+      {
+        name: '<slug>',
+        description:
+          'Tool slug for single execute, or repeated <slug> -d <text> pairs when using -p/--parallel',
+      },
+    ],
     options: [
       {
         name: '-d, --data <text>',
@@ -225,7 +246,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio execute GITHUB_CREATE_ISSUE -d @issue.json',
       '',
       '# Execute multiple tools concurrently',
-      `composio execute --parallel GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com" }'  GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
+      `composio execute -p GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com" }' GITHUB_CREATE_AN_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
     ],
     seeAlso: [
       'composio search "<query>"               Find tool slugs by use case',
@@ -235,18 +256,17 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
   },
   link: {
-    usage: 'composio link [<toolkit>] [--no-browser] [--no-wait]',
+    usage: 'composio link [<toolkit>] [--no-wait]',
     description:
       'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf. Opens a browser for OAuth authorization and waits for confirmation.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
     flags: [
-      { name: '--no-browser', description: 'Print the auth URL instead of opening a browser' },
       {
         name: '--no-wait',
         description: 'Print link info and exit without waiting for authorization',
       },
     ],
-    examples: ['composio link github', 'composio link gmail --no-browser'],
+    examples: ['composio link github'],
     seeAlso: [
       'composio search "<query>"               Find tools to use after linking',
       "composio execute <slug> -d '{ ... }'    Execute a tool with your connected account",
@@ -261,7 +281,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '-f, --file <text>', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running them' },
       { name: '--debug', description: 'Log helper steps while the script runs' },
-      { name: '--logs-off', description: 'Hide the always-on subAgent streaming logs' },
+      { name: '--logs-off', description: 'Hide the always-on experimental_subAgent streaming logs' },
     ],
     flags: [
       { name: '--skip-connection-check', description: 'Skip the connected-account check' },
@@ -279,8 +299,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: 'search(query, opts?)', description: 'Find tools — same as `composio search`' },
       { name: 'proxy(toolkit)', description: 'Returns a fetch() bound to your connected account' },
       {
-        name: 'subAgent(prompt, opts?)',
-        description: 'Spawn a sub-agent (Claude/Codex) with optional structured output',
+        name: 'experimental_subAgent(prompt, opts?)',
+        description: 'Experimental sub-agent helper (Claude/Codex) with optional structured output',
       },
       {
         name: 'result.prompt()',
@@ -331,7 +351,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       `  console.log(await f("https://gmail.googleapis.com/gmail/v1/users/me/profile"));`,
       `'`,
       '',
-      '# subAgent + z + result.prompt() — structured output from a sub-agent',
+      '# experimental_subAgent + z + result.prompt() — structured output from a sub-agent',
       `composio run '`,
       `  const [emails, issues] = await Promise.all([`,
       `    execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
@@ -339,7 +359,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       `  ]);`,
       `  // result.prompt() serializes helper output for LLM consumption`,
       `  // z is a global from zod for defining structured output schemas`,
-      `  const brief = await subAgent(`,
+      `  const brief = await experimental_subAgent(`,
       `    \`Summarize these emails and issues.\\n\\n\${emails.prompt()}\\n\\n\${issues.prompt()}\`,`,
       `    { schema: z.object({ summary: z.string(), urgent: z.array(z.string()) }) }`,
       `  );`,
@@ -391,8 +411,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   // ── Account commands ──────────────────────────────────────────────────
 
   login: {
-    usage: 'composio login [--no-browser] [--no-wait] [--key text] [-y, --yes]',
-    description: 'Log in to the Composio CLI session.',
+    usage:
+      'composio login [--no-browser] [--no-wait] [--key text] [-y, --yes] [--no-skill-install]',
+    description:
+      'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
     options: [
       {
         name: '--key <text>',
@@ -403,6 +425,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '--no-browser', description: 'Login without browser interaction' },
       { name: '--no-wait', description: 'Print login URL and session info, then exit' },
       { name: '-y, --yes', description: 'Skip org picker; use session default org' },
+      {
+        name: '--no-skill-install',
+        description: 'Skip installing the composio-cli skill for Claude Code',
+      },
     ],
   },
   logout: {
@@ -420,6 +446,39 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   upgrade: {
     usage: 'composio upgrade',
     description: 'Upgrade your Composio CLI to the latest available version.',
+  },
+  files: {
+    usage: 'composio files',
+    description: 'Where the Composio CLI stores data on disk.',
+    examples: [
+      '~/.composio/',
+      '  CLI configuration and cache directory.',
+      '  user_data.json        Your auth state (API key, org, base URL)',
+      '  toolkits.json         Cached toolkit list from the API',
+      '  tools.json            Cached tool definitions',
+      '  trigger-types.json    Cached trigger type definitions',
+      '  consumer-short-term-cache.json   Per-org connected toolkits cache (15-min TTL)',
+      '  analytics.json        Anonymous install ID for telemetry',
+      '',
+      '  All caches are safe to delete — they will be re-fetched on next use.',
+      '',
+      '$TMPDIR/composio/   (or COMPOSIO_SESSION_DIR / COMPOSIO_CACHE_DIR)',
+      '  Session artifacts directory. Each CLI session gets a unique subdirectory',
+      '  scoped to your working directory. Stores session history and files',
+      '  created during `run` and `execute` (e.g. large tool outputs).',
+      '  Use `composio artifacts cwd` to print the current session path.',
+      '',
+      '.composio/   (per-project, optional)',
+      '  Per-directory project config. Scoped to the nearest parent that has one.',
+      '  .env             Allows COMPOSIO_ORG_ID and COMPOSIO_PROJECT_ID overrides',
+      '  project.json     Project context (org, project binding)',
+      '',
+      'Environment variables that control paths:',
+      '  COMPOSIO_SESSION_DIR     Override session artifacts root',
+      '  COMPOSIO_CACHE_DIR       Override cache directory (also used for artifacts fallback)',
+      '  COMPOSIO_CACHE_DIR is useful in sandboxed environments where ~/.composio or',
+      '  $TMPDIR may not be writable.',
+    ],
   },
 
   // ── Tools commands ────────────────────────────────────────────────────
@@ -845,6 +904,29 @@ export function printSubcommandHelp(cmd: string): Effect.Effect<void> {
   return Console.log(renderSubcommandHelp(help));
 }
 
+/**
+ * Match the command name from argv without requiring --help at the end.
+ * Used to print contextual help alongside error messages.
+ */
+export function matchCommandFromArgv(argv: ReadonlyArray<string>): string | undefined {
+  const args = argv.slice(2).filter(a => a !== '--help' && a !== '-h' && !a.startsWith('--'));
+  // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
+  for (let len = Math.min(args.length, 3); len > 0; len--) {
+    const key = args.slice(0, len).join(' ');
+    if (key in SUBCOMMAND_HELP) return key;
+  }
+  return undefined;
+}
+
+/**
+ * Get rendered help text for a command, or undefined if not found.
+ */
+export function getCommandHelpText(cmd: string): string | undefined {
+  const help = SUBCOMMAND_HELP[cmd];
+  if (!help) return undefined;
+  return renderSubcommandHelp(help);
+}
+
 // ── Main help output ───────────────────────────────────────────────────
 
 /**
@@ -876,14 +958,19 @@ export function printRootHelp(): Effect.Effect<void> {
     ...renderCompactCommands(OTHER_COMMANDS),
     '',
     bold('EXAMPLES'),
-    `  ${dim('# Find a tool')}`,
-    `  ${name} search "create github issue"`,
+    `  ${dim('# Find tools — supports multiple queries at once')}`,
+    `  ${name} search "send an email" "create github issue"`,
+    `  ${name} search "list calendar events" --toolkits google_calendar --limit 5`,
     '',
-    `  ${dim('# Connect your GitHub account')}`,
+    `  ${dim('# Connect your account for a toolkit')}`,
     `  ${name} link github`,
     '',
     `  ${dim('# Execute a tool')}`,
-    `  ${name} execute GITHUB_CREATE_ISSUE -d '{ repo: "owner/repo", title: "Bug" }'`,
+    `  ${name} execute GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
+    '',
+    `  ${dim('# Execute multiple tools in parallel')}`,
+    `  ${name} execute -p GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hi" }' \\`,
+    `                     SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL -d '{ channel: "general", text: "Hello" }'`,
     '',
     `  ${dim('# Call an API directly through proxy')}`,
     `  ${name} proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail`,
@@ -891,11 +978,35 @@ export function printRootHelp(): Effect.Effect<void> {
     `  ${dim('# Run a script with injected helpers')}`,
     `  ${name} run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
     '',
+    `  ${dim('# Run a multi-step script with Promise.all')}`,
+    `  ${name} run '`,
+    `    const [emails, issues] = await Promise.all([`,
+    `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
+    `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "acme", repo: "app", state: "open" }),`,
+    `    ]);`,
+    `    const brief = await experimental_subAgent(\`Summarize:\\n\${emails.prompt()}\\n\${issues.prompt()}\`);`,
+    `    console.log(brief);`,
+    `  '`,
+    '',
     bold('DEVELOPER COMMANDS'),
     ...renderCompactCommands(DEVELOPER_COMMANDS),
     '',
     bold('ACCOUNT'),
     ...renderCompactCommands(ACCOUNT_COMMANDS),
+    '',
+    bold('FILES') + dim('  (composio files --help)'),
+    `  ${bold('~/.composio/')}`,
+    `    CLI configuration and cache directory. Contains your auth state`,
+    `    (user_data.json), cached tool definitions (tools.json, toolkits.json),`,
+    `    trigger types, and per-org consumer caches. These caches speed up`,
+    `    repeated commands — safe to delete, they will be re-fetched on next use.`,
+    '',
+    `  ${bold('/tmp/composio/')}`,
+    `    Session artifacts directory. Each CLI session gets a unique subdirectory`,
+    `    scoped to your working directory. Stores session history and files`,
+    `    created during ${bold('run')} and ${bold('execute')} commands (e.g. downloaded attachments,`,
+    `    generated outputs). Use \`${name} artifacts cwd\` to print the path for`,
+    `    the current directory's session.`,
     '',
     bold('FLAGS'),
     '  -h, --help     Show help for command',

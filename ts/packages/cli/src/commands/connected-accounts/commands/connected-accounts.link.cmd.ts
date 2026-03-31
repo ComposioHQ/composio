@@ -6,9 +6,9 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
-import { extractMessage } from 'src/utils/api-error-extraction';
+import { extractMessage, extractSlug } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import {
   resolveCommandProject,
   formatResolveCommandProjectError,
@@ -36,11 +36,6 @@ const projectName = Options.text('project-name').pipe(
   Options.withDescription('Developer project name override for this command')
 );
 
-const noBrowser = Options.boolean('no-browser').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Skip auto-opening the browser')
-);
-
 const noWait = Options.boolean('no-wait').pipe(
   Options.withDefault(false),
   Options.withDescription('Do not wait for authorization; only print link info')
@@ -49,19 +44,13 @@ const noWait = Options.boolean('no-wait').pipe(
 const showRedirectUrl = (
   ui: TerminalUI,
   redirectUrl: string,
-  noBrowser: boolean,
   options?: { readonly emitRaw?: boolean }
 ) =>
   Effect.gen(function* () {
-    if (noBrowser) {
-      yield* ui.log.info('Please authorize using the following URL:');
-    } else {
-      yield* ui.log.step('Redirecting you to the authorization page');
-    }
-
+    yield* ui.log.step('Redirecting you to the authorization page');
     yield* ui.note(redirectUrl, 'Redirect URL');
     if (options?.emitRaw) {
-      yield* ui.output(redirectUrl, noBrowser ? { force: true } : undefined);
+      yield* ui.output(redirectUrl);
     }
   });
 
@@ -69,35 +58,32 @@ const waitForActiveConnection = (
   ui: TerminalUI,
   client: RawComposioClient,
   connectedAccountId: string,
-  redirectUrl: string,
-  noBrowser: boolean
+  redirectUrl: string
 ) =>
   Effect.gen(function* () {
-    yield* showRedirectUrl(ui, redirectUrl, noBrowser, { emitRaw: noBrowser });
+    yield* showRedirectUrl(ui, redirectUrl);
 
-    if (!noBrowser) {
-      let urlSchemeValid = false;
-      try {
-        const parsed = new URL(redirectUrl);
-        urlSchemeValid = parsed.protocol === 'https:' || parsed.protocol === 'http:';
-      } catch {
-        // ignore
-      }
+    let urlSchemeValid = false;
+    try {
+      const parsed = new URL(redirectUrl);
+      urlSchemeValid = parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    } catch {
+      // ignore
+    }
 
-      if (!urlSchemeValid) {
-        yield* ui.log.warn(`Redirect URL has an unexpected scheme: ${redirectUrl}`);
-        yield* ui.log.info('Open the URL manually if you trust the source.');
-      } else {
-        yield* Effect.tryPromise(() => open(redirectUrl, { wait: false })).pipe(
-          Effect.catchAll(error =>
-            Effect.gen(function* () {
-              yield* Effect.logDebug('Failed to open browser:', error);
-              yield* ui.log.warn('Could not open the browser automatically.');
-              yield* ui.log.info('Tip: try using `--no-browser` and open the URL manually.');
-            })
-          )
-        );
-      }
+    if (!urlSchemeValid) {
+      yield* ui.log.warn(`Redirect URL has an unexpected scheme: ${redirectUrl}`);
+      yield* ui.log.info('Open the URL manually if you trust the source.');
+    } else {
+      yield* Effect.tryPromise(() => open(redirectUrl, { wait: false })).pipe(
+        Effect.catchAll(error =>
+          Effect.gen(function* () {
+            yield* Effect.logDebug('Failed to open browser:', error);
+            yield* ui.log.warn('Could not open the browser automatically.');
+            yield* ui.log.info('Open the URL above manually.');
+          })
+        )
+      );
     }
 
     yield* ui.useMakeSpinner('Waiting for authentication...', spinner =>
@@ -168,12 +154,43 @@ const validateLinkResponse = (
     });
   });
 
+const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string) =>
+  Effect.gen(function* () {
+    const userContext = yield* ComposioUserContext;
+    const webURL = userContext.data.webURL.replace(/\/+$/, '');
+    const apiKey = Option.getOrUndefined(userContext.data.apiKey);
+
+    let orgSlug = '~';
+    if (apiKey) {
+      const sessionInfo = yield* getSessionInfoByUserApiKey({
+        baseURL: userContext.data.baseURL,
+        userApiKey: apiKey,
+      }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+
+      if (sessionInfo?.project.org.name) {
+        orgSlug = sessionInfo.project.org.name;
+      }
+    }
+
+    const dashboardUrl = `${webURL}/${orgSlug}/~/connect/apps/${toolkitSlug}?open=true`;
+
+    yield* ui.log.warn(
+      `Composio does not manage auth for "${toolkitSlug}" — opening the dashboard to connect manually.`
+    );
+
+    yield* Effect.tryPromise(() => open(dashboardUrl, { wait: false })).pipe(
+      Effect.catchAll(() => ui.log.warn('Could not open the browser automatically.'))
+    );
+
+    yield* ui.note(dashboardUrl, 'Dashboard URL');
+    yield* ui.output(dashboardUrl);
+  });
+
 const runConnectedAccountsLink = (params: {
   toolkit: Option.Option<string>;
   authConfig: Option.Option<string>;
   userId: Option.Option<string>;
   projectName: Option.Option<string>;
-  noBrowser: boolean;
   noWait: boolean;
   rootOnly: boolean;
 }) =>
@@ -284,7 +301,7 @@ const runConnectedAccountsLink = (params: {
 
       const { connectedAccountId: connId, redirectUrl } = validatedLink.value;
       if (params.noWait) {
-        yield* showRedirectUrl(ui, redirectUrl, params.noBrowser);
+        yield* showRedirectUrl(ui, redirectUrl);
         yield* ui.output(
           JSON.stringify(
             {
@@ -300,7 +317,7 @@ const runConnectedAccountsLink = (params: {
           { force: true }
         );
       } else {
-        yield* waitForActiveConnection(ui, client, connId, redirectUrl, params.noBrowser);
+        yield* waitForActiveConnection(ui, client, connId, redirectUrl);
       }
       return;
     }
@@ -345,6 +362,13 @@ const runConnectedAccountsLink = (params: {
         Effect.asSome,
         Effect.catchAll(error =>
           Effect.gen(function* () {
+            const slug = extractSlug(error);
+
+            if (slug === 'ToolRouterV2_NoManagedAuth') {
+              yield* handleNoManagedAuth(ui, toolkitSlug);
+              return Option.none();
+            }
+
             const message =
               extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`;
             yield* ui.log.error(message);
@@ -352,6 +376,9 @@ const runConnectedAccountsLink = (params: {
             yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
             return Option.none();
           })
+        ),
+        Effect.tap(() =>
+          invalidateConsumerConnectedToolkitsCache().pipe(Effect.catchAll(() => Effect.void))
         )
       );
 
@@ -361,10 +388,9 @@ const runConnectedAccountsLink = (params: {
     if (Option.isNone(validatedLink)) return;
 
     const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
-    yield* invalidateConsumerConnectedToolkitsCache().pipe(Effect.catchAll(() => Effect.void));
 
     if (params.noWait) {
-      yield* showRedirectUrl(ui, redirectUrl, params.noBrowser);
+      yield* showRedirectUrl(ui, redirectUrl);
       yield* ui.output(
         JSON.stringify(
           {
@@ -393,7 +419,7 @@ const runConnectedAccountsLink = (params: {
         },
       }).pipe(Effect.catchAll(() => Effect.void));
     } else {
-      yield* waitForActiveConnection(ui, client, connAccountId, redirectUrl, params.noBrowser);
+      yield* waitForActiveConnection(ui, client, connAccountId, redirectUrl);
       yield* appendCliSessionHistory({
         orgId: resolvedProject.projectType === 'CONSUMER' ? resolvedProject.orgId : undefined,
         consumerUserId:
@@ -411,14 +437,13 @@ const runConnectedAccountsLink = (params: {
 
 export const connectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, authConfig, userId, projectName, noBrowser, noWait },
-  ({ toolkit, authConfig, userId, projectName, noBrowser, noWait }) =>
+  { toolkit, authConfig, userId, projectName, noWait },
+  ({ toolkit, authConfig, userId, projectName, noWait }) =>
     runConnectedAccountsLink({
       toolkit,
       authConfig,
       userId,
       projectName,
-      noBrowser,
       noWait,
       rootOnly: false,
     })
@@ -430,7 +455,6 @@ export const connectedAccountsCmd$Link = Command.make(
       '',
       'Examples:',
       '  composio link github',
-      '  composio link gmail --no-browser          Print the auth URL instead of opening it',
       '',
       'See also:',
       '  composio search "<query>"                 Find tools to use after linking',
@@ -441,14 +465,13 @@ export const connectedAccountsCmd$Link = Command.make(
 
 export const rootConnectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, noBrowser, noWait },
-  ({ toolkit, noBrowser, noWait }) =>
+  { toolkit, noWait },
+  ({ toolkit, noWait }) =>
     runConnectedAccountsLink({
       toolkit,
       authConfig: Option.none(),
       userId: Option.none(),
       projectName: Option.none(),
-      noBrowser,
       noWait,
       rootOnly: true,
     })
@@ -460,7 +483,6 @@ export const rootConnectedAccountsCmd$Link = Command.make(
       '',
       'Examples:',
       '  composio link github',
-      '  composio link gmail --no-browser          Print the auth URL instead of opening it',
       '',
       'See also:',
       '  composio search "<query>"                 Find tools to use after linking',

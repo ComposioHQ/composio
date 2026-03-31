@@ -3,6 +3,7 @@ import { connectedAccountsCmd$List } from './commands/connected-accounts.list.cm
 import { connectedAccountsCmd$Info } from './commands/connected-accounts.info.cmd';
 import { connectedAccountsCmd$Whoami } from './commands/connected-accounts.whoami.cmd';
 import { connectedAccountsCmd$Delete } from './commands/connected-accounts.delete.cmd';
+import { connectedAccountsCmd$Link } from './commands/connected-accounts.link.cmd';
 
 /**
  * CLI entry point for connected account management commands.
@@ -15,6 +16,7 @@ import { connectedAccountsCmd$Delete } from './commands/connected-accounts.delet
 export const connectedAccountsCmd = Command.make('connected-accounts').pipe(
   Command.withDescription('View and manage Composio connected accounts.'),
   Command.withSubcommands([
+    connectedAccountsCmd$Link,
     connectedAccountsCmd$List,
     connectedAccountsCmd$Info,
     connectedAccountsCmd$Whoami,

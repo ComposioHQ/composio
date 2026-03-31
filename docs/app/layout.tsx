@@ -104,7 +104,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
           }}
         />
       </head>
-      <body className="flex flex-col min-h-screen font-sans">
+      <body className="flex flex-col min-h-dvh font-sans">
         <Analytics />
         <PostHogProvider>
           <RootProvider

@@ -31,7 +31,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is zsh', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates .zshrc with PATH and completions', () =>
+      it.scoped('[Then] creates .zshrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/zsh';
@@ -46,14 +46,15 @@ describe('CLI: composio install', () => {
           expect(contents).toContain('# Composio CLI');
           expect(contents).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(contents).toContain('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"');
-          expect(contents).toContain('# Composio CLI completions');
+          expect(contents).not.toContain('# Composio CLI completions');
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('Detected shell: zsh');
           expect(output).toContain('PATH: will add');
-          expect(output).toContain('Completions: will install shell completions');
+          expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Updated');
+          expect(output).toContain('source ~/.zshrc');
         })
       );
     });
@@ -61,7 +62,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is bash', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates .bashrc with PATH and completions', () =>
+      it.scoped('[Then] creates .bashrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/bash';
@@ -76,7 +77,7 @@ describe('CLI: composio install', () => {
           expect(contents).toContain('# Composio CLI');
           expect(contents).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(contents).toContain('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"');
-          expect(contents).toContain('# Composio CLI completions');
+          expect(contents).not.toContain('# Composio CLI completions');
         })
       );
     });
@@ -84,7 +85,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is fish', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates config.fish with PATH and completions', () =>
+      it.scoped('[Then] creates config.fish with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/usr/bin/fish';
@@ -99,7 +100,33 @@ describe('CLI: composio install', () => {
           expect(contents).toContain('# Composio CLI');
           expect(contents).toContain('set --export COMPOSIO_INSTALL_DIR');
           expect(contents).toContain('set --export PATH $COMPOSIO_INSTALL_DIR $PATH');
+          expect(contents).not.toContain('# Composio CLI completions');
+        })
+      );
+    });
+  });
+
+  describe('[When] --completions is passed', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] writes PATH block and installs completions', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          process.env.SHELL = '/bin/bash';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          yield* cli(['install', '--completions']);
+
+          const fs = yield* FileSystem.FileSystem;
+          const rcPath = path.join(os.homedir, '.bashrc');
+          const contents = yield* fs.readFileString(rcPath);
+
+          expect(contents).toContain('# Composio CLI');
+          expect(contents).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(contents).toContain('# Composio CLI completions');
+
+          const lines = yield* MockConsole.getLines();
+          const output = lines.join('\n');
+          expect(output).toContain('Completions: will install shell completions');
         })
       );
     });
@@ -125,7 +152,7 @@ describe('CLI: composio install', () => {
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
-          expect(output).toContain('Completions: skipped (--no-completions)');
+          expect(output).toContain('Completions: skipped for zsh');
         })
       );
     });
@@ -136,15 +163,15 @@ describe('CLI: composio install', () => {
       it.scoped('[Then] does not duplicate entries', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
-          process.env.SHELL = '/bin/zsh';
+          process.env.SHELL = '/bin/bash';
           process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
 
           // Run install twice
-          yield* cli(['install']);
-          yield* cli(['install']);
+          yield* cli(['install', '--completions']);
+          yield* cli(['install', '--completions']);
 
           const fs = yield* FileSystem.FileSystem;
-          const rcPath = path.join(os.homedir, '.zshrc');
+          const rcPath = path.join(os.homedir, '.bashrc');
           const contents = yield* fs.readFileString(rcPath);
 
           // Count occurrences of each marker — should be exactly 1
@@ -175,18 +202,17 @@ describe('CLI: composio install', () => {
             '# existing config\n# Composio CLI\nexport COMPOSIO_INSTALL_DIR=/old\n# Composio CLI completions\n_composio() {}\n'
           );
 
-          yield* cli(['install']);
+          yield* cli(['install', '--completions']);
 
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('PATH: already configured');
-          expect(output).toContain('Completions: already configured');
+          expect(output).toContain('Completions: skipped for zsh');
           expect(output).toContain('Shell integration already configured');
 
           // File should not have grown
           const contents = yield* fs.readFileString(rcPath);
           const markerCount = contents.split('# Composio CLI').length - 1;
-          // "# Composio CLI" appears in both the PATH block marker and the completions marker
           expect(markerCount).toBe(2);
         })
       );

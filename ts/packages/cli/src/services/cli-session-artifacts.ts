@@ -1,9 +1,14 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { Effect, Option } from 'effect';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
 
-const CLI_SESSION_ARTIFACTS_ROOT = '/tmp/composio';
+const resolveArtifactsRoot = (): string =>
+  process.env.COMPOSIO_SESSION_DIR?.trim() ||
+  process.env.COMPOSIO_CACHE_DIR?.trim() ||
+  path.join(os.tmpdir(), 'composio');
+
 const SESSION_HISTORY_FILE = 'session-history.jsonl';
 
 export type CliSessionArtifacts = {
@@ -22,13 +27,19 @@ export const resolveCliSessionArtifacts = (params?: {
   readonly consumerUserId?: string;
 }) =>
   Effect.gen(function* () {
-    const sessionIdOption = yield* getOrCreateProbablyMyCliSessionIdForCurrentCwd(params);
+    const sessionIdOption = yield* getOrCreateProbablyMyCliSessionIdForCurrentCwd(params).pipe(
+      Effect.catchAll(() => Effect.succeed(Option.none<string>()))
+    );
     if (Option.isNone(sessionIdOption)) {
       return Option.none<CliSessionArtifacts>();
     }
 
-    const directoryPath = path.join(CLI_SESSION_ARTIFACTS_ROOT, sessionIdOption.value);
-    fs.mkdirSync(directoryPath, { recursive: true });
+    const directoryPath = path.join(resolveArtifactsRoot(), sessionIdOption.value);
+    try {
+      fs.mkdirSync(directoryPath, { recursive: true });
+    } catch {
+      return Option.none<CliSessionArtifacts>();
+    }
     return Option.some({
       sessionId: sessionIdOption.value,
       directoryPath,
@@ -55,7 +66,11 @@ export const appendCliSessionHistory = (params: {
       sessionId: artifactsOption.value.sessionId,
       ...params.entry,
     });
-    fs.appendFileSync(artifactsOption.value.historyFilePath, `${line}\n`, 'utf8');
+    try {
+      fs.appendFileSync(artifactsOption.value.historyFilePath, `${line}\n`, 'utf8');
+    } catch {
+      // Best-effort — session history write is non-fatal.
+    }
   });
 
 export const storeCliSessionArtifact = (params: {
@@ -75,14 +90,18 @@ export const storeCliSessionArtifact = (params: {
           consumerUserId: params.consumerUserId,
         }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
       ) ||
-      path.join(CLI_SESSION_ARTIFACTS_ROOT, `adhoc_${randomToken(12)}`);
+      path.join(resolveArtifactsRoot(), `adhoc_${randomToken(12)}`);
 
-    fs.mkdirSync(directoryPath, { recursive: true });
-    const extension = (params.extension ?? 'json').replace(/^\.+/, '') || 'json';
-    const filePath = path.join(
-      directoryPath,
-      `${sanitizeArtifactName(params.name)}_${randomToken()}.${extension}`
-    );
-    fs.writeFileSync(filePath, params.contents, 'utf8');
-    return filePath;
+    try {
+      fs.mkdirSync(directoryPath, { recursive: true });
+      const extension = (params.extension ?? 'json').replace(/^\.+/, '') || 'json';
+      const filePath = path.join(
+        directoryPath,
+        `${sanitizeArtifactName(params.name)}_${randomToken()}.${extension}`
+      );
+      fs.writeFileSync(filePath, params.contents, 'utf8');
+      return filePath;
+    } catch {
+      return undefined;
+    }
   });
