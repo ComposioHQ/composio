@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import process from 'node:process';
 import { z } from 'zod';
 import type { MasterKind } from 'src/services/master-detector';
-import { isAcpInvokeError } from 'src/services/run-subagent-shared';
+import { isAcpInvokeError, type InvokeAgentTarget } from 'src/services/run-subagent-shared';
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
 import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 
@@ -70,7 +70,6 @@ type NormalizedInvokeAgentOptions = {
   readonly jsonSchema?: Record<string, unknown>;
   readonly structuredSchema?: Record<string, unknown>;
   readonly zodSchema?: StructuredSchemaInput;
-  readonly [key: string]: unknown;
 };
 
 type RunGlobalScope = typeof globalThis & {
@@ -508,11 +507,13 @@ export const installRunHelpers = async ({
 
   const normalizeFetchHeaders = (headers: HeadersInit | undefined) => {
     if (!headers) return [];
-    return Array.from(new Headers(headers).entries()).map(([name, value]) => ({
-      name,
-      type: 'header',
-      value,
-    }));
+    return [...(new Headers(headers) as unknown as Iterable<[string, string]>)].map(
+      ([name, value]) => ({
+        name,
+        type: 'header',
+        value,
+      })
+    );
   };
 
   const normalizeFetchBody = async (body: unknown) => {
@@ -611,7 +612,7 @@ export const installRunHelpers = async ({
       ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
       ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
     };
-    delete env.BUN_BE_BUN;
+    delete (env as Record<string, string | undefined>).BUN_BE_BUN;
     perfDebugLog('start', requestId, { cmd: args });
     const child = Bun.spawn({
       cmd: [...cliPrefix, ...args],
@@ -725,7 +726,8 @@ export const installRunHelpers = async ({
     try {
       const response = await invokeAcpSubAgent({
         prompt: prompt.trim(),
-        options: normalizedOptions,
+        options:
+          normalizedOptions as import('src/services/run-subagent-shared').InvokeAgentNormalizedOptions,
         master,
         target,
         allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
@@ -744,12 +746,10 @@ export const installRunHelpers = async ({
       });
       const response = await invokeLegacySubAgent({
         prompt: prompt.trim(),
-        options: normalizedOptions,
+        options:
+          normalizedOptions as import('src/services/run-subagent-shared').InvokeAgentNormalizedOptions,
         master,
         target,
-        allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
-          ? helperContext.readAccessRoots
-          : [],
         helperDebugLog,
       });
       return logFilePath ? { ...response, logFilePath } : response;
@@ -815,11 +815,13 @@ export const installRunHelpers = async ({
           ...(request.body !== undefined ? { body: request.body } : {}),
           ...(request.parameters.length > 0
             ? {
-                parameters: request.parameters.map(parameter => ({
-                  name: parameter.name,
-                  type: parameter.type,
-                  value: String(parameter.value),
-                })),
+                parameters: request.parameters.map(
+                  (parameter: { name: string; type: string; value: string }) => ({
+                    name: parameter.name,
+                    type: parameter.type,
+                    value: String(parameter.value),
+                  })
+                ),
               }
             : {}),
         }
