@@ -115,7 +115,7 @@ export function Feedback({ page }: FeedbackProps) {
               animate-in slide-in-from-bottom duration-200 sm:zoom-in-95
               motion-reduce:animate-none
               overscroll-contain
-              max-h-[90vh] overflow-y-auto"
+              max-h-[90dvh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
