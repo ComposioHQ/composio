@@ -98,6 +98,12 @@ export const detectInBandWarning = (
     }
   }
 
+  if (data.successfull === false || data.successful === false) {
+    if (typeof data.error === 'string') return data.error;
+    if (typeof data.message === 'string') return data.message;
+    return 'Tool response indicates unsuccessful execution';
+  }
+
   return null;
 };
 
