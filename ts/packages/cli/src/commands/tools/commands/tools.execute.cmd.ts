@@ -651,9 +651,12 @@ const handleExecutionError = (
     return { error: mapped.message, slug: slugValue };
   });
 
-class ToolExecutionError {
+class ToolExecutionError extends Error {
   readonly _tag = 'ToolExecutionError';
-  constructor(readonly message: string) {}
+  constructor(readonly message: string) {
+    super(message);
+    this.name = 'ToolExecutionError';
+  }
 }
 
 type CachedValidationDecision =
