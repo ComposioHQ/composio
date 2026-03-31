@@ -248,7 +248,7 @@ a:focus-visible {
 #nd-sidebar {
   position: sticky;
   top: 3.5rem;
-  height: calc(100vh - 3.5rem);
+  height: calc(100dvh - 3.5rem);
   background-color: var(--composio-sidebar);
 }
 
@@ -561,7 +561,7 @@ p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
    ========================================================================== */
 
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: max-width 0.3s ease;
 }
 

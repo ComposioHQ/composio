@@ -1,0 +1,1 @@
+../../../.claude/skills/cli-test-with-bundling/SKILL.md
