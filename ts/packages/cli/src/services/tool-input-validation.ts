@@ -6,6 +6,7 @@ import { z } from 'zod/v3';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
 import { isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { ComposioUserContext } from 'src/services/user-context';
 
 const TOOL_DEFINITIONS_DIR = 'tool_definitions';
@@ -373,9 +374,10 @@ export const validateToolInputArgumentsWithDefinition = (
   Effect.gen(function* () {
     const { schemaPath, schema } = definition;
     const allowedKeys = getObjectSchemaProperties(schema);
+    const normalizedSchema = normalizeFileUploadSchema(schema);
 
     const zodSchema = yield* Effect.try({
-      try: () => jsonSchemaToZodSchema<z.ZodTypeAny>(schema),
+      try: () => jsonSchemaToZodSchema<z.ZodTypeAny>(normalizedSchema),
       catch: error =>
         new ToolInputValidationError(
           slug,

@@ -35,7 +35,7 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
     description:
       'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
     usage:
-      'execute <slug> [-d, --data text] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
+      'execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
@@ -47,8 +47,12 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
         name: '-p, --parallel',
         description: 'Execute repeated <slug> -d <text> pairs concurrently',
       },
+      {
+        name: '--file',
+        description: 'Inject a local file path into the single file_uploadable input',
+      },
       { name: '--dry-run', description: 'Validate and preview the tool call without executing it' },
-      { name: '--get-schema', description: 'Fetch and print the raw tool schema' },
+      { name: '--get-schema', description: 'Fetch and print the CLI-facing input schema' },
     ],
   },
   {
@@ -192,7 +196,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
   },
   execute: {
-    usage: 'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]',
+    usage:
+      'composio execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] [--parallel]',
     description:
       'Execute a tool by slug. Validates inputs against cached schemas and checks connections automatically — just try it and it will tell you what to fix.',
     args: [
@@ -213,8 +218,12 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
         description: 'Execute repeated TOOL_SLUG -d <text> groups concurrently',
       },
       {
+        name: '--file <path>',
+        description: 'Inject a local file path into the single file_uploadable input',
+      },
+      {
         name: '--get-schema',
-        description: 'Fetch and print the raw tool schema without executing',
+        description: 'Fetch and print the CLI-facing input schema without executing',
       },
       {
         name: '--dry-run',
@@ -281,7 +290,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       { name: '-f, --file <text>', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running them' },
       { name: '--debug', description: 'Log helper steps while the script runs' },
-      { name: '--logs-off', description: 'Hide the always-on experimental_subAgent streaming logs' },
+      {
+        name: '--logs-off',
+        description: 'Hide the always-on experimental_subAgent streaming logs',
+      },
     ],
     flags: [
       { name: '--skip-connection-check', description: 'Skip the connected-account check' },
@@ -496,7 +508,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   'tools info': {
     usage: 'composio tools info [<slug>]',
     description:
-      'View a brief summary of a tool and cache the raw schema used by `composio execute --get-schema`.',
+      'View a brief summary of a tool and show the CLI-facing schema used by `composio execute --get-schema`.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GMAIL_SEND_EMAIL")' }],
   },
 
@@ -573,17 +585,21 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   },
   'dev playground-execute': {
     usage:
-      'composio dev playground-execute <slug> [-d, --data text] [--user-id text] [--project-name text] [--dry-run] [--get-schema]',
+      'composio dev playground-execute <slug> [-d, --data text] [--file path] [--user-id text] [--project-name text] [--dry-run] [--get-schema]',
     description:
       'Test tool executions against playground users using your developer project auth configs.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' }],
     options: [
       { name: '-d, --data <text>', description: 'JSON arguments, @file, or - for stdin' },
+      {
+        name: '--file <path>',
+        description: 'Inject a local file path into the single file_uploadable input',
+      },
       { name: '--user-id <text>', description: 'Developer-project user ID override' },
       { name: '--project-name <text>', description: 'Developer project name override' },
       {
         name: '--get-schema',
-        description: 'Fetch and print the raw tool schema without executing',
+        description: 'Fetch and print the CLI-facing input schema without executing',
       },
       { name: '--dry-run', description: 'Validate and preview without executing' },
     ],
