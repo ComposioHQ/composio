@@ -1,4 +1,6 @@
 import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { ConfigProvider, Effect, Option } from 'effect';
@@ -582,6 +584,89 @@ describe('CLI: composio execute', () => {
         expect(output.schemaVersion).toBeTruthy();
         expect(output.arguments).toEqual({ recipient_email: 'a@b.com', body: 'Hello' });
         expect(output.schemaPath).toContain('/tool_definitions/GMAIL_SEND_EMAIL.json');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email with attachment',
+            tags: ['email'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                recipient_email: { type: 'string' },
+                attachment: {
+                  file_uploadable: true,
+                  title: 'Attachment',
+                  description: 'Local path or URL to upload',
+                },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {
+                message_id: { type: 'string' },
+              },
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )('[Given] file_uploadable input as a local path [Then] execute uploads and sends s3key data', it => {
+    it.scoped('uploads local file paths before Tool Router execution', () =>
+      Effect.gen(function* () {
+        const tempFile = path.join(os.tmpdir(), `composio-upload-${Date.now()}.txt`);
+        fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
+
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          new Response(null, {
+            status: 200,
+          })
+        );
+
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          JSON.stringify({
+            recipient_email: 'a@b.com',
+            attachment: tempFile,
+          }),
+        ]);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+
+        expect(output.successful).toBe(true);
+        expect(output.data.arguments).toEqual({
+          recipient_email: 'a@b.com',
+          attachment: {
+            name: path.basename(tempFile),
+            mimetype: 'application/octet-stream',
+            s3key: `uploads/${path.basename(tempFile)}`,
+          },
+        });
+        expect(fetchSpy).toHaveBeenCalledWith(
+          'https://s3.test.composio.dev/upload',
+          expect.objectContaining({
+            method: 'PUT',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/octet-stream',
+            }),
+          })
+        );
+
+        fs.rmSync(tempFile, { force: true });
       })
     );
   });

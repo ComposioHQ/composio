@@ -11,6 +11,8 @@ import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
+import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import { uploadToolInputFiles } from 'src/services/tool-file-uploads';
 
 /**
  * Parameters accepted by the Tool Router-based executor.
@@ -118,18 +120,33 @@ export const ToolsExecutorLive = Layer.effect(
           const sessionId = yield* createToolRouterSession(resolvedClient, params.userId, {
             manageConnections: true,
           });
+          const normalizedArguments = isMetaToolSlug(slug)
+            ? params.arguments
+            : yield* getOrFetchToolInputDefinition(slug).pipe(
+                Effect.flatMap(definition =>
+                  Effect.tryPromise(() =>
+                    uploadToolInputFiles({
+                      toolSlug: slug,
+                      arguments_: params.arguments,
+                      inputSchema: definition.schema,
+                      client: resolvedClient,
+                    })
+                  )
+                ),
+                Effect.catchAll(() => Effect.succeed(params.arguments))
+              );
 
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(
             () => {
               if (isMetaToolSlug(slug)) {
                 return resolvedClient.toolRouter.session.executeMeta(sessionId, {
                   slug,
-                  arguments: params.arguments,
+                  arguments: normalizedArguments,
                 });
               }
               return resolvedClient.toolRouter.session.execute(sessionId, {
                 tool_slug: slug,
-                arguments: params.arguments,
+                arguments: normalizedArguments,
               });
             }
           );

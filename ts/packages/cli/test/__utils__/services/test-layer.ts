@@ -979,6 +979,18 @@ export const TestLayer = (input?: TestLiveInput) =>
           };
         },
       },
+      files: {
+        createPresignedURL: async (params: {
+          filename: string;
+          mimetype: string;
+          md5: string;
+          tool_slug: string;
+          toolkit_slug: string;
+        }) => ({
+          key: `uploads/${params.filename}`,
+          new_presigned_url: 'https://s3.test.composio.dev/upload',
+        }),
+      },
       toolRouter: {
         session: {
           create:

@@ -266,6 +266,9 @@ describe('buildRunHelpersSource', () => {
     expect(source).toContain('globalThis.zod = z;');
     expect(source).toContain('const stringifyForPrompt = (value) => {');
     expect(source).toContain('const attachPromptMethod = (value) => {');
+    expect(source).toContain('const writeTempExecuteFile = async (value) => {');
+    expect(source).toContain('const materializeExecutePayload = async (value) => {');
+    expect(source).toContain('const preparedData = await materializeExecutePayload(data);');
     expect(source).toContain('typeof value.prompt === "function"');
     expect(source).toContain(
       'value: () => stringifyForPrompt("data" in value ? value.data : value),'
