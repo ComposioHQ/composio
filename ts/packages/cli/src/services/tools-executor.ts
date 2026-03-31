@@ -131,17 +131,21 @@ export const ToolsExecutorLive = Layer.effect(
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
             : yield* getOrFetchToolInputDefinition(slug).pipe(
-                Effect.flatMap(definition =>
-                  Effect.tryPromise(() =>
+                Effect.catchAll(() => Effect.succeed(null)),
+                Effect.flatMap(definition => {
+                  if (!definition) {
+                    return Effect.succeed(params.arguments);
+                  }
+
+                  return Effect.tryPromise(() =>
                     uploadToolInputFiles({
                       toolSlug: slug,
                       arguments_: params.arguments,
                       inputSchema: definition.schema,
                       client: resolvedClient,
                     })
-                  )
-                ),
-                Effect.catchAll(() => Effect.succeed(params.arguments))
+                  );
+                })
               );
 
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(

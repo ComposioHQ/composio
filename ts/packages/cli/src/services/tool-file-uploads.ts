@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Composio as RawComposioClient } from '@composio/client';
+import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -208,9 +209,6 @@ const uploadFile = async (params: {
   };
 };
 
-const deriveToolkitSlug = (toolSlug: string): string =>
-  toolSlug.split('_')[0]?.toLowerCase() || 'unknown';
-
 const hydrateFileUploads = async (
   value: unknown,
   schema: JsonSchema | undefined,
@@ -242,7 +240,7 @@ const hydrateFileUploads = async (
     return nextValue;
   }
 
-  if (schema?.type === 'object' && isSchemaRecord(schema.properties) && isRecord(value)) {
+  if (isSchemaRecord(schema?.properties) && isRecord(value)) {
     const entries = await Promise.all(
       Object.entries(value).map(async ([key, entryValue]) => [
         key,
@@ -284,7 +282,7 @@ export const uploadToolInputFiles = async (params: {
 
   const hydrated = await hydrateFileUploads(params.arguments_, params.inputSchema, {
     toolSlug: params.toolSlug,
-    toolkitSlug: params.toolkitSlug ?? deriveToolkitSlug(params.toolSlug),
+    toolkitSlug: params.toolkitSlug ?? toolkitFromToolSlug(params.toolSlug) ?? 'unknown',
     client: params.client,
   });
 
