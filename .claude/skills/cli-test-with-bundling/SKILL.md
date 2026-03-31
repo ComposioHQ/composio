@@ -13,20 +13,27 @@ Trigger the `Build CLI Binaries` workflow on GitHub Actions, wait for it to comp
 
 ## Step 1: Determine the version
 
-Read the version from `ts/packages/cli/package.json`:
+Read the version from `ts/packages/cli/package.json` and append a beta prerelease suffix so the build is always treated as a beta release. This prevents accidental production releases and marks the GitHub release as a prerelease.
 
 ```bash
-jq -r .version ts/packages/cli/package.json
+BASE_VERSION=$(jq -r .version ts/packages/cli/package.json)
+BETA_VERSION="${BASE_VERSION}-beta.$(date +%Y%m%d%H%M%S)"
 ```
 
+For example, if `package.json` has `1.2.3`, the version becomes `1.2.3-beta.20260331143022`.
+
 ## Step 2: Trigger the workflow
+
+**Always use the beta version** — never pass the bare version from `package.json`:
 
 ```bash
 gh workflow run build-cli-binaries.yml \
   --repo ComposioHQ/composio \
   --ref "$(git rev-parse --abbrev-ref HEAD)" \
-  --field version="<version-from-step-1>"
+  --field version="${BETA_VERSION}"
 ```
+
+This ensures the CI workflow creates a **prerelease** GitHub release (the workflow auto-detects `beta` in the version string).
 
 ## Step 3: Find and monitor the run
 
@@ -71,10 +78,10 @@ esac
 ARTIFACT="composio-${OS}-${ARCH}"
 ```
 
-Then download from the release. The workflow creates a GitHub release tagged `@composio/cli@<version>`:
+Then download from the release. The workflow creates a GitHub release tagged `@composio/cli@<beta-version>`:
 
 ```bash
-VERSION="<version-from-step-1>"
+VERSION="${BETA_VERSION}"  # the beta version from Step 1
 TAG="@composio/cli@${VERSION}"
 ENCODED_TAG=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${TAG}', safe=''))")
 
