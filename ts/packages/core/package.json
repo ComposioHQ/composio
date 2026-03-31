@@ -141,26 +141,26 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {
-    "@type-challenges/utils": "^0.1.1",
-    "@types/semver": "^7.7.0",
+    "@type-challenges/utils": "0.1.1",
+    "@types/semver": "7.7.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
-    "typedoc": "^0.28.5",
+    "typedoc": "0.28.5",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": "^3.25 || ^4"
+    "zod": "3.25.0 || 4.0.0"
   },
   "dependencies": {
     "@composio/client": "catalog:",
     "@composio/json-schema-to-zod": "workspace:*",
-    "@types/json-schema": "^7.0.15",
-    "chalk": "^4.1.2",
+    "@types/json-schema": "7.0.15",
+    "chalk": "4.1.2",
     "openai": "catalog:",
-    "pusher-js": "^8.4.0",
-    "semver": "^7.7.2",
+    "pusher-js": "8.4.0",
+    "semver": "7.7.2",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"

@@ -22,7 +22,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "google-genai",
+        "google-genai==1.20.0",
         "composio",
     ],
     include_package_data=True,

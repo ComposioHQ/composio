@@ -28,7 +28,7 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@types/babel__helper-validator-identifier": "^7.15.2",
+    "@types/babel__helper-validator-identifier": "7.15.2",
     "helper-validator-identifier": "link:@types/@babel/helper-validator-identifier",
     "tsdown": "catalog:",
     "vitest": "catalog:"
@@ -43,6 +43,6 @@
   ],
   "sideEffects": false,
   "dependencies": {
-    "@babel/helper-validator-identifier": "^7.27.1"
+    "@babel/helper-validator-identifier": "7.27.1"
   }
 }

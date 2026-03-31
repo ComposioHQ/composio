@@ -23,14 +23,14 @@
     "@composio/openai": "workspace:*",
     "@composio/openai-agents": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
-    "@openai/agents": "^0.1.4",
-    "dotenv": "^16.4.1",
+    "@openai/agents": "0.1.4",
+    "dotenv": "16.4.1",
     "openai": "catalog:",
     "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "1.2.9",
     "typescript": "catalog:"
   }
 }

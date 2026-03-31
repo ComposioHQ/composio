@@ -3,7 +3,7 @@
   "type": "module",
   "dependencies": {
     "@composio/core": "file:/app/ts/packages/core",
-    "openai": "^6.16.0",
-    "zod": "^4.3.5"
+    "openai": "6.16.0",
+    "zod": "4.3.5"
   }
 }

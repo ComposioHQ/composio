@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "llama_index",
+    "llama_index==0.12.0",
     "composio",
 ]
 

@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["llama-index", "composio"],
+    install_requires=["llama-index==0.12.0", "composio"],
     include_package_data=True,
 )

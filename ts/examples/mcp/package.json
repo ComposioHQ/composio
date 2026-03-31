@@ -18,15 +18,15 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.35",
+    "@ai-sdk/openai": "2.0.35",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
     "ai": "catalog:",
-    "dotenv": "^16.4.1"
+    "dotenv": "16.4.1"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "1.2.9",
     "typescript": "catalog:"
   }
 }

@@ -45,7 +45,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "dependencies": {
-    "zod": "^3.25.76"
+    "zod": "3.25.76"
   },
   "peerDependencies": {
     "@composio/core": "0.6.7",
@@ -53,10 +53,10 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@anthropic-ai/claude-agent-sdk": "^0.1.9",
+    "@anthropic-ai/claude-agent-sdk": "0.1.9",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^3.25.76"
+    "zod": "3.25.76"
   }
 }

@@ -21,11 +21,11 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:^",
-    "dotenv": "^16.4.1",
+    "dotenv": "16.4.1",
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "1.2.9",
     "typescript": "catalog:"
   }
 }

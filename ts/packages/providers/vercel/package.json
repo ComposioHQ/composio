@@ -39,7 +39,7 @@
   "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@composio/core": "0.6.7",
-    "ai": "^5.0.0 || ^6.0.0"
+    "ai": "5.0.0 || 6.0.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",

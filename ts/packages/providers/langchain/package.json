@@ -39,11 +39,11 @@
   "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@composio/core": "0.6.7",
-    "@langchain/core": "^1.1.4"
+    "@langchain/core": "1.1.4"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@langchain/core": "^1.1.4",
+    "@langchain/core": "1.1.4",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

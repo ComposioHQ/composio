@@ -44,18 +44,18 @@
   "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@composio/core": "0.6.7",
-    "@mastra/core": "^1.0.4",
-    "zod": "^3.25 || ^4"
+    "@mastra/core": "1.0.4",
+    "zod": "3.25.0 || 4.0.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@mastra/core": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4",
+    "vitest": "3.1.4",
     "zod": "catalog:"
   },
   "dependencies": {
-    "@mastra/schema-compat": "^1.0.0"
+    "@mastra/schema-compat": "1.0.0"
   }
 }
