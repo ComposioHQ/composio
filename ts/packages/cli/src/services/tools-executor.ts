@@ -5,12 +5,18 @@ import type {
   SessionExecuteMetaResponse,
   SessionExecuteMetaParams,
 } from '@composio/client/resources/tool-router';
+import type { FileSystem } from '@effect/platform';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { createToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
+import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import { uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import type { NodeOs } from 'src/services/node-os';
+import type { ComposioUserContext } from 'src/services/user-context';
+import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
 
 /**
  * Parameters accepted by the Tool Router-based executor.
@@ -35,7 +41,11 @@ export interface ToolsExecutor {
   readonly execute: (
     slug: string,
     params: ToolExecuteParams
-  ) => Effect.Effect<ToolExecuteResponse, unknown>;
+  ) => Effect.Effect<
+    ToolExecuteResponse,
+    unknown,
+    FileSystem.FileSystem | NodeOs | ComposioUserContext | ComposioToolkitsRepository
+  >;
 }
 
 export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsExecutor');
@@ -103,7 +113,6 @@ export const detectInBandWarning = (
     if (typeof data.message === 'string') return data.message;
     return 'Tool response indicates unsuccessful execution';
   }
-
   return null;
 };
 
@@ -124,18 +133,37 @@ export const ToolsExecutorLive = Layer.effect(
           const sessionId = yield* createToolRouterSession(resolvedClient, params.userId, {
             manageConnections: true,
           });
+          const normalizedArguments = isMetaToolSlug(slug)
+            ? params.arguments
+            : yield* getOrFetchToolInputDefinition(slug).pipe(
+                Effect.catchAll(() => Effect.succeed(null)),
+                Effect.flatMap(definition => {
+                  if (!definition) {
+                    return Effect.succeed(params.arguments);
+                  }
+
+                  return Effect.tryPromise(() =>
+                    uploadToolInputFiles({
+                      toolSlug: slug,
+                      arguments_: params.arguments,
+                      inputSchema: definition.schema,
+                      client: resolvedClient,
+                    })
+                  );
+                })
+              );
 
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(
             () => {
               if (isMetaToolSlug(slug)) {
                 return resolvedClient.toolRouter.session.executeMeta(sessionId, {
                   slug,
-                  arguments: params.arguments,
+                  arguments: normalizedArguments,
                 });
               }
               return resolvedClient.toolRouter.session.execute(sessionId, {
                 tool_slug: slug,
-                arguments: params.arguments,
+                arguments: normalizedArguments,
               });
             }
           );

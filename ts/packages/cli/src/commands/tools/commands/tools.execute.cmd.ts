@@ -48,6 +48,7 @@ import {
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
+import { findFileUploadablePaths, normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -64,6 +65,10 @@ const data = Options.text('data').pipe(
   Options.withDescription('JSON arguments, @file, or - for stdin'),
   Options.optional
 );
+const file = Options.text('file').pipe(
+  Options.withDescription('Inject a local file path into the single file_uploadable input'),
+  Options.optional
+);
 
 const userId = Options.text('user-id').pipe(
   Options.optional,
@@ -76,7 +81,7 @@ const projectName = Options.text('project-name').pipe(
 );
 
 const getSchema = Options.boolean('get-schema').pipe(
-  Options.withDescription('Fetch and print the raw tool schema without executing'),
+  Options.withDescription('Fetch and print the CLI-facing input schema without executing'),
   Options.withDefault(false)
 );
 const dryRun = Options.boolean('dry-run').pipe(
@@ -117,6 +122,88 @@ const parseArguments = (raw: string) =>
       );
     }
     return parsed as Record<string, unknown>;
+  });
+
+const hasNestedKey = (
+  record: Record<string, unknown>,
+  pathParts: ReadonlyArray<string>
+): boolean => {
+  let current: unknown = record;
+  for (const key of pathParts) {
+    if (typeof current !== 'object' || current === null || Array.isArray(current)) {
+      return false;
+    }
+    if (!(key in (current as Record<string, unknown>))) {
+      return false;
+    }
+    current = (current as Record<string, unknown>)[key];
+  }
+  return true;
+};
+
+const setNestedKey = (
+  record: Record<string, unknown>,
+  pathParts: ReadonlyArray<string>,
+  value: unknown
+): Record<string, unknown> => {
+  if (pathParts.length === 0) return record;
+
+  const clone: Record<string, unknown> = { ...record };
+  let current = clone;
+
+  for (const [index, key] of pathParts.entries()) {
+    if (index === pathParts.length - 1) {
+      current[key] = value;
+      break;
+    }
+
+    const next = current[key];
+    const nextObject =
+      typeof next === 'object' && next !== null && !Array.isArray(next)
+        ? { ...(next as Record<string, unknown>) }
+        : {};
+    current[key] = nextObject;
+    current = nextObject;
+  }
+
+  return clone;
+};
+
+const injectSingleFileArgument = (params: {
+  readonly slug: string;
+  readonly args: Record<string, unknown>;
+  readonly filePath: string;
+  readonly schema: Record<string, unknown>;
+}) =>
+  Effect.gen(function* () {
+    const uploadablePaths = findFileUploadablePaths(params.schema);
+
+    if (uploadablePaths.length === 0) {
+      return yield* Effect.fail(
+        new Error(
+          `Tool "${params.slug}" has no file_uploadable input. Remove --file or pass JSON via -d.`
+        )
+      );
+    }
+
+    if (uploadablePaths.length > 1) {
+      return yield* Effect.fail(
+        new Error(
+          `Tool "${params.slug}" has multiple file_uploadable inputs (${uploadablePaths.map(parts => parts.join('.')).join(', ')}). Pass the target field explicitly with -d instead of --file.`
+        )
+      );
+    }
+
+    const targetPath = uploadablePaths[0] ?? [];
+    if (hasNestedKey(params.args, targetPath)) {
+      return yield* Effect.fail(
+        new Error(
+          `Cannot use --file because "${targetPath.join('.')}" is already set in -d. Remove that field or omit --file.`
+        )
+      );
+    }
+
+    return setNestedKey(params.args, targetPath, params.filePath);
   });
 
 const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
@@ -564,9 +651,12 @@ const handleExecutionError = (
     return { error: mapped.message, slug: slugValue };
   });
 
-class ToolExecutionError {
+class ToolExecutionError extends Error {
   readonly _tag = 'ToolExecutionError';
-  constructor(readonly message: string) {}
+  constructor(readonly message: string) {
+    super(message);
+    this.name = 'ToolExecutionError';
+  }
 }
 
 type CachedValidationDecision =
@@ -721,6 +811,7 @@ type DryRunSummary = {
 type RunToolsExecuteParams = {
   slug: string;
   data: Option.Option<string>;
+  file: Option.Option<string>;
   userId: Option.Option<string>;
   projectName: Option.Option<string>;
   surface: 'root' | 'dev';
@@ -732,7 +823,7 @@ type RunToolsExecuteParams = {
   skipChecks: boolean;
 };
 
-type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data'>;
+type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data' | 'file'>;
 
 type ParallelExecuteSpec = {
   readonly slug: string;
@@ -792,6 +883,7 @@ const emitCachedSchema = (
   }
 ) =>
   Effect.gen(function* () {
+    const displaySchema = normalizeFileUploadSchema(definition.schema);
     yield* ui.log.message(
       `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
     );
@@ -801,7 +893,7 @@ const emitCachedSchema = (
           slug,
           version: definition.version,
           schemaPath: definition.schemaPath,
-          inputSchema: definition.schema,
+          inputSchema: displaySchema,
         },
         null,
         2
@@ -823,7 +915,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const projectContext = yield* ProjectContext;
 
     const input = (yield* resolveInput(params.data)) ?? '{}';
-    const args = yield* parseArguments(input);
+    const parsedArgs = yield* parseArguments(input);
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catchAll(() => Effect.succeed(Option.none()))
     );
@@ -850,6 +942,21 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
+    const args = Option.isSome(params.file)
+      ? yield* getOrFetchToolInputDefinition(params.slug, {
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        }).pipe(
+          Effect.flatMap(definition =>
+            injectSingleFileArgument({
+              slug: params.slug,
+              args: parsedArgs,
+              filePath: Option.getOrThrow(params.file),
+              schema: definition.schema,
+            })
+          )
+        )
+      : parsedArgs;
     const executeOutputDir =
       process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() ||
       Option.getOrUndefined(
@@ -1545,7 +1652,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
             successful: true,
             version: definition.version,
             schemaPath: definition.schemaPath,
-            inputSchema: definition.schema,
+            inputSchema: normalizeFileUploadSchema(definition.schema),
           } satisfies Extract<
             ParallelExecuteResult,
             { readonly inputSchema: Record<string, unknown> }
@@ -1610,6 +1717,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
         resolveExecuteContext({
           slug: spec.slug,
           data: spec.data,
+          file: Option.none(),
           userId: params.userId,
           projectName: params.projectName,
           surface: params.surface,
@@ -1791,11 +1899,12 @@ export const runParallelToolsExecuteFromArgv = (argv: ReadonlyArray<string>) => 
 
 export const rootToolsCmd$Execute = Command.make(
   'execute',
-  { slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks },
-  ({ slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks }) =>
+  { slug, data, file, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks },
+  ({ slug, data, file, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks }) =>
     runToolsExecute({
       slug,
       data,
+      file,
       userId: Option.none(),
       projectName: Option.none(),
       surface: 'root',
@@ -1814,11 +1923,13 @@ export const rootToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK --file ./image.png -d \'{ channels: "C123" }\'',
       '  composio execute --parallel GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com" }\'  GITHUB_CREATE_AN_ISSUE -d \'{ owner: "acme", repo: "app", title: "Bug" }\'',
       "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
       '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
       '',
       'Flags:',
+      '  --file <path>                Inject a local file path into the single file_uploadable input',
       '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
       '  --skip-connection-check     Skip the connected-account check',
       '  --skip-tool-params-check    Skip input validation against cached schema',
@@ -1837,6 +1948,7 @@ export const devToolsCmd$Execute = Command.make(
   {
     slug,
     data,
+    file,
     userId,
     projectName,
     getSchema,
@@ -1848,6 +1960,7 @@ export const devToolsCmd$Execute = Command.make(
   ({
     slug,
     data,
+    file,
     userId,
     projectName,
     getSchema,
@@ -1859,6 +1972,7 @@ export const devToolsCmd$Execute = Command.make(
     runToolsExecute({
       slug,
       data,
+      file,
       userId,
       projectName,
       surface: 'dev',
@@ -1878,10 +1992,12 @@ export const devToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio dev playground-execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio dev playground-execute SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK --file ./image.png -d \'{ channels: "C123" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --get-schema',
       '',
       'Flags:',
+      '  --file <path>                Inject a local file path into the single file_uploadable input',
       '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
     ].join('\n')
   )

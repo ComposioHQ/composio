@@ -1,4 +1,6 @@
 import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { ConfigProvider, Effect, Option } from 'effect';
@@ -82,6 +84,70 @@ describe('CLI: composio execute', () => {
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
         expect(output.data.arguments).toEqual({ recipient: 'a' });
         expect(output.logId).toBe('log_test');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Upload Slack File',
+            slug: 'SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK',
+            description: 'Uploads a file to Slack',
+            tags: ['slack'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                channels: { type: 'string' },
+                file: {
+                  type: 'object',
+                  file_uploadable: true,
+                  title: 'File',
+                  description: 'Local file accepted by CLI',
+                  properties: {
+                    name: { type: 'string' },
+                    mimetype: { type: 'string' },
+                    s3key: { type: 'string' },
+                  },
+                  required: ['name', 'mimetype', 's3key'],
+                },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {},
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )('[Given] file_uploadable schema [Then] execute --get-schema shows a path string input', it => {
+    it.scoped('renders the CLI-facing schema instead of the raw FileUploadable object', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK', '--get-schema']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines) as unknown as {
+          inputSchema: Record<string, unknown>;
+        };
+
+        expect(output.inputSchema).toEqual({
+          type: 'object',
+          properties: {
+            channels: { type: 'string' },
+            file: {
+              title: 'File',
+              description: 'Local file accepted by CLI',
+              format: 'path',
+              type: 'string',
+              file_uploadable: true,
+            },
+          },
+        });
       })
     );
   });
@@ -590,6 +656,478 @@ describe('CLI: composio execute', () => {
     TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email with attachment',
+            tags: ['email'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                recipient_email: { type: 'string' },
+                attachment: {
+                  file_uploadable: true,
+                  title: 'Attachment',
+                  description: 'Local path or URL to upload',
+                },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {
+                message_id: { type: 'string' },
+              },
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )(
+    '[Given] file_uploadable input as a local path [Then] execute uploads and sends s3key data',
+    it => {
+      it.scoped('uploads local file paths before Tool Router execution', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-upload-${Date.now()}.txt`);
+          fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
+
+          const originalFetch = globalThis.fetch;
+          const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url =
+              typeof input === 'string'
+                ? input
+                : input instanceof URL
+                  ? input.toString()
+                  : input.url;
+            if (url === 'https://s3.test.composio.dev/upload') {
+              return Promise.resolve(new Response(null, { status: 200 }));
+            }
+            return originalFetch(input, init);
+          });
+
+          yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '-d',
+            JSON.stringify({
+              recipient_email: 'a@b.com',
+              attachment: tempFile,
+            }),
+          ]);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines);
+
+          expect(output.successful).toBe(true);
+          expect(output.data.arguments).toEqual({
+            recipient_email: 'a@b.com',
+            attachment: {
+              name: path.basename(tempFile),
+              mimetype: 'application/octet-stream',
+              s3key: `uploads/${path.basename(tempFile)}`,
+            },
+          });
+          expect(fetchSpy).toHaveBeenCalledWith(
+            'https://s3.test.composio.dev/upload',
+            expect.objectContaining({
+              method: 'PUT',
+              headers: expect.objectContaining({
+                'Content-Type': 'application/octet-stream',
+              }),
+            })
+          );
+
+          fs.rmSync(tempFile, { force: true });
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Upload Slack File',
+            slug: 'SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK',
+            description: 'Uploads a file to Slack',
+            tags: ['slack'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                channels: { type: 'string' },
+                file: {
+                  type: 'object',
+                  file_uploadable: true,
+                  title: 'File',
+                  description: 'Local file accepted by CLI',
+                  properties: {
+                    name: { type: 'string' },
+                    mimetype: { type: 'string' },
+                    s3key: { type: 'string' },
+                  },
+                  required: ['name', 'mimetype', 's3key'],
+                },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {},
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )(
+    '[Given] --file for a tool with one file_uploadable input [Then] execute injects it automatically',
+    it => {
+      it.scoped('injects into the single file_uploadable field before upload hydration', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-inject-${Date.now()}.png`);
+          fs.writeFileSync(tempFile, 'png-binary-ish', 'utf8');
+
+          const originalFetch = globalThis.fetch;
+          const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url =
+              typeof input === 'string'
+                ? input
+                : input instanceof URL
+                  ? input.toString()
+                  : input.url;
+            if (url === 'https://s3.test.composio.dev/upload') {
+              return Promise.resolve(new Response(null, { status: 200 }));
+            }
+            return originalFetch(input, init);
+          });
+
+          yield* cli([
+            'execute',
+            'SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK',
+            '--skip-connection-check',
+            '--file',
+            tempFile,
+            '-d',
+            JSON.stringify({ channels: 'C123' }),
+          ]);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines);
+
+          expect(output.successful).toBe(true);
+          expect(output.data.arguments).toEqual({
+            channels: 'C123',
+            file: {
+              name: path.basename(tempFile),
+              mimetype: 'application/octet-stream',
+              s3key: `uploads/${path.basename(tempFile)}`,
+            },
+          });
+          expect(fetchSpy).toHaveBeenCalled();
+
+          fs.rmSync(tempFile, { force: true });
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Nested Upload',
+            slug: 'NESTED_UPLOAD_TOOL',
+            description: 'Uploads a nested file',
+            tags: ['test'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                payload: {
+                  properties: {
+                    file: {
+                      file_uploadable: true,
+                      title: 'File',
+                      description: 'Nested file path',
+                      properties: {
+                        name: { type: 'string' },
+                        mimetype: { type: 'string' },
+                        s3key: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {},
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )(
+    '[Given] a nested file_uploadable path under properties without explicit object type [Then] hydration still uploads it',
+    it => {
+      it.scoped('treats property-bearing schema nodes as object-like during upload hydration', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-nested-${Date.now()}.png`);
+          fs.writeFileSync(tempFile, 'nested-png-binary-ish', 'utf8');
+
+          const originalFetch = globalThis.fetch;
+          vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url =
+              typeof input === 'string'
+                ? input
+                : input instanceof URL
+                  ? input.toString()
+                  : input.url;
+            if (url === 'https://s3.test.composio.dev/upload') {
+              return Promise.resolve(new Response(null, { status: 200 }));
+            }
+            return originalFetch(input, init);
+          });
+
+          yield* cli([
+            'execute',
+            'NESTED_UPLOAD_TOOL',
+            '--skip-connection-check',
+            '--file',
+            tempFile,
+            '-d',
+            JSON.stringify({ payload: {} }),
+          ]);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines);
+
+          expect(output.successful).toBe(true);
+          expect(output.data.arguments).toEqual({
+            payload: {
+              file: {
+                name: path.basename(tempFile),
+                mimetype: 'application/octet-stream',
+                s3key: `uploads/${path.basename(tempFile)}`,
+              },
+            },
+          });
+
+          fs.rmSync(tempFile, { force: true });
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email with attachment',
+            tags: ['email'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                recipient_email: { type: 'string' },
+                attachment: {
+                  file_uploadable: true,
+                  title: 'Attachment',
+                  description: 'Local path or URL to upload',
+                  properties: {
+                    name: { type: 'string' },
+                    mimetype: { type: 'string' },
+                    s3key: { type: 'string' },
+                  },
+                },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {},
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )(
+    '[Given] an S3 upload failure [Then] execute surfaces the upload error instead of sending a raw path',
+    it => {
+      it.scoped('propagates upload failures from file hydration', () =>
+        Effect.gen(function* () {
+          const tempFile = path.join(os.tmpdir(), `composio-upload-fail-${Date.now()}.txt`);
+          fs.writeFileSync(tempFile, 'hello from failed cli upload', 'utf8');
+
+          const originalFetch = globalThis.fetch;
+          vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url =
+              typeof input === 'string'
+                ? input
+                : input instanceof URL
+                  ? input.toString()
+                  : input.url;
+            if (url === 'https://s3.test.composio.dev/upload') {
+              return Promise.resolve(
+                new Response('Upload failed', { status: 500, statusText: 'Upload Failed' })
+              );
+            }
+            return originalFetch(input, init);
+          });
+
+          const failure = yield* cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            JSON.stringify({
+              recipient_email: 'a@b.com',
+              attachment: tempFile,
+            }),
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error instanceof Error ? error.message : String(error)))
+          );
+
+          expect(failure).toContain('Failed to upload file to S3');
+
+          fs.rmSync(tempFile, { force: true });
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Send Email',
+            slug: 'GMAIL_SEND_EMAIL',
+            description: 'Send an email',
+            tags: ['email'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                recipient_email: { type: 'string' },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {},
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )('[Given] --file for a tool with no file_uploadable input [Then] execute fails clearly', it => {
+    it.scoped('rejects the convenience flag when the schema has no file input', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--file',
+          '/tmp/example.txt',
+        ]).pipe(
+          Effect.flip,
+          Effect.map(error => (error instanceof Error ? error.message : String(error)))
+        );
+
+        expect(failure).toContain('has no file_uploadable input');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolkitsData: {
+        tools: [
+          {
+            name: 'Multi Upload',
+            slug: 'MULTI_UPLOAD_TOOL',
+            description: 'Tool with two uploadable fields',
+            tags: ['test'],
+            available_versions: ['20260316_00'],
+            input_parameters: {
+              type: 'object',
+              properties: {
+                avatar: {
+                  type: 'object',
+                  file_uploadable: true,
+                  properties: {
+                    name: { type: 'string' },
+                    mimetype: { type: 'string' },
+                    s3key: { type: 'string' },
+                  },
+                },
+                resume: {
+                  type: 'object',
+                  file_uploadable: true,
+                  properties: {
+                    name: { type: 'string' },
+                    mimetype: { type: 'string' },
+                    s3key: { type: 'string' },
+                  },
+                },
+              },
+            },
+            output_parameters: {
+              type: 'object',
+              properties: {},
+            },
+          },
+        ],
+      } satisfies TestLiveInput['toolkitsData'],
+    })
+  )(
+    '[Given] --file for a tool with multiple file_uploadable inputs [Then] execute asks for explicit JSON',
+    it => {
+      it.scoped('fails instead of guessing which file field to use', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli([
+            'execute',
+            'MULTI_UPLOAD_TOOL',
+            '--file',
+            '/tmp/example.txt',
+          ]).pipe(
+            Effect.flip,
+            Effect.map(error => (error instanceof Error ? error.message : String(error)))
+          );
+
+          expect(failure).toContain('has multiple file_uploadable inputs');
+          expect(failure).toContain('avatar');
+          expect(failure).toContain('resume');
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       toolkitsData: {
         tools: [
           {
@@ -887,7 +1425,7 @@ describe('CLI: composio execute', () => {
 
         expect(output).toContain('USAGE');
         expect(output).toContain(
-          'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]'
+          'composio execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] [--parallel]'
         );
         expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
         expect(output).toContain('--parallel');

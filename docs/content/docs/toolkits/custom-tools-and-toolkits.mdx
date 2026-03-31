@@ -5,32 +5,77 @@ keywords: [custom tools, custom toolkits, experimental, local tools, proxy execu
 ---
 
 <Callout type="warn">
-Custom tool APIs are experimental. TypeScript uses `experimental_createTool()` / `experimental_createToolkit()`. Python uses `@composio.experimental.tool()` / `composio.experimental.Toolkit(...)`. The session `experimental` option may change in future releases.
+Custom tool APIs are experimental and may change in future releases.
 </Callout>
 
 <Callout type="info">
-Custom tools work with **native tools** (`session.tools()`). MCP support is coming soon — custom tools are not available via the MCP server URL yet.
+Custom tools work with **native tools** (`session.tools()`). MCP support is coming soon. Custom tools are not available via the MCP server URL yet.
 </Callout>
 
 Custom tools let you define tools that run in-process alongside remote Composio tools within a session. There are three patterns:
 
-- **Standalone tools** — for internal app logic that doesn't need Composio auth (DB lookups, in-memory data, business rules)
-- **Extension tools** — wrap a Composio toolkit's API with custom business logic via `extendsToolkit` / `extends_toolkit`, using `ctx.proxyExecute()` / `ctx.proxy_execute()` for authenticated requests
-- **Custom toolkits** — group related standalone tools under a namespace
+- **Standalone tools** - for internal app logic that doesn't need Composio auth (DB lookups, in-memory data, business rules)
+- **Extension tools** - wrap a Composio toolkit's API with custom business logic via `extendsToolkit` / `extends_toolkit`, using `ctx.proxyExecute()` / `ctx.proxy_execute()` for authenticated requests
+- **Custom toolkits** - group related standalone tools under a namespace
 
-The example below defines one of each and binds them to a session:
+<IntegrationTabs tabs={[
+  { value: "standalone", label: "Standalone Tool" },
+  { value: "extension", label: "Extension Tool" },
+  { value: "toolkit", label: "Custom Toolkit" },
+]}>
+
+<IntegrationContent value="standalone">
+<Steps>
+<Step>
+**Install**
 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
+```bash
+npm install @composio/core zod
+```
+</Tab>
+<Tab value="Python">
+```bash
+pip install composio
+```
+</Tab>
+</Tabs>
+</Step>
 
+<Step>
+**Initialize the client**
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
 ```typescript
-import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your_api_key" });
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Create the tool**
+
+A standalone tool handles internal app logic that doesn't need Composio auth. `ctx.userId` identifies which user's session is running.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
 
-// ── Standalone tool ─────────────────────────────────────────────
-// Internal data lookup — no Composio auth needed.
-// ctx.userId identifies which user's session is running.
 const profiles: Record<string, { name: string; email: string; tier: string }> = {
   "user_1": { name: "Alice Johnson", email: "alice@myapp.com", tier: "enterprise" },
   "user_2": { name: "Bob Smith", email: "bob@myapp.com", tier: "free" },
@@ -46,77 +91,13 @@ const getUserProfile = experimental_createTool("GET_USER_PROFILE", {
     return profile;
   },
 });
-
-// ── Extension tool ──────────────────────────────────────────────
-// Wraps Gmail API with business logic. Inherits auth via extendsToolkit,
-// so ctx.proxyExecute() handles credentials automatically.
-const sendPromoEmail = experimental_createTool("SEND_PROMO_EMAIL", {
-  name: "Send promo email",
-  description: "Send the standard promotional email to a recipient",
-  extendsToolkit: "gmail",
-  inputParams: z.object({
-    to: z.string().describe("Recipient email address"),
-  }),
-  execute: async (input, ctx) => {
-    const subject = "You're invited to try MyApp Pro";
-    const body = "Hi there,\n\nWe'd love for you to try MyApp Pro — free for 14 days.\n\nBest,\nThe MyApp Team";
-    const raw = btoa(`To: ${input.to}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n${body}`);
-
-    const res = await ctx.proxyExecute({
-      toolkit: "gmail",
-      endpoint: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-      method: "POST",
-      body: { raw },
-    });
-    return { status: res.status, to: input.to };
-  },
-});
-
-// ── Custom toolkit ──────────────────────────────────────────────
-// Groups standalone tools that don't need Composio auth under a toolkit.
-// Tools inside a toolkit cannot use extendsToolkit.
-const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
-  name: "User management",
-  description: "Manage user roles and permissions",
-  tools: [
-    experimental_createTool("ASSIGN_ROLE", {
-      name: "Assign role",
-      description: "Assign a role to a user in the internal system",
-      inputParams: z.object({
-        user_id: z.string().describe("Target user ID"),
-        role: z.enum(["admin", "editor", "viewer"]).describe("Role to assign"),
-      }),
-      execute: async ({ user_id, role }) => ({ user_id, role, assigned: true }),
-    }),
-  ],
-});
-
-// ── Bind to session ─────────────────────────────────────────────
-// Pass custom tools and toolkits via the experimental option.
-// session.tools() returns both remote Composio tools and your custom tools.
-const composio = new Composio({ apiKey: "your_api_key" });
-
-const session = await composio.create("user_1", {
-  toolkits: ["gmail"],
-  experimental: {
-    customTools: [getUserProfile, sendPromoEmail],
-    customToolkits: [userManagement],
-  },
-});
-
-const tools = await session.tools();
 ```
-
 </Tab>
 <Tab value="Python">
-
 ```python
-import base64
-
 from pydantic import BaseModel, Field
 
 from composio import Composio
-
 
 composio = Composio(api_key="your_api_key")
 
@@ -138,6 +119,140 @@ def get_user_profile(input: UserLookupInput, ctx):
     if not profile:
         raise ValueError(f'No profile found for user "{input.user_id}"')
     return profile
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Bind to a session**
+
+Pass custom tools via the `experimental` option. `session.tools()` returns both remote Composio tools and your custom tools.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createTool } from "@composio/core";
+import { z } from "zod/v3";
+
+declare const getUserProfile: ReturnType<typeof experimental_createTool>;
+const composio = new Composio({ apiKey: "your_api_key" });
+// ---cut---
+
+const session = await composio.create("user_1", {
+  experimental: {
+    customTools: [getUserProfile],
+  },
+});
+
+const tools = await session.tools();
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+
+session = composio.create(
+    user_id="user_1",
+    experimental={
+        "custom_tools": [get_user_profile],
+    },
+)
+
+tools = session.tools()
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+</IntegrationContent>
+
+<IntegrationContent value="extension">
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core zod
+```
+</Tab>
+<Tab value="Python">
+```bash
+pip install composio
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Initialize the client**
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your_api_key" });
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Create the tool**
+
+An extension tool wraps a Composio toolkit's API with custom business logic. It inherits auth via `extendsToolkit` / `extends_toolkit`, so `ctx.proxyExecute()` / `ctx.proxy_execute()` handles credentials automatically.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createTool } from "@composio/core";
+import { z } from "zod/v3";
+// ---cut---
+
+const sendPromoEmail = experimental_createTool("SEND_PROMO_EMAIL", {
+  name: "Send promo email",
+  description: "Send the standard promotional email to a recipient",
+  extendsToolkit: "gmail",
+  inputParams: z.object({
+    to: z.string().describe("Recipient email address"),
+  }),
+  execute: async (input, ctx) => {
+    const subject = "You're invited to try MyApp Pro";
+    const body = "Hi there,\n\nWe'd love for you to try MyApp Pro — free for 14 days.\n\nBest,\nThe MyApp Team";
+    const raw = btoa(`To: ${input.to}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n${body}`);
+
+    const res = await ctx.proxyExecute({
+      toolkit: "gmail",
+      endpoint: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+      method: "POST",
+      body: { raw },
+    });
+    return { status: res.status, to: input.to };
+  },
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+import base64
+
+from pydantic import BaseModel, Field
+
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
 
 
 class PromoEmailInput(BaseModel):
@@ -168,7 +283,134 @@ def send_promo_email(input: PromoEmailInput, ctx):
         body={"raw": raw},
     )
     return {"status": res.status, "to": input.to}
+```
+</Tab>
+</Tabs>
+</Step>
 
+<Step>
+**Bind to a session**
+
+Pass custom tools via the `experimental` option. Extension tools inherit auth from the toolkit specified in `extendsToolkit`.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createTool } from "@composio/core";
+import { z } from "zod/v3";
+
+declare const sendPromoEmail: ReturnType<typeof experimental_createTool>;
+const composio = new Composio({ apiKey: "your_api_key" });
+// ---cut---
+
+const session = await composio.create("user_1", {
+  toolkits: ["gmail"],
+  experimental: {
+    customTools: [sendPromoEmail],
+  },
+});
+
+const tools = await session.tools();
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+
+session = composio.create(
+    user_id="user_1",
+    toolkits=["gmail"],
+    experimental={
+        "custom_tools": [send_promo_email],
+    },
+)
+
+tools = session.tools()
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+</IntegrationContent>
+
+<IntegrationContent value="toolkit">
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```bash
+npm install @composio/core zod
+```
+</Tab>
+<Tab value="Python">
+```bash
+pip install composio
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Initialize the client**
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+
+const composio = new Composio({ apiKey: "your_api_key" });
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+```
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Create the toolkit**
+
+A custom toolkit groups related standalone tools under a namespace. Tools inside a toolkit cannot use `extendsToolkit`.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
+import { z } from "zod/v3";
+// ---cut---
+
+const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
+  name: "User management",
+  description: "Manage user roles and permissions",
+  tools: [
+    experimental_createTool("ASSIGN_ROLE", {
+      name: "Assign role",
+      description: "Assign a role to a user in the internal system",
+      inputParams: z.object({
+        user_id: z.string().describe("Target user ID"),
+        role: z.enum(["admin", "editor", "viewer"]).describe("Role to assign"),
+      }),
+      execute: async ({ user_id, role }) => ({ user_id, role, assigned: true }),
+    }),
+  ],
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+from pydantic import BaseModel, Field
+
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
 
 user_management = composio.experimental.Toolkit(
     slug="USER_MANAGEMENT",
@@ -186,80 +428,167 @@ class AssignRoleInput(BaseModel):
 def assign_role(input: AssignRoleInput, ctx):
     """Assign a role to a user in the internal system."""
     return {"user_id": input.user_id, "role": input.role, "assigned": True}
+```
+</Tab>
+</Tabs>
+</Step>
 
+<Step>
+**Bind to a session**
+
+Pass custom toolkits via the `experimental` option. `session.tools()` returns both remote Composio tools and your custom toolkit's tools.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createToolkit } from "@composio/core";
+import { z } from "zod/v3";
+
+declare const userManagement: ReturnType<typeof experimental_createToolkit>;
+const composio = new Composio({ apiKey: "your_api_key" });
+// ---cut---
+
+const session = await composio.create("user_1", {
+  experimental: {
+    customToolkits: [userManagement],
+  },
+});
+
+const tools = await session.tools();
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
 
 session = composio.create(
     user_id="user_1",
-    toolkits=["gmail"],
     experimental={
-        "custom_tools": [get_user_profile, send_promo_email],
         "custom_toolkits": [user_management],
     },
 )
 
 tools = session.tools()
 ```
-
 </Tab>
 </Tabs>
+</Step>
+</Steps>
+</IntegrationContent>
 
-## How custom tools work with meta tools
+</IntegrationTabs>
 
-Custom tools integrate seamlessly with Composio's meta tools:
+## Meta tools integration
 
-- **`COMPOSIO_SEARCH_TOOLS`** automatically includes your custom tools and toolkits in search results, giving slight priority to tools that don't require auth or are already connected
-- **`COMPOSIO_GET_TOOL_SCHEMAS`** returns schemas for custom tools alongside remote tools — the agent sees them as first-class tools
-- **`COMPOSIO_MULTI_EXECUTE_TOOL`** intelligently splits execution — custom tools run in-process while remote tools go to the backend, results are merged transparently
-- **`COMPOSIO_MANAGE_CONNECTIONS`** handles auth for extension tools — if a tool extends `gmail`, the agent can prompt the user to connect Gmail just like any other toolkit
-- Custom tools are **not supported in Workbench** — the LLM is made aware of this and will not attempt to use them there
+Custom tools work automatically with Composio's meta tools:
 
-## Best practices
+| Meta tool | Behavior |
+|-----------|----------|
+| `COMPOSIO_SEARCH_TOOLS` | Includes custom tools in search results, with slight priority for tools that don't require auth |
+| `COMPOSIO_GET_TOOL_SCHEMAS` | Returns schemas for custom tools alongside remote tools |
+| `COMPOSIO_MULTI_EXECUTE_TOOL` | Runs custom tools in-process while remote tools go to the backend, merging results transparently |
+| `COMPOSIO_MANAGE_CONNECTIONS` | Handles auth for extension tools. If a tool extends `gmail`, the agent can prompt the user to connect Gmail |
 
-- **Descriptive names and slugs** — The agent sees your tool's name and description to decide when to use it. Be specific: "Send weekly promo email" is better than "Send email". In TypeScript, define uppercase slugs like `SEND_PROMO_EMAIL`. In Python, inferred slugs come from the function name, so `snake_case` function names produce the cleanest defaults; or pass `slug=` / `name=` explicitly.
-- **Detailed descriptions** — Include what the tool does, when to use it, and what it returns. The agent relies on this to pick the right tool.
-- **Use `extendsToolkit` / `extends_toolkit` for auth** — If your tool needs Gmail/GitHub/etc. auth for `ctx.proxyExecute()` / `ctx.proxy_execute()` or `ctx.execute()`, set the toolkit extension so connection management is handled seamlessly via `COMPOSIO_MANAGE_CONNECTIONS`.
-- **In Python, annotations are the schema** — The first parameter must be a Pydantic `BaseModel`, and its field descriptions become the input schema. Docstrings are used as the default tool description unless you pass `description=`.
-- **Tool names get prefixed** — Slugs exposed to the agent are automatically prefixed with `LOCAL_` and the toolkit name (if any). `GET_USER_PROFILE` becomes `LOCAL_GET_USER_PROFILE`, `ASSIGN_ROLE` in `USER_MANAGEMENT` becomes `LOCAL_USER_MANAGEMENT_ASSIGN_ROLE`. Your slugs cannot start with `LOCAL_` — this prefix is reserved.
+<Callout type="info">
+Custom tools are not supported in Workbench.
+</Callout>
 
-For more best practices, see [How to Build Tools for AI Agents: A Field Guide](https://composio.dev/blog/how-to-build-tools-for-ai-agents-a-field-guide).
+## Context object (`ctx`)
 
-## Verifying registration
-
-Use `session.customTools()` / `session.customToolkits()` in TypeScript or `session.custom_tools()` / `session.custom_toolkits()` in Python to list registered tools and toolkits. Registered tool slugs include their final `LOCAL_` prefix, and toolkit-scoped tools also include the toolkit slug.
-
-Reference: [TypeScript ToolRouterSession](/reference/sdk-reference/typescript/tool-router-session) · [Python ToolRouterSession](/reference/sdk-reference/python/tool-router-session)
-
-## Programmatic execution
-
-Use `session.execute()` to run custom tools directly, outside of an agent loop (e.g. `session.execute("GET_USER_PROFILE")`). Custom tools execute in-process; remote tools are sent to the backend automatically.
-
-Reference: [TypeScript ToolRouterSession](/reference/sdk-reference/typescript/tool-router-session) · [Python ToolRouterSession](/reference/sdk-reference/python/tool-router-session)
-
-## SessionContext
-
-Every custom tool's `execute` function receives `(input, ctx)`. The `ctx` object provides:
+Every custom tool's `execute` function receives `(input, ctx)`. Use `ctx` to access the current user, make authenticated API requests, or call other Composio tools.
 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 
-| Method | Description |
-|--------|-------------|
-| `ctx.userId` | The user ID for the current session. |
-| `ctx.proxyExecute(params)` | Authenticated HTTP request via Composio's auth layer. Params: `toolkit`, `endpoint`, `method`, `body?`, `parameters?` (array of `{ in: "query" \| "header", name, value }`). |
-| `ctx.execute(toolSlug, args)` | Execute any Composio native tool from within your custom tool. |
+| Property / Method | Description |
+|-------------------|-------------|
+| `ctx.userId` | The user ID for the current session |
+| `ctx.proxyExecute({ toolkit, endpoint, method, body?, parameters? })` | Make an authenticated HTTP request via Composio's auth layer |
+| `ctx.execute(toolSlug, args)` | Execute any Composio native tool from within your custom tool |
 
 </Tab>
 <Tab value="Python">
 
-| Method | Description |
-|--------|-------------|
-| `ctx.user_id` | The user ID for the current session. |
-| `ctx.proxy_execute(...)` | Authenticated HTTP request via Composio's auth layer. Params: `toolkit`, `endpoint`, `method`, `body=None`, `parameters=[{"in": "query" \| "header", "name": ..., "value": ...}]`. |
-| `ctx.execute(tool_slug, arguments)` | Execute any Composio native tool from within your custom tool. |
+| Property / Method | Description |
+|-------------------|-------------|
+| `ctx.user_id` | The user ID for the current session |
+| `ctx.proxy_execute(toolkit, endpoint, method, body=None, parameters=[])` | Make an authenticated HTTP request via Composio's auth layer |
+| `ctx.execute(tool_slug, arguments)` | Execute any Composio native tool from within your custom tool |
 
 </Tab>
 </Tabs>
 
-In Python, `parameters` dictionaries accept both `in` and `type`; this guide uses `in` to match the TypeScript examples.
+See the full API in the SDK reference: [TypeScript](/reference/sdk-reference/typescript/session-context-impl) | [Python](/reference/sdk-reference/python/session-context-impl)
 
-Reference: [TypeScript SessionContextImpl](/reference/sdk-reference/typescript/session-context-impl) · [Python SessionContextImpl](/reference/sdk-reference/python/session-context-impl)
+## Verifying registration
+
+Use these methods to list registered tools and toolkits. Slugs include their final `LOCAL_` prefix, and toolkit-scoped tools also include the toolkit slug.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+const composio = new Composio({ apiKey: "your_api_key" });
+const session = await composio.create("user_1");
+// ---cut---
+const customTools = session.customTools();
+const customToolkits = session.customToolkits();
+```
+</Tab>
+<Tab value="Python">
+```python
+custom_tools = session.custom_tools()
+custom_toolkits = session.custom_toolkits()
+```
+</Tab>
+</Tabs>
+
+## Programmatic execution
+
+Use `session.execute()` to run custom tools directly, outside of an agent loop. Custom tools execute in-process; remote tools are sent to the backend automatically.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from "@composio/core";
+const composio = new Composio({ apiKey: "your_api_key" });
+const session = await composio.create("user_1");
+// ---cut---
+const result = await session.execute("GET_USER_PROFILE");
+```
+</Tab>
+<Tab value="Python">
+```python
+result = session.execute("GET_USER_PROFILE")
+```
+</Tab>
+</Tabs>
+
+## Best practices
+
+### Naming and descriptions
+
+The agent relies on your tool's name and description to decide when to call it. Be specific: "Send weekly promo email" is better than "Send email". Include what the tool does, when to use it, and what it returns.
+
+In TypeScript, use uppercase slugs like `SEND_PROMO_EMAIL`. In Python, slugs are inferred from the function name, so `snake_case` produces clean defaults. You can also pass `slug` and `name` explicitly.
+
+### Accessing authenticated APIs
+
+If your tool needs to call an API that requires user credentials (Gmail, GitHub, etc.), set `extendsToolkit` / `extends_toolkit` to the toolkit name. Composio will handle authentication automatically, and the agent can prompt users to connect their account if needed.
+
+### Defining inputs in Python
+
+Your tool's first parameter must be a Pydantic `BaseModel`. The field descriptions become what the agent sees as the input schema, and the function's docstring becomes the tool description. You can override this by passing `description` explicitly.
+
+### Tool names get prefixed
+
+Slugs exposed to the agent are automatically prefixed with `LOCAL_` and the toolkit name (if applicable):
+
+- `GET_USER_PROFILE` becomes `LOCAL_GET_USER_PROFILE`
+- `ASSIGN_ROLE` in `USER_MANAGEMENT` becomes `LOCAL_USER_MANAGEMENT_ASSIGN_ROLE`
+
+Your slugs cannot start with `LOCAL_`. This prefix is reserved.
+
+For more best practices, see [How to Build Tools for AI Agents: A Field Guide](https://composio.dev/blog/how-to-build-tools-for-ai-agents-a-field-guide).
