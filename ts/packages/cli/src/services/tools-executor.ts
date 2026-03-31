@@ -5,6 +5,7 @@ import type {
   SessionExecuteMetaResponse,
   SessionExecuteMetaParams,
 } from '@composio/client/resources/tool-router';
+import type { FileSystem } from '@effect/platform';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { createToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
@@ -13,6 +14,9 @@ import {
 } from 'src/services/composio-error-overrides';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import type { NodeOs } from 'src/services/node-os';
+import type { ComposioUserContext } from 'src/services/user-context';
+import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
 
 /**
  * Parameters accepted by the Tool Router-based executor.
@@ -37,7 +41,11 @@ export interface ToolsExecutor {
   readonly execute: (
     slug: string,
     params: ToolExecuteParams
-  ) => Effect.Effect<ToolExecuteResponse, unknown>;
+  ) => Effect.Effect<
+    ToolExecuteResponse,
+    unknown,
+    FileSystem.FileSystem | NodeOs | ComposioUserContext | ComposioToolkitsRepository
+  >;
 }
 
 export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsExecutor');

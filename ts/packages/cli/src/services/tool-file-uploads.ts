@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Composio as RawComposioClient } from '@composio/client';
@@ -92,6 +91,43 @@ export const schemaHasFileUploadable = (schema: JsonSchema | undefined): boolean
   return false;
 };
 
+export const findFileUploadablePaths = (
+  schema: JsonSchema | undefined,
+  basePath: ReadonlyArray<string> = []
+): ReadonlyArray<ReadonlyArray<string>> => {
+  if (!schema) return [];
+
+  if (schema.file_uploadable === true) {
+    return [basePath];
+  }
+
+  const directPropertyPaths = isSchemaRecord(schema.properties)
+    ? Object.entries(schema.properties).flatMap(([key, property]) =>
+        isSchemaRecord(property) ? findFileUploadablePaths(property, [...basePath, key]) : []
+      )
+    : [];
+
+  const variantPaths = getSchemaVariants(schema).flatMap(variant =>
+    findFileUploadablePaths(variant, basePath)
+  );
+
+  const itemPaths = Array.isArray(schema.items)
+    ? schema.items.flatMap(item =>
+        isSchemaRecord(item) ? findFileUploadablePaths(item, basePath) : []
+      )
+    : isSchemaRecord(schema.items)
+      ? findFileUploadablePaths(schema.items, basePath)
+      : [];
+
+  const seen = new Set<string>();
+  return [...directPropertyPaths, ...variantPaths, ...itemPaths].filter(pathParts => {
+    const key = pathParts.join('.');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const readFileFromUrl = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) {
@@ -142,7 +178,7 @@ const uploadFile = async (params: {
   readonly client: RawComposioClient;
 }) => {
   const fileData = await readUploadSource(params.file);
-  const md5 = crypto.createHash('md5').update(fileData.bytes).digest('hex');
+  const md5 = new Bun.CryptoHasher('md5').update(fileData.bytes).digest('hex');
   const presigned = await params.client.files.createPresignedURL({
     filename: fileData.fileName,
     mimetype: fileData.mimeType,
@@ -211,7 +247,9 @@ const hydrateFileUploads = async (
         key,
         await hydrateFileUploads(
           entryValue,
-          isSchemaRecord(schema.properties?.[key]) ? (schema.properties[key] as JsonSchema) : undefined,
+          isSchemaRecord((schema.properties as Record<string, unknown>)[key])
+            ? ((schema.properties as Record<string, unknown>)[key] as JsonSchema)
+            : undefined,
           ctx
         ),
       ])
