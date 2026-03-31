@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import decompress from 'decompress';
 
 export const RUN_COMPANION_MODULE_BASENAMES = [
+  'run-helpers-runtime',
   'run-subagent-shared',
   'run-subagent-acp',
   'run-subagent-legacy',
