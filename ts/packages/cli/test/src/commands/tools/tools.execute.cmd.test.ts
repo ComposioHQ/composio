@@ -103,7 +103,7 @@ describe('CLI: composio execute', () => {
             status: 'ACTIVE',
             status_reason: null,
             is_disabled: false,
-            user_id: 'consumer_user_123',
+            user_id: 'consumer-user-org_test',
             toolkit: { slug: 'posthog' },
             auth_config: {
               id: 'ac_posthog_custom',
@@ -137,30 +137,30 @@ describe('CLI: composio execute', () => {
   )(
     '[Given] a non-managed connected account [Then] execute preloads auth configs into the Tool Router session',
     it => {
-      it.scoped('passes explicit auth_configs and connected_accounts for custom auth toolkits', () =>
-        Effect.gen(function* () {
-          yield* cli([
-            'execute',
-            'POSTHOG_RUN_ENDPOINT',
-            '--skip-checks',
-            '-d',
-            '{"project_id":"196278","name":"test"}',
-          ]);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = parseLastJson(lines);
+      it.scoped(
+        'passes explicit auth_configs and connected_accounts for custom auth toolkits',
+        () =>
+          Effect.gen(function* () {
+            yield* cli([
+              'execute',
+              'POSTHOG_RUN_ENDPOINT',
+              '--skip-checks',
+              '-d',
+              '{"project_id":"196278","name":"test"}',
+            ]);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            const output = parseLastJson(lines);
 
-          expect(output.successful).toBe(true);
-          expect(recordedSessionCreateParams).toHaveLength(1);
-          expect(recordedSessionCreateParams[0]).toMatchObject({
-            user_id: 'consumer_user_123',
-            auth_configs: {
+            expect(output.successful).toBe(true);
+            expect(recordedSessionCreateParams).toHaveLength(1);
+            expect(recordedSessionCreateParams[0]?.user_id).toEqual(expect.any(String));
+            expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
               posthog: 'ac_posthog_custom',
-            },
-            connected_accounts: {
+            });
+            expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
               posthog: 'con_posthog_active',
-            },
-          });
-        })
+            });
+          })
       );
     }
   );

@@ -18,9 +18,15 @@ const CACHE_FILE = 'consumer-short-term-cache.json';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const SEARCH_SESSION_EXTENSION_MS = 5 * 60 * 1000;
 
+export type ConsumerToolRouterConnectionMappings = {
+  readonly authConfigs?: Record<string, string>;
+  readonly connectedAccounts?: Record<string, string>;
+};
+
 type CacheEntry = {
   readonly toolkits: ReadonlyArray<string>;
   readonly expiresAt: string;
+  readonly toolRouterConnections?: ConsumerToolRouterConnectionMappings;
   readonly probablyMyCliSessionsByCwdHash?: Record<
     string,
     {
@@ -123,6 +129,56 @@ const normalizeCachedToolkits = (
   noAuthToolkits: ReadonlyArray<string>
 ) => [...new Set([...toolkits, ...noAuthToolkits].map(toolkit => toolkit.toLowerCase()))];
 
+const normalizeConnectionMappings = (
+  mappings?: ConsumerToolRouterConnectionMappings
+): ConsumerToolRouterConnectionMappings | undefined => {
+  if (!mappings) return undefined;
+
+  const authConfigs = Object.fromEntries(
+    Object.entries(mappings.authConfigs ?? {})
+      .map(([toolkit, authConfigId]) => [toolkit.toLowerCase(), authConfigId])
+      .filter(([, authConfigId]) => typeof authConfigId === 'string' && authConfigId.length > 0)
+  );
+  const connectedAccounts = Object.fromEntries(
+    Object.entries(mappings.connectedAccounts ?? {})
+      .map(([toolkit, connectedAccountId]) => [toolkit.toLowerCase(), connectedAccountId])
+      .filter(
+        ([, connectedAccountId]) =>
+          typeof connectedAccountId === 'string' && connectedAccountId.length > 0
+      )
+  );
+
+  if (Object.keys(authConfigs).length === 0 && Object.keys(connectedAccounts).length === 0) {
+    return undefined;
+  }
+
+  return {
+    authConfigs: Object.keys(authConfigs).length > 0 ? authConfigs : undefined,
+    connectedAccounts: Object.keys(connectedAccounts).length > 0 ? connectedAccounts : undefined,
+  };
+};
+
+const mergeConnectionMappings = (params: {
+  readonly current?: ConsumerToolRouterConnectionMappings;
+  readonly next?: ConsumerToolRouterConnectionMappings;
+}) => {
+  const current = normalizeConnectionMappings(params.current);
+  const next = normalizeConnectionMappings(params.next);
+  if (!current) return next;
+  if (!next) return current;
+
+  return normalizeConnectionMappings({
+    authConfigs: {
+      ...(current.authConfigs ?? {}),
+      ...(next.authConfigs ?? {}),
+    },
+    connectedAccounts: {
+      ...(current.connectedAccounts ?? {}),
+      ...(next.connectedAccounts ?? {}),
+    },
+  });
+};
+
 export const getFreshConsumerConnectedToolkitsFromCache = (params: {
   orgId: string;
   consumerUserId: string;
@@ -142,6 +198,54 @@ export const getFreshConsumerConnectedToolkitsFromCache = (params: {
       return Option.none<ReadonlyArray<string>>();
     }
     return Option.some(entry.toolkits);
+  });
+
+export const getFreshConsumerToolRouterConnectionMappingsFromCache = (params: {
+  orgId: string;
+  consumerUserId: string;
+  toolkits?: ReadonlyArray<string>;
+}) =>
+  Effect.gen(function* () {
+    const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
+    if (disabled) {
+      return Option.none<ConsumerToolRouterConnectionMappings>();
+    }
+    const state = yield* readCache();
+    const entry = state[cacheKey(params.orgId, params.consumerUserId)];
+    if (!entry) {
+      return Option.none<ConsumerToolRouterConnectionMappings>();
+    }
+    const expiresAtMs = Date.parse(entry.expiresAt);
+    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+      return Option.none<ConsumerToolRouterConnectionMappings>();
+    }
+
+    const mappings = normalizeConnectionMappings(entry.toolRouterConnections);
+    if (!mappings) {
+      return Option.none<ConsumerToolRouterConnectionMappings>();
+    }
+
+    if (!params.toolkits || params.toolkits.length === 0) {
+      return Option.some(mappings);
+    }
+
+    const requestedToolkits = params.toolkits.map(toolkit => toolkit.toLowerCase());
+    const authConfigs = Object.fromEntries(
+      requestedToolkits
+        .map(toolkit => [toolkit, mappings.authConfigs?.[toolkit]])
+        .filter(([, authConfigId]) => typeof authConfigId === 'string')
+    );
+    const connectedAccounts = Object.fromEntries(
+      requestedToolkits
+        .map(toolkit => [toolkit, mappings.connectedAccounts?.[toolkit]])
+        .filter(([, connectedAccountId]) => typeof connectedAccountId === 'string')
+    );
+    const filtered = normalizeConnectionMappings({
+      authConfigs,
+      connectedAccounts,
+    });
+
+    return filtered ? Option.some(filtered) : Option.none<ConsumerToolRouterConnectionMappings>();
   });
 
 export const invalidateConsumerConnectedToolkitsCache = () =>
@@ -227,19 +331,18 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
         client,
         scope.consumerUserId
       );
-      return connectionContext.connectedToolkits;
+      return connectionContext;
     }).pipe(Effect.option);
 
-    const connectedToolkits = Option.isSome(directToolkits)
-      ? directToolkits.value
-      : (
-          yield* getConsumerConnectedToolkits({
+    const connectedToolkits =
+      Option.isSome(directToolkits) && directToolkits.value.connectedToolkits.length > 0
+        ? directToolkits.value.connectedToolkits
+        : (yield* getConsumerConnectedToolkits({
             baseURL: userContext.data.baseURL,
             apiKey,
             orgId: scope.orgId,
             consumerUserId: scope.consumerUserId,
-          })
-        ).toolkits;
+          })).toolkits;
 
     const noAuthToolkits = yield* getAlwaysConnectedNoAuthToolkits();
     const state = yield* readCache();
@@ -255,6 +358,15 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       [key]: {
         toolkits: normalizeCachedToolkits(connectedToolkits, noAuthToolkits),
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        toolRouterConnections: mergeConnectionMappings({
+          current: currentEntry?.toolRouterConnections,
+          next: Option.isSome(directToolkits)
+            ? {
+                authConfigs: directToolkits.value.authConfigs,
+                connectedAccounts: directToolkits.value.connectedAccounts,
+              }
+            : undefined,
+        }),
         ...searchSessionFields,
       },
     });
@@ -264,6 +376,7 @@ export const writeConsumerConnectedToolkitsCache = (params: {
   readonly orgId: string;
   readonly consumerUserId: string;
   readonly toolkits: ReadonlyArray<string>;
+  readonly toolRouterConnections?: ConsumerToolRouterConnectionMappings;
 }) =>
   Effect.gen(function* () {
     const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
@@ -283,6 +396,10 @@ export const writeConsumerConnectedToolkitsCache = (params: {
       [key]: {
         toolkits: normalizeCachedToolkits(params.toolkits, noAuthToolkits),
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        toolRouterConnections: mergeConnectionMappings({
+          current: currentEntry?.toolRouterConnections,
+          next: params.toolRouterConnections,
+        }),
         ...searchSessionFields,
       },
     });
