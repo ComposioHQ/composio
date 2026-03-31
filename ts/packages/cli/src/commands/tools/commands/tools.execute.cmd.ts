@@ -17,7 +17,7 @@ import {
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { ToolsExecutor } from 'src/services/tools-executor';
+import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -1188,6 +1188,12 @@ const runExecuteWithSpinner = (params: {
           ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
           : '';
         yield* spinner.stop(`Execution successful${logId}`);
+        const inBandWarning = detectInBandWarning(result.data);
+        if (inBandWarning) {
+          yield* params.ui.log.warn(
+            `The tool executed successfully but the response may contain an error: ${inBandWarning}`
+          );
+        }
         const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);
         if (output.kind === 'file') {
           yield* params.ui.log.message(
