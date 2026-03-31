@@ -6,10 +6,12 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
 import {
   ComposioToolkitsRepository,
+  ComposioClientSingleton,
   getConsumerConnectedToolkits,
   resolveConsumerProject,
 } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
+import { resolveToolRouterSessionConnections } from 'src/services/tool-router-session-connections';
 import { ComposioUserContext } from 'src/services/user-context';
 
 const CACHE_FILE = 'consumer-short-term-cache.json';
@@ -210,12 +212,35 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
       return;
     }
 
-    const response = yield* getConsumerConnectedToolkits({
-      baseURL: userContext.data.baseURL,
-      apiKey,
-      orgId: scope.orgId,
-      consumerUserId: scope.consumerUserId,
-    });
+    const clientSingleton = yield* ComposioClientSingleton;
+    const directToolkits = yield* Effect.gen(function* () {
+      const consumerProject = yield* resolveConsumerProject({
+        baseURL: userContext.data.baseURL,
+        apiKey,
+        orgId: scope.orgId,
+      });
+      const client = yield* clientSingleton.getFor({
+        orgId: scope.orgId,
+        projectId: consumerProject.project_id,
+      });
+      const connectionContext = yield* resolveToolRouterSessionConnections(
+        client,
+        scope.consumerUserId
+      );
+      return connectionContext.connectedToolkits;
+    }).pipe(Effect.option);
+
+    const connectedToolkits = Option.isSome(directToolkits)
+      ? directToolkits.value
+      : (
+          yield* getConsumerConnectedToolkits({
+            baseURL: userContext.data.baseURL,
+            apiKey,
+            orgId: scope.orgId,
+            consumerUserId: scope.consumerUserId,
+          })
+        ).toolkits;
+
     const noAuthToolkits = yield* getAlwaysConnectedNoAuthToolkits();
     const state = yield* readCache();
     const key = cacheKey(scope.orgId, scope.consumerUserId);
@@ -228,7 +253,7 @@ export const refreshConsumerConnectedToolkitsCache = (params?: {
     yield* writeCache({
       ...state,
       [key]: {
-        toolkits: normalizeCachedToolkits(response.toolkits, noAuthToolkits),
+        toolkits: normalizeCachedToolkits(connectedToolkits, noAuthToolkits),
         expiresAt: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         ...searchSessionFields,
       },

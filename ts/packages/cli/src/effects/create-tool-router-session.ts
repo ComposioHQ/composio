@@ -1,5 +1,6 @@
 import { Effect } from 'effect';
 import type { Composio } from '@composio/client';
+import { resolveToolRouterSessionConnections } from 'src/services/tool-router-session-connections';
 
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
@@ -21,16 +22,24 @@ export const createToolRouterSession = (
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
-  Effect.tryPromise(() =>
-    client.toolRouter.session.create({
-      user_id: userId,
-      manage_connections: { enable: options?.manageConnections ?? false },
-      toolkits:
-        options?.toolkits && options.toolkits.length > 0
-          ? { enable: [...options.toolkits] }
-          : undefined,
-    })
-  ).pipe(Effect.map(session => session.session_id));
+  Effect.gen(function* () {
+    const connectionContext = yield* resolveToolRouterSessionConnections(client, userId, {
+      toolkits: options?.toolkits,
+    });
+
+    return yield* Effect.tryPromise(() =>
+      client.toolRouter.session.create({
+        user_id: userId,
+        auth_configs: connectionContext.authConfigs,
+        connected_accounts: connectionContext.connectedAccounts,
+        manage_connections: { enable: options?.manageConnections ?? false },
+        toolkits:
+          options?.toolkits && options.toolkits.length > 0
+            ? { enable: [...options.toolkits] }
+            : undefined,
+      })
+    ).pipe(Effect.map(session => session.session_id));
+  });
 
 /**
  * Resolve the Composio client and create a Tool Router session in one step.

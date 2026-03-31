@@ -939,6 +939,38 @@ export const TestLayer = (input?: TestLiveInput) =>
         },
       },
       connectedAccounts: {
+        list: async (params?: {
+          toolkit_slugs?: string[];
+          user_ids?: string[];
+          statuses?: string[];
+          limit?: number;
+        }) => {
+          let results = [...connectedAccountsData.items];
+
+          if (params?.toolkit_slugs && params.toolkit_slugs.length > 0) {
+            const slugs = new Set(params.toolkit_slugs.map(slug => slug.toLowerCase()));
+            results = results.filter(item => slugs.has(item.toolkit.slug.toLowerCase()));
+          }
+
+          if (params?.user_ids && params.user_ids.length > 0) {
+            const userIds = new Set(params.user_ids);
+            results = results.filter(item => userIds.has(item.user_id));
+          }
+
+          if (params?.statuses && params.statuses.length > 0) {
+            const statuses = new Set(params.statuses);
+            results = results.filter(item => statuses.has(item.status));
+          }
+
+          const limit = params?.limit ?? 30;
+          return {
+            items: results.slice(0, limit),
+            total_items: results.length,
+            total_pages: Math.ceil(results.length / limit),
+            current_page: 1,
+            next_cursor: null,
+          };
+        },
         retrieve: async (nanoid: string) => {
           const found = connectedAccountsData.items.find(item => item.id === nanoid);
           if (!found) {

@@ -58,6 +58,11 @@ describe('CLI: composio execute', () => {
     if (savedCI !== undefined) process.env.CI = savedCI;
   });
 
+  let recordedSessionCreateParams: Array<Record<string, unknown>> = [];
+  beforeEach(() => {
+    recordedSessionCreateParams = [];
+  });
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -85,6 +90,80 @@ describe('CLI: composio execute', () => {
       })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      connectedAccountsData: {
+        items: [
+          {
+            id: 'con_posthog_active',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer_user_123',
+            toolkit: { slug: 'posthog' },
+            auth_config: {
+              id: 'ac_posthog_custom',
+              auth_scheme: 'BEARER_TOKEN',
+              is_composio_managed: false,
+              is_disabled: false,
+            },
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-02T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+      toolRouter: {
+        create: async params => {
+          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+          return {
+            session_id: 'trs_posthog_test_session',
+            config: { user_id: params.user_id },
+            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+          };
+        },
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, arguments: params.arguments },
+          error: null,
+          log_id: 'log_posthog_test',
+        }),
+      },
+    })
+  )(
+    '[Given] a non-managed connected account [Then] execute preloads auth configs into the Tool Router session',
+    it => {
+      it.scoped('passes explicit auth_configs and connected_accounts for custom auth toolkits', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'execute',
+            'POSTHOG_RUN_ENDPOINT',
+            '--skip-checks',
+            '-d',
+            '{"project_id":"196278","name":"test"}',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines);
+
+          expect(output.successful).toBe(true);
+          expect(recordedSessionCreateParams).toHaveLength(1);
+          expect(recordedSessionCreateParams[0]).toMatchObject({
+            user_id: 'consumer_user_123',
+            auth_configs: {
+              posthog: 'ac_posthog_custom',
+            },
+            connected_accounts: {
+              posthog: 'con_posthog_active',
+            },
+          });
+        })
+      );
+    }
+  );
 
   layer(
     TestLive({
