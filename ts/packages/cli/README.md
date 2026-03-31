@@ -41,7 +41,7 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 - `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
 - `composio generate py [-o, --output-dir <directory>] [--toolkits <toolkit>]`: Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
 - `composio generate ts [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]`: Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
-- `composio upgrade`: Self-update the Composio CLI if a new release is out.
+- `composio upgrade [--beta]`: Self-update the Composio CLI from the stable channel, or from the beta channel with `--beta`.
 
 ## Configuration
 
@@ -83,6 +83,12 @@ If you pin upgrades with `COMPOSIO_GITHUB_TAG`, prefer the package-scoped tag fo
 
 ```bash
 COMPOSIO_GITHUB_TAG='@composio/cli@0.1.24' composio upgrade
+```
+
+To pull from the beta channel instead of the stable channel:
+
+```bash
+composio upgrade --beta
 ```
 
 ## Caching

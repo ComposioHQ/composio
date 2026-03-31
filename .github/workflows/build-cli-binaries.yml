@@ -1,21 +1,133 @@
 name: Build CLI Binaries
 
 on:
-  release:
-    types: [published]
+  pull_request:
+    branches: [next]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Semver version to release (e.g., 1.0.0)'
+      beta_tag:
+        description: 'Existing beta release tag to promote (e.g., @composio/cli@1.0.0-beta.123)'
         required: true
 
 permissions:
   contents: write
 
 jobs:
+  prepare:
+    name: Resolve Release Metadata
+    if: "${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.title == 'Release: update version' }}"
+    runs-on: ubuntu-latest
+    outputs:
+      checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
+      release_name: ${{ steps.resolve.outputs.release_name }}
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+      release_version: ${{ steps.resolve.outputs.release_version }}
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
+      make_latest: ${{ steps.resolve.outputs.make_latest }}
+
+    steps:
+      - name: Checkout release PR head
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Resolve beta or stable release target
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BETA_TAG_INPUT: ${{ inputs.beta_tag }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            version=$(node -p "require('./ts/packages/cli/package.json').version")
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Expected ts/packages/cli/package.json version to be a stable semver on the release PR, got: $version"
+              exit 1
+            fi
+
+            release_tag="@composio/cli@${version}-beta.${PR_NUMBER}"
+            release_name="CLI Beta ${release_tag}"
+            {
+              echo "checkout_ref=${PR_HEAD_SHA}"
+              echo "release_name=${release_name}"
+              echo "release_tag=${release_tag}"
+              echo "release_version=${version}"
+              echo "prerelease=true"
+              echo "make_latest=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          encoded_beta_tag=$(python3 - <<'PY'
+          import os, urllib.parse
+          print(urllib.parse.quote(os.environ["BETA_TAG_INPUT"], safe=""))
+          PY
+          )
+
+          release_json=$(curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPOSITORY}/releases/tags/${encoded_beta_tag}")
+
+          is_prerelease=$(jq -r '.prerelease' <<<"$release_json")
+          if [[ "$is_prerelease" != "true" ]]; then
+            echo "Release ${BETA_TAG_INPUT} is not a beta prerelease"
+            exit 1
+          fi
+
+          if [[ ! "$BETA_TAG_INPUT" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
+            echo "Beta tag must match @composio/cli@<version>-beta.<pr-number>"
+            exit 1
+          fi
+
+          stable_version="${BASH_REMATCH[1]}"
+          stable_tag="@composio/cli@${stable_version}"
+          export stable_tag
+
+          stable_status=$(curl -sS -o /tmp/stable-release.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPOSITORY}/releases/tags/$(python3 - <<'PY'
+            import os, urllib.parse
+            print(urllib.parse.quote(os.environ["stable_tag"], safe=""))
+            PY
+            )")
+          if [[ "$stable_status" == "200" ]]; then
+            echo "Stable release ${stable_tag} already exists"
+            exit 1
+          fi
+          if [[ "$stable_status" != "404" ]]; then
+            echo "Unexpected response while checking stable release ${stable_tag}: HTTP ${stable_status}"
+            cat /tmp/stable-release.json
+            exit 1
+          fi
+
+          target_commitish=$(jq -r '.target_commitish' <<<"$release_json")
+          if [[ -z "$target_commitish" || "$target_commitish" == "null" ]]; then
+            echo "Beta release ${BETA_TAG_INPUT} does not expose target_commitish"
+            exit 1
+          fi
+
+          {
+            echo "checkout_ref=${target_commitish}"
+            echo "release_name=CLI ${stable_tag}"
+            echo "release_tag=${stable_tag}"
+            echo "release_version=${stable_version}"
+            echo "prerelease=false"
+            echo "make_latest=true"
+          } >> "$GITHUB_OUTPUT"
+
   build:
     name: Build ${{ matrix.artifact }}
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, '@composio/cli@') || startsWith(github.event.release.tag_name, 'v')
+    needs: prepare
+    if: needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,16 +144,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Validate manual version input
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          version="${{ inputs.version }}"
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
-            echo "Invalid semver version: '$version'"
-            echo "Expected format like: 1.2.3, 1.2.3-beta.1, 1.2.3+build.7"
-            exit 1
-          fi
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -84,13 +188,15 @@ jobs:
 
   release:
     name: Create Release
-    needs: build
+    needs: [prepare, build]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    if: needs.build.result == 'success'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -119,29 +225,31 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI @composio/cli@{0} (Manual Build)', inputs.version) || github.event.release.tag_name }}
+          tag_name: ${{ needs.prepare.outputs.release_tag }}
+          name: ${{ needs.prepare.outputs.release_name }}
           files: |
             ts/packages/cli/dist/binaries/*.zip
             ts/packages/cli/dist/binaries/checksums.txt
           draft: false
-          prerelease: ${{ github.event_name == 'workflow_dispatch' || github.event.release.prerelease || contains(github.event.release.tag_name, 'alpha') || contains(github.event.release.tag_name, 'beta') || contains(github.event.release.tag_name, 'rc') }}
+          prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
           generate_release_notes: true
-          make_latest: ${{ github.event_name != 'workflow_dispatch' }}
+          make_latest: ${{ needs.prepare.outputs.make_latest }}
+          target_commitish: ${{ needs.prepare.outputs.checkout_ref }}
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test-installation:
     name: Test Installation
-    needs: release
+    needs: [prepare, release]
     if: always() && !cancelled() && needs.release.result == 'success'
     uses: ./.github/workflows/cli.test-installation.yml
     with:
-      version: ${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}
+      version: ${{ needs.prepare.outputs.release_tag }}
 
   create-install-instructions:
     name: Create Install Instructions
-    needs: release
+    needs: [prepare, release]
     runs-on: ubuntu-latest
     if: always() && !cancelled() && needs.release.result == 'success'
 
@@ -151,7 +259,7 @@ jobs:
 
       - name: Create installation README
         run: |
-          RELEASE_TAG="${{ github.event_name == 'workflow_dispatch' && format('@composio/cli@{0}', inputs.version) || github.event.release.tag_name }}"
+          RELEASE_TAG="${{ needs.prepare.outputs.release_tag }}"
           cat > INSTALL.md << 'EOF'
           # Composio CLI Installation
 
