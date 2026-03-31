@@ -39,8 +39,8 @@ sidclaw = SidClaw(
 # ---------------------------------------------------------------------------
 # Governance modifiers
 #
-# create_composio_governance_modifiers() returns before_execute and
-# after_execute functions that plug into Composio's modifier pipeline.
+# create_composio_governance_modifiers() returns a list of Modifier
+# objects that plug into Composio's modifier pipeline.
 #
 # Before execution: SidClaw evaluates the action against your policies.
 # After execution:  SidClaw records the outcome to the audit trail.
@@ -76,7 +76,7 @@ try:
             "title": "Agent-detected: disk usage above 90%",
             "body": "Automated alert from DevOps agent.",
         },
-        **modifiers,
+        modifiers=modifiers,
     )
     print("GitHub issue created:", result)
 except Exception as e:
@@ -93,7 +93,7 @@ try:
             "subject": "Your request has been processed",
             "body": "Hi, we've completed your request. Let us know if you need anything.",
         },
-        **modifiers,
+        modifiers=modifiers,
     )
     print("Email sent:", result)
 except Exception as e:
