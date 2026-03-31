@@ -215,13 +215,18 @@ export const getFreshConsumerToolRouterAuthConfigsFromCache = (params: {
     }
 
     const requestedToolkits = params.toolkits.map(toolkit => toolkit.toLowerCase());
-    const authConfigs = Object.fromEntries(
-      requestedToolkits
-        .map(toolkit => [toolkit, mappings.authConfigs?.[toolkit]])
-        .filter(([, authConfigId]) => typeof authConfigId === 'string')
+    const requestedAuthConfigs = requestedToolkits.map(
+      toolkit => [toolkit, mappings.authConfigs?.[toolkit]] as const
     );
+
+    if (requestedAuthConfigs.some(([, authConfigId]) => typeof authConfigId !== 'string')) {
+      return Option.none<ConsumerToolRouterAuthConfigMappings>();
+    }
+
     const filtered = normalizeAuthConfigMappings({
-      authConfigs,
+      authConfigs: Object.fromEntries(
+        requestedAuthConfigs.map(([toolkit, authConfigId]) => [toolkit, authConfigId as string])
+      ),
     });
 
     return filtered ? Option.some(filtered) : Option.none<ConsumerToolRouterAuthConfigMappings>();

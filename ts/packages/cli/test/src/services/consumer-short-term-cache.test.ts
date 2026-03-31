@@ -5,6 +5,7 @@ import { extendConfigProvider } from 'src/services/config';
 import * as composioClients from 'src/services/composio-clients';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
+  getFreshConsumerToolRouterAuthConfigsFromCache,
   refreshConsumerConnectedToolkitsCache,
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
@@ -175,4 +176,68 @@ describe('consumer short-term cache', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] a full auth-config cache hit [Then] cache reads are toolkit-complete',
+    it => {
+      it.scoped('returns cached auth configs when every requested toolkit is covered', () =>
+        Effect.gen(function* () {
+          yield* writeConsumerConnectedToolkitsCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+            toolkits: ['posthog', 'hubspot'],
+            toolRouterAuthConfigs: {
+              authConfigs: {
+                posthog: 'ac_posthog',
+                hubspot: 'ac_hubspot',
+              },
+            },
+          });
+
+          const cached = yield* getFreshConsumerToolRouterAuthConfigsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+            toolkits: ['posthog', 'hubspot'],
+          });
+
+          expect(cached).toEqual(
+            Option.some({
+              authConfigs: {
+                posthog: 'ac_posthog',
+                hubspot: 'ac_hubspot',
+              },
+            })
+          );
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] a partial auth-config cache hit [Then] cache read fails closed',
+    it => {
+      it.scoped('returns none unless every requested toolkit has a cached auth config', () =>
+        Effect.gen(function* () {
+          yield* writeConsumerConnectedToolkitsCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+            toolkits: ['posthog', 'hubspot'],
+            toolRouterAuthConfigs: {
+              authConfigs: {
+                posthog: 'ac_posthog',
+              },
+            },
+          });
+
+          const cached = yield* getFreshConsumerToolRouterAuthConfigsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+            toolkits: ['posthog', 'hubspot'],
+          });
+
+          expect(cached).toEqual(Option.none());
+        })
+      );
+    }
+  );
 });

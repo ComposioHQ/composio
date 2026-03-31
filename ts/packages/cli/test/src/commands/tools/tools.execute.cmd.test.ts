@@ -137,28 +137,26 @@ describe('CLI: composio execute', () => {
   )(
     '[Given] a non-managed connected account [Then] execute preloads auth configs into the Tool Router session',
     it => {
-      it.scoped(
-        'passes explicit auth_configs and connected_accounts for custom auth toolkits',
-        () =>
-          Effect.gen(function* () {
-            yield* cli([
-              'execute',
-              'POSTHOG_RUN_ENDPOINT',
-              '--skip-checks',
-              '-d',
-              '{"project_id":"196278","name":"test"}',
-            ]);
-            const lines = yield* MockConsole.getLines({ stripAnsi: true });
-            const output = parseLastJson(lines);
+      it.scoped('passes explicit auth_configs for custom auth toolkits', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'execute',
+            'POSTHOG_RUN_ENDPOINT',
+            '--skip-checks',
+            '-d',
+            '{"project_id":"196278","name":"test"}',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines);
 
-            expect(output.successful).toBe(true);
-            expect(recordedSessionCreateParams).toHaveLength(1);
-            expect(recordedSessionCreateParams[0]?.user_id).toEqual(expect.any(String));
-            expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
-              posthog: 'ac_posthog_custom',
-            });
-            expect(recordedSessionCreateParams[0]?.connected_accounts).toBeUndefined();
-          })
+          expect(output.successful).toBe(true);
+          expect(recordedSessionCreateParams).toHaveLength(1);
+          expect(recordedSessionCreateParams[0]?.user_id).toEqual(expect.any(String));
+          expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
+            posthog: 'ac_posthog_custom',
+          });
+          expect(recordedSessionCreateParams[0]?.connected_accounts).toBeUndefined();
+        })
       );
     }
   );
