@@ -73,7 +73,9 @@ const isMetaToolSlug = (slug: string): slug is SessionExecuteMetaParams['slug'] 
  * failure markers so the CLI can surface these instead of silently reporting
  * success with empty results.
  */
-const detectInBandError = (data: Record<string, unknown>): string | null => {
+const detectInBandError = (data: Record<string, unknown> | null | undefined): string | null => {
+  if (data == null) return null;
+
   // Check for a "status" field set to an explicit failure value.
   if (typeof data.status === 'string') {
     const status = data.status.toLowerCase();
