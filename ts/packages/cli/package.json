@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "Composio CLI",
   "main": "./dist/bin.mjs",
   "private": true,
