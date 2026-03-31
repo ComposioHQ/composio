@@ -186,6 +186,18 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string) =>
     yield* ui.output(dashboardUrl);
   });
 
+const getConsumerCacheScope = (resolvedProject: {
+  readonly orgId: string;
+  readonly projectType: 'CONSUMER' | 'DEVELOPER';
+  readonly consumerUserId?: string;
+}) =>
+  resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+    ? {
+        orgId: resolvedProject.orgId,
+        consumerUserId: resolvedProject.consumerUserId,
+      }
+    : undefined;
+
 const runConnectedAccountsLink = (params: {
   toolkit: Option.Option<string>;
   authConfig: Option.Option<string>;
@@ -352,6 +364,7 @@ const runConnectedAccountsLink = (params: {
         Effect.gen(function* () {
           const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
             manageConnections: true,
+            cacheScope: getConsumerCacheScope(resolvedProject),
           });
           return yield* Effect.tryPromise(() =>
             client.toolRouter.session.link(sessionId, { toolkit: toolkitSlug })

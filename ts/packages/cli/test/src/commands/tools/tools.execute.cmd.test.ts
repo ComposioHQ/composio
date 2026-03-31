@@ -157,13 +157,65 @@ describe('CLI: composio execute', () => {
             expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
               posthog: 'ac_posthog_custom',
             });
-            expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
-              posthog: 'con_posthog_active',
-            });
+            expect(recordedSessionCreateParams[0]?.connected_accounts).toBeUndefined();
           })
       );
     }
   );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolRouter: {
+        create: async params => {
+          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+          return {
+            session_id: 'trs_posthog_cached_session',
+            config: { user_id: params.user_id },
+            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+          };
+        },
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, arguments: params.arguments },
+          error: null,
+          log_id: 'log_posthog_cached',
+        }),
+      },
+    })
+  )('[Given] cached auth configs [Then] execute seeds the session from cache', it => {
+    it.scoped('uses cached auth_configs for consumer execute sessions', () =>
+      Effect.gen(function* () {
+        vi.spyOn(
+          consumerShortTermCache,
+          'getFreshConsumerToolRouterAuthConfigsFromCache'
+        ).mockReturnValue(
+          Effect.succeed(
+            Option.some({
+              authConfigs: {
+                posthog: 'ac_posthog_cached',
+              },
+            })
+          )
+        );
+
+        yield* cli([
+          'execute',
+          'POSTHOG_RUN_ENDPOINT',
+          '--skip-checks',
+          '-d',
+          '{"project_id":"196278","name":"test"}',
+        ]);
+
+        expect(recordedSessionCreateParams).toHaveLength(1);
+        expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
+          posthog: 'ac_posthog_cached',
+        });
+      })
+    );
+  });
 
   layer(
     TestLive({

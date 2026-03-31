@@ -871,6 +871,13 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         userId: resolvedUserId.value,
         arguments: args,
         client,
+        cacheScope:
+          resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+            ? {
+                orgId: resolvedProject.orgId,
+                consumerUserId: resolvedProject.consumerUserId,
+              }
+            : undefined,
       },
     } satisfies ResolvedExecuteContext;
   });

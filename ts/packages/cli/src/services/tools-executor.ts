@@ -1,3 +1,4 @@
+import { FileSystem } from '@effect/platform';
 import { Context, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
 import type {
@@ -5,12 +6,14 @@ import type {
   SessionExecuteMetaResponse,
   SessionExecuteMetaParams,
 } from '@composio/client/resources/tool-router';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { createToolRouterSession } from 'src/effects/create-tool-router-session';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
+import { NodeOs } from 'src/services/node-os';
+import { NodeProcess } from 'src/services/node-process';
 
 /**
  * Parameters accepted by the Tool Router-based executor.
@@ -19,6 +22,10 @@ export interface ToolExecuteParams {
   readonly userId: string;
   readonly arguments: Record<string, unknown>;
   readonly client?: Composio;
+  readonly cacheScope?: {
+    readonly orgId: string;
+    readonly consumerUserId: string;
+  };
 }
 
 /**
@@ -35,7 +42,11 @@ export interface ToolsExecutor {
   readonly execute: (
     slug: string,
     params: ToolExecuteParams
-  ) => Effect.Effect<ToolExecuteResponse, unknown>;
+  ) => Effect.Effect<
+    ToolExecuteResponse,
+    unknown,
+    FileSystem.FileSystem | NodeOs | NodeProcess | ComposioToolkitsRepository
+  >;
 }
 
 export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsExecutor');
@@ -92,6 +103,7 @@ export const ToolsExecutorLive = Layer.effect(
           // One session per invocation — CLI runs one tool per process.
           const sessionId = yield* createToolRouterSession(resolvedClient, params.userId, {
             manageConnections: true,
+            cacheScope: params.cacheScope,
           });
 
           const raw: SessionExecuteResponse | SessionExecuteMetaResponse = yield* Effect.tryPromise(

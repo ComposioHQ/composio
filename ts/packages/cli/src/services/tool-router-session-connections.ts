@@ -17,7 +17,6 @@ type RawConnectedAccount = {
 export type ToolRouterSessionConnectionContext = {
   readonly connectedToolkits: ReadonlyArray<string>;
   readonly authConfigs?: Record<string, string>;
-  readonly connectedAccounts?: Record<string, string>;
 };
 
 const parseTimestamp = (value?: string | null): number => {
@@ -79,28 +78,21 @@ export const resolveToolRouterSessionConnections = (
       }
 
       const authConfigs: Record<string, string> = {};
-      const connectedAccounts: Record<string, string> = {};
-
       for (const [toolkit, item] of explicitAccountsByToolkit) {
         const authConfigId = item.auth_config?.id?.trim();
-        const connectedAccountId = item.id.trim();
-        if (!authConfigId || !connectedAccountId) continue;
+        if (!authConfigId) continue;
         authConfigs[toolkit] = authConfigId;
-        connectedAccounts[toolkit] = connectedAccountId;
       }
 
       return {
         connectedToolkits: [...connectedToolkits],
         authConfigs: Object.keys(authConfigs).length > 0 ? authConfigs : undefined,
-        connectedAccounts:
-          Object.keys(connectedAccounts).length > 0 ? connectedAccounts : undefined,
       } satisfies ToolRouterSessionConnectionContext;
     }),
     Effect.catchAll(() =>
       Effect.succeed({
         connectedToolkits: [],
         authConfigs: undefined,
-        connectedAccounts: undefined,
       } satisfies ToolRouterSessionConnectionContext)
     )
   );

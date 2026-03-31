@@ -1,5 +1,9 @@
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import type { Composio } from '@composio/client';
+import {
+  getFreshConsumerToolRouterAuthConfigsFromCache,
+  writeConsumerConnectedToolkitsCache,
+} from 'src/services/consumer-short-term-cache';
 import { resolveToolRouterSessionConnections } from 'src/services/tool-router-session-connections';
 
 export interface CreateToolRouterSessionOptions {
@@ -7,6 +11,11 @@ export interface CreateToolRouterSessionOptions {
   readonly manageConnections?: boolean;
   /** Restrict session to these toolkit slugs. */
   readonly toolkits?: ReadonlyArray<string>;
+  /** Consumer-only cache scope for rolling auth-config reuse. */
+  readonly cacheScope?: {
+    readonly orgId: string;
+    readonly consumerUserId: string;
+  };
 }
 
 /**
@@ -23,15 +32,38 @@ export const createToolRouterSession = (
   options?: CreateToolRouterSessionOptions
 ) =>
   Effect.gen(function* () {
-    const connectionContext = yield* resolveToolRouterSessionConnections(client, userId, {
-      toolkits: options?.toolkits,
-    });
+    const cachedAuthConfigs = options?.cacheScope
+      ? yield* getFreshConsumerToolRouterAuthConfigsFromCache({
+          orgId: options.cacheScope.orgId,
+          consumerUserId: options.cacheScope.consumerUserId,
+          toolkits: options.toolkits,
+        })
+      : Option.none();
+
+    const connectionContext = Option.isSome(cachedAuthConfigs)
+      ? {
+          connectedToolkits: options?.toolkits ?? [],
+          authConfigs: cachedAuthConfigs.value.authConfigs,
+        }
+      : yield* resolveToolRouterSessionConnections(client, userId, {
+          toolkits: options?.toolkits,
+        });
+
+    if (options?.cacheScope && Option.isNone(cachedAuthConfigs)) {
+      yield* writeConsumerConnectedToolkitsCache({
+        orgId: options.cacheScope.orgId,
+        consumerUserId: options.cacheScope.consumerUserId,
+        toolkits: connectionContext.connectedToolkits,
+        toolRouterAuthConfigs: {
+          authConfigs: connectionContext.authConfigs,
+        },
+      }).pipe(Effect.catchAll(() => Effect.void));
+    }
 
     return yield* Effect.tryPromise(() =>
       client.toolRouter.session.create({
         user_id: userId,
         auth_configs: connectionContext.authConfigs,
-        connected_accounts: connectionContext.connectedAccounts,
         manage_connections: { enable: options?.manageConnections ?? false },
         toolkits:
           options?.toolkits && options.toolkits.length > 0
