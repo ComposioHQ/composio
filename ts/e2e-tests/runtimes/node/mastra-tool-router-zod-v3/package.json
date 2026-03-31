@@ -13,7 +13,7 @@
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "1.0.0",
+    "@mastra/mcp": "1.0.1",
     "ai": "catalog:",
     "zod": "3.25.76"
   },

@@ -14,12 +14,12 @@ packages:
   - ts/packages/wrappers/*
 
 catalog:
-  '@ai-sdk/openai': 3.0.19
+  '@ai-sdk/openai': 3.0.29
   '@arethetypeswrong/cli': 0.18.2
   '@clack/core': '1.0.1'
   '@clack/prompts': '1.0.1'
-  '@cloudflare/vitest-pool-workers': 0.9.2
-  '@cloudflare/workers-types': 4.20250917.0
+  '@cloudflare/vitest-pool-workers': 0.9.14
+  '@cloudflare/workers-types': 4.20260218.0
   '@composio/client': 0.1.0-alpha.62
   '@effect/cli': 0.73.2
   '@effect/eslint-plugin': 0.3.2
@@ -29,21 +29,21 @@ catalog:
   '@effect/platform-node': 0.104.1
   '@effect/platform-node-shared': 0.57.1
   '@effect/vitest': 0.27.0
-  '@mastra/core': 1.0.4
-  '@modelcontextprotocol/sdk': 1.25.2
-  ai: 6.0.27
-  effect: 3.19.15
-  hono: 4.11.4
-  openai: 6.16.0
-  pnpm: 10.28.0
-  publint: 0.3.16
+  '@mastra/core': 1.4.0
+  '@modelcontextprotocol/sdk': 1.26.0
+  ai: 6.0.90
+  effect: 3.19.18
+  hono: 4.11.9
+  openai: 6.22.0
+  pnpm: 10.30.0
+  publint: 0.3.17
   tsdown: 0.18.4
-  tsx: 4.20.5
-  typescript: 5.9.2
+  tsx: 4.21.0
+  typescript: 5.9.3
   uuid: 13.0.0
   vitest: 3.2.4
   wrangler: 4.78.0
-  zod: 4.1.0
+  zod: 4.3.6
   zod-to-json-schema: 3.25.1
 
 minimumReleaseAge: 4320
@@ -52,4 +52,4 @@ minimumReleaseAgeExclude:
   - '@composio/client'
 
 overrides:
-  qs@<6.14.1: '6.14.1'
+  qs@<6.14.1: '>=6.14.1'

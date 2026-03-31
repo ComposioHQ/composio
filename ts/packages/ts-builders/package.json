@@ -43,6 +43,6 @@
   ],
   "sideEffects": false,
   "dependencies": {
-    "@babel/helper-validator-identifier": "7.27.1"
+    "@babel/helper-validator-identifier": "7.28.5"
   }
 }
