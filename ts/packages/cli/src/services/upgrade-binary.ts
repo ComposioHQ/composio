@@ -14,6 +14,7 @@ import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
+  readInstalledReleaseTag,
   writeInstalledReleaseTag,
 } from './run-companion-modules';
 
@@ -216,13 +217,17 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     /**
      * Check if update is available
      */
+    const resolveCurrentReleaseIdentifier = (currentPath: string) =>
+      readInstalledReleaseTag(currentPath) || `@composio/cli@${APP_VERSION}`;
+
     const isUpdateAvailable = (
-      release: GitHubRelease
+      release: GitHubRelease,
+      currentReleaseIdentifier: string
     ): Effect.Effect<boolean, CompareSemverError | UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         // Current version is older than latest
         const isVersionOutdated: Predicate<number> = comparison => comparison < 0;
-        const comparison = yield* semverComparator(APP_VERSION, release.tag_name);
+        const comparison = yield* semverComparator(currentReleaseIdentifier, release.tag_name);
         return isVersionOutdated(comparison);
       });
 
@@ -577,13 +582,15 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const upgradeTargetOpt = yield* DEBUG_OVERRIDE_CONFIG['UPGRADE_TARGET'];
         const currentPath = yield* getCurrentExecutablePath();
         const prerelease = options.prerelease ?? false;
+        const currentReleaseIdentifier = resolveCurrentReleaseIdentifier(currentPath);
         yield* Effect.logDebug(`Current executable path: ${currentPath}`);
+        yield* Effect.logDebug(`Current release identifier: ${currentReleaseIdentifier}`);
 
         yield* ui.intro('composio upgrade');
 
         // If local binary path is provided (for testing), use it directly
         if (Option.isSome(upgradeTargetOpt)) {
-          yield* ui.log.info(`New local version available (current: ${APP_VERSION})`);
+          yield* ui.log.info(`New local version available (current: ${currentReleaseIdentifier})`);
           yield* replaceBinary(upgradeTargetOpt.value, currentPath);
           yield* ui.outro('Upgrade completed');
           return undefined;
@@ -593,14 +600,14 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           Effect.gen(function* () {
             const platformArch = yield* detectPlatform;
             const release = yield* fetchLatestRelease(platformArch, { prerelease });
-            const updateAvailable = yield* isUpdateAvailable(release);
+            const updateAvailable = yield* isUpdateAvailable(release, currentReleaseIdentifier);
             if (!updateAvailable) {
               yield* spinner.stop('You are already running the latest version!');
               return false;
             }
 
             yield* spinner.message(
-              `New version available: ${release.tag_name} (current: ${APP_VERSION}). Downloading...`
+              `New version available: ${release.tag_name} (current: ${currentReleaseIdentifier}). Downloading...`
             );
 
             const { name, data } = yield* downloadBinary(release, platformArch);

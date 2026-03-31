@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { FetchHttpClient } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
@@ -336,6 +339,58 @@ describe('UpgradeBinary', () => {
         }
       );
     } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('uses the installed beta release tag when comparing beta updates', async () => {
+    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-beta-upgrade-'));
+    const fakeExecPath = path.join(installDir, 'composio');
+    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.2.17-beta.1\n');
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
+    try {
+      await withHttpServer(
+        (_req, res) => {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(
+            JSON.stringify([
+              {
+                tag_name: '@composio/cli@0.2.17-beta.3',
+                draft: false,
+                prerelease: true,
+                assets: [
+                  {
+                    name: 'composio-darwin-aarch64.zip',
+                    browser_download_url: 'http://127.0.0.1/beta-3.zip',
+                  },
+                ],
+              },
+            ])
+          );
+        },
+        async apiBaseUrl => {
+          const error = await runUpgrade(
+            [
+              ['GITHUB_API_BASE_URL', apiBaseUrl],
+              ['GITHUB_OWNER', 'test-owner'],
+              ['GITHUB_REPO', 'test-repo'],
+            ],
+            { prerelease: true }
+          );
+
+          expect(error).toBeInstanceOf(UpgradeBinaryError);
+          if (!(error instanceof UpgradeBinaryError)) {
+            throw error;
+          }
+          expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
+          expect(String(error.cause)).toContain('beta-3.zip');
+        }
+      );
+    } finally {
+      execPathSpy.mockRestore();
       vi.unstubAllGlobals();
       vi.restoreAllMocks();
     }
