@@ -776,6 +776,23 @@ const extractArrayPayload = (json: unknown): ReadonlyArray<unknown> => {
   return [];
 };
 
+const readPaginationIntFromPayload = (json: unknown, key: string): number | undefined => {
+  if (!json || typeof json !== 'object') return undefined;
+
+  const readInt = (value: unknown): number | undefined =>
+    typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined;
+
+  const record = json as Record<string, unknown>;
+  const value = readInt(record[key]);
+  if (value !== undefined) return value;
+
+  if (record.data && typeof record.data === 'object') {
+    return readInt((record.data as Record<string, unknown>)[key]);
+  }
+
+  return undefined;
+};
+
 const readIdFromItem = (item: unknown): string | undefined => {
   if (!item || typeof item !== 'object') return undefined;
   const record = item as Record<string, unknown>;
@@ -834,10 +851,11 @@ export const listOrganizations = (params: {
         return { id, name } satisfies OrganizationSummary;
       })
       .filter((value): value is OrganizationSummary => value !== undefined);
+    const totalItems = readPaginationIntFromPayload(json, 'total_items') ?? organizations.length;
 
     return {
       data: organizations,
-      total_items: organizations.length,
+      total_items: Math.max(totalItems, organizations.length),
     };
   });
 

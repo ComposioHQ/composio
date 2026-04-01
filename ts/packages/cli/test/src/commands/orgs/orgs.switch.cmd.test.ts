@@ -33,6 +33,7 @@ describe('CLI: composio dev orgs switch', () => {
           const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
             mockFetchResponse({
               organizations: [{ id: 'org_1', name: 'Org One' }],
+              total_items: 3,
             })
           );
 
@@ -54,6 +55,7 @@ describe('CLI: composio dev orgs switch', () => {
           expect(userConfig.project_id).toBeUndefined();
 
           const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('Displaying 1 organization out of 3');
           expect(output).toContain('Updated default org');
         })
     );

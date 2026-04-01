@@ -16,6 +16,13 @@ const selectOrganization = (organizations: ReadonlyArray<OrganizationSummary>) =
     ]);
   });
 
+const formatOrganizationLoadMessage = (showing: number, total: number): string => {
+  if (total > showing) {
+    return `Displaying ${showing} organization${showing === 1 ? '' : 's'} out of ${total}`;
+  }
+  return `Loaded ${showing} org${showing === 1 ? '' : 's'}`;
+};
+
 export const runOrgSelection = (params: {
   apiKey: string;
   baseURL: string;
@@ -36,7 +43,9 @@ export const runOrgSelection = (params: {
               apiKey,
               limit: clampedLimit,
             });
-            yield* ui.log.info(`Loaded ${organizations.data.length} orgs`);
+            const showing = organizations.data.length;
+            const total = Math.max(organizations.total_items, showing);
+            yield* ui.log.info(formatOrganizationLoadMessage(showing, total));
             if (organizations.data.length === 0) return undefined;
             return yield* selectOrganization(organizations.data);
           });
