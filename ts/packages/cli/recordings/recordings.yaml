@@ -264,3 +264,9 @@ recordings:
     - name: link-no-args
       description: Link without arguments
       command: "composio manage connected-accounts link"
+
+  orgs:
+    - name: switch-limit-1
+      description: Show a truncated org list with --limit
+      command: "bun ./scripts/run-mock-orgs-switch-demo.ts"
+      height: dynamic

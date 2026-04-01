@@ -12,6 +12,7 @@ Tests use `runCmd` to execute shell commands in the container and assert on exit
 
 | Suite | Description | Env Vars |
 | --- | --- | --- |
+| [orgs/switch](./orgs/switch/) | `composio orgs switch --limit <n>` against a local mock org API | None |
 | [version](./version/) | `composio version` output and exit code | None |
 | [whoami](./whoami/) | `composio whoami` prints the API key | `COMPOSIO_USER_API_KEY` |
 
@@ -26,6 +27,7 @@ Tests use `runCmd` to execute shell commands in the container and assert on exit
 pnpm test:e2e:cli
 
 # A specific suite
+cd ts/e2e-tests/cli/orgs/switch && pnpm test:e2e:cli
 cd ts/e2e-tests/cli/version && pnpm test:e2e:cli
 cd ts/e2e-tests/cli/whoami && pnpm test:e2e:cli
 ```

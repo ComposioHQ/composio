@@ -173,6 +173,12 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  ts/e2e-tests/cli/orgs/switch:
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
   ts/e2e-tests/cli/toolkits/info:
     devDependencies:
       '@e2e-tests/utils':

@@ -1,0 +1,186 @@
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show a truncated org list with --limit
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show a truncated org list with --limit
+> bun ./scripts/run-mock-orgs-switch-demo.ts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show a truncated org list with --limit
+> bun ./scripts/run-mock-orgs-switch-demo.ts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show a truncated org list with --limit
+> bun ./scripts/run-mock-orgs-switch-demo.ts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
+> # Show a truncated org list with --limit
+> bun ./scripts/run-mock-orgs-switch-demo.ts
+┌  composio orgs switch
+│
+◇  Global defaults ────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                              │
+│  This updates your default org for CLI commands. Use `composio dev init` for local developer project setup.  │
+│                                                                                                              │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│
+●  Displaying 1 organization out of 3
+│
+●  Selected organization: "Alpha Org" (org_alpha)
+│
+◆  Updated default org to "Alpha Org".
+│
+└  Default org updated.
+
+>
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────
