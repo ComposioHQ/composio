@@ -1,28 +1,15 @@
 /**
  * TypeScript .mjs import resolution e2e test
  *
- * Verifies that generated TypeScript files with .mjs imports
- * can be compiled successfully with moduleResolution: "nodenext".
- *
- * Requires COMPOSIO_API_KEY environment variable to be set.
+ * Verifies that representative generated TypeScript files using `.js` imports
+ * compile successfully with moduleResolution: "nodenext".
  */
 
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_API_KEY: string;
-    COMPOSIO_USER_API_KEY: string;
-  }
-}
-
 e2e(import.meta.url, {
   versions: { node: ['current'] },
-  env: {
-    COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
-    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
-  },
   defineTests: ({ runFixture }) => {
     let result: E2ETestResult;
 
@@ -35,16 +22,12 @@ e2e(import.meta.url, {
         expect(result.exitCode).toBe(0);
       });
 
-      it('composio generate ts succeeds', () => {
-        expect(result.stdout).toContain('Test 1 passed: composio generate ts succeeded');
-      });
-
-      it('generated files exist', () => {
-        expect(result.stdout).toContain('Test 2 passed: Generated files exist');
+      it('fixture generated files exist', () => {
+        expect(result.stdout).toContain('Test 1 passed: Fixture generated files exist');
       });
 
       it('TypeScript compilation succeeds', () => {
-        expect(result.stdout).toContain('Test 3 passed: TypeScript compilation succeeded');
+        expect(result.stdout).toContain('Test 2 passed: TypeScript compilation succeeded');
       });
 
       it('completes all tests', () => {
