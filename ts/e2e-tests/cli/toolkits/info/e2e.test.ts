@@ -13,36 +13,46 @@ import {
   type E2ETestResultWithFiles,
 } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { describe, it, expect, beforeAll } from 'bun:test';
-
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_USER_API_KEY: string;
-  }
-}
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import {
+  startMockToolkitsListServer,
+  type MockToolkitsServer,
+} from '../../../../packages/cli/scripts/mock-toolkits-server';
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
-  env: {
-    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
-  },
   defineTests: ({ runCmd }) => {
+    let server: MockToolkitsServer;
     let validResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let invalidResult: E2ETestResult;
     let missingSlugResult: E2ETestResult;
 
     beforeAll(async () => {
-      validResult = await runCmd('composio dev toolkits info gmail');
+      server = await startMockToolkitsListServer();
+
+      const envPrefix = [
+        `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
+        'COMPOSIO_CACHE_DIR=/tmp/composio-toolkits-info',
+        'COMPOSIO_USER_API_KEY=uak_mock_toolkits_info',
+      ].join(' ');
+
+      validResult = await runCmd(`${envPrefix} composio dev toolkits info gmail`);
       redirectResult = await runCmd({
-        command: 'composio dev toolkits info gmail > out.json',
+        command: `${envPrefix} composio dev toolkits info gmail > out.json`,
         files: ['out.json'],
       });
-      invalidResult = await runCmd('composio dev toolkits info nonexistent_toolkit_xyz12345');
-      missingSlugResult = await runCmd('composio dev toolkits info');
+      invalidResult = await runCmd(
+        `${envPrefix} composio dev toolkits info nonexistent_toolkit_xyz12345`
+      );
+      missingSlugResult = await runCmd(`${envPrefix} composio dev toolkits info`);
     }, TIMEOUTS.FIXTURE);
+
+    afterAll(async () => {
+      await server.close();
+    });
 
     describe('composio dev toolkits info gmail (valid slug)', () => {
       it('exits successfully', () => {
@@ -134,6 +144,15 @@ e2e(import.meta.url, {
 
       it('stderr is empty', () => {
         expect(missingSlugResult.stderr).toBe('');
+      });
+    });
+
+    describe('mock API usage', () => {
+      it('requests the detailed toolkit route for known and unknown slugs', () => {
+        expect(server.requests).toContain('GET /api/v3/toolkits/gmail');
+        expect(server.requests).toContain(
+          'GET /api/v3/toolkits/nonexistent_toolkit_xyz12345'
+        );
       });
     });
   },

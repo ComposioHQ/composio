@@ -15,15 +15,15 @@ import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import {
   startMockToolkitsListServer,
-  type MockToolkitsListServer,
-} from '../../../../packages/cli/scripts/mock-toolkits-list-server';
+  type MockToolkitsServer,
+} from '../../../../packages/cli/scripts/mock-toolkits-server';
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
   defineTests: ({ runCmd }) => {
-    let server: MockToolkitsListServer;
+    let server: MockToolkitsServer;
     let exactResult: E2ETestResult;
     let prefixResult: E2ETestResult;
     let noFuzzyResult: E2ETestResult;
