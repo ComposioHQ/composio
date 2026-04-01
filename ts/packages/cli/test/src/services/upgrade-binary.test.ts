@@ -285,7 +285,7 @@ describe('UpgradeBinary', () => {
           res.end(
             JSON.stringify([
               {
-                tag_name: '@composio/cli@0.2.18-beta.1',
+                tag_name: '@composio/cli@0.2.19-beta.1',
                 draft: false,
                 prerelease: true,
                 assets: [
@@ -296,7 +296,7 @@ describe('UpgradeBinary', () => {
                 ],
               },
               {
-                tag_name: '@composio/cli@0.2.18-beta.3',
+                tag_name: '@composio/cli@0.2.19-beta.3',
                 draft: false,
                 prerelease: true,
                 assets: [
