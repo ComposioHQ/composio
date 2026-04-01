@@ -1,5 +1,14 @@
 # @composio/cli
 
+## 0.2.18
+
+### Patch Changes
+
+- f49e0af: feat: add `--beta` flag to `composio upgrade` for prerelease channel support
+  feat: preload custom auth connections into tool router sessions for seamless custom-auth toolkit execution
+  improve: beta-channel CLI release promotion flow in CI workflow
+  improve: expanded test coverage for upgrade binary and custom auth session creation
+
 ## 0.2.17
 
 ### Patch Changes
