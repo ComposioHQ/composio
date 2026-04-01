@@ -20,7 +20,40 @@ const GMAIL_TOOLKIT = {
   no_auth: false,
 } as const;
 
-export interface MockToolkitsListServer {
+const GMAIL_TOOLKIT_DETAILED = {
+  name: 'Gmail',
+  slug: 'gmail',
+  is_local_toolkit: false,
+  composio_managed_auth_schemes: ['OAUTH2'],
+  no_auth: false,
+  meta: {
+    description: 'Gmail toolkit for deterministic CLI e2e tests.',
+    categories: [],
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    available_versions: ['2024.01.01'],
+    tools_count: 40,
+    triggers_count: 2,
+  },
+  auth_config_details: [
+    {
+      mode: 'OAUTH2',
+      name: 'OAuth 2.0',
+      fields: {
+        auth_config_creation: {
+          required: [],
+          optional: [],
+        },
+        connected_account_initiation: {
+          required: [],
+          optional: [],
+        },
+      },
+    },
+  ],
+} as const;
+
+export interface MockToolkitsServer {
   readonly hostBaseUrl: string;
   readonly dockerBaseUrl: string;
   readonly requests: string[];
@@ -54,7 +87,7 @@ const parseLimit = (req: IncomingMessage): number => {
 export async function startMockToolkitsListServer(options?: {
   host?: string;
   port?: number;
-}): Promise<MockToolkitsListServer> {
+}): Promise<MockToolkitsServer> {
   const host = options?.host ?? '0.0.0.0';
   const port = options?.port ?? 0;
   const requests: string[] = [];
@@ -71,6 +104,18 @@ export async function startMockToolkitsListServer(options?: {
         total_pages: 1,
         current_page: 1,
         next_cursor: null,
+      });
+      return;
+    }
+
+    if ((req.method ?? 'GET') === 'GET' && url.pathname === '/api/v3/toolkits/gmail') {
+      sendJson(res, 200, GMAIL_TOOLKIT_DETAILED);
+      return;
+    }
+
+    if ((req.method ?? 'GET') === 'GET' && url.pathname.startsWith('/api/v3/toolkits/')) {
+      sendJson(res, 404, {
+        error: `Toolkit not found: ${url.pathname.split('/').at(-1) ?? 'unknown'}`,
       });
       return;
     }
