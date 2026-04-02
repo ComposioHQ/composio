@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.6.8
+
+### Patch Changes
+
+- 2b19ae9: Fix `customAuthParams.baseURL` not being sent to the API during tool execution. The SDK property `baseURL` is now correctly mapped to the API's expected `base_url` field.
+
 ## 0.6.7
 
 ### Patch Changes
