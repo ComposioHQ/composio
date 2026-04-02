@@ -190,6 +190,16 @@ def _convert_with_library(
 
         # For object schemas, create model directly
         if schema.get("type") == "object":
+            # Handle objects with additionalProperties but no explicit properties
+            # e.g. {"type": "object", "additionalProperties": {"type": "string"}}
+            # should map to Dict[str, str], not an empty Pydantic model.
+            if "additionalProperties" in schema and "properties" not in schema:
+                additional = schema["additionalProperties"]
+                if isinstance(additional, bool):
+                    return t.Dict[str, t.Any] if additional else t.Dict
+                value_type = json_schema_to_pydantic_type(additional)
+                return t.Dict[str, t.cast(t.Type, value_type)]  # type: ignore
+
             if "title" not in schema:
                 schema = {**schema, "title": "GeneratedModel"}
             return create_model_from_schema(
