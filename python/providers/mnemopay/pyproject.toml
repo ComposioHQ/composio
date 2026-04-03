@@ -1,0 +1,23 @@
+[project]
+name = "composio-mnemopay"
+version = "0.1.0"
+description = "Use Composio to give any AI agent persistent memory and an escrow wallet via MnemoPay."
+readme = "README.md"
+requires-python = ">=3.9,<4"
+authors = [
+    { name = "MnemoPay", email = "jerry@mnemopay.io" },
+    { name = "Composio", email = "tech@composio.dev" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "composio",
+]
+
+[project.urls]
+Homepage = "https://github.com/ComposioHQ/composio"
+Documentation = "https://docs.mnemopay.io"
+Repository = "https://github.com/mnemopay/mnemopay-sdk"
