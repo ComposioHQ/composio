@@ -17,4 +17,4 @@ composio = Composio(provider=MnemoPayProvider())
 tools = composio.tools.get(user_id="default", toolkits=["mnemopay"])
 print(f"Loaded {len(tools)} MnemoPay tools")
 for tool in tools:
-    print(f"  - {tool.slug}: {tool.description[:60]}...")
+    print(f"  - {tool['name']}: {tool['description'][:60]}...")

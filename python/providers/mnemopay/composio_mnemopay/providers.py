@@ -410,7 +410,9 @@ class MnemoPayProvider(
             mcp_args["txId"] = mcp_args.pop("tx_id")
 
         result = _get_client().call_tool(mcp_name, mcp_args)
-        is_error = isinstance(result, str) and result.startswith("Error:")
+        is_error = isinstance(result, str) and (
+            result.startswith("Error:") or result.startswith("MCP error:")
+        )
         return {
             "data": {"result": result} if not is_error else None,
             "error": result if is_error else None,
