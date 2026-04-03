@@ -426,6 +426,12 @@ class MnemoPayProvider(
 
         def _execute(**kwargs: t.Any) -> dict:
             try:
+                # Route MnemoPay tools to the MCP server; everything else
+                # goes through the standard Composio execute callback.
+                if tool.slug.startswith("MNEMOPAY_"):
+                    return self._execute_mnemopay(
+                        slug=tool.slug, arguments=kwargs
+                    )
                 return execute_tool(slug=tool.slug, arguments=kwargs)
             except pydantic.ValidationError as e:
                 return {
