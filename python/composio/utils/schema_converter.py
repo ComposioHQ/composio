@@ -196,9 +196,14 @@ def _convert_with_library(
             if "additionalProperties" in schema and "properties" not in schema:
                 additional = schema["additionalProperties"]
                 if isinstance(additional, bool):
-                    return t.Dict[str, t.Any] if additional else t.Dict
-                value_type = json_schema_to_pydantic_type(additional)
-                return t.Dict[str, t.cast(t.Type, value_type)]  # type: ignore
+                    if additional:
+                        return t.Dict[str, t.Any]
+                    # additionalProperties: false with no properties means
+                    # only empty objects are valid — fall through to
+                    # create_model_from_schema which produces a strict model.
+                else:
+                    value_type = json_schema_to_pydantic_type(additional)
+                    return t.Dict[str, t.cast(t.Type, value_type)]  # type: ignore
 
             if "title" not in schema:
                 schema = {**schema, "title": "GeneratedModel"}
