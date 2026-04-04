@@ -30,6 +30,18 @@ from composio.utils.shared import json_schema_to_model
 # Lightweight MCP client (HTTP or stdio) -- zero external deps beyond stdlib
 # ---------------------------------------------------------------------------
 
+class _MCPResult(t.NamedTuple):
+    """Structured result from MCP transport calls.
+
+    Using a dedicated type avoids in-band error signaling where a
+    successful tool result (e.g. a recalled memory containing the text
+    ``"Error: ..."`` ) could be misclassified as a transport failure.
+    """
+
+    ok: bool
+    value: str
+
+
 class _MnemoPayClient:
     """Thin client that talks JSON-RPC to the MnemoPay MCP server."""
 
@@ -48,14 +60,16 @@ class _MnemoPayClient:
 
     # -- public ------------------------------------------------------------
 
-    def call_tool(self, name: str, arguments: dict[str, t.Any] | None = None) -> str:
+    def call_tool(
+        self, name: str, arguments: dict[str, t.Any] | None = None
+    ) -> _MCPResult:
         if self.server_url:
             return self._call_http(name, arguments or {})
         return self._call_stdio(name, arguments or {})
 
     # -- transports --------------------------------------------------------
 
-    def _call_http(self, name: str, arguments: dict[str, t.Any]) -> str:
+    def _call_http(self, name: str, arguments: dict[str, t.Any]) -> _MCPResult:
         import urllib.request
 
         data = json.dumps(
@@ -77,14 +91,16 @@ class _MnemoPayClient:
                 result = json.loads(resp.read().decode())
                 if "result" in result:
                     content = result["result"].get("content", [])
-                    return content[0].get("text", str(content)) if content else "OK"
+                    text = content[0].get("text", str(content)) if content else "OK"
+                    return _MCPResult(ok=True, value=text)
                 if "error" in result:
-                    return f"Error: {result['error'].get('message', str(result['error']))}"
-                return str(result)
+                    msg = result["error"].get("message", str(result["error"]))
+                    return _MCPResult(ok=False, value=msg)
+                return _MCPResult(ok=True, value=str(result))
         except Exception as e:
-            return f"MCP error: {e}"
+            return _MCPResult(ok=False, value=f"MCP transport error: {e}")
 
-    def _call_stdio(self, name: str, arguments: dict[str, t.Any]) -> str:
+    def _call_stdio(self, name: str, arguments: dict[str, t.Any]) -> _MCPResult:
         with self._lock:
             if self._process is None or self._process.poll() is not None:
                 env = {
@@ -96,7 +112,7 @@ class _MnemoPayClient:
                     ["npx", "-y", "@mnemopay/sdk"],
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
                     env=env,
                 )
             assert self._process and self._process.stdin and self._process.stdout
@@ -111,16 +127,24 @@ class _MnemoPayClient:
                 self._process.stdin.flush()
                 raw = self._process.stdout.readline()
                 if not raw:
-                    return "Error: MCP server closed"
+                    return _MCPResult(ok=False, value="MCP server closed")
                 response = json.loads(raw.decode())
                 content = response.get("result", {}).get("content", [])
                 if content and isinstance(content, list):
-                    return content[0].get("text", str(content))
+                    return _MCPResult(
+                        ok=True,
+                        value=content[0].get("text", str(content)),
+                    )
                 if "error" in response:
-                    return f"Error: {response['error'].get('message', str(response['error']))}"
-                return str(response.get("result", {}))
+                    msg = response["error"].get(
+                        "message", str(response["error"])
+                    )
+                    return _MCPResult(ok=False, value=msg)
+                return _MCPResult(
+                    ok=True, value=str(response.get("result", {}))
+                )
             except Exception as e:
-                return f"MCP error: {e}"
+                return _MCPResult(ok=False, value=f"MCP transport error: {e}")
 
     def _next_id(self) -> int:
         self._request_id += 1
@@ -410,13 +434,16 @@ class MnemoPayProvider(
             mcp_args["txId"] = mcp_args.pop("tx_id")
 
         result = _get_client().call_tool(mcp_name, mcp_args)
-        is_error = isinstance(result, str) and (
-            result.startswith("Error:") or result.startswith("MCP error:")
-        )
+        if result.ok:
+            return {
+                "data": {"result": result.value},
+                "error": None,
+                "successful": True,
+            }
         return {
-            "data": {"result": result} if not is_error else None,
-            "error": result if is_error else None,
-            "successful": not is_error,
+            "data": None,
+            "error": result.value,
+            "successful": False,
         }
 
     def wrap_tool(
