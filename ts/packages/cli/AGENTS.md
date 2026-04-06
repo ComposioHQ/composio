@@ -27,16 +27,16 @@ Errors are captured via the custom `effect-errors/` module, which provides sourc
 
 Each command is declared with `@effect/cli`'s `Command.make()` pattern:
 
-| Command                                                  | Description                                                |
-| -------------------------------------------------------- | ---------------------------------------------------------- |
-| `composio version`                                       | Display CLI version                                        |
-| `composio whoami`                                        | Show logged-in user's API key                              |
-| `composio login [--no-browser] [--no-wait] [--key text]` | Login with browser redirect                                |
-| `composio logout`                                        | Clear stored API key                                       |
-| `composio upgrade`                                       | Self-update binary from GitHub releases                    |
-| `composio generate`                                      | Auto-detect project language, delegate to `ts` or `py`     |
-| `composio generate ts`                                   | Generate TypeScript type stubs for toolkits/tools/triggers |
-| `composio generate py`                                   | Generate Python type stubs                                 |
+| Command                                                  | Description                                                                           |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `composio version`                                       | Display CLI version                                                                   |
+| `composio whoami`                                        | Show logged-in user's API key                                                         |
+| `composio login [--no-browser] [--no-wait] [--key text]` | Login with browser redirect                                                           |
+| `composio logout`                                        | Clear stored API key                                                                  |
+| `composio upgrade`                                       | Self-update binary from GitHub releases                                               |
+| `composio generate`                                      | Auto-detect project language, delegate to `ts` or `py`                                |
+| `composio generate ts`                                   | Generate TypeScript type stubs for toolkits/tools/triggers                            |
+| `composio generate py`                                   | Generate Python type stubs                                                            |
 | `composio manage <command>`                              | Manage Composio resources (toolkits, tools, accounts, triggers, logs, orgs, projects) |
 
 Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation.
@@ -335,3 +335,45 @@ recordings/
 - **Config**: `recordings/recordings.yaml`
 - **Script**: `scripts/record.ts` — Bun + Effect.ts, parallel VHS execution
 - **Shared tape**: `recordings/tapes/shared-config.tape` — common VHS settings (auto-generated)
+
+---
+
+## Release Workflow
+
+CLI releases use a two-channel system: **beta** (automatic) and **stable** (manual promotion).
+
+### Beta Releases (automatic)
+
+Every push to `next` that touches `ts/packages/cli/**` automatically triggers `.github/workflows/build-cli-binaries.yml`, which:
+
+1. Finds the latest stable `@composio/cli@X.Y.Z` release
+2. Computes the next patch version (`X.Y.Z+1`)
+3. Builds cross-platform binaries (linux-x64, linux-aarch64, darwin-x64, darwin-aarch64)
+4. Creates a GitHub prerelease tagged `@composio/cli@X.Y.(Z+1)-beta.<run_number>`
+
+You can also trigger a beta build from **any branch** via `workflow_dispatch` → `build-beta`.
+
+Users install beta releases with `composio upgrade --beta`.
+
+### Stable Releases (via changeset)
+
+To promote to a stable release:
+
+1. Create a changeset PR (`.changeset/<name>.md` with `"@composio/cli": patch`)
+2. Merge it into `next`
+3. The changeset bot creates a "Release: update version" PR that bumps `package.json`
+4. Merge that PR → the push to `next` detects the `package.json` version changed → builds a **stable** release (`@composio/cli@X.Y.Z`, marked as `latest`)
+5. `ts.release.yml` also publishes to npm
+
+### Manual Promotion
+
+You can also promote an existing beta to stable via `workflow_dispatch` → `promote-stable` with the beta tag (e.g. `@composio/cli@0.2.20-beta.42`).
+
+### Key Files
+
+| File                                          | Purpose                          |
+| --------------------------------------------- | -------------------------------- |
+| `.github/workflows/build-cli-binaries.yml`    | Binary build + release workflow  |
+| `.github/workflows/ts.release.yml`            | Changeset bot + npm publish      |
+| `.github/workflows/cli.test-installation.yml` | Post-release install smoke tests |
+| `.changeset/config.json`                      | Changeset configuration          |
