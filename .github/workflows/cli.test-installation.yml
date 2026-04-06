@@ -316,33 +316,27 @@ jobs:
           echo "Checking shell configuration updates..."
 
           if [[ "${{ matrix.shell }}" == "zsh" ]]; then
-            if grep -q "COMPOSIO_INSTALL_DIR" ~/.zshrc; then
-              echo "✅ .zshrc updated with COMPOSIO_INSTALL"
-            else
-              echo "❌ .zshrc not updated"
-              exit 1
-            fi
-            
-            if grep -q 'export PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.zshrc; then
-              echo "✅ .zshrc updated with PATH"
-            else
-              echo "❌ .zshrc PATH not updated"
-              exit 1
-            fi
+            config_file=~/.zshrc
           else
-            if grep -q "COMPOSIO_INSTALL_DIR" ~/.bashrc; then
-              echo "✅ .bashrc updated with COMPOSIO_INSTALL"
-            else
-              echo "❌ .bashrc not updated"
-              exit 1
-            fi
-            
-            if grep -q 'export PATH="\\$COMPOSIO_INSTALL_DIR:\\$PATH"' ~/.bashrc; then
-              echo "✅ .bashrc updated with PATH"
-            else
-              echo "❌ .bashrc PATH not updated"
-              exit 1
-            fi
+            config_file=~/.bashrc
+          fi
+
+          if grep -q "COMPOSIO_INSTALL_DIR" "$config_file"; then
+            echo "✅ $config_file updated with COMPOSIO_INSTALL_DIR"
+          else
+            echo "❌ $config_file not updated with COMPOSIO_INSTALL_DIR"
+            echo "=== $config_file contents ==="
+            cat "$config_file"
+            exit 1
+          fi
+
+          if grep -q 'export PATH=.*COMPOSIO_INSTALL_DIR.*PATH' "$config_file"; then
+            echo "✅ $config_file updated with PATH"
+          else
+            echo "❌ $config_file PATH not updated"
+            echo "=== $config_file contents ==="
+            cat "$config_file"
+            exit 1
           fi
 
       - name: Test custom install directory
