@@ -1,22 +1,14 @@
 name: Build CLI Binaries
 
 on:
-  push:
+  pull_request:
     branches: [next]
-    paths:
-      - 'ts/packages/cli/**'
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
-      action:
-        description: 'What to do'
-        type: choice
-        options:
-          - build-beta
-          - promote-stable
-        default: build-beta
       beta_tag:
-        description: 'Existing beta release tag to promote (only for promote-stable, e.g. @composio/cli@0.2.20-beta.42)'
-        required: false
+        description: 'Existing beta release tag to promote (e.g., @composio/cli@1.0.0-beta.123)'
+        required: true
 
 permissions:
   contents: write
@@ -24,6 +16,7 @@ permissions:
 jobs:
   prepare:
     name: Resolve Release Metadata
+    if: "${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.title == 'Release: update version' }}"
     runs-on: ubuntu-latest
     outputs:
       checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
@@ -34,112 +27,42 @@ jobs:
       make_latest: ${{ steps.resolve.outputs.make_latest }}
 
     steps:
-      - name: Checkout
+      - name: Checkout release PR head
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Resolve release target
+      - name: Resolve beta or stable release target
         id: resolve
         env:
           EVENT_NAME: ${{ github.event_name }}
-          ACTION_INPUT: ${{ inputs.action }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BETA_TAG_INPUT: ${{ inputs.beta_tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
-          RUN_NUMBER: ${{ github.run_number }}
-          COMMIT_SHA: ${{ github.sha }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
 
-          # ── Push to next ──
-          if [[ "$EVENT_NAME" == "push" ]]; then
-            # Check if this is a "Release: update version" commit → stable release
-            if [[ "$COMMIT_MESSAGE" == Release:\ update\ version* ]]; then
-              version=$(node -p "require('./ts/packages/cli/package.json').version")
-              release_tag="@composio/cli@${version}"
-              release_name="CLI ${release_tag}"
-              {
-                echo "checkout_ref=${COMMIT_SHA}"
-                echo "release_name=${release_name}"
-                echo "release_tag=${release_tag}"
-                echo "release_version=${version}"
-                echo "prerelease=false"
-                echo "make_latest=true"
-              } >> "$GITHUB_OUTPUT"
-              exit 0
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            version=$(node -p "require('./ts/packages/cli/package.json').version")
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Expected ts/packages/cli/package.json version to be a stable semver on the release PR, got: $version"
+              exit 1
             fi
 
-            # Otherwise → beta release
-            # Find the latest stable CLI release to determine next version
-            latest_stable_tag=$(gh release list \
-              --repo "$REPOSITORY" \
-              --json tagName,isPrerelease \
-              --jq '[.[] | select(.tagName | startswith("@composio/cli@")) | select(.isPrerelease == false)] | sort_by(.tagName) | last | .tagName // empty')
-
-            if [[ -z "$latest_stable_tag" ]]; then
-              echo "No stable @composio/cli release found, falling back to package.json"
-              current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-            else
-              current_version=$(echo "$latest_stable_tag" | sed 's/@composio\/cli@//')
-            fi
-
-            # Bump patch version for the beta
-            IFS='.' read -r major minor patch <<< "$current_version"
-            next_version="${major}.${minor}.$((patch + 1))"
-
-            release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
+            release_tag="@composio/cli@${version}-beta.${PR_NUMBER}"
             release_name="CLI Beta ${release_tag}"
             {
-              echo "checkout_ref=${COMMIT_SHA}"
+              echo "checkout_ref=${PR_HEAD_SHA}"
               echo "release_name=${release_name}"
               echo "release_tag=${release_tag}"
-              echo "release_version=${next_version}"
+              echo "release_version=${version}"
               echo "prerelease=true"
               echo "make_latest=false"
             } >> "$GITHUB_OUTPUT"
             exit 0
-          fi
-
-          # ── workflow_dispatch: build-beta ──
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]] && [[ "$ACTION_INPUT" == "build-beta" ]]; then
-            latest_stable_tag=$(gh release list \
-              --repo "$REPOSITORY" \
-              --json tagName,isPrerelease \
-              --jq '[.[] | select(.tagName | startswith("@composio/cli@")) | select(.isPrerelease == false)] | sort_by(.tagName) | last | .tagName // empty')
-
-            if [[ -z "$latest_stable_tag" ]]; then
-              current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-            else
-              current_version=$(echo "$latest_stable_tag" | sed 's/@composio\/cli@//')
-            fi
-
-            IFS='.' read -r major minor patch <<< "$current_version"
-            next_version="${major}.${minor}.$((patch + 1))"
-
-            release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
-            release_name="CLI Beta ${release_tag}"
-            {
-              echo "checkout_ref=${COMMIT_SHA}"
-              echo "release_name=${release_name}"
-              echo "release_tag=${release_tag}"
-              echo "release_version=${next_version}"
-              echo "prerelease=true"
-              echo "make_latest=false"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # ── Promote stable (workflow_dispatch with promote-stable) ──
-          if [[ "$ACTION_INPUT" != "promote-stable" ]]; then
-            echo "Unknown action: $ACTION_INPUT"
-            exit 1
-          fi
-
-          if [[ -z "$BETA_TAG_INPUT" ]]; then
-            echo "beta_tag input is required for promote-stable"
-            exit 1
           fi
 
           encoded_beta_tag=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["BETA_TAG_INPUT"], safe=""))')
@@ -156,7 +79,7 @@ jobs:
           fi
 
           if [[ ! "$BETA_TAG_INPUT" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
-            echo "Beta tag must match @composio/cli@<version>-beta.<number>"
+            echo "Beta tag must match @composio/cli@<version>-beta.<pr-number>"
             exit 1
           fi
 
