@@ -2156,6 +2156,19 @@
                           }
                         ]
                       },
+                      "user_scopes": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        ]
+                      },
                       "restrict_to_following_tools": {
                         "type": "array",
                         "items": {
