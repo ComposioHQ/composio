@@ -33,6 +33,11 @@ export const DEBUG_OVERRIDE_ENV_CONFIG_KEY_PREFIX = 'DEBUG_OVERRIDE_';
 export const USER_CONFIG_FILE_NAME = constants.USER_DATA_FILE_NAME;
 
 /**
+ * Name of the general CLI config file used by the Composio CLI.
+ */
+export const CLI_CONFIG_FILE_NAME = 'config.json';
+
+/**
  * Name of the directory used to store the Composio CLI config.
  */
 export const USER_COMPOSIO_DIR = constants.COMPOSIO_DIR;

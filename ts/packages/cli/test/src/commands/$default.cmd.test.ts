@@ -59,7 +59,9 @@ describe('CLI: composio', () => {
         const args = ['--help'];
         yield* cli(args);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n').trim().length).toBeGreaterThan(0);
+        const output = lines.join('\n');
+        expect(output.trim().length).toBeGreaterThan(0);
+        expect(output).toContain('config.json');
       })
     );
   });

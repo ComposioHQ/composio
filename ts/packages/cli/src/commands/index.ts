@@ -29,6 +29,7 @@ import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/con
 import { orgsCmd } from './orgs/orgs.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { detectMaster } from 'src/services/master-detector';
@@ -36,8 +37,30 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
+import { type CommandVisibility, tagged, visibleValues } from './feature-tags';
 
-const $cmd = $defaultCmd.pipe(
+const ROOT_COMMANDS = [
+  tagged(versionCmd),
+  tagged(upgradeCmd),
+  tagged(whoamiCmd),
+  tagged(loginCmd),
+  tagged(listenCmd),
+  tagged(logoutCmd),
+  tagged(runCmd),
+  tagged(proxyCmd),
+  tagged(artifactsCmd),
+  tagged(installCmd),
+  tagged(devCmd),
+  tagged(rootToolsCmd),
+  tagged(rootTriggersCmd),
+  tagged(rootToolsCmd$Search),
+  tagged(rootConnectedAccountsCmd$Link),
+  tagged(rootToolsCmd$Execute),
+  tagged(generateCmd),
+  tagged(orgsCmd),
+] as const;
+
+export const rootCommand = $defaultCmd.pipe(
   Command.withSubcommands([
     versionCmd,
     upgradeCmd,
@@ -59,7 +82,13 @@ const $cmd = $defaultCmd.pipe(
     orgsCmd,
   ])
 );
-export const rootCommand = $cmd;
+
+export const buildRootCommand = (visibility: CommandVisibility) => {
+  const subcommands = visibleValues(ROOT_COMMANDS, visibility) as Parameters<
+    typeof Command.withSubcommands
+  >[0];
+  return $defaultCmd.pipe(Command.withSubcommands(subcommands));
+};
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = argv.slice(2);
@@ -239,8 +268,13 @@ const isDebugWhoIsMyMaster = (argv: ReadonlyArray<string>): boolean => {
 };
 
 export const runWithConfig = Effect.gen(function* () {
+  const cliUserConfig = yield* ComposioCliUserConfig;
+  const visibility: CommandVisibility = {
+    isExperimentalFeatureEnabled: feature => cliUserConfig.isExperimentalFeatureEnabled(feature),
+  };
   const version = yield* getVersion;
-  const run = Command.run($cmd, {
+  const rootCommand = buildRootCommand(visibility);
+  const run = Command.run(rootCommand, {
     name: 'composio',
     executable: 'composio',
     version,
@@ -251,11 +285,11 @@ export const runWithConfig = Effect.gen(function* () {
       normalizeListenStreamFlag(normalizeVersionShortFlag(argv))
     );
     if (isRootHelp(normalizedArgv)) {
-      return printRootHelp();
+      return printRootHelp(visibility);
     }
-    const subHelp = matchSubcommandHelp(normalizedArgv);
+    const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {
-      return printSubcommandHelp(subHelp);
+      return printSubcommandHelp(subHelp, visibility);
     }
     const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
     if (parallelExecute) {
@@ -317,7 +351,7 @@ export const runWithConfig = Effect.gen(function* () {
   };
 });
 
-export const run = Command.run($cmd, {
+export const run = Command.run(rootCommand, {
   name: 'composio',
   version: constants.APP_VERSION,
   executable: 'composio',
