@@ -276,7 +276,11 @@ describe('UpgradeBinary', () => {
   });
 
   it('selects the latest prerelease when beta upgrades are requested', async () => {
+    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-beta-select-'));
+    const fakeExecPath = path.join(installDir, 'composio');
+    writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.1.0-beta.0\n');
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
     try {
       await withHttpServer(
@@ -285,7 +289,7 @@ describe('UpgradeBinary', () => {
           res.end(
             JSON.stringify([
               {
-                tag_name: '@composio/cli@0.2.18-beta.1',
+                tag_name: '@composio/cli@0.2.19-beta.1',
                 draft: false,
                 prerelease: true,
                 assets: [
@@ -296,7 +300,7 @@ describe('UpgradeBinary', () => {
                 ],
               },
               {
-                tag_name: '@composio/cli@0.2.18-beta.3',
+                tag_name: '@composio/cli@0.2.19-beta.3',
                 draft: false,
                 prerelease: true,
                 assets: [
@@ -339,6 +343,7 @@ describe('UpgradeBinary', () => {
         }
       );
     } finally {
+      execPathSpy.mockRestore();
       vi.unstubAllGlobals();
       vi.restoreAllMocks();
     }
