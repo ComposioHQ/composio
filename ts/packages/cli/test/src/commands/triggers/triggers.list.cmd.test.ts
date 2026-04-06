@@ -4,6 +4,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import type { TriggerTypes } from 'src/models/trigger-types';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
+import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 
 const testTriggerTypes: TriggerTypes = [
   {
@@ -38,7 +39,13 @@ const testTriggerTypes: TriggerTypes = [
   },
 ];
 
+const testToolkits = makeTestToolkits([
+  { name: 'Gmail', slug: 'gmail' },
+  { name: 'Slack', slug: 'slack' },
+]);
+
 const toolkitsData = {
+  toolkits: testToolkits,
   triggerTypes: testTriggerTypes,
 } satisfies TestLiveInput['toolkitsData'];
 
@@ -69,11 +76,11 @@ describe('CLI: composio dev triggers list', () => {
     it => {
       it.scoped('uses root toolkit command in the no-results hint', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'list', 'nonexistent']);
+          yield* cli(['triggers', 'list', 'nonexistent']).pipe(Effect.ignore);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('No trigger types found');
+          expect(output).toContain('not available');
           expect(output).toContain('composio toolkits list');
           expect(output).not.toContain('composio dev toolkits list');
         })
@@ -86,11 +93,8 @@ describe('CLI: composio dev triggers list', () => {
     it => {
       it.scoped('requires a toolkit positional argument', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'list']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
-
-          expect(output).toContain('toolkit');
+          const exit = yield* cli(['triggers', 'list']).pipe(Effect.exit);
+          expect(JSON.stringify(exit)).toContain('toolkit');
         })
       );
     }
@@ -174,31 +178,33 @@ describe('CLI: composio dev triggers list', () => {
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
-    '[Given] empty results [Then] shows no trigger types found',
-    it => {
-      it.scoped('shows no trigger types found', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'list', 'gmail']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData: { toolkits: makeTestToolkits([{ name: 'Gmail', slug: 'gmail' }]) },
+    })
+  )('[Given] empty results [Then] shows no trigger types found', it => {
+    it.scoped('shows no trigger types found', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'triggers', 'list', 'gmail']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
 
-          expect(output).toContain('No trigger types found');
-        })
-      );
-    }
-  );
+        expect(output).toContain('No trigger types found');
+      })
+    );
+  });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] toolkit "nonexistent" [Then] shows no trigger types found with hint',
+    '[Given] toolkit "nonexistent" [Then] shows invalid toolkit error with hint',
     it => {
       it.scoped('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'list', 'nonexistent']);
+          yield* cli(['dev', 'triggers', 'list', 'nonexistent']).pipe(Effect.ignore);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('No trigger types found');
+          expect(output).toContain('not available');
           expect(output).toContain('composio dev toolkits list');
         })
       );

@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
@@ -116,7 +118,7 @@ describe('CLI: composio', () => {
           .join('\n')
           .trim();
 
-        expect(output).toContain('/tmp/composio');
+        expect(output).toContain(path.join(os.tmpdir(), 'composio'));
       })
     );
   });
