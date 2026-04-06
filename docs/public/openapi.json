@@ -7613,343 +7613,6 @@
         }
       }
     },
-    "/api/v3/tools": {
-      "get": {
-        "summary": "List available tools",
-        "description": "Retrieve a paginated list of available tools with comprehensive filtering, sorting and search capabilities. Use query parameters to narrow down results by toolkit, tags, or search terms.",
-        "tags": [
-          "Tools"
-        ],
-        "operationId": "getTools",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "The slug of the toolkit to filter by",
-            "in": "query",
-            "name": "toolkit_slug"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "Comma-separated list of specific tool slugs to retrieve (overrides other filters)",
-            "in": "query",
-            "name": "tool_slugs"
-          },
-          {
-            "schema": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              ]
-            },
-            "required": false,
-            "description": "Comma-separated list of auth config IDs to filter tools by",
-            "in": "query",
-            "name": "auth_config_ids"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "true",
-                "false"
-              ]
-            },
-            "required": false,
-            "description": "Filter to only show important/featured tools (set to \"true\" to enable)",
-            "in": "query",
-            "name": "important"
-          },
-          {
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "required": false,
-            "description": "Filter tools by one or more tags (can be specified multiple times)",
-            "in": "query",
-            "name": "tags"
-          },
-          {
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "string"
-              },
-              "description": "Filter tools by one or more scopes (can be specified multiple times)"
-            },
-            "required": false,
-            "description": "Array of scopes to filter tools by)",
-            "name": "scopes",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "Full-text search query to filter tools by name, slug, or description. Applied as a soft filter on top of other filters.",
-            "in": "query",
-            "name": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "Deprecated: use \"query\" instead. Free-text search query to find tools by name, description, or functionality.",
-            "in": "query",
-            "name": "search",
-            "deprecated": true
-          },
-          {
-            "schema": {
-              "type": "boolean",
-              "default": true
-            },
-            "required": false,
-            "description": "Include deprecated tools in the response",
-            "in": "query",
-            "name": "include_deprecated"
-          },
-          {
-            "schema": {
-              "oneOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "description": "Object representation of parsed bracket notation"
-                }
-              ]
-            },
-            "required": false,
-            "description": "Toolkit version specification. Use \"latest\" for latest versions or bracket notation for specific versions per toolkit.",
-            "in": "query",
-            "name": "toolkit_versions",
-            "examples": {
-              "latest_version": {
-                "summary": "Latest version for all toolkits",
-                "value": "latest"
-              },
-              "bracket_notation": {
-                "summary": "Specific versions using bracket notation",
-                "value": "Use: toolkit_versions[gmail]=20250930_00&toolkit_versions[slack]=20250929_00"
-              },
-              "null_value": {
-                "summary": "No version specified (uses 00000000_00)",
-                "value": null
-              }
-            }
-          },
-          {
-            "schema": {
-              "type": "number",
-              "nullable": true
-            },
-            "required": false,
-            "description": "Number of items per page, max allowed is 1000",
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "description": "Cursor for pagination. The cursor is a base64 encoded string of the page and limit. The page is the page number and the limit is the number of items per page. The cursor is used to paginate through the items. The cursor is not required for the first page.",
-            "name": "cursor",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved tools list with pagination information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ToolsPaginated"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - Invalid query parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Authentication credentials are missing or invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - User does not have permission to access tools",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found - The requested resource was not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests - Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - Something went wrong on the server",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v3/tools/enum": {
-      "get": {
-        "summary": "Get tool enum list",
-        "description": "Retrieve a list of all available tool enumeration values (tool slugs) from latest version of each toolkit. This endpoint returns a comma-separated string of tool slugs that can be used in other API calls.",
-        "tags": [
-          "Tools"
-        ],
-        "operationId": "getToolsEnum",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved tool enum list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "JSON string containing all tool enum values from latest version of each toolkit"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - Invalid request parameters",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Authentication credentials are missing or invalid",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - User does not have permission to access tool enums",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found - Tool enum list not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - Something went wrong on the server",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v3/toolkits/multi": {
       "post": {
         "summary": "Fetch multiple toolkits",
@@ -17524,6 +17187,343 @@
           },
           "500": {
             "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3.1/tools": {
+      "get": {
+        "summary": "List available tools",
+        "description": "Retrieve a paginated list of available tools with comprehensive filtering, sorting and search capabilities. Use query parameters to narrow down results by toolkit, tags, or search terms.",
+        "tags": [
+          "Tools"
+        ],
+        "operationId": "getV3_1Tools",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "The slug of the toolkit to filter by",
+            "in": "query",
+            "name": "toolkit_slug"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Comma-separated list of specific tool slugs to retrieve (overrides other filters)",
+            "in": "query",
+            "name": "tool_slugs"
+          },
+          {
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "required": false,
+            "description": "Comma-separated list of auth config IDs to filter tools by",
+            "in": "query",
+            "name": "auth_config_ids"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "description": "Filter to only show important/featured tools (set to \"true\" to enable)",
+            "in": "query",
+            "name": "important"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "required": false,
+            "description": "Filter tools by one or more tags (can be specified multiple times)",
+            "in": "query",
+            "name": "tags"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "nullable": true,
+              "items": {
+                "type": "string"
+              },
+              "description": "Filter tools by one or more scopes (can be specified multiple times)"
+            },
+            "required": false,
+            "description": "Array of scopes to filter tools by)",
+            "name": "scopes",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Full-text search query to filter tools by name, slug, or description. Applied as a soft filter on top of other filters.",
+            "in": "query",
+            "name": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Deprecated: use \"query\" instead. Free-text search query to find tools by name, description, or functionality.",
+            "in": "query",
+            "name": "search",
+            "deprecated": true
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "required": false,
+            "description": "Include deprecated tools in the response",
+            "in": "query",
+            "name": "include_deprecated"
+          },
+          {
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "Object representation of parsed bracket notation"
+                }
+              ]
+            },
+            "required": false,
+            "description": "Toolkit version specification. Use \"latest\" for latest versions or bracket notation for specific versions per toolkit.",
+            "in": "query",
+            "name": "toolkit_versions",
+            "examples": {
+              "latest_version": {
+                "summary": "Latest version for all toolkits",
+                "value": "latest"
+              },
+              "bracket_notation": {
+                "summary": "Specific versions using bracket notation",
+                "value": "Use: toolkit_versions[gmail]=20250930_00&toolkit_versions[slack]=20250929_00"
+              },
+              "null_value": {
+                "summary": "No version specified (uses 00000000_00)",
+                "value": null
+              }
+            }
+          },
+          {
+            "schema": {
+              "type": "number",
+              "nullable": true
+            },
+            "required": false,
+            "description": "Number of items per page, max allowed is 1000",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Cursor for pagination. The cursor is a base64 encoded string of the page and limit. The page is the page number and the limit is the number of items per page. The cursor is used to paginate through the items. The cursor is not required for the first page.",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved tools list with pagination information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsPaginated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication credentials are missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User does not have permission to access tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - The requested resource was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - Something went wrong on the server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v3.1/tools/enum": {
+      "get": {
+        "summary": "Get tool enum list",
+        "description": "Retrieve a list of all available tool enumeration values (tool slugs) from latest version of each toolkit. This endpoint returns a comma-separated string of tool slugs that can be used in other API calls.",
+        "tags": [
+          "Tools"
+        ],
+        "operationId": "getV3_1ToolsEnum",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved tool enum list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "JSON string containing all tool enum values from latest version of each toolkit"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication credentials are missing or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - User does not have permission to access tool enums",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - Tool enum list not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - Something went wrong on the server",
             "content": {
               "application/json": {
                 "schema": {
