@@ -1,10 +1,17 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
+import { extendConfigProvider } from 'src/services/config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+
+const testConfigProvider = ConfigProvider.fromMap(
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
+).pipe(extendConfigProvider);
 
 describe('CLI: composio listen', () => {
   layer(
     TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       realtimeData: {
         events: [
           {
@@ -42,6 +49,8 @@ describe('CLI: composio listen', () => {
 
   layer(
     TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       connectedAccountsData: {
         items: [
           {
