@@ -9,6 +9,7 @@ import { formatTriggerTypeInfo } from '../format';
 type TriggersInfoCommandConfig = {
   readonly exampleCommand: string;
   readonly listCommand: string;
+  readonly listCommandPlaceholder: string;
 };
 
 const slug = Args.text({ name: 'slug' }).pipe(
@@ -24,7 +25,11 @@ const slug = Args.text({ name: 'slug' }).pipe(
  * composio dev triggers info "GMAIL_NEW_GMAIL_MESSAGE"
  * ```
  */
-const makeTriggersInfoCommand = ({ exampleCommand, listCommand }: TriggersInfoCommandConfig) =>
+const makeTriggersInfoCommand = ({
+  exampleCommand,
+  listCommand,
+  listCommandPlaceholder,
+}: TriggersInfoCommandConfig) =>
   Command.make('info', { slug }, ({ slug }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
@@ -50,7 +55,7 @@ const makeTriggersInfoCommand = ({ exampleCommand, listCommand }: TriggersInfoCo
             'services/HttpServerError',
             handleHttpServerError(ui, {
               fallbackMessage: `Trigger "${slugValue}" not found.`,
-              hint: `Browse available trigger types:\n> ${listCommand}`,
+              hint: `Browse available trigger types:\n> ${listCommandPlaceholder}`,
               fallbackValue: Option.none(),
             })
           )
@@ -76,9 +81,11 @@ const makeTriggersInfoCommand = ({ exampleCommand, listCommand }: TriggersInfoCo
 export const triggersCmd$Info = makeTriggersInfoCommand({
   exampleCommand: 'composio dev triggers info',
   listCommand: 'composio dev triggers list',
+  listCommandPlaceholder: 'composio dev triggers list "<toolkit>"',
 });
 
 export const rootTriggersCmd$Info = makeTriggersInfoCommand({
   exampleCommand: 'composio triggers info',
   listCommand: 'composio triggers list',
+  listCommandPlaceholder: 'composio triggers list "<toolkit>"',
 });
