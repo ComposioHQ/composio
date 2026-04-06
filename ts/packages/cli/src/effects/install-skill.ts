@@ -6,10 +6,119 @@ import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { APP_VERSION } from 'src/constants';
+import { semverComparator } from 'src/effects/compare-semver';
 import decompress from 'decompress';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
+const CLI_RELEASE_TAG_PATTERN = /^@composio\/cli@\d+\.\d+\.\d+.*$/;
+
+export type SkillReleaseChannel = 'beta' | 'stable';
+
+type GitHubRelease = {
+  tag_name: string;
+  prerelease?: boolean;
+  draft?: boolean;
+  assets: Array<{ name: string; browser_download_url: string }>;
+};
+
+type GitHubConfig = {
+  API_BASE_URL: string;
+  OWNER: string;
+  REPO: string;
+  TAG: Option.Option<string>;
+  ACCESS_TOKEN: Option.Option<string>;
+};
+
+const hasSkillAsset = (release: GitHubRelease) =>
+  release.assets.some(asset => asset.name === SKILL_ASSET_NAME);
+
+export const inferSkillReleaseChannel = (tagOrVersion: string): SkillReleaseChannel =>
+  tagOrVersion.includes('-beta.') ? 'beta' : 'stable';
+
+export const resolveSkillReleaseTag = ({
+  channel,
+  githubConfig,
+  httpClient,
+  releaseTag,
+}: {
+  channel?: SkillReleaseChannel;
+  githubConfig: GitHubConfig;
+  httpClient: HttpClient.HttpClient;
+  releaseTag?: string;
+}) =>
+  Effect.gen(function* () {
+    if (releaseTag) {
+      return releaseTag;
+    }
+
+    const configTag = Option.getOrUndefined(githubConfig.TAG);
+    if (configTag) {
+      return configTag;
+    }
+
+    if (!channel) {
+      return `@composio/cli@${APP_VERSION}`;
+    }
+
+    const releaseUrl = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
+    const releaseResponse = yield* httpClient
+      .get(releaseUrl)
+      .pipe(
+        Effect.catchAll(error =>
+          Effect.fail(new Error(`Failed to fetch ${channel} releases from GitHub: ${error}`))
+        )
+      );
+
+    if (releaseResponse.status < 200 || releaseResponse.status >= 300) {
+      return yield* Effect.fail(
+        new Error(
+          `Failed to fetch ${channel} releases from GitHub (HTTP ${releaseResponse.status})`
+        )
+      );
+    }
+
+    const releases = (yield* releaseResponse.json.pipe(
+      Effect.catchAll(() => Effect.fail(new Error('Failed to parse GitHub releases JSON')))
+    )) as unknown;
+
+    if (!Array.isArray(releases)) {
+      return yield* Effect.fail(new Error('GitHub releases response was not an array'));
+    }
+
+    const prerelease = channel === 'beta';
+    const matchingReleases = releases.filter(
+      (release): release is GitHubRelease =>
+        typeof release === 'object' &&
+        release !== null &&
+        'tag_name' in release &&
+        typeof release.tag_name === 'string' &&
+        ('prerelease' in release ? release.prerelease === prerelease : prerelease === false) &&
+        ('draft' in release ? release.draft === false : true) &&
+        CLI_RELEASE_TAG_PATTERN.test(release.tag_name) &&
+        Array.isArray(release.assets) &&
+        hasSkillAsset(release)
+    );
+
+    if (matchingReleases.length === 0) {
+      return yield* Effect.fail(
+        new Error(`No ${channel} CLI releases found with ${SKILL_ASSET_NAME}`)
+      );
+    }
+
+    let latest = matchingReleases[0];
+    for (const release of matchingReleases.slice(1)) {
+      const comparison = yield* semverComparator(latest.tag_name, release.tag_name).pipe(
+        Effect.mapError(error => new Error(`Failed to compare release versions: ${error}`))
+      );
+
+      if (comparison < 0) {
+        latest = release;
+      }
+    }
+
+    return latest.tag_name;
+  });
 
 /**
  * Install the composio-cli skill into the user's global agent skills directory.
@@ -20,7 +129,10 @@ const SKILL_ASSET_NAME = 'composio-skill.zip';
  *
  * Non-fatal: wrapped version catches all errors.
  */
-export const installSkill = (options?: { readonly releaseTag?: string }) =>
+export const installSkill = (options?: {
+  readonly releaseTag?: string;
+  readonly channel?: SkillReleaseChannel;
+}) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
     const ui = yield* TerminalUI;
@@ -31,10 +143,12 @@ export const installSkill = (options?: { readonly releaseTag?: string }) =>
     const agentSkillDir = path.join(home, '.agents', 'skills', SKILL_NAME);
     const claudeSkillLink = path.join(home, '.claude', 'skills', SKILL_NAME);
 
-    // Resolve the release tag — prefer explicit override, then env config, then current version
-    const tag =
-      options?.releaseTag ??
-      Option.getOrElse(githubConfig.TAG, () => `@composio/cli@${APP_VERSION}`);
+    const tag = yield* resolveSkillReleaseTag({
+      channel: options?.channel,
+      githubConfig,
+      httpClient,
+      releaseTag: options?.releaseTag,
+    });
 
     // Find the skill asset URL from the release
     const releaseUrl = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodeURIComponent(tag)}`;
@@ -127,7 +241,10 @@ export const installSkill = (options?: { readonly releaseTag?: string }) =>
 /**
  * Wrapped version that catches all errors and logs a warning instead of failing.
  */
-export const installSkillSafe = (options?: { readonly releaseTag?: string }) =>
+export const installSkillSafe = (options?: {
+  readonly releaseTag?: string;
+  readonly channel?: SkillReleaseChannel;
+}) =>
   installSkill(options).pipe(
     Effect.sandbox,
     Effect.catchAll(cause =>

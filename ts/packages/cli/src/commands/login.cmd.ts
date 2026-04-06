@@ -12,7 +12,8 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
-import { installSkillSafe } from 'src/effects/install-skill';
+import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
+import { APP_VERSION } from 'src/constants';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
@@ -42,10 +43,7 @@ const noSkillInstall = Options.boolean('no-skill-install').pipe(
   Options.withDescription('Skip installing the composio-cli skill for Claude Code')
 );
 
-const formatLoginSuccessMessage = (params: {
-  email?: string;
-  orgName?: string;
-}): string => {
+const formatLoginSuccessMessage = (params: { email?: string; orgName?: string }): string => {
   const { email, orgName } = params;
   if (email && orgName) {
     return `Logged in as ${email} in "${orgName}"`;
@@ -482,7 +480,7 @@ export const loginCmd = Command.make(
           skipOrgProjectPicker: true,
         });
         if (!noSkillInstall) {
-          yield* installSkillSafe();
+          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
         }
         return;
       }
@@ -506,7 +504,7 @@ export const loginCmd = Command.make(
       });
 
       if (!noSkillInstall && !noWait) {
-        yield* installSkillSafe();
+        yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
       }
     })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));
