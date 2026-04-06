@@ -1,5 +1,10 @@
 import { Data, Effect, Runtime } from 'effect';
-import { ComposioSessionRepository } from 'src/services/composio-clients';
+import {
+  ComposioClientSingleton,
+  ComposioSessionRepository,
+  type CliRealtimeAuthResponse,
+  type CliRealtimeCredentialsResponse,
+} from 'src/services/composio-clients';
 
 type RawRealtimeEvent = Record<string, unknown>;
 
@@ -71,12 +76,20 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
   {
     effect: Effect.gen(function* () {
       const sessionRepo = yield* ComposioSessionRepository;
+      const clientSingleton = yield* ComposioClientSingleton;
       const runtime = yield* Effect.runtime<never>();
 
-      const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
+      const listenWith = (params: {
+        getRealtimeCredentials: () => Effect.Effect<CliRealtimeCredentialsResponse>;
+        authRealtimeChannel: (params: {
+          channel_name: string;
+          socket_id: string;
+        }) => Effect.Effect<CliRealtimeAuthResponse>;
+        onEvent: (data: RawRealtimeEvent) => void;
+      }) =>
         Effect.acquireUseRelease(
           Effect.gen(function* () {
-            const creds = yield* sessionRepo.getRealtimeCredentials();
+            const creds = yield* params.getRealtimeCredentials();
             const channelName = `private-cli-${creds.project_id}`;
 
             const pusherModule = yield* Effect.tryPromise({
@@ -90,9 +103,9 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               cluster: creds.pusher_cluster,
               channelAuthorization: {
                 customHandler: (authOptions: PusherAuthOptions, callback?: PusherAuthCallback) => {
-                  const params = authOptions.params ?? authOptions;
-                  const channel_name = params.channel_name ?? params.channelName;
-                  const socket_id = params.socket_id ?? params.socketId;
+                  const authParams = authOptions.params ?? authOptions;
+                  const channel_name = authParams.channel_name ?? authParams.channelName;
+                  const socket_id = authParams.socket_id ?? authParams.socketId;
 
                   const doAuth = async () => {
                     if (!channel_name || !socket_id) {
@@ -100,7 +113,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                     }
 
                     const response = await Runtime.runPromise(runtime)(
-                      sessionRepo.authRealtimeChannel({
+                      params.authRealtimeChannel({
                         channel_name,
                         socket_id,
                       })
@@ -167,7 +180,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
             }, CHUNK_TTL_MS);
 
             channel.bind('trigger_to_client', eventData => {
-              onEvent((eventData ?? {}) as RawRealtimeEvent);
+              params.onEvent((eventData ?? {}) as RawRealtimeEvent);
             });
 
             channel.bind('chunked-trigger_to_client', data => {
@@ -217,7 +230,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               ) {
                 try {
                   const parsed = JSON.parse(current.chunks.join('')) as RawRealtimeEvent;
-                  onEvent(parsed);
+                  params.onEvent(parsed);
                 } catch {
                   // Silently discard events that fail to parse after chunk reassembly
                 } finally {
@@ -243,8 +256,40 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
             }).pipe(Effect.catchAll(() => Effect.void))
         );
 
-      return { listen };
+      const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
+        listenWith({
+          getRealtimeCredentials: () => sessionRepo.getRealtimeCredentials().pipe(Effect.orDie),
+          authRealtimeChannel: params => sessionRepo.authRealtimeChannel(params).pipe(Effect.orDie),
+          onEvent,
+        });
+
+      const listenInProject = (
+        scope: { orgId: string; projectId: string },
+        onEvent: (data: RawRealtimeEvent) => void
+      ) =>
+        Effect.gen(function* () {
+          const client = yield* clientSingleton.getFor({
+            orgId: scope.orgId,
+            projectId: scope.projectId,
+          });
+
+          return yield* listenWith({
+            getRealtimeCredentials: () =>
+              Effect.tryPromise({
+                try: () => client.cli.realtime.credentials(),
+                catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
+              }).pipe(Effect.orDie),
+            authRealtimeChannel: params =>
+              Effect.tryPromise({
+                try: () => client.cli.realtime.auth(params),
+                catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
+              }).pipe(Effect.orDie),
+            onEvent,
+          });
+        });
+
+      return { listen, listenInProject };
     }),
-    dependencies: [ComposioSessionRepository.Default],
+    dependencies: [ComposioSessionRepository.Default, ComposioClientSingleton.Default],
   }
 ) {}

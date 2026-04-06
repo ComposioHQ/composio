@@ -73,6 +73,35 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
     ],
   },
   {
+    name: 'listen',
+    description:
+      'Create a temporary subscription for consumer-project events and persist each payload into the session artifact folder.',
+    usage:
+      'listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
+    options: [
+      { name: '<slug>', description: 'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")' },
+      {
+        name: '-p, --params',
+        description:
+          "Trigger create params as JSON or JS-style object, e.g. -p '{ trigger_config: { ... } }'.",
+      },
+      {
+        name: '--max-events',
+        description: 'Stop after receiving N events, then disable the temporary trigger',
+      },
+      {
+        name: '--timeout',
+        description:
+          'Stop after a duration such as 30s, 5m, or 1hr, then disable the temporary trigger',
+      },
+      {
+        name: '--stream',
+        description:
+          'Also print each payload inline as a single-line stream value. Optionally pass a jq-like path such as ".thread.id".',
+      },
+    ],
+  },
+  {
     name: 'proxy',
     description:
       'curl-like access to any toolkit API through Composio using your connected account.',
@@ -270,6 +299,47 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio tools info <slug>              Schema summary with jq hints',
       'composio link <toolkit>                 Connect an account for a toolkit',
       'composio artifacts cwd                  Print the current session artifact directory',
+    ],
+  },
+  listen: {
+    usage:
+      'composio listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
+    description:
+      'Create a temporary subscription for consumer-project events so background agents can easily consume new emails, Slack messages, and other trigger payloads from artifacts.',
+    args: [{ name: '<slug>', description: 'Trigger slug to create and listen to' }],
+    options: [
+      {
+        name: '-p, --params <text>',
+        description:
+          'Trigger create params as JSON/JS object, @file, or - for stdin. Pass optional trigger config fields only.',
+      },
+      {
+        name: '--max-events <integer>',
+        description: 'Stop after N events for this temporary trigger and disable it',
+      },
+      {
+        name: '--timeout <text>',
+        description: 'Stop after a duration such as "30s", "5m", or "1hr" and disable the trigger',
+      },
+      {
+        name: '--stream [text]',
+        description:
+          'Also print each event payload inline. Optionally pass a jq-like path such as ".thread.id" or ".data[0].id".',
+      },
+    ],
+    examples: [
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE',
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --max-events 5',
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 5m',
+      "composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 1hr --stream '.data.threadId'",
+      'composio listen SLACK_RECEIVE_MESSAGE -p \'{ trigger_config: { channel: "C123" } }\'',
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream',
+      "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
+    ],
+    seeAlso: [
+      'composio artifacts cwd                   Print the current session artifact directory',
+      'composio triggers info <slug>            Inspect trigger type details before listening',
+      'composio link <toolkit>                  Connect the required account before creating the trigger',
     ],
   },
   link: {
