@@ -212,12 +212,12 @@ export const getCurrentCwdSessionId = (): string | undefined => {
 const withCliSessionId = (event: TrackEvent): TrackEvent => {
   if (!event) return event;
   const cliSessionId = getCurrentCwdSessionId();
-  if (!cliSessionId) return event;
   return {
     ...event,
     properties: {
       ...(event.properties ?? {}),
-      cli_session_id: cliSessionId,
+      cli_version: event.properties?.cli_version ?? constants.APP_VERSION,
+      ...(cliSessionId ? { cli_session_id: cliSessionId } : {}),
     },
   };
 };

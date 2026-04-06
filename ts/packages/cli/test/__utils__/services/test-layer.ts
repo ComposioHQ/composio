@@ -984,6 +984,24 @@ export const TestLayer = (input?: TestLiveInput) =>
           return found;
         },
       },
+      triggerInstances: {
+        upsert: async (
+          triggerSlug: string,
+          params?: {
+            connected_account_id?: string;
+            trigger_config?: Record<string, unknown>;
+          }
+        ) => ({
+          trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+        }),
+        manage: {
+          update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
+            trigger_id: triggerId,
+            status: params.status,
+          }),
+          delete: async (triggerId: string) => ({ trigger_id: triggerId }),
+        },
+      },
       toolkits: {
         retrieve: async (slug: string) => {
           const detailed = toolkitsData.detailedToolkits.find(

@@ -75,7 +75,7 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
   {
     name: 'listen',
     description:
-      'Create a temporary subscription for consumer-project events and persist each payload into the session artifact folder.',
+      'Listen to consumer-project realtime events and persist each payload into the session artifact folder.',
     usage:
       'listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
     options: [
@@ -305,13 +305,19 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     usage:
       'composio listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
     description:
-      'Create a temporary subscription for consumer-project events so background agents can easily consume new emails, Slack messages, and other trigger payloads from artifacts.',
-    args: [{ name: '<slug>', description: 'Trigger slug to create and listen to' }],
+      'Listen to consumer-project realtime events. Trigger slugs create a temporary trigger; top-level composio.* event types subscribe directly.',
+    args: [
+      {
+        name: '<slug>',
+        description:
+          'Trigger slug to create and listen to, or a project event type such as "composio.connected_account.expired"',
+      },
+    ],
     options: [
       {
         name: '-p, --params <text>',
         description:
-          'Trigger create params as JSON/JS object, @file, or - for stdin. Pass optional trigger config fields only.',
+          'Trigger create params as JSON/JS object, @file, or - for stdin. Only valid for trigger slugs.',
       },
       {
         name: '--max-events <integer>',
@@ -333,6 +339,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 5m',
       "composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 1hr --stream '.data.threadId'",
       'composio listen SLACK_RECEIVE_MESSAGE -p \'{ trigger_config: { channel: "C123" } }\'',
+      'composio listen composio.connected_account.expired --max-events 1',
       'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream',
       "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
     ],
