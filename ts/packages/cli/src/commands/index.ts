@@ -37,9 +37,10 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import {
-  type CommandVisibility,
   experimental,
+  type CommandVisibility,
   type TaggedValue,
   tagged,
   visibleValues,
@@ -51,7 +52,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(upgradeCmd),
   tagged(whoamiCmd),
   tagged(loginCmd),
-  experimental('listen', listenCmd),
+  experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
   tagged(logoutCmd),
   tagged(runCmd),
   tagged(proxyCmd),
