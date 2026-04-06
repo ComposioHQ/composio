@@ -1,5 +1,12 @@
 # @composio/cli
 
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies [2b19ae9]
+  - @composio/core@0.6.8
+
 ## 0.2.18
 
 ### Patch Changes

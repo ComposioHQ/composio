@@ -15,11 +15,8 @@
     "inputParameters": {
       "properties": {
         "tool_slugs": {
-          "description": "List of tool slugs to retrieve schemas for. Each slug MUST be a valid tool slug previously returned by COMPOSIO_SEARCH_TOOLS.",
+          "description": "Array of tool slugs to retrieve schemas for. Pass slugs exactly as returned by COMPOSIO_SEARCH_TOOLS.",
           "examples": [
-            [
-              "GMAIL_SEND_EMAIL"
-            ],
             [
               "GMAIL_SEND_EMAIL",
               "SLACK_SEND_MESSAGE"
@@ -36,6 +33,29 @@
           "description": "ALWAYS pass the session_id that was provided in the SEARCH_TOOLS response.",
           "title": "Session ID",
           "type": "string"
+        },
+        "include": {
+          "description": "Schema fields to include. Defaults to [\"input_schema\"]. Include \"output_schema\" when calling tools in the workbench to validate response structure.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "input_schema",
+              "output_schema"
+            ]
+          },
+          "default": [
+            "input_schema"
+          ],
+          "examples": [
+            [
+              "input_schema"
+            ],
+            [
+              "input_schema",
+              "output_schema"
+            ]
+          ]
         }
       },
       "required": [
