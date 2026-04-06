@@ -120,7 +120,7 @@ describe('CLI: composio dev triggers info', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
-          expect(output).toContain('composio dev triggers list');
+          expect(output).toContain('composio dev triggers list "<toolkit>"');
         })
       );
     }

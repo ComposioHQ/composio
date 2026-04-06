@@ -65,6 +65,23 @@ describe('CLI: composio dev triggers list', () => {
   );
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] root triggers list with nonexistent toolkit [Then] shows root toolkit hint',
+    it => {
+      it.scoped('uses root toolkit command in the no-results hint', () =>
+        Effect.gen(function* () {
+          yield* cli(['triggers', 'list', 'nonexistent']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('No trigger types found');
+          expect(output).toContain('composio toolkits list');
+          expect(output).not.toContain('composio dev toolkits list');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no toolkit [Then] parse fails because toolkit is required',
     it => {
       it.scoped('requires a toolkit positional argument', () =>

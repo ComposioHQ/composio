@@ -643,6 +643,9 @@ export async function runCliContainer(options: RunCliContainerOptions): Promise<
     dockerArgs.push('--workdir', containerCwd);
   }
 
+  // Allow CLI e2e suites to reach host-side mock servers deterministically.
+  dockerArgs.push('--add-host', 'host.docker.internal:host-gateway');
+
   addHostComposioMount(dockerArgs, '/tmp/.composio');
 
   if (env) {

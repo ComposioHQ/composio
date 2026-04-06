@@ -87,6 +87,6 @@ export const triggersCmd$List = makeTriggersListCommand({
 });
 
 export const rootTriggersCmd$List = makeTriggersListCommand({
-  noResultsCommand: 'composio dev toolkits list',
+  noResultsCommand: 'composio toolkits list',
   infoCommand: 'composio triggers info',
 });
