@@ -422,6 +422,9 @@ export const createStructuredOutputMcpContext = ({
 
   let tempDirectory: string | null = null;
   try {
+    // Keep this on an OS temp dir for now. Repointing MCP schema/result files into
+    // session artifacts needs a broader bundling + run-companion test pass so we
+    // don't break structured sub-agent output in packaged CLI builds.
     tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-subagent-output-mcp-'));
     const schemaFilePath = path.join(tempDirectory, 'schema.json');
     const resultFilePath = path.join(tempDirectory, 'result.json');

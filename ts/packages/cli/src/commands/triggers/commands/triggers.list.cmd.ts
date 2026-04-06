@@ -1,7 +1,7 @@
 import { Args, Command, Options } from '@effect/cli';
 import { Effect } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository, InvalidToolkitsError } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { formatTriggerTypesJson, formatTriggerTypesTable } from '../format';
@@ -38,6 +38,21 @@ const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersList
       const repo = yield* ComposioToolkitsRepository;
       const clampedLimit = clampLimit(limit);
 
+      yield* repo.validateToolkits([toolkit]).pipe(
+        Effect.catchTag('services/InvalidToolkitsError', (error: InvalidToolkitsError) =>
+          Effect.gen(function* () {
+            const availableExample = error.availableToolkits.slice(0, 8).join(', ');
+            yield* ui.log.error(
+              `Toolkit "${toolkit}" is not available. ${availableExample ? `Examples: ${availableExample}` : ''}`
+            );
+            yield* ui.log.step(`List valid toolkits with:\n> ${noResultsCommand}`);
+            return yield* Effect.fail(
+              new Error(`Invalid toolkit slug "${toolkit}" for trigger listing.`)
+            );
+          })
+        )
+      );
+
       const allTriggerTypes = yield* ui.withSpinner(
         'Fetching trigger types...',
         repo.getTriggerTypes([toolkit])
@@ -52,8 +67,9 @@ const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersList
       }
 
       const count = triggerTypes.length;
-      yield* ui.log.info(
-        `Listing ${count} trigger type${count === 1 ? '' : 's'}\n\n${formatTriggerTypesTable(triggerTypes)}`
+      yield* ui.note(
+        formatTriggerTypesTable(triggerTypes),
+        `Listing ${count} trigger type${count === 1 ? '' : 's'}`
       );
 
       const firstSlug = triggerTypes[0]?.slug;

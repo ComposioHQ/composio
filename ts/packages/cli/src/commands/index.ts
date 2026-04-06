@@ -8,6 +8,7 @@ import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
@@ -42,6 +43,7 @@ const $cmd = $defaultCmd.pipe(
     upgradeCmd,
     whoamiCmd,
     loginCmd,
+    listenCmd,
     logoutCmd,
     runCmd,
     proxyCmd,
@@ -125,6 +127,34 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
     return [...argv.slice(0, 2), '--version'];
   }
   return argv;
+};
+
+const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const head = argv.slice(0, 2);
+  const args = argv.slice(2);
+  const isListen = args[0] === 'listen';
+  if (!isListen) {
+    return argv;
+  }
+
+  const normalized: string[] = [...head];
+  for (let i = 0; i < args.length; i += 1) {
+    const token = args[i];
+    if (token !== '--stream') {
+      normalized.push(token ?? '');
+      continue;
+    }
+
+    const next = args[i + 1];
+    if (next === undefined || next.startsWith('-')) {
+      normalized.push('--stream=');
+      continue;
+    }
+
+    normalized.push(token);
+  }
+
+  return normalized;
 };
 
 const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
@@ -217,7 +247,9 @@ export const runWithConfig = Effect.gen(function* () {
   });
 
   return (argv: ReadonlyArray<string>) => {
-    const normalizedArgv = normalizeHiddenDebugFlags(normalizeVersionShortFlag(argv));
+    const normalizedArgv = normalizeHiddenDebugFlags(
+      normalizeListenStreamFlag(normalizeVersionShortFlag(argv))
+    );
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp();
     }

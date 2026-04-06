@@ -765,6 +765,11 @@ export const TestLayer = (input?: TestLiveInput) =>
             yield* Effect.forEach(realtimeData.events, event => Effect.sync(() => onEvent(event)));
             return yield* Effect.never;
           }),
+        listenInProject: (_scope, onEvent) =>
+          Effect.gen(function* () {
+            yield* Effect.forEach(realtimeData.events, event => Effect.sync(() => onEvent(event)));
+            return yield* Effect.never;
+          }),
       })
     );
 

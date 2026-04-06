@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Effect, Option } from 'effect';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
 
-const resolveArtifactsRoot = (): string =>
+export const resolveArtifactsRoot = (): string =>
   process.env.COMPOSIO_SESSION_DIR?.trim() ||
   process.env.COMPOSIO_CACHE_DIR?.trim() ||
   path.join(os.tmpdir(), 'composio');
