@@ -49,23 +49,22 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           RUN_NUMBER: ${{ github.run_number }}
           COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
 
           # ── Push to next ──
           if [[ "$EVENT_NAME" == "push" ]]; then
-            # Check if ts/packages/cli/package.json version changed → stable release
-            current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-            previous_version=$(git show HEAD^:ts/packages/cli/package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null || echo "")
-
-            if [[ -n "$previous_version" && "$current_version" != "$previous_version" ]]; then
-              release_tag="@composio/cli@${current_version}"
+            # Check if this is a "Release: update version" commit → stable release
+            if [[ "$COMMIT_MESSAGE" == Release:\ update\ version* ]]; then
+              version=$(node -p "require('./ts/packages/cli/package.json').version")
+              release_tag="@composio/cli@${version}"
               release_name="CLI ${release_tag}"
               {
                 echo "checkout_ref=${COMMIT_SHA}"
                 echo "release_name=${release_name}"
                 echo "release_tag=${release_tag}"
-                echo "release_version=${current_version}"
+                echo "release_version=${version}"
                 echo "prerelease=false"
                 echo "make_latest=true"
               } >> "$GITHUB_OUTPUT"
