@@ -23,6 +23,7 @@ import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
+import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
@@ -48,6 +49,7 @@ const $cmd = $defaultCmd.pipe(
     installCmd,
     devCmd,
     rootToolsCmd,
+    rootTriggersCmd,
     rootToolsCmd$Search,
     rootConnectedAccountsCmd$Link,
     rootToolsCmd$Execute,
@@ -188,9 +190,7 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return (
-    args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'))
-  );
+  return args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'));
 };
 
 const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {

@@ -93,6 +93,14 @@ const OTHER_COMMANDS: ReadonlyArray<CompactCommand> = [
   { name: 'composio tools info <slug>', description: 'Print tool summary and cache its schema' },
   { name: 'composio tools list <toolkit>', description: 'List tools available in a toolkit' },
   {
+    name: 'composio triggers info <slug>',
+    description: 'Print trigger type details and schema summaries',
+  },
+  {
+    name: 'composio triggers list <toolkit>',
+    description: 'List available trigger types in a toolkit',
+  },
+  {
     name: 'composio artifacts cwd',
     description: 'Print the cwd-scoped session artifact directory',
   },
@@ -511,6 +519,19 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'View a brief summary of a tool and show the CLI-facing schema used by `composio execute --get-schema`.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GMAIL_SEND_EMAIL")' }],
   },
+  'triggers list': {
+    usage: 'composio triggers list <toolkit> [--limit integer]',
+    description: 'List available trigger types for a toolkit.',
+    args: [
+      { name: '<toolkit>', description: 'Toolkit slug to list trigger types for (e.g. "gmail")' },
+    ],
+    options: [{ name: '--limit <integer>', description: 'Number of results' }],
+  },
+  'triggers info': {
+    usage: 'composio triggers info [<slug>]',
+    description: 'View details of a specific trigger type.',
+    args: [{ name: '<slug>', description: 'Trigger slug' }],
+  },
 
   // ── Generate commands ─────────────────────────────────────────────────
 
@@ -722,12 +743,12 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
   },
   'dev triggers list': {
-    usage: 'composio dev triggers list [--toolkits text] [--limit integer]',
-    description: 'List available trigger types.',
-    options: [
-      { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
-      { name: '--limit <integer>', description: 'Number of results' },
+    usage: 'composio dev triggers list <toolkit> [--limit integer]',
+    description: 'List available trigger types for a toolkit.',
+    args: [
+      { name: '<toolkit>', description: 'Toolkit slug to list trigger types for (e.g. "gmail")' },
     ],
+    options: [{ name: '--limit <integer>', description: 'Number of results' }],
   },
   'dev triggers info': {
     usage: 'composio dev triggers info [<slug>]',

@@ -36,6 +36,7 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 - `composio run <code> [-- ...args]` or `composio run --file <path> [-- ...args]`: Run inline or file-based TS/JS workflows with Composio helpers injected.
 - `composio proxy <url> --toolkit <toolkit> [-X method] [-H header]... [-d data]`: Call a toolkit API directly through Composio using a connected account.
 - `composio tools list|info`: Inspect available tools and their cached schemas.
+- `composio triggers list <toolkit>|info`: Inspect toolkit-scoped trigger types and their schemas.
 - `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
 - `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.
 - `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
