@@ -349,12 +349,6 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
-        yield* ui.log.success(
-          formatLoginSuccessMessage({
-            email: uakSessionInfo.org_member.email || linkedSession.account.email || undefined,
-            orgName: result.name,
-          })
-        );
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
@@ -509,12 +503,6 @@ export const browserLogin = (params: {
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
-        yield* ui.log.success(
-          formatLoginSuccessMessage({
-            email: uakSessionInfo.org_member.email || linkedSession.account.email || undefined,
-            orgName: result.name,
-          })
-        );
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
