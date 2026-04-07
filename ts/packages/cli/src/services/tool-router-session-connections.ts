@@ -58,7 +58,7 @@ const normalizeConnectedAccountStatus = (
     case 'INACTIVE':
       return status;
     default:
-      return 'ACTIVE';
+      return 'INACTIVE';
   }
 };
 

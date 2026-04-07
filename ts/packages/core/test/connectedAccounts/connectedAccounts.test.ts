@@ -744,6 +744,7 @@ describe('ConnectedAccounts', () => {
       expect(result).toEqual({
         id: nanoid,
         status: ConnectedAccountStatuses.ACTIVE,
+        alias: null,
         authConfig: {
           id: 'auth_config_123',
           authScheme: AuthSchemeTypes.OAUTH2,
@@ -768,6 +769,7 @@ describe('ConnectedAccounts', () => {
           slug: 'test-toolkit',
         },
         testRequestEndpoint: undefined,
+        wordId: null,
       });
     });
 
@@ -839,8 +841,10 @@ describe('ConnectedAccounts', () => {
       expect(result).toEqual({
         id: nanoid,
         status: ConnectedAccountStatuses.ACTIVE,
+        alias: null,
         authConfig: {
           id: 'auth_config_123',
+          authScheme: undefined,
           isComposioManaged: true,
           isDisabled: false,
         },
@@ -862,6 +866,7 @@ describe('ConnectedAccounts', () => {
           slug: 'test-toolkit',
         },
         testRequestEndpoint: undefined,
+        wordId: null,
       });
     });
   });

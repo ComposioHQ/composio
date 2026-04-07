@@ -282,6 +282,8 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
+const shouldStoreLargeExecuteOutput = () => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN !== 'run';
+
 type StoredExecuteOutputSummary = {
   readonly successful: true;
   readonly error: null;
@@ -338,7 +340,7 @@ const prepareExecuteOutput = (
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
     const tokenCount = getExecuteOutputEncoder().encode(json).length;
-    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
+    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD || !shouldStoreLargeExecuteOutput()) {
       return {
         kind: 'inline' as const,
         json,

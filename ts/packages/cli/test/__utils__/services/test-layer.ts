@@ -106,6 +106,7 @@ export interface TestLiveInput {
   connectedAccountsData?: {
     items?: ConnectedAccountItem[];
     linkResponse?: LinkCreateResponse;
+    onPatch?: (params: { path: string; body: Record<string, unknown> | undefined }) => void;
   };
 
   /**
@@ -948,6 +949,28 @@ export const TestLayer = (input?: TestLiveInput) =>
           };
           return response;
         },
+      },
+      patch: async (path: string, options?: { body?: Record<string, unknown> }) => {
+        connectedAccountsData.onPatch?.({ path, body: options?.body });
+
+        const match = path.match(/^\/api\/v3\/connected_accounts\/([^/]+)$/);
+        if (!match) {
+          throw new Error(`Unhandled PATCH path "${path}"`);
+        }
+
+        const connectedAccountId = match[1];
+        const account = connectedAccountsData.items.find(item => item.id === connectedAccountId);
+        if (!account) {
+          throw new Error(`Connected account "${connectedAccountId}" not found`);
+        }
+
+        if (typeof options?.body?.alias === 'string') {
+          Object.assign(account as { alias?: string | null }, {
+            alias: options.body.alias,
+          });
+        }
+
+        return account;
       },
       connectedAccounts: {
         list: async (params?: {

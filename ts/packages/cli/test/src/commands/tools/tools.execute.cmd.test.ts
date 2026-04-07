@@ -98,6 +98,49 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          data: {
+            content: 'token '.repeat(20_000),
+          },
+          error: null,
+          successful: true,
+          logId: 'log_large_output',
+        },
+      },
+    })
+  )(
+    '[Given] a large execution response during composio run [Then] it stays inline instead of storing a temp file',
+    it => {
+      it.scoped('returns the full JSON payload when invocation origin is run', () =>
+        Effect.gen(function* () {
+          vi.stubEnv('COMPOSIO_CLI_INVOCATION_ORIGIN', 'run');
+
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', '{"recipient":"a"}']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = parseLastJson(lines) as unknown as {
+            successful: boolean;
+            storedInFile?: boolean;
+            outputFilePath?: string;
+            data: {
+              content: string;
+            };
+          };
+
+          expect(output.successful).toBe(true);
+          expect(output.storedInFile).not.toBe(true);
+          expect(output.outputFilePath).toBeUndefined();
+          expect(output.data.content).toContain('token token token');
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
       connectedAccountsData: {
         items: [
           {

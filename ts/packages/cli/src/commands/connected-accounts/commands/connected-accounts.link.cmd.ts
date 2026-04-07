@@ -48,6 +48,14 @@ const noWait = Options.boolean('no-wait').pipe(
   Options.withDefault(false),
   Options.withDescription('Do not wait for authorization; only print link info')
 );
+
+const alias = Options.text('alias').pipe(
+  Options.withDescription(
+    'Alias to assign to the connected account. Required when creating an additional account for the same toolkit/auth config.'
+  ),
+  Options.optional
+);
+
 const list = Options.boolean('list').pipe(
   Options.withDefault(false),
   Options.withDescription(
@@ -212,6 +220,99 @@ const getConsumerCacheScope = (resolvedProject: {
       }
     : undefined;
 
+const normalizeAlias = (rawAlias: string) => rawAlias.trim();
+
+const listActiveConnectedAccounts = (params: {
+  readonly client: RawComposioClient;
+  readonly userId: string;
+  readonly toolkitSlug?: string;
+  readonly authConfigId?: string;
+}) =>
+  Effect.tryPromise(() =>
+    params.client.connectedAccounts.list({
+      user_ids: [params.userId],
+      toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
+      auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
+      statuses: ['ACTIVE'],
+      limit: 100,
+    })
+  );
+
+const formatExistingAccountLabels = (
+  items: ReadonlyArray<{
+    readonly id: string;
+    readonly alias?: string | null;
+    readonly word_id?: string | null;
+  }>
+) =>
+  items
+    .map(item => {
+      const labels = [item.alias, item.word_id].filter(
+        (value): value is string => typeof value === 'string' && value.trim().length > 0
+      );
+      return labels.length > 0 ? `${item.id} (${labels.join(', ')})` : item.id;
+    })
+    .join(', ');
+
+const ensureAliasForAdditionalAccount = (params: {
+  readonly ui: TerminalUI;
+  readonly alias: Option.Option<string>;
+  readonly connectedAccountId: string;
+  readonly existingAccounts: {
+    readonly items: ReadonlyArray<{
+      readonly id: string;
+      readonly alias?: string | null;
+      readonly word_id?: string | null;
+    }>;
+  };
+  readonly scopeDescription: string;
+}) =>
+  Effect.gen(function* () {
+    if (Option.isSome(params.alias)) {
+      return true as const;
+    }
+
+    const existingIds = new Set(params.existingAccounts.items.map(item => item.id));
+    if (params.existingAccounts.items.length === 0 || existingIds.has(params.connectedAccountId)) {
+      return true as const;
+    }
+
+    yield* params.ui.log.error(
+      `A connected account already exists for ${params.scopeDescription}. Pass --alias to create another one.`
+    );
+    yield* params.ui.note(
+      formatExistingAccountLabels(params.existingAccounts.items),
+      'Existing accounts'
+    );
+    return false as const;
+  });
+
+const patchConnectedAccountAlias = (params: {
+  readonly ui: TerminalUI;
+  readonly client: RawComposioClient;
+  readonly connectedAccountId: string;
+  readonly alias: Option.Option<string>;
+}) =>
+  Effect.gen(function* () {
+    if (Option.isNone(params.alias)) {
+      return;
+    }
+
+    const normalizedAlias = normalizeAlias(params.alias.value);
+    if (normalizedAlias.length === 0) {
+      return yield* Effect.fail(new Error('`--alias` cannot be empty.'));
+    }
+
+    yield* params.ui.withSpinner(
+      `Assigning alias "${normalizedAlias}"...`,
+      Effect.tryPromise(() =>
+        params.client.patch(`/api/v3/connected_accounts/${params.connectedAccountId}`, {
+          body: { alias: normalizedAlias },
+        })
+      )
+    );
+  });
+
 const resolveLinkUserId = (params: {
   readonly resolvedProject: {
     readonly projectType: 'CONSUMER' | 'DEVELOPER';
@@ -290,7 +391,7 @@ const handleListConnectedAccounts = (params: {
 
     const toolkitSlug = params.toolkit.value;
     const resolvedProject = yield* resolveCommandProject({
-      mode: params.rootOnly ? 'consumer' : 'developer',
+      mode: 'consumer',
       projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const client = yield* params.clientSingleton.getFor({
@@ -372,6 +473,7 @@ const handleLegacyAuthConfigLink = (params: {
   readonly requestedUserId: Option.Option<string>;
   readonly projectName: Option.Option<string>;
   readonly noWait: boolean;
+  readonly alias: Option.Option<string>;
   readonly ui: TerminalUI;
   readonly clientSingleton: {
     readonly getFor: (params: {
@@ -429,6 +531,11 @@ const handleLegacyAuthConfigLink = (params: {
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
+    const existingAccounts = yield* listActiveConnectedAccounts({
+      client,
+      userId: resolvedUserId.value,
+      authConfigId: params.authConfigId,
+    }).pipe(Effect.catchAll(() => Effect.succeed({ items: [] })));
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
@@ -461,6 +568,22 @@ const handleLegacyAuthConfigLink = (params: {
     if (Option.isNone(validatedLink)) return;
 
     const { connectedAccountId, redirectUrl } = validatedLink.value;
+    const canContinue = yield* ensureAliasForAdditionalAccount({
+      ui: params.ui,
+      alias: params.alias,
+      connectedAccountId,
+      existingAccounts,
+      scopeDescription: `user "${resolvedUserId.value}" in auth config "${params.authConfigId}"`,
+    });
+    if (!canContinue) return;
+
+    yield* patchConnectedAccountAlias({
+      ui: params.ui,
+      client,
+      connectedAccountId,
+      alias: params.alias,
+    });
+
     if (params.noWait) {
       yield* showRedirectUrl(params.ui, redirectUrl);
       yield* params.ui.output(
@@ -489,6 +612,7 @@ const runConnectedAccountsLink = (params: {
   userId: Option.Option<string>;
   projectName: Option.Option<string>;
   noWait: boolean;
+  alias: Option.Option<string>;
   list: boolean;
   rootOnly: boolean;
 }) =>
@@ -551,6 +675,7 @@ const runConnectedAccountsLink = (params: {
         requestedUserId: params.userId,
         projectName: params.projectName,
         noWait: params.noWait,
+        alias: params.alias,
         ui,
         clientSingleton,
         projectContext,
@@ -582,6 +707,11 @@ const runConnectedAccountsLink = (params: {
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
+    const existingAccounts = yield* listActiveConnectedAccounts({
+      client,
+      userId: resolvedUserId.value,
+      toolkitSlug,
+    }).pipe(Effect.catchAll(() => Effect.succeed({ items: [] })));
 
     const linkOpt = yield* ui
       .withSpinner(
@@ -626,6 +756,21 @@ const runConnectedAccountsLink = (params: {
     if (Option.isNone(validatedLink)) return;
 
     const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
+    const canContinue = yield* ensureAliasForAdditionalAccount({
+      ui,
+      alias: params.alias,
+      connectedAccountId: connAccountId,
+      existingAccounts,
+      scopeDescription: `user "${resolvedUserId.value}" in toolkit "${toolkitSlug}"`,
+    });
+    if (!canContinue) return;
+
+    yield* patchConnectedAccountAlias({
+      ui,
+      client,
+      connectedAccountId: connAccountId,
+      alias: params.alias,
+    });
 
     if (params.noWait) {
       yield* showRedirectUrl(ui, redirectUrl);
@@ -675,14 +820,15 @@ const runConnectedAccountsLink = (params: {
 
 export const connectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, authConfig, userId, projectName, noWait, list },
-  ({ toolkit, authConfig, userId, projectName, noWait, list }) =>
+  { toolkit, authConfig, userId, projectName, noWait, alias, list },
+  ({ toolkit, authConfig, userId, projectName, noWait, alias, list }) =>
     runConnectedAccountsLink({
       toolkit,
       authConfig,
       userId,
       projectName,
       noWait,
+      alias,
       list,
       rootOnly: false,
     })
@@ -694,6 +840,7 @@ export const connectedAccountsCmd$Link = Command.make(
       '',
       'Examples:',
       '  composio link github',
+      '  composio link gmail --alias work',
       '  composio link github --list',
       '',
       'See also:',
@@ -705,14 +852,15 @@ export const connectedAccountsCmd$Link = Command.make(
 
 export const rootConnectedAccountsCmd$Link = Command.make(
   'link',
-  { toolkit, noWait, list },
-  ({ toolkit, noWait, list }) =>
+  { toolkit, noWait, alias, list },
+  ({ toolkit, noWait, alias, list }) =>
     runConnectedAccountsLink({
       toolkit,
       authConfig: Option.none(),
       userId: Option.none(),
       projectName: Option.none(),
       noWait,
+      alias,
       list,
       rootOnly: true,
     })
@@ -724,6 +872,7 @@ export const rootConnectedAccountsCmd$Link = Command.make(
       '',
       'Examples:',
       '  composio link github',
+      '  composio link gmail --alias work',
       '  composio link github --list',
       '',
       'See also:',
