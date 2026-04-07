@@ -11,6 +11,7 @@ import {
   Layer,
   Logger,
   LogLevel,
+  Option,
   Schedule,
   String,
 } from 'effect';
@@ -39,7 +40,8 @@ import type { TriggerInstanceItem } from 'src/models/triggers';
 import type { AuthConfigCreateResponse, LinkCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
-import { ComposioCliUserConfigLive } from 'src/services/cli-user-config';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CliUserConfig } from 'src/models/cli-user-config';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -800,9 +802,24 @@ export const TestLayer = (input?: TestLiveInput) =>
       Layer.merge(BunFileSystem.layer, NodeOsTest)
     );
 
-    const ComposioCliUserConfigTest = Layer.provideMerge(
-      ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest)
+    const ComposioCliUserConfigTest = Layer.succeed(
+      ComposioCliUserConfig,
+      ComposioCliUserConfig.of({
+        data: {
+          channel: 'beta',
+          experimentalFeatures: {},
+          artifactDirectory: undefined,
+          experimentalSubagentTarget: 'auto',
+        },
+        raw: CliUserConfig.make({
+          experimentalFeatures: {},
+          artifactDirectory: Option.none(),
+          experimentalSubagent: Option.none(),
+        }),
+        channel: 'beta',
+        isExperimentalFeatureEnabled: () => true,
+        update: () => Effect.void,
+      })
     );
 
     const UpgradeBinaryTest = Layer.provide(
