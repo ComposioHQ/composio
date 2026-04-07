@@ -7,10 +7,12 @@ import { truncate } from 'src/ui/truncate';
  * Format a list of connected accounts as a human-readable table.
  */
 export function formatConnectedAccountsTable(items: ReadonlyArray<ConnectedAccountItem>): string {
-  const header = `${bold('Id'.padEnd(18))} ${bold('User Id'.padEnd(20))} ${bold('Toolkit'.padEnd(14))} ${bold('Auth Config'.padEnd(18))} ${bold('Auth Scheme'.padEnd(14))} ${bold('Status')}`;
+  const header = `${bold('Id'.padEnd(18))} ${bold('Alias'.padEnd(14))} ${bold('Word'.padEnd(12))} ${bold('User Id'.padEnd(20))} ${bold('Toolkit'.padEnd(14))} ${bold('Auth Config'.padEnd(18))} ${bold('Auth Scheme'.padEnd(14))} ${bold('Status')}`;
 
   const rows = items.map(item => {
     const id = truncate(redact({ value: item.id, prefix: 'con_' }), 18).padEnd(18);
+    const alias = truncate(item.alias || '-', 14).padEnd(14);
+    const wordId = truncate(item.word_id || '-', 12).padEnd(12);
     const userId = truncate(item.user_id, 20).padEnd(20);
     const toolkit = truncate(item.toolkit.slug, 14).padEnd(14);
     const authConfig = truncate(redact({ value: item.auth_config.id, prefix: 'ac_' }), 18).padEnd(
@@ -18,7 +20,7 @@ export function formatConnectedAccountsTable(items: ReadonlyArray<ConnectedAccou
     );
     const authScheme = truncate(item.auth_config.auth_scheme || '-', 14).padEnd(14);
     const status = item.status === 'ACTIVE' ? item.status : gray(item.status);
-    return `${id} ${userId} ${toolkit} ${authConfig} ${authScheme} ${status}`;
+    return `${id} ${alias} ${wordId} ${userId} ${toolkit} ${authConfig} ${authScheme} ${status}`;
   });
 
   return [header, ...rows].join('\n');
@@ -31,6 +33,8 @@ export function formatConnectedAccountsJson(items: ReadonlyArray<ConnectedAccoun
   return JSON.stringify(
     items.map(item => ({
       id: item.id,
+      alias: item.alias,
+      word_id: item.word_id,
       user_id: item.user_id,
       toolkit_slug: item.toolkit.slug,
       auth_config_id: item.auth_config.id,
@@ -50,6 +54,8 @@ export function formatConnectedAccountInfo(item: ConnectedAccountItem): string {
   const lines: string[] = [];
 
   lines.push(`${bold('Id:')} ${redact({ value: item.id, prefix: 'con_' })}`);
+  lines.push(`${bold('Alias:')} ${item.alias || '-'}`);
+  lines.push(`${bold('Word Id:')} ${item.word_id || '-'}`);
   lines.push(`${bold('Status:')} ${item.status === 'ACTIVE' ? item.status : gray(item.status)}`);
 
   if (item.status_reason) {
@@ -79,6 +85,8 @@ export function formatConnectedAccountInfo(item: ConnectedAccountItem): string {
 export function formatConnectedAccountWhoami(item: ConnectedAccountItem): string {
   const lines: string[] = [];
   lines.push(`${bold('Id:')} ${redact({ value: item.id, prefix: 'con_' })}`);
+  lines.push(`${bold('Alias:')} ${item.alias || '-'}`);
+  lines.push(`${bold('Word Id:')} ${item.word_id || '-'}`);
   lines.push(`${bold('Status:')} ${item.status === 'ACTIVE' ? item.status : gray(item.status)}`);
   lines.push(`${bold('Toolkit:')} ${item.toolkit.slug}`);
   lines.push(`${bold('User Id:')} ${item.user_id}`);

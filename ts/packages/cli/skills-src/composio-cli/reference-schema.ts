@@ -1,6 +1,6 @@
-import { CLI_EXPERIMENTAL_FEATURES } from '../../src/constants';
+import { CLI_EXPERIMENTAL_FEATURES, type CliReleaseChannel } from '../../src/constants';
 
-export type SkillReleaseChannel = 'beta' | 'stable';
+export type SkillReleaseChannel = CliReleaseChannel;
 
 export type SkillFeatureFlag =
   (typeof CLI_EXPERIMENTAL_FEATURES)[keyof typeof CLI_EXPERIMENTAL_FEATURES];
@@ -54,7 +54,7 @@ export const resolveSkillBuildContext = (channel: SkillReleaseChannel): SkillBui
   },
 });
 
-const isEnabledForBuild = (build: SkillBuildContext, value?: FeatureScoped) =>
+export const isEnabledForBuild = (build: SkillBuildContext, value?: FeatureScoped) =>
   !value?.features || value.features.every(feature => build.experimentalFeatures[feature]);
 
 export const renderCommandSnippet = (snippet: CommandSnippet) => {

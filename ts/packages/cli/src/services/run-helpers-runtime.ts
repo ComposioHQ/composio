@@ -79,7 +79,7 @@ type RunGlobalScope = typeof globalThis & {
   z: typeof z;
   zod: typeof z;
   search: (query: string, options?: Record<string, unknown>) => Promise<RunCliResult>;
-  execute: (slug: string, data?: unknown) => Promise<RunCliResult>;
+  execute: (slug: string, data?: unknown, options?: { account?: string }) => Promise<RunCliResult>;
   experimental_subAgent: (prompt: string, options?: Record<string, unknown>) => Promise<unknown>;
   invokeAgent: (prompt: string, options?: Record<string, unknown>) => Promise<unknown>;
   proxy: (
@@ -754,13 +754,20 @@ export const installRunHelpers = async ({
     return runCliJson(args);
   };
 
-  runGlobals.execute = async (slug, data = {}) => {
-    helperDebugLog('execute.prepare', { slug, hasData: data !== undefined });
+  runGlobals.execute = async (slug, data = {}, options = {}) => {
+    helperDebugLog('execute.prepare', {
+      slug,
+      hasData: data !== undefined,
+      account: options.account ?? null,
+    });
     const args = ['execute', slug];
     if (helperContext.dryRun === true) args.push('--dry-run');
     if (helperContext.skipConnectionCheck === true) args.push('--skip-connection-check');
     if (helperContext.skipToolParamsCheck === true) args.push('--skip-tool-params-check');
     if (helperContext.skipChecks === true) args.push('--skip-checks');
+    if (typeof options.account === 'string' && options.account.trim().length > 0) {
+      args.push('--account', options.account.trim());
+    }
     if (data !== undefined) {
       const preparedData = await materializeExecutePayload(data);
       const serialized =

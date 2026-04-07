@@ -16,6 +16,10 @@ import {
 } from 'src/services/cli-session-artifacts';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import {
+  formatConnectedAccountChoices,
+  resolveConnectedAccountSelection,
+} from 'src/services/connected-account-selection';
 import { parseJsonIsh } from 'src/utils/parse-json-ish';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { matchesTriggerListenFilters } from './triggers/filter';
@@ -48,6 +52,12 @@ const timeout = Options.text('timeout').pipe(
 const stream = Options.text('stream').pipe(
   Options.withDescription(
     'Also stream each event payload inline. Pass an optional jq-like path such as ".thread.id" or ".data[0].id".'
+  ),
+  Options.optional
+);
+const account = Options.text('account').pipe(
+  Options.withDescription(
+    'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
   ),
   Options.optional
 );
@@ -103,6 +113,7 @@ const resolveConnectedAccountIdForTrigger = (params: {
   client: RawComposioClient;
   slug: string;
   consumerUserId: string;
+  account: Option.Option<string>;
 }) =>
   Effect.gen(function* () {
     const toolkitSlug = toolkitFromToolSlug(params.slug);
@@ -125,36 +136,29 @@ const resolveConnectedAccountIdForTrigger = (params: {
       catch: error =>
         new Error(`Failed to list connected accounts for "${toolkitSlug}": ${String(error)}`),
     });
-    const connectedAccountId = selectConnectedAccountId(connectedAccounts.items);
-
-    if (!connectedAccountId) {
-      return yield* Effect.fail(
-        new Error(
-          `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`
-        )
-      );
+    const selectedAccount = resolveConnectedAccountSelection(
+      connectedAccounts.items as Parameters<typeof resolveConnectedAccountSelection>[0],
+      Option.getOrUndefined(params.account)
+    );
+    if (selectedAccount?.id) {
+      return selectedAccount.id;
     }
 
-    return connectedAccountId;
+    const choices = formatConnectedAccountChoices(
+      connectedAccounts.items as Parameters<typeof formatConnectedAccountChoices>[0]
+    );
+    const suffix =
+      Option.isSome(params.account) && choices.length > 0
+        ? ` Available accounts: ${choices.join(', ')}.`
+        : '';
+    return yield* Effect.fail(
+      new Error(
+        Option.isSome(params.account)
+          ? `No connected account matched "${params.account.value}" for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}".${suffix}`
+          : `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`
+      )
+    );
   });
-
-const selectConnectedAccountId = (
-  items: ReadonlyArray<{
-    id: string;
-    updated_at: string;
-    is_disabled: boolean;
-  }>
-): string | undefined => {
-  const active = items.filter(item => !item.is_disabled);
-  if (active.length === 0) {
-    return undefined;
-  }
-
-  return [...active]
-    .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))
-    .at(0)?.id;
-};
-
 const emitStreamLine = (line: string, ui: TerminalUI) =>
   Effect.gen(function* () {
     yield* ui.log.message(line);
@@ -303,10 +307,78 @@ const parseTimeoutMs = (value: string): number => {
   return Math.round(amount * unitMs);
 };
 
+const resolveListenSetup = (params: {
+  readonly slug: string;
+  readonly inputParams: Option.Option<string>;
+  readonly timeout: Option.Option<string>;
+  readonly stream: Option.Option<string>;
+  readonly maxEvents: Option.Option<number>;
+  readonly account: Option.Option<string>;
+  readonly client: RawComposioClient;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+    readonly consumerUserId?: string;
+  };
+}) =>
+  Effect.gen(function* () {
+    if (!params.resolvedProject.consumerUserId) {
+      return yield* Effect.fail(
+        new Error('No consumer user is available in the current project context.')
+      );
+    }
+
+    const listeningToProjectEvent = isProjectEventType(params.slug);
+    const rawParams = Option.isSome(params.inputParams)
+      ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
+      : '{}';
+    const createParamsInput = yield* parseCreateParams(rawParams);
+    yield* assertSupportedListenParams({
+      listeningToProjectEvent,
+      slug: params.slug,
+      createParamsInput,
+    });
+
+    const resolvedConnectedAccountId = listeningToProjectEvent
+      ? undefined
+      : yield* resolveConnectedAccountIdForTrigger({
+          client: params.client,
+          slug: params.slug,
+          consumerUserId: params.resolvedProject.consumerUserId,
+          account: params.account,
+        });
+
+    const createParams = listeningToProjectEvent
+      ? undefined
+      : ({
+          ...createParamsInput,
+          connected_account_id: resolvedConnectedAccountId,
+        } as Parameters<typeof params.client.triggerInstances.upsert>[1]);
+
+    return {
+      listeningToProjectEvent,
+      createParams,
+      timeoutMs: Option.match(params.timeout, {
+        onNone: () => undefined,
+        onSome: value => parseTimeoutMs(value),
+      }),
+      streamPath: Option.match(params.stream, {
+        onNone: () => undefined,
+        onSome: value => {
+          const trimmed = value.trim();
+          return trimmed.length === 0 ? [] : parseStreamPath(trimmed);
+        },
+      }),
+      shouldStream: Option.isSome(params.stream),
+      maxEventsLimit: Option.getOrUndefined(params.maxEvents),
+      consumerUserId: params.resolvedProject.consumerUserId,
+    };
+  });
+
 export const listenCmd = Command.make(
   'listen',
-  { slug, params, maxEvents, timeout, stream, debug },
-  ({ slug, params, maxEvents, timeout, stream, debug }) =>
+  { slug, params, maxEvents, timeout, stream, account, debug },
+  ({ slug, params, maxEvents, timeout, stream, account, debug }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
@@ -324,50 +396,28 @@ export const listenCmd = Command.make(
         orgId: resolvedProject.orgId,
         projectId: resolvedProject.projectId,
       });
-
-      if (!resolvedProject.consumerUserId) {
-        return yield* Effect.fail(
-          new Error('No consumer user is available in the current project context.')
-        );
-      }
-
-      const listeningToProjectEvent = isProjectEventType(slug);
-      const rawParams = Option.isSome(params)
-        ? (yield* resolveParamsInput(params))?.trim() || '{}'
-        : '{}';
-      const createParamsInput = yield* parseCreateParams(rawParams);
-      yield* assertSupportedListenParams({ listeningToProjectEvent, slug, createParamsInput });
-
-      const resolvedConnectedAccountId = listeningToProjectEvent
-        ? undefined
-        : yield* resolveConnectedAccountIdForTrigger({
-            client,
-            slug,
-            consumerUserId: resolvedProject.consumerUserId,
-          });
-
-      const createParams = listeningToProjectEvent
-        ? undefined
-        : ({
-            ...createParamsInput,
-            connected_account_id: resolvedConnectedAccountId,
-          } as Parameters<typeof client.triggerInstances.upsert>[1]);
-      const timeoutMs = Option.match(timeout, {
-        onNone: () => undefined,
-        onSome: value => parseTimeoutMs(value),
+      const {
+        listeningToProjectEvent,
+        createParams,
+        timeoutMs,
+        streamPath,
+        shouldStream,
+        maxEventsLimit,
+        consumerUserId,
+      } = yield* resolveListenSetup({
+        slug,
+        inputParams: params,
+        timeout,
+        stream,
+        maxEvents,
+        account,
+        client,
+        resolvedProject,
       });
-      const streamPath = Option.match(stream, {
-        onNone: () => undefined,
-        onSome: value => {
-          const trimmed = value.trim();
-          return trimmed.length === 0 ? [] : parseStreamPath(trimmed);
-        },
-      });
-      const shouldStream = Option.isSome(stream);
 
       const artifactsOption = yield* resolveCliSessionArtifacts({
         orgId: resolvedProject.orgId,
-        consumerUserId: resolvedProject.consumerUserId,
+        consumerUserId,
       });
       const artifactsRoot = Option.match(artifactsOption, {
         onNone: () => resolveFallbackArtifactsDir(),
@@ -383,7 +433,6 @@ export const listenCmd = Command.make(
       yield* fs.makeDirectory(triggerDir, { recursive: true });
       yield* fs.writeFileString(streamFilePath, '', { flag: 'a' });
 
-      const maxEventsLimit = Option.getOrUndefined(maxEvents);
       const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout'>();
       let matchingEvents = 0;
       const seenEventIds = new Set<string>();

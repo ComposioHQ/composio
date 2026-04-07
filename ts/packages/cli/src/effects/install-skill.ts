@@ -5,7 +5,7 @@ import { HttpClient } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
-import { APP_VERSION } from 'src/constants';
+import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
 import {
   fetchLatestCliRelease,
   type GitHubRelease,
@@ -15,7 +15,7 @@ import decompress from 'decompress';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
-export type SkillReleaseChannel = 'beta' | 'stable';
+export type SkillReleaseChannel = CliReleaseChannel;
 
 type GitHubConfig = GitHubRepoConfig & {
   TAG: Option.Option<string>;

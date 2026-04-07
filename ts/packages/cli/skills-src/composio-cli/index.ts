@@ -5,6 +5,7 @@ import { composioDevReference } from './references/composio-dev';
 import { powerUserExamplesReference } from './references/power-user-examples';
 import { troubleshootingReference } from './references/troubleshooting';
 import {
+  isEnabledForBuild,
   renderReferenceDocument,
   resolveSkillBuildContext,
   validateReferenceDocument,
@@ -39,9 +40,6 @@ type SkillCommand = {
     markdown: string;
   }>;
 };
-
-const isEnabledForBuild = (build: SkillBuildContext, entry?: { features?: SkillFeatureFlag[] }) =>
-  !entry?.features || entry.features.every(feature => build.experimentalFeatures[feature]);
 
 const sourceAssetsDir = path.resolve(import.meta.dirname, './assets');
 

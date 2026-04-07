@@ -1,7 +1,6 @@
 import process from 'node:process';
 import { Effect, Option } from 'effect';
 import { Command } from '@effect/cli';
-import * as constants from 'src/constants';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';

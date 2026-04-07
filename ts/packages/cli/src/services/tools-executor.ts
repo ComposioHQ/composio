@@ -26,6 +26,7 @@ export interface ToolExecuteParams {
   readonly userId: string;
   readonly arguments: Record<string, unknown>;
   readonly client?: Composio;
+  readonly connectedAccounts?: Record<string, string>;
   readonly cacheScope?: {
     readonly orgId: string;
     readonly consumerUserId: string;
@@ -137,6 +138,7 @@ export const ToolsExecutorLive = Layer.effect(
           // One session per invocation — CLI runs one tool per process.
           const sessionId = yield* createToolRouterSession(resolvedClient, params.userId, {
             manageConnections: true,
+            connectedAccounts: params.connectedAccounts,
             cacheScope: params.cacheScope,
           });
           const normalizedArguments = isMetaToolSlug(slug)

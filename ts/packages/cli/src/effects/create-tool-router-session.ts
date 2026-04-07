@@ -2,6 +2,7 @@ import { Effect, Option } from 'effect';
 import type { Composio } from '@composio/client';
 import {
   getFreshConsumerToolRouterAuthConfigsFromCache,
+  getFreshConsumerToolRouterConnectedAccountsFromCache,
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { resolveToolRouterSessionConnections } from 'src/services/tool-router-session-connections';
@@ -16,6 +17,8 @@ export interface CreateToolRouterSessionOptions {
     readonly orgId: string;
     readonly consumerUserId: string;
   };
+  /** Explicit connected-account pins by toolkit slug. */
+  readonly connectedAccounts?: Record<string, string>;
 }
 
 /**
@@ -32,8 +35,20 @@ export const createToolRouterSession = (
   options?: CreateToolRouterSessionOptions
 ) =>
   Effect.gen(function* () {
+    const mergeConnectedAccounts = (...mappings: Array<Record<string, string> | undefined>) => {
+      const merged = Object.assign({}, ...mappings.filter(Boolean));
+      return Object.keys(merged).length > 0 ? merged : undefined;
+    };
+
     const cachedAuthConfigs = options?.cacheScope
       ? yield* getFreshConsumerToolRouterAuthConfigsFromCache({
+          orgId: options.cacheScope.orgId,
+          consumerUserId: options.cacheScope.consumerUserId,
+          toolkits: options.toolkits,
+        })
+      : Option.none();
+    const cachedConnectedAccounts = options?.cacheScope
+      ? yield* getFreshConsumerToolRouterConnectedAccountsFromCache({
           orgId: options.cacheScope.orgId,
           consumerUserId: options.cacheScope.consumerUserId,
           toolkits: options.toolkits,
@@ -44,10 +59,27 @@ export const createToolRouterSession = (
       ? {
           connectedToolkits: options?.toolkits ?? [],
           authConfigs: cachedAuthConfigs.value.authConfigs,
+          connectedAccounts: mergeConnectedAccounts(
+            Option.isSome(cachedConnectedAccounts)
+              ? cachedConnectedAccounts.value.connectedAccounts
+              : undefined,
+            options?.connectedAccounts
+          ),
+          availableConnectedAccounts: Option.isSome(cachedConnectedAccounts)
+            ? cachedConnectedAccounts.value.availableConnectedAccounts
+            : undefined,
         }
       : yield* resolveToolRouterSessionConnections(client, userId, {
           toolkits: options?.toolkits,
-        });
+        }).pipe(
+          Effect.map(connectionContext => ({
+            ...connectionContext,
+            connectedAccounts: mergeConnectedAccounts(
+              connectionContext.connectedAccounts,
+              options?.connectedAccounts
+            ),
+          }))
+        );
 
     if (options?.cacheScope && Option.isNone(cachedAuthConfigs)) {
       yield* writeConsumerConnectedToolkitsCache({
@@ -57,6 +89,10 @@ export const createToolRouterSession = (
         toolRouterAuthConfigs: {
           authConfigs: connectionContext.authConfigs,
         },
+        toolRouterConnectedAccounts: {
+          connectedAccounts: connectionContext.connectedAccounts,
+          availableConnectedAccounts: connectionContext.availableConnectedAccounts,
+        },
       }).pipe(Effect.catchAll(() => Effect.void));
     }
 
@@ -64,6 +100,7 @@ export const createToolRouterSession = (
       client.toolRouter.session.create({
         user_id: userId,
         auth_configs: connectionContext.authConfigs,
+        connected_accounts: connectionContext.connectedAccounts,
         manage_connections: { enable: options?.manageConnections ?? false },
         toolkits:
           options?.toolkits && options.toolkits.length > 0

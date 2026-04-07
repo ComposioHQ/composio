@@ -12,8 +12,7 @@ import {
   cliUserConfigToJSON,
 } from 'src/models/cli-user-config';
 import * as constants from 'src/constants';
-
-export type CliReleaseChannel = 'stable' | 'beta';
+import type { CliReleaseChannel } from 'src/constants';
 
 export type CliUserConfigResolved = {
   readonly channel: CliReleaseChannel;

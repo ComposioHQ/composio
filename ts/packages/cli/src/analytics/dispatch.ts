@@ -533,7 +533,10 @@ export const runBackgroundWorkerFromArgv = async (argv: ReadonlyArray<string>): 
   try {
     const decoded = decodeBase64Url(encodedPayload);
     const body = JSON.parse(decoded) as ReturnType<typeof createCliCodactFailureBody>;
-    if (body?.failure_type !== 'wrong_tool_slug' && body?.failure_type !== 'wrong_tool_input_param') {
+    if (
+      body?.failure_type !== 'wrong_tool_slug' &&
+      body?.failure_type !== 'wrong_tool_input_param'
+    ) {
       return;
     }
 
