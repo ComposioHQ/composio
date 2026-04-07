@@ -37,9 +37,10 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
-import { type CommandVisibility, tagged, visibleValues } from './feature-tags';
+import { type CommandVisibility, type TaggedValue, tagged, visibleValues } from './feature-tags';
 
-const ROOT_COMMANDS = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, any>>> = [
   tagged(versionCmd),
   tagged(upgradeCmd),
   tagged(whoamiCmd),
@@ -58,7 +59,7 @@ const ROOT_COMMANDS = [
   tagged(rootToolsCmd$Execute),
   tagged(generateCmd),
   tagged(orgsCmd),
-] as const;
+];
 
 export const rootCommand = $defaultCmd.pipe(
   Command.withSubcommands([
@@ -84,10 +85,9 @@ export const rootCommand = $defaultCmd.pipe(
 );
 
 export const buildRootCommand = (visibility: CommandVisibility) => {
-  const subcommands = visibleValues(ROOT_COMMANDS, visibility) as Parameters<
-    typeof Command.withSubcommands
-  >[0];
-  return $defaultCmd.pipe(Command.withSubcommands(subcommands));
+  const subcommands = visibleValues(ROOT_COMMANDS, visibility);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return $defaultCmd.pipe(Command.withSubcommands(subcommands as any));
 };
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
