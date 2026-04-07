@@ -1,6 +1,12 @@
 import { Console, Effect } from 'effect';
 import { bold, dim, gray } from 'src/ui/colors';
-import { type CommandVisibility, tagged, visibleValues, type TaggedValue } from './feature-tags';
+import {
+  type CommandVisibility,
+  experimental,
+  tagged,
+  visibleValues,
+  type TaggedValue,
+} from './feature-tags';
 
 type DetailedCommand = {
   name: string;
@@ -73,7 +79,7 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
       { name: '--dry-run', description: 'Preview execute() calls without running remote actions' },
     ],
   }),
-  tagged({
+  experimental('listen', {
     name: 'listen',
     description:
       'Create a temporary subscription for consumer-project events and persist each payload into the session artifact folder.',
