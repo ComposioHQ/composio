@@ -1,4 +1,4 @@
-import { CLI_EXPERIMENTAL_FEATURES, type CliReleaseChannel } from '../../src/constants';
+import { CLI_EXPERIMENTAL_FEATURES, type CliReleaseChannel } from '../../src/experimental-features';
 
 export type SkillReleaseChannel = CliReleaseChannel;
 

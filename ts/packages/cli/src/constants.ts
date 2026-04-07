@@ -86,10 +86,8 @@ export const GITHUB_REPO = {
   API_BASE_URL: 'https://api.github.com',
 } as const;
 
-export const CLI_EXPERIMENTAL_FEATURES = {
-  LISTEN: 'listen',
-} as const;
-
-export const CLI_RELEASE_CHANNELS = ['stable', 'beta'] as const;
-
-export type CliReleaseChannel = (typeof CLI_RELEASE_CHANNELS)[number];
+export {
+  CLI_EXPERIMENTAL_FEATURES,
+  CLI_RELEASE_CHANNELS,
+  type CliReleaseChannel,
+} from './experimental-features';

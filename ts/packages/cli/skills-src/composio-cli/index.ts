@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { CLI_EXPERIMENTAL_FEATURES } from '../../src/constants';
+import { CLI_EXPERIMENTAL_FEATURES } from '../../src/experimental-features';
 import { composioDevReference } from './references/composio-dev';
 import { powerUserExamplesReference } from './references/power-user-examples';
 import { troubleshootingReference } from './references/troubleshooting';
