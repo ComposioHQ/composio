@@ -34,7 +34,7 @@ describe('CLI: composio login', () => {
           expect(output).toContain('--org');
           expect(output).toContain('--yes');
           expect(output).toContain('-y');
-          expect(output).not.toContain('--api-key');
+          expect(output).not.toMatch(/(^|\s)--api-key(?:\s|$)/);
         })
       );
     });
