@@ -1,7 +1,6 @@
 import process from 'node:process';
 import { Effect, Option } from 'effect';
 import { Command } from '@effect/cli';
-import * as constants from 'src/constants';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -37,7 +36,13 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
-import { type CommandVisibility, type TaggedValue, tagged, visibleValues } from './feature-tags';
+import {
+  type CommandVisibility,
+  experimental,
+  type TaggedValue,
+  tagged,
+  visibleValues,
+} from './feature-tags';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, any>>> = [
@@ -45,7 +50,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(upgradeCmd),
   tagged(whoamiCmd),
   tagged(loginCmd),
-  tagged(listenCmd),
+  experimental('listen', listenCmd),
   tagged(logoutCmd),
   tagged(runCmd),
   tagged(proxyCmd),
@@ -60,29 +65,6 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(generateCmd),
   tagged(orgsCmd),
 ];
-
-export const rootCommand = $defaultCmd.pipe(
-  Command.withSubcommands([
-    versionCmd,
-    upgradeCmd,
-    whoamiCmd,
-    loginCmd,
-    listenCmd,
-    logoutCmd,
-    runCmd,
-    proxyCmd,
-    artifactsCmd,
-    installCmd,
-    devCmd,
-    rootToolsCmd,
-    rootTriggersCmd,
-    rootToolsCmd$Search,
-    rootConnectedAccountsCmd$Link,
-    rootToolsCmd$Execute,
-    generateCmd,
-    orgsCmd,
-  ])
-);
 
 export const buildRootCommand = (visibility: CommandVisibility) => {
   const subcommands = visibleValues(ROOT_COMMANDS, visibility);
@@ -349,10 +331,4 @@ export const runWithConfig = Effect.gen(function* () {
     }
     return run(normalizedArgv);
   };
-});
-
-export const run = Command.run(rootCommand, {
-  name: 'composio',
-  version: constants.APP_VERSION,
-  executable: 'composio',
 });

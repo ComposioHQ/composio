@@ -3,16 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { Effect, Option } from 'effect';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
-import * as constants from 'src/constants';
+import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 
 const readConfiguredArtifactDirectory = (): string | undefined => {
-  const configPath = path.join(
-    os.homedir(),
-    constants.USER_COMPOSIO_DIR,
-    constants.CLI_CONFIG_FILE_NAME
-  );
   try {
-    const raw = fs.readFileSync(configPath, 'utf8');
+    const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
     const parsed = JSON.parse(raw) as { artifact_directory?: unknown };
     return typeof parsed.artifact_directory === 'string' &&
       parsed.artifact_directory.trim().length > 0

@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
 import { z } from 'zod';
-import * as constants from 'src/constants';
+import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 import type { MasterKind } from 'src/services/master-detector';
 import { isAcpInvokeError } from 'src/services/run-subagent-shared';
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
@@ -492,13 +492,8 @@ export const installRunHelpers = async ({
   };
 
   const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
-    const configPath = path.join(
-      os.homedir(),
-      constants.USER_COMPOSIO_DIR,
-      constants.CLI_CONFIG_FILE_NAME
-    );
     try {
-      const raw = fs.readFileSync(configPath, 'utf8');
+      const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
       const parsed = JSON.parse(raw) as {
         experimental_subagent?: { target?: unknown };
       };
