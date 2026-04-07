@@ -516,13 +516,21 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   login: {
     usage:
-      'composio login [--no-browser] [--no-wait] [--key text] [-y, --yes] [--no-skill-install]',
+      'composio login [--no-browser] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
     description:
       'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
     options: [
       {
         name: '--key <text>',
         description: 'Complete login using session key from composio login --no-wait',
+      },
+      {
+        name: '--user-api-key <text>',
+        description: 'Log in directly with a Composio user API key',
+      },
+      {
+        name: '--org <text>',
+        description: 'Default organization ID or name to store for CLI commands',
       },
     ],
     flags: [

@@ -31,7 +31,7 @@ Each command is declared with `@effect/cli`'s `Command.make()` pattern:
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `composio version`                                       | Display CLI version                                                                   |
 | `composio whoami`                                        | Show logged-in user's API key                                                         |
-| `composio login [--no-browser] [--no-wait] [--key text]` | Login with browser redirect                                                           |
+| `composio login [--no-browser] [--no-wait] [--key text] [--user-api-key text] [--org text]` | Login with browser redirect or direct user API key                                    |
 | `composio logout`                                        | Clear stored API key                                                                  |
 | `composio upgrade`                                       | Self-update binary from GitHub releases                                               |
 | `composio generate`                                      | Auto-detect project language, delegate to `ts` or `py`                                |
