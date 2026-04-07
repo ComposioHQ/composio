@@ -1,5 +1,6 @@
 import { Args, Command, Options } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
+import type { Composio as RawComposioClient } from '@composio/client';
 import { Deferred, Effect, Option, Runtime } from 'effect';
 import path from 'node:path';
 import { requireAuth } from 'src/effects/require-auth';
@@ -83,6 +84,58 @@ const parseCreateParams = (raw: string) =>
     }
 
     return parsed as Record<string, unknown>;
+  });
+
+const assertSupportedListenParams = (params: {
+  listeningToProjectEvent: boolean;
+  slug: string;
+  createParamsInput: Record<string, unknown>;
+}) =>
+  params.listeningToProjectEvent && Object.keys(params.createParamsInput).length > 0
+    ? Effect.fail(
+        new Error(
+          `--params is only supported for trigger slugs. "${params.slug}" is a project-level composio.* event type and does not create a temporary trigger.`
+        )
+      )
+    : Effect.void;
+
+const resolveConnectedAccountIdForTrigger = (params: {
+  client: RawComposioClient;
+  slug: string;
+  consumerUserId: string;
+}) =>
+  Effect.gen(function* () {
+    const toolkitSlug = toolkitFromToolSlug(params.slug);
+    if (!toolkitSlug) {
+      return yield* Effect.fail(
+        new Error(
+          `Could not infer a toolkit from trigger slug "${params.slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`
+        )
+      );
+    }
+
+    const connectedAccounts = yield* Effect.tryPromise({
+      try: () =>
+        params.client.connectedAccounts.list({
+          toolkit_slugs: [toolkitSlug],
+          user_ids: [params.consumerUserId],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        }),
+      catch: error =>
+        new Error(`Failed to list connected accounts for "${toolkitSlug}": ${String(error)}`),
+    });
+    const connectedAccountId = selectConnectedAccountId(connectedAccounts.items);
+
+    if (!connectedAccountId) {
+      return yield* Effect.fail(
+        new Error(
+          `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`
+        )
+      );
+    }
+
+    return connectedAccountId;
   });
 
 const selectConnectedAccountId = (
@@ -189,6 +242,23 @@ const formatStreamValue = (value: unknown): string => {
   return JSON.stringify(value);
 };
 
+const formatStopMessage = (params: {
+  matchingEvents: number;
+  timedOut: boolean;
+  temporaryTriggerDisabled: boolean;
+}): string => {
+  const eventLabel = `event${params.matchingEvents === 1 ? '' : 's'}`;
+  if (params.timedOut) {
+    return params.temporaryTriggerDisabled
+      ? `Stopped after timeout with ${params.matchingEvents} matching ${eventLabel}. Temporary trigger disabled.`
+      : `Stopped after timeout with ${params.matchingEvents} matching ${eventLabel}.`;
+  }
+
+  return params.temporaryTriggerDisabled
+    ? `Stopped after receiving ${params.matchingEvents} ${eventLabel}. Temporary trigger disabled.`
+    : `Stopped after receiving ${params.matchingEvents} ${eventLabel}.`;
+};
+
 const TIMEOUT_UNITS_MS: Record<string, number> = {
   ms: 1,
   millisecond: 1,
@@ -266,48 +336,15 @@ export const listenCmd = Command.make(
         ? (yield* resolveParamsInput(params))?.trim() || '{}'
         : '{}';
       const createParamsInput = yield* parseCreateParams(rawParams);
-      if (listeningToProjectEvent && Object.keys(createParamsInput).length > 0) {
-        return yield* Effect.fail(
-          new Error(
-            `--params is only supported for trigger slugs. "${slug}" is a project-level composio.* event type and does not create a temporary trigger.`
-          )
-        );
-      }
+      yield* assertSupportedListenParams({ listeningToProjectEvent, slug, createParamsInput });
 
-      let resolvedConnectedAccountId: string | undefined;
-      if (!listeningToProjectEvent) {
-        const toolkitSlug = toolkitFromToolSlug(slug);
-        if (!toolkitSlug) {
-          return yield* Effect.fail(
-            new Error(
-              `Could not infer a toolkit from trigger slug "${slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`
-            )
-          );
-        }
-
-        const connectedAccounts = yield* Effect.tryPromise({
-          try: () =>
-            client.connectedAccounts.list({
-              toolkit_slugs: [toolkitSlug],
-              user_ids: resolvedProject.consumerUserId
-                ? [resolvedProject.consumerUserId]
-                : undefined,
-              statuses: ['ACTIVE'],
-              limit: 100,
-            }),
-          catch: error =>
-            new Error(`Failed to list connected accounts for "${toolkitSlug}": ${String(error)}`),
-        });
-        resolvedConnectedAccountId = selectConnectedAccountId(connectedAccounts.items);
-
-        if (!resolvedConnectedAccountId) {
-          return yield* Effect.fail(
-            new Error(
-              `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${resolvedProject.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`
-            )
-          );
-        }
-      }
+      const resolvedConnectedAccountId = listeningToProjectEvent
+        ? undefined
+        : yield* resolveConnectedAccountIdForTrigger({
+            client,
+            slug,
+            consumerUserId: resolvedProject.consumerUserId,
+          });
 
       const createParams = listeningToProjectEvent
         ? undefined
@@ -402,7 +439,7 @@ export const listenCmd = Command.make(
                     yield* emitStreamLine(
                       createdTrigger === null
                         ? `[debug] event.type=${eventTypeOf(eventData) ?? '<missing>'} match=${filterResult}`
-                        : `[debug] parsed.id=${parsedTriggerEvent.id} triggerSlug=${parsedTriggerEvent.triggerSlug} trigger_id=${createdTrigger.trigger_id} match=${filterResult}`,
+                        : `[debug] parsed.id=${parsedTriggerEvent!.id} triggerSlug=${parsedTriggerEvent!.triggerSlug} trigger_id=${createdTrigger.trigger_id} match=${filterResult}`,
                       ui
                     );
                   }
@@ -483,18 +520,22 @@ export const listenCmd = Command.make(
             const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
             if (stopReason === 'max-events') {
               yield* ui.outro(
-                createdTrigger === null
-                  ? `Stopped after receiving ${matchingEvents} event${matchingEvents === 1 ? '' : 's'}.`
-                  : `Stopped after receiving ${matchingEvents} events. Temporary trigger disabled.`
+                formatStopMessage({
+                  matchingEvents,
+                  timedOut: false,
+                  temporaryTriggerDisabled: createdTrigger !== null,
+                })
               );
               return;
             }
 
             if (stopReason === 'timeout') {
               yield* ui.outro(
-                createdTrigger === null
-                  ? `Stopped after timeout with ${matchingEvents} matching event${matchingEvents === 1 ? '' : 's'}.`
-                  : `Stopped after timeout with ${matchingEvents} matching event${matchingEvents === 1 ? '' : 's'}. Temporary trigger disabled.`
+                formatStopMessage({
+                  matchingEvents,
+                  timedOut: true,
+                  temporaryTriggerDisabled: createdTrigger !== null,
+                })
               );
             }
           }),

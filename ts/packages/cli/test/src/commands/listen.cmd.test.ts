@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 const testConfigProvider = ConfigProvider.fromMap(
@@ -34,6 +35,13 @@ describe('CLI: composio listen', () => {
       '[Then] listens to top-level composio.* events without creating a temporary trigger',
       () =>
         Effect.gen(function* () {
+          const config = yield* ComposioCliUserConfig;
+          yield* config.update({
+            experimentalFeatures: {
+              ...config.raw.experimentalFeatures,
+              listen: true,
+            },
+          });
           yield* cli(['listen', 'composio.connected_account.expired', '--max-events', '1']);
 
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -98,6 +106,13 @@ describe('CLI: composio listen', () => {
   )(it => {
     it.scoped('[Then] keeps the temporary-trigger flow for trigger slugs', () =>
       Effect.gen(function* () {
+        const config = yield* ComposioCliUserConfig;
+        yield* config.update({
+          experimentalFeatures: {
+            ...config.raw.experimentalFeatures,
+            listen: true,
+          },
+        });
         yield* cli(['listen', 'GMAIL_NEW_GMAIL_MESSAGE', '--max-events', '1']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -105,7 +120,7 @@ describe('CLI: composio listen', () => {
 
         expect(output).toContain('listening for events GMAIL_NEW_GMAIL_MESSAGE');
         expect(output).toContain('/triggers/GMAIL_NEW_GMAIL_MESSAGE/');
-        expect(output).toContain('Temporary trigger disabled.');
+        expect(output).toContain('Stopped after receiving 1 event. Temporary trigger disabled.');
       })
     );
   });
