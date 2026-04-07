@@ -23,6 +23,8 @@ import {
   groupCachedConnectedAccountsByToolkit,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -619,6 +621,13 @@ const runConnectedAccountsLink = (params: {
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
+    const cliConfig = yield* ComposioCliUserConfig;
+    const aliasOption = cliConfig.isExperimentalFeatureEnabled(
+      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
+    )
+      ? params.alias
+      : Option.none<string>();
+
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
     const projectContext = yield* ProjectContext;
@@ -675,7 +684,7 @@ const runConnectedAccountsLink = (params: {
         requestedUserId: params.userId,
         projectName: params.projectName,
         noWait: params.noWait,
-        alias: params.alias,
+        alias: aliasOption,
         ui,
         clientSingleton,
         projectContext,
@@ -758,7 +767,7 @@ const runConnectedAccountsLink = (params: {
     const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
     const canContinue = yield* ensureAliasForAdditionalAccount({
       ui,
-      alias: params.alias,
+      alias: aliasOption,
       connectedAccountId: connAccountId,
       existingAccounts,
       scopeDescription: `user "${resolvedUserId.value}" in toolkit "${toolkitSlug}"`,
@@ -769,7 +778,7 @@ const runConnectedAccountsLink = (params: {
       ui,
       client,
       connectedAccountId: connAccountId,
-      alias: params.alias,
+      alias: aliasOption,
     });
 
     if (params.noWait) {

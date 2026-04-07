@@ -7,6 +7,7 @@
  */
 export const CLI_EXPERIMENTAL_FEATURES = {
   LISTEN: 'listen',
+  MULTI_ACCOUNT: 'multi_account',
 } as const;
 
 export const CLI_RELEASE_CHANNELS = ['stable', 'beta'] as const;
