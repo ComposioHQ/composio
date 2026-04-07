@@ -23,7 +23,6 @@ export const upgradeCmd = Command.make('upgrade', { beta: betaOpt }, ({ beta }) 
     const upgradeBinary = yield* UpgradeBinary;
     const newReleaseTag = yield* upgradeBinary.upgrade({ prerelease: beta });
     yield* installSkillSafe({
-      channel: beta ? 'beta' : 'stable',
       releaseTag: newReleaseTag ?? `@composio/cli@${APP_VERSION}`,
     });
   })

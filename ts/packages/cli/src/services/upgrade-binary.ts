@@ -6,6 +6,7 @@ import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
+import { fetchLatestCliRelease, type GitHubRelease } from 'src/effects/resolve-cli-release';
 
 // Note: `node:zlib` does not support Github's zip files
 import decompress from 'decompress';
@@ -27,18 +28,6 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
  * CLI binary name constant
  */
 export const CLI_BINARY_NAME = 'composio';
-
-type GitHubRelease = {
-  tag_name: string;
-  prerelease?: boolean;
-  draft?: boolean;
-  assets: Array<{
-    name: string;
-    browser_download_url: string;
-  }>;
-};
-
-const CLI_RELEASE_TAG_PATTERN = /^@composio\/cli@\d+\.\d+\.\d+.*$/;
 
 const getBinaryAssetName = (platformArch: PlatformArch) =>
   `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
@@ -122,77 +111,25 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               yield* Effect.logDebug(
                 `No tag specified, resolving latest package-scoped CLI ${prerelease ? 'beta' : 'stable'} release`
               );
-              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases?per_page=100`;
-              const releases = yield* fetchGitHubJson<unknown>({
-                url,
-                fetchErrorMessage: 'Failed to fetch releases from GitHub',
-                parseErrorMessage: 'Failed to parse GitHub releases JSON response',
-              });
-
-              if (!Array.isArray(releases)) {
-                return yield* Effect.fail(
-                  new UpgradeBinaryError({
-                    cause: new Error('GitHub releases response was not an array'),
-                    message: 'Unexpected response while resolving latest CLI release',
-                  })
-                );
-              }
-
-              const cliReleases = releases.filter(
-                (release): release is GitHubRelease =>
-                  typeof release === 'object' &&
-                  release !== null &&
-                  'tag_name' in release &&
-                  typeof release.tag_name === 'string' &&
-                  ('prerelease' in release
-                    ? release.prerelease === prerelease
-                    : prerelease === false) &&
-                  ('draft' in release ? release.draft === false : true) &&
-                  CLI_RELEASE_TAG_PATTERN.test(release.tag_name)
+              const latest = yield* fetchLatestCliRelease({
+                assetDescription: getBinaryAssetName(platformArch),
+                channel: prerelease ? 'beta' : 'stable',
+                githubConfig,
+                hasRequiredAsset: release => hasPlatformBinaryAsset(release, platformArch),
+                httpClient,
+              }).pipe(
+                Effect.mapError(
+                  error =>
+                    new UpgradeBinaryError({
+                      cause: error,
+                      message: error.message.startsWith('Failed to fetch ')
+                        ? 'Failed to fetch releases from GitHub'
+                        : error.message === 'Failed to parse GitHub releases JSON'
+                          ? 'Failed to parse GitHub releases JSON response'
+                          : `Failed to determine latest CLI ${prerelease ? 'beta' : 'stable'} release from @composio/cli tags on GitHub`,
+                    })
+                )
               );
-
-              if (cliReleases.length === 0) {
-                return yield* Effect.fail(
-                  new UpgradeBinaryError({
-                    cause: new Error(
-                      `No package-scoped CLI ${prerelease ? 'beta' : 'stable'} releases found`
-                    ),
-                    message: `Failed to determine latest CLI ${prerelease ? 'beta' : 'stable'} release from @composio/cli tags on GitHub`,
-                  })
-                );
-              }
-
-              const cliReleasesWithBinary = cliReleases.filter(release =>
-                hasPlatformBinaryAsset(release, platformArch)
-              );
-
-              if (cliReleasesWithBinary.length === 0) {
-                return yield* Effect.fail(
-                  new UpgradeBinaryError({
-                    cause: new Error(
-                      `No package-scoped CLI ${prerelease ? 'beta' : 'stable'} releases found with ${getBinaryAssetName(platformArch)}`
-                    ),
-                    message: `Failed to determine latest CLI ${prerelease ? 'beta' : 'stable'} release from @composio/cli tags on GitHub`,
-                  })
-                );
-              }
-
-              let latest = cliReleasesWithBinary[0];
-              for (const release of cliReleasesWithBinary.slice(1)) {
-                const comparison = yield* semverComparator(latest.tag_name, release.tag_name).pipe(
-                  Effect.mapError(
-                    error =>
-                      new UpgradeBinaryError({
-                        cause: error,
-                        message: 'Failed to compare CLI release versions',
-                      })
-                  )
-                );
-
-                if (comparison < 0) {
-                  latest = release;
-                }
-              }
 
               yield* Effect.logDebug(`Resolved latest CLI release tag: ${latest.tag_name}`);
               return latest;
