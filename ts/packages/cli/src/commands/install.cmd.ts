@@ -129,7 +129,11 @@ const tildify = (p: string, homedir: string): string =>
 
 export const installShellIntegration = (params: {
   readonly completions: boolean;
-}): Effect.Effect<void, PlatformError, TerminalUI | NodeOs | FileSystem.FileSystem> =>
+}): Effect.Effect<
+  void,
+  PlatformError,
+  TerminalUI | NodeOs | FileSystem.FileSystem | ComposioCliUserConfig
+> =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const os = yield* NodeOs;
