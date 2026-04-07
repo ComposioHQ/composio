@@ -3,10 +3,25 @@ import os from 'node:os';
 import path from 'node:path';
 import { Effect, Option } from 'effect';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
+import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
+
+const readConfiguredArtifactDirectory = (): string | undefined => {
+  try {
+    const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
+    const parsed = JSON.parse(raw) as { artifact_directory?: unknown };
+    return typeof parsed.artifact_directory === 'string' &&
+      parsed.artifact_directory.trim().length > 0
+      ? parsed.artifact_directory.trim()
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 export const resolveArtifactsRoot = (): string =>
   process.env.COMPOSIO_SESSION_DIR?.trim() ||
   process.env.COMPOSIO_CACHE_DIR?.trim() ||
+  readConfiguredArtifactDirectory() ||
   path.join(os.tmpdir(), 'composio');
 
 const SESSION_HISTORY_FILE = 'session-history.jsonl';

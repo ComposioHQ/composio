@@ -5,7 +5,7 @@ import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
-import { rootCommand, runWithConfig } from 'src/commands';
+import { buildRootCommand, runWithConfig } from 'src/commands';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
@@ -19,6 +19,7 @@ import { ComposioToolkitsRepositoryCached } from 'src/services/composio-clients-
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
+import { ComposioCliUserConfigLive, ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { TerminalUILive } from 'src/services/terminal-ui';
@@ -47,6 +48,11 @@ export const ComposioUserContextLive = Layer.provide(
   _ComposioUserContextLive,
   Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
+
+export const ComposioCliUserConfigLayer = Layer.provide(
+  ComposioCliUserConfigLive,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+);
 
 export const ComposioSessionRepositoryLive = Layer.provide(
   ComposioSessionRepository.Default,
@@ -93,6 +99,7 @@ const layers = Layer.mergeAll(
   NodeOs.Default,
   NodeProcess.Default,
   UpgradeBinaryLive,
+  ComposioCliUserConfigLayer,
   ComposioUserContextLive,
   ComposioSessionRepositoryLive,
   ComposioClientSingletonLive,
@@ -161,7 +168,7 @@ const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) 
   }
 };
 
-const valueOptionNames = (() => {
+const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand>) => {
   const names = new Set<string>();
   const visited = new Set<CommandDescriptor.Command<unknown>>();
   const visit = (command: CommandDescriptor.Command<unknown>) => {
@@ -176,7 +183,7 @@ const valueOptionNames = (() => {
   };
   visit(rootCommand.descriptor);
   return names;
-})();
+};
 
 showUpdateNotice();
 checkForUpdateInBackground();
@@ -194,23 +201,31 @@ runWithArgs.pipe(
     )
   ),
   Effect.catchIf(ValidationError.isValidationError, error => {
-    const text = HelpDoc.toAnsiText(error.error).trim();
-    const errorEffect = text.length > 0 ? Console.error(text) : Effect.void;
-    const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
-    const tipEffect =
-      flagMatch && valueOptionNames.has(flagMatch[1])
-        ? Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
-        : Effect.void;
-    const cmdName = matchCommandFromArgv(process.argv);
-    const helpText = cmdName ? getCommandHelpText(cmdName) : undefined;
-    const helpEffect = helpText ? Console.error(helpText) : Effect.void;
-    return Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
-      Effect.tap(() =>
-        Effect.sync(() => {
-          process.exitCode = 1;
-        })
-      )
-    );
+    return Effect.gen(function* () {
+      const cliUserConfig = yield* ComposioCliUserConfig;
+      const visibility = {
+        isExperimentalFeatureEnabled: (feature: string) =>
+          cliUserConfig.isExperimentalFeatureEnabled(feature),
+      };
+      const valueOptionNames = collectValueOptionNames(buildRootCommand(visibility));
+      const text = HelpDoc.toAnsiText(error.error).trim();
+      const errorEffect = text.length > 0 ? Console.error(text) : Effect.void;
+      const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
+      const tipEffect =
+        flagMatch && valueOptionNames.has(flagMatch[1])
+          ? Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
+          : Effect.void;
+      const cmdName = matchCommandFromArgv(process.argv, visibility);
+      const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
+      const helpEffect = helpText ? Console.error(helpText) : Effect.void;
+      return yield* Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
+        Effect.tap(() =>
+          Effect.sync(() => {
+            process.exitCode = 1;
+          })
+        )
+      );
+    });
   }),
   Effect.withSpan('composio-cli', {
     attributes: {
@@ -238,8 +253,13 @@ runWithArgs.pipe(
         ).trim();
         if (message.length > 0) {
           yield* Console.error(message);
-          const cmdName = matchCommandFromArgv(process.argv);
-          const helpText = cmdName ? getCommandHelpText(cmdName) : undefined;
+          const cliUserConfig = yield* ComposioCliUserConfig;
+          const visibility = {
+            isExperimentalFeatureEnabled: (feature: string) =>
+              cliUserConfig.isExperimentalFeatureEnabled(feature),
+          };
+          const cmdName = matchCommandFromArgv(process.argv, visibility);
+          const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
           if (helpText) {
             yield* Console.error(helpText);
           }

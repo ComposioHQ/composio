@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
 import { z } from 'zod';
+import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 import type { MasterKind } from 'src/services/master-detector';
 import { isAcpInvokeError } from 'src/services/run-subagent-shared';
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
@@ -490,8 +491,23 @@ export const installRunHelpers = async ({
     return 'user';
   };
 
+  const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
+    try {
+      const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
+      const parsed = JSON.parse(raw) as {
+        experimental_subagent?: { target?: unknown };
+      };
+      const target = parsed.experimental_subagent?.target;
+      return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
+    } catch {
+      return 'auto';
+    }
+  };
+
   const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
     if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
+    const configuredTarget = readConfiguredExperimentalSubagentTarget();
+    if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
     const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
     if (detected === 'codex' || detected === 'claude') return detected;
     if (typeof Bun.which === 'function' && Bun.which('codex')) return 'codex';

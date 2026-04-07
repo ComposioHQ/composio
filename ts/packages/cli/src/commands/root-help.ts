@@ -1,5 +1,12 @@
 import { Console, Effect } from 'effect';
 import { bold, dim, gray } from 'src/ui/colors';
+import {
+  type CommandVisibility,
+  experimental,
+  tagged,
+  visibleValues,
+  type TaggedValue,
+} from './feature-tags';
 
 type DetailedCommand = {
   name: string;
@@ -15,8 +22,8 @@ type CompactCommand = {
 
 // ── Core workflow commands ──────────────────────────────────────────────
 
-const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
-  {
+const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
+  tagged({
     name: 'search',
     description: 'Find tools by use case across all toolkits/apps.',
     usage: 'search <query...> [--toolkits text] [--limit integer] [--human]',
@@ -29,8 +36,8 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '--limit', description: 'Maximum number of results (1-1000)' },
       { name: '--human', description: 'Show formatted output instead of default JSON' },
     ],
-  },
-  {
+  }),
+  tagged({
     name: 'execute',
     description:
       'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
@@ -54,14 +61,14 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '--dry-run', description: 'Validate and preview the tool call without executing it' },
       { name: '--get-schema', description: 'Fetch and print the CLI-facing input schema' },
     ],
-  },
-  {
+  }),
+  tagged({
     name: 'link',
     description: 'Connect your account for a toolkit/app.',
     usage: 'link [<toolkit>]',
     options: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
-  },
-  {
+  }),
+  tagged({
     name: 'run',
     description:
       'Run inline TS/JS code with shimmed CLI commands; injected execute(), search(), proxy(), experimental_subAgent(), and z (zod).',
@@ -71,8 +78,8 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '-f, --file', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running remote actions' },
     ],
-  },
-  {
+  }),
+  experimental('listen', {
     name: 'listen',
     description:
       'Listen to consumer-project realtime events and persist each payload into the session artifact folder.',
@@ -100,8 +107,8 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
           'Also print each payload inline as a single-line stream value. Optionally pass a jq-like path such as ".thread.id".',
       },
     ],
-  },
-  {
+  }),
+  tagged({
     name: 'proxy',
     description:
       'curl-like access to any toolkit API through Composio using your connected account.',
@@ -113,49 +120,55 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '-H, --header', description: 'Header in "Name: value" format. Repeat for multiple.' },
       { name: '-d, --data', description: 'Request body as raw text, JSON, @file, or - for stdin' },
     ],
-  },
+  }),
 ];
 
 // ── Developer commands ─────────────────────────────────────────────────
 
-const OTHER_COMMANDS: ReadonlyArray<CompactCommand> = [
-  { name: 'composio tools info <slug>', description: 'Print tool summary and cache its schema' },
-  { name: 'composio tools list <toolkit>', description: 'List tools available in a toolkit' },
-  {
+const OTHER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({
+    name: 'composio tools info <slug>',
+    description: 'Print tool summary and cache its schema',
+  }),
+  tagged({
+    name: 'composio tools list <toolkit>',
+    description: 'List tools available in a toolkit',
+  }),
+  tagged({
     name: 'composio triggers info <slug>',
     description: 'Print trigger type details and schema summaries',
-  },
-  {
+  }),
+  tagged({
     name: 'composio triggers list <toolkit>',
     description: 'List available trigger types in a toolkit',
-  },
-  {
+  }),
+  tagged({
     name: 'composio artifacts cwd',
     description: 'Print the cwd-scoped session artifact directory',
-  },
+  }),
 ];
 
-const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
-  {
+const DEVELOPER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({
     name: 'dev',
     description:
       'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.',
-  },
-  {
+  }),
+  tagged({
     name: 'generate',
     description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
-  },
+  }),
 ];
 
 // ── Account commands ───────────────────────────────────────────────────
 
-const ACCOUNT_COMMANDS: ReadonlyArray<CompactCommand> = [
-  { name: 'login', description: 'Log in to Composio' },
-  { name: 'logout', description: 'Log out from Composio' },
-  { name: 'whoami', description: 'Show current account info' },
-  { name: 'orgs', description: 'Manage default organization context (list, switch)' },
-  { name: 'version', description: 'Display CLI version' },
-  { name: 'upgrade', description: 'Upgrade CLI to the latest version' },
+const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({ name: 'login', description: 'Log in to Composio' }),
+  tagged({ name: 'logout', description: 'Log out from Composio' }),
+  tagged({ name: 'whoami', description: 'Show current account info' }),
+  tagged({ name: 'orgs', description: 'Manage default organization context (list, switch)' }),
+  tagged({ name: 'version', description: 'Display CLI version' }),
+  tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
 ];
 
 // ── Render helpers ─────────────────────────────────────────────────────
@@ -997,7 +1010,10 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
  * Check if argv is `composio <subcommand> --help` for a command we have custom help for.
  * Returns the command name if matched, undefined otherwise.
  */
-export function matchSubcommandHelp(argv: ReadonlyArray<string>): string | undefined {
+export function matchSubcommandHelp(
+  argv: ReadonlyArray<string>,
+  _visibility: CommandVisibility
+): string | undefined {
   const args = argv.slice(2);
   if (args.length < 2) return undefined;
   const last = args[args.length - 1];
@@ -1012,7 +1028,10 @@ export function matchSubcommandHelp(argv: ReadonlyArray<string>): string | undef
   return undefined;
 }
 
-export function printSubcommandHelp(cmd: string): Effect.Effect<void> {
+export function printSubcommandHelp(
+  cmd: string,
+  _visibility: CommandVisibility
+): Effect.Effect<void> {
   const help = SUBCOMMAND_HELP[cmd];
   if (!help) return Console.log(`Unknown command: ${cmd}`);
   return Console.log(renderSubcommandHelp(help));
@@ -1022,7 +1041,10 @@ export function printSubcommandHelp(cmd: string): Effect.Effect<void> {
  * Match the command name from argv without requiring --help at the end.
  * Used to print contextual help alongside error messages.
  */
-export function matchCommandFromArgv(argv: ReadonlyArray<string>): string | undefined {
+export function matchCommandFromArgv(
+  argv: ReadonlyArray<string>,
+  _visibility: CommandVisibility
+): string | undefined {
   const args = argv.slice(2).filter(a => a !== '--help' && a !== '-h' && !a.startsWith('--'));
   // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
   for (let len = Math.min(args.length, 3); len > 0; len--) {
@@ -1035,7 +1057,10 @@ export function matchCommandFromArgv(argv: ReadonlyArray<string>): string | unde
 /**
  * Get rendered help text for a command, or undefined if not found.
  */
-export function getCommandHelpText(cmd: string): string | undefined {
+export function getCommandHelpText(
+  cmd: string,
+  _visibility: CommandVisibility
+): string | undefined {
   const help = SUBCOMMAND_HELP[cmd];
   if (!help) return undefined;
   return renderSubcommandHelp(help);
@@ -1048,7 +1073,7 @@ export function getCommandHelpText(cmd: string): string | undefined {
  * Core workflow commands are shown first with full usage/options.
  * Housekeeping and developer commands are shown compactly at the bottom.
  */
-export function printRootHelp(): Effect.Effect<void> {
+export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void> {
   const name = 'composio';
 
   const lines: string[] = [
@@ -1065,11 +1090,11 @@ export function printRootHelp(): Effect.Effect<void> {
     `  ${name} <command> [options]`,
     '',
     bold('CORE COMMANDS'),
-    ...renderDetailedCommands(name, CORE_COMMANDS),
+    ...renderDetailedCommands(name, visibleValues(CORE_COMMANDS, visibility)),
     gray('  Typical flow: search → execute (link and tools when needed)'),
     '',
     bold('TOOLS'),
-    ...renderCompactCommands(OTHER_COMMANDS),
+    ...renderCompactCommands(visibleValues(OTHER_COMMANDS, visibility)),
     '',
     bold('EXAMPLES'),
     `  ${dim('# Find tools — supports multiple queries at once')}`,
@@ -1103,15 +1128,16 @@ export function printRootHelp(): Effect.Effect<void> {
     `  '`,
     '',
     bold('DEVELOPER COMMANDS'),
-    ...renderCompactCommands(DEVELOPER_COMMANDS),
+    ...renderCompactCommands(visibleValues(DEVELOPER_COMMANDS, visibility)),
     '',
     bold('ACCOUNT'),
-    ...renderCompactCommands(ACCOUNT_COMMANDS),
+    ...renderCompactCommands(visibleValues(ACCOUNT_COMMANDS, visibility)),
     '',
     bold('FILES') + dim('  (composio files --help)'),
     `  ${bold('~/.composio/')}`,
     `    CLI configuration and cache directory. Contains your auth state`,
-    `    (user_data.json), cached tool definitions (tools.json, toolkits.json),`,
+    `    (user_data.json), runtime settings (config.json), cached tool definitions`,
+    `    (tools.json, toolkits.json),`,
     `    trigger types, and per-org consumer caches. These caches speed up`,
     `    repeated commands — safe to delete, they will be re-fetched on next use.`,
     '',
