@@ -2707,6 +2707,16 @@
                             "format": "connectedAccountId",
                             "description": "The id of the connection"
                           },
+                          "word_id": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A short, token-friendly identifier for multi-account disambiguation, typically toolkit-prefixed with 1-2 words (e.g., \"gmail_red-castle\")"
+                          },
+                          "alias": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "A user-defined alias for the connected account"
+                          },
                           "user_id": {
                             "type": "string",
                             "description": "This is deprecated, we will not be providing userId from this api anymore, you will only be able to read via userId not get it back",
@@ -2927,6 +2937,8 @@
                           "toolkit",
                           "auth_config",
                           "id",
+                          "word_id",
+                          "alias",
                           "user_id",
                           "status",
                           "created_at",
@@ -3632,6 +3644,16 @@
                       "format": "connectedAccountId",
                       "description": "The id of the connection"
                     },
+                    "word_id": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "A short, token-friendly identifier for multi-account disambiguation, typically toolkit-prefixed with 1-2 words (e.g., \"gmail_red-castle\")"
+                    },
+                    "alias": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "A user-defined alias for the connected account"
+                    },
                     "user_id": {
                       "type": "string",
                       "description": "This is deprecated, we will not be providing userId from this api anymore, you will only be able to read via userId not get it back",
@@ -3858,6 +3880,8 @@
                     "toolkit",
                     "auth_config",
                     "id",
+                    "word_id",
+                    "alias",
                     "user_id",
                     "status",
                     "created_at",
@@ -4029,6 +4053,132 @@
           },
           "500": {
             "description": "Internal server error - Failed to delete the connected account due to a server-side issue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a connected account",
+        "description": "Updates mutable fields of a connected account. Currently supports updating the alias field. Alias must be unique within the same project, entity, and toolkit scope.",
+        "tags": [
+          "Connected Accounts"
+        ],
+        "operationId": "patchConnectedAccountsByNanoid",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "connectedAccountId"
+            },
+            "required": true,
+            "description": "The unique identifier (nanoid) of the connected account",
+            "example": "con_1a2b3c4d5e6f",
+            "name": "nanoid",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "alias": {
+                    "type": "string",
+                    "description": "A human-readable alias for this connected account. Pass an empty string to clear the alias. Must be unique per entity and toolkit within the project."
+                  }
+                },
+                "required": [
+                  "alias"
+                ],
+                "example": {
+                  "alias": "work-gmail"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated the connected account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates whether the connected account was successfully updated"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "description": "Response returned after successfully updating a connected account",
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid nanoid format, invalid request body, or duplicate alias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions to update this connected account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Connected account not found - The specified account does not exist or has been deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - Failed to update the connected account due to a server-side issue",
             "content": {
               "application/json": {
                 "schema": {

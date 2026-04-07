@@ -924,7 +924,7 @@
     "name": "Miro",
     "logo": "https://logos.composio.dev/api/miro",
     "category": "team collaboration",
-    "toolCount": 78,
+    "toolCount": 77,
     "triggerCount": 0
   },
   {
@@ -2468,7 +2468,7 @@
     "name": "Bookingmood",
     "logo": "https://logos.composio.dev/api/bookingmood",
     "category": "scheduling & booking",
-    "toolCount": 143,
+    "toolCount": 142,
     "triggerCount": 0
   },
   {
@@ -4360,11 +4360,19 @@
     "triggerCount": 1
   },
   {
+    "slug": "googlecontacts",
+    "name": "Googlecontacts",
+    "logo": "https://logos.composio.dev/api/googlecontacts",
+    "category": "productivity",
+    "toolCount": 24,
+    "triggerCount": 0
+  },
+  {
     "slug": "googleforms",
     "name": "Googleforms",
     "logo": "https://logos.composio.dev/api/googleforms",
     "category": "productivity",
-    "toolCount": 7,
+    "toolCount": 10,
     "triggerCount": 0
   },
   {
@@ -5373,6 +5381,14 @@
     "logo": "https://logos.composio.dev/api/matterport",
     "category": "developer tools",
     "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
+    "slug": "maxio",
+    "name": "Maxio",
+    "logo": "https://logos.composio.dev/api/maxio",
+    "category": "commerce",
+    "toolCount": 177,
     "triggerCount": 0
   },
   {
@@ -7981,22 +7997,6 @@
     "logo": "https://logos.composio.dev/api/whop",
     "category": "ecommerce",
     "toolCount": 19,
-    "triggerCount": 0
-  },
-  {
-    "slug": "winston_ai",
-    "name": "Winston AI",
-    "logo": "https://logos.composio.dev/api/winston_ai",
-    "category": "ai safety compliance detection",
-    "toolCount": 3,
-    "triggerCount": 0
-  },
-  {
-    "slug": "wisepops",
-    "name": "Wisepops",
-    "logo": "https://logos.composio.dev/api/wisepops",
-    "category": "marketing",
-    "toolCount": 5,
     "triggerCount": 0
   }
 ]
