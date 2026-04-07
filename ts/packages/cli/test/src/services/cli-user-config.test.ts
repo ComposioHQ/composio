@@ -104,7 +104,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(parsed.experimental_subagent.target, 'claude');
     }).pipe(Effect.provide(CliUserConfigTest));
   });
-
   it.effect('resolves sync config path from COMPOSIO_CACHE_DIR when provided', () => {
     const cacheDir = tempy.temporaryDirectory();
     process.env.COMPOSIO_CACHE_DIR = cacheDir;

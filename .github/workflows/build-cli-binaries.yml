@@ -289,8 +289,17 @@ jobs:
 
       - name: Package skill files
         working-directory: ts/packages/cli
+        env:
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
         run: |
-          cd skills && zip -r ../dist/binaries/composio-skill.zip composio-cli/
+          pnpm run validate:skills
+          if [[ "$PRERELEASE" == "true" ]]; then
+            channel=beta
+          else
+            channel=stable
+          fi
+          pnpm run build:skills -- --channel "$channel" --output-dir ./dist/skills
+          cd dist/skills && zip -r ../binaries/composio-skill.zip composio-cli/
 
       - name: Create GitHub Release
         env:

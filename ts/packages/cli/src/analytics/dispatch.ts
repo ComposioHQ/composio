@@ -212,12 +212,12 @@ export const getCurrentCwdSessionId = (): string | undefined => {
 const withCliSessionId = (event: TrackEvent): TrackEvent => {
   if (!event) return event;
   const cliSessionId = getCurrentCwdSessionId();
-  if (!cliSessionId) return event;
   return {
     ...event,
     properties: {
       ...(event.properties ?? {}),
-      cli_session_id: cliSessionId,
+      cli_version: event.properties?.cli_version ?? constants.APP_VERSION,
+      ...(cliSessionId ? { cli_session_id: cliSessionId } : {}),
     },
   };
 };
@@ -533,7 +533,10 @@ export const runBackgroundWorkerFromArgv = async (argv: ReadonlyArray<string>): 
   try {
     const decoded = decodeBase64Url(encodedPayload);
     const body = JSON.parse(decoded) as ReturnType<typeof createCliCodactFailureBody>;
-    if (body?.failure_type !== 'wrong_tool_slug' && body?.failure_type !== 'wrong_tool_input_param') {
+    if (
+      body?.failure_type !== 'wrong_tool_slug' &&
+      body?.failure_type !== 'wrong_tool_input_param'
+    ) {
       return;
     }
 

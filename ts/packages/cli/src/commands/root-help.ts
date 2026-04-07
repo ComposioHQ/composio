@@ -1,4 +1,5 @@
-import { Console, Effect } from 'effect';
+import { Console, Effect, Option } from 'effect';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { bold, dim, gray } from 'src/ui/colors';
 import {
   type CommandVisibility,
@@ -79,7 +80,7 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
       { name: '--dry-run', description: 'Preview execute() calls without running remote actions' },
     ],
   }),
-  experimental('listen', {
+  experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, {
     name: 'listen',
     description:
       'Create a temporary subscription for consumer-project events and persist each payload into the session artifact folder.',
@@ -207,7 +208,7 @@ type SubcommandHelp = {
   seeAlso?: ReadonlyArray<string>;
 };
 
-const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
+const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHelp>> = {
   search: {
     usage: 'composio search <query...> [--toolkits text] [--limit integer] [--human]',
     description:
@@ -314,7 +315,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio artifacts cwd                  Print the current session artifact directory',
     ],
   },
-  listen: {
+  listen: experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, {
     usage:
       'composio listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
     description:
@@ -354,7 +355,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio triggers info <slug>            Inspect trigger type details before listening',
       'composio link <toolkit>                  Connect the required account before creating the trigger',
     ],
-  },
+  }),
   link: {
     usage: 'composio link [<toolkit>] [--no-wait]',
     description:
@@ -936,6 +937,28 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   },
 };
 
+const getVisibleSubcommandHelp = (
+  cmd: string,
+  visibility: CommandVisibility
+): Option.Option<SubcommandHelp> => {
+  const entry = SUBCOMMAND_HELP[cmd];
+  if (!entry) {
+    return Option.none();
+  }
+
+  if (!('value' in entry)) {
+    return Option.some(entry);
+  }
+
+  if (!entry.tags || entry.tags.length === 0) {
+    return Option.some(entry.value);
+  }
+
+  return entry.tags.every(tag => visibility.isExperimentalFeatureEnabled(tag))
+    ? Option.some(entry.value)
+    : Option.none();
+};
+
 function renderSubcommandHelp(cmd: SubcommandHelp): string {
   const lines: string[] = [
     '',
@@ -1005,7 +1028,7 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
  */
 export function matchSubcommandHelp(
   argv: ReadonlyArray<string>,
-  _visibility: CommandVisibility
+  visibility: CommandVisibility
 ): string | undefined {
   const args = argv.slice(2);
   if (args.length < 2) return undefined;
@@ -1016,18 +1039,18 @@ export function matchSubcommandHelp(
   // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
   for (let len = cmdParts.length; len > 0; len--) {
     const key = cmdParts.slice(0, len).join(' ');
-    if (key in SUBCOMMAND_HELP) return key;
+    if (Option.isSome(getVisibleSubcommandHelp(key, visibility))) return key;
   }
   return undefined;
 }
 
 export function printSubcommandHelp(
   cmd: string,
-  _visibility: CommandVisibility
+  visibility: CommandVisibility
 ): Effect.Effect<void> {
-  const help = SUBCOMMAND_HELP[cmd];
-  if (!help) return Console.log(`Unknown command: ${cmd}`);
-  return Console.log(renderSubcommandHelp(help));
+  const help = getVisibleSubcommandHelp(cmd, visibility);
+  if (Option.isNone(help)) return Console.log(`Unknown command: ${cmd}`);
+  return Console.log(renderSubcommandHelp(help.value));
 }
 
 /**
@@ -1036,13 +1059,13 @@ export function printSubcommandHelp(
  */
 export function matchCommandFromArgv(
   argv: ReadonlyArray<string>,
-  _visibility: CommandVisibility
+  visibility: CommandVisibility
 ): string | undefined {
   const args = argv.slice(2).filter(a => a !== '--help' && a !== '-h' && !a.startsWith('--'));
   // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
   for (let len = Math.min(args.length, 3); len > 0; len--) {
     const key = args.slice(0, len).join(' ');
-    if (key in SUBCOMMAND_HELP) return key;
+    if (Option.isSome(getVisibleSubcommandHelp(key, visibility))) return key;
   }
   return undefined;
 }
@@ -1050,13 +1073,11 @@ export function matchCommandFromArgv(
 /**
  * Get rendered help text for a command, or undefined if not found.
  */
-export function getCommandHelpText(
-  cmd: string,
-  _visibility: CommandVisibility
-): string | undefined {
-  const help = SUBCOMMAND_HELP[cmd];
-  if (!help) return undefined;
-  return renderSubcommandHelp(help);
+export function getCommandHelpText(cmd: string, visibility: CommandVisibility): string | undefined {
+  return Option.match(getVisibleSubcommandHelp(cmd, visibility), {
+    onNone: () => undefined,
+    onSome: help => renderSubcommandHelp(help),
+  });
 }
 
 // ── Main help output ───────────────────────────────────────────────────

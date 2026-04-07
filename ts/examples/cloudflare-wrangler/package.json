@@ -1,7 +1,8 @@
 {
-	"name": "cloudflare-wrangler-deploy",
+	"name": "cloudflare-wrangler-example",
 	"version": "0.0.0",
 	"private": true,
+	"packageManager": "pnpm@10.28.0",
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",

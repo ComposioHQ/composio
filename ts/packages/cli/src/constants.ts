@@ -85,3 +85,7 @@ export const GITHUB_REPO = {
   REPO: 'composio',
   API_BASE_URL: 'https://api.github.com',
 } as const;
+
+export const CLI_EXPERIMENTAL_FEATURES = {
+  LISTEN: 'listen',
+} as const;
