@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { CLI_EXPERIMENTAL_FEATURES } from '../../src/constants';
+import { CLI_EXPERIMENTAL_FEATURES } from '../../src/experimental-features';
 import { composioDevReference } from './references/composio-dev';
 import { powerUserExamplesReference } from './references/power-user-examples';
 import { troubleshootingReference } from './references/troubleshooting';
@@ -72,6 +72,12 @@ const commands: SkillCommand[] = [
         name: '`--parallel`',
         description: 'Execute multiple independent tool calls in the same invocation.',
       },
+      {
+        name: '`--account`',
+        description:
+          'Select which connected account to use by alias, word_id, or account id when multiple accounts exist for the same toolkit.',
+        features: [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT],
+      },
     ],
     examples: [
       {
@@ -125,6 +131,14 @@ const commands: SkillCommand[] = [
         code: 'composio link gmail\ncomposio link googlecalendar --no-browser',
       },
     ],
+    flags: [
+      {
+        name: '`--alias`',
+        description:
+          'Assign an alias to the connected account. Required when creating an additional account for the same toolkit.',
+        features: [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT],
+      },
+    ],
     notes: ['Retry the original `execute` command after linking succeeds.'],
   },
   {
@@ -151,6 +165,11 @@ const commands: SkillCommand[] = [
       {
         name: '`--timeout` and `--max-events`',
         description: 'Stop long-running listeners cleanly.',
+      },
+      {
+        name: '`--account`',
+        description: 'Select which connected account to use by alias, word_id, or account id.',
+        features: [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT],
       },
     ],
     notes: [

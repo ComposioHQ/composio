@@ -1,4 +1,4 @@
-import { CLI_EXPERIMENTAL_FEATURES, type CliReleaseChannel } from '../../src/constants';
+import { CLI_EXPERIMENTAL_FEATURES, type CliReleaseChannel } from '../../src/experimental-features';
 
 export type SkillReleaseChannel = CliReleaseChannel;
 
@@ -51,6 +51,7 @@ export const resolveSkillBuildContext = (channel: SkillReleaseChannel): SkillBui
   channel,
   experimentalFeatures: {
     [CLI_EXPERIMENTAL_FEATURES.LISTEN]: channel === 'beta',
+    [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]: channel === 'beta',
   },
 });
 

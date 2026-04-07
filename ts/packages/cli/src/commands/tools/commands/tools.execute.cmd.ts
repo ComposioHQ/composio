@@ -60,6 +60,8 @@ import {
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -1009,12 +1011,18 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
+    const cliConfig = yield* ComposioCliUserConfig;
+    const accountSelector = cliConfig.isExperimentalFeatureEnabled(
+      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
+    )
+      ? params.account
+      : Option.none<string>();
     const toolkitSlug = toolkitFromToolSlug(params.slug);
     const selectedConnectedAccountId = yield* resolveExplicitConnectedAccount({
       client,
       toolkitSlug,
       userId: resolvedUserId.value,
-      selector: params.account,
+      selector: accountSelector,
     });
     const args = Option.isSome(params.file)
       ? yield* getOrFetchToolInputDefinition(params.slug, {
