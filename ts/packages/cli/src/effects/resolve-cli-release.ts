@@ -1,8 +1,7 @@
 import { Effect } from 'effect';
 import { HttpClient } from '@effect/platform';
 import { semverComparator } from 'src/effects/compare-semver';
-
-export type CliReleaseChannel = 'beta' | 'stable';
+import type { CliReleaseChannel } from 'src/constants';
 
 export type GitHubReleaseAsset = {
   name: string;

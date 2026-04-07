@@ -89,3 +89,7 @@ export const GITHUB_REPO = {
 export const CLI_EXPERIMENTAL_FEATURES = {
   LISTEN: 'listen',
 } as const;
+
+export const CLI_RELEASE_CHANNELS = ['stable', 'beta'] as const;
+
+export type CliReleaseChannel = (typeof CLI_RELEASE_CHANNELS)[number];
