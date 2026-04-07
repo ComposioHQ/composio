@@ -2,6 +2,7 @@ import { FileSystem } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Context, Effect, Layer, Option } from 'effect';
 import type { ParseError } from 'effect/ParseResult';
+import os from 'node:os';
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getVersion } from 'src/effects/version';
@@ -23,6 +24,12 @@ export type CliUserConfigResolved = {
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
   /-[0-9A-Za-z.-]+$/.test(version) ? 'beta' : 'stable';
+
+export const resolveCliConfigDirectorySync = (): string =>
+  process.env.COMPOSIO_CACHE_DIR?.trim() || path.join(os.homedir(), constants.USER_COMPOSIO_DIR);
+
+export const resolveCliConfigPathSync = (): string =>
+  path.join(resolveCliConfigDirectorySync(), constants.CLI_CONFIG_FILE_NAME);
 
 export class ComposioCliUserConfig extends Context.Tag('ComposioCliUserConfig')<
   ComposioCliUserConfig,
