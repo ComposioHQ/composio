@@ -20,10 +20,12 @@ const extractJsonObject = (output: string): Record<string, unknown> | null => {
 const testConnectedAccounts: ConnectedAccountItem[] = [
   {
     id: 'con_test_link',
+    alias: 'default',
+    word_id: 'castle',
     status: 'ACTIVE',
     status_reason: null,
     is_disabled: false,
-    user_id: 'default',
+    user_id: 'consumer-user-org_test',
     toolkit: { slug: 'gmail' },
     auth_config: {
       id: 'ac_gmail_oauth',
@@ -98,6 +100,27 @@ describe('CLI: composio dev connected-accounts link', () => {
         expect(parsed?.connected_account_id).toBe('con_test_link');
         expect(parsed?.toolkit).toBe('gmail');
         expect(vi.mocked(open)).toHaveBeenCalledOnce();
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData,
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] --list [Then] it shows existing accounts without opening a new link', it => {
+    it.scoped('lists alias and word_id for existing accounts', () =>
+      Effect.gen(function* () {
+        yield* cli(['link', 'gmail', '--list']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('default');
+        expect(output).toContain('castle');
+        expect(output).toContain('"toolkit": "gmail"');
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
   });

@@ -2,6 +2,7 @@ import { Args, Command, Options } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
 import { Deferred, Effect, Option, Runtime } from 'effect';
 import path from 'node:path';
+import type { Composio } from '@composio/client';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -15,6 +16,10 @@ import {
 } from 'src/services/cli-session-artifacts';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import {
+  formatConnectedAccountChoices,
+  resolveConnectedAccountSelection,
+} from 'src/services/connected-account-selection';
 import { parseJsonIsh } from 'src/utils/parse-json-ish';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { matchesTriggerListenFilters } from './triggers/filter';
@@ -43,6 +48,12 @@ const timeout = Options.text('timeout').pipe(
 const stream = Options.text('stream').pipe(
   Options.withDescription(
     'Also stream each event payload inline. Pass an optional jq-like path such as ".thread.id" or ".data[0].id".'
+  ),
+  Options.optional
+);
+const account = Options.text('account').pipe(
+  Options.withDescription(
+    'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
   ),
   Options.optional
 );
@@ -78,23 +89,6 @@ const parseCreateParams = (raw: string) =>
 
     return parsed as Record<string, unknown>;
   });
-
-const selectConnectedAccountId = (
-  items: ReadonlyArray<{
-    id: string;
-    updated_at: string;
-    is_disabled: boolean;
-  }>
-): string | undefined => {
-  const active = items.filter(item => !item.is_disabled);
-  if (active.length === 0) {
-    return undefined;
-  }
-
-  return [...active]
-    .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))
-    .at(0)?.id;
-};
 
 const emitStreamLine = (line: string, ui: TerminalUI) =>
   Effect.gen(function* () {
@@ -224,10 +218,55 @@ const parseTimeoutMs = (value: string): number => {
   return Math.round(amount * unitMs);
 };
 
+const resolveListenConnectedAccountId = (params: {
+  readonly client: Composio;
+  readonly toolkitSlug: string;
+  readonly consumerUserId: string;
+  readonly account: Option.Option<string>;
+}) =>
+  Effect.gen(function* () {
+    const connectedAccounts = yield* Effect.tryPromise({
+      try: () =>
+        params.client.connectedAccounts.list({
+          toolkit_slugs: [params.toolkitSlug],
+          user_ids: [params.consumerUserId],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        }),
+      catch: error =>
+        new Error(
+          `Failed to list connected accounts for "${params.toolkitSlug}": ${String(error)}`
+        ),
+    });
+
+    const selectedAccount = resolveConnectedAccountSelection(
+      connectedAccounts.items as Parameters<typeof resolveConnectedAccountSelection>[0],
+      Option.getOrUndefined(params.account)
+    );
+    if (selectedAccount?.id) {
+      return selectedAccount.id;
+    }
+
+    const choices = formatConnectedAccountChoices(
+      connectedAccounts.items as Parameters<typeof formatConnectedAccountChoices>[0]
+    );
+    const suffix =
+      Option.isSome(params.account) && choices.length > 0
+        ? ` Available accounts: ${choices.join(', ')}.`
+        : '';
+    return yield* Effect.fail(
+      new Error(
+        Option.isSome(params.account)
+          ? `No connected account matched "${params.account.value}" for toolkit "${params.toolkitSlug}" and consumer user "${params.consumerUserId}".${suffix}`
+          : `No active connected account found for toolkit "${params.toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${params.toolkitSlug}\` first.`
+      )
+    );
+  });
+
 export const listenCmd = Command.make(
   'listen',
-  { slug, params, maxEvents, timeout, stream, debug },
-  ({ slug, params, maxEvents, timeout, stream, debug }) =>
+  { slug, params, maxEvents, timeout, stream, account, debug },
+  ({ slug, params, maxEvents, timeout, stream, account, debug }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
@@ -265,26 +304,12 @@ export const listenCmd = Command.make(
         );
       }
 
-      const connectedAccounts = yield* Effect.tryPromise({
-        try: () =>
-          client.connectedAccounts.list({
-            toolkit_slugs: [toolkitSlug],
-            user_ids: resolvedProject.consumerUserId ? [resolvedProject.consumerUserId] : undefined,
-            statuses: ['ACTIVE'],
-            limit: 100,
-          }),
-        catch: error =>
-          new Error(`Failed to list connected accounts for "${toolkitSlug}": ${String(error)}`),
+      const resolvedConnectedAccountId = yield* resolveListenConnectedAccountId({
+        client,
+        toolkitSlug,
+        consumerUserId: resolvedProject.consumerUserId,
+        account,
       });
-      const resolvedConnectedAccountId = selectConnectedAccountId(connectedAccounts.items);
-
-      if (!resolvedConnectedAccountId) {
-        return yield* Effect.fail(
-          new Error(
-            `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${resolvedProject.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`
-          )
-        );
-      }
 
       const createParams = {
         ...createParamsInput,

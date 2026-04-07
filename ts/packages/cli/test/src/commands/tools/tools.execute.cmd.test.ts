@@ -101,6 +101,172 @@ describe('CLI: composio execute', () => {
       connectedAccountsData: {
         items: [
           {
+            id: 'con_gmail_default',
+            alias: 'default',
+            word_id: 'castle',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'gmail' },
+            auth_config: {
+              id: 'ac_gmail_oauth',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+          {
+            id: 'con_gmail_secondary',
+            alias: 'work',
+            word_id: 'forest',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'gmail' },
+            auth_config: {
+              id: 'ac_gmail_oauth',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-01-02T00:00:00.000Z',
+            updated_at: '2026-01-02T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+      toolRouter: {
+        create: async params => {
+          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+          return {
+            session_id: 'trs_gmail_default_session',
+            config: { user_id: params.user_id },
+            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+          };
+        },
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, arguments: params.arguments },
+          error: null,
+          log_id: 'log_gmail_default',
+        }),
+      },
+    })
+  )('[Given] default alias exists [Then] execute pins the default connected account', it => {
+    it.scoped('passes connected_accounts with the default alias account', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+
+        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
+          gmail: 'con_gmail_default',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      connectedAccountsData: {
+        items: [
+          {
+            id: 'con_gmail_default',
+            alias: 'default',
+            word_id: 'castle',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'gmail' },
+            auth_config: {
+              id: 'ac_gmail_oauth',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+          {
+            id: 'con_gmail_secondary',
+            alias: 'work',
+            word_id: 'forest',
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'consumer-user-org_test',
+            toolkit: { slug: 'gmail' },
+            auth_config: {
+              id: 'ac_gmail_oauth',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-01-02T00:00:00.000Z',
+            updated_at: '2026-01-02T00:00:00.000Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+      toolRouter: {
+        create: async params => {
+          recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
+          return {
+            session_id: 'trs_gmail_explicit_session',
+            config: { user_id: params.user_id },
+            mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+            tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+          };
+        },
+        execute: async (_sessionId, params) => ({
+          data: { tool_slug: params.tool_slug, arguments: params.arguments },
+          error: null,
+          log_id: 'log_gmail_explicit',
+        }),
+      },
+    })
+  )('[Given] --account selector [Then] execute pins the matched connected account', it => {
+    it.scoped('matches by alias, word_id, or id', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--account',
+          'forest',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+
+        expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
+          gmail: 'con_gmail_secondary',
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      connectedAccountsData: {
+        items: [
+          {
             id: 'con_posthog_active',
             status: 'ACTIVE',
             status_reason: null,
@@ -157,7 +323,9 @@ describe('CLI: composio execute', () => {
           expect(recordedSessionCreateParams[0]?.auth_configs).toEqual({
             posthog: 'ac_posthog_custom',
           });
-          expect(recordedSessionCreateParams[0]?.connected_accounts).toBeUndefined();
+          expect(recordedSessionCreateParams[0]?.connected_accounts).toEqual({
+            posthog: 'con_posthog_active',
+          });
         })
       );
     }
