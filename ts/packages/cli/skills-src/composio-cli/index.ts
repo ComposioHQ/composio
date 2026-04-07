@@ -1,39 +1,47 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-
-export type SkillReleaseChannel = 'beta' | 'stable';
+import { CLI_EXPERIMENTAL_FEATURES } from '../../src/constants';
+import { composioDevReference } from './references/composio-dev';
+import { powerUserExamplesReference } from './references/power-user-examples';
+import { troubleshootingReference } from './references/troubleshooting';
+import {
+  renderReferenceDocument,
+  resolveSkillBuildContext,
+  validateReferenceDocument,
+  type SkillBuildContext,
+  type SkillFeatureFlag,
+  type SkillReleaseChannel,
+} from './reference-schema';
 
 type SkillFlag = {
   description: string;
   name: string;
-  channels?: SkillReleaseChannel[];
+  features?: SkillFeatureFlag[];
 };
 
 type SkillExample = {
   code: string;
   description?: string;
-  channels?: SkillReleaseChannel[];
+  features?: SkillFeatureFlag[];
 };
 
 type SkillCommand = {
   id: string;
   title: string;
   summary?: string;
-  channels?: SkillReleaseChannel[];
+  features?: SkillFeatureFlag[];
   intro?: string[];
   flags?: SkillFlag[];
   examples?: SkillExample[];
   notes?: string[];
   extraBody?: Array<{
-    channels?: SkillReleaseChannel[];
+    features?: SkillFeatureFlag[];
     markdown: string;
   }>;
 };
 
-const isEnabledForChannel = (
-  channel: SkillReleaseChannel,
-  entry?: { channels?: SkillReleaseChannel[] }
-) => !entry?.channels || entry.channels.includes(channel);
+const isEnabledForBuild = (build: SkillBuildContext, entry?: { features?: SkillFeatureFlag[] }) =>
+  !entry?.features || entry.features.every(feature => build.experimentalFeatures[feature]);
 
 const sourceAssetsDir = path.resolve(import.meta.dirname, './assets');
 
@@ -124,6 +132,7 @@ const commands: SkillCommand[] = [
   {
     id: 'listen',
     title: '`listen` - Subscribe To Trigger Events',
+    features: [CLI_EXPERIMENTAL_FEATURES.LISTEN],
     summary:
       'Use `listen` for temporary trigger subscriptions in consumer projects, especially when background agents should consume new event payloads from artifact files.',
     examples: [
@@ -180,24 +189,11 @@ const commands: SkillCommand[] = [
       },
       {
         description: 'Feed tool output into an LLM and get structured JSON back',
-        channels: ['beta'],
         code: 'composio run --logs-off \'\n  const emails = await execute("GMAIL_FETCH_EMAILS", { max_results: 5 });\n  const brief = await experimental_subAgent(\n    `Summarize these emails and count them.\\n\\n${emails.prompt()}`,\n    { schema: z.object({ summary: z.string(), count: z.number() }) }\n  );\n  console.log(brief.structuredOutput);\n\'',
       },
     ],
     notes: [
       'Use top-level `execute --parallel` instead when the user only needs a few independent tool calls and does not need script logic.',
-    ],
-    extraBody: [
-      {
-        channels: ['beta'],
-        markdown:
-          '### Beta Path\n\nBeta releases can expose command pathways that are still being QA’d. Treat `experimental_subAgent()` and similar helper flows as prerelease surfaces until they are promoted to stable.',
-      },
-      {
-        channels: ['stable'],
-        markdown:
-          '### Stable Path\n\nStable releases should stick to fully-supported `execute()`, `search()`, and `proxy()` flows unless the user explicitly asks for experimental guidance.',
-      },
     ],
   },
   {
@@ -211,20 +207,29 @@ const commands: SkillCommand[] = [
   },
 ];
 
-const defaultWorkflow = (channel: SkillReleaseChannel) => {
-  const runNote =
-    channel === 'beta'
-      ? ' For multi-step workflows, beta builds may also suggest prerelease `run` helper pathways when those are explicitly enabled.'
-      : '';
-
-  return [
+const defaultWorkflow = (build: SkillBuildContext) => {
+  const lines = [
     '1. Start with `composio execute <slug>` whenever the slug is known.',
     '2. If several independent tool calls must happen at once, use `composio execute -p/--parallel` with repeated `<slug> -d <json>` groups.',
     '3. If `execute` says the toolkit is not connected, run `composio link <toolkit>` and retry.',
     '4. If the arguments are unclear, run `composio execute <slug> --get-schema` or `--dry-run` before guessing.',
-    `5. Reach for \`composio search "<task>"\` only when the slug is unknown. \`search\` accepts one or more queries, so batch related discovery work into a single command when useful.${runNote}`,
+    '5. Reach for `composio search "<task>"` only when the slug is unknown. `search` accepts one or more queries, so batch related discovery work into a single command when useful.',
   ];
+
+  if (build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.LISTEN]) {
+    lines.push(
+      '6. If the CLI build enables the experimental `listen` feature, use it for temporary consumer-project trigger subscriptions.'
+    );
+  }
+
+  return lines;
 };
+
+const referenceDocuments = [
+  composioDevReference,
+  powerUserExamplesReference,
+  troubleshootingReference,
+] as const;
 
 const renderExample = (example: SkillExample) => {
   const lines = [];
@@ -237,7 +242,7 @@ const renderExample = (example: SkillExample) => {
   return lines.join('\n');
 };
 
-const renderCommand = (channel: SkillReleaseChannel, command: SkillCommand) => {
+const renderCommand = (build: SkillBuildContext, command: SkillCommand) => {
   const lines: string[] = [`## ${command.title}`];
 
   if (command.summary) {
@@ -248,16 +253,14 @@ const renderCommand = (channel: SkillReleaseChannel, command: SkillCommand) => {
     lines.push('', intro);
   }
 
-  const examples = (command.examples ?? []).filter(example =>
-    isEnabledForChannel(channel, example)
-  );
+  const examples = (command.examples ?? []).filter(example => isEnabledForBuild(build, example));
   if (examples.length > 0) {
     for (const example of examples) {
       lines.push('', renderExample(example));
     }
   }
 
-  const flags = (command.flags ?? []).filter(flag => isEnabledForChannel(channel, flag));
+  const flags = (command.flags ?? []).filter(flag => isEnabledForBuild(build, flag));
   if (flags.length > 0) {
     lines.push('', 'Key flags:');
     for (const flag of flags) {
@@ -269,9 +272,7 @@ const renderCommand = (channel: SkillReleaseChannel, command: SkillCommand) => {
     lines.push('', `- ${note}`);
   }
 
-  for (const extra of (command.extraBody ?? []).filter(block =>
-    isEnabledForChannel(channel, block)
-  )) {
+  for (const extra of (command.extraBody ?? []).filter(block => isEnabledForBuild(build, block))) {
     lines.push('', extra.markdown);
   }
 
@@ -279,6 +280,7 @@ const renderCommand = (channel: SkillReleaseChannel, command: SkillCommand) => {
 };
 
 export const renderComposioCliSkill = (channel: SkillReleaseChannel) => {
+  const build = resolveSkillBuildContext(channel);
   const lines: string[] = [
     '---',
     `name: ${frontmatter.name}`,
@@ -292,12 +294,12 @@ export const renderComposioCliSkill = (channel: SkillReleaseChannel) => {
     '',
     '## Default Workflow',
     '',
-    ...defaultWorkflow(channel),
+    ...defaultWorkflow(build),
   ];
 
-  const enabledCommands = commands.filter(command => isEnabledForChannel(channel, command));
+  const enabledCommands = commands.filter(command => isEnabledForBuild(build, command));
   for (const command of enabledCommands) {
-    lines.push('', renderCommand(channel, command));
+    lines.push('', renderCommand(build, command));
   }
 
   lines.push(
@@ -311,6 +313,18 @@ export const renderComposioCliSkill = (channel: SkillReleaseChannel) => {
 
   return lines.join('\n') + '\n';
 };
+
+export const renderReferenceFiles = (channel: SkillReleaseChannel) => {
+  const build = resolveSkillBuildContext(channel);
+  return Object.fromEntries(
+    referenceDocuments.map(document => [
+      `${document.slug}.md`,
+      renderReferenceDocument(document, build),
+    ])
+  );
+};
+
+export const validateSkillSources = () => referenceDocuments.flatMap(validateReferenceDocument);
 
 const copyDir = (sourceDir: string, targetDir: string) => {
   fs.mkdirSync(targetDir, { recursive: true });
@@ -340,11 +354,15 @@ export const buildComposioCliSkill = ({
 
   fs.writeFileSync(path.join(skillOutputDir, 'SKILL.md'), renderComposioCliSkill(channel), 'utf8');
 
-  for (const child of ['agents', 'references']) {
-    const sourcePath = path.join(sourceAssetsDir, child);
-    if (fs.existsSync(sourcePath)) {
-      copyDir(sourcePath, path.join(skillOutputDir, child));
-    }
+  const agentsSourceDir = path.join(sourceAssetsDir, 'agents');
+  if (fs.existsSync(agentsSourceDir)) {
+    copyDir(agentsSourceDir, path.join(skillOutputDir, 'agents'));
+  }
+
+  const referencesOutputDir = path.join(skillOutputDir, 'references');
+  fs.mkdirSync(referencesOutputDir, { recursive: true });
+  for (const [fileName, markdown] of Object.entries(renderReferenceFiles(channel))) {
+    fs.writeFileSync(path.join(referencesOutputDir, fileName), markdown, 'utf8');
   }
 
   return skillOutputDir;

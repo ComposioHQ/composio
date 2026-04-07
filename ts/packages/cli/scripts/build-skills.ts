@@ -14,7 +14,7 @@ if (channelArg !== 'stable' && channelArg !== 'beta') {
   throw new Error(`Invalid --channel value "${channelArg}". Expected "stable" or "beta".`);
 }
 
-const outputDirArg = readArg('--output-dir') ?? path.resolve(process.cwd(), 'skills');
+const outputDirArg = readArg('--output-dir') ?? path.resolve(process.cwd(), 'dist/skills');
 const outputDir = path.resolve(process.cwd(), outputDirArg);
 const channel = channelArg as SkillReleaseChannel;
 

@@ -1,11 +1,20 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { buildComposioCliSkill, renderComposioCliSkill } from '../skills-src/composio-cli/index';
+import {
+  buildComposioCliSkill,
+  renderComposioCliSkill,
+  validateSkillSources,
+} from '../skills-src/composio-cli/index';
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-skill-validate-'));
 
 try {
+  const sourceErrors = validateSkillSources();
+  if (sourceErrors.length > 0) {
+    throw new Error(sourceErrors.join('\n'));
+  }
+
   const stableDir = buildComposioCliSkill({
     channel: 'stable',
     outputRoot: path.join(tempRoot, 'stable'),
@@ -26,12 +35,12 @@ try {
     throw new Error('Beta skill output is missing its release channel marker.');
   }
 
-  if (stableSkill.includes('### Beta Path')) {
-    throw new Error('Stable skill output unexpectedly includes beta-only content.');
+  if (stableSkill.includes('## `listen` - Subscribe To Trigger Events')) {
+    throw new Error('Stable skill output unexpectedly includes beta-only listen guidance.');
   }
 
-  if (!betaSkill.includes('### Beta Path')) {
-    throw new Error('Beta skill output is missing beta-only content.');
+  if (!betaSkill.includes('## `listen` - Subscribe To Trigger Events')) {
+    throw new Error('Beta skill output is missing beta-only listen guidance.');
   }
 
   if (stableSkill !== renderComposioCliSkill('stable')) {
