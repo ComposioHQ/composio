@@ -10,5 +10,6 @@ cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/tools-direct/toolkit-
 # Test fixture dummy token for verifying Authorization header forwarding (not a real secret)
 694231f9ffcdb23ca5baf67509101355764d81dc:ts/packages/cli/test/src/services/update-check.test.ts:generic-api-key:296
 
-# OpenAPI spec example value — not a real Stripe key, just a placeholder in the API schema
+# OpenAPI spec example values in .gitleaksignore and generated spec files (placeholder, not real keys)
+918457becffa5874aefa85c5c6d66d9a0f10bc04:.gitleaksignore:stripe-access-token:13
 bf107b3f01c0301543d1e473daae5cd9be0c70e8:docs/public/openapi-v3.json:stripe-access-token:792
