@@ -4,7 +4,7 @@ import { createSearchAPI } from 'fumadocs-core/search/server';
 import { loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
-import { openapi } from '@/lib/openapi';
+import { openapiV3, openapiV31 } from '@/lib/openapi';
 import { getAllToolkitsSync } from '@/lib/toolkit-data';
 
 // Create loaders directly here to avoid the problematic lib/source.ts import
@@ -55,17 +55,24 @@ const changelogIndexes = changelog.map((entry) => ({
 // Use dynamic indexes to support async OpenAPI page loading
 export const { GET } = createSearchAPI('advanced', {
   indexes: async () => {
-    // Load OpenAPI pages and build full reference source
-    const openapiPages = await openapiSource(openapi, {
-      groupBy: 'tag',
-      baseDir: 'api-reference',
-    });
+    // Load OpenAPI pages for both v3 and v3.1 specs
+    const [openapiV3Pages, openapiV31Pages] = await Promise.all([
+      openapiSource(openapiV3, {
+        groupBy: 'tag',
+        baseDir: 'api-reference/v3',
+      }),
+      openapiSource(openapiV31, {
+        groupBy: 'tag',
+        baseDir: 'api-reference/v3.1',
+      }),
+    ]);
 
     const fullReferenceSource = loader({
       baseUrl: '/reference',
       source: multiple({
         mdx: reference.toFumadocsSource(),
-        openapi: openapiPages,
+        'openapi-v3': openapiV3Pages,
+        'openapi-v31': openapiV31Pages,
       }),
       plugins: [lucideIconsPlugin(), openapiPlugin()],
     });

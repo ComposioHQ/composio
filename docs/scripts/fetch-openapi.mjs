@@ -66,9 +66,6 @@ async function fetchAndFilterSpec() {
     }
   }
 
-  // Keep all API versions (v3 and v3.1) so both appear in the docs.
-  // Users need to see both versions to understand the differences and migrate at their own pace.
-
   spec.paths = filteredPaths;
 
   // Filter tags list
@@ -242,12 +239,47 @@ async function fetchAndFilterSpec() {
     console.log(`Fixed ${nullableFixCount} schemas with nullable but no type`);
   }
 
-  // Write to public directory for fumadocs to fetch
+  // Split spec into v3 and v3.1 versions for separate doc sections
   const __dirname = dirname(fileURLToPath(import.meta.url));
+
+  const v3Paths = {};
+  const v31Paths = {};
+  for (const [path, methods] of Object.entries(spec.paths)) {
+    if (path.startsWith('/api/v3.1/')) {
+      v31Paths[path] = methods;
+    } else {
+      v3Paths[path] = methods;
+    }
+  }
+
+  // Collect tags used by each version
+  const v3Tags = new Set();
+  const v31Tags = new Set();
+  for (const methods of Object.values(v3Paths)) {
+    for (const op of Object.values(methods)) {
+      for (const tag of (op.tags || [])) v3Tags.add(tag);
+    }
+  }
+  for (const methods of Object.values(v31Paths)) {
+    for (const op of Object.values(methods)) {
+      for (const tag of (op.tags || [])) v31Tags.add(tag);
+    }
+  }
+
+  const v3Spec = { ...spec, paths: v3Paths, tags: (spec.tags || []).filter(t => v3Tags.has(t.name)) };
+  const v31Spec = { ...spec, paths: v31Paths, tags: (spec.tags || []).filter(t => v31Tags.has(t.name)) };
+
+  // Write combined spec (for backwards compatibility) and versioned specs
   const outputPath = join(__dirname, '../public/openapi.json');
   writeFileSync(outputPath, JSON.stringify(spec, null, 2));
 
-  console.log(`Written to ${outputPath}`);
+  const v3OutputPath = join(__dirname, '../public/openapi-v3.json');
+  writeFileSync(v3OutputPath, JSON.stringify(v3Spec, null, 2));
+  console.log(`Written v3 spec to ${v3OutputPath} (${Object.keys(v3Paths).length} paths)`);
+
+  const v31OutputPath = join(__dirname, '../public/openapi-v3.1.json');
+  writeFileSync(v31OutputPath, JSON.stringify(v31Spec, null, 2));
+  console.log(`Written v3.1 spec to ${v31OutputPath} (${Object.keys(v31Paths).length} paths)`);
 }
 
 fetchAndFilterSpec().catch(console.error);

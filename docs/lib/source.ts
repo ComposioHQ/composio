@@ -1,7 +1,7 @@
 import { docs, reference, cookbooks, toolkits, changelog } from 'fumadocs-mdx:collections/server';
 import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
-import { openapi } from './openapi';
+import { openapiV3, openapiV31 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
 
@@ -11,8 +11,14 @@ import { getGuardrails } from './llm-guardrails';
  */
 const defaultOpenTransformer = {
   folder(node: { name: string; defaultOpen?: boolean }, folderPath: string) {
-    // Set defaultOpen for API Reference and SDK Reference folders
-    if (folderPath === 'api-reference' || folderPath === 'sdk-reference' || folderPath === 'meta-tools') {
+    // Set defaultOpen for API Reference version folders, SDK Reference, and Meta Tools
+    if (
+      folderPath === 'api-reference' ||
+      folderPath === 'api-reference/v3' ||
+      folderPath === 'api-reference/v3.1' ||
+      folderPath === 'sdk-reference' ||
+      folderPath === 'meta-tools'
+    ) {
       return { ...node, defaultOpen: true };
     }
     return node;
@@ -31,26 +37,33 @@ export const source = loader({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _referenceSource: any = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _openapiPagesPromise: Promise<any> | null = null;
+let _openapiPagesPromise: Promise<{ v3: any; v31: any }> | null = null;
 
 async function getOpenapiPages() {
   if (!_openapiPagesPromise) {
-    _openapiPagesPromise = openapiSource(openapi, {
-      groupBy: 'tag',
-      baseDir: 'api-reference',
-    });
+    _openapiPagesPromise = Promise.all([
+      openapiSource(openapiV3, {
+        groupBy: 'tag',
+        baseDir: 'api-reference/v3',
+      }),
+      openapiSource(openapiV31, {
+        groupBy: 'tag',
+        baseDir: 'api-reference/v3.1',
+      }),
+    ]).then(([v3, v31]) => ({ v3, v31 }));
   }
   return _openapiPagesPromise;
 }
 
 export async function getReferenceSource() {
   if (!_referenceSource) {
-    const openapiPages = await getOpenapiPages();
+    const { v3, v31 } = await getOpenapiPages();
     _referenceSource = loader({
       baseUrl: '/reference',
       source: multiple({
         mdx: reference.toFumadocsSource(),
-        openapi: openapiPages,
+        'openapi-v3': v3,
+        'openapi-v31': v31,
       }),
       plugins: [lucideIconsPlugin(), openapiPlugin()],
       pageTree: {

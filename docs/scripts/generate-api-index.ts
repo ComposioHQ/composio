@@ -1,8 +1,6 @@
 /**
- * Generates simple markdown index pages for each OpenAPI tag.
- * These pages provide:
- * - Tag description from OpenAPI spec
- * - Links to all endpoints in that tag
+ * Generates simple markdown index pages for each OpenAPI tag, split by API version.
+ * Creates separate sections for v3 and v3.1 API endpoints.
  *
  * Run: bun scripts/generate-api-index.ts
  */
@@ -22,9 +20,7 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-function generateIndexPages() {
-  // Read OpenAPI spec
-  const specPath = join(process.cwd(), 'public/openapi.json');
+function generateIndexPagesForSpec(specPath: string, version: string, baseOutputDir: string) {
   const spec: OpenAPISpec = JSON.parse(readFileSync(specPath, 'utf-8'));
 
   // Build tag -> operations map
@@ -36,8 +32,6 @@ function generateIndexPages() {
     tagDescriptions[tag.name] = tag.description || '';
     tagOperations[tag.name] = [];
   }
-
-  // Keep all API versions (v3 and v3.1) so both appear in the docs
 
   // Group operations by tag
   for (const [path, methods] of Object.entries(spec.paths)) {
@@ -61,7 +55,7 @@ function generateIndexPages() {
   }
 
   // Generate MDX files for each tag as index.mdx inside folders
-  const outputDir = join(process.cwd(), 'content/reference/api-reference');
+  const outputDir = join(baseOutputDir, version);
 
   for (const [tagName, operations] of Object.entries(tagOperations)) {
     if (operations.length === 0) continue;
@@ -71,7 +65,7 @@ function generateIndexPages() {
 
     // Generate endpoint table
     const tableRows = operations.map(op => {
-      const url = `/reference/api-reference/${tagSlug}/${op.operationId}`;
+      const url = `/reference/api-reference/${version}/${tagSlug}/${op.operationId}`;
 
       return `| \`${op.method} ${op.path}\` | [${op.summary}](${url}) |`;
     }).join('\n');
@@ -97,8 +91,21 @@ ${tableRows}
     mkdirSync(folderPath, { recursive: true });
     const filePath = join(folderPath, 'index.mdx');
     writeFileSync(filePath, content);
-    console.log(`Generated: ${tagSlug}/index.mdx`);
+    console.log(`Generated: ${version}/${tagSlug}/index.mdx`);
   }
+}
+
+function generateIndexPages() {
+  const publicDir = join(process.cwd(), 'public');
+  const outputDir = join(process.cwd(), 'content/reference/api-reference');
+
+  // Generate for v3
+  const v3SpecPath = join(publicDir, 'openapi-v3.json');
+  generateIndexPagesForSpec(v3SpecPath, 'v3', outputDir);
+
+  // Generate for v3.1
+  const v31SpecPath = join(publicDir, 'openapi-v3.1.json');
+  generateIndexPagesForSpec(v31SpecPath, 'v3.1', outputDir);
 
   console.log('Done generating API index pages');
 }
