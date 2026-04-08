@@ -39,7 +39,11 @@ export const resolveInstalledSkillName = (skillName?: string): string => {
   if (!normalized) {
     return SKILL_NAME;
   }
-  if (!SKILL_NAME_PATTERN.test(normalized)) {
+  if (
+    normalized === '.' ||
+    normalized === '..' ||
+    !SKILL_NAME_PATTERN.test(normalized)
+  ) {
     throw new Error(
       'Invalid skill name. Use letters, numbers, dots, underscores, or hyphens only.'
     );

@@ -52,6 +52,8 @@ describe('install-skill', () => {
 
   it('rejects unsafe installed skill names', () => {
     expect(() => resolveInstalledSkillName('../bad')).toThrow(/Invalid skill name/);
+    expect(() => resolveInstalledSkillName('.')).toThrow(/Invalid skill name/);
+    expect(() => resolveInstalledSkillName('..')).toThrow(/Invalid skill name/);
   });
 
   it('resolves the agent-specific skill path', () => {
