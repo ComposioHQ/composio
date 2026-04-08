@@ -11,6 +11,7 @@ import {
   Layer,
   Logger,
   LogLevel,
+  Option,
   Schedule,
   String,
 } from 'effect';
@@ -39,6 +40,8 @@ import type { TriggerInstanceItem } from 'src/models/triggers';
 import type { AuthConfigCreateResponse, LinkCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
 import { ComposioUserContextLive } from 'src/services/user-context';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CliUserConfig } from 'src/models/cli-user-config';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -105,6 +108,7 @@ export interface TestLiveInput {
   connectedAccountsData?: {
     items?: ConnectedAccountItem[];
     linkResponse?: LinkCreateResponse;
+    onPatch?: (params: { path: string; body: Record<string, unknown> | undefined }) => void;
   };
 
   /**
@@ -798,6 +802,26 @@ export const TestLayer = (input?: TestLiveInput) =>
       Layer.merge(BunFileSystem.layer, NodeOsTest)
     );
 
+    const ComposioCliUserConfigTest = Layer.succeed(
+      ComposioCliUserConfig,
+      ComposioCliUserConfig.of({
+        data: {
+          channel: 'beta',
+          experimentalFeatures: {},
+          artifactDirectory: undefined,
+          experimentalSubagentTarget: 'auto',
+        },
+        raw: CliUserConfig.make({
+          experimentalFeatures: {},
+          artifactDirectory: Option.none(),
+          experimentalSubagent: Option.none(),
+        }),
+        channel: 'beta',
+        isExperimentalFeatureEnabled: () => true,
+        update: () => Effect.void,
+      })
+    );
+
     const UpgradeBinaryTest = Layer.provide(
       UpgradeBinary.Default,
       Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
@@ -943,6 +967,28 @@ export const TestLayer = (input?: TestLiveInput) =>
           return response;
         },
       },
+      patch: async (path: string, options?: { body?: Record<string, unknown> }) => {
+        connectedAccountsData.onPatch?.({ path, body: options?.body });
+
+        const match = path.match(/^\/api\/v3\/connected_accounts\/([^/]+)$/);
+        if (!match) {
+          throw new Error(`Unhandled PATCH path "${path}"`);
+        }
+
+        const connectedAccountId = match[1];
+        const account = connectedAccountsData.items.find(item => item.id === connectedAccountId);
+        if (!account) {
+          throw new Error(`Connected account "${connectedAccountId}" not found`);
+        }
+
+        if (typeof options?.body?.alias === 'string') {
+          Object.assign(account as { alias?: string | null }, {
+            alias: options.body.alias,
+          });
+        }
+
+        return account;
+      },
       connectedAccounts: {
         list: async (params?: {
           toolkit_slugs?: string[];
@@ -982,6 +1028,24 @@ export const TestLayer = (input?: TestLiveInput) =>
             throw new Error(`Connected account "${nanoid}" not found`);
           }
           return found;
+        },
+      },
+      triggerInstances: {
+        upsert: async (
+          triggerSlug: string,
+          params?: {
+            connected_account_id?: string;
+            trigger_config?: Record<string, unknown>;
+          }
+        ) => ({
+          trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
+        }),
+        manage: {
+          update: async (triggerId: string, params: { status: 'enable' | 'disable' }) => ({
+            trigger_id: triggerId,
+            status: params.status,
+          }),
+          delete: async (triggerId: string) => ({ trigger_id: triggerId }),
         },
       },
       toolkits: {
@@ -1147,6 +1211,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       CliConfigLive,
       NodeProcessTest,
       UpgradeBinaryTest,
+      ComposioCliUserConfigTest,
       ComposioUserContextTest,
       ComposioClientSingletonTest,
       ComposioSessionRepositoryTest,

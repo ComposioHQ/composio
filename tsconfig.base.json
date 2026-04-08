@@ -1,9 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "baseUrl": ".", // Required for paths
     "paths": {
-      "@composio/core": ["ts/packages/core/src"] // or wherever your core is
+      "@composio/core": ["./ts/packages/core/src"] // or wherever your core is
     },
     "lib": ["es2022", "DOM"],
     "target": "es2022",

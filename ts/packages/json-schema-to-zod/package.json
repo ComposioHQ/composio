@@ -32,9 +32,12 @@
     "clean": "git clean -xdf node_modules",
     "build": "pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
-    "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
-    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
+    "typecheck:src": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "pnpm exec tsgo --noEmit -p ./tsconfig.test.json",
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
+    "typecheck:src:tsc": "tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test:tsc": "tsc --noEmit -p ./tsconfig.test.json",
+    "typecheck:tsc": "pnpm run typecheck:src:tsc && pnpm run typecheck:test:tsc"
   },
   "keywords": [],
   "author": "",

@@ -6,6 +6,7 @@ import * as composioClients from 'src/services/composio-clients';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
   getFreshConsumerToolRouterAuthConfigsFromCache,
+  getFreshConsumerToolRouterConnectedAccountsFromCache,
   refreshConsumerConnectedToolkitsCache,
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
@@ -236,6 +237,62 @@ describe('consumer short-term cache', () => {
           });
 
           expect(cached).toEqual(Option.none());
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] cached connected account metadata [Then] default mappings and summaries are readable',
+    it => {
+      it.scoped('returns cached connected account selectors by toolkit', () =>
+        Effect.gen(function* () {
+          yield* writeConsumerConnectedToolkitsCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+            toolkits: ['gmail'],
+            toolRouterConnectedAccounts: {
+              connectedAccounts: {
+                gmail: 'con_default',
+              },
+              availableConnectedAccounts: {
+                gmail: [
+                  {
+                    id: 'con_default',
+                    alias: 'default',
+                    wordId: 'castle',
+                    updatedAt: '2026-01-02T00:00:00.000Z',
+                    createdAt: '2026-01-01T00:00:00.000Z',
+                  },
+                ],
+              },
+            },
+          });
+
+          const cached = yield* getFreshConsumerToolRouterConnectedAccountsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+            toolkits: ['gmail'],
+          });
+
+          expect(cached).toEqual(
+            Option.some({
+              connectedAccounts: {
+                gmail: 'con_default',
+              },
+              availableConnectedAccounts: {
+                gmail: [
+                  {
+                    id: 'con_default',
+                    alias: 'default',
+                    wordId: 'castle',
+                    updatedAt: '2026-01-02T00:00:00.000Z',
+                    createdAt: '2026-01-01T00:00:00.000Z',
+                  },
+                ],
+              },
+            })
+          );
         })
       );
     }

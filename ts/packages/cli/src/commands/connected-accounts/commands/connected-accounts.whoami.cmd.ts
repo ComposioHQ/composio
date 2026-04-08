@@ -72,6 +72,8 @@ export const connectedAccountsCmd$Whoami = Command.make('whoami', { id }, ({ id 
       JSON.stringify(
         {
           id: item.id,
+          alias: item.alias,
+          word_id: item.word_id,
           toolkit: item.toolkit.slug,
           user_id: item.user_id,
           status: item.status,

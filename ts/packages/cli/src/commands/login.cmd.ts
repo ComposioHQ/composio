@@ -5,6 +5,7 @@ import {
   ComposioSessionRepository,
   getSessionInfo,
   getSessionInfoByUserApiKey,
+  listOrganizations,
   type SessionInfoResponse,
 } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -12,7 +13,8 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
-import { installSkillSafe } from 'src/effects/install-skill';
+import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
+import { APP_VERSION } from 'src/constants';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
@@ -31,6 +33,16 @@ const keyOpt = Options.text('key').pipe(
   Options.optional
 );
 
+const userApiKeyOpt = Options.text('user-api-key').pipe(
+  Options.withDescription('Log in directly with a Composio user API key'),
+  Options.optional
+);
+
+const orgOpt = Options.text('org').pipe(
+  Options.withDescription('Default organization ID or name to store for CLI commands'),
+  Options.optional
+);
+
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
@@ -42,10 +54,7 @@ const noSkillInstall = Options.boolean('no-skill-install').pipe(
   Options.withDescription('Skip installing the composio-cli skill for Claude Code')
 );
 
-const formatLoginSuccessMessage = (params: {
-  email?: string;
-  orgName?: string;
-}): string => {
+const formatLoginSuccessMessage = (params: { email?: string; orgName?: string }): string => {
   const { email, orgName } = params;
   if (email && orgName) {
     return `Logged in as ${email} in "${orgName}"`;
@@ -59,10 +68,107 @@ const formatLoginSuccessMessage = (params: {
   return 'Logged in successfully';
 };
 
+const emitLoginComplete = (params: {
+  email?: string;
+  orgId: string;
+  orgName?: string;
+  skipHints?: boolean;
+}) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const { email, orgId, orgName, skipHints = false } = params;
+
+    yield* ui.log.success(formatLoginSuccessMessage({ email, orgName }));
+    if (!skipHints) {
+      yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
+      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
+    }
+
+    yield* ui.output(
+      JSON.stringify({
+        email,
+        org_id: orgId,
+        org_name: orgName ?? '',
+      })
+    );
+
+    if (!skipHints) {
+      yield* ui.outro("You're all set!");
+    }
+  });
+
+const resolveDirectLoginOrganization = (params: {
+  apiKey: string;
+  baseURL: string;
+  requestedOrg?: string;
+  fallbackOrgId: string;
+  fallbackOrgName?: string;
+}) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const { apiKey, baseURL, requestedOrg, fallbackOrgId, fallbackOrgName } = params;
+
+    if (!requestedOrg) {
+      return {
+        id: fallbackOrgId,
+        name: fallbackOrgName ?? fallbackOrgId,
+      };
+    }
+
+    const organizations = yield* listOrganizations({
+      baseURL,
+      apiKey,
+    });
+    const match = organizations.data.find(
+      org => org.id === requestedOrg || org.name === requestedOrg
+    );
+
+    if (!match) {
+      yield* ui.log.error(`Organization "${requestedOrg}" was not found for this API key.`);
+      return yield* Effect.fail(
+        new Error('Invalid organization. Run `composio orgs list` to inspect available orgs.')
+      );
+    }
+
+    return match;
+  });
+
+const directLogin = (params: { userApiKey: string; org?: string }) =>
+  Effect.gen(function* () {
+    const ctx = yield* ComposioUserContext;
+    const sessionInfo = yield* getSessionInfoByUserApiKey({
+      baseURL: ctx.data.baseURL,
+      userApiKey: params.userApiKey,
+    });
+
+    const selectedOrg = yield* resolveDirectLoginOrganization({
+      apiKey: params.userApiKey,
+      baseURL: ctx.data.baseURL,
+      requestedOrg: params.org,
+      fallbackOrgId: sessionInfo.project.org.id,
+      fallbackOrgName: sessionInfo.project.org.name,
+    });
+
+    const sessionUserId = sessionInfo.org_member.user_id ?? sessionInfo.org_member.id;
+    const testUserId = sessionUserId
+      ? `pg-test-${sessionUserId}`
+      : Option.getOrUndefined(ctx.data.testUserId);
+
+    yield* ctx.login(params.userApiKey, selectedOrg.id, testUserId);
+    yield* primeConsumerConnectedToolkitsCacheInBackground({
+      orgId: selectedOrg.id,
+    });
+    yield* emitLoginComplete({
+      email: sessionInfo.org_member.email || undefined,
+      orgId: selectedOrg.id,
+      orgName: selectedOrg.name,
+    });
+  });
+
 /**
  * Verifies credentials via session/info and stores them.
  *
- * Resolves TerminalUI and ComposioUserContext from the Effect context rather
+ * Resolves ComposioUserContext from the Effect context rather
  * than accepting them as parameters -- this keeps the signature focused on
  * data and avoids hand-rolled structural types.
  */
@@ -78,7 +184,6 @@ const storeCredentials = (params: {
   skipOutput?: boolean;
 }) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
 
     const {
@@ -133,27 +238,13 @@ const storeCredentials = (params: {
       orgId,
     });
 
-    const email = sessionInfo?.org_member.email || fallbackEmail || undefined;
-    const orgName = sessionInfo?.project.org.name || undefined;
-    yield* ui.log.success(formatLoginSuccessMessage({ email, orgName }));
-    if (!skipHints) {
-      yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
-      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
-    }
-
-    // Emit structured JSON for piped/scripted consumption (agent-native)
     if (!skipOutput) {
-      yield* ui.output(
-        JSON.stringify({
-          email,
-          org_id: orgId,
-          org_name: sessionInfo?.project.org.name ?? '',
-        })
-      );
-    }
-
-    if (!skipHints) {
-      yield* ui.outro("You're all set!");
+      yield* emitLoginComplete({
+        email: sessionInfo?.org_member.email || fallbackEmail || undefined,
+        orgId,
+        orgName: sessionInfo?.project.org.name || undefined,
+        skipHints,
+      });
     }
   });
 
@@ -258,25 +349,14 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
-        yield* ui.log.success(
-          formatLoginSuccessMessage({
-            email: uakSessionInfo.org_member.email || linkedSession.account.email || undefined,
-            orgName: result.name,
-          })
-        );
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
-      yield* ui.output(
-        JSON.stringify({
-          email: linkedSession.account.email ?? undefined,
-          org_id: finalOrgId,
-          org_name: finalOrgName,
-        })
-      );
-      yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
-      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
-      yield* ui.outro("You're all set!");
+      yield* emitLoginComplete({
+        email: linkedSession.account.email ?? undefined,
+        orgId: finalOrgId,
+        orgName: finalOrgName,
+      });
     }
   });
 
@@ -423,25 +503,14 @@ export const browserLogin = (params: {
         yield* primeConsumerConnectedToolkitsCacheInBackground({
           orgId: result.id,
         });
-        yield* ui.log.success(
-          formatLoginSuccessMessage({
-            email: uakSessionInfo.org_member.email || linkedSession.account.email || undefined,
-            orgName: result.name,
-          })
-        );
       }
       const finalOrgId = result?.id ?? xOrgId;
       const finalOrgName = result?.name ?? uakSessionInfo.project.org.name ?? '';
-      yield* ui.output(
-        JSON.stringify({
-          email: linkedSession.account.email ?? undefined,
-          org_id: finalOrgId,
-          org_name: finalOrgName,
-        })
-      );
-      yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
-      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
-      yield* ui.outro("You're all set!");
+      yield* emitLoginComplete({
+        email: linkedSession.account.email ?? undefined,
+        orgId: finalOrgId,
+        orgName: finalOrgName,
+      });
     }
   });
 
@@ -453,6 +522,7 @@ export const browserLogin = (params: {
  * Use --no-wait to print login URL and session info (JSON) then exit without opening browser or waiting.
  * Use --key to complete login with a session key from --no-wait. Without --no-wait, polls until linked;
  * with --no-wait, checks once and fails if not linked.
+ * Use --user-api-key to log in directly without a browser flow, and --org to override the default org.
  * Use -y to skip org picker and use session default org.
  *
  * @example
@@ -462,18 +532,44 @@ export const browserLogin = (params: {
  * composio login --no-wait
  * composio login --key <key>
  * composio login --key <key> --no-wait
+ * composio login --user-api-key <uak>
+ * composio login --user-api-key <uak> --org <org>
  * composio login -y
  * ```
  */
 export const loginCmd = Command.make(
   'login',
-  { noBrowser, noWait, key: keyOpt, yes: yesOpt, noSkillInstall },
-  ({ noBrowser, noWait, key, yes, noSkillInstall }) =>
+  {
+    noBrowser,
+    noWait,
+    key: keyOpt,
+    userApiKey: userApiKeyOpt,
+    org: orgOpt,
+    yes: yesOpt,
+    noSkillInstall,
+  },
+  ({ noBrowser, noWait, key, userApiKey, org, yes, noSkillInstall }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
 
       yield* ui.intro('composio login');
+
+      if (Option.isSome(key) && Option.isSome(userApiKey)) {
+        return yield* Effect.fail(new Error('Use either `--key` or `--user-api-key`, not both.'));
+      }
+
+      if (Option.isSome(org) && Option.isNone(userApiKey)) {
+        return yield* Effect.fail(new Error('`--org` requires `--user-api-key`.'));
+      }
+
+      if (Option.isSome(userApiKey) && (noBrowser || noWait || Option.isSome(key))) {
+        return yield* Effect.fail(
+          new Error(
+            '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
+          )
+        );
+      }
 
       if (Option.isSome(key)) {
         yield* loginWithKey({
@@ -482,7 +578,18 @@ export const loginCmd = Command.make(
           skipOrgProjectPicker: true,
         });
         if (!noSkillInstall) {
-          yield* installSkillSafe();
+          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
+        }
+        return;
+      }
+
+      if (Option.isSome(userApiKey)) {
+        yield* directLogin({
+          userApiKey: userApiKey.value,
+          org: Option.getOrUndefined(org),
+        });
+        if (!noSkillInstall) {
+          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
         }
         return;
       }
@@ -506,7 +613,7 @@ export const loginCmd = Command.make(
       });
 
       if (!noSkillInstall && !noWait) {
-        yield* installSkillSafe();
+        yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
       }
     })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

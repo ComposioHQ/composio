@@ -31,6 +31,7 @@ catalog:
   '@effect/vitest': ^0.27.0
   '@mastra/core': ^1.0.4
   '@modelcontextprotocol/sdk': ^1.25.2
+  '@typescript/native-preview': 7.0.0-dev.20260403.1
   ai: ^6.0.27
   effect: ^3.19.15
   hono: ^4.11.4
