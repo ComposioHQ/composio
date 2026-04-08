@@ -121,10 +121,12 @@ e2e(import.meta.url, {
     });
 
     describe('mock API usage', () => {
-      it('requests the toolkit catalog for each search term', () => {
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=1');
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmai&limit=1');
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmal&limit=1');
+      it('attempts a detailed lookup for each search term', () => {
+        // The list command first tries an exact detailed lookup for slug-like queries,
+        // then falls back to the search endpoint with a broader candidate limit.
+        expect(server.requests).toContain(`GET /api/v3/toolkits/${exactQuery}`);
+        expect(server.requests).toContain(`GET /api/v3/toolkits/${prefixQuery}`);
+        expect(server.requests).toContain(`GET /api/v3/toolkits/${missingQuery}`);
       });
     });
   },
