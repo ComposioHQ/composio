@@ -66,29 +66,8 @@ async function fetchAndFilterSpec() {
     }
   }
 
-  // For endpoints that exist under multiple API versions (e.g. /api/v3/ and /api/v3.1/),
-  // only keep the latest version to avoid duplicate sidebar entries.
-  const versionedPaths = new Map();
-  for (const path of Object.keys(filteredPaths)) {
-    const match = path.match(/^\/api\/v([\d.]+)\/(.+)$/);
-    if (!match) continue;
-    const [, version, rest] = match;
-    if (!versionedPaths.has(rest)) versionedPaths.set(rest, []);
-    versionedPaths.get(rest).push({ version, fullPath: path });
-  }
-
-  let versionDedupCount = 0;
-  for (const entries of versionedPaths.values()) {
-    if (entries.length <= 1) continue;
-    entries.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
-    for (const entry of entries.slice(1)) {
-      delete filteredPaths[entry.fullPath];
-      versionDedupCount++;
-    }
-  }
-  if (versionDedupCount > 0) {
-    console.log(`Removed ${versionDedupCount} endpoints superseded by newer API versions`);
-  }
+  // Keep all API versions (v3 and v3.1) so both appear in the docs.
+  // Users need to see both versions to understand the differences and migrate at their own pace.
 
   spec.paths = filteredPaths;
 
