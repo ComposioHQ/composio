@@ -13,7 +13,7 @@ Webhooks are the recommended way to receive trigger events in production. To sta
 | `composio.trigger.message` | Fired when a trigger receives data from an external service |
 | `composio.connected_account.expired` | Fired when a connected account expires and needs re-authentication. See [Subscribing to connection expiry events](/docs/subscribing-to-connection-expiry-events). |
 
-Set your webhook URL in the [dashboard settings](https://platform.composio.dev?next_page=/settings/webhook) or via the [Webhook Subscriptions API](/reference/api-reference/v3/webhooks):
+Set your webhook URL in the [dashboard settings](https://platform.composio.dev?next_page=/settings/webhook) or via the [Webhook Subscriptions API](/reference/api-reference/v3/webhooks/postWebhookSubscriptions):
 
 ```bash
 curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
