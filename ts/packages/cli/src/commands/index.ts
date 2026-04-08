@@ -37,6 +37,7 @@ import {
   resolveCommandProject,
 } from 'src/services/command-project';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
 import {
   experimental,
   type CommandVisibility,
@@ -71,6 +72,80 @@ export const buildRootCommand = (visibility: CommandVisibility) => {
   const subcommands = visibleValues(ROOT_COMMANDS, visibility);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return $defaultCmd.pipe(Command.withSubcommands(subcommands as any));
+};
+
+const ROOT_INSTALL_SKILL_FLAGS = ['--instal-skill', '--install-skill'] as const;
+const SKILL_INSTALL_TARGETS = ['claude', 'codex', 'openclaw'] as const satisfies ReadonlyArray<
+  SkillInstallTarget
+>;
+
+type RootInstallSkillRequest =
+  | {
+      _tag: 'parsed';
+      skillName?: string;
+      target: SkillInstallTarget;
+    }
+  | { _tag: 'error'; message: string };
+
+const isSkillInstallTarget = (value: string): value is SkillInstallTarget =>
+  (SKILL_INSTALL_TARGETS as ReadonlyArray<string>).includes(value);
+
+export const parseRootInstallSkillRequest = (
+  argv: ReadonlyArray<string>
+): RootInstallSkillRequest | undefined => {
+  const args = argv.slice(2);
+  const flagIndex = args.findIndex(arg =>
+    (ROOT_INSTALL_SKILL_FLAGS as ReadonlyArray<string>).includes(arg)
+  );
+  if (flagIndex < 0) {
+    return undefined;
+  }
+
+  const rawValues: string[] = [];
+  for (let i = flagIndex + 1; i < args.length; i += 1) {
+    const token = args[i];
+    if (!token) continue;
+    if (token.startsWith('-')) break;
+    rawValues.push(token);
+  }
+
+  if (rawValues.length === 0) {
+    return {
+      _tag: 'error',
+      message:
+        'Missing target for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+    };
+  }
+
+  if (rawValues.length === 1) {
+    const [target] = rawValues;
+    if (!isSkillInstallTarget(target)) {
+      return {
+        _tag: 'error',
+        message:
+          'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+      };
+    }
+    return { _tag: 'parsed', target };
+  }
+
+  if (rawValues.length === 2) {
+    const [skillName, target] = rawValues;
+    if (!isSkillInstallTarget(target)) {
+      return {
+        _tag: 'error',
+        message:
+          'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+      };
+    }
+    return { _tag: 'parsed', skillName, target };
+  }
+
+  return {
+    _tag: 'error',
+    message:
+      'Too many arguments for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+  };
 };
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
@@ -267,6 +342,16 @@ export const runWithConfig = Effect.gen(function* () {
     const normalizedArgv = normalizeHiddenDebugFlags(
       normalizeListenStreamFlag(normalizeVersionShortFlag(argv))
     );
+    const installSkillRequest = parseRootInstallSkillRequest(normalizedArgv);
+    if (installSkillRequest) {
+      if (installSkillRequest._tag === 'error') {
+        return Effect.fail(new Error(installSkillRequest.message));
+      }
+      return installSkill({
+        skillName: installSkillRequest.skillName,
+        target: installSkillRequest.target,
+      });
+    }
     if (isRootHelp(normalizedArgv)) {
       return printRootHelp(visibility);
     }
