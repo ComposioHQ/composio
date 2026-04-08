@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
+import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -8,6 +9,7 @@ import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/service
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { extractMessage } from 'src/utils/api-error-extraction';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
 import {
   mergeToolkitData,
@@ -16,7 +18,12 @@ import {
   toolkitFromDetailed,
 } from '../format';
 import { fetchSessionToolkitFallback } from '../session-fallback';
-import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
+import { getOptionalResultWithTimeout } from '../timeout-helpers';
+import {
+  isSingleSlugQuery,
+  filterToolkitsByQuery,
+  buildCatalogResultFromToolkits,
+} from '../toolkit-ranking';
 
 const query = Options.text('query').pipe(
   Options.withDescription('Text search by name, slug, or description'),
@@ -25,15 +32,14 @@ const query = Options.text('query').pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(30),
-  Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
+  Options.withDescription(formatLimitDescription('Number of results per page'))
 );
 
-const SINGLE_TOOLKIT_QUERY_PATTERN = /^[a-z0-9_-]+$/i;
-const LIST_EXACT_MATCH_TIMEOUT_MS = 15_000;
+const LIST_EXACT_MATCH_TIMEOUT_MS = 5_000;
 const LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT = 50;
-const LIST_SEARCH_ENDPOINT_TIMEOUT_MS = 20_000;
-const LIST_CATALOG_FALLBACK_TIMEOUT_MS = 60_000;
-const LIST_SESSION_FALLBACK_TIMEOUT_MS = 45_000;
+const LIST_SEARCH_ENDPOINT_TIMEOUT_MS = 8_000;
+const LIST_CATALOG_FALLBACK_TIMEOUT_MS = 10_000;
+const LIST_SESSION_FALLBACK_TIMEOUT_MS = 10_000;
 
 const connected = Options.boolean('connected').pipe(
   Options.withDescription('Filter to connected toolkits only'),
@@ -47,86 +53,8 @@ const userId = Options.text('user-id').pipe(
   )
 );
 
-export const filterToolkitsForListQuery = (
-  toolkits: ReadonlyArray<Toolkit>,
-  query?: string
-): ReadonlyArray<Toolkit> => {
-  const normalizedQuery = query?.trim().toLowerCase();
-  if (!normalizedQuery) return toolkits;
-
-  const rankMatch = (toolkit: Toolkit): number | undefined => {
-    const rankValue = (value: string) => {
-      const normalizedValue = value.toLowerCase();
-      if (normalizedValue === normalizedQuery) return 0;
-      if (normalizedValue.startsWith(normalizedQuery)) return 1;
-
-      const words = normalizedValue.split(/[^a-z0-9]+/).filter(Boolean);
-      if (words.some(word => word === normalizedQuery)) return 2;
-      if (words.some(word => word.startsWith(normalizedQuery))) return 3;
-      if (normalizedValue.includes(normalizedQuery)) return 4;
-
-      return undefined;
-    };
-
-    const slugRank = rankValue(toolkit.slug);
-    const nameRank = rankValue(toolkit.name);
-    const descriptionRank = rankValue(toolkit.meta.description);
-
-    return [slugRank, nameRank, descriptionRank].reduce<number | undefined>(
-      (currentBest, candidate) => {
-        if (candidate === undefined) return currentBest;
-        if (currentBest === undefined) return candidate;
-        return Math.min(currentBest, candidate);
-      },
-      undefined
-    );
-  };
-
-  return toolkits
-    .map(toolkit => {
-      const bestRank = rankMatch(toolkit);
-      return bestRank === undefined ? undefined : { toolkit, bestRank };
-    })
-    .filter((value): value is { toolkit: Toolkit; bestRank: number } => value !== undefined)
-    .sort((left, right) => {
-      if (left.bestRank !== right.bestRank) return left.bestRank - right.bestRank;
-      return left.toolkit.slug.localeCompare(right.toolkit.slug);
-    })
-    .map(({ toolkit }) => toolkit);
-};
-
-const buildCatalogResultFromToolkits = (
-  toolkits: ReadonlyArray<Toolkit>,
-  limit: number
-): ToolkitSearchResult => ({
-  items: toolkits.slice(0, limit),
-  total_items: toolkits.length,
-  total_pages: toolkits.length === 0 ? 0 : Math.ceil(toolkits.length / limit),
-  next_cursor: null,
-});
-
-const getOptionalResultWithTimeout = <A, E, R>(
-  effect: Effect.Effect<A, E, R>,
-  timeoutMs: number,
-  timeoutMessage: string,
-  failureMessage: string
-) =>
-  Effect.raceFirst(
-    Effect.disconnect(
-      effect.pipe(
-        Effect.asSome,
-        Effect.catchAll(error =>
-          Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
-        )
-      )
-    ),
-    Effect.disconnect(
-      Effect.sleep(timeoutMs).pipe(
-        Effect.zipRight(Effect.logDebug(timeoutMessage)),
-        Effect.as(Option.none<A>())
-      )
-    )
-  );
+/** Re-export for tests. */
+export { filterToolkitsByQuery as filterToolkitsForListQuery } from '../toolkit-ranking';
 
 const getExactToolkitListMatch = (
   repo: ComposioToolkitsRepository,
@@ -134,14 +62,14 @@ const getExactToolkitListMatch = (
   limit: number
 ) => {
   const normalizedQuery = query.trim().toLowerCase();
-  if (!SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)) {
+  if (!isSingleSlugQuery(normalizedQuery)) {
     return Effect.succeed(Option.none<ToolkitSearchResult>());
   }
 
   return getOptionalResultWithTimeout(
     repo.getToolkitDetailed(normalizedQuery).pipe(
       Effect.map(toolkitFromDetailed),
-      Effect.map(toolkit => filterToolkitsForListQuery([toolkit], normalizedQuery)),
+      Effect.map(toolkit => filterToolkitsByQuery([toolkit], normalizedQuery)),
       Effect.catchTag('services/HttpServerError', error =>
         error.status === 404 ? Effect.succeed([] as ReadonlyArray<Toolkit>) : Effect.fail(error)
       )
@@ -160,23 +88,13 @@ const getExactToolkitListMatch = (
   );
 };
 
-const shouldRequirePreciseListMatch = (query?: string): boolean => {
-  const normalizedQuery = query?.trim();
-  return (
-    normalizedQuery !== undefined &&
-    normalizedQuery.length > 0 &&
-    !/\s/.test(normalizedQuery) &&
-    SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)
-  );
-};
-
 const getCatalogToolkitsWithFallback = (
   repo: ComposioToolkitsRepository,
   query: string | undefined,
   limit: number
 ) => {
   const fallback = repo.getToolkits().pipe(
-    Effect.map(toolkits => filterToolkitsForListQuery(toolkits, query)),
+    Effect.map(toolkits => filterToolkitsByQuery(toolkits, query)),
     Effect.map(toolkits => buildCatalogResultFromToolkits(toolkits, limit))
   );
 
@@ -198,7 +116,7 @@ const getCatalogToolkitsWithFallback = (
         search: query,
         limit: LIST_SEARCH_ENDPOINT_CANDIDATE_LIMIT,
       })
-      .pipe(Effect.map(result => filterToolkitsForListQuery(result.items, query))),
+      .pipe(Effect.map(result => filterToolkitsByQuery(result.items, query))),
     LIST_SEARCH_ENDPOINT_TIMEOUT_MS,
     'Timed out searching toolkits directly for list; waiting on full catalog fallback.',
     'Failed to search toolkits directly for list; waiting on full catalog fallback:'
@@ -225,7 +143,7 @@ const getCatalogToolkitsWithFallback = (
             ).pipe(Effect.zipRight(Effect.never));
           }
 
-          if (shouldRequirePreciseListMatch(query) && !hasPreciseMatch) {
+          if (isSingleSlugQuery(query) && !hasPreciseMatch) {
             return Effect.logDebug(
               'Direct toolkit list search returned only imprecise matches; waiting on full catalog fallback.'
             ).pipe(Effect.zipRight(Effect.never));
@@ -243,7 +161,7 @@ const getCatalogToolkitsWithFallback = (
     Effect.disconnect(fallbackResult)
   );
 
-  if (!shouldRequirePreciseListMatch(query)) {
+  if (!isSingleSlugQuery(query)) {
     return broaderSearch;
   }
 
@@ -285,7 +203,7 @@ export const toolkitsCmd$List = Command.make(
       const projectContext = yield* ProjectContext;
       const userContext = yield* ComposioUserContext;
 
-      const validatedLimit = yield* validateToolkitsLimit(limit);
+      const validatedLimit = yield* validateLimit(limit);
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
       const globalTestUserId = userContext.data.testUserId;
@@ -342,7 +260,7 @@ export const toolkitsCmd$List = Command.make(
               clientSingleton,
               userId: fallbackUserId,
               query: queryValue,
-              filter: filterToolkitsForListQuery,
+              filter: filterToolkitsByQuery,
             }),
             LIST_SESSION_FALLBACK_TIMEOUT_MS,
             'Timed out retrieving toolkit list from Tool Router session fallback.',
@@ -380,48 +298,37 @@ export const toolkitsCmd$List = Command.make(
       }
 
       // When session context is available, fetch session toolkits for connection status.
-      let sessionItems:
-        | ReadonlyArray<
-            import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
-          >
-        | undefined;
-      let sessionFailed = false;
-      if (sessionContext) {
-        const { client, sessionId } = sessionContext;
-        sessionItems = yield* Effect.tryPromise(() =>
-          client.toolRouter.session.toolkits(sessionId, {
-            search: queryValue,
-            limit: validatedLimit,
-            is_connected: Option.getOrUndefined(connected),
-          })
-        ).pipe(
-          Effect.map(r => r.items),
-          Effect.catchAll(error =>
-            Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
-              Effect.as(
-                [] as ReadonlyArray<
-                  import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
-                >
+      const sessionData: {
+        readonly items: ReadonlyArray<SessionToolkitsResponse.Item> | undefined;
+        readonly failed: boolean;
+      } = sessionContext
+        ? yield* Effect.tryPromise(() =>
+            sessionContext.client.toolRouter.session.toolkits(sessionContext.sessionId, {
+              search: queryValue,
+              limit: validatedLimit,
+              is_connected: Option.getOrUndefined(connected),
+            })
+          ).pipe(
+            Effect.map(r =>
+              r.items.length > 0
+                ? ({ items: r.items, failed: false } as const)
+                : ({ items: undefined, failed: true } as const)
+            ),
+            Effect.catchAll(error =>
+              Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
+                Effect.as({ items: undefined, failed: true } as const)
               )
             )
           )
-        );
-        if (sessionItems.length === 0) {
-          sessionFailed = true;
-          sessionItems = undefined;
-        }
-      } else if (Option.isSome(resolvedUserId)) {
-        // Session creation itself failed (caught in parallel fetch above).
-        sessionFailed = true;
-      }
+        : { items: undefined, failed: Option.isSome(resolvedUserId) };
 
-      let unified = mergeToolkitData(catalogResult.items, sessionItems);
+      let unified = mergeToolkitData(catalogResult.items, sessionData.items);
 
       // Apply --connected filter client-side: only keep toolkits with an active connection.
       const isConnectedFilter = Option.getOrUndefined(connected);
-      if (isConnectedFilter && sessionItems) {
+      if (isConnectedFilter && sessionData.items) {
         unified = unified.filter(t => t.connected?.status === 'ACTIVE');
-      } else if (isConnectedFilter && sessionFailed) {
+      } else if (isConnectedFilter && sessionData.failed) {
         yield* ui.log.warn('`--connected` filter could not be applied — session data unavailable.');
       }
 

@@ -91,7 +91,13 @@ export type HttpError = HttpServerError | HttpDecodingError;
 const TRANSIENT_HTTP_RETRYABLE_STATUSES = new Set([408, 429]);
 // Fresh CI environments occasionally hit short-lived 429/5xx bursts on catalog reads.
 // Use a wider backoff window so read-heavy commands can recover without surfacing flaky failures.
-const TRANSIENT_HTTP_RETRY_DELAYS = [1000, 2500, 5000, 10000] as const;
+const TRANSIENT_HTTP_RETRY_BASE_DELAYS = [1000, 2500, 5000, 10000] as const;
+
+/** Add ±25% jitter to a delay to prevent thundering herd effects in CI. */
+const jitter = (delay: number): number => delay * (0.75 + Math.random() * 0.5);
+
+const TRANSIENT_HTTP_RETRY_DELAYS: ReadonlyArray<number> =
+  TRANSIENT_HTTP_RETRY_BASE_DELAYS.map(jitter);
 
 export const isTransientHttpServerError = (error: unknown): error is HttpServerError =>
   error instanceof HttpServerError &&

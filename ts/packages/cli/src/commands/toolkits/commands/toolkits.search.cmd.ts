@@ -2,11 +2,12 @@ import process from 'node:process';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import type { SessionToolkitsResponse } from '@composio/client/resources/tool-router';
-import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
+import type { ToolkitSearchResult } from 'src/models/toolkits';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { extractMessage } from 'src/utils/api-error-extraction';
+import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import {
   mergeToolkitData,
   formatToolkitsTable,
@@ -14,7 +15,12 @@ import {
   toolkitFromDetailed,
 } from '../format';
 import { fetchSessionToolkitFallback } from '../session-fallback';
-import { TOOLKITS_LIMIT_DESCRIPTION, validateToolkitsLimit } from '../limits';
+import { getOptionalResultWithTimeout } from '../timeout-helpers';
+import {
+  isSingleSlugQuery,
+  filterToolkitsByQuery,
+  buildCatalogResultFromToolkits,
+} from '../toolkit-ranking';
 
 const query = Args.text({ name: 'query' }).pipe(
   Args.withDescription('Search query (e.g. "send emails")')
@@ -22,102 +28,17 @@ const query = Args.text({ name: 'query' }).pipe(
 
 const limit = Options.integer('limit').pipe(
   Options.withDefault(10),
-  Options.withDescription(TOOLKITS_LIMIT_DESCRIPTION)
+  Options.withDescription(formatLimitDescription('Number of results per page'))
 );
 
-const SINGLE_TOOLKIT_QUERY_PATTERN = /^[a-z0-9_-]+$/i;
-const SEARCH_EXACT_MATCH_TIMEOUT_MS = 15_000;
-const SEARCH_CATALOG_FALLBACK_TIMEOUT_MS = 60_000;
-const SEARCH_SESSION_FALLBACK_TIMEOUT_MS = 45_000;
+const SEARCH_EXACT_MATCH_TIMEOUT_MS = 5_000;
+const SEARCH_CATALOG_FALLBACK_TIMEOUT_MS = 10_000;
+const SEARCH_SESSION_FALLBACK_TIMEOUT_MS = 10_000;
 
 type SearchToolkitsWithFallbackResult = {
   readonly result: ToolkitSearchResult;
   readonly sessionFallbackItems?: ReadonlyArray<SessionToolkitsResponse.Item>;
 };
-
-const rankToolkitForFallbackQuery = (toolkit: Toolkit, query: string): number | undefined => {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return 0;
-
-  const rankMatch = (value: string) => {
-    const normalizedValue = value.toLowerCase();
-    if (normalizedValue === normalizedQuery) return 0;
-    if (normalizedValue.startsWith(normalizedQuery)) return 1;
-
-    const words = normalizedValue.split(/[^a-z0-9]+/).filter(Boolean);
-    if (words.some(word => word === normalizedQuery)) return 2;
-    if (words.some(word => word.startsWith(normalizedQuery))) return 3;
-    if (normalizedValue.includes(normalizedQuery)) return 4;
-
-    return undefined;
-  };
-
-  const slugRank = rankMatch(toolkit.slug);
-  const nameRank = rankMatch(toolkit.name);
-  const descriptionRank = rankMatch(toolkit.meta.description);
-
-  return [slugRank, nameRank, descriptionRank].reduce<number | undefined>(
-    (currentBest, candidate) => {
-      if (candidate === undefined) return currentBest;
-      if (currentBest === undefined) return candidate;
-      return Math.min(currentBest, candidate);
-    },
-    undefined
-  );
-};
-
-const filterToolkitsForFallbackQuery = (
-  toolkits: ReadonlyArray<Toolkit>,
-  query: string
-): ReadonlyArray<Toolkit> => {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return toolkits;
-
-  return toolkits
-    .map(toolkit => {
-      const bestRank = rankToolkitForFallbackQuery(toolkit, normalizedQuery);
-      return bestRank === undefined ? undefined : { toolkit, bestRank };
-    })
-    .filter((value): value is { toolkit: Toolkit; bestRank: number } => value !== undefined)
-    .sort((left, right) => {
-      if (left.bestRank !== right.bestRank) return left.bestRank - right.bestRank;
-      return left.toolkit.slug.localeCompare(right.toolkit.slug);
-    })
-    .map(({ toolkit }) => toolkit);
-};
-
-const buildCatalogResultFromToolkits = (
-  toolkits: ReadonlyArray<Toolkit>,
-  limit: number
-): ToolkitSearchResult => ({
-  items: toolkits.slice(0, limit),
-  total_items: toolkits.length,
-  total_pages: toolkits.length === 0 ? 0 : Math.ceil(toolkits.length / limit),
-  next_cursor: null,
-});
-
-const getOptionalResultWithTimeout = <A, E, R>(
-  effect: Effect.Effect<A, E, R>,
-  timeoutMs: number,
-  timeoutMessage: string,
-  failureMessage: string
-) =>
-  Effect.raceFirst(
-    Effect.disconnect(
-      effect.pipe(
-        Effect.asSome,
-        Effect.catchAll(error =>
-          Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
-        )
-      )
-    ),
-    Effect.disconnect(
-      Effect.sleep(timeoutMs).pipe(
-        Effect.zipRight(Effect.logDebug(timeoutMessage)),
-        Effect.as(Option.none<A>())
-      )
-    )
-  );
 
 const getExactToolkitSearchMatch = (
   repo: ComposioToolkitsRepository,
@@ -125,16 +46,18 @@ const getExactToolkitSearchMatch = (
   limit: number
 ) => {
   const normalizedQuery = query.trim().toLowerCase();
-  if (!SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)) {
+  if (!isSingleSlugQuery(normalizedQuery)) {
     return Effect.succeed(Option.none<ToolkitSearchResult>());
   }
 
   return getOptionalResultWithTimeout(
     repo.getToolkitDetailed(normalizedQuery).pipe(
       Effect.map(toolkitFromDetailed),
-      Effect.map(toolkit => filterToolkitsForFallbackQuery([toolkit], normalizedQuery)),
+      Effect.map(toolkit => filterToolkitsByQuery([toolkit], normalizedQuery)),
       Effect.catchTag('services/HttpServerError', error =>
-        error.status === 404 ? Effect.succeed([] as ReadonlyArray<Toolkit>) : Effect.fail(error)
+        error.status === 404
+          ? Effect.succeed([] as ReadonlyArray<import('src/models/toolkits').Toolkit>)
+          : Effect.fail(error)
       )
     ),
     SEARCH_EXACT_MATCH_TIMEOUT_MS,
@@ -157,9 +80,7 @@ const getCatalogToolkitSearchMatch = (
   limit: number
 ) =>
   getOptionalResultWithTimeout(
-    repo
-      .getToolkits()
-      .pipe(Effect.map(toolkits => filterToolkitsForFallbackQuery(toolkits, query))),
+    repo.getToolkits().pipe(Effect.map(toolkits => filterToolkitsByQuery(toolkits, query))),
     SEARCH_CATALOG_FALLBACK_TIMEOUT_MS,
     'Timed out filtering toolkit fallback results against the local catalog.',
     'Failed to filter toolkit fallback results against the local catalog:'
@@ -173,28 +94,19 @@ const getCatalogToolkitSearchMatch = (
     )
   );
 
-const shouldUseLocalSearchFallback = (query: string): boolean => {
-  const normalizedQuery = query.trim();
-  return (
-    normalizedQuery.length > 0 &&
-    !/\s/.test(normalizedQuery) &&
-    SINGLE_TOOLKIT_QUERY_PATTERN.test(normalizedQuery)
-  );
-};
-
 const searchToolkitsWithFallback = (
   repo: ComposioToolkitsRepository,
   clientSingleton: ComposioClientSingleton,
   query: string,
   limit: number
-): Effect.Effect<SearchToolkitsWithFallbackResult, unknown> =>
+) =>
   Effect.gen(function* () {
     const directResult = yield* repo.searchToolkits({
       search: query,
       limit,
     });
 
-    if (directResult.items.length > 0 || !shouldUseLocalSearchFallback(query)) {
+    if (directResult.items.length > 0 || !isSingleSlugQuery(query)) {
       return {
         result: directResult,
       };
@@ -219,7 +131,7 @@ const searchToolkitsWithFallback = (
         clientSingleton,
         userId: 'default',
         query,
-        filter: filterToolkitsForFallbackQuery,
+        filter: filterToolkitsByQuery,
       }),
       SEARCH_SESSION_FALLBACK_TIMEOUT_MS,
       'Timed out retrieving toolkit search results from Tool Router session fallback.',
@@ -258,7 +170,7 @@ export const toolkitsCmd$Search = Command.make('search', { query, limit }, ({ qu
     const repo = yield* ComposioToolkitsRepository;
     const clientSingleton = yield* ComposioClientSingleton;
 
-    const validatedLimit = yield* validateToolkitsLimit(limit);
+    const validatedLimit = yield* validateLimit(limit);
 
     const { result, sessionFallbackItems } = yield* ui.withSpinner(
       `Searching toolkits for "${query}"...`,

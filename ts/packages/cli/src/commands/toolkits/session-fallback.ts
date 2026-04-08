@@ -6,6 +6,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { toolkitFromSession } from './format';
 
 const SESSION_TOOLKIT_FALLBACK_LIMIT = 50;
+const SESSION_TOOLKIT_MAX_PAGES = 10;
 
 export type SessionToolkitFallbackResult = {
   readonly catalogToolkits: ReadonlyArray<Toolkit>;
@@ -54,6 +55,7 @@ export const fetchSessionToolkitFallback = (params: {
 
     const allItems: Array<SessionToolkitsResponse.Item> = [];
     let cursor: string | undefined;
+    let pageCount = 0;
 
     do {
       const response = yield* Effect.tryPromise(() =>
@@ -64,7 +66,8 @@ export const fetchSessionToolkitFallback = (params: {
       );
       allItems.push(...response.items);
       cursor = response.next_cursor ?? undefined;
-    } while (cursor);
+      pageCount++;
+    } while (cursor && pageCount < SESSION_TOOLKIT_MAX_PAGES);
 
     return filterSessionItems({
       sessionItems: allItems,

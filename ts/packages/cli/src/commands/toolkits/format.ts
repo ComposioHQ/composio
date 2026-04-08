@@ -75,6 +75,9 @@ export function toolkitFromDetailed(toolkit: ToolkitDetailed): Toolkit {
 }
 
 export function toolkitFromSession(toolkit: SessionToolkitItem): Toolkit {
+  // Session items don't carry created_at/updated_at timestamps, but the Toolkit model
+  // requires DateTimeUtc for these fields. Downstream code only uses String() on these
+  // values (e.g., in formatToolkitInfo), so a Date placeholder is safe.
   const fallbackDate = new Date(
     '1970-01-01T00:00:00.000Z'
   ) as unknown as Toolkit['meta']['created_at'];

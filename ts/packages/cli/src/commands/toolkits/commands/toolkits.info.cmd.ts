@@ -9,6 +9,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import type { Toolkit, ToolkitDetailed } from 'src/models/toolkits';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
+import { getOptionalResultWithTimeout, getOptionalValueWithTimeout } from '../timeout-helpers';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Toolkit slug (e.g. "gmail")'),
@@ -28,45 +29,12 @@ const allDetails = Options.boolean('all').pipe(
   Options.withDescription('Show all available toolkit details, including auth config fields')
 );
 
-const TOOLKIT_INFO_METADATA_TIMEOUT_MS = 30_000;
-const TOOLKIT_INFO_SESSION_TIMEOUT_MS = 20_000;
-const TOOLKIT_INFO_EXACT_LOOKUP_TIMEOUT_MS = 30_000;
-const TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS = 20_000;
-const TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS = 10_000;
+const TOOLKIT_INFO_DETAILED_TIMEOUT_MS = 8_000;
+const TOOLKIT_INFO_SESSION_TIMEOUT_MS = 8_000;
+const TOOLKIT_INFO_CATALOG_TIMEOUT_MS = 8_000;
+const TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS = 8_000;
+const TOOLKIT_INFO_SUGGESTIONS_TIMEOUT_MS = 5_000;
 const TOOLKIT_INFO_SEARCH_FALLBACK_LIMIT = 50;
-
-const getOptionalResultWithTimeout = <A, E, R>(
-  effect: Effect.Effect<A, E, R>,
-  timeoutMs: number,
-  timeoutMessage: string,
-  failureMessage: string
-): Effect.Effect<Option.Option<A>, never, R> =>
-  Effect.raceFirst(
-    Effect.disconnect(
-      effect.pipe(
-        Effect.asSome,
-        Effect.catchAll(error =>
-          Effect.logDebug(failureMessage, error).pipe(Effect.as(Option.none<A>()))
-        )
-      )
-    ),
-    Effect.disconnect(
-      Effect.sleep(timeoutMs).pipe(
-        Effect.zipRight(Effect.logDebug(timeoutMessage)),
-        Effect.as(Option.none<A>())
-      )
-    )
-  );
-
-const getOptionalValueWithTimeout = <A, E, R>(
-  effect: Effect.Effect<A, E, R>,
-  timeoutMs: number,
-  timeoutMessage: string,
-  failureMessage: string
-): Effect.Effect<A | undefined, never, R> =>
-  getOptionalResultWithTimeout(effect, timeoutMs, timeoutMessage, failureMessage).pipe(
-    Effect.map(Option.getOrUndefined)
-  );
 
 const findToolkitBySlug = <A extends { slug: string }>(
   items: ReadonlyArray<A>,
@@ -75,6 +43,40 @@ const findToolkitBySlug = <A extends { slug: string }>(
   const normalizedSlug = slug.trim().toLowerCase();
   return Option.fromNullable(items.find(item => item.slug.trim().toLowerCase() === normalizedSlug));
 };
+
+const fallbackToolkitFromCatalog = (catalogToolkitOpt: Option.Option<Toolkit>) =>
+  Option.match(catalogToolkitOpt, {
+    onNone: () => undefined,
+    onSome: toolkit => ({
+      slug: toolkit.slug,
+      name: toolkit.name,
+      meta: {
+        description: toolkit.meta.description,
+        logo: '',
+      },
+      is_no_auth: toolkit.no_auth,
+      enabled: true,
+      connected_account: null,
+      composio_managed_auth_schemes: [...toolkit.composio_managed_auth_schemes],
+    }),
+  });
+
+const fallbackToolkitFromDetailed = (detailedToolkitOpt: Option.Option<ToolkitDetailed>) =>
+  Option.match(detailedToolkitOpt, {
+    onNone: () => undefined,
+    onSome: detailed => ({
+      slug: detailed.slug,
+      name: detailed.name,
+      meta: {
+        description: detailed.meta.description,
+        logo: '',
+      },
+      is_no_auth: detailed.no_auth,
+      enabled: true,
+      connected_account: null,
+      composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
+    }),
+  });
 
 /**
  * View details of a specific toolkit including connection status.
@@ -111,38 +113,6 @@ export const toolkitsCmd$Info = Command.make(
       const resolvedProjectContext = yield* projectContext.resolve;
       const testUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
       const globalTestUserId = userContext.data.testUserId;
-      const fallbackToolkitFromCatalog = (catalogToolkitOpt: Option.Option<Toolkit>) =>
-        Option.match(catalogToolkitOpt, {
-          onNone: () => undefined,
-          onSome: toolkit => ({
-            slug: toolkit.slug,
-            name: toolkit.name,
-            meta: {
-              description: toolkit.meta.description,
-              logo: '',
-            },
-            is_no_auth: toolkit.no_auth,
-            enabled: true,
-            connected_account: null,
-            composio_managed_auth_schemes: [...toolkit.composio_managed_auth_schemes],
-          }),
-        });
-      const fallbackToolkitFromDetailed = (detailedToolkitOpt: Option.Option<ToolkitDetailed>) =>
-        Option.match(detailedToolkitOpt, {
-          onNone: () => undefined,
-          onSome: detailed => ({
-            slug: detailed.slug,
-            name: detailed.name,
-            meta: {
-              description: detailed.meta.description,
-              logo: '',
-            },
-            is_no_auth: detailed.no_auth,
-            enabled: true,
-            connected_account: null,
-            composio_managed_auth_schemes: [...detailed.composio_managed_auth_schemes],
-          }),
-        });
       const resolvedUserId = Option.match(userId, {
         onSome: value => Option.some(value),
         onNone: () =>
@@ -166,108 +136,67 @@ export const toolkitsCmd$Info = Command.make(
         .withSpinner(
           `Fetching toolkit "${slugValue}"...`,
           Effect.gen(function* () {
-            const detailedToolkitOptEffect = getOptionalResultWithTimeout(
-              repo.getToolkitDetailed(slugValue),
-              TOOLKIT_INFO_METADATA_TIMEOUT_MS,
-              `Timed out fetching detailed toolkit info for "${slugValue}".`,
-              'Failed to fetch detailed toolkit info:'
-            );
-
-            const catalogToolkitOptEffect = Effect.all(
-              [
-                getOptionalResultWithTimeout(
-                  repo
-                    .getToolkitsBySlugs([slugValue])
-                    .pipe(Effect.map(toolkits => findToolkitBySlug(toolkits, slugValue))),
-                  TOOLKIT_INFO_EXACT_LOOKUP_TIMEOUT_MS,
-                  `Timed out fetching toolkit "${slugValue}" by slug.`,
-                  'Failed to fetch toolkit by slug:'
-                ).pipe(Effect.map(Option.flatten)),
-                getOptionalResultWithTimeout(
-                  repo
-                    .searchToolkits({
-                      search: slugValue,
-                      limit: TOOLKIT_INFO_SEARCH_FALLBACK_LIMIT,
-                    })
-                    .pipe(Effect.map(result => findToolkitBySlug(result.items, slugValue))),
-                  TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS,
-                  `Timed out fetching toolkit search fallback for "${slugValue}".`,
-                  'Failed to fetch toolkit search fallback:'
-                ).pipe(Effect.map(Option.flatten)),
-              ],
-              { concurrency: 'unbounded' }
-            ).pipe(
-              Effect.map(([retrievedToolkitOpt, searchedToolkitOpt]) =>
-                Option.orElse(retrievedToolkitOpt, () => searchedToolkitOpt)
-              )
-            );
-
-            const sessionToolkitEffect = getOptionalValueWithTimeout(
-              clientSingleton.get().pipe(
-                Effect.flatMap(client =>
-                  resolveToolRouterSession(client, effectiveUserId).pipe(
-                    Effect.flatMap(({ sessionId }) =>
-                      Effect.tryPromise(() =>
-                        client.toolRouter.session.toolkits(sessionId, {
-                          toolkits: [slugValue],
-                        })
+            // Run all lookups in parallel. Each has its own timeout so
+            // the total wait is bounded by the slowest (8s), not their sum.
+            const [sessionToolkit, catalogToolkitOpt, searchToolkitOpt, detailedToolkitOpt] =
+              yield* Effect.all(
+                [
+                  getOptionalValueWithTimeout(
+                    clientSingleton.get().pipe(
+                      Effect.flatMap(client =>
+                        resolveToolRouterSession(client, effectiveUserId).pipe(
+                          Effect.flatMap(({ sessionId }) =>
+                            Effect.tryPromise(() =>
+                              client.toolRouter.session.toolkits(sessionId, {
+                                toolkits: [slugValue],
+                              })
+                            )
+                          ),
+                          Effect.map(response => response.items[0])
+                        )
                       )
                     ),
-                    Effect.map(response => response.items[0])
-                  )
-                )
-              ),
-              TOOLKIT_INFO_SESSION_TIMEOUT_MS,
-              `Timed out fetching session toolkit info for "${slugValue}".`,
-              'Failed to fetch session toolkit info:'
-            );
-
-            const cachedCatalogToolkitOptEffect = yield* Effect.cached(catalogToolkitOptEffect);
-            const cachedSessionToolkitEffect = yield* Effect.cached(sessionToolkitEffect);
-            const cachedDetailedToolkitOptEffect = yield* Effect.cached(detailedToolkitOptEffect);
-
-            const [summaryToolkit, detailedToolkitOpt] = yield* Effect.all(
-              [
-                Effect.raceFirst(
-                  Effect.disconnect(
-                    Effect.raceFirst(
-                      Effect.disconnect(
-                        cachedSessionToolkitEffect.pipe(
-                          Effect.flatMap(toolkit =>
-                            toolkit === undefined ? Effect.never : Effect.succeed(toolkit)
-                          )
-                        )
-                      ),
-                      Effect.disconnect(
-                        cachedCatalogToolkitOptEffect.pipe(
-                          Effect.flatMap(catalogToolkitOpt => {
-                            const toolkit = fallbackToolkitFromCatalog(catalogToolkitOpt);
-                            return toolkit === undefined ? Effect.never : Effect.succeed(toolkit);
-                          })
-                        )
-                      )
-                    )
+                    TOOLKIT_INFO_SESSION_TIMEOUT_MS,
+                    `Timed out fetching session toolkit info for "${slugValue}".`,
+                    'Failed to fetch session toolkit info:'
                   ),
-                  Effect.disconnect(
-                    Effect.all([cachedSessionToolkitEffect, cachedCatalogToolkitOptEffect], {
-                      concurrency: 'unbounded',
-                    }).pipe(
-                      Effect.map(
-                        ([sessionToolkit, catalogToolkitOpt]) =>
-                          sessionToolkit ?? fallbackToolkitFromCatalog(catalogToolkitOpt)
-                      )
-                    )
-                  )
-                ),
-                cachedDetailedToolkitOptEffect,
-              ],
-              { concurrency: 'unbounded' }
-            );
+                  getOptionalResultWithTimeout(
+                    repo
+                      .getToolkitsBySlugs([slugValue])
+                      .pipe(Effect.map(toolkits => findToolkitBySlug(toolkits, slugValue))),
+                    TOOLKIT_INFO_CATALOG_TIMEOUT_MS,
+                    `Timed out fetching toolkit "${slugValue}" from catalog.`,
+                    'Failed to fetch toolkit from catalog:'
+                  ).pipe(Effect.map(Option.flatten)),
+                  getOptionalResultWithTimeout(
+                    repo
+                      .searchToolkits({
+                        search: slugValue,
+                        limit: TOOLKIT_INFO_SEARCH_FALLBACK_LIMIT,
+                      })
+                      .pipe(Effect.map(result => findToolkitBySlug(result.items, slugValue))),
+                    TOOLKIT_INFO_SEARCH_FALLBACK_TIMEOUT_MS,
+                    `Timed out fetching toolkit search fallback for "${slugValue}".`,
+                    'Failed to fetch toolkit search fallback:'
+                  ).pipe(Effect.map(Option.flatten)),
+                  getOptionalResultWithTimeout(
+                    repo.getToolkitDetailed(slugValue),
+                    TOOLKIT_INFO_DETAILED_TIMEOUT_MS,
+                    `Timed out fetching detailed toolkit info for "${slugValue}".`,
+                    'Failed to fetch detailed toolkit info:'
+                  ),
+                ],
+                { concurrency: 'unbounded' }
+              );
 
-            return {
-              toolkit: summaryToolkit ?? fallbackToolkitFromDetailed(detailedToolkitOpt),
-              detailedToolkitOpt,
-            };
+            const toolkit =
+              sessionToolkit ??
+              fallbackToolkitFromCatalog(
+                Option.orElse(catalogToolkitOpt, () => searchToolkitOpt)
+              ) ??
+              fallbackToolkitFromDetailed(detailedToolkitOpt);
+
+            return { toolkit, detailedToolkitOpt };
           })
         )
         .pipe(

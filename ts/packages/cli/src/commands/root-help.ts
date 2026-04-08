@@ -2,7 +2,7 @@ import { Console, Effect, Option } from 'effect';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { bold, dim, gray } from 'src/ui/colors';
 import { formatLimitDescription } from 'src/ui/clamp-limit';
-import { TOOLKITS_LIMIT_DESCRIPTION } from './toolkits/limits';
+const TOOLKITS_LIMIT_DESCRIPTION = formatLimitDescription('Number of results per page');
 import {
   type CommandVisibility,
   experimental,

@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { filterToolkitsForListQuery } from 'src/commands/toolkits/commands/toolkits.list.cmd';
+// filterToolkitsForListQuery is a re-export of filterToolkitsByQuery from toolkit-ranking.ts
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
