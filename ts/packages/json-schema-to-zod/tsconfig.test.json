@@ -2,8 +2,7 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.options.json",
   "compilerOptions": {
-    "rootDir": ".",
-    "baseUrl": "."
+    "rootDir": "."
   },
   "include": ["src/**/*", "test/**/*", "package.json"],
   "exclude": ["node_modules", "../../../node_modules", "**/dist", "test/e2e", "test-sandboxes"]

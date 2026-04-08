@@ -2,9 +2,8 @@
  * E2E test: TypeScript .mjs import resolution with moduleResolution: "nodenext"
  *
  * This suite keeps a committed sample of Composio-generated TypeScript sources
- * and verifies that they compile successfully with moduleResolution: "nodenext".
- * The live CLI generation path is covered elsewhere; this test focuses only on
- * the emitted import specifiers and TypeScript compatibility.
+ * and verifies that representative `.js` import specifiers compile successfully
+ * with moduleResolution: "nodenext".
  */
 
 import assert from 'node:assert';
@@ -22,8 +21,8 @@ console.log('🧪 Testing TypeScript .mjs import resolution with moduleResolutio
 console.log(`Node.js version: ${process.version}`);
 console.log(`Working directory: ${__dirname}\n`);
 
-// Test 1: Verify generated files exist
-console.log('Test 1: Verifying generated files exist...');
+// Test 1: Verify representative generated files exist
+console.log('Test 1: Verifying fixture generated files exist...');
 try {
   assert.ok(existsSync(GENERATED_DIR), 'Generated directory should exist');
 
@@ -31,19 +30,18 @@ try {
   console.log('Generated files:', files);
 
   assert.ok(files.length > 0, 'Generated directory should not be empty');
-  assert.ok(files.some((f) => f.endsWith('.ts')), 'Should have .ts files');
-
-  console.log('✅ Test 1 passed: Generated files exist\n');
+  assert.ok(files.includes('index.ts'), 'Generated directory should include index.ts');
+  assert.ok(files.includes('codeinterpreter.ts'), 'Generated directory should include codeinterpreter.ts');
+  console.log('✅ Test 1 passed: Fixture generated files exist\n');
 } catch (error) {
-  console.error('❌ Test 1 failed: Generated files verification failed');
+  console.error('❌ Test 1 failed: Fixture generated files verification failed');
   console.error(error.message);
   process.exit(1);
 }
 
 // Test 2: Run tsc --noEmit to check TypeScript compilation
 console.log('Test 2: Running tsc --noEmit to verify TypeScript compilation...');
-console.log('Expected: FAILURE with TS2307 if importExtension is "mjs"');
-console.log('Expected: SUCCESS if importExtension is "js"\n');
+console.log('Expected: SUCCESS when generated source uses ".js" specifiers under nodenext\n');
 
 try {
   execSync(`npx tsc --noEmit -p ${TSCONFIG_PATH}`, {
@@ -54,23 +52,19 @@ try {
   });
 
   console.log('✅ Test 2 passed: TypeScript compilation succeeded');
-  console.log('   (importExtension is correctly set to "js")\n');
+  console.log('   (fixture imports correctly use ".js" specifiers)\n');
 } catch (error) {
-  // execSync error object has stdout/stderr as Buffer or string
   const stdout = error.stdout?.toString?.() || error.stdout || '';
   const stderr = error.stderr?.toString?.() || error.stderr || '';
   const output = stdout + stderr + error.message;
 
   if (output.includes('TS2307') && output.includes('.mjs')) {
-    console.log('❌ Test 2 failed: TypeScript compilation failed with TS2307');
-    console.log('   This confirms the bug: .mjs imports do not resolve to .ts files');
-    console.log('   with moduleResolution: "nodenext"\n');
-    console.log('Error output:');
-    console.log(stdout || stderr);
-    process.exit(1);
+    console.error('❌ Test 2 failed: TypeScript compilation failed with TS2307');
+    console.error('   This likely means the generated imports still use ".mjs" under nodenext.');
+  } else {
+    console.error('❌ Test 2 failed: TypeScript compilation failed');
   }
-
-  console.error('❌ Test 2 failed: Unexpected TypeScript error');
+  console.error('output:', output);
   console.error('stdout:', stdout);
   console.error('stderr:', stderr);
   console.error('message:', error.message);

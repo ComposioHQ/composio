@@ -15,11 +15,8 @@
     "inputParameters": {
       "properties": {
         "tool_slugs": {
-          "description": "List of tool slugs to retrieve schemas for. Each slug MUST be a valid tool slug previously returned by COMPOSIO_SEARCH_TOOLS.",
+          "description": "Array of tool slugs to retrieve schemas for. Pass slugs exactly as returned by COMPOSIO_SEARCH_TOOLS.",
           "examples": [
-            [
-              "GMAIL_SEND_EMAIL"
-            ],
             [
               "GMAIL_SEND_EMAIL",
               "SLACK_SEND_MESSAGE"
@@ -36,6 +33,29 @@
           "description": "ALWAYS pass the session_id that was provided in the SEARCH_TOOLS response.",
           "title": "Session ID",
           "type": "string"
+        },
+        "include": {
+          "description": "Schema fields to include. Defaults to [\"input_schema\"]. Include \"output_schema\" when calling tools in the workbench to validate response structure.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "input_schema",
+              "output_schema"
+            ]
+          },
+          "default": [
+            "input_schema"
+          ],
+          "examples": [
+            [
+              "input_schema"
+            ],
+            [
+              "input_schema",
+              "output_schema"
+            ]
+          ]
         }
       },
       "required": [
@@ -367,8 +387,7 @@
           },
           "required": [
             "message",
-            "results",
-            "summary"
+            "results"
           ],
           "title": "Data",
           "type": "object"
@@ -398,7 +417,7 @@
     "slug": "COMPOSIO_MULTI_EXECUTE_TOOL",
     "name": "multi_execute_tool",
     "displayName": "Multi Execute Tool",
-    "description": "\n  Fast and parallel tool executor for tools and recipes discovered through COMPOSIO_SEARCH_TOOLS. Use this tool to execute up to 50 tools in parallel across apps. Response contains structured outputs ready for immediate analysis - avoid reprocessing them via remote bash/workbench tools.\n\nPrerequisites:\n- Always use valid tool slugs and their arguments discovered through COMPOSIO_SEARCH_TOOLS. NEVER invent tool slugs or argument fields. ALWAYS pass STRICTLY schema-compliant arguments with each tool execution.\n- Ensure an ACTIVE connection exists for the toolkits that are going to be executed. If none exists, MUST initiate one via COMPOSIO_MANAGE_CONNECTIONS before execution.\n- Only batch tools that are logically independent - no required ordering or dependencies between tools or their outputs. DO NOT pass dummy or placeholder values; always resolve required inputs using appropriate tools first.\n\nUsage guidelines:\n- Use this whenever a tool is discovered and has to be called, either as part of a multi-step workflow or as a standalone tool.\n- If COMPOSIO_SEARCH_TOOLS returns a tool that can perform the task, prefer calling it via this executor. Do not write custom API calls or ad-hoc scripts for tasks that can be completed by available Composio tools.\n- Prefer parallel execution: group independent tools into a single multi-execute call where possible.\n- Predictively set sync_response_to_workbench=true if the response may be large or needed for later scripting. It still shows response inline; if the actual response data turns out small and easy to handle, keep everything inline and SKIP workbench usage.\n- Responses contain structured outputs for each tool. RULE: Small data - process yourself inline; large data - process in the workbench.\n- ALWAYS include inline references/links to sources in MARKDOWN format directly next to the relevant text. Eg provide slack thread links alongside with summary, render document links instead of raw IDs.\n\nRestrictions: Some tools or toolkits may be disabled in this environment. If the response indicates a restriction, inform the user and STOP execution immediately. Do NOT attempt workarounds or speculative actions.\n\n\n",
+    "description": "\n  Fast and parallel tool executor for tools and recipes discovered through COMPOSIO_SEARCH_TOOLS. Use this tool to execute up to 50 tools in parallel across apps only when they're logically independent (no ordering/output dependencies). Response contains structured outputs ready for immediate analysis - avoid reprocessing them via remote bash/workbench tools.\n\nPrerequisites:\n- Always use valid tool slugs and their arguments discovered through COMPOSIO_SEARCH_TOOLS. NEVER invent tool slugs or argument fields. ALWAYS pass STRICTLY schema-compliant arguments with each tool execution.\n- Ensure an ACTIVE connection exists for the toolkits that are going to be executed. If none exists, MUST initiate one via COMPOSIO_MANAGE_CONNECTIONS before execution.\n- Only batch tools that are logically independent - no ordering, no output-to-input dependencies, and no intra-call chaining (tools in one call can't use each other's outputs). DO NOT pass dummy or placeholder inputs; always resolve required inputs using appropriate tools first.\n\nUsage guidelines:\n- Use this whenever a tool is discovered and has to be called, either as part of a multi-step workflow or as a standalone tool.\n- If COMPOSIO_SEARCH_TOOLS returns a tool that can perform the task, prefer calling it via this executor. Do not write custom API calls or ad-hoc scripts for tasks that can be completed by available Composio tools.\n- Prefer parallel execution: group independent tools into a single multi-execute call where possible.\n- Predictively set sync_response_to_workbench=true if the response may be large or needed for later scripting. It still shows response inline; if the actual response data turns out small and easy to handle, keep everything inline and SKIP workbench usage.\n- Responses contain structured outputs for each tool. RULE: Small data - process yourself inline; large data - process in the workbench.\n- ALWAYS include inline references/links to sources in MARKDOWN format directly next to the relevant text. Eg provide slack thread links alongside with summary, render document links instead of raw IDs.\n\nRestrictions: Some tools or toolkits may be disabled in this environment. If the response indicates a restriction, inform the user and STOP execution immediately. Do NOT attempt workarounds or speculative actions.\n\n\n",
     "tags": [
       "openWorldHint",
       "destructiveHint",
@@ -412,7 +431,7 @@
     "inputParameters": {
       "properties": {
         "tools": {
-          "description": "List of tools to execute in parallel.",
+          "description": "List of logically independent tools to execute in parallel.",
           "items": {
             "properties": {
               "tool_slug": {

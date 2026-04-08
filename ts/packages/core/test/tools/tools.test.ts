@@ -650,6 +650,41 @@ describe('Tools', () => {
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
 
+    it('should transform customAuthParams.baseURL to base_url when executing a tool', async () => {
+      const slug = 'COMPOSIO_TOOL';
+      const body = {
+        userId: 'test-user',
+        connectedAccountId: 'test-connected-account-id',
+        arguments: { query: 'test' },
+        dangerouslySkipVersionCheck: true,
+        customAuthParams: {
+          baseURL: 'https://custom-api.example.com',
+          parameters: [{ name: 'x-api-key', value: 'test-key', in: 'header' as const }],
+          body: { extra: 'data' },
+        },
+      };
+
+      await mockToolExecution(context.tools);
+
+      const result = await context.tools.execute(slug, body);
+
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(slug, {
+        allow_tracing: undefined,
+        connected_account_id: 'test-connected-account-id',
+        custom_auth_params: {
+          base_url: 'https://custom-api.example.com',
+          parameters: [{ name: 'x-api-key', value: 'test-key', in: 'header' }],
+          body: { extra: 'data' },
+        },
+        custom_connection_data: undefined,
+        arguments: body.arguments,
+        user_id: body.userId,
+        version: 'latest',
+        text: undefined,
+      });
+      expect(result).toEqual(toolMocks.toolExecuteResponse);
+    });
+
     it('should pass version parameter from execute() to getRawComposioToolBySlug()', async () => {
       const slug = 'COMPOSIO_TOOL';
       const explicitVersion = '20250909_00';

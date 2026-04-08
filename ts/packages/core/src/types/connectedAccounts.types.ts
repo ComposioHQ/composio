@@ -88,6 +88,8 @@ export type ConnectedAccountAuthConfig = z.infer<typeof ConnectedAccountAuthConf
 export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   id: string;
   authConfig: z.infer<typeof ConnectedAccountAuthConfigSchema>;
+  wordId?: string | null;
+  alias?: string | null;
   /** @deprecated use connectedAccount.state instead */
   data?: Record<string, unknown>;
   /** @deprecated use connectedAccount.state instead */
@@ -103,6 +105,8 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
 }> = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
+  wordId: z.string().nullable().optional(),
+  alias: z.string().nullable().optional(),
   /**
    * @deprecated use connectedAccount.state instead
    */

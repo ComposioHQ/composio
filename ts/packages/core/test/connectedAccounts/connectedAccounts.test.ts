@@ -479,6 +479,8 @@ describe('ConnectedAccounts', () => {
           isComposioManaged: true,
           isDisabled: false,
         },
+        wordId: null,
+        alias: null,
         state: {
           authScheme: AuthSchemeTypes.OAUTH2,
           val: {
@@ -498,6 +500,35 @@ describe('ConnectedAccounts', () => {
         },
         testRequestEndpoint: undefined,
       });
+    });
+
+    it('should preserve alias and wordId when the API returns them', async () => {
+      const nanoid = 'conn_456';
+      const mockResponse = {
+        id: nanoid,
+        status: 'ACTIVE',
+        word_id: 'castle',
+        alias: 'Work Gmail',
+        auth_config: {
+          id: 'test-auth-config',
+          is_composio_managed: true,
+          is_disabled: false,
+        },
+        is_disabled: false,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z',
+        status_reason: null,
+        toolkit: {
+          slug: 'gmail',
+        },
+      };
+
+      extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.get(nanoid);
+
+      expect(result.wordId).toBe('castle');
+      expect(result.alias).toBe('Work Gmail');
     });
   });
 
@@ -713,6 +744,7 @@ describe('ConnectedAccounts', () => {
       expect(result).toEqual({
         id: nanoid,
         status: ConnectedAccountStatuses.ACTIVE,
+        alias: null,
         authConfig: {
           id: 'auth_config_123',
           authScheme: AuthSchemeTypes.OAUTH2,
@@ -737,6 +769,7 @@ describe('ConnectedAccounts', () => {
           slug: 'test-toolkit',
         },
         testRequestEndpoint: undefined,
+        wordId: null,
       });
     });
 
@@ -808,8 +841,10 @@ describe('ConnectedAccounts', () => {
       expect(result).toEqual({
         id: nanoid,
         status: ConnectedAccountStatuses.ACTIVE,
+        alias: null,
         authConfig: {
           id: 'auth_config_123',
+          authScheme: undefined,
           isComposioManaged: true,
           isDisabled: false,
         },
@@ -831,6 +866,7 @@ describe('ConnectedAccounts', () => {
           slug: 'test-toolkit',
         },
         testRequestEndpoint: undefined,
+        wordId: null,
       });
     });
   });

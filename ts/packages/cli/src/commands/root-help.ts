@@ -1,7 +1,15 @@
-import { Console, Effect } from 'effect';
+import { Console, Effect, Option } from 'effect';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { bold, dim, gray } from 'src/ui/colors';
 import { formatLimitDescription } from 'src/ui/clamp-limit';
 import { TOOLKITS_LIMIT_DESCRIPTION } from './toolkits/limits';
+import {
+  type CommandVisibility,
+  experimental,
+  tagged,
+  visibleValues,
+  type TaggedValue,
+} from './feature-tags';
 
 type DetailedCommand = {
   name: string;
@@ -27,8 +35,8 @@ const LOGS_LIMIT_DESCRIPTION = formatLimitDescription('Number of logs to fetch')
 
 // ── Core workflow commands ──────────────────────────────────────────────
 
-const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
-  {
+const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
+  tagged({
     name: 'search',
     description: 'Find tools by use case across all toolkits/apps.',
     usage: 'search <query...> [--toolkits text] [--limit integer] [--human]',
@@ -41,13 +49,13 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '--limit', description: MAX_RESULTS_LIMIT_DESCRIPTION },
       { name: '--human', description: 'Show formatted output instead of default JSON' },
     ],
-  },
-  {
+  }),
+  tagged({
     name: 'execute',
     description:
       'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
     usage:
-      'execute <slug> [-d, --data text] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
+      'execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
@@ -59,17 +67,21 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
         name: '-p, --parallel',
         description: 'Execute repeated <slug> -d <text> pairs concurrently',
       },
+      {
+        name: '--file',
+        description: 'Inject a local file path into the single file_uploadable input',
+      },
       { name: '--dry-run', description: 'Validate and preview the tool call without executing it' },
-      { name: '--get-schema', description: 'Fetch and print the raw tool schema' },
+      { name: '--get-schema', description: 'Fetch and print the CLI-facing input schema' },
     ],
-  },
-  {
+  }),
+  tagged({
     name: 'link',
     description: 'Connect your account for a toolkit/app.',
     usage: 'link [<toolkit>]',
     options: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
-  },
-  {
+  }),
+  tagged({
     name: 'run',
     description:
       'Run inline TS/JS code with shimmed CLI commands; injected execute(), search(), proxy(), experimental_subAgent(), and z (zod).',
@@ -79,8 +91,37 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '-f, --file', description: 'Run a TS/JS file instead of inline code' },
       { name: '--dry-run', description: 'Preview execute() calls without running remote actions' },
     ],
-  },
-  {
+  }),
+  experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, {
+    name: 'listen',
+    description:
+      'Create a temporary subscription for consumer-project events and persist each payload into the session artifact folder.',
+    usage:
+      'listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
+    options: [
+      { name: '<slug>', description: 'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")' },
+      {
+        name: '-p, --params',
+        description:
+          "Trigger create params as JSON or JS-style object, e.g. -p '{ trigger_config: { ... } }'.",
+      },
+      {
+        name: '--max-events',
+        description: 'Stop after receiving N events, then disable the temporary trigger',
+      },
+      {
+        name: '--timeout',
+        description:
+          'Stop after a duration such as 30s, 5m, or 1hr, then disable the temporary trigger',
+      },
+      {
+        name: '--stream',
+        description:
+          'Also print each payload inline as a single-line stream value. Optionally pass a jq-like path such as ".thread.id".',
+      },
+    ],
+  }),
+  tagged({
     name: 'proxy',
     description:
       'curl-like access to any toolkit API through Composio using your connected account.',
@@ -92,41 +133,55 @@ const CORE_COMMANDS: ReadonlyArray<DetailedCommand> = [
       { name: '-H, --header', description: 'Header in "Name: value" format. Repeat for multiple.' },
       { name: '-d, --data', description: 'Request body as raw text, JSON, @file, or - for stdin' },
     ],
-  },
+  }),
 ];
 
 // ── Developer commands ─────────────────────────────────────────────────
 
-const OTHER_COMMANDS: ReadonlyArray<CompactCommand> = [
-  { name: 'composio tools info <slug>', description: 'Print tool summary and cache its schema' },
-  { name: 'composio tools list <toolkit>', description: 'List tools available in a toolkit' },
-  {
+const OTHER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({
+    name: 'composio tools info <slug>',
+    description: 'Print tool summary and cache its schema',
+  }),
+  tagged({
+    name: 'composio tools list <toolkit>',
+    description: 'List tools available in a toolkit',
+  }),
+  tagged({
+    name: 'composio triggers info <slug>',
+    description: 'Print trigger type details and schema summaries',
+  }),
+  tagged({
+    name: 'composio triggers list <toolkit>',
+    description: 'List available trigger types in a toolkit',
+  }),
+  tagged({
     name: 'composio artifacts cwd',
     description: 'Print the cwd-scoped session artifact directory',
-  },
+  }),
 ];
 
-const DEVELOPER_COMMANDS: ReadonlyArray<CompactCommand> = [
-  {
+const DEVELOPER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({
     name: 'dev',
     description:
       'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.',
-  },
-  {
+  }),
+  tagged({
     name: 'generate',
     description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
-  },
+  }),
 ];
 
 // ── Account commands ───────────────────────────────────────────────────
 
-const ACCOUNT_COMMANDS: ReadonlyArray<CompactCommand> = [
-  { name: 'login', description: 'Log in to Composio' },
-  { name: 'logout', description: 'Log out from Composio' },
-  { name: 'whoami', description: 'Show current account info' },
-  { name: 'orgs', description: 'Manage default organization context (list, switch)' },
-  { name: 'version', description: 'Display CLI version' },
-  { name: 'upgrade', description: 'Upgrade CLI to the latest version' },
+const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({ name: 'login', description: 'Log in to Composio' }),
+  tagged({ name: 'logout', description: 'Log out from Composio' }),
+  tagged({ name: 'whoami', description: 'Show current account info' }),
+  tagged({ name: 'orgs', description: 'Manage default organization context (list, switch)' }),
+  tagged({ name: 'version', description: 'Display CLI version' }),
+  tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
 ];
 
 // ── Render helpers ─────────────────────────────────────────────────────
@@ -165,7 +220,7 @@ type SubcommandHelp = {
   seeAlso?: ReadonlyArray<string>;
 };
 
-const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
+const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHelp>> = {
   search: {
     usage: 'composio search <query...> [--toolkits text] [--limit integer] [--human]',
     description:
@@ -204,7 +259,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     ],
   },
   execute: {
-    usage: 'composio execute <slug> [-d, --data text] [--dry-run] [--get-schema] [--parallel]',
+    usage:
+      'composio execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] [--parallel]',
     description:
       'Execute a tool by slug. Validates inputs against cached schemas and checks connections automatically — just try it and it will tell you what to fix.',
     args: [
@@ -225,8 +281,12 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
         description: 'Execute repeated <slug> and -d/--data groups in parallel',
       },
       {
+        name: '--file <path>',
+        description: 'Inject a local file path into the single file_uploadable input',
+      },
+      {
         name: '--get-schema',
-        description: 'Fetch and print the raw tool schema without executing',
+        description: 'Fetch and print the CLI-facing input schema without executing',
       },
       {
         name: '--dry-run',
@@ -270,6 +330,47 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
       'composio artifacts cwd                  Print the current session artifact directory',
     ],
   },
+  listen: experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, {
+    usage:
+      'composio listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
+    description:
+      'Create a temporary subscription for consumer-project events so background agents can easily consume new emails, Slack messages, and other trigger payloads from artifacts.',
+    args: [{ name: '<slug>', description: 'Trigger slug to create and listen to' }],
+    options: [
+      {
+        name: '-p, --params <text>',
+        description:
+          'Trigger create params as JSON/JS object, @file, or - for stdin. Pass optional trigger config fields only.',
+      },
+      {
+        name: '--max-events <integer>',
+        description: 'Stop after N events for this temporary trigger and disable it',
+      },
+      {
+        name: '--timeout <text>',
+        description: 'Stop after a duration such as "30s", "5m", or "1hr" and disable the trigger',
+      },
+      {
+        name: '--stream [text]',
+        description:
+          'Also print each event payload inline. Optionally pass a jq-like path such as ".thread.id" or ".data[0].id".',
+      },
+    ],
+    examples: [
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE',
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --max-events 5',
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 5m',
+      "composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 1hr --stream '.data.threadId'",
+      'composio listen SLACK_RECEIVE_MESSAGE -p \'{ trigger_config: { channel: "C123" } }\'',
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream',
+      "composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream '.data.threadId'",
+    ],
+    seeAlso: [
+      'composio artifacts cwd                   Print the current session artifact directory',
+      'composio triggers info <slug>            Inspect trigger type details before listening',
+      'composio link <toolkit>                  Connect the required account before creating the trigger',
+    ],
+  }),
   link: {
     usage: 'composio link [<toolkit>] [--no-wait]',
     description:
@@ -430,13 +531,21 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
 
   login: {
     usage:
-      'composio login [--no-browser] [--no-wait] [--key text] [-y, --yes] [--no-skill-install]',
+      'composio login [--no-browser] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
     description:
       'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
     options: [
       {
         name: '--key <text>',
         description: 'Complete login using session key from composio login --no-wait',
+      },
+      {
+        name: '--user-api-key <text>',
+        description: 'Log in directly with a Composio user API key',
+      },
+      {
+        name: '--org <text>',
+        description: 'Default organization ID or name to store for CLI commands',
       },
     ],
     flags: [
@@ -514,8 +623,21 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   'tools info': {
     usage: 'composio tools info [<slug>]',
     description:
-      'View a brief summary of a tool and cache the raw schema used by `composio execute --get-schema`.',
+      'View a brief summary of a tool and show the CLI-facing schema used by `composio execute --get-schema`.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GMAIL_SEND_EMAIL")' }],
+  },
+  'triggers list': {
+    usage: 'composio triggers list <toolkit> [--limit integer]',
+    description: 'List available trigger types for a toolkit.',
+    args: [
+      { name: '<toolkit>', description: 'Toolkit slug to list trigger types for (e.g. "gmail")' },
+    ],
+    options: [{ name: '--limit <integer>', description: MAX_TRIGGER_TYPES_LIMIT_DESCRIPTION }],
+  },
+  'triggers info': {
+    usage: 'composio triggers info [<slug>]',
+    description: 'View details of a specific trigger type.',
+    args: [{ name: '<slug>', description: 'Trigger slug' }],
   },
 
   // ── Generate commands ─────────────────────────────────────────────────
@@ -591,17 +713,21 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   },
   'dev playground-execute': {
     usage:
-      'composio dev playground-execute <slug> [-d, --data text] [--user-id text] [--project-name text] [--dry-run] [--get-schema]',
+      'composio dev playground-execute <slug> [-d, --data text] [--file path] [--user-id text] [--project-name text] [--dry-run] [--get-schema]',
     description:
       'Test tool executions against playground users using your developer project auth configs.',
     args: [{ name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' }],
     options: [
       { name: '-d, --data <text>', description: 'JSON arguments, @file, or - for stdin' },
+      {
+        name: '--file <path>',
+        description: 'Inject a local file path into the single file_uploadable input',
+      },
       { name: '--user-id <text>', description: 'Developer-project user ID override' },
       { name: '--project-name <text>', description: 'Developer project name override' },
       {
         name: '--get-schema',
-        description: 'Fetch and print the raw tool schema without executing',
+        description: 'Fetch and print the CLI-facing input schema without executing',
       },
       { name: '--dry-run', description: 'Validate and preview without executing' },
     ],
@@ -724,12 +850,12 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
     flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
   },
   'dev triggers list': {
-    usage: 'composio dev triggers list [--toolkits text] [--limit integer]',
-    description: 'List available trigger types.',
-    options: [
-      { name: '--toolkits <text>', description: 'Filter by toolkit slugs' },
-      { name: '--limit <integer>', description: MAX_TRIGGER_TYPES_LIMIT_DESCRIPTION },
+    usage: 'composio dev triggers list <toolkit> [--limit integer]',
+    description: 'List available trigger types for a toolkit.',
+    args: [
+      { name: '<toolkit>', description: 'Toolkit slug to list trigger types for (e.g. "gmail")' },
     ],
+    options: [{ name: '--limit <integer>', description: MAX_TRIGGER_TYPES_LIMIT_DESCRIPTION }],
   },
   'dev triggers info': {
     usage: 'composio dev triggers info [<slug>]',
@@ -834,6 +960,28 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp> = {
   },
 };
 
+const getVisibleSubcommandHelp = (
+  cmd: string,
+  visibility: CommandVisibility
+): Option.Option<SubcommandHelp> => {
+  const entry = SUBCOMMAND_HELP[cmd];
+  if (!entry) {
+    return Option.none();
+  }
+
+  if (!('value' in entry)) {
+    return Option.some(entry);
+  }
+
+  if (!entry.tags || entry.tags.length === 0) {
+    return Option.some(entry.value);
+  }
+
+  return entry.tags.every(tag => visibility.isExperimentalFeatureEnabled(tag))
+    ? Option.some(entry.value)
+    : Option.none();
+};
+
 function renderSubcommandHelp(cmd: SubcommandHelp): string {
   const lines: string[] = [
     '',
@@ -901,7 +1049,10 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
  * Check if argv is `composio <subcommand> --help` for a command we have custom help for.
  * Returns the command name if matched, undefined otherwise.
  */
-export function matchSubcommandHelp(argv: ReadonlyArray<string>): string | undefined {
+export function matchSubcommandHelp(
+  argv: ReadonlyArray<string>,
+  visibility: CommandVisibility
+): string | undefined {
   const args = argv.slice(2);
   if (args.length < 2) return undefined;
   const last = args[args.length - 1];
@@ -911,27 +1062,33 @@ export function matchSubcommandHelp(argv: ReadonlyArray<string>): string | undef
   // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
   for (let len = cmdParts.length; len > 0; len--) {
     const key = cmdParts.slice(0, len).join(' ');
-    if (key in SUBCOMMAND_HELP) return key;
+    if (Option.isSome(getVisibleSubcommandHelp(key, visibility))) return key;
   }
   return undefined;
 }
 
-export function printSubcommandHelp(cmd: string): Effect.Effect<void> {
-  const help = SUBCOMMAND_HELP[cmd];
-  if (!help) return Console.log(`Unknown command: ${cmd}`);
-  return Console.log(renderSubcommandHelp(help));
+export function printSubcommandHelp(
+  cmd: string,
+  visibility: CommandVisibility
+): Effect.Effect<void> {
+  const help = getVisibleSubcommandHelp(cmd, visibility);
+  if (Option.isNone(help)) return Console.log(`Unknown command: ${cmd}`);
+  return Console.log(renderSubcommandHelp(help.value));
 }
 
 /**
  * Match the command name from argv without requiring --help at the end.
  * Used to print contextual help alongside error messages.
  */
-export function matchCommandFromArgv(argv: ReadonlyArray<string>): string | undefined {
+export function matchCommandFromArgv(
+  argv: ReadonlyArray<string>,
+  visibility: CommandVisibility
+): string | undefined {
   const args = argv.slice(2).filter(a => a !== '--help' && a !== '-h' && !a.startsWith('--'));
   // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
   for (let len = Math.min(args.length, 3); len > 0; len--) {
     const key = args.slice(0, len).join(' ');
-    if (key in SUBCOMMAND_HELP) return key;
+    if (Option.isSome(getVisibleSubcommandHelp(key, visibility))) return key;
   }
   return undefined;
 }
@@ -939,10 +1096,11 @@ export function matchCommandFromArgv(argv: ReadonlyArray<string>): string | unde
 /**
  * Get rendered help text for a command, or undefined if not found.
  */
-export function getCommandHelpText(cmd: string): string | undefined {
-  const help = SUBCOMMAND_HELP[cmd];
-  if (!help) return undefined;
-  return renderSubcommandHelp(help);
+export function getCommandHelpText(cmd: string, visibility: CommandVisibility): string | undefined {
+  return Option.match(getVisibleSubcommandHelp(cmd, visibility), {
+    onNone: () => undefined,
+    onSome: help => renderSubcommandHelp(help),
+  });
 }
 
 // ── Main help output ───────────────────────────────────────────────────
@@ -952,7 +1110,7 @@ export function getCommandHelpText(cmd: string): string | undefined {
  * Core workflow commands are shown first with full usage/options.
  * Housekeeping and developer commands are shown compactly at the bottom.
  */
-export function printRootHelp(): Effect.Effect<void> {
+export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void> {
   const name = 'composio';
 
   const lines: string[] = [
@@ -969,11 +1127,11 @@ export function printRootHelp(): Effect.Effect<void> {
     `  ${name} <command> [options]`,
     '',
     bold('CORE COMMANDS'),
-    ...renderDetailedCommands(name, CORE_COMMANDS),
+    ...renderDetailedCommands(name, visibleValues(CORE_COMMANDS, visibility)),
     gray('  Typical flow: search → execute (link and tools when needed)'),
     '',
     bold('TOOLS'),
-    ...renderCompactCommands(OTHER_COMMANDS),
+    ...renderCompactCommands(visibleValues(OTHER_COMMANDS, visibility)),
     '',
     bold('EXAMPLES'),
     `  ${dim('# Find tools — supports multiple queries at once')}`,
@@ -1007,15 +1165,16 @@ export function printRootHelp(): Effect.Effect<void> {
     `  '`,
     '',
     bold('DEVELOPER COMMANDS'),
-    ...renderCompactCommands(DEVELOPER_COMMANDS),
+    ...renderCompactCommands(visibleValues(DEVELOPER_COMMANDS, visibility)),
     '',
     bold('ACCOUNT'),
-    ...renderCompactCommands(ACCOUNT_COMMANDS),
+    ...renderCompactCommands(visibleValues(ACCOUNT_COMMANDS, visibility)),
     '',
     bold('FILES') + dim('  (composio files --help)'),
     `  ${bold('~/.composio/')}`,
     `    CLI configuration and cache directory. Contains your auth state`,
-    `    (user_data.json), cached tool definitions (tools.json, toolkits.json),`,
+    `    (user_data.json), runtime settings (config.json), cached tool definitions`,
+    `    (tools.json, toolkits.json),`,
     `    trigger types, and per-org consumer caches. These caches speed up`,
     `    repeated commands — safe to delete, they will be re-fetched on next use.`,
     '',

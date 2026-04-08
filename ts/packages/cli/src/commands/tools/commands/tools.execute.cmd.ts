@@ -1,4 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
+import type { Composio } from '@composio/client';
 import util from 'node:util';
 import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
@@ -17,7 +18,7 @@ import {
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
-import { ToolsExecutor } from 'src/services/tools-executor';
+import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -44,16 +45,23 @@ import {
   refreshConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import {
+  formatConnectedAccountChoices,
+  resolveConnectedAccountSelection,
+} from 'src/services/connected-account-selection';
+import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { storeCliSessionArtifact } from 'src/services/cli-session-artifacts';
+import { findFileUploadablePaths, normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
   normalizeCliError,
 } from 'src/services/composio-error-overrides';
 import * as constants from 'src/constants';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -62,6 +70,16 @@ const slug = Args.text({ name: 'slug' }).pipe(
 const data = Options.text('data').pipe(
   Options.withAlias('d'),
   Options.withDescription('JSON arguments, @file, or - for stdin'),
+  Options.optional
+);
+const file = Options.text('file').pipe(
+  Options.withDescription('Inject a local file path into the single file_uploadable input'),
+  Options.optional
+);
+const accountOption = Options.text('account').pipe(
+  Options.withDescription(
+    'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
+  ),
   Options.optional
 );
 
@@ -76,7 +94,7 @@ const projectName = Options.text('project-name').pipe(
 );
 
 const getSchema = Options.boolean('get-schema').pipe(
-  Options.withDescription('Fetch and print the raw tool schema without executing'),
+  Options.withDescription('Fetch and print the CLI-facing input schema without executing'),
   Options.withDefault(false)
 );
 const dryRun = Options.boolean('dry-run').pipe(
@@ -117,6 +135,88 @@ const parseArguments = (raw: string) =>
       );
     }
     return parsed as Record<string, unknown>;
+  });
+
+const hasNestedKey = (
+  record: Record<string, unknown>,
+  pathParts: ReadonlyArray<string>
+): boolean => {
+  let current: unknown = record;
+  for (const key of pathParts) {
+    if (typeof current !== 'object' || current === null || Array.isArray(current)) {
+      return false;
+    }
+    if (!(key in (current as Record<string, unknown>))) {
+      return false;
+    }
+    current = (current as Record<string, unknown>)[key];
+  }
+  return true;
+};
+
+const setNestedKey = (
+  record: Record<string, unknown>,
+  pathParts: ReadonlyArray<string>,
+  value: unknown
+): Record<string, unknown> => {
+  if (pathParts.length === 0) return record;
+
+  const clone: Record<string, unknown> = { ...record };
+  let current = clone;
+
+  for (const [index, key] of pathParts.entries()) {
+    if (index === pathParts.length - 1) {
+      current[key] = value;
+      break;
+    }
+
+    const next = current[key];
+    const nextObject =
+      typeof next === 'object' && next !== null && !Array.isArray(next)
+        ? { ...(next as Record<string, unknown>) }
+        : {};
+    current[key] = nextObject;
+    current = nextObject;
+  }
+
+  return clone;
+};
+
+const injectSingleFileArgument = (params: {
+  readonly slug: string;
+  readonly args: Record<string, unknown>;
+  readonly filePath: string;
+  readonly schema: Record<string, unknown>;
+}) =>
+  Effect.gen(function* () {
+    const uploadablePaths = findFileUploadablePaths(params.schema);
+
+    if (uploadablePaths.length === 0) {
+      return yield* Effect.fail(
+        new Error(
+          `Tool "${params.slug}" has no file_uploadable input. Remove --file or pass JSON via -d.`
+        )
+      );
+    }
+
+    if (uploadablePaths.length > 1) {
+      return yield* Effect.fail(
+        new Error(
+          `Tool "${params.slug}" has multiple file_uploadable inputs (${uploadablePaths.map(parts => parts.join('.')).join(', ')}). Pass the target field explicitly with -d instead of --file.`
+        )
+      );
+    }
+
+    const targetPath = uploadablePaths[0] ?? [];
+    if (hasNestedKey(params.args, targetPath)) {
+      return yield* Effect.fail(
+        new Error(
+          `Cannot use --file because "${targetPath.join('.')}" is already set in -d. Remove that field or omit --file.`
+        )
+      );
+    }
+
+    return setNestedKey(params.args, targetPath, params.filePath);
   });
 
 const connectionTips = (toolSlug: string, surface: 'root' | 'dev') => {
@@ -184,6 +284,8 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
+const shouldStoreLargeExecuteOutput = () => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN !== 'run';
+
 type StoredExecuteOutputSummary = {
   readonly successful: true;
   readonly error: null;
@@ -240,7 +342,7 @@ const prepareExecuteOutput = (
   Effect.gen(function* () {
     const json = serializeExecuteOutput(result);
     const tokenCount = getExecuteOutputEncoder().encode(json).length;
-    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD) {
+    if (tokenCount <= EXECUTE_INLINE_OUTPUT_TOKEN_THRESHOLD || !shouldStoreLargeExecuteOutput()) {
       return {
         kind: 'inline' as const,
         json,
@@ -564,9 +666,12 @@ const handleExecutionError = (
     return { error: mapped.message, slug: slugValue };
   });
 
-class ToolExecutionError {
+class ToolExecutionError extends Error {
   readonly _tag = 'ToolExecutionError';
-  constructor(readonly message: string) {}
+  constructor(readonly message: string) {
+    super(message);
+    this.name = 'ToolExecutionError';
+  }
 }
 
 type CachedValidationDecision =
@@ -721,6 +826,8 @@ type DryRunSummary = {
 type RunToolsExecuteParams = {
   slug: string;
   data: Option.Option<string>;
+  file: Option.Option<string>;
+  account: Option.Option<string>;
   userId: Option.Option<string>;
   projectName: Option.Option<string>;
   surface: 'root' | 'dev';
@@ -732,11 +839,12 @@ type RunToolsExecuteParams = {
   skipChecks: boolean;
 };
 
-type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data'>;
+type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data' | 'file'>;
 
 type ParallelExecuteSpec = {
   readonly slug: string;
   readonly data: Option.Option<string>;
+  readonly account: Option.Option<string>;
 };
 
 type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
@@ -768,6 +876,7 @@ type ResolvedExecuteContext = {
   };
   readonly args: Record<string, unknown>;
   readonly resolvedUserId: string;
+  readonly selectedConnectedAccountId?: string;
   readonly executeParams: ToolExecuteParams;
   readonly executeOutputDir?: string;
 };
@@ -792,6 +901,7 @@ const emitCachedSchema = (
   }
 ) =>
   Effect.gen(function* () {
+    const displaySchema = normalizeFileUploadSchema(definition.schema);
     yield* ui.log.message(
       `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
     );
@@ -801,10 +911,61 @@ const emitCachedSchema = (
           slug,
           version: definition.version,
           schemaPath: definition.schemaPath,
-          inputSchema: definition.schema,
+          inputSchema: displaySchema,
         },
         null,
         2
+      )
+    );
+  });
+
+const resolveExplicitConnectedAccount = (params: {
+  readonly client: Composio;
+  readonly toolkitSlug?: string;
+  readonly userId: string;
+  readonly selector: Option.Option<string>;
+}): Effect.Effect<string | undefined, Error> =>
+  Effect.gen(function* () {
+    if (!params.toolkitSlug) return undefined;
+    const toolkitSlug = params.toolkitSlug;
+
+    const accounts = yield* Effect.tryPromise({
+      try: () =>
+        params.client.connectedAccounts.list({
+          toolkit_slugs: [toolkitSlug],
+          user_ids: [params.userId],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        }),
+      catch: error =>
+        new Error(
+          `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(error)}`
+        ),
+    });
+
+    const selected = resolveConnectedAccountSelection(
+      accounts.items as Parameters<typeof resolveConnectedAccountSelection>[0],
+      Option.getOrUndefined(params.selector)
+    );
+
+    if (selected) {
+      return selected.id;
+    }
+
+    if (Option.isNone(params.selector)) {
+      return undefined;
+    }
+
+    const choices = formatConnectedAccountChoices(
+      accounts.items as Parameters<typeof formatConnectedAccountChoices>[0]
+    );
+    const hint =
+      choices.length > 0
+        ? ` Available accounts: ${choices.join(', ')}.`
+        : ' No active connected accounts were found for that toolkit.';
+    return yield* Effect.fail(
+      new Error(
+        `No connected account matched "${params.selector.value}" for toolkit "${toolkitSlug}".${hint}`
       )
     );
   });
@@ -823,7 +984,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const projectContext = yield* ProjectContext;
 
     const input = (yield* resolveInput(params.data)) ?? '{}';
-    const args = yield* parseArguments(input);
+    const parsedArgs = yield* parseArguments(input);
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catchAll(() => Effect.succeed(Option.none()))
     );
@@ -850,6 +1011,34 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
+    const cliConfig = yield* ComposioCliUserConfig;
+    const accountSelector = cliConfig.isExperimentalFeatureEnabled(
+      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
+    )
+      ? params.account
+      : Option.none<string>();
+    const toolkitSlug = toolkitFromToolSlug(params.slug);
+    const selectedConnectedAccountId = yield* resolveExplicitConnectedAccount({
+      client,
+      toolkitSlug,
+      userId: resolvedUserId.value,
+      selector: accountSelector,
+    });
+    const args = Option.isSome(params.file)
+      ? yield* getOrFetchToolInputDefinition(params.slug, {
+          orgId: resolvedProject.orgId,
+          projectId: resolvedProject.projectId,
+        }).pipe(
+          Effect.flatMap(definition =>
+            injectSingleFileArgument({
+              slug: params.slug,
+              args: parsedArgs,
+              filePath: Option.getOrThrow(params.file),
+              schema: definition.schema,
+            })
+          )
+        )
+      : parsedArgs;
     const executeOutputDir =
       process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() ||
       Option.getOrUndefined(
@@ -866,11 +1055,25 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       resolvedProject,
       args,
       resolvedUserId: resolvedUserId.value,
+      selectedConnectedAccountId,
       executeOutputDir,
       executeParams: {
         userId: resolvedUserId.value,
         arguments: args,
         client,
+        connectedAccounts:
+          toolkitSlug && selectedConnectedAccountId
+            ? {
+                [toolkitSlug]: selectedConnectedAccountId,
+              }
+            : undefined,
+        cacheScope:
+          resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+            ? {
+                orgId: resolvedProject.orgId,
+                consumerUserId: resolvedProject.consumerUserId,
+              }
+            : undefined,
       },
     } satisfies ResolvedExecuteContext;
   });
@@ -1188,6 +1391,12 @@ const runExecuteWithSpinner = (params: {
           ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
           : '';
         yield* spinner.stop(`Execution successful${logId}`);
+        const inBandWarning = detectInBandWarning(result.data);
+        if (inBandWarning) {
+          yield* params.ui.log.warn(
+            `The tool executed successfully but the response may contain an error: ${inBandWarning}`
+          );
+        }
         const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);
         if (output.kind === 'file') {
           yield* params.ui.log.message(
@@ -1280,6 +1489,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
     toolDebugLog('execute_params', {
       slug: params.slug,
       userId: context.resolvedUserId,
+      connectedAccountId: context.selectedConnectedAccountId,
       arguments: context.args,
       projectId: context.resolvedProject.projectId,
       orgId: context.resolvedProject.orgId,
@@ -1319,6 +1529,7 @@ const parseParallelExecuteArgs = (
   let skipConnectionCheck = false;
   let skipToolParamsCheck = false;
   let skipChecks = false;
+  let account = Option.none<string>();
   let userId = Option.none<string>();
   let projectName = Option.none<string>();
   const specs: ParallelExecuteSpec[] = [];
@@ -1372,6 +1583,12 @@ const parseParallelExecuteArgs = (
       skipChecks = true;
       continue;
     }
+    if (token === '--account' || token.startsWith('--account=')) {
+      const parsed = readValue(token, i);
+      account = Option.some(parsed.value);
+      i = parsed.nextIndex;
+      continue;
+    }
     if (token === '--user-id' || token.startsWith('--user-id=')) {
       if (!config.allowUserId) {
         throw new Error(`${token} is not supported for this execute command.`);
@@ -1405,6 +1622,7 @@ const parseParallelExecuteArgs = (
       currentSpec = {
         slug: currentSpec.slug,
         data: Option.some(parsed.value),
+        account: currentSpec.account,
       };
       i = parsed.nextIndex;
       continue;
@@ -1417,6 +1635,7 @@ const parseParallelExecuteArgs = (
     currentSpec = {
       slug: token,
       data: Option.none(),
+      account,
     };
   }
 
@@ -1439,6 +1658,7 @@ const parseParallelExecuteArgs = (
     skipConnectionCheck,
     skipToolParamsCheck,
     skipChecks,
+    account,
   };
 };
 
@@ -1508,6 +1728,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
       params.specs,
       () =>
         resolveSchemaContext({
+          account: params.account,
           userId: params.userId,
           projectName: params.projectName,
           surface: params.surface,
@@ -1539,7 +1760,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
             successful: true,
             version: definition.version,
             schemaPath: definition.schemaPath,
-            inputSchema: definition.schema,
+            inputSchema: normalizeFileUploadSchema(definition.schema),
           } satisfies Extract<
             ParallelExecuteResult,
             { readonly inputSchema: Record<string, unknown> }
@@ -1604,6 +1825,8 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
         resolveExecuteContext({
           slug: spec.slug,
           data: spec.data,
+          file: Option.none(),
+          account: spec.account,
           userId: params.userId,
           projectName: params.projectName,
           surface: params.surface,
@@ -1785,11 +2008,33 @@ export const runParallelToolsExecuteFromArgv = (argv: ReadonlyArray<string>) => 
 
 export const rootToolsCmd$Execute = Command.make(
   'execute',
-  { slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks },
-  ({ slug, data, getSchema, dryRun, skipConnectionCheck, skipToolParamsCheck, skipChecks }) =>
+  {
+    slug,
+    data,
+    file,
+    account: accountOption,
+    getSchema,
+    dryRun,
+    skipConnectionCheck,
+    skipToolParamsCheck,
+    skipChecks,
+  },
+  ({
+    slug,
+    data,
+    file,
+    account,
+    getSchema,
+    dryRun,
+    skipConnectionCheck,
+    skipToolParamsCheck,
+    skipChecks,
+  }) =>
     runToolsExecute({
       slug,
       data,
+      file,
+      account,
       userId: Option.none(),
       projectName: Option.none(),
       surface: 'root',
@@ -1808,11 +2053,15 @@ export const rootToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio execute GMAIL_SEND_EMAIL --account default -d \'{ recipient_email: "a@b.com" }\'',
+      '  composio execute SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK --file ./image.png -d \'{ channels: "C123" }\'',
       '  composio execute --parallel GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com" }\'  GITHUB_CREATE_AN_ISSUE -d \'{ owner: "acme", repo: "app", title: "Bug" }\'',
       "  composio execute GMAIL_SEND_EMAIL --dry-run -d '{ ... }'   Preview without executing",
       '  composio execute GMAIL_SEND_EMAIL --get-schema              Fetch and print the input schema',
       '',
       'Flags:',
+      '  --file <path>                Inject a local file path into the single file_uploadable input',
+      '  --account <selector>         Select connected account by alias, word_id, or account id',
       '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
       '  --skip-connection-check     Skip the connected-account check',
       '  --skip-tool-params-check    Skip input validation against cached schema',
@@ -1831,6 +2080,8 @@ export const devToolsCmd$Execute = Command.make(
   {
     slug,
     data,
+    file,
+    account: accountOption,
     userId,
     projectName,
     getSchema,
@@ -1842,6 +2093,8 @@ export const devToolsCmd$Execute = Command.make(
   ({
     slug,
     data,
+    file,
+    account,
     userId,
     projectName,
     getSchema,
@@ -1853,6 +2106,8 @@ export const devToolsCmd$Execute = Command.make(
     runToolsExecute({
       slug,
       data,
+      file,
+      account,
       userId,
       projectName,
       surface: 'dev',
@@ -1872,10 +2127,14 @@ export const devToolsCmd$Execute = Command.make(
       '',
       'Examples:',
       '  composio dev playground-execute GMAIL_SEND_EMAIL -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
+      '  composio dev playground-execute GMAIL_SEND_EMAIL --account default -d \'{ recipient_email: "a@b.com" }\'',
+      '  composio dev playground-execute SLACK_UPLOAD_OR_CREATE_A_FILE_IN_SLACK --file ./image.png -d \'{ channels: "C123" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --dry-run -d \'{ recipient_email: "a@b.com", body: "Hello" }\'',
       '  composio dev playground-execute GMAIL_SEND_EMAIL --get-schema',
       '',
       'Flags:',
+      '  --file <path>                Inject a local file path into the single file_uploadable input',
+      '  --account <selector>         Select connected account by alias, word_id, or account id',
       '  -p, --parallel              Execute repeated TOOL_SLUG -d <json> groups concurrently',
     ].join('\n')
   )

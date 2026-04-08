@@ -257,95 +257,14 @@ describe('buildRunHelpersSource', () => {
       runLogFilePath: '/tmp/composio-run/run.log',
     });
 
-    expect(source).toContain('import * as fs from "node:fs";');
-    expect(source).toContain('import { z } from "zod";');
-    expect(source).toContain('import { isAcpInvokeError } from "file://');
-    expect(source).toContain('import { invokeAcpSubAgent } from "file://');
-    expect(source).toContain('import { invokeLegacySubAgent } from "file://');
-    expect(source).toContain('globalThis.z = z;');
-    expect(source).toContain('globalThis.zod = z;');
-    expect(source).toContain('const stringifyForPrompt = (value) => {');
-    expect(source).toContain('const attachPromptMethod = (value) => {');
-    expect(source).toContain('typeof value.prompt === "function"');
-    expect(source).toContain(
-      'value: () => stringifyForPrompt("data" in value ? value.data : value),'
-    );
-    expect(source).toContain(
-      'const sharedRunOutputDir = typeof helperContext.runOutputDir === "string"'
-    );
-    expect(source).toContain(
-      'const sharedRunLogFilePath = typeof helperContext.runLogFilePath === "string"'
-    );
-    expect(source).toContain('const appendRunLogLine = (line) => {');
-    expect(source).toContain('COMPOSIO_RUN_OUTPUT_DIR');
-    expect(source).toContain('const maybeLoadStoredCliResult = (result) => {');
-    expect(source).toContain('storedInFilePath: outputFilePath !== null,');
-    expect(source).toContain('outputFilePath,');
-    expect(source).toContain('const formatHelperDebugEvent = (step, details = {}) => {');
-    expect(source).toContain(
-      'return `[experimental_subAgent] triggered with ${details.resolvedTarget}`;'
-    );
-    expect(source).toContain('const logCliResultPreview = (requestId, command, result) => {');
-    expect(source).toContain('helperDebugLog("cli.result", {');
-    expect(source).toContain('helperDebugLog("cli.result.stored_in_file"');
-    expect(source).toContain('case "subAgent.acp.message":');
-    expect(source).toContain('COMPOSIO_USER_API_KEY');
+    expect(source).toContain('import { installRunHelpers } from "file://');
+    expect(source).toContain('await installRunHelpers(');
+    expect(source).toContain('"cliPrefix":["/tmp/composio"]');
     expect(source).toContain('"acpOnly":true');
     expect(source).toContain('"logsOff":true');
     expect(source).toContain('"runLogFilePath":"/tmp/composio-run/run.log"');
     expect(source).toContain('"consumerUserId":"consumer_user_test"');
-    expect(source).toContain('Object.defineProperty(globalThis, "__composioRunContext", {');
-    expect(source).toContain('__composioConsumerContext');
-    expect(source).toContain('globalThis.execute = async (slug, data = {}) => {');
-    expect(source).toContain(
-      'if (result && typeof result === "object" && result.successful === false) {'
-    );
-    expect(source).toContain('Object.assign(error, { result, slug });');
-    expect(source).toContain('globalThis.experimental_subAgent = experimentalSubAgentImpl;');
-    expect(source).toContain(
-      'Object.defineProperty(globalThis.experimental_subAgent, "schema", { value: experimentalSubAgentSchema });'
-    );
-    expect(source).toContain('globalThis.invokeAgent = experimentalSubAgentImpl;');
-    expect(source).toContain(
-      'const logFilePath = typeof helperContext.runLogFilePath === "string"'
-    );
-    expect(source).toContain('const response = await invokeAcpSubAgent({');
-    expect(source).toContain('return logFilePath ? { ...response, logFilePath } : response;');
-    expect(source).toContain('if (!isAcpInvokeError(error)) {');
-    expect(source).toContain('if (helperContext.acpOnly === true) {');
-    expect(source).toContain('helperDebugLog("subAgent.acp.fallback"');
-    expect(source).toContain('const response = await invokeLegacySubAgent({');
-    expect(source).toContain('const detectInvokeAgentMaster = () => {');
-    expect(source).toContain(
-      'throw new Error("experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.");'
-    );
-    expect(source).toContain('const inputSchema = options.schema ?? options.jsonSchema;');
-    expect(source).toContain('if (typeof z.toJSONSchema !== "function") {');
-    expect(source).toContain(
-      'experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
-    );
-    expect(source).toContain('let zodSchema;');
-    expect(source).toContain('zodSchema = inputSchema;');
-    expect(source).toContain('structuredSchema = z.toJSONSchema(inputSchema);');
-    expect(source).not.toContain(
-      'const runExternalCommandText = async (cmd, spawnOptions = {}) => {'
-    );
-    expect(source).toContain('globalThis.proxy = async (toolkit) => {');
-    expect(source).toContain('const proxyFetch = async (input, init = {}) => {');
-    expect(source).toContain('return toProxyResponse(result);');
-    expect(source).toContain(
-      'Object.defineProperty(globalThis.proxy, "schema", { value: proxySchema });'
-    );
-    expect(source).toContain('`/api/v3/tool_router/session/${sessionId}/proxy_execute`');
-    expect(source).toContain('"proxy() requires a consumer project context');
-    expect(source).toContain('returned no JSON output');
-    expect(source).toContain('args.push("--dry-run");');
-    expect(source).toContain('args.push("--skip-connection-check");');
-    expect(source).toContain('args.push("--skip-tool-params-check");');
-    expect(source).toContain('args.push("--skip-checks");');
-    expect(source).toContain(
-      "stdio: ['inherit', 'pipe', perfDebugEnabled || toolDebugEnabled ? 'inherit' : 'pipe']"
-    );
+    expect(source).not.toContain('globalThis.execute = async (slug, data = {}) => {');
   });
 });
 
@@ -532,6 +451,11 @@ describe('run companion install metadata', () => {
     fs.mkdirSync(servicesDir, { recursive: true });
 
     fs.writeFileSync(
+      path.join(tempDir, 'run-helpers-runtime.mjs'),
+      'export * from "./services/run-helpers-runtime.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
       path.join(tempDir, 'run-subagent-shared.mjs'),
       'export * from "./services/run-subagent-shared.mjs";\n',
       'utf8'
@@ -552,6 +476,11 @@ describe('run companion install metadata', () => {
       'utf8'
     );
 
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-helpers-runtime.mjs'),
+      'export const runtimeValue = 1;\n',
+      'utf8'
+    );
     fs.writeFileSync(
       path.join(servicesDir, 'run-subagent-shared.mjs'),
       'export const x = 1;\n',
@@ -585,6 +514,11 @@ describe('run companion install metadata', () => {
     fs.mkdirSync(servicesDir, { recursive: true });
 
     fs.writeFileSync(
+      path.join(tempDir, 'run-helpers-runtime.mjs'),
+      'export * from "./services/run-helpers-runtime.mjs";\n',
+      'utf8'
+    );
+    fs.writeFileSync(
       path.join(tempDir, 'run-subagent-shared.mjs'),
       'export * from "./services/run-subagent-shared.mjs";\n',
       'utf8'
@@ -605,6 +539,11 @@ describe('run companion install metadata', () => {
       'utf8'
     );
 
+    fs.writeFileSync(
+      path.join(servicesDir, 'run-helpers-runtime.mjs'),
+      'export const runtimeValue = 1;\n',
+      'utf8'
+    );
     fs.writeFileSync(
       path.join(servicesDir, 'run-subagent-shared.mjs'),
       'export const sharedValue = 1;\n',

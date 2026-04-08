@@ -1,5 +1,45 @@
 # @composio/cli
 
+## 0.2.20
+
+### Patch Changes
+
+- 4e36db8: feat: add `composio listen` command for real-time trigger event monitoring
+  feat: add top-level `composio triggers` command (list, info subcommands)
+  fix: pre-existing CI failures across CLI and e2e suites
+  docs: document `--file` support for CLI skill uploads
+
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies [2b19ae9]
+  - @composio/core@0.6.8
+
+## 0.2.18
+
+### Patch Changes
+
+- f49e0af: feat: add `--beta` flag to `composio upgrade` for prerelease channel support
+  feat: preload custom auth connections into tool router sessions for seamless custom-auth toolkit execution
+  improve: beta-channel CLI release promotion flow in CI workflow
+  improve: expanded test coverage for upgrade binary and custom auth session creation
+
+## 0.2.17
+
+### Patch Changes
+
+- e3322e6: fix: hydrate file_uploadable tool inputs and add temp-file handling for execute payloads
+  fix: surface in-band tool errors as warnings without overriding successful execution results
+  fix: resolve 8 TypeScript strict-mode errors blocking CLI build in run-helpers-runtime
+  refactor: extract run helper runtime (~650 lines) from run.cmd.ts into run-helpers-runtime.ts
+
+## 0.2.16
+
+### Patch Changes
+
+- b763753: fix: bundle bun support files into CLI binary so standalone builds work without external bun dependencies
+
 ## 0.2.15
 
 ### Patch Changes

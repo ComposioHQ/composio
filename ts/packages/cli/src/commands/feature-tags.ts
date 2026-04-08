@@ -1,0 +1,37 @@
+export type CliFeatureTag = string;
+
+export type TaggedValue<T> = {
+  readonly value: T;
+  readonly tags?: ReadonlyArray<CliFeatureTag>;
+};
+
+export type CommandVisibility = {
+  readonly isExperimentalFeatureEnabled: (feature: string) => boolean;
+};
+
+export const tagged = <T>(value: T, tags?: ReadonlyArray<CliFeatureTag>): TaggedValue<T> => ({
+  value,
+  tags,
+});
+
+export const experimental = <T>(feature: string, value: T): TaggedValue<T> => ({
+  value,
+  tags: [feature],
+});
+
+export const isTaggedValueVisible = <T>(
+  entry: TaggedValue<T>,
+  visibility: CommandVisibility
+): boolean => {
+  if (!entry.tags || entry.tags.length === 0) {
+    return true;
+  }
+
+  return entry.tags.every(tag => visibility.isExperimentalFeatureEnabled(tag));
+};
+
+export const visibleValues = <T>(
+  entries: ReadonlyArray<TaggedValue<T>>,
+  visibility: CommandVisibility
+): Array<T> =>
+  entries.filter(entry => isTaggedValueVisible(entry, visibility)).map(entry => entry.value);

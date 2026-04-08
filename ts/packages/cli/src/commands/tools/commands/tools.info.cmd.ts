@@ -5,6 +5,7 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { bold } from 'src/ui/colors';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 
@@ -31,7 +32,9 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
     // Missing slug guard
     if (Option.isNone(slug)) {
       yield* ui.log.warn('Missing required argument: <slug>');
-      yield* ui.log.step('Try specifying a tool slug, e.g.:\n> composio tools info "GMAIL_SEND_EMAIL"');
+      yield* ui.log.step(
+        'Try specifying a tool slug, e.g.:\n> composio tools info "GMAIL_SEND_EMAIL"'
+      );
       return;
     }
 
@@ -69,6 +72,7 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
 
     const tool = toolOpt.value;
     const definition = yield* getOrFetchToolInputDefinition(slugValue);
+    const displaySchema = normalizeFileUploadSchema(definition.schema);
 
     const summary = [
       `${bold('Slug:')} ${tool.slug}`,
@@ -97,6 +101,7 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
           toolkit: tool.toolkit.slug,
           version: definition.version,
           schemaPath: definition.schemaPath,
+          inputSchema: displaySchema,
         },
         null,
         2
@@ -105,6 +110,6 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
   })
 ).pipe(
   Command.withDescription(
-    'View a brief summary of a tool and cache the same raw schema used by `composio execute --get-schema`.'
+    'View a brief summary of a tool and show the CLI-facing input schema used by `composio execute`.'
   )
 );

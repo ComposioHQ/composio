@@ -1,7 +1,7 @@
 /**
  * TypeScript .mjs import resolution e2e test
  *
- * Verifies that committed Composio-generated TypeScript files
+ * Verifies that committed TypeScript fixture files using `.js` imports
  * compile successfully with moduleResolution: "nodenext".
  */
 
@@ -23,8 +23,8 @@ e2e(import.meta.url, {
         expect(result.exitCode).toBe(0);
       });
 
-      it('generated files exist', () => {
-        expect(result.stdout).toContain('Test 1 passed: Generated files exist');
+      it('fixture generated files exist', () => {
+        expect(result.stdout).toContain('Test 1 passed: Fixture generated files exist');
       });
 
       it('TypeScript compilation succeeds', () => {

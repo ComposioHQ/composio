@@ -8,53 +8,54 @@
 import {
   e2e,
   sanitizeOutput,
+  parseJsonStdout,
   type E2ETestResult,
   type E2ETestResultWithFiles,
 } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { describe, it, expect, beforeAll } from 'bun:test';
-
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_USER_API_KEY: string;
-  }
-}
-
-const parseOptionalToolkitObject = (output: string): Record<string, unknown> | undefined => {
-  const sanitized = sanitizeOutput(output);
-  if (sanitized === '') return undefined;
-
-  const obj = JSON.parse(sanitized);
-  expect(typeof obj).toBe('object');
-  expect(Array.isArray(obj)).toBe(false);
-  return obj as Record<string, unknown>;
-};
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import {
+  startMockToolkitsListServer,
+  type MockToolkitsServer,
+} from '../../../../packages/cli/scripts/mock-toolkits-server';
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
-  env: {
-    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
-  },
   defineTests: ({ runCmd }) => {
-    const query = 'hackernews';
+    const query = 'gmail';
+    let server: MockToolkitsServer;
     let validResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let invalidResult: E2ETestResult;
     let missingSlugResult: E2ETestResult;
 
     beforeAll(async () => {
-      validResult = await runCmd(`composio dev toolkits info ${query}`);
+      server = await startMockToolkitsListServer();
+
+      const envPrefix = [
+        `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
+        'COMPOSIO_CACHE_DIR=/tmp/composio-toolkits-info',
+        'COMPOSIO_USER_API_KEY=uak_mock_toolkits_info',
+      ].join(' ');
+
+      validResult = await runCmd(`${envPrefix} composio dev toolkits info ${query}`);
       redirectResult = await runCmd({
-        command: `composio dev toolkits info ${query} > out.json`,
+        command: `${envPrefix} composio dev toolkits info ${query} > out.json`,
         files: ['out.json'],
       });
-      invalidResult = await runCmd('composio dev toolkits info nonexistent_toolkit_xyz12345');
-      missingSlugResult = await runCmd('composio dev toolkits info');
-    }, TIMEOUTS.FIXTURE * 2);
+      invalidResult = await runCmd(
+        `${envPrefix} composio dev toolkits info nonexistent_toolkit_xyz12345`
+      );
+      missingSlugResult = await runCmd(`${envPrefix} composio dev toolkits info`);
+    }, TIMEOUTS.FIXTURE);
 
-    describe('composio dev toolkits info <slug> (valid slug)', () => {
+    afterAll(async () => {
+      await server.close();
+    });
+
+    describe('composio dev toolkits info gmail (valid slug)', () => {
       it('exits successfully', () => {
         expect(validResult.exitCode).toBe(0);
       });
@@ -63,52 +64,43 @@ e2e(import.meta.url, {
         expect(validResult.stderr).toBe('');
       });
 
-      it('stdout is empty or a valid JSON object', () => {
-        parseOptionalToolkitObject(validResult.stdout);
+      it('stdout is a valid JSON object', () => {
+        const obj = parseJsonStdout(validResult);
+        expect(typeof obj).toBe('object');
+        expect(Array.isArray(obj)).toBe(false);
       });
 
-      it('has the expected slug when the backend returns toolkit data', () => {
-        const obj = parseOptionalToolkitObject(validResult.stdout);
-        if (!obj) return;
-
+      it('has the correct name and slug', () => {
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
+        expect(obj.name).toBe('Gmail');
         expect(obj.slug).toBe(query);
       });
 
-      it('has meta with description and logo when the backend returns toolkit data', () => {
-        const obj = parseOptionalToolkitObject(validResult.stdout) as
-          | Record<string, Record<string, unknown>>
-          | undefined;
-        if (!obj) return;
-
+      it('has meta with description and logo', () => {
+        const obj = parseJsonStdout(validResult) as Record<string, Record<string, unknown>>;
         expect(obj.meta).toHaveProperty('description');
         expect(typeof obj.meta.description).toBe('string');
         expect(obj.meta).toHaveProperty('logo');
       });
 
-      it('has is_no_auth and enabled when the backend returns toolkit data', () => {
-        const obj = parseOptionalToolkitObject(validResult.stdout);
-        if (!obj) return;
-
+      it('has is_no_auth and enabled', () => {
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
         expect(typeof obj.is_no_auth).toBe('boolean');
         expect(typeof obj.enabled).toBe('boolean');
       });
 
-      it('has composio_managed_auth_schemes array when the backend returns toolkit data', () => {
-        const obj = parseOptionalToolkitObject(validResult.stdout);
-        if (!obj) return;
-
+      it('has composio_managed_auth_schemes array', () => {
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
         expect(Array.isArray(obj.composio_managed_auth_schemes)).toBe(true);
       });
 
-      it('has connected_account when the backend returns toolkit data', () => {
-        const obj = parseOptionalToolkitObject(validResult.stdout);
-        if (!obj) return;
-
+      it('has connected_account (object or null)', () => {
+        const obj = parseJsonStdout(validResult) as Record<string, unknown>;
         expect(obj).toHaveProperty('connected_account');
       });
     });
 
-    describe('composio dev toolkits info <slug> > out.json (stdout redirection)', () => {
+    describe('composio dev toolkits info gmail > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });
@@ -121,11 +113,9 @@ e2e(import.meta.url, {
         expect(redirectResult.stderr).toBe('');
       });
 
-      it('out.json is empty or contains valid JSON with the discovered slug', () => {
+      it('out.json contains valid JSON with slug "gmail"', () => {
         const content = redirectResult.files['out.json'];
-        const obj = parseOptionalToolkitObject(content);
-        if (!obj) return;
-
+        const obj = JSON.parse(sanitizeOutput(content));
         expect(obj.slug).toBe(query);
       });
     });
@@ -155,6 +145,15 @@ e2e(import.meta.url, {
 
       it('stderr is empty', () => {
         expect(missingSlugResult.stderr).toBe('');
+      });
+    });
+
+    describe('mock API usage', () => {
+      it('requests the detailed toolkit route for known and unknown slugs', () => {
+        expect(server.requests).toContain('GET /api/v3/toolkits/gmail');
+        expect(server.requests).toContain(
+          'GET /api/v3/toolkits/nonexistent_toolkit_xyz12345'
+        );
       });
     });
   },

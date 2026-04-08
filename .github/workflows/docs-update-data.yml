@@ -96,8 +96,11 @@ jobs:
 
       - name: Request review from trigger actor
         if: steps.create-pr.outputs.pull-request-number
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
           AUTHOR: ${{ github.actor }}
-        run: gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR"
+        run: |
+          gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR" || \
+          gh pr edit "$PR_NUMBER" --add-reviewer "Sushmithamallesh"

@@ -1,41 +1,57 @@
 /**
  * CLI `composio dev toolkits list` e2e test
  *
- * Verifies that the list subcommand returns toolkit arrays as JSON in piped mode,
- * handles known and missing queries, and respects --limit.
+ * Verifies that the list subcommand returns toolkits as JSON in piped mode,
+ * supports deterministic `--query` filtering, and respects `--limit`.
  */
 
-import { e2e, sanitizeOutput, parseJsonStdout, type E2ETestResult } from '@e2e-tests/utils';
+import {
+  e2e,
+  sanitizeOutput,
+  parseJsonStdout,
+  type E2ETestResult,
+} from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { describe, it, expect, beforeAll } from 'bun:test';
-
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_USER_API_KEY: string;
-  }
-}
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import {
+  startMockToolkitsListServer,
+  type MockToolkitsServer,
+} from '../../../../packages/cli/scripts/mock-toolkits-server';
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
-  env: {
-    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
-  },
   defineTests: ({ runCmd }) => {
-    const query = 'hackernews';
-    const missingQuery = 'xyznonexistent_abc_12345';
+    const exactQuery = 'gmail';
+    const prefixQuery = 'gmai';
+    const missingQuery = 'gmal';
+    let server: MockToolkitsServer;
     let exactResult: E2ETestResult;
+    let prefixResult: E2ETestResult;
     let noFuzzyResult: E2ETestResult;
 
     beforeAll(async () => {
-      [exactResult, noFuzzyResult] = await Promise.all([
-        runCmd(`composio dev toolkits list --query ${query} --limit 1`),
-        runCmd(`composio dev toolkits list --query ${missingQuery} --limit 1`),
-      ]);
-    }, TIMEOUTS.FIXTURE * 2);
+      server = await startMockToolkitsListServer();
 
-    describe('composio dev toolkits list --query <query> --limit 1 (query execution)', () => {
+      const envPrefix = [
+        `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
+        'COMPOSIO_CACHE_DIR=/tmp/composio-toolkits-list',
+        'COMPOSIO_USER_API_KEY=uak_mock_toolkits_list',
+      ].join(' ');
+
+      [exactResult, prefixResult, noFuzzyResult] = await Promise.all([
+        runCmd(`${envPrefix} composio dev toolkits list --query ${exactQuery} --limit 1`),
+        runCmd(`${envPrefix} composio dev toolkits list --query ${prefixQuery} --limit 1`),
+        runCmd(`${envPrefix} composio dev toolkits list --query ${missingQuery} --limit 1`),
+      ]);
+    }, TIMEOUTS.FIXTURE);
+
+    afterAll(async () => {
+      await server.close();
+    });
+
+    describe('composio dev toolkits list --query gmail --limit 1 (exact slug)', () => {
       it('exits successfully', () => {
         expect(exactResult.exitCode).toBe(0);
       });
@@ -44,17 +60,19 @@ e2e(import.meta.url, {
         expect(exactResult.stderr).toBe('');
       });
 
-      it('stdout is a JSON array with at most 1 element', () => {
+      it('stdout is a JSON array with 1 element', () => {
         const items = parseJsonStdout(exactResult);
         expect(Array.isArray(items)).toBe(true);
-        expect((items as Array<unknown>).length).toBeLessThanOrEqual(1);
+        expect(items).toHaveLength(1);
       });
 
-      it('the element has the expected shape when a result is returned', () => {
-        const item = (parseJsonStdout(exactResult) as Array<Record<string, unknown>>)[0];
-        if (!item) return;
+      it('the element has slug "gmail"', () => {
+        const items = parseJsonStdout(exactResult) as Array<{ slug: string }>;
+        expect(items[0].slug).toBe(exactQuery);
+      });
 
-        expect(item.slug).toBe(query);
+      it('the element has the expected shape', () => {
+        const item = (parseJsonStdout(exactResult) as Array<Record<string, unknown>>)[0];
         expect(item).toHaveProperty('name');
         expect(item).toHaveProperty('slug');
         expect(item).toHaveProperty('description');
@@ -67,7 +85,28 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio dev toolkits list --query <missing-query> --limit 1 (no fuzzy search)', () => {
+    describe('composio dev toolkits list --query gmai --limit 1 (prefix search)', () => {
+      it('exits successfully', () => {
+        expect(prefixResult.exitCode).toBe(0);
+      });
+
+      it('stderr is empty', () => {
+        expect(prefixResult.stderr).toBe('');
+      });
+
+      it('stdout is a JSON array with 1 element', () => {
+        const items = parseJsonStdout(prefixResult);
+        expect(Array.isArray(items)).toBe(true);
+        expect(items).toHaveLength(1);
+      });
+
+      it('the element has slug "gmail"', () => {
+        const items = parseJsonStdout(prefixResult) as Array<{ slug: string }>;
+        expect(items[0].slug).toBe(exactQuery);
+      });
+    });
+
+    describe('composio dev toolkits list --query gmal --limit 1 (no fuzzy search)', () => {
       it('exits successfully', () => {
         expect(noFuzzyResult.exitCode).toBe(0);
       });
@@ -78,6 +117,14 @@ e2e(import.meta.url, {
 
       it('stdout is an empty JSON array (no results)', () => {
         expect(sanitizeOutput(noFuzzyResult.stdout)).toBe('[]');
+      });
+    });
+
+    describe('mock API usage', () => {
+      it('requests the toolkit catalog for each search term', () => {
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=1');
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmai&limit=1');
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmal&limit=1');
       });
     });
   },

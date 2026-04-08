@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
@@ -57,7 +59,9 @@ describe('CLI: composio', () => {
         const args = ['--help'];
         yield* cli(args);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n').trim().length).toBeGreaterThan(0);
+        const output = lines.join('\n');
+        expect(output.trim().length).toBeGreaterThan(0);
+        expect(output).toContain('config.json');
       })
     );
   });
@@ -116,7 +120,7 @@ describe('CLI: composio', () => {
           .join('\n')
           .trim();
 
-        expect(output).toContain('/tmp/composio');
+        expect(output).toContain(path.join(os.tmpdir(), 'composio'));
       })
     );
   });

@@ -314,6 +314,10 @@ export const proxyCmd = Command.make('proxy', {
           });
           const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
             toolkits: [normalizedToolkit],
+            cacheScope: {
+              orgId: resolvedProject.orgId,
+              consumerUserId,
+            },
           });
 
           const resultEither = yield* Effect.tryPromise(() =>

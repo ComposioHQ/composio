@@ -37,8 +37,32 @@ function generateIndexPages() {
     tagOperations[tag.name] = [];
   }
 
+  // For endpoints that exist under multiple API versions (e.g. /api/v3/ and /api/v3.1/),
+  // only show the latest version. Extract version from path like /api/v3.1/tools/... → "3.1"
+  const supersededPaths: Set<string> = new Set();
+  const versionedPaths = new Map<string, { version: string; fullPath: string }[]>();
+
+  for (const path of Object.keys(spec.paths)) {
+    const match = path.match(/^\/api\/v([\d.]+)\/(.+)$/);
+    if (!match) continue;
+    const [, version, rest] = match;
+    if (!versionedPaths.has(rest)) versionedPaths.set(rest, []);
+    versionedPaths.get(rest)!.push({ version, fullPath: path });
+  }
+
+  for (const entries of versionedPaths.values()) {
+    if (entries.length <= 1) continue;
+    // Sort by version descending; keep only the latest
+    entries.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
+    for (const entry of entries.slice(1)) {
+      supersededPaths.add(entry.fullPath);
+    }
+  }
+
   // Group operations by tag
   for (const [path, methods] of Object.entries(spec.paths)) {
+    // Skip endpoints superseded by a newer API version
+    if (supersededPaths.has(path)) continue;
     for (const [method, operation] of Object.entries(methods)) {
       if (operation.tags) {
         for (const tag of operation.tags) {

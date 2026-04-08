@@ -1,0 +1,620 @@
+import { Args, Command, Options } from '@effect/cli';
+import { FileSystem } from '@effect/platform';
+import type { Composio as RawComposioClient } from '@composio/client';
+import { Deferred, Effect, Option, Runtime } from 'effect';
+import path from 'node:path';
+import { requireAuth } from 'src/effects/require-auth';
+import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
+import {
+  formatResolveCommandProjectError,
+  resolveCommandProject,
+} from 'src/services/command-project';
+import {
+  resolveArtifactsRoot,
+  resolveCliSessionArtifacts,
+} from 'src/services/cli-session-artifacts';
+import { TerminalUI } from 'src/services/terminal-ui';
+import { TriggersRealtime } from 'src/services/triggers-realtime';
+import {
+  formatConnectedAccountChoices,
+  resolveConnectedAccountSelection,
+} from 'src/services/connected-account-selection';
+import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { matchesTriggerListenFilters } from './triggers/filter';
+import { parseTriggerListenEvent } from './triggers/parse';
+
+const slug = Args.text({ name: 'slug' }).pipe(
+  Args.withDescription(
+    'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE") or project event type (e.g. "composio.connected_account.expired")'
+  )
+);
+
+const params = Options.text('params').pipe(
+  Options.withAlias('p'),
+  Options.withDescription(
+    'Trigger create params as JSON/JS object, @file, or - for stdin. Only valid for trigger slugs.'
+  ),
+  Options.optional
+);
+
+const maxEvents = Options.integer('max-events').pipe(
+  Options.withDescription('Stop after receiving N matching events'),
+  Options.optional
+);
+
+const timeout = Options.text('timeout').pipe(
+  Options.withDescription('Stop after a duration such as "5m", "1hr", or "30s"'),
+  Options.optional
+);
+
+const stream = Options.text('stream').pipe(
+  Options.withDescription(
+    'Also stream each event payload inline. Pass an optional jq-like path such as ".thread.id" or ".data[0].id".'
+  ),
+  Options.optional
+);
+const account = Options.text('account').pipe(
+  Options.withDescription(
+    'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
+  ),
+  Options.optional
+);
+
+const debug = Options.boolean('debug').pipe(
+  Options.withDescription(
+    'Print verbose debug information (raw events, filter results, Pusher state)'
+  ),
+  Options.withDefault(false)
+);
+
+const sanitizePathPart = (value: string): string =>
+  value.replace(/[^A-Z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'unknown';
+
+const isProjectEventType = (value: string): boolean => value.startsWith('composio.');
+
+const resolveParamsInput = (input: Option.Option<string>) =>
+  resolveOptionalTextInput(input, { missingValue: '{}' });
+
+const parseCreateParams = (raw: string) =>
+  Effect.gen(function* () {
+    const parsed = yield* Effect.try({
+      try: () => parseJsonIsh(raw),
+      catch: () =>
+        new Error(
+          "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'."
+        ),
+    });
+
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return yield* Effect.fail(
+        new Error("Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'.")
+      );
+    }
+
+    return parsed as Record<string, unknown>;
+  });
+
+const assertSupportedListenParams = (params: {
+  listeningToProjectEvent: boolean;
+  slug: string;
+  createParamsInput: Record<string, unknown>;
+}) =>
+  params.listeningToProjectEvent && Object.keys(params.createParamsInput).length > 0
+    ? Effect.fail(
+        new Error(
+          `--params is only supported for trigger slugs. "${params.slug}" is a project-level composio.* event type and does not create a temporary trigger.`
+        )
+      )
+    : Effect.void;
+
+const resolveConnectedAccountIdForTrigger = (params: {
+  client: RawComposioClient;
+  slug: string;
+  consumerUserId: string;
+  account: Option.Option<string>;
+}) =>
+  Effect.gen(function* () {
+    const toolkitSlug = toolkitFromToolSlug(params.slug);
+    if (!toolkitSlug) {
+      return yield* Effect.fail(
+        new Error(
+          `Could not infer a toolkit from trigger slug "${params.slug}". Use a standard trigger slug such as "GMAIL_NEW_GMAIL_MESSAGE", or a project event type such as "composio.connected_account.expired".`
+        )
+      );
+    }
+
+    const connectedAccounts = yield* Effect.tryPromise({
+      try: () =>
+        params.client.connectedAccounts.list({
+          toolkit_slugs: [toolkitSlug],
+          user_ids: [params.consumerUserId],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        }),
+      catch: error =>
+        new Error(`Failed to list connected accounts for "${toolkitSlug}": ${String(error)}`),
+    });
+    const selectedAccount = resolveConnectedAccountSelection(
+      connectedAccounts.items as Parameters<typeof resolveConnectedAccountSelection>[0],
+      Option.getOrUndefined(params.account)
+    );
+    if (selectedAccount?.id) {
+      return selectedAccount.id;
+    }
+
+    const choices = formatConnectedAccountChoices(
+      connectedAccounts.items as Parameters<typeof formatConnectedAccountChoices>[0]
+    );
+    const suffix =
+      Option.isSome(params.account) && choices.length > 0
+        ? ` Available accounts: ${choices.join(', ')}.`
+        : '';
+    return yield* Effect.fail(
+      new Error(
+        Option.isSome(params.account)
+          ? `No connected account matched "${params.account.value}" for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}".${suffix}`
+          : `No active connected account found for toolkit "${toolkitSlug}" and consumer user "${params.consumerUserId}". Run \`composio link ${toolkitSlug}\` first.`
+      )
+    );
+  });
+const emitStreamLine = (line: string, ui: TerminalUI) =>
+  Effect.gen(function* () {
+    yield* ui.log.message(line);
+    yield* ui.output(line, { force: true });
+  });
+
+const eventTypeOf = (eventData: Record<string, unknown>): string | undefined =>
+  typeof eventData.type === 'string' && eventData.type.length > 0 ? eventData.type : undefined;
+
+const extractEventFileId = (eventData: Record<string, unknown>): string => {
+  const candidates = [
+    eventData.id,
+    eventData.log_id,
+    typeof eventData.metadata === 'object' && eventData.metadata !== null
+      ? (eventData.metadata as Record<string, unknown>).id
+      : undefined,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.length > 0) {
+      return sanitizePathPart(candidate);
+    }
+  }
+
+  return `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+};
+
+const resolveFallbackArtifactsDir = () => resolveArtifactsRoot();
+
+const parseStreamPath = (expression: string): ReadonlyArray<string | number> => {
+  const trimmed = expression.trim();
+  if (!trimmed.startsWith('.')) {
+    throw new Error('Expected --stream to contain a jq-like path starting with "."');
+  }
+
+  const pathTokens: Array<string | number> = [];
+  const tokenPattern = /(?:\.([A-Za-z0-9_-]+))|(?:\[(\d+)\])/g;
+  let lastIndex = 0;
+
+  for (const match of trimmed.matchAll(tokenPattern)) {
+    if ((match.index ?? -1) !== lastIndex) {
+      throw new Error(
+        'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+      );
+    }
+
+    if (match[1]) pathTokens.push(match[1]);
+    if (match[2]) pathTokens.push(Number(match[2]));
+    lastIndex += match[0].length;
+  }
+
+  if (lastIndex !== trimmed.length) {
+    throw new Error(
+      'Unsupported --stream expression. Use a jq-like path such as ".foo.bar" or ".items[0].id".'
+    );
+  }
+
+  return pathTokens;
+};
+
+const applyStreamPath = (value: unknown, pathTokens: ReadonlyArray<string | number>): unknown => {
+  let current = value;
+  for (const token of pathTokens) {
+    if (typeof token === 'number') {
+      if (!Array.isArray(current) || token < 0 || token >= current.length) {
+        return undefined;
+      }
+      current = current[token];
+      continue;
+    }
+
+    if (typeof current !== 'object' || current === null || Array.isArray(current)) {
+      return undefined;
+    }
+
+    current = (current as Record<string, unknown>)[token];
+  }
+
+  return current;
+};
+
+const formatStreamValue = (value: unknown): string => {
+  if (value === undefined) return 'null';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+};
+
+const formatStopMessage = (params: {
+  matchingEvents: number;
+  timedOut: boolean;
+  temporaryTriggerDisabled: boolean;
+}): string => {
+  const eventLabel = `event${params.matchingEvents === 1 ? '' : 's'}`;
+  if (params.timedOut) {
+    return params.temporaryTriggerDisabled
+      ? `Stopped after timeout with ${params.matchingEvents} matching ${eventLabel}. Temporary trigger disabled.`
+      : `Stopped after timeout with ${params.matchingEvents} matching ${eventLabel}.`;
+  }
+
+  return params.temporaryTriggerDisabled
+    ? `Stopped after receiving ${params.matchingEvents} ${eventLabel}. Temporary trigger disabled.`
+    : `Stopped after receiving ${params.matchingEvents} ${eventLabel}.`;
+};
+
+const TIMEOUT_UNITS_MS: Record<string, number> = {
+  ms: 1,
+  millisecond: 1,
+  milliseconds: 1,
+  s: 1_000,
+  sec: 1_000,
+  secs: 1_000,
+  second: 1_000,
+  seconds: 1_000,
+  m: 60_000,
+  min: 60_000,
+  mins: 60_000,
+  minute: 60_000,
+  minutes: 60_000,
+  h: 3_600_000,
+  hr: 3_600_000,
+  hrs: 3_600_000,
+  hour: 3_600_000,
+  hours: 3_600_000,
+  d: 86_400_000,
+  day: 86_400_000,
+  days: 86_400_000,
+};
+
+const parseTimeoutMs = (value: string): number => {
+  const trimmed = value.trim().toLowerCase();
+  const match = /^(\d+(?:\.\d+)?)\s*([a-z]+)$/.exec(trimmed);
+  if (!match) {
+    throw new Error(
+      'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".'
+    );
+  }
+
+  const amount = Number(match[1]);
+  const unitMs = TIMEOUT_UNITS_MS[match[2]];
+  if (!Number.isFinite(amount) || amount <= 0 || unitMs === undefined) {
+    throw new Error(
+      'Invalid --timeout value. Use a duration such as "30s", "5m", "1hr", or "1day".'
+    );
+  }
+
+  return Math.round(amount * unitMs);
+};
+
+const resolveListenSetup = (params: {
+  readonly slug: string;
+  readonly inputParams: Option.Option<string>;
+  readonly timeout: Option.Option<string>;
+  readonly stream: Option.Option<string>;
+  readonly maxEvents: Option.Option<number>;
+  readonly account: Option.Option<string>;
+  readonly client: RawComposioClient;
+  readonly resolvedProject: {
+    readonly orgId: string;
+    readonly projectId: string;
+    readonly consumerUserId?: string;
+  };
+}) =>
+  Effect.gen(function* () {
+    if (!params.resolvedProject.consumerUserId) {
+      return yield* Effect.fail(
+        new Error('No consumer user is available in the current project context.')
+      );
+    }
+
+    const listeningToProjectEvent = isProjectEventType(params.slug);
+    const rawParams = Option.isSome(params.inputParams)
+      ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
+      : '{}';
+    const createParamsInput = yield* parseCreateParams(rawParams);
+    yield* assertSupportedListenParams({
+      listeningToProjectEvent,
+      slug: params.slug,
+      createParamsInput,
+    });
+
+    const resolvedConnectedAccountId = listeningToProjectEvent
+      ? undefined
+      : yield* resolveConnectedAccountIdForTrigger({
+          client: params.client,
+          slug: params.slug,
+          consumerUserId: params.resolvedProject.consumerUserId,
+          account: params.account,
+        });
+
+    const createParams = listeningToProjectEvent
+      ? undefined
+      : ({
+          ...createParamsInput,
+          connected_account_id: resolvedConnectedAccountId,
+        } as Parameters<typeof params.client.triggerInstances.upsert>[1]);
+
+    return {
+      listeningToProjectEvent,
+      createParams,
+      timeoutMs: Option.match(params.timeout, {
+        onNone: () => undefined,
+        onSome: value => parseTimeoutMs(value),
+      }),
+      streamPath: Option.match(params.stream, {
+        onNone: () => undefined,
+        onSome: value => {
+          const trimmed = value.trim();
+          return trimmed.length === 0 ? [] : parseStreamPath(trimmed);
+        },
+      }),
+      shouldStream: Option.isSome(params.stream),
+      maxEventsLimit: Option.getOrUndefined(params.maxEvents),
+      consumerUserId: params.resolvedProject.consumerUserId,
+    };
+  });
+
+export const listenCmd = Command.make(
+  'listen',
+  { slug, params, maxEvents, timeout, stream, account, debug },
+  ({ slug, params, maxEvents, timeout, stream, account, debug }) =>
+    Effect.gen(function* () {
+      if (!(yield* requireAuth)) return;
+
+      const ui = yield* TerminalUI;
+      const fs = yield* FileSystem.FileSystem;
+      const runtime = yield* Effect.runtime<never>();
+      const clientSingleton = yield* ComposioClientSingleton;
+      const realtime = yield* TriggersRealtime;
+
+      const resolvedProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
+        Effect.mapError(formatResolveCommandProjectError)
+      );
+
+      const client = yield* clientSingleton.getFor({
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
+      });
+      const cliConfig = yield* ComposioCliUserConfig;
+      const accountSelector = cliConfig.isExperimentalFeatureEnabled(
+        CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
+      )
+        ? account
+        : Option.none<string>();
+      const {
+        listeningToProjectEvent,
+        createParams,
+        timeoutMs,
+        streamPath,
+        shouldStream,
+        maxEventsLimit,
+        consumerUserId,
+      } = yield* resolveListenSetup({
+        slug,
+        inputParams: params,
+        timeout,
+        stream,
+        maxEvents,
+        account: accountSelector,
+        client,
+        resolvedProject,
+      });
+
+      const artifactsOption = yield* resolveCliSessionArtifacts({
+        orgId: resolvedProject.orgId,
+        consumerUserId,
+      });
+      const artifactsRoot = Option.match(artifactsOption, {
+        onNone: () => resolveFallbackArtifactsDir(),
+        onSome: value => value.directoryPath,
+      });
+      const triggerDir = path.join(
+        artifactsRoot,
+        listeningToProjectEvent ? 'events' : 'triggers',
+        sanitizePathPart(slug)
+      );
+      const streamFilePath = path.join(triggerDir, 'events.jsonl');
+
+      yield* fs.makeDirectory(triggerDir, { recursive: true });
+      yield* fs.writeFileString(streamFilePath, '', { flag: 'a' });
+
+      const stopWhenDone = yield* Deferred.make<'max-events' | 'timeout'>();
+      let matchingEvents = 0;
+      const seenEventIds = new Set<string>();
+
+      yield* Effect.acquireUseRelease(
+        listeningToProjectEvent
+          ? Effect.succeed<null | { trigger_id: string }>(null)
+          : Effect.tryPromise({
+              try: () => client.triggerInstances.upsert(slug, createParams),
+              catch: error =>
+                new Error(`Failed to create temporary trigger "${slug}": ${String(error)}`),
+            }),
+        createdTrigger =>
+          Effect.gen(function* () {
+            yield* emitStreamLine(`listening for events ${slug} (tail at ${streamFilePath})`, ui);
+            if (debug) {
+              const debugMsg =
+                createdTrigger === null
+                  ? `[debug] event_type=${slug} project=${resolvedProject.projectId} org=${resolvedProject.orgId}`
+                  : `[debug] trigger_id=${createdTrigger.trigger_id} project=${resolvedProject.projectId} org=${resolvedProject.orgId} createParams=${JSON.stringify(createParams)}`;
+              yield* emitStreamLine(debugMsg, ui);
+              if (createdTrigger !== null) {
+                yield* emitStreamLine(
+                  `[debug] upsert response: ${JSON.stringify(createdTrigger)}`,
+                  ui
+                );
+              }
+            }
+
+            const onEvent = (eventData: Record<string, unknown>) => {
+              Runtime.runFork(runtime)(
+                Effect.gen(function* () {
+                  if (debug) {
+                    yield* emitStreamLine(
+                      `[debug] raw event keys: ${Object.keys(eventData).join(', ')}`,
+                      ui
+                    );
+                    yield* emitStreamLine(
+                      `[debug] raw event (truncated): ${JSON.stringify(eventData).slice(0, 500)}`,
+                      ui
+                    );
+                  }
+                  const parsedTriggerEvent =
+                    createdTrigger === null ? undefined : parseTriggerListenEvent(eventData);
+                  const filterResult =
+                    createdTrigger === null
+                      ? eventTypeOf(eventData) === slug
+                      : matchesTriggerListenFilters(
+                          { triggerId: createdTrigger.trigger_id },
+                          parsedTriggerEvent!
+                        );
+                  if (debug) {
+                    yield* emitStreamLine(
+                      createdTrigger === null
+                        ? `[debug] event.type=${eventTypeOf(eventData) ?? '<missing>'} match=${filterResult}`
+                        : `[debug] parsed.id=${parsedTriggerEvent!.id} triggerSlug=${parsedTriggerEvent!.triggerSlug} trigger_id=${createdTrigger.trigger_id} match=${filterResult}`,
+                      ui
+                    );
+                  }
+                  if (!filterResult) {
+                    return;
+                  }
+
+                  const eventFileId = extractEventFileId(eventData);
+                  if (seenEventIds.has(eventFileId)) {
+                    if (debug) {
+                      yield* emitStreamLine(`[debug] skipping duplicate event ${eventFileId}`, ui);
+                    }
+                    return;
+                  }
+                  seenEventIds.add(eventFileId);
+
+                  matchingEvents += 1;
+                  const eventFilePath = path.join(triggerDir, `${eventFileId}-payload.json`);
+                  const eventJson = JSON.stringify(eventData, null, 2);
+                  const streamEntry = JSON.stringify({
+                    event_id: eventFileId,
+                    event_type: eventTypeOf(eventData),
+                    trigger_id: createdTrigger?.trigger_id,
+                    trigger_slug: createdTrigger ? slug : undefined,
+                    file_path: eventFilePath,
+                    received_at: new Date().toISOString(),
+                  });
+
+                  yield* fs.writeFileString(eventFilePath, `${eventJson}\n`);
+                  yield* fs.writeFileString(streamFilePath, `${streamEntry}\n`, { flag: 'a' });
+                  yield* emitStreamLine(`event: ${eventFilePath}`, ui);
+
+                  if (shouldStream) {
+                    const streamValue =
+                      streamPath === undefined
+                        ? eventData
+                        : streamPath.length === 0
+                          ? eventData
+                          : applyStreamPath(eventData, streamPath);
+                    yield* emitStreamLine(`stream: ${formatStreamValue(streamValue)}`, ui);
+                  }
+
+                  if (maxEventsLimit !== undefined && matchingEvents >= maxEventsLimit) {
+                    yield* Deferred.succeed(stopWhenDone, 'max-events').pipe(Effect.ignore);
+                  }
+                }).pipe(
+                  Effect.catchAll(error =>
+                    ui.log.warn(error instanceof Error ? error.message : String(error))
+                  )
+                )
+              );
+            };
+
+            const listenEffect = realtime
+              .listenInProject(
+                {
+                  orgId: resolvedProject.orgId,
+                  projectId: resolvedProject.projectId,
+                },
+                onEvent
+              )
+              .pipe(Effect.onInterrupt(() => ui.log.info(`Stopped listening for events ${slug}.`)));
+
+            if (timeoutMs !== undefined) {
+              yield* Effect.forkScoped(
+                Effect.sleep(timeoutMs).pipe(
+                  Effect.andThen(Deferred.succeed(stopWhenDone, 'timeout')),
+                  Effect.ignore
+                )
+              );
+            }
+
+            if (maxEventsLimit === undefined && timeoutMs === undefined) {
+              yield* listenEffect;
+              return;
+            }
+
+            const stopReason = yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+            if (stopReason === 'max-events') {
+              yield* ui.outro(
+                formatStopMessage({
+                  matchingEvents,
+                  timedOut: false,
+                  temporaryTriggerDisabled: createdTrigger !== null,
+                })
+              );
+              return;
+            }
+
+            if (stopReason === 'timeout') {
+              yield* ui.outro(
+                formatStopMessage({
+                  matchingEvents,
+                  timedOut: true,
+                  temporaryTriggerDisabled: createdTrigger !== null,
+                })
+              );
+            }
+          }),
+        created =>
+          created === null
+            ? Effect.void
+            : Effect.tryPromise({
+                try: () =>
+                  client.triggerInstances.manage.update(created.trigger_id, { status: 'disable' }),
+                catch: error =>
+                  new Error(
+                    `Failed to disable temporary trigger "${created.trigger_id}": ${String(error)}`
+                  ),
+              }).pipe(
+                Effect.catchAll(error =>
+                  ui.log.warn(error instanceof Error ? error.message : String(error))
+                )
+              )
+      );
+    })
+).pipe(
+  Command.withDescription(
+    'Listen to consumer-project realtime events. Trigger slugs create a temporary trigger; top-level composio.* event types subscribe directly.'
+  )
+);

@@ -786,7 +786,13 @@ export class Tools<
       const result = await this.client.tools.execute(tool.slug, {
         allow_tracing: body.allowTracing,
         connected_account_id: body.connectedAccountId,
-        custom_auth_params: body.customAuthParams,
+        custom_auth_params: body.customAuthParams
+          ? {
+              base_url: body.customAuthParams.baseURL,
+              body: body.customAuthParams.body,
+              parameters: body.customAuthParams.parameters,
+            }
+          : undefined,
         /**
          * @deprecated: customConnectionData
          * @description

@@ -1,13 +1,13 @@
 import process from 'node:process';
 import { Effect, Option } from 'effect';
 import { Command } from '@effect/cli';
-import * as constants from 'src/constants';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
@@ -23,10 +23,12 @@ import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
+import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { detectMaster } from 'src/services/master-detector';
@@ -34,28 +36,42 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import {
+  experimental,
+  type CommandVisibility,
+  type TaggedValue,
+  tagged,
+  visibleValues,
+} from './feature-tags';
 
-const $cmd = $defaultCmd.pipe(
-  Command.withSubcommands([
-    versionCmd,
-    upgradeCmd,
-    whoamiCmd,
-    loginCmd,
-    logoutCmd,
-    runCmd,
-    proxyCmd,
-    artifactsCmd,
-    installCmd,
-    devCmd,
-    rootToolsCmd,
-    rootToolsCmd$Search,
-    rootConnectedAccountsCmd$Link,
-    rootToolsCmd$Execute,
-    generateCmd,
-    orgsCmd,
-  ])
-);
-export const rootCommand = $cmd;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, any>>> = [
+  tagged(versionCmd),
+  tagged(upgradeCmd),
+  tagged(whoamiCmd),
+  tagged(loginCmd),
+  experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
+  tagged(logoutCmd),
+  tagged(runCmd),
+  tagged(proxyCmd),
+  tagged(artifactsCmd),
+  tagged(installCmd),
+  tagged(devCmd),
+  tagged(rootToolsCmd),
+  tagged(rootTriggersCmd),
+  tagged(rootToolsCmd$Search),
+  tagged(rootConnectedAccountsCmd$Link),
+  tagged(rootToolsCmd$Execute),
+  tagged(generateCmd),
+  tagged(orgsCmd),
+];
+
+export const buildRootCommand = (visibility: CommandVisibility) => {
+  const subcommands = visibleValues(ROOT_COMMANDS, visibility);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return $defaultCmd.pipe(Command.withSubcommands(subcommands as any));
+};
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = argv.slice(2);
@@ -125,6 +141,34 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
   return argv;
 };
 
+const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const head = argv.slice(0, 2);
+  const args = argv.slice(2);
+  const isListen = args[0] === 'listen';
+  if (!isListen) {
+    return argv;
+  }
+
+  const normalized: string[] = [...head];
+  for (let i = 0; i < args.length; i += 1) {
+    const token = args[i];
+    if (token !== '--stream') {
+      normalized.push(token ?? '');
+      continue;
+    }
+
+    const next = args[i + 1];
+    if (next === undefined || next.startsWith('-')) {
+      normalized.push('--stream=');
+      continue;
+    }
+
+    normalized.push(token);
+  }
+
+  return normalized;
+};
+
 const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
   const normalized: string[] = [...argv.slice(0, 2)];
   const args = argv.slice(2);
@@ -188,9 +232,7 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return (
-    args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'))
-  );
+  return args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'));
 };
 
 const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
@@ -209,21 +251,28 @@ const isDebugWhoIsMyMaster = (argv: ReadonlyArray<string>): boolean => {
 };
 
 export const runWithConfig = Effect.gen(function* () {
+  const cliUserConfig = yield* ComposioCliUserConfig;
+  const visibility: CommandVisibility = {
+    isExperimentalFeatureEnabled: feature => cliUserConfig.isExperimentalFeatureEnabled(feature),
+  };
   const version = yield* getVersion;
-  const run = Command.run($cmd, {
+  const rootCommand = buildRootCommand(visibility);
+  const run = Command.run(rootCommand, {
     name: 'composio',
     executable: 'composio',
     version,
   });
 
   return (argv: ReadonlyArray<string>) => {
-    const normalizedArgv = normalizeHiddenDebugFlags(normalizeVersionShortFlag(argv));
+    const normalizedArgv = normalizeHiddenDebugFlags(
+      normalizeListenStreamFlag(normalizeVersionShortFlag(argv))
+    );
     if (isRootHelp(normalizedArgv)) {
-      return printRootHelp();
+      return printRootHelp(visibility);
     }
-    const subHelp = matchSubcommandHelp(normalizedArgv);
+    const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {
-      return printSubcommandHelp(subHelp);
+      return printSubcommandHelp(subHelp, visibility);
     }
     const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
     if (parallelExecute) {
@@ -283,10 +332,4 @@ export const runWithConfig = Effect.gen(function* () {
     }
     return run(normalizedArgv);
   };
-});
-
-export const run = Command.run($cmd, {
-  name: 'composio',
-  version: constants.APP_VERSION,
-  executable: 'composio',
 });
