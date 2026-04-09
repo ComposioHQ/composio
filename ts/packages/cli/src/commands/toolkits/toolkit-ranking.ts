@@ -1,4 +1,8 @@
+import { Effect, Option } from 'effect';
 import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
+import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { toolkitFromDetailed } from './format';
+import { getOptionalResultWithTimeout } from './timeout-helpers';
 
 /**
  * Pattern matching single toolkit slug identifiers (alphanumeric, hyphens, underscores).
@@ -88,3 +92,42 @@ export const buildCatalogResultFromToolkits = (
   total_pages: toolkits.length === 0 ? 0 : Math.ceil(toolkits.length / limit),
   next_cursor: null,
 });
+
+/**
+ * Try to find a toolkit by exact slug via detailed lookup.
+ * Returns `Option.some(result)` if found, `Option.none()` on timeout/404/error.
+ */
+export const getExactToolkitMatch = (
+  repo: ComposioToolkitsRepository,
+  query: string,
+  limit: number,
+  timeoutMs: number,
+  timeoutMessage: string,
+  failureMessage: string
+) => {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!isSingleSlugQuery(normalizedQuery)) {
+    return Effect.succeed(Option.none<ToolkitSearchResult>());
+  }
+
+  return getOptionalResultWithTimeout(
+    repo.getToolkitDetailed(normalizedQuery).pipe(
+      Effect.map(toolkitFromDetailed),
+      Effect.map(toolkit => filterToolkitsByQuery([toolkit], normalizedQuery)),
+      Effect.catchTag('services/HttpServerError', error =>
+        error.status === 404 ? Effect.succeed([] as ReadonlyArray<Toolkit>) : Effect.fail(error)
+      )
+    ),
+    timeoutMs,
+    timeoutMessage,
+    failureMessage
+  ).pipe(
+    Effect.map(
+      Option.flatMap(items =>
+        items.length === 0
+          ? Option.none<ToolkitSearchResult>()
+          : Option.some(buildCatalogResultFromToolkits(items, limit))
+      )
+    )
+  );
+};

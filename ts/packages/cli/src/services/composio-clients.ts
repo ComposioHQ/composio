@@ -96,9 +96,6 @@ const TRANSIENT_HTTP_RETRY_BASE_DELAYS = [1000, 2500, 5000, 10000] as const;
 /** Add ±25% jitter to a delay to prevent thundering herd effects in CI. */
 const jitter = (delay: number): number => delay * (0.75 + Math.random() * 0.5);
 
-const TRANSIENT_HTTP_RETRY_DELAYS: ReadonlyArray<number> =
-  TRANSIENT_HTTP_RETRY_BASE_DELAYS.map(jitter);
-
 export const isTransientHttpServerError = (error: unknown): error is HttpServerError =>
   error instanceof HttpServerError &&
   (error.status === undefined ||
@@ -107,16 +104,18 @@ export const isTransientHttpServerError = (error: unknown): error is HttpServerE
 
 export const retryTransientHttpRead = <A, E, R>(
   effect: Effect.Effect<A, E, R>,
-  delays: ReadonlyArray<number> = TRANSIENT_HTTP_RETRY_DELAYS
+  delays: ReadonlyArray<number> = TRANSIENT_HTTP_RETRY_BASE_DELAYS
 ): Effect.Effect<A, E, R> =>
   Effect.suspend(() =>
     effect.pipe(
       Effect.catchAll(error => {
-        const [nextDelay, ...remainingDelays] = delays;
+        const [nextBaseDelay, ...remainingDelays] = delays;
 
-        if (!nextDelay || !isTransientHttpServerError(error)) {
+        if (nextBaseDelay === undefined || !isTransientHttpServerError(error)) {
           return Effect.fail(error);
         }
+
+        const nextDelay = jitter(nextBaseDelay);
 
         return Effect.logDebug(
           `Retrying transient HTTP read after ${nextDelay}ms (${error.status ?? 'network'})`
@@ -2166,11 +2165,15 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getToolkits: () => retryTransientHttpRead(getToolkits()),
         getToolkitsBySlugs: (slugs: ReadonlyArray<string>) =>
           retryTransientHttpRead(getToolkitsBySlugsDirect(slugs)).pipe(
-            Effect.catchAll(error =>
-              Effect.logDebug(
-                'Failed to retrieve toolkit(s) individually, falling back to full catalog:',
-                error
-              ).pipe(Effect.flatMap(() => getToolkitsBySlugsFromCatalog(getToolkits, slugs)))
+            Effect.catchIf(
+              error =>
+                !(error instanceof InvalidToolkitsError) &&
+                !(error instanceof InvalidToolkitVersionsError),
+              error =>
+                Effect.logDebug(
+                  'Failed to retrieve toolkit(s) individually, falling back to full catalog:',
+                  error
+                ).pipe(Effect.flatMap(() => getToolkitsBySlugsFromCatalog(getToolkits, slugs)))
             )
           ),
         getMetrics: () => client.getMetrics(),

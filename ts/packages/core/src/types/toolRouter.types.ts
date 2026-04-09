@@ -333,7 +333,6 @@ export const ToolRouterToolkitsOptionsSchema = z
     isConnected: z.boolean().optional(),
     search: z.string().optional(),
   })
-  .strict()
   .superRefine((value, ctx) => {
     if (
       value.cursor !== undefined &&

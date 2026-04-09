@@ -11,18 +11,15 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
 import type { Toolkit, ToolkitSearchResult } from 'src/models/toolkits';
-import {
-  mergeToolkitData,
-  formatToolkitsJson,
-  formatToolkitsTable,
-  toolkitFromDetailed,
-} from '../format';
+import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
 import { fetchSessionToolkitFallback } from '../session-fallback';
 import { getOptionalResultWithTimeout } from '../timeout-helpers';
 import {
   isSingleSlugQuery,
   filterToolkitsByQuery,
   buildCatalogResultFromToolkits,
+  rankToolkit,
+  getExactToolkitMatch,
 } from '../toolkit-ranking';
 
 const query = Options.text('query').pipe(
@@ -56,37 +53,15 @@ const userId = Options.text('user-id').pipe(
 /** Re-export for tests. */
 export { filterToolkitsByQuery as filterToolkitsForListQuery } from '../toolkit-ranking';
 
-const getExactToolkitListMatch = (
-  repo: ComposioToolkitsRepository,
-  query: string,
-  limit: number
-) => {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!isSingleSlugQuery(normalizedQuery)) {
-    return Effect.succeed(Option.none<ToolkitSearchResult>());
-  }
-
-  return getOptionalResultWithTimeout(
-    repo.getToolkitDetailed(normalizedQuery).pipe(
-      Effect.map(toolkitFromDetailed),
-      Effect.map(toolkit => filterToolkitsByQuery([toolkit], normalizedQuery)),
-      Effect.catchTag('services/HttpServerError', error =>
-        error.status === 404 ? Effect.succeed([] as ReadonlyArray<Toolkit>) : Effect.fail(error)
-      )
-    ),
+const getExactToolkitListMatch = (repo: ComposioToolkitsRepository, query: string, limit: number) =>
+  getExactToolkitMatch(
+    repo,
+    query,
+    limit,
     LIST_EXACT_MATCH_TIMEOUT_MS,
     'Timed out retrieving exact toolkit list match; falling back to broader search.',
     'Failed to retrieve exact toolkit list match; falling back to broader search:'
-  ).pipe(
-    Effect.map(
-      Option.flatMap(items =>
-        items.length === 0
-          ? Option.none<ToolkitSearchResult>()
-          : Option.some(buildCatalogResultFromToolkits(items, limit))
-      )
-    )
   );
-};
 
 const getCatalogToolkitsWithFallback = (
   repo: ComposioToolkitsRepository,
@@ -126,15 +101,8 @@ const getCatalogToolkitsWithFallback = (
         onNone: () => Effect.never,
         onSome: items => {
           const hasPreciseMatch = items.some(toolkit => {
-            const normalizedQuery = query.trim().toLowerCase();
-            const slug = toolkit.slug.toLowerCase();
-            const name = toolkit.name.toLowerCase();
-            return (
-              slug === normalizedQuery ||
-              slug.startsWith(normalizedQuery) ||
-              name === normalizedQuery ||
-              name.startsWith(normalizedQuery)
-            );
+            const rank = rankToolkit(toolkit, query);
+            return rank !== undefined && rank <= 1; // exact or prefix match
           });
 
           if (items.length === 0) {

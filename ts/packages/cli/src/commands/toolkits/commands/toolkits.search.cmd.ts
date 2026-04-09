@@ -8,18 +8,14 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { formatLimitDescription, validateLimit } from 'src/ui/clamp-limit';
-import {
-  mergeToolkitData,
-  formatToolkitsTable,
-  formatToolkitsJson,
-  toolkitFromDetailed,
-} from '../format';
+import { mergeToolkitData, formatToolkitsTable, formatToolkitsJson } from '../format';
 import { fetchSessionToolkitFallback } from '../session-fallback';
 import { getOptionalResultWithTimeout } from '../timeout-helpers';
 import {
   isSingleSlugQuery,
   filterToolkitsByQuery,
   buildCatalogResultFromToolkits,
+  getExactToolkitMatch,
 } from '../toolkit-ranking';
 
 const query = Args.text({ name: 'query' }).pipe(
@@ -44,35 +40,15 @@ const getExactToolkitSearchMatch = (
   repo: ComposioToolkitsRepository,
   query: string,
   limit: number
-) => {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!isSingleSlugQuery(normalizedQuery)) {
-    return Effect.succeed(Option.none<ToolkitSearchResult>());
-  }
-
-  return getOptionalResultWithTimeout(
-    repo.getToolkitDetailed(normalizedQuery).pipe(
-      Effect.map(toolkitFromDetailed),
-      Effect.map(toolkit => filterToolkitsByQuery([toolkit], normalizedQuery)),
-      Effect.catchTag('services/HttpServerError', error =>
-        error.status === 404
-          ? Effect.succeed([] as ReadonlyArray<import('src/models/toolkits').Toolkit>)
-          : Effect.fail(error)
-      )
-    ),
+) =>
+  getExactToolkitMatch(
+    repo,
+    query,
+    limit,
     SEARCH_EXACT_MATCH_TIMEOUT_MS,
     'Timed out retrieving exact toolkit search fallback.',
     'Failed to retrieve exact toolkit search fallback:'
-  ).pipe(
-    Effect.map(
-      Option.flatMap(items =>
-        items.length === 0
-          ? Option.none<ToolkitSearchResult>()
-          : Option.some(buildCatalogResultFromToolkits(items, limit))
-      )
-    )
   );
-};
 
 const getCatalogToolkitSearchMatch = (
   repo: ComposioToolkitsRepository,

@@ -193,7 +193,7 @@ function fetchFilteredData(
           Match.exhaustive
         ),
       ],
-      { concurrency: 1 }
+      { concurrency: 'unbounded' }
     );
 
     yield* spinner.message(
@@ -245,7 +245,7 @@ function fetchAllDataFastPath(
           Match.exhaustive
         ),
       ],
-      { concurrency: 1 }
+      { concurrency: 'unbounded' }
     );
 
     yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);
@@ -305,7 +305,7 @@ function fetchAllDataWithOverrides(
           Match.exhaustive
         ),
       ],
-      { concurrency: 1 }
+      { concurrency: 'unbounded' }
     );
 
     yield* spinner.message(`Found ${allToolkits.length} toolkit(s)`);
