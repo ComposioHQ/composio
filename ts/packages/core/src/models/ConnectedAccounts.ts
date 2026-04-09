@@ -490,6 +490,16 @@ export class ConnectedAccounts {
    *
    * // Clear an alias
    * await composio.connectedAccounts.update('conn_abc123', { alias: '' });
+   *
+   * // Update credentials
+   * await composio.connectedAccounts.update('conn_abc123', {
+   *   connection: {
+   *     state: {
+   *       authScheme: 'BEARER_TOKEN',
+   *       val: { token: 'new-access-token' },
+   *     },
+   *   },
+   * });
    * ```
    */
   async update(
@@ -505,6 +515,7 @@ export class ConnectedAccounts {
 
     const response = await this.client.connectedAccounts.patch(nanoid, {
       alias: parsedParams.data.alias,
+      connection: parsedParams.data.connection,
     });
 
     return UpdateConnectedAccountResponseSchema.parse(response);

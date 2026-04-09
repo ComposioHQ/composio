@@ -360,33 +360,42 @@ class ConnectedAccounts:
         self,
         nanoid: str,
         *,
-        alias: str,
+        alias: t.Optional[str] = None,
+        connection: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> t.Dict[str, t.Any]:
         """
-        Update a connected account's alias.
+        Update credentials and/or alias on a connected account.
 
-        :param nanoid: The unique identifier of the connected account.
+        :param nanoid: The unique identifier of the connected account (ca_xxx).
         :param alias: Human-readable alias for the account. Must be unique per userId
                       and toolkit within the project. Pass an empty string to clear.
-        :return: Dict with ``success``, and optionally ``id`` and ``status``.
+        :param connection: Credential update with ``state`` containing ``authScheme``
+                          and ``val`` fields.
+        :return: Dict with ``success``, ``id``, and ``status``.
 
         Example:
             # Set an alias
             composio.connected_accounts.update('ca_abc123', alias='work-gmail')
 
-            # Clear an alias
-            composio.connected_accounts.update('ca_abc123', alias='')
+            # Update credentials
+            composio.connected_accounts.update(
+                'ca_abc123',
+                connection={
+                    'state': {
+                        'authScheme': 'BEARER_TOKEN',
+                        'val': {'token': 'new-access-token'},
+                    },
+                },
+            )
         """
         if not nanoid:
             raise ValueError(
                 f"Expected a non-empty value for `nanoid` but received {nanoid!r}"
             )
-        # The composio_client doesn't yet have a typed method for this endpoint,
-        # so we call the raw client patch method directly.
-        return self._client.patch(  # type: ignore[no-any-return]
-            f"/api/v3/connected_accounts/{nanoid}",
-            body={"alias": alias},
-            cast_to=dict,  # type: ignore[arg-type]
+        return self._client.connected_accounts.patch(  # type: ignore[no-any-return]
+            nanoid,
+            alias=alias,
+            connection=connection,  # type: ignore[arg-type]
         )
 
     def initiate(

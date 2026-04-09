@@ -966,6 +966,48 @@ describe('ConnectedAccounts', () => {
       expect(result).toEqual({ success: true });
     });
 
+    it('should update credentials via connection param', async () => {
+      const nanoid = 'conn_abc123';
+      const mockResponse = { success: true, id: nanoid, status: 'ACTIVE' };
+      const connection = {
+        state: {
+          authScheme: 'BEARER_TOKEN' as const,
+          val: { token: 'new-access-token' },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.update(nanoid, { connection });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith(nanoid, {
+        alias: undefined,
+        connection,
+      });
+      expect(result).toEqual({ success: true, id: nanoid, status: 'ACTIVE' });
+    });
+
+    it('should update both alias and credentials together', async () => {
+      const nanoid = 'conn_abc123';
+      const mockResponse = { success: true, id: nanoid, status: 'ACTIVE' };
+      const connection = {
+        state: {
+          authScheme: 'API_KEY' as const,
+          val: { api_key: 'new-key-123' },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.update(nanoid, { alias: 'work-gmail', connection });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith(nanoid, {
+        alias: 'work-gmail',
+        connection,
+      });
+      expect(result).toEqual({ success: true, id: nanoid, status: 'ACTIVE' });
+    });
+
     it('should throw ValidationError for invalid params', async () => {
       await expect(connectedAccounts.update('conn_abc123', { alias: 123 } as any)).rejects.toThrow(
         'Failed to parse connected account update params'

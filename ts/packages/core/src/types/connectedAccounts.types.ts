@@ -218,7 +218,24 @@ export const UpdateConnectedAccountParamsSchema = z.object({
     .string()
     .describe(
       'Human-readable alias for the account. Must be unique per userId and toolkit within the project. Pass an empty string to clear the alias.'
-    ),
+    )
+    .optional(),
+  connection: z
+    .object({
+      state: z.object({
+        authScheme: z.enum([
+          'BEARER_TOKEN',
+          'API_KEY',
+          'BASIC',
+          'BASIC_WITH_JWT',
+          'GOOGLE_SERVICE_ACCOUNT',
+          'SERVICE_ACCOUNT',
+        ]),
+        val: z.record(z.string().nullable()),
+      }),
+    })
+    .describe('Credential update with authScheme and val fields.')
+    .optional(),
 });
 export type UpdateConnectedAccountParams = z.infer<typeof UpdateConnectedAccountParamsSchema>;
 
