@@ -29,7 +29,7 @@ const limitValidationCases = [
   },
   {
     commandName: 'composio dev triggers list',
-    args: ['dev', 'triggers', 'list', '--limit', '51'],
+    args: ['dev', 'triggers', 'list', 'gmail', '--limit', '51'],
   },
   {
     commandName: 'composio dev triggers status',
