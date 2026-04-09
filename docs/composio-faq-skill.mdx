@@ -1,0 +1,970 @@
+---
+title: "Composio FAQ Skill — Complete Reference"
+description: "A reusable skill document for adding, editing, and managing FAQs in the Composio docs. Covers both General FAQs and Toolkit-specific FAQs with exact formatting, directory structure, parsing pipeline, and end-to-end workflow."
+---
+
+# Composio FAQ Skill
+
+## 1. Overview
+
+This skill enables adding, editing, and managing FAQ entries in the Composio documentation site. There are **two distinct FAQ systems**:
+
+| System | Format | Location | Rendered At |
+|--------|--------|----------|-------------|
+| **General FAQ** | MDX with `<Accordion>` components | `docs/content/docs/common-faq.mdx` | `/docs/common-faq` |
+| **Toolkit FAQ** | Plain Markdown with `## ` headings | `docs/content/toolkits/faq/{toolkit-slug}.md` | `/toolkits/{toolkit-slug}` |
+
+**Key differences:**
+- General FAQs use MDX components (`<Accordions>`, `<Accordion>`, `<Tabs>`, `<Tab>`) — these are globally available with no imports needed.
+- Toolkit FAQs use plain Markdown — a custom parser (`readToolkitFaq`) splits on `## ` headings, converts markdown to HTML via unified/remark, and renders via the `FaqSection` React component.
+
+---
+
+## 2. Repository & Directory Structure
+
+**Repository:** https://github.com/ComposioHQ/composio
+**Branch:** `next`
+**Docs framework:** [Fumadocs](https://fumadocs.vercel.app/) (fumadocs-core, fumadocs-ui, fumadocs-mdx)
+**Runtime:** Next.js 16+ with App Router, React 19, Bun
+
+### Directory Tree (FAQ-related files only)
+
+```
+composio/docs/
+├── content/
+│   ├── docs/
+│   │   ├── common-faq.mdx          ← General FAQ (MDX, 6 sections, ~32 questions)
+│   │   └── meta.json               ← Sidebar nav (lists "common-faq" under Resources)
+│   └── toolkits/
+│       └── faq/                     ← Toolkit FAQs (45 files, ~144 questions total)
+│           ├── gmail.md
+│           ├── slack.md
+│           ├── notion.md
+│           ├── jira.md
+│           ├── hubspot.md
+│           ├── salesforce.md
+│           ├── twitter.md
+│           ├── stripe.md
+│           ├── monday.md
+│           ├── googlesheets.md
+│           ├── googledrive.md
+│           ├── googledocs.md
+│           ├── googlecalendar.md
+│           ├── googlemeet.md
+│           ├── googleslides.md
+│           ├── googletasks.md
+│           ├── google_admin.md
+│           ├── google_classroom.md
+│           ├── google_maps.md
+│           ├── googlesuper.md
+│           ├── airtable.md
+│           ├── asana.md
+│           ├── calendly.md
+│           ├── canva.md
+│           ├── confluence.md
+│           ├── dropbox.md
+│           ├── facebook.md
+│           ├── gitlab.md
+│           ├── instantly.md
+│           ├── linkedin.md
+│           ├── one_drive.md
+│           ├── outlook.md
+│           ├── pipedrive.md
+│           ├── posthog.md
+│           ├── quickbooks.md
+│           ├── shopify.md
+│           ├── snowflake.md
+│           ├── spotify.md
+│           ├── strava.md
+│           ├── whatsapp.md
+│           ├── xero.md
+│           ├── youtube.md
+│           ├── zendesk.md
+│           ├── zoho.md
+│           └── zoom.md
+├── app/(home)/toolkits/[[...slug]]/
+│   └── page.tsx                     ← readToolkitFaq() parser + parallel data fetch
+├── components/toolkits/
+│   └── faq-section.tsx              ← FaqSection client component (renders accordions)
+└── source.config.ts                 ← Fumadocs config (excludes faq/** from MDX processing)
+```
+
+### Key Files Explained
+
+#### `source.config.ts` — FAQ Exclusion
+
+Toolkit FAQ `.md` files are **excluded** from Fumadocs' MDX processing pipeline. This is critical — without this exclusion, Fumadocs would try to process them as MDX pages and fail:
+
+```typescript
+export const toolkits = defineDocs({
+  dir: 'content/toolkits',
+  docs: {
+    schema: docsSchema,
+    files: ['**/*', '!faq/**'],  // ← Excludes faq/ directory
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+```
+
+#### `page.tsx` — The Toolkit FAQ Parser
+
+The `readToolkitFaq()` function reads `.md` files at build time and splits them into question/answer pairs:
+
+```typescript
+function markdownToHtml(md: string): string {
+  const tree = unified().use(remarkParse).parse(md);
+  const hast = unified().use(remarkRehype).runSync(tree);
+  return toHtml(hast);
+}
+
+async function readToolkitFaq(slug: string): Promise<FaqItem[] | null> {
+  const filePath = join(process.cwd(), 'content/toolkits/faq', `${slug}.md`);
+  let content: string;
+  try {
+    content = await readFile(filePath, 'utf-8');
+  } catch {
+    return null; // No FAQ file for this toolkit — that's fine
+  }
+
+  const items: FaqItem[] = [];
+  const sections = content.split(/^## /m).filter(Boolean);
+  for (const section of sections) {
+    const newlineIdx = section.indexOf('\n');
+    if (newlineIdx === -1) continue;
+    const question = section.slice(0, newlineIdx).trim();
+    const answerMd = section.slice(newlineIdx + 1).trim();
+    if (question && answerMd) {
+      items.push({ question, answer: markdownToHtml(answerMd) });
+    }
+  }
+  return items.length > 0 ? items : null;
+}
+```
+
+**How the parser works:**
+1. Reads `content/toolkits/faq/{slug}.md`
+2. Splits on `^## ` regex (markdown H2 headings at line start)
+3. First line of each section → question text
+4. Remaining lines → answer markdown, converted to HTML via unified pipeline
+5. Returns `FaqItem[]` or `null` if no FAQ file exists
+
+**Parallel data fetching** — tools, triggers, and FAQ are loaded simultaneously:
+
+```typescript
+const [detailedTools, detailedTriggers, faq] = await Promise.all([
+  fetchDetailedTools(toolkitSlug, toolkit.version),
+  fetchDetailedTriggers(toolkitSlug, toolkit.version),
+  readToolkitFaq(toolkitSlug),
+]);
+```
+
+The FAQ is then passed to the `ToolkitDetail` component:
+
+```typescript
+<ToolkitDetail
+  toolkit={toolkit}
+  tools={tools}
+  triggers={triggers}
+  path={`/toolkits/${toolkit.slug}`}
+  faq={faq}
+/>
+```
+
+#### `faq-section.tsx` — The Rendering Component
+
+A client component that renders FAQ items as collapsible accordions:
+
+```typescript
+'use client';
+
+import { HelpCircle } from 'lucide-react';
+import { Accordion, Accordions } from '@/mdx-components';
+
+export interface FaqItem {
+  question: string;
+  answer: string;   // Pre-rendered HTML string
+}
+
+interface FaqSectionProps {
+  faq: FaqItem[];
+}
+
+export function FaqSection({ faq }: FaqSectionProps) {
+  if (!faq || faq.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <h2 className="flex items-center gap-2 text-base font-semibold text-fd-foreground">
+        <HelpCircle className="h-4 w-4" />
+        Frequently Asked Questions
+      </h2>
+      <Accordions type="single">
+        {faq.map((item) => (
+          <Accordion key={item.question} title={item.question}>
+            <div
+              className="prose prose-sm prose-fd max-w-none text-fd-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: item.answer }}
+            />
+          </Accordion>
+        ))}
+      </Accordions>
+    </div>
+  );
+}
+```
+
+---
+
+## 3. General FAQ Format
+
+**File:** `docs/content/docs/common-faq.mdx`
+**Renders at:** `/docs/common-faq`
+**Listed in sidebar:** `docs/content/docs/meta.json` under "Resources"
+
+### Frontmatter
+
+```yaml
+---
+title: General FAQs
+description: Frequently asked questions about Composio
+keywords: [faq, questions, help, common questions]
+---
+```
+
+### Section Structure
+
+The file has 6 sections, each with its own `<Accordions>` wrapper:
+
+1. **General** — What is Composio, user IDs, sessions, auth vs MCP config
+2. **Tools & Toolkits** — Available toolkits, versions, triggers, requesting tools
+3. **Authentication & Connections** — Auth configs, OAuth, token refresh, multiple accounts
+4. **White Labeling & Branding** — Custom consent screens, logos, branding
+5. **Debugging & Troubleshooting** — Logs, secrets, SDK debug mode
+6. **Platform & Pricing** — Security, IP ranges, quotas, self-hosting
+
+### Format Rules
+
+- Each section starts with `## Section Name`
+- Followed by `<Accordions>` wrapper
+- Each FAQ entry is an `<Accordion title="Question text here?">` ... `</Accordion>`
+- Closed with `</Accordions>`
+- **No imports needed** — `<Accordions>`, `<Accordion>`, `<Tabs>`, `<Tab>` are globally available MDX components
+- Content inside `<Accordion>` can use full MDX: markdown, links, code blocks, `<Tabs>`/`<Tab>` components
+
+### 10 Real Examples
+
+#### Example 1: Simple text answer
+
+```mdx
+<Accordion title="Do I need an AI agent to use Composio?">
+No. If you're building an AI agent, Composio can give it [meta tools](/docs/quickstart) that handle tool discovery and execution automatically, or you can [fetch specific tools](/docs/tools-direct/fetching-tools) and pass them to your agent directly.
+
+If you don't have an agent, you can [execute tools directly](/docs/tools-direct/executing-tools#direct-tool-execution) from any backend.
+</Accordion>
+```
+
+#### Example 2: Bold terms with definitions
+
+```mdx
+<Accordion title="What is the difference between a tool and a toolkit?">
+A **toolkit** is a collection of related tools grouped by app, for example the GitHub toolkit or the Gmail toolkit. A **tool** is a single action within a toolkit, like `GITHUB_CREATE_ISSUE` or `GMAIL_SEND_EMAIL`.
+
+You connect to toolkits (via OAuth or API keys), and then execute individual tools within them. See [Tools and toolkits](/docs/tools-and-toolkits).
+</Accordion>
+```
+
+#### Example 3: With Python/TypeScript code tabs
+
+```mdx
+<Accordion title="What toolkits are available by default in a session?">
+All toolkits in the Composio catalog are available by default. When you create a session without specifying a `toolkits` parameter, your agent can discover and use any toolkit through `COMPOSIO_SEARCH_TOOLS`.
+
+To restrict which toolkits are available, pass `toolkits` when creating the session:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Only GitHub and Gmail
+session = composio.create(user_id="user_123", toolkits=["github", "gmail"])
+
+# Everything except Linear and Jira
+session = composio.create(user_id="user_123", toolkits={"disable": ["linear", "jira"]})
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Only GitHub and Gmail
+const session = await composio.create("user_123", { toolkits: ["github", "gmail"] });
+
+// Everything except Linear and Jira
+const session2 = await composio.create("user_123", { toolkits: { disable: ["linear", "jira"] } });
+```
+</Tab>
+</Tabs>
+
+You can also list the toolkits available in a session with `session.toolkits()`. See [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
+</Accordion>
+```
+
+#### Example 4: With a curl code block
+
+```mdx
+<Accordion title="Why does the API return fewer tools than the platform UI?">
+When calling the Get Tools API (`GET /api/v3/tools`) without specifying a `toolkit_versions` parameter, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. The platform UI shows tools from the latest version.
+
+To get all available tools, pass `toolkit_versions=latest`:
+
+```bash
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+  -H "x-api-key: $YOUR_API_KEY"
+```
+
+See [Toolkit versioning](/docs/tools-direct/toolkit-versioning) for more details.
+</Accordion>
+```
+
+#### Example 5: Multi-paragraph with links
+
+```mdx
+<Accordion title="What is an auth config?">
+An auth config is a blueprint that defines how authentication works for a toolkit. It specifies the auth method (OAuth2, API Key, etc.), the scopes to request, and the credentials to use.
+
+If you're using sessions with meta tools (`composio.create()`), you don't need to create auth configs yourself. When a user connects to a toolkit, Composio automatically uses a default auth config with managed credentials. The agent handles the entire flow through `COMPOSIO_MANAGE_CONNECTIONS`.
+
+You only need to create auth configs manually when you're [executing tools directly](/docs/tools-direct/authenticating-tools), want to [use your own OAuth app](/docs/white-labeling-authentication), need [custom scopes](/docs/auth-configuration/custom-auth-configs), or are working with a toolkit that doesn't have Composio-managed auth. See [Authentication](/docs/authentication) for the full overview and [When to use your own developer credentials](/docs/custom-app-vs-managed-app) for help deciding.
+</Accordion>
+```
+
+#### Example 6: With Python/TypeScript tabs and API key example
+
+```mdx
+<Accordion title="How do I use my own API key for a toolkit instead of asking each user for theirs?">
+For toolkits that require API keys (like Tavily, Perplexity, or ImgBB), you can create connections on behalf of your users by passing your own API key through `connectedAccounts.initiate()`. This way, your users get access to the service without needing to provide their own credentials.
+
+Create an auth config for the toolkit, then call `initiate()` with your API key and each user's ID:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+connection = composio.connected_accounts.initiate(
+  user_id="user_123",
+  auth_config_id="your_auth_config_id",
+  config={
+    "auth_scheme": "API_KEY", "val": {"api_key": "your_own_api_key"}
+  }
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio, AuthScheme } from '@composio/core';
+
+declare const composio: Composio;
+// ---cut---
+const connection = await composio.connectedAccounts.initiate('user_123', 'your_auth_config_id', {
+  config: AuthScheme.APIKey({
+    api_key: 'your_own_api_key',
+  }),
+});
+```
+  </Tab>
+</Tabs>
+
+Each user gets their own connected account scoped to their `user_id`, but they all share your API key under the hood. See [API key connections](/docs/tools-direct/authenticating-tools#api-key-connections) for the full setup.
+</Accordion>
+```
+
+#### Example 7: Short answer with link
+
+```mdx
+<Accordion title="How do I increase my quota?">
+Upgrade your plan. See [pricing](https://composio.dev/pricing) for available plans and limits.
+</Accordion>
+```
+
+#### Example 8: Bullet points and bold text
+
+```mdx
+<Accordion title="What happens to existing connections when I switch to my own OAuth app?">
+Nothing — existing connected accounts are permanently tied to the auth config they were created with. Switching to a custom auth config only affects new connections.
+
+- **Existing connections keep working.** Tokens continue refreshing using the original auth config's credentials.
+- **New connections use your custom auth config.** Users who connect after the switch see your app name on the consent screen.
+- **To fully migrate a user**, delete their old connected account and have them re-authenticate through your OAuth app. There is no way to move an existing connection between auth configs without re-authentication.
+
+This applies whether you're using sessions or direct tool execution:
+- **Sessions:** Pass `authConfigs` when calling `composio.create()`. See [Switching auth configs (sessions)](/docs/white-labeling-authentication#switching-from-composio-managed-to-your-own-oauth-app).
+- **Direct tool execution:** Pass the new `authConfigId` when calling `initiate()`. See [Switching auth configs (direct)](/docs/auth-configuration/white-labeling#switching-from-composio-managed-to-your-own-oauth-app).
+</Accordion>
+```
+
+#### Example 9: Inline code with bash commands
+
+```mdx
+<Accordion title="How do I check complete logs / API calls from the SDK?">
+Enable debug logging to view all API calls and network requests made by the SDK.
+
+Python:
+```bash
+COMPOSIO_LOGGING_LEVEL=debug
+```
+
+TypeScript:
+```bash
+COMPOSIO_LOG_LEVEL=debug
+```
+
+See [Troubleshooting SDKs](/docs/troubleshooting/sdks).
+</Accordion>
+```
+
+#### Example 10: Numbered steps with curl examples
+
+```mdx
+<Accordion title="How do I check if a toolkit has Composio managed auth?">
+Call the toolkits API and check the `composio_managed_auth_schemes` field:
+
+```bash
+curl 'https://backend.composio.dev/api/v3/toolkits/github' \
+  -H "x-api-key: $YOUR_API_KEY"
+```
+
+If the array is empty, you'll need to provide your own credentials.
+
+To fetch all toolkits and filter by managed auth availability, use the list endpoint:
+
+```bash
+curl 'https://backend.composio.dev/api/v3/toolkits' \
+  -H "x-api-key: $YOUR_API_KEY"
+```
+
+Each toolkit in the response includes `composio_managed_auth_schemes`. You can also browse the full list on the [managed auth page](/toolkits/managed-auth) or check individual toolkit pages on the [toolkits page](/toolkits).
+</Accordion>
+```
+
+---
+
+## 4. Toolkit FAQ Format
+
+**Directory:** `docs/content/toolkits/faq/`
+**File naming:** `{toolkit-slug}.md` (e.g., `gmail.md`, `slack.md`, `monday.md`)
+**Renders at:** `/toolkits/{toolkit-slug}` (in an accordion section at the bottom of the toolkit page)
+
+### Format Rules
+
+- **Plain Markdown** — no MDX components, no frontmatter
+- Each question is a `## ` heading (H2)
+- Answer is everything between one `## ` and the next (or end of file)
+- Most files end with a `---` horizontal rule (optional, the parser ignores content that lacks both question and answer)
+- Links use standard Markdown: `[text](url)`
+- Code blocks use standard fenced blocks: ` ```language ... ``` `
+- The parser (`readToolkitFaq`) converts the markdown to HTML via remark/rehype — all standard Markdown features are supported
+
+### 10 Real Examples from Different Toolkits
+
+#### Example 1: Gmail — Simple answer with link
+
+```markdown
+## How do I set up custom Google OAuth credentials for Gmail?
+
+For a step-by-step guide on creating and configuring your own Google OAuth credentials with Composio, see [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
+```
+
+#### Example 2: Gmail — Troubleshooting with action steps
+
+```markdown
+## Why am I seeing "App is blocked" when connecting Gmail?
+
+The OAuth client is requesting scopes that Google hasn't verified for that client. This usually happens when you add extra scopes beyond the defaults.
+
+Remove the additional scopes from your auth config, or create your own OAuth app and submit the scopes for verification. See [How to create OAuth2 credentials for Google Apps](https://composio.dev/auth/googleapps).
+```
+
+#### Example 3: Slack — Detailed explanation with bold terms
+
+```markdown
+## What is the difference between Slack and Slackbot toolkits?
+
+Slack is for workspace-level API access (channels, files, users) while Slackbot is bot-centric (messaging, interactivity). Slack triggers cover workspace events; Slackbot covers bot entry points like app mentions, DMs, and slash commands. Slack can post as the app; Slackbot posts as the bot user.
+```
+
+#### Example 4: Slack — Setup instructions with a URL
+
+```markdown
+## How do I set up Slack event webhooks?
+
+Enable Event Subscriptions in your Slack app. Set the Request URL to `https://backend.composio.dev/api/v3/trigger_instances/slack/default/handle`. Add events (e.g., `reaction_added`) to Subscribe to Bot Events and save. If using the Slackbot integration, add the bot to the channels you want to monitor.
+```
+
+#### Example 5: Notion — Short Q&A pair
+
+```markdown
+## Does Notion use OAuth scopes?
+
+No. Notion controls access by granting integrations access to specific pages and databases, not through scopes. You don't need to pass scopes when creating an auth config.
+```
+
+#### Example 6: Salesforce — SOQL code block
+
+```markdown
+## How do I query relationships like Pricebooks and Opportunities?
+
+Use SOQL subqueries to traverse relationships. For example, Products → Pricebooks → Opportunities:
+
+```sql
+SELECT Id, Name,
+  (SELECT Id, Quantity, UnitPrice, TotalPrice, PricebookEntry.Product2.Name FROM OpportunityLineItems)
+FROM Opportunity
+```
+```
+
+#### Example 7: Jira — Comparing similar tools
+
+```markdown
+## What is the difference between JQL GET, JQL POST, and Search Issues?
+
+JQL GET and POST target the same search functionality but use different HTTP methods. POST supports complex queries in the request body. Search Issues uses JQL POST under the hood with extra parameters and filters. For consistent results, prefer POST for complex queries. Use the `fields` parameter to request specific fields, or `["*all"]` to request all fields.
+```
+
+#### Example 8: Monday — Multi-paragraph with numbered steps and code block
+
+```markdown
+## How do I configure scopes for Monday.com?
+
+Monday.com doesn't accept scopes in the auth config the way Google does. Scopes are configured on the OAuth app itself. If you're using the default OAuth app, the required scopes are already configured. If creating your own app, add the scopes you need:
+
+```bash
+me:read
+boards:read
+boards:write
+docs:read
+docs:write
+workspaces:read
+workspaces:write
+users:read
+users:write
+account:read
+notifications:write
+updates:read
+updates:write
+assets:read
+tags:read
+teams:read
+teams:write
+webhooks:write
+webhooks:read
+```
+```
+
+#### Example 9: Twitter — Migration notice with numbered steps
+
+```markdown
+## Why are Composio managed credentials no longer available for Twitter?
+
+As of February 2026, Composio managed credentials for the Twitter toolkit have been removed. You must now bring your own Twitter API credentials. To migrate:
+
+1. Create a Twitter Developer account and obtain API credentials from the [Twitter Developer Portal](https://developer.x.com/en/portal/dashboard).
+2. Set up a custom auth configuration with your credentials in Composio.
+
+If you were relying on managed credentials, your Twitter integrations will stop working until you configure your own. See the [changelog entry](/docs/changelog/2026/02/12) for full details.
+```
+
+#### Example 10: HubSpot — Specific parameter constraint
+
+```markdown
+## Why am I getting errors with `limit` on HubSpot contact searches?
+
+The `HUBSPOT_SEARCH_CONTACTS_BY_CRITERIA` and `HUBSPOT_LIST_CONTACTS_PAGE` tools have a maximum limit of 100 results per request. Set `limit` to 100 or lower to avoid errors.
+```
+
+---
+
+## 5. Step-by-Step: Adding a New General FAQ
+
+### Step 1: Open the file
+
+```bash
+# File location (from repo root)
+docs/content/docs/common-faq.mdx
+```
+
+### Step 2: Identify the correct section
+
+The 6 sections in order:
+1. `## General`
+2. `## Tools & Toolkits`
+3. `## Authentication & Connections`
+4. `## White Labeling & Branding`
+5. `## Debugging & Troubleshooting`
+6. `## Platform & Pricing`
+
+Choose the section that best fits your FAQ topic.
+
+### Step 3: Add the entry inside the `<Accordions>` wrapper
+
+Insert a new `<Accordion>` block **inside** the `<Accordions>` ... `</Accordions>` of the chosen section. You can place it anywhere within the wrapper — typically at the end before `</Accordions>`, or group it logically near related entries.
+
+**Template — simple text answer:**
+
+```mdx
+<Accordion title="Your question here?">
+Your answer here. You can use **bold**, `code`, and [links](/docs/page).
+</Accordion>
+```
+
+**Template — with code tabs:**
+
+```mdx
+<Accordion title="How do I do X with the SDK?">
+Explanation of the feature.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# Python example
+result = composio.do_something()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// TypeScript example
+const result = await composio.doSomething();
+```
+</Tab>
+</Tabs>
+
+See [relevant doc page](/docs/page) for more details.
+</Accordion>
+```
+
+### Step 4: Verify formatting
+
+- The `title` attribute must be a string (use quotes)
+- No blank line between `<Accordion title="...">` and the first line of content
+- Content can include blank lines, code blocks, tabs, lists, etc.
+- Close with `</Accordion>` (must match opening tag)
+- Ensure the entry is inside `<Accordions>` ... `</Accordions>`
+
+---
+
+## 6. Step-by-Step: Adding a New Toolkit FAQ
+
+### Step 1: Determine the toolkit slug
+
+The slug matches the file name exactly. Common patterns:
+- Single-word: `gmail`, `slack`, `jira`, `notion`, `stripe`, `shopify`
+- Multi-word with underscore: `google_admin`, `google_classroom`, `google_maps`, `one_drive`
+- Multi-word concatenated: `googlesheets`, `googledrive`, `googledocs`, `googlecalendar`
+
+Check existing files in `docs/content/toolkits/faq/` or the toolkit's URL on the docs site.
+
+### Step 2a: Add to an existing FAQ file
+
+```bash
+# Open the file
+docs/content/toolkits/faq/{toolkit-slug}.md
+```
+
+Add a new `## ` heading before the closing `---`:
+
+```markdown
+## Your new question here?
+
+Your answer here. Standard markdown: **bold**, `code`, [links](url), code blocks, numbered lists.
+
+---
+```
+
+**Important:** The parser splits on `^## ` (H2 at line start). Do NOT use `## ` inside answer content — use `### ` (H3) or lower for sub-headings within answers.
+
+### Step 2b: Create a new FAQ file (if none exists)
+
+```bash
+# Create the file
+docs/content/toolkits/faq/{toolkit-slug}.md
+```
+
+Write the file with this structure:
+
+```markdown
+## First question about this toolkit?
+
+Answer to the first question.
+
+## Second question?
+
+Answer to the second question with [a link](https://example.com).
+
+---
+```
+
+**No frontmatter needed.** The file is plain Markdown.
+
+**No configuration changes needed.** The `readToolkitFaq()` function automatically picks up any `.md` file in the `faq/` directory that matches a toolkit slug. The `source.config.ts` already excludes `faq/**` from Fumadocs processing.
+
+### Step 3: File naming convention
+
+The file name **must** match the toolkit slug exactly as used in the URL:
+- `/toolkits/gmail` → `gmail.md`
+- `/toolkits/googlesheets` → `googlesheets.md`
+- `/toolkits/google_admin` → `google_admin.md`
+
+If unsure, check the toolkit slug via the API:
+```bash
+curl 'https://backend.composio.dev/api/v3/toolkits?limit=500' \
+  -H "x-api-key: $YOUR_API_KEY" | jq '.[].slug'
+```
+
+---
+
+## 7. Preview & Verification
+
+### Local Preview Server
+
+```bash
+cd docs/
+
+# Install dependencies (first time only)
+bun install
+
+# Start dev server
+bun run dev
+# → Starts at http://localhost:3000 (or next available port if 3000 is in use)
+```
+
+**Note:** The `COMPOSIO_API_KEY` env var is needed for toolkit API data (tools, triggers) but NOT for FAQ rendering. FAQs are read from local files, so they work without any API key.
+
+### Verify General FAQ
+
+```bash
+# In browser
+open http://localhost:3000/docs/common-faq
+
+# Or via curl — check for your question text in the HTML
+curl -s http://localhost:3000/docs/common-faq | grep "Your question text"
+```
+
+### Verify Toolkit FAQ
+
+```bash
+# In browser
+open http://localhost:3000/toolkits/{toolkit-slug}
+
+# Or via curl
+curl -s http://localhost:3000/toolkits/gmail | grep "Your question text"
+```
+
+### Vercel Preview (for PRs)
+
+When you push a branch and open a PR against `next`, Vercel automatically builds a preview deployment:
+
+```
+https://docs-git-{branch-name}.preview.composio.dev
+```
+
+For example, branch `zen/add-gmail-faq-a7x9k2` → `https://docs-git-zen-add-gmail-faq-a7x9k2.preview.composio.dev`
+
+Check the PR's "Checks" tab for the Vercel deployment URL.
+
+---
+
+## 8. PR Workflow
+
+### Branch Naming
+
+```bash
+# Generate a 6-char nanoId suffix
+SUFFIX=$(head -c 256 /dev/urandom | LC_ALL=C tr -dc 'a-z0-9' | head -c 6)
+
+# Create branch
+git checkout -b zen/add-faq-{topic}-${SUFFIX} next
+```
+
+### Commit & Push
+
+```bash
+git add docs/content/docs/common-faq.mdx
+# OR for toolkit FAQ:
+git add docs/content/toolkits/faq/{toolkit-slug}.md
+
+git commit -m "docs: add FAQ entry for {topic}"
+git push -u origin zen/add-faq-{topic}-${SUFFIX}
+```
+
+### Create PR
+
+```bash
+gh pr create \
+  --base next \
+  --title "docs: add FAQ for {topic}" \
+  --body "$(cat <<'EOF'
+# Description
+Add FAQ entry for {topic description}.
+
+- **Type:** General FAQ / Toolkit FAQ ({toolkit name})
+- **Section:** {section name, if general FAQ}
+- **Question:** "{the question}"
+
+# How did I test this PR
+- Ran local dev server (`bun run dev`) and verified FAQ renders at `/{path}`
+- Checked Vercel preview deployment
+- Verified accordion opens/closes correctly
+- Confirmed markdown rendering (links, code blocks, formatting)
+EOF
+)"
+```
+
+### CI Checks
+
+These checks run on PRs to `next`:
+- **check-links** — verifies all internal links resolve
+- **test** — runs the test suite
+- **typescript-check** — TypeScript type checking
+- **claude-review** — AI code review
+- **gitleaks** — secrets detection
+
+All must pass before merging.
+
+---
+
+## 9. Full End-to-End Example
+
+This walkthrough adds both a General FAQ and a Toolkit FAQ for a hypothetical "How do webhook retries work?" question.
+
+### 9.1 Clone and Setup
+
+```bash
+git clone https://github.com/ComposioHQ/composio.git -b next
+cd composio
+
+# Generate branch suffix
+SUFFIX=$(head -c 256 /dev/urandom | LC_ALL=C tr -dc 'a-z0-9' | head -c 6)
+git checkout -b zen/add-webhook-retry-faq-${SUFFIX}
+```
+
+### 9.2 Add General FAQ Entry
+
+Edit `docs/content/docs/common-faq.mdx`. Add inside the `## Tools & Toolkits` section, before `</Accordions>`:
+
+```mdx
+<Accordion title="How do webhook retries work for triggers?">
+When a webhook delivery fails (non-2xx response or timeout), Composio retries with exponential backoff: 1 minute, 5 minutes, 30 minutes, then hourly for up to 24 hours.
+
+You can check delivery status and retry history in the [dashboard logs](https://platform.composio.dev?next_page=/logs/triggers). Failed deliveries show the HTTP status code and response body.
+
+See [Subscribing to triggers](/docs/setting-up-triggers/subscribing-to-events) for webhook setup.
+</Accordion>
+```
+
+### 9.3 Add Toolkit FAQ Entry
+
+Edit `docs/content/toolkits/faq/slack.md`. Add before the closing `---`:
+
+```markdown
+## How do webhook retries work for Slack triggers?
+
+Slack triggers use Composio's retry mechanism. If your webhook endpoint returns a non-2xx status or times out, Composio retries with exponential backoff for up to 24 hours. Check the [trigger logs](https://platform.composio.dev?next_page=/logs/triggers) for delivery status.
+
+---
+```
+
+### 9.4 Start Preview Server
+
+```bash
+cd docs/
+bun install
+bun run dev
+```
+
+### 9.5 Verify Both FAQs
+
+```bash
+# General FAQ
+curl -s http://localhost:3000/docs/common-faq | grep "webhook retries"
+# Expected: match found in the HTML output
+
+# Toolkit FAQ
+curl -s http://localhost:3000/toolkits/slack | grep "webhook retries"
+# Expected: match found in the HTML output
+```
+
+### 9.6 Commit and Push
+
+```bash
+cd ..  # back to repo root
+git add docs/content/docs/common-faq.mdx docs/content/toolkits/faq/slack.md
+git commit -m "docs: add webhook retry FAQ to general and Slack toolkit pages"
+git push -u origin zen/add-webhook-retry-faq-${SUFFIX}
+```
+
+### 9.7 Create PR
+
+```bash
+gh pr create \
+  --base next \
+  --title "docs: add webhook retry FAQ entries" \
+  --body "$(cat <<'EOF'
+# Description
+Add FAQ entries explaining how webhook retries work for triggers:
+- General FAQ: added under "Tools & Toolkits" section in `common-faq.mdx`
+- Toolkit FAQ: added to `slack.md` toolkit FAQ
+
+# How did I test this PR
+- Ran `bun run dev` in `docs/` and verified both FAQ entries render correctly
+- General FAQ visible at `/docs/common-faq` under Tools & Toolkits section
+- Slack toolkit FAQ visible at `/toolkits/slack` in the FAQ accordion
+- Verified links resolve and accordion expand/collapse works
+- Will confirm on Vercel preview after deploy
+EOF
+)"
+```
+
+### 9.8 Wait for CI and Vercel Preview
+
+```bash
+# Check CI status
+gh pr checks
+
+# Once Vercel deploys, verify at:
+# https://docs-git-zen-add-webhook-retry-faq-${SUFFIX}.preview.composio.dev/docs/common-faq
+# https://docs-git-zen-add-webhook-retry-faq-${SUFFIX}.preview.composio.dev/toolkits/slack
+```
+
+---
+
+## 10. Quick Reference
+
+### General FAQ Cheatsheet
+
+| Item | Value |
+|------|-------|
+| File | `docs/content/docs/common-faq.mdx` |
+| URL | `/docs/common-faq` |
+| Format | MDX with `<Accordion>` inside `<Accordions>` |
+| Sections | General, Tools & Toolkits, Authentication & Connections, White Labeling & Branding, Debugging & Troubleshooting, Platform & Pricing |
+| Rich content | `<Tabs>`, `<Tab>`, code blocks, links, lists, bold — all supported |
+
+### Toolkit FAQ Cheatsheet
+
+| Item | Value |
+|------|-------|
+| Directory | `docs/content/toolkits/faq/` |
+| File naming | `{toolkit-slug}.md` |
+| URL | `/toolkits/{toolkit-slug}` |
+| Format | Plain Markdown, `## Question` headings |
+| Rendering | Parsed by `readToolkitFaq()` → HTML → `FaqSection` component |
+| Auto-discovery | Yes — any new `.md` file matching a toolkit slug is picked up automatically |
+| Total files | 45 (as of April 2026) |
+| Total questions | ~144 across all toolkit FAQ files |
+
+### All 45 Toolkit FAQ Files
+
+`airtable` `asana` `calendly` `canva` `confluence` `dropbox` `facebook` `gitlab` `gmail` `google_admin` `google_classroom` `google_maps` `googlecalendar` `googledocs` `googledrive` `googlemeet` `googlesheets` `googleslides` `googlesuper` `googletasks` `hubspot` `instantly` `jira` `linkedin` `monday` `notion` `one_drive` `outlook` `pipedrive` `posthog` `quickbooks` `salesforce` `shopify` `slack` `snowflake` `spotify` `strava` `stripe` `twitter` `whatsapp` `xero` `youtube` `zendesk` `zoho` `zoom`
