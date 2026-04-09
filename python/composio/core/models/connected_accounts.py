@@ -9,10 +9,9 @@ import typing_extensions as te
 
 from composio import exceptions
 from composio.client import HttpClient
+from composio_client import Omit, omit
 from composio.client.types import (
     connected_account_create_params,
-    connected_account_patch_params,
-    connected_account_patch_response,
     connected_account_retrieve_response,
     connected_account_update_status_response,
 )
@@ -362,9 +361,9 @@ class ConnectedAccounts:
         self,
         nano_id: str,
         *,
-        alias: t.Optional[str] = None,
-        connection: t.Optional[connected_account_patch_params.Connection] = None,
-    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
+        alias: t.Union[str, Omit] = omit,
+        connection: t.Union[t.Dict[str, t.Any], Omit] = omit,
+    ) -> t.Any:
         """
         Update credentials and/or alias on a connected account.
 
@@ -376,7 +375,7 @@ class ConnectedAccounts:
         return self._client.connected_accounts.patch(
             nano_id,
             alias=alias,
-            connection=connection,
+            connection=connection,  # type: ignore[arg-type]
         )
 
     def initiate(
