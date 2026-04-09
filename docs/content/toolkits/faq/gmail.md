@@ -32,4 +32,8 @@ Gmail triggers poll roughly every minute by default. If you need lower latency, 
 
 Google enforces per-minute and daily request quotas. If you're using Composio's default OAuth app, you share that quota with other users, which can cause limits to be hit faster. Use your own OAuth app credentials to get a dedicated quota, and add exponential backoff and retries to handle transient rate limits.
 
+## Is this a test toolkit FAQ added by Zen?
+
+Yes! This is a dummy toolkit FAQ entry added by Zen to verify the toolkit FAQ addition workflow. If you see this in the Gmail toolkit FAQ section, everything is working.
+
 ---
