@@ -8,6 +8,8 @@
 import ComposioClient from '@composio/client';
 import {
   ConnectedAccountDeleteResponse,
+  ConnectedAccountPatchParams,
+  ConnectedAccountPatchResponse,
   ConnectedAccountRefreshParams,
   ConnectedAccountRefreshResponse,
   ConnectedAccountUpdateStatusParams,
@@ -460,5 +462,36 @@ export class ConnectedAccounts {
    */
   async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
+  }
+
+  /**
+   * Update credentials and/or alias on a connected account
+   * @param {string} nanoid - Unique identifier of the connected account
+   * @param {ConnectedAccountPatchParams} params - Fields to update
+   * @returns {Promise<ConnectedAccountPatchResponse>} Updated connected account
+   *
+   * @example
+   * ```typescript
+   * // Update credentials
+   * await composio.connectedAccounts.update('ca_abc123', {
+   *   connection: {
+   *     state: {
+   *       authScheme: 'BEARER_TOKEN',
+   *       val: { token: 'new-access-token' },
+   *     },
+   *   },
+   * });
+   *
+   * // Update alias
+   * await composio.connectedAccounts.update('ca_abc123', {
+   *   alias: 'work-gmail',
+   * });
+   * ```
+   */
+  async update(
+    nanoid: string,
+    params: ConnectedAccountPatchParams,
+  ): Promise<ConnectedAccountPatchResponse> {
+    return this.client.connectedAccounts.patch(nanoid, params);
   }
 }

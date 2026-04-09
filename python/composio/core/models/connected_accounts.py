@@ -11,6 +11,8 @@ from composio import exceptions
 from composio.client import HttpClient
 from composio.client.types import (
     connected_account_create_params,
+    connected_account_patch_params,
+    connected_account_patch_response,
     connected_account_retrieve_response,
     connected_account_update_status_response,
 )
@@ -485,6 +487,27 @@ class ConnectedAccounts:
             client=self._client,
         ).wait_for_connection(
             timeout=timeout,
+        )
+
+    def update(
+        self,
+        nano_id: str,
+        *,
+        alias: t.Optional[str] = None,
+        connection: t.Optional[connected_account_patch_params.Connection] = None,
+    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
+        """
+        Update credentials and/or alias on a connected account.
+
+        Args:
+            nano_id: The connected account ID (ca_xxx)
+            alias: Human-readable alias. Empty string clears alias.
+            connection: Credential update with authScheme and val fields.
+        """
+        return self._client.connected_accounts.patch(
+            nano_id,
+            alias=alias,
+            connection=connection,
         )
 
 
