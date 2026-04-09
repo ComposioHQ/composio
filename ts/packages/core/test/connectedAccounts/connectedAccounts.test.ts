@@ -1013,6 +1013,12 @@ describe('ConnectedAccounts', () => {
         'Failed to parse connected account update params'
       );
     });
+
+    it('should throw ValidationError for empty params', async () => {
+      await expect(connectedAccounts.update('conn_abc123', {} as any)).rejects.toThrow(
+        'Failed to parse connected account update params'
+      );
+    });
   });
 
   describe('link', () => {

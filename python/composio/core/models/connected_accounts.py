@@ -392,10 +392,16 @@ class ConnectedAccounts:
             raise ValueError(
                 f"Expected a non-empty value for `nanoid` but received {nanoid!r}"
             )
+        if alias is None and connection is None:
+            raise ValueError("At least one of `alias` or `connection` must be provided")
+        kwargs: t.Dict[str, t.Any] = {}
+        if alias is not None:
+            kwargs["alias"] = alias
+        if connection is not None:
+            kwargs["connection"] = connection
         return self._client.connected_accounts.patch(  # type: ignore[no-any-return]
             nanoid,
-            alias=alias,
-            connection=connection,  # type: ignore[arg-type]
+            **kwargs,
         )
 
     def initiate(
