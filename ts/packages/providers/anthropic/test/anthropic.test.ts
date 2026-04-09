@@ -3,6 +3,7 @@ import { AnthropicProvider, AnthropicToolUseBlock } from '../src';
 import type { AnthropicTool } from '../src/types';
 import type { Tool } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
+import { sanitizeSchemaPropertyKeys, restoreOriginalKeys } from '../src/sanitize-keys';
 
 vi.mock('@anthropic-ai/sdk', () => {
   return {
@@ -486,6 +487,203 @@ describe('AnthropicProvider', () => {
         expect(result[0].url).toBe('https://test.com');
         expect(result[0].type).toBe('url');
       });
+    });
+  });
+
+  describe('property key sanitization (issue #2330)', () => {
+    const LONG_KEY_1 = 'settings__approved__or__denied__countries__or__regions__approved__list'; // 70 chars
+    const LONG_KEY_2 = 'settings__approved__or__denied__countries__or__regions__denied__list'; // 68 chars
+    const LONG_KEY_3 = 'settings__continuous__meeting__chat__auto__add__invited__external__users'; // 72 chars
+
+    function makeLongKeyTool(slug: string, keys: string[]): Tool {
+      const properties: Record<string, unknown> = {};
+      for (const k of keys) {
+        properties[k] = { type: 'string' };
+      }
+      return {
+        slug,
+        name: slug,
+        description: 'Test tool',
+        inputParameters: {
+          type: 'object',
+          properties,
+          required: keys.length > 0 ? [keys[0]] : [],
+        },
+        tags: [],
+      };
+    }
+
+    it('should truncate property keys exceeding 64 characters', () => {
+      const tool = makeLongKeyTool('ZOOM_CREATE_A_MEETING', [
+        'short_key',
+        LONG_KEY_1,
+        LONG_KEY_2,
+        LONG_KEY_3,
+      ]);
+
+      const wrapped = provider.wrapTool(tool) as AnthropicTool;
+      const propertyKeys = Object.keys(wrapped.input_schema.properties as Record<string, unknown>);
+
+      for (const key of propertyKeys) {
+        expect(key.length).toBeLessThanOrEqual(64);
+      }
+      expect(propertyKeys).toContain('short_key');
+      expect(propertyKeys).toHaveLength(4);
+      expect(new Set(propertyKeys).size).toBe(4);
+    });
+
+    it('should update the required array with sanitized keys', () => {
+      const tool = makeLongKeyTool('ZOOM_TOOL', [LONG_KEY_1]);
+
+      const wrapped = provider.wrapTool(tool) as AnthropicTool;
+      const required = (wrapped.input_schema as any).required as string[];
+
+      expect(required).toHaveLength(1);
+      expect(required[0].length).toBeLessThanOrEqual(64);
+      expect(required[0]).not.toBe(LONG_KEY_1);
+    });
+
+    it('should not modify schemas with keys under 64 characters', () => {
+      const wrapped = provider.wrapTool(mockTool) as AnthropicTool;
+
+      expect(wrapped.input_schema).toEqual({
+        type: 'object',
+        properties: mockTool.inputParameters?.properties,
+        required: mockTool.inputParameters?.required,
+      });
+    });
+
+    it('should restore original keys when executing tool calls', async () => {
+      const tool = makeLongKeyTool('ZOOM_TOOL', [LONG_KEY_1]);
+
+      const wrapped = provider.wrapTool(tool) as AnthropicTool;
+      const truncatedKey = Object.keys(
+        wrapped.input_schema.properties as Record<string, unknown>
+      )[0];
+
+      const toolUse: AnthropicToolUseBlock = {
+        type: 'tool_use',
+        id: 'tu_zoom',
+        name: 'ZOOM_TOOL',
+        input: { [truncatedKey]: 'US,CA' },
+      };
+
+      await provider.executeToolCall('user-1', toolUse);
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'ZOOM_TOOL',
+        expect.objectContaining({
+          arguments: { [LONG_KEY_1]: 'US,CA' },
+        }),
+        undefined
+      );
+    });
+
+    it('should clear stale key mappings when tool is re-wrapped with short keys', () => {
+      // First wrap: tool has long keys -> mapping stored
+      const longKeyTool = makeLongKeyTool('STALE_TOOL', [LONG_KEY_1]);
+      provider.wrapTool(longKeyTool);
+
+      // Second wrap: same slug, but now all keys are short -> mapping must be cleared
+      const shortKeyTool: Tool = {
+        slug: 'STALE_TOOL',
+        name: 'Stale Tool',
+        description: 'Updated tool',
+        inputParameters: {
+          type: 'object',
+          properties: { short_key: { type: 'string' } },
+          required: [],
+        },
+        tags: [],
+      };
+      provider.wrapTool(shortKeyTool);
+
+      // Internal map should NOT have a mapping for this slug
+      // Verify by executing: args should pass through unchanged
+      const toolUse: AnthropicToolUseBlock = {
+        type: 'tool_use',
+        id: 'tu_stale',
+        name: 'STALE_TOOL',
+        input: { short_key: 'value' },
+      };
+
+      provider.executeToolCall('user-1', toolUse);
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'STALE_TOOL',
+        expect.objectContaining({
+          arguments: { short_key: 'value' },
+        }),
+        undefined
+      );
+    });
+  });
+
+  describe('sanitizeSchemaPropertyKeys', () => {
+    it('should return schema unchanged when all keys fit', () => {
+      const schema = {
+        type: 'object' as const,
+        properties: { name: { type: 'string' }, age: { type: 'number' } },
+        required: ['name'],
+      };
+      const { schema: result, keyMap } = sanitizeSchemaPropertyKeys(schema);
+      expect(result).toBe(schema);
+      expect(keyMap.size).toBe(0);
+    });
+
+    it('should handle schema without properties', () => {
+      const schema = { type: 'object' as const };
+      const { schema: result, keyMap } = sanitizeSchemaPropertyKeys(schema);
+      expect(result).toBe(schema);
+      expect(keyMap.size).toBe(0);
+    });
+
+    it('should truncate keys deterministically', () => {
+      const longKey = 'a'.repeat(70);
+      const schema = {
+        type: 'object' as const,
+        properties: { [longKey]: { type: 'string' } },
+      };
+      const { schema: result, keyMap } = sanitizeSchemaPropertyKeys(schema);
+      const newKey = Object.keys(result.properties!)[0];
+
+      expect(newKey.length).toBe(64);
+      expect(keyMap.size).toBe(1);
+      expect(keyMap.get(newKey)).toBe(longKey);
+
+      // Same input produces same output
+      const { schema: result2 } = sanitizeSchemaPropertyKeys(schema);
+      expect(Object.keys(result2.properties!)[0]).toBe(newKey);
+    });
+
+    it('should produce unique truncated keys for different long keys', () => {
+      const key1 = 'settings__approved__or__denied__countries__or__regions__approved__list';
+      const key2 = 'settings__approved__or__denied__countries__or__regions__denied__list';
+      const schema = {
+        type: 'object' as const,
+        properties: { [key1]: { type: 'string' }, [key2]: { type: 'string' } },
+      };
+      const { schema: result } = sanitizeSchemaPropertyKeys(schema);
+      const keys = Object.keys(result.properties!);
+
+      expect(keys[0]).not.toBe(keys[1]);
+      expect(keys[0].length).toBeLessThanOrEqual(64);
+      expect(keys[1].length).toBeLessThanOrEqual(64);
+    });
+  });
+
+  describe('restoreOriginalKeys', () => {
+    it('should restore mapped keys and pass through unmapped ones', () => {
+      const keyMap = new Map([['short_abc1234', 'very_long_original_key']]);
+      const input = { short_abc1234: 'value', other: 'val2' };
+      const result = restoreOriginalKeys(input, keyMap);
+      expect(result).toEqual({ very_long_original_key: 'value', other: 'val2' });
+    });
+
+    it('should return input unchanged with empty map', () => {
+      const input = { key: 'value' };
+      const result = restoreOriginalKeys(input, new Map());
+      expect(result).toBe(input);
     });
   });
 });

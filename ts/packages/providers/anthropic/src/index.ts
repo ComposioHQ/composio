@@ -18,6 +18,7 @@ import {
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
+import { sanitizeSchemaPropertyKeys, restoreOriginalKeys } from './sanitize-keys';
 
 export type AnthropicMcpServerGetResponse = {
   type: 'url';
@@ -58,6 +59,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
+  private _toolKeyMaps: Map<string, Map<string, string>> = new Map();
 
   /**
    * Creates a new instance of the AnthropicProvider.
@@ -118,14 +120,30 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: ComposioTool): AnthropicTool {
+    // Clear any stale key mapping for this tool before recomputing.
+    // Without this, re-wrapping a tool whose schema changed from long to short keys
+    // would leave a stale mapping that corrupts executeToolCall arguments.
+    this._toolKeyMaps.delete(tool.slug);
+
+    const rawSchema = (tool.inputParameters || {
+      type: 'object',
+      properties: {},
+      required: [],
+    }) as InputSchema;
+
+    const { schema: sanitizedSchema, keyMap } = sanitizeSchemaPropertyKeys(rawSchema);
+
+    if (keyMap.size > 0) {
+      this._toolKeyMaps.set(tool.slug, keyMap);
+      logger.debug(
+        `Sanitized ${keyMap.size} property key(s) for tool "${tool.slug}" to comply with Anthropic's 64-char limit`
+      );
+    }
+
     return {
       name: tool.slug,
       description: tool.description || '',
-      input_schema: (tool.inputParameters || {
-        type: 'object',
-        properties: {},
-        required: [],
-      }) as InputSchema,
+      input_schema: sanitizedSchema as InputSchema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
@@ -210,8 +228,11 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    const keyMap = this._toolKeyMaps.get(toolUse.name);
+    const args = keyMap ? restoreOriginalKeys(toolUse.input, keyMap) : toolUse.input;
+
     const payload: ToolExecuteParams = {
-      arguments: toolUse.input,
+      arguments: args,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,
