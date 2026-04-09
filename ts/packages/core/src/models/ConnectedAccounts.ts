@@ -8,6 +8,8 @@
 import ComposioClient from '@composio/client';
 import {
   ConnectedAccountDeleteResponse,
+  ConnectedAccountPatchParams,
+  ConnectedAccountPatchResponse,
   ConnectedAccountRefreshParams,
   ConnectedAccountRefreshResponse,
   ConnectedAccountUpdateStatusParams,
@@ -26,10 +28,6 @@ import {
   ConnectedAccountStatuses,
   ConnectedAccountRefreshOptions,
   ConnectedAccountRefreshOptionsSchema,
-  UpdateConnectedAccountParams,
-  UpdateConnectedAccountParamsSchema,
-  UpdateConnectedAccountResponse,
-  UpdateConnectedAccountResponseSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
@@ -476,12 +474,10 @@ export class ConnectedAccounts {
   }
 
   /**
-   * Update a connected account's alias.
+   * Update credentials and/or alias on a connected account.
    *
    * @param {string} nanoid - The unique identifier of the connected account
-   * @param {UpdateConnectedAccountParams} params - The update parameters
-   * @param {string} params.alias - Human-readable alias for the account. Must be unique per userId and toolkit within the project. Pass an empty string to clear.
-   * @returns {Promise<UpdateConnectedAccountResponse>} The update response
+   * @param {ConnectedAccountPatchParams} params - Fields to update
    *
    * @example
    * ```typescript
@@ -504,20 +500,8 @@ export class ConnectedAccounts {
    */
   async update(
     nanoid: string,
-    params: UpdateConnectedAccountParams
-  ): Promise<UpdateConnectedAccountResponse> {
-    const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
-    if (!parsedParams.success) {
-      throw new ValidationError('Failed to parse connected account update params', {
-        cause: parsedParams.error,
-      });
-    }
-
-    const response = await this.client.connectedAccounts.patch(nanoid, {
-      alias: parsedParams.data.alias,
-      connection: parsedParams.data.connection,
-    });
-
-    return UpdateConnectedAccountResponseSchema.parse(response);
+    params: ConnectedAccountPatchParams,
+  ): Promise<ConnectedAccountPatchResponse> {
+    return this.client.connectedAccounts.patch(nanoid, params);
   }
 }

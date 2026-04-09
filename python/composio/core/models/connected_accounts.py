@@ -9,9 +9,10 @@ import typing_extensions as te
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio_client import Omit, omit
 from composio.client.types import (
     connected_account_create_params,
+    connected_account_patch_params,
+    connected_account_patch_response,
     connected_account_retrieve_response,
     connected_account_update_status_response,
 )
@@ -359,46 +360,23 @@ class ConnectedAccounts:
 
     def update(
         self,
-        nanoid: str,
+        nano_id: str,
         *,
-        alias: t.Union[str, Omit] = omit,
-        connection: t.Union[t.Dict[str, t.Any], Omit] = omit,
-    ) -> t.Dict[str, t.Any]:
+        alias: t.Optional[str] = None,
+        connection: t.Optional[connected_account_patch_params.Connection] = None,
+    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
         """
         Update credentials and/or alias on a connected account.
 
-        :param nanoid: The unique identifier of the connected account (ca_xxx).
-        :param alias: Human-readable alias for the account. Must be unique per userId
-                      and toolkit within the project. Pass an empty string to clear.
-        :param connection: Credential update with ``state`` containing ``authScheme``
-                          and ``val`` fields.
-        :return: Dict with ``success``, ``id``, and ``status``.
-
-        Example:
-            # Set an alias
-            composio.connected_accounts.update('ca_abc123', alias='work-gmail')
-
-            # Update credentials
-            composio.connected_accounts.update(
-                'ca_abc123',
-                connection={
-                    'state': {
-                        'authScheme': 'BEARER_TOKEN',
-                        'val': {'token': 'new-access-token'},
-                    },
-                },
-            )
+        Args:
+            nano_id: The connected account ID (ca_xxx)
+            alias: Human-readable alias. Empty string clears alias.
+            connection: Credential update with authScheme and val fields.
         """
-        if not nanoid:
-            raise ValueError(
-                f"Expected a non-empty value for `nanoid` but received {nanoid!r}"
-            )
-        if isinstance(alias, Omit) and isinstance(connection, Omit):
-            raise ValueError("At least one of `alias` or `connection` must be provided")
-        return self._client.connected_accounts.patch(  # type: ignore[return-value]
-            nanoid,
+        return self._client.connected_accounts.patch(
+            nano_id,
             alias=alias,
-            connection=connection,  # type: ignore[arg-type]
+            connection=connection,
         )
 
     def initiate(
