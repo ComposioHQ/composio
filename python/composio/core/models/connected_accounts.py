@@ -8,7 +8,7 @@ import typing as t
 import typing_extensions as te
 
 from composio import exceptions
-from composio.client import HttpClient
+from composio.client import NOT_GIVEN, HttpClient, NotGiven
 from composio.client.types import (
     connected_account_create_params,
     connected_account_retrieve_response,
@@ -360,8 +360,8 @@ class ConnectedAccounts:
         self,
         nanoid: str,
         *,
-        alias: t.Optional[str] = None,
-        connection: t.Optional[t.Dict[str, t.Any]] = None,
+        alias: t.Union[str, NotGiven] = NOT_GIVEN,
+        connection: t.Union[t.Dict[str, t.Any], NotGiven] = NOT_GIVEN,
     ) -> t.Dict[str, t.Any]:
         """
         Update credentials and/or alias on a connected account.
@@ -392,16 +392,12 @@ class ConnectedAccounts:
             raise ValueError(
                 f"Expected a non-empty value for `nanoid` but received {nanoid!r}"
             )
-        if alias is None and connection is None:
+        if isinstance(alias, NotGiven) and isinstance(connection, NotGiven):
             raise ValueError("At least one of `alias` or `connection` must be provided")
-        kwargs: t.Dict[str, t.Any] = {}
-        if alias is not None:
-            kwargs["alias"] = alias
-        if connection is not None:
-            kwargs["connection"] = connection
         return self._client.connected_accounts.patch(  # type: ignore[no-any-return]
             nanoid,
-            **kwargs,
+            alias=alias,
+            connection=connection,  # type: ignore[arg-type]
         )
 
     def initiate(
