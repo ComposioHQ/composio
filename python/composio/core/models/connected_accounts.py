@@ -395,7 +395,7 @@ class ConnectedAccounts:
             )
         if isinstance(alias, Omit) and isinstance(connection, Omit):
             raise ValueError("At least one of `alias` or `connection` must be provided")
-        return self._client.connected_accounts.patch(  # type: ignore[no-any-return]
+        return self._client.connected_accounts.patch(  # type: ignore[return-value]
             nanoid,
             alias=alias,
             connection=connection,  # type: ignore[arg-type]
