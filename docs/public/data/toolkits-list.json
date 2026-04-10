@@ -1234,7 +1234,7 @@
   {
     "slug": "flutterwave",
     "name": "Flutterwave",
-    "logo": "https://flutterwave.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/flutterwave",
     "category": "payment processing",
     "toolCount": 53,
     "triggerCount": 0
@@ -1266,7 +1266,7 @@
   {
     "slug": "screenshotone",
     "name": "ScreenshotOne",
-    "logo": "https://screenshotone.com/logo.png",
+    "logo": "https://logos.composio.dev/api/screenshotone",
     "category": "developer tools",
     "toolCount": 5,
     "triggerCount": 0
@@ -2346,7 +2346,7 @@
   {
     "slug": "bestbuy",
     "name": "Bestbuy",
-    "logo": "https://developer.bestbuy.com/images/bestbuy-logo.png",
+    "logo": "https://logos.composio.dev/api/bestbuy",
     "category": "ecommerce",
     "toolCount": 8,
     "triggerCount": 0
@@ -2866,7 +2866,7 @@
   {
     "slug": "clockify",
     "name": "Clockify",
-    "logo": "https://clockify.me/assets/images/clockify-logo.svg",
+    "logo": "https://logos.composio.dev/api/clockify",
     "category": "time tracking software",
     "toolCount": 75,
     "triggerCount": 0
@@ -2890,7 +2890,7 @@
   {
     "slug": "cloudflare_api_key",
     "name": "Cloudflare Api Key",
-    "logo": "https://www.cloudflare.com/img/logo-cloudflare.svg",
+    "logo": "https://logos.composio.dev/api/cloudflare_api_key",
     "category": "security & identity tools",
     "toolCount": 25,
     "triggerCount": 0
@@ -2914,7 +2914,7 @@
   {
     "slug": "cloudlayer",
     "name": "Cloudlayer",
-    "logo": "https://cloudlayer.io/logo.png",
+    "logo": "https://logos.composio.dev/api/cloudlayer",
     "category": "documents",
     "toolCount": 16,
     "triggerCount": 0
@@ -2970,7 +2970,7 @@
   {
     "slug": "coinmarketcap",
     "name": "CoinMarketCap",
-    "logo": "https://s2.coinmarketcap.com/static/cloud/img/coinmarketcap_1.svg",
+    "logo": "https://logos.composio.dev/api/coinmarketcap",
     "category": "analytics",
     "toolCount": 9,
     "triggerCount": 0
@@ -2978,7 +2978,7 @@
   {
     "slug": "coinranking",
     "name": "Coinranking",
-    "logo": "https://coinranking.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/coinranking",
     "category": "analytics",
     "toolCount": 14,
     "triggerCount": 0
@@ -4074,7 +4074,7 @@
   {
     "slug": "fraudlabs_pro",
     "name": "FraudLabs Pro",
-    "logo": "https://www.fraudlabspro.com/images/logo.png",
+    "logo": "https://logos.composio.dev/api/fraudlabs_pro",
     "category": "payment processing",
     "toolCount": 8,
     "triggerCount": 0
@@ -4098,7 +4098,7 @@
   {
     "slug": "fullenrich",
     "name": "Fullenrich",
-    "logo": "https://gravatar.com/avatar/0d4b0c4b0c4b0c4b0c4b0c4b0c4b0c4b0",
+    "logo": "https://logos.composio.dev/api/fullenrich",
     "category": "contact management",
     "toolCount": 9,
     "triggerCount": 0
@@ -4154,7 +4154,7 @@
   {
     "slug": "genderapi_io",
     "name": "GenderAPI.io",
-    "logo": "https://genderapi.io/logo.png",
+    "logo": "https://logos.composio.dev/api/genderapi_io",
     "category": "developer tools",
     "toolCount": 5,
     "triggerCount": 0
@@ -4170,7 +4170,7 @@
   {
     "slug": "geoapify",
     "name": "Geoapify",
-    "logo": "https://www.geoapify.com/wp-content/uploads/2020/06/geoapify_logo.svg",
+    "logo": "https://logos.composio.dev/api/geoapify",
     "category": "developer tools",
     "toolCount": 25,
     "triggerCount": 0
@@ -4194,7 +4194,7 @@
   {
     "slug": "getform",
     "name": "Getform",
-    "logo": "https://getform.io/favicon.ico",
+    "logo": "https://logos.composio.dev/api/getform",
     "category": "forms & surveys",
     "toolCount": 2,
     "triggerCount": 0
@@ -4210,7 +4210,7 @@
   {
     "slug": "gift_up",
     "name": "Gift Up!",
-    "logo": "https://giftup.app/favicon.ico",
+    "logo": "https://logos.composio.dev/api/gift_up",
     "category": "ecommerce",
     "toolCount": 44,
     "triggerCount": 0
@@ -4226,7 +4226,7 @@
   {
     "slug": "giphy",
     "name": "Giphy",
-    "logo": "https://giphy.com/static/img/giphy_logo_square_social.png",
+    "logo": "https://logos.composio.dev/api/giphy",
     "category": "images & design",
     "toolCount": 23,
     "triggerCount": 0
@@ -4234,7 +4234,7 @@
   {
     "slug": "gist",
     "name": "Gist",
-    "logo": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+    "logo": "https://logos.composio.dev/api/gist",
     "category": "developer tools",
     "toolCount": 20,
     "triggerCount": 0
@@ -4258,7 +4258,7 @@
   {
     "slug": "givebutter",
     "name": "Givebutter",
-    "logo": "https://givebutter.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/givebutter",
     "category": "fundraising",
     "toolCount": 58,
     "triggerCount": 0
@@ -4266,7 +4266,7 @@
   {
     "slug": "gladia",
     "name": "Gladia",
-    "logo": "https://www.gladia.io/favicon.ico",
+    "logo": "https://logos.composio.dev/api/gladia",
     "category": "transcription",
     "toolCount": 10,
     "triggerCount": 0
@@ -4282,7 +4282,7 @@
   {
     "slug": "globalping",
     "name": "Globalping",
-    "logo": "https://globalping.io/logo.png",
+    "logo": "https://logos.composio.dev/api/globalping",
     "category": "server monitoring",
     "toolCount": 5,
     "triggerCount": 0
@@ -4290,7 +4290,7 @@
   {
     "slug": "godial",
     "name": "Godial",
-    "logo": "https://godial.cc/wp-content/uploads/2020/06/GoDial-Logo-1.png",
+    "logo": "https://logos.composio.dev/api/godial",
     "category": "crm",
     "toolCount": 24,
     "triggerCount": 0
@@ -4298,7 +4298,7 @@
   {
     "slug": "goodbits",
     "name": "Goodbits",
-    "logo": "https://goodbits.io/logo.png",
+    "logo": "https://logos.composio.dev/api/goodbits",
     "category": "email newsletters",
     "toolCount": 5,
     "triggerCount": 0
@@ -4306,7 +4306,7 @@
   {
     "slug": "goody",
     "name": "Goody",
-    "logo": "https://www.ongoody.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/goody",
     "category": "ecommerce",
     "toolCount": 13,
     "triggerCount": 0
@@ -4378,7 +4378,7 @@
   {
     "slug": "gosquared",
     "name": "Gosquared",
-    "logo": "https://www.gosquared.com/images/logo.png",
+    "logo": "https://logos.composio.dev/api/gosquared",
     "category": "analytics",
     "toolCount": 90,
     "triggerCount": 0
@@ -4394,7 +4394,7 @@
   {
     "slug": "grafbase",
     "name": "Grafbase",
-    "logo": "https://grafbase.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/grafbase",
     "category": "developer tools",
     "toolCount": 28,
     "triggerCount": 0
@@ -4410,7 +4410,7 @@
   {
     "slug": "graphhopper",
     "name": "Graphhopper",
-    "logo": "https://www.graphhopper.com/images/graphhopper_logo.svg",
+    "logo": "https://logos.composio.dev/api/graphhopper",
     "category": "developer tools",
     "toolCount": 13,
     "triggerCount": 0
@@ -4418,7 +4418,7 @@
   {
     "slug": "griptape",
     "name": "Griptape",
-    "logo": "https://www.griptape.ai/logo.png",
+    "logo": "https://logos.composio.dev/api/griptape",
     "category": "artificial intelligence",
     "toolCount": 143,
     "triggerCount": 0
@@ -4426,7 +4426,7 @@
   {
     "slug": "grist",
     "name": "Grist",
-    "logo": "https://www.getgrist.com/static/images/logo.svg",
+    "logo": "https://logos.composio.dev/api/grist",
     "category": "productivity",
     "toolCount": 30,
     "triggerCount": 0
@@ -4474,7 +4474,7 @@
   {
     "slug": "happy_scribe",
     "name": "Happy Scribe",
-    "logo": "https://www.happyscribe.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/happy_scribe",
     "category": "transcription",
     "toolCount": 20,
     "triggerCount": 0
@@ -4538,7 +4538,7 @@
   {
     "slug": "here",
     "name": "Here",
-    "logo": "https://www.here.com/etc.clientlibs/here/clientlibs/website/clientlib-site/resources/images/here-logo.svg",
+    "logo": "https://logos.composio.dev/api/here",
     "category": "developer tools",
     "toolCount": 99,
     "triggerCount": 0
@@ -4570,7 +4570,7 @@
   {
     "slug": "heyzine",
     "name": "Heyzine",
-    "logo": "https://heyzine.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/heyzine",
     "category": "documents",
     "toolCount": 14,
     "triggerCount": 0
@@ -4578,7 +4578,7 @@
   {
     "slug": "highergov",
     "name": "Highergov",
-    "logo": "https://www.highergov.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/highergov",
     "category": "business intelligence",
     "toolCount": 16,
     "triggerCount": 0
@@ -4594,7 +4594,7 @@
   {
     "slug": "honeyhive",
     "name": "Honeyhive",
-    "logo": "https://www.honeyhive.ai/logo.png",
+    "logo": "https://logos.composio.dev/api/honeyhive",
     "category": "artificial intelligence",
     "toolCount": 42,
     "triggerCount": 0
@@ -4618,7 +4618,7 @@
   {
     "slug": "html_to_image",
     "name": "HTML to Image",
-    "logo": "https://html2img.com/logo.png",
+    "logo": "https://logos.composio.dev/api/html_to_image",
     "category": "images & design",
     "toolCount": 3,
     "triggerCount": 0
@@ -4642,7 +4642,7 @@
   {
     "slug": "humanitix",
     "name": "Humanitix",
-    "logo": "https://humanitix.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/humanitix",
     "category": "event management",
     "toolCount": 3,
     "triggerCount": 0
@@ -4650,7 +4650,7 @@
   {
     "slug": "hunter",
     "name": "Hunter",
-    "logo": "https://logo.clearbit.com/hunter.io",
+    "logo": "https://logos.composio.dev/api/hunter",
     "category": "email",
     "toolCount": 26,
     "triggerCount": 0
@@ -4658,7 +4658,7 @@
   {
     "slug": "hypeauditor",
     "name": "Hypeauditor",
-    "logo": "https://hypeauditor.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/hypeauditor",
     "category": "social media marketing",
     "toolCount": 4,
     "triggerCount": 0
@@ -4674,7 +4674,7 @@
   {
     "slug": "hyperise",
     "name": "Hyperise",
-    "logo": "https://hyperise.com/images/logo.png",
+    "logo": "https://logos.composio.dev/api/hyperise",
     "category": "marketing automation",
     "toolCount": 5,
     "triggerCount": 0
@@ -4698,7 +4698,7 @@
   {
     "slug": "icypeas",
     "name": "Icypeas",
-    "logo": "https://www.icypeas.com/logo.png",
+    "logo": "https://logos.composio.dev/api/icypeas",
     "category": "email",
     "toolCount": 22,
     "triggerCount": 0
@@ -4714,7 +4714,7 @@
   {
     "slug": "ignisign",
     "name": "Ignisign",
-    "logo": "https://ignisign.io/logo.png",
+    "logo": "https://logos.composio.dev/api/ignisign",
     "category": "signatures",
     "toolCount": 32,
     "triggerCount": 0
@@ -4722,7 +4722,7 @@
   {
     "slug": "imagekit_io",
     "name": "ImageKit",
-    "logo": "https://imagekit.io/static/imagekit-logo.svg",
+    "logo": "https://logos.composio.dev/api/imagekit_io",
     "category": "images & design",
     "toolCount": 26,
     "triggerCount": 0
@@ -4746,7 +4746,7 @@
   {
     "slug": "imgbb",
     "name": "ImgBB",
-    "logo": "https://imgbb.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/imgbb",
     "category": "images & design",
     "toolCount": 2,
     "triggerCount": 0
@@ -4754,7 +4754,7 @@
   {
     "slug": "imgix",
     "name": "Imgix",
-    "logo": "https://assets.imgix.net/press/imgix-logo.png",
+    "logo": "https://logos.composio.dev/api/imgix",
     "category": "images & design",
     "toolCount": 53,
     "triggerCount": 0
@@ -4770,7 +4770,7 @@
   {
     "slug": "influxdb_cloud",
     "name": "InfluxDB Cloud",
-    "logo": "https://www.influxdata.com/wp-content/uploads/influxdata-logo.png",
+    "logo": "https://logos.composio.dev/api/influxdb_cloud",
     "category": "databases",
     "toolCount": 9,
     "triggerCount": 0
@@ -4802,7 +4802,7 @@
   {
     "slug": "instantly",
     "name": "Instantly",
-    "logo": "https://app.instantly.ai/favicon.ico",
+    "logo": "https://logos.composio.dev/api/instantly",
     "category": "drip emails",
     "toolCount": 117,
     "triggerCount": 0
@@ -4818,7 +4818,7 @@
   {
     "slug": "ip2location",
     "name": "Ip2Location",
-    "logo": "https://www.ip2location.io/images/logo.png",
+    "logo": "https://logos.composio.dev/api/ip2location",
     "category": "developer tools",
     "toolCount": 8,
     "triggerCount": 0
@@ -4842,7 +4842,7 @@
   {
     "slug": "ip2whois",
     "name": "Ip2Whois",
-    "logo": "https://www.ip2whois.com/images/logo.png",
+    "logo": "https://logos.composio.dev/api/ip2whois",
     "category": "security & identity tools",
     "toolCount": 2,
     "triggerCount": 0
@@ -4850,7 +4850,7 @@
   {
     "slug": "ipdata_co",
     "name": "Ipdata.co",
-    "logo": "https://ipdata.co/static/images/ipdata-logo.png",
+    "logo": "https://logos.composio.dev/api/ipdata_co",
     "category": "developer tools",
     "toolCount": 28,
     "triggerCount": 0
@@ -4858,7 +4858,7 @@
   {
     "slug": "ipinfo_io",
     "name": "Ipinfo.io",
-    "logo": "https://ipinfo.io/static/images/ipinfo-logo.png",
+    "logo": "https://logos.composio.dev/api/ipinfo_io",
     "category": "developer tools",
     "toolCount": 27,
     "triggerCount": 0
@@ -6866,7 +6866,7 @@
   {
     "slug": "seat_geek",
     "name": "Seat Geek",
-    "logo": "https://seatgeek.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/seat_geek",
     "category": "event management",
     "toolCount": 10,
     "triggerCount": 0
@@ -7490,7 +7490,7 @@
   {
     "slug": "tapfiliate",
     "name": "Tapfiliate",
-    "logo": "https://logo.clearbit.com/tapfiliate.com",
+    "logo": "https://logos.composio.dev/api/tapfiliate",
     "category": "marketing automation",
     "toolCount": 40,
     "triggerCount": 0
@@ -7562,7 +7562,7 @@
   {
     "slug": "test_app",
     "name": "Test app",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/icons/testapp.png",
+    "logo": "https://logos.composio.dev/api/test_app",
     "category": "tag1",
     "toolCount": 2,
     "triggerCount": 0
@@ -7610,7 +7610,7 @@
   {
     "slug": "ticktick",
     "name": "Ticktick",
-    "logo": "https://ticktick.com/favicon.ico",
+    "logo": "https://logos.composio.dev/api/ticktick",
     "category": "productivity",
     "toolCount": 14,
     "triggerCount": 0
@@ -7882,7 +7882,7 @@
   {
     "slug": "veo",
     "name": "Veo",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/gemini.svg",
+    "logo": "https://logos.composio.dev/api/veo",
     "category": "artificial intelligence",
     "toolCount": 5,
     "triggerCount": 0

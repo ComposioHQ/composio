@@ -222,14 +222,25 @@ async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]>
   }));
 }
 
+function normalizeLogoUrl(logo: string | null | undefined, slug: string): string {
+  const cdnBase = 'https://logos.composio.dev/api/';
+  // Always use the CDN URL — external logo URLs are unreliable (many return 404/500)
+  // See: https://github.com/ComposioHQ/composio/issues/3175
+  if (!logo || !logo.startsWith(cdnBase)) {
+    return `${cdnBase}${slug}`;
+  }
+  return logo;
+}
+
 function transformToolkit(raw: any): Toolkit {
   const authSchemes = raw.auth_schemes || raw.authSchemes || [];
   const composioManaged = raw.composio_managed_auth_schemes || raw.composioManagedAuthSchemes || [];
+  const slug = raw.slug?.toLowerCase() || '';
 
   return {
-    slug: raw.slug?.toLowerCase() || '',
+    slug,
     name: raw.name || raw.slug || '',
-    logo: raw.meta?.logo || raw.logo || null,
+    logo: normalizeLogoUrl(raw.meta?.logo || raw.logo || null, slug),
     description: raw.meta?.description || raw.description || '',
     category: raw.meta?.categories?.[0]?.name || raw.meta?.categories?.[0] || null,
     authSchemes,
