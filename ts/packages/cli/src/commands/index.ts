@@ -92,7 +92,9 @@ const findNestedSubcommandMismatch = (
     }
 
     const subcommands = CommandDescriptor.getSubcommands(current);
-    const available = Array.from(HashMap.keys(subcommands)).sort();
+    const available = HashMap.toEntries(subcommands)
+      .map(([name]) => name)
+      .sort();
     if (available.length === 0) {
       return undefined;
     }
