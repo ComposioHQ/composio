@@ -23,15 +23,58 @@ const stateArg = Args.text({ name: 'state' }).pipe(
 
 const SKILL_NAME = 'composio-cli';
 
+/**
+ * Find every directory where the composio-cli skill is currently installed.
+ * Known locations:
+ *   ~/.agents/skills/composio-cli   (canonical install target)
+ *   ~/.claude/skills/composio-cli   (Claude Code — may be a symlink or a real dir)
+ *
+ * We resolve symlinks so we don't rebuild the same physical directory twice,
+ * but we also rebuild any real (non-symlink) copies so everything stays in sync.
+ */
+const discoverSkillRoots = (home: string): string[] => {
+  const candidates = [path.join(home, '.agents', 'skills'), path.join(home, '.claude', 'skills')];
+
+  const seen = new Set<string>();
+  const roots: string[] = [];
+
+  for (const parent of candidates) {
+    const skillDir = path.join(parent, SKILL_NAME);
+    try {
+      const stat = fs.lstatSync(skillDir);
+      if (stat.isSymbolicLink()) {
+        // Resolve the symlink target — we'll rebuild the real directory it points to
+        const realDir = fs.realpathSync(skillDir);
+        const realParent = path.dirname(realDir);
+        if (!seen.has(realParent)) {
+          seen.add(realParent);
+          roots.push(realParent);
+        }
+      } else if (stat.isDirectory()) {
+        if (!seen.has(parent)) {
+          seen.add(parent);
+          roots.push(parent);
+        }
+      }
+    } catch {
+      // Directory doesn't exist — skip
+    }
+  }
+
+  // Always include ~/.agents/skills as a fallback so there's at least one target
+  const agentSkillsRoot = path.join(home, '.agents', 'skills');
+  if (!seen.has(agentSkillsRoot)) {
+    roots.push(agentSkillsRoot);
+  }
+
+  return roots;
+};
+
 const rebuildSkill = Effect.gen(function* () {
   const ui = yield* TerminalUI;
   const os = yield* NodeOs;
   const cliConfig = yield* ComposioCliUserConfig;
   const home = os.homedir;
-
-  const agentSkillsRoot = path.join(home, '.agents', 'skills');
-  const agentSkillDir = path.join(agentSkillsRoot, SKILL_NAME);
-  const claudeSkillLink = path.join(home, '.claude', 'skills', SKILL_NAME);
 
   // Build the feature overrides from the current config
   const featureOverrides: Partial<Record<SkillFeatureFlag, boolean>> = {};
@@ -39,25 +82,20 @@ const rebuildSkill = Effect.gen(function* () {
     featureOverrides[name as SkillFeatureFlag] = cliConfig.isExperimentalFeatureEnabled(name);
   }
 
-  buildComposioCliSkill({
-    channel: cliConfig.channel,
-    outputRoot: agentSkillsRoot,
-    featureOverrides,
-  });
-
-  // Ensure the Claude Code symlink exists
-  fs.mkdirSync(path.join(home, '.claude', 'skills'), { recursive: true });
-  try {
-    fs.lstatSync(claudeSkillLink);
-    // Already exists — remove to replace
-    fs.rmSync(claudeSkillLink, { recursive: true, force: true });
-  } catch {
-    // Doesn't exist — fine
+  const roots = discoverSkillRoots(home);
+  for (const root of roots) {
+    buildComposioCliSkill({
+      channel: cliConfig.channel,
+      outputRoot: root,
+      featureOverrides,
+    });
   }
-  const relativeTarget = path.relative(path.dirname(claudeSkillLink), agentSkillDir);
-  fs.symlinkSync(relativeTarget, claudeSkillLink);
 
-  yield* ui.log.step('Rebuilt composio-cli skill with updated feature flags');
+  yield* ui.log.step(
+    roots.length === 1
+      ? `Rebuilt skill in ${roots[0]}`
+      : `Rebuilt skill in ${roots.length} locations`
+  );
 });
 
 export const configExperimentalCmd = Command.make(
