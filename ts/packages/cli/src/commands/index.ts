@@ -1,6 +1,6 @@
 import process from 'node:process';
-import { Effect, Option } from 'effect';
-import { Command } from '@effect/cli';
+import { Effect, HashMap, Option } from 'effect';
+import { Command, CommandDescriptor, HelpDoc, ValidationError } from '@effect/cli';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -71,6 +71,49 @@ export const buildRootCommand = (visibility: CommandVisibility) => {
   const subcommands = visibleValues(ROOT_COMMANDS, visibility);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return $defaultCmd.pipe(Command.withSubcommands(subcommands as any));
+};
+
+const formatSubcommandChoices = (choices: ReadonlyArray<string>) =>
+  choices.map(choice => `'${choice}'`).join(', ');
+
+const findNestedSubcommandMismatch = (
+  argv: ReadonlyArray<string>,
+  rootCommand: ReturnType<typeof buildRootCommand>
+): ReturnType<typeof ValidationError.commandMismatch> | undefined => {
+  const args = argv.slice(2);
+  let current = rootCommand.descriptor;
+  const path = ['composio'];
+
+  for (const token of args) {
+    if (!token || token === '--' || token === '--help' || token === '-h' || token.startsWith('-')) {
+      return undefined;
+    }
+
+    const subcommands = CommandDescriptor.getSubcommands(current);
+    const available = Array.from(HashMap.keys(subcommands)).sort();
+    if (available.length === 0) {
+      return undefined;
+    }
+
+    const next = HashMap.get(subcommands, token);
+    if (Option.isSome(next)) {
+      current = next.value;
+      path.push(token);
+      continue;
+    }
+
+    if (path.length === 1) {
+      return undefined;
+    }
+
+    return ValidationError.commandMismatch(
+      HelpDoc.p(
+        `Invalid subcommand for ${path.join(' ')} - use one of ${formatSubcommandChoices(available)}`
+      )
+    );
+  }
+
+  return undefined;
 };
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
@@ -273,6 +316,10 @@ export const runWithConfig = Effect.gen(function* () {
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {
       return printSubcommandHelp(subHelp, visibility);
+    }
+    const nestedMismatch = findNestedSubcommandMismatch(normalizedArgv, rootCommand);
+    if (nestedMismatch) {
+      return Effect.fail(nestedMismatch);
     }
     const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
     if (parallelExecute) {

@@ -595,6 +595,18 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   // ── Tools commands ────────────────────────────────────────────────────
 
+  tools: {
+    usage: 'composio tools <command>',
+    description: 'Browse and inspect tools before executing them.',
+    examples: [
+      'composio tools list gmail',
+      'composio tools info GMAIL_SEND_EMAIL',
+    ],
+    seeAlso: [
+      'composio search "<query>"               Find tools by use case',
+      "composio execute <slug> -d '{ ... }'    Execute a tool directly",
+    ],
+  },
   'tools list': {
     usage: 'composio tools list <toolkit> [--query text] [--tags text] [--limit integer]',
     description: 'List available tools for a toolkit.',
