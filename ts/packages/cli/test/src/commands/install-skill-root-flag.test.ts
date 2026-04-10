@@ -34,6 +34,28 @@ describe('CLI: --instal-skill', () => {
     );
   });
 
+  it('accepts the root flag after leading global options', () => {
+    expect(
+      parseRootInstallSkillRequest([
+        'node',
+        'composio',
+        '--log-level',
+        'debug',
+        '--instal-skill',
+        'claude',
+      ])
+    ).toEqual({
+      _tag: 'parsed',
+      target: 'claude',
+    });
+  });
+
+  it('does not intercept subcommand flags after a positional command', () => {
+    expect(
+      parseRootInstallSkillRequest(['node', 'composio', 'upgrade', '--install-skill', 'claude'])
+    ).toBeUndefined();
+  });
+
   it('returns a helpful error when the target is missing', () => {
     expect(parseRootInstallSkillRequest(['node', 'composio', '--instal-skill'])).toEqual({
       _tag: 'error',

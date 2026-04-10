@@ -94,58 +94,72 @@ export const parseRootInstallSkillRequest = (
   argv: ReadonlyArray<string>
 ): RootInstallSkillRequest | undefined => {
   const args = argv.slice(2);
-  const flagIndex = args.findIndex(arg =>
-    (ROOT_INSTALL_SKILL_FLAGS as ReadonlyArray<string>).includes(arg)
-  );
-  if (flagIndex < 0) {
-    return undefined;
-  }
-
-  const rawValues: string[] = [];
-  for (let i = flagIndex + 1; i < args.length; i += 1) {
+  for (let i = 0; i < args.length; i += 1) {
     const token = args[i];
     if (!token) continue;
-    if (token.startsWith('-')) break;
-    rawValues.push(token);
-  }
 
-  if (rawValues.length === 0) {
-    return {
-      _tag: 'error',
-      message:
-        'Missing target for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
-    };
-  }
+    if ((ROOT_INSTALL_SKILL_FLAGS as ReadonlyArray<string>).includes(token)) {
+      const rawValues: string[] = [];
+      for (let j = i + 1; j < args.length; j += 1) {
+        const next = args[j];
+        if (!next) continue;
+        if (next.startsWith('-')) break;
+        rawValues.push(next);
+      }
 
-  if (rawValues.length === 1) {
-    const [target] = rawValues;
-    if (!isSkillInstallTarget(target)) {
+      if (rawValues.length === 0) {
+        return {
+          _tag: 'error',
+          message:
+            'Missing target for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+        };
+      }
+
+      if (rawValues.length === 1) {
+        const [target] = rawValues;
+        if (!isSkillInstallTarget(target)) {
+          return {
+            _tag: 'error',
+            message:
+              'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+          };
+        }
+        return { _tag: 'parsed', target };
+      }
+
+      if (rawValues.length === 2) {
+        const [skillName, target] = rawValues;
+        if (!isSkillInstallTarget(target)) {
+          return {
+            _tag: 'error',
+            message:
+              'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+          };
+        }
+        return { _tag: 'parsed', skillName, target };
+      }
+
       return {
         _tag: 'error',
         message:
-          'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+          'Too many arguments for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
       };
     }
-    return { _tag: 'parsed', target };
-  }
 
-  if (rawValues.length === 2) {
-    const [skillName, target] = rawValues;
-    if (!isSkillInstallTarget(target)) {
-      return {
-        _tag: 'error',
-        message:
-          'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
-      };
+    if (token === '--log-level') {
+      i += 1;
+      continue;
     }
-    return { _tag: 'parsed', skillName, target };
-  }
 
-  return {
-    _tag: 'error',
-    message:
-      'Too many arguments for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
-  };
+    if (token.startsWith('--log-level=')) {
+      continue;
+    }
+
+    if (!token.startsWith('-')) {
+      return undefined;
+    }
+  }
+  return undefined;
 };
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
