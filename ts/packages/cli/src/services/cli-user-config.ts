@@ -11,6 +11,7 @@ import {
   cliUserConfigFromJSON,
   cliUserConfigToJSON,
 } from 'src/models/cli-user-config';
+import { isExperimentalFeatureEnabledByDefault } from 'src/experimental-features';
 import * as constants from 'src/constants';
 import type { CliReleaseChannel } from 'src/constants';
 
@@ -109,7 +110,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
 
     const isExperimentalFeatureEnabled = (feature: string) => {
       const configured = resolveConfig(rawConfig, channel).experimentalFeatures[feature];
-      return configured ?? channel === 'beta';
+      return configured ?? isExperimentalFeatureEnabledByDefault(feature, channel);
     };
 
     return ComposioCliUserConfig.of({

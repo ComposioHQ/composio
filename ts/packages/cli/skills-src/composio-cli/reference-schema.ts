@@ -1,4 +1,8 @@
-import { CLI_EXPERIMENTAL_FEATURES, type CliReleaseChannel } from '../../src/experimental-features';
+import {
+  CLI_EXPERIMENTAL_FEATURES,
+  isExperimentalFeatureEnabledByDefault,
+  type CliReleaseChannel,
+} from '../../src/experimental-features';
 
 export type SkillReleaseChannel = CliReleaseChannel;
 
@@ -50,8 +54,14 @@ const TOP_LEVEL_COMMANDS = new Set([
 export const resolveSkillBuildContext = (channel: SkillReleaseChannel): SkillBuildContext => ({
   channel,
   experimentalFeatures: {
-    [CLI_EXPERIMENTAL_FEATURES.LISTEN]: channel === 'beta',
-    [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]: channel === 'beta',
+    [CLI_EXPERIMENTAL_FEATURES.LISTEN]: isExperimentalFeatureEnabledByDefault(
+      CLI_EXPERIMENTAL_FEATURES.LISTEN,
+      channel
+    ),
+    [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]: isExperimentalFeatureEnabledByDefault(
+      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT,
+      channel
+    ),
   },
 });
 

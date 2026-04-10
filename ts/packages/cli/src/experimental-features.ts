@@ -13,3 +13,20 @@ export const CLI_EXPERIMENTAL_FEATURES = {
 export const CLI_RELEASE_CHANNELS = ['stable', 'beta'] as const;
 
 export type CliReleaseChannel = (typeof CLI_RELEASE_CHANNELS)[number];
+
+export type CliExperimentalFeature =
+  (typeof CLI_EXPERIMENTAL_FEATURES)[keyof typeof CLI_EXPERIMENTAL_FEATURES];
+
+export const isExperimentalFeatureEnabledByDefault = (
+  feature: string,
+  channel: CliReleaseChannel
+) => {
+  switch (feature) {
+    case CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT:
+      return true;
+    case CLI_EXPERIMENTAL_FEATURES.LISTEN:
+      return channel === 'beta';
+    default:
+      return channel === 'beta';
+  }
+};
