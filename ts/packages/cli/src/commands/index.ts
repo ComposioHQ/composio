@@ -1,6 +1,6 @@
 import process from 'node:process';
-import { Effect, HashMap, Option } from 'effect';
-import { Command, CommandDescriptor, HelpDoc, ValidationError } from '@effect/cli';
+import { Effect, Option } from 'effect';
+import { Command, HelpDoc, ValidationError } from '@effect/cli';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -79,13 +79,58 @@ export const buildRootCommand = (visibility: CommandVisibility) => {
 const formatSubcommandChoices = (choices: ReadonlyArray<string>) =>
   choices.map(choice => `'${choice}'`).join(', ');
 
+/**
+ * Internal shape of an `@effect/cli` command descriptor. The public
+ * `CommandDescriptor.getSubcommands` helper flattens nested subcommand trees
+ * and only returns the *parent* Standard node for each branch, which means we
+ * can't use it to walk deeper than one level. Walking the `_tag`-based
+ * internal tree directly is the only way to recover the full descendable
+ * structure without losing subcommand context on descent.
+ */
+type InternalDescriptor =
+  | { _tag: 'Standard'; name: string }
+  | { _tag: 'GetUserInput'; name: string }
+  | { _tag: 'Map'; command: InternalDescriptor }
+  | {
+      _tag: 'Subcommands';
+      parent: InternalDescriptor;
+      children: ReadonlyArray<InternalDescriptor>;
+    };
+
+type UnwrappedDescriptor = Exclude<InternalDescriptor, { _tag: 'Map' }>;
+
+const unwrapMaps = (cmd: InternalDescriptor): UnwrappedDescriptor => {
+  let current: InternalDescriptor = cmd;
+  while (current._tag === 'Map') {
+    current = current.command;
+  }
+  return current;
+};
+
+const getCommandName = (cmd: InternalDescriptor): string => {
+  const unwrapped = unwrapMaps(cmd);
+  if (unwrapped._tag === 'Subcommands') {
+    return getCommandName(unwrapped.parent);
+  }
+  return unwrapped.name;
+};
+
+const getChildEntries = (
+  cmd: InternalDescriptor
+): ReadonlyArray<readonly [string, InternalDescriptor]> => {
+  const unwrapped = unwrapMaps(cmd);
+  if (unwrapped._tag !== 'Subcommands') {
+    return [];
+  }
+  return unwrapped.children.map(child => [getCommandName(child), child] as const);
+};
+
 const findNestedSubcommandMismatch = (
   argv: ReadonlyArray<string>,
   rootCommand: ReturnType<typeof buildRootCommand>
 ): ReturnType<typeof ValidationError.commandMismatch> | undefined => {
   const args = argv.slice(2);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let current: CommandDescriptor.Command<any> = rootCommand.descriptor;
+  let current: InternalDescriptor = rootCommand.descriptor as unknown as InternalDescriptor;
   const path = ['composio'];
 
   for (const token of args) {
@@ -93,17 +138,14 @@ const findNestedSubcommandMismatch = (
       return undefined;
     }
 
-    const subcommands = CommandDescriptor.getSubcommands(current);
-    const available = HashMap.toEntries(subcommands)
-      .map(([name]) => name)
-      .sort();
-    if (available.length === 0) {
+    const children = getChildEntries(current);
+    if (children.length === 0) {
       return undefined;
     }
 
-    const next = HashMap.get(subcommands, token);
-    if (Option.isSome(next)) {
-      current = next.value;
+    const match = children.find(([name]) => name === token);
+    if (match) {
+      current = match[1];
       path.push(token);
       continue;
     }
@@ -112,6 +154,7 @@ const findNestedSubcommandMismatch = (
       return undefined;
     }
 
+    const available = children.map(([name]) => name).sort();
     return ValidationError.commandMismatch(
       HelpDoc.p(
         `Invalid subcommand for ${path.join(' ')} - use one of ${formatSubcommandChoices(available)}`
