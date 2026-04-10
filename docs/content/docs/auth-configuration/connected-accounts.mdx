@@ -1,7 +1,7 @@
 ---
 title: Connected Accounts
 description: Manage and monitor user connections to toolkits
-keywords: [list accounts, refresh token, disable, delete account]
+keywords: [list accounts, refresh token, patch credentials, rotate token, disable, delete account]
 llmGuardrails: "direct-execution"
 ---
 
@@ -11,7 +11,7 @@ If you're building an agent, we recommend using [sessions](/docs/configuring-ses
 
 Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/tools-direct/authenticating-tools)), you can manage these accounts throughout their lifecycle.
 
-Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, enabling, disabling, and deleting accounts.
+Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, updating credentials, enabling, disabling, and deleting accounts.
 
 ## List accounts
 
@@ -150,6 +150,55 @@ try {
 ```
   </Tab>
 </Tabs>
+
+## Update credentials
+
+If you already manage token rotation or credential updates on your side, patch the connected account in place without recreating it.
+
+Fields you omit are preserved. Fields set to `null` are removed.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'curl']} persist>
+  <Tab value="Python">
+```python
+composio.connected_accounts.update(
+    "ca_your_connection_id",
+    connection={
+        "state": {
+            "authScheme": "BEARER_TOKEN",
+            "val": {"token": "new-access-token"},
+        },
+    },
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+await composio.connectedAccounts.update('ca_your_connection_id', {
+  connection: {
+    state: {
+      authScheme: 'BEARER_TOKEN',
+      val: { token: 'new-access-token' },
+    },
+  },
+});
+```
+  </Tab>
+  <Tab value="curl">
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3/connected_accounts/ca_xxx \
+  -H 'x-api-key: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"connection":{"state":{"authScheme":"BEARER_TOKEN","val":{"token":"new-access-token"}}}}'
+```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+For scheme-specific examples (API key, bearer token, and basic auth), see [Importing existing connections](/docs/importing-existing-connections#updating-credentials).
+</Callout>
 
 ## Enable and disable accounts
 
