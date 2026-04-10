@@ -1211,6 +1211,91 @@ describe('ToolRouter', () => {
     //   });
     // });
 
+    describe('multiAccount configuration', () => {
+      it('should create a session with multiAccount enable only', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          multiAccount: {
+            enable: true,
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            user_id: userId,
+            multi_account: {
+              enable: true,
+              max_accounts_per_toolkit: undefined,
+              require_explicit_selection: undefined,
+            },
+          })
+        );
+      });
+
+      it('should create a session with full multiAccount configuration', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          multiAccount: {
+            enable: true,
+            maxAccountsPerToolkit: 3,
+            requireExplicitSelection: true,
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            user_id: userId,
+            multi_account: {
+              enable: true,
+              max_accounts_per_toolkit: 3,
+              require_explicit_selection: true,
+            },
+          })
+        );
+      });
+
+      it('should not include multi_account when multiAccount is not provided', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {});
+
+        const callArgs = mockClient.toolRouter.session.create.mock.calls[0][0];
+        expect(callArgs.multi_account).toBeUndefined();
+      });
+
+      it('should create a session with multiAccount combined with other options', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        const config: ToolRouterCreateSessionConfig = {
+          toolkits: ['gmail', 'slack'],
+          multiAccount: {
+            enable: true,
+            maxAccountsPerToolkit: 5,
+          },
+        };
+
+        await toolRouter.create(userId, config);
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            user_id: userId,
+            toolkits: { enable: ['gmail', 'slack'] },
+            multi_account: {
+              enable: true,
+              max_accounts_per_toolkit: 5,
+              require_explicit_selection: undefined,
+            },
+          })
+        );
+      });
+    });
+
     describe('experimental configuration', () => {
       it('should create a session with experimental assistivePrompt userTimezone', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);

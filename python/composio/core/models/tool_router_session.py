@@ -386,16 +386,21 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         toolkit: str,
         *,
         callback_url: t.Optional[str] = None,
+        alias: t.Optional[str] = None,
     ) -> ConnectionRequest:
         """
         Authorize a toolkit for the user and get a connection request.
 
         Initiates the OAuth flow and returns a ConnectionRequest with redirect URL.
+
+        :param alias: Human-readable alias for the connection. Must be unique
+            per userId and toolkit within the project.
         """
         response = self._client.tool_router.session.link(
             session_id=self.session_id,
             toolkit=toolkit,
             callback_url=callback_url if callback_url else omit,
+            alias=alias if alias is not None else omit,
         )
         return ConnectionRequest(
             id=response.connected_account_id,
