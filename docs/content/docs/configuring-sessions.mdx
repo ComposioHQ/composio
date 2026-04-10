@@ -153,6 +153,41 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+## Multi-account mode
+
+By default, each session uses one account per toolkit. Enable multi-account mode to allow users to connect and use multiple accounts for the same toolkit in the same session.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    multi_account={
+        "enable": True,
+        "max_accounts_per_toolkit": 3,
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  multiAccount: {
+    enable: true,
+    maxAccountsPerToolkit: 3,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+For aliasing and selecting between multiple accounts, see [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
+
 ### Precedence
 
 When executing a tool, the connected account is selected in this order:
@@ -163,7 +198,7 @@ When executing a tool, the connected account is selected in this order:
 4. Creates new auth config using Composio managed auth
 5. Error if no Composio managed auth scheme exists for the toolkit
 
-If a user has multiple connected accounts for a toolkit, the most recently connected one is used.
+If a user has multiple connected accounts for a toolkit and multi-account mode is disabled, the most recently connected one is used.
 
 ## Disabling workbench
 
