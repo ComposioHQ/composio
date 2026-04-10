@@ -26,6 +26,7 @@ import { rootToolsCmd } from './tools/tools.cmd';
 import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
+import { configCmd } from './config/config.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -65,6 +66,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(rootToolsCmd$Execute),
   tagged(generateCmd),
   tagged(orgsCmd),
+  tagged(configCmd),
 ];
 
 export const buildRootCommand = (visibility: CommandVisibility) => {

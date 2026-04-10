@@ -170,6 +170,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'orgs', description: 'Manage default organization context (list, switch)' }),
   tagged({ name: 'version', description: 'Display CLI version' }),
   tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
+  tagged({ name: 'config', description: 'View and manage CLI configuration' }),
 ];
 
 // ── Render helpers ─────────────────────────────────────────────────────
@@ -357,20 +358,37 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
   }),
   link: {
-    usage: 'composio link [<toolkit>] [--no-wait]',
+    usage: 'composio link [<toolkit>] [--no-wait] [--alias text] [--list]',
     description:
       'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf. Opens a browser for OAuth authorization and waits for confirmation.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
+    options: [
+      {
+        name: '--alias <text>',
+        description:
+          'Alias for the connected account. Required when creating an additional account for the same toolkit (requires multi_account experimental feature)',
+      },
+    ],
     flags: [
       {
         name: '--no-wait',
         description: 'Print link info and exit without waiting for authorization',
       },
+      {
+        name: '--list',
+        description:
+          'List existing connected accounts for the toolkit instead of creating a new link',
+      },
     ],
-    examples: ['composio link github'],
+    examples: [
+      'composio link github',
+      'composio link gmail --alias work',
+      'composio link github --list',
+    ],
     seeAlso: [
       'composio search "<query>"               Find tools to use after linking',
       "composio execute <slug> -d '{ ... }'    Execute a tool with your connected account",
+      'composio config experimental             Manage experimental features',
     ],
   },
   run: {
@@ -926,6 +944,24 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       { name: '--to <integer>', description: 'End timestamp (epoch ms)' },
     ],
     flags: [{ name: '--case-sensitive', description: 'Case-sensitive filtering' }],
+  },
+  config: {
+    usage: 'composio config <subcommand>',
+    description: 'View and manage CLI configuration.',
+    seeAlso: ['composio config experimental'],
+  },
+  'config experimental': {
+    usage: 'composio config experimental [<feature>] [on|off]',
+    description: 'View or toggle experimental feature flags.',
+    args: [
+      { name: '<feature>', description: 'Feature name (e.g., listen, multi_account)' },
+      { name: 'on|off', description: 'Enable or disable the feature' },
+    ],
+    examples: [
+      'composio config experimental                     # List all features',
+      'composio config experimental listen              # Show current state',
+      'composio config experimental multi_account on    # Enable multi_account',
+    ],
   },
   'dev logs triggers': {
     usage:

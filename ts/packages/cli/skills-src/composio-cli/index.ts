@@ -296,8 +296,11 @@ const renderCommand = (build: SkillBuildContext, command: SkillCommand) => {
   return lines.join('\n');
 };
 
-export const renderComposioCliSkill = (channel: SkillReleaseChannel) => {
-  const build = resolveSkillBuildContext(channel);
+export const renderComposioCliSkill = (
+  channel: SkillReleaseChannel,
+  featureOverrides?: Partial<Record<SkillFeatureFlag, boolean>>
+) => {
+  const build = resolveSkillBuildContext(channel, featureOverrides);
   const lines: string[] = [
     '---',
     `name: ${frontmatter.name}`,
@@ -331,8 +334,11 @@ export const renderComposioCliSkill = (channel: SkillReleaseChannel) => {
   return lines.join('\n') + '\n';
 };
 
-export const renderReferenceFiles = (channel: SkillReleaseChannel) => {
-  const build = resolveSkillBuildContext(channel);
+export const renderReferenceFiles = (
+  channel: SkillReleaseChannel,
+  featureOverrides?: Partial<Record<SkillFeatureFlag, boolean>>
+) => {
+  const build = resolveSkillBuildContext(channel, featureOverrides);
   return Object.fromEntries(
     referenceDocuments.map(document => [
       `${document.slug}.md`,
@@ -361,15 +367,21 @@ const copyDir = (sourceDir: string, targetDir: string) => {
 export const buildComposioCliSkill = ({
   channel,
   outputRoot,
+  featureOverrides,
 }: {
   channel: SkillReleaseChannel;
   outputRoot: string;
+  featureOverrides?: Partial<Record<SkillFeatureFlag, boolean>>;
 }) => {
   const skillOutputDir = path.join(outputRoot, 'composio-cli');
   fs.rmSync(skillOutputDir, { recursive: true, force: true });
   fs.mkdirSync(skillOutputDir, { recursive: true });
 
-  fs.writeFileSync(path.join(skillOutputDir, 'SKILL.md'), renderComposioCliSkill(channel), 'utf8');
+  fs.writeFileSync(
+    path.join(skillOutputDir, 'SKILL.md'),
+    renderComposioCliSkill(channel, featureOverrides),
+    'utf8'
+  );
 
   const agentsSourceDir = path.join(sourceAssetsDir, 'agents');
   if (fs.existsSync(agentsSourceDir)) {
@@ -378,7 +390,9 @@ export const buildComposioCliSkill = ({
 
   const referencesOutputDir = path.join(skillOutputDir, 'references');
   fs.mkdirSync(referencesOutputDir, { recursive: true });
-  for (const [fileName, markdown] of Object.entries(renderReferenceFiles(channel))) {
+  for (const [fileName, markdown] of Object.entries(
+    renderReferenceFiles(channel, featureOverrides)
+  )) {
     fs.writeFileSync(path.join(referencesOutputDir, fileName), markdown, 'utf8');
   }
 

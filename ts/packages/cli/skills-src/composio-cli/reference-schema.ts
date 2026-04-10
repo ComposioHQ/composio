@@ -34,6 +34,7 @@ export type ReferenceDocument = {
 
 const TOP_LEVEL_COMMANDS = new Set([
   'artifacts',
+  'config',
   'dev',
   'execute',
   'link',
@@ -47,11 +48,15 @@ const TOP_LEVEL_COMMANDS = new Set([
   'whoami',
 ]);
 
-export const resolveSkillBuildContext = (channel: SkillReleaseChannel): SkillBuildContext => ({
+export const resolveSkillBuildContext = (
+  channel: SkillReleaseChannel,
+  overrides?: Partial<Record<SkillFeatureFlag, boolean>>
+): SkillBuildContext => ({
   channel,
   experimentalFeatures: {
     [CLI_EXPERIMENTAL_FEATURES.LISTEN]: channel === 'beta',
     [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]: channel === 'beta',
+    ...overrides,
   },
 });
 
