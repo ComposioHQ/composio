@@ -16,6 +16,15 @@ import decompress from 'decompress';
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
 export type SkillReleaseChannel = CliReleaseChannel;
+export type SkillInstallTarget = 'claude' | 'codex' | 'openclaw';
+
+const SKILL_NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+const SKILL_TARGET_LABELS: Record<SkillInstallTarget, string> = {
+  claude: 'Claude Code',
+  codex: 'Codex',
+  openclaw: 'OpenClaw',
+};
 
 type GitHubConfig = GitHubRepoConfig & {
   TAG: Option.Option<string>;
@@ -24,6 +33,40 @@ type GitHubConfig = GitHubRepoConfig & {
 
 const hasSkillAsset = (release: GitHubRelease) =>
   release.assets.some(asset => asset.name === SKILL_ASSET_NAME);
+
+export const resolveInstalledSkillName = (skillName?: string): string => {
+  const normalized = skillName?.trim();
+  if (!normalized) {
+    return SKILL_NAME;
+  }
+  if (normalized === '.' || normalized === '..' || !SKILL_NAME_PATTERN.test(normalized)) {
+    throw new Error(
+      'Invalid skill name. Use letters, numbers, dots, underscores, or hyphens only.'
+    );
+  }
+  return normalized;
+};
+
+export const resolveTargetSkillPath = ({
+  home,
+  skillName,
+  target,
+}: {
+  home: string;
+  skillName: string;
+  target: SkillInstallTarget;
+}): string => {
+  switch (target) {
+    case 'claude':
+      return path.join(home, '.claude', 'skills', skillName);
+    case 'codex':
+      return path.join(home, '.codex', 'skills', skillName);
+    case 'openclaw':
+      return path.join(home, '.openclaw', 'skills', skillName);
+  }
+};
+
+const resolveTargetLabel = (target: SkillInstallTarget): string => SKILL_TARGET_LABELS[target];
 
 export const inferSkillReleaseChannel = (tagOrVersion: string): SkillReleaseChannel =>
   tagOrVersion.includes('-beta.') ? 'beta' : 'stable';
@@ -68,14 +111,16 @@ export const resolveSkillReleaseTag = ({
  * Install the composio-cli skill into the user's global agent skills directory.
  *
  * - Downloads composio-skill.zip from the matching CLI GitHub release
- * - Extracts to ~/.agents/skills/composio-cli/
- * - Creates a symlink at ~/.claude/skills/composio-cli → ../../.agents/skills/composio-cli
+ * - Extracts to ~/.agents/skills/<skill-name>/
+ * - Creates a symlink in the selected agent's skills directory
  *
  * Non-fatal: wrapped version catches all errors.
  */
 export const installSkill = (options?: {
   readonly releaseTag?: string;
   readonly channel?: SkillReleaseChannel;
+  readonly target?: SkillInstallTarget;
+  readonly skillName?: string;
 }) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
@@ -83,9 +128,11 @@ export const installSkill = (options?: {
     const httpClient = yield* HttpClient.HttpClient;
     const githubConfig = yield* Config.all(GITHUB_CONFIG);
     const home = os.homedir;
+    const target = options?.target ?? 'claude';
+    const skillName = resolveInstalledSkillName(options?.skillName);
 
-    const agentSkillDir = path.join(home, '.agents', 'skills', SKILL_NAME);
-    const claudeSkillLink = path.join(home, '.claude', 'skills', SKILL_NAME);
+    const agentSkillDir = path.join(home, '.agents', 'skills', skillName);
+    const targetSkillPath = resolveTargetSkillPath({ home, skillName, target });
 
     const tag = yield* resolveSkillReleaseTag({
       channel: options?.channel,
@@ -161,25 +208,25 @@ export const installSkill = (options?: {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
 
-    // Create symlink for Claude Code — always replace any existing entry
-    fs.mkdirSync(path.join(home, '.claude', 'skills'), { recursive: true });
+    // Create agent-specific symlink — always replace any existing entry.
+    fs.mkdirSync(path.dirname(targetSkillPath), { recursive: true });
     try {
-      const stat = fs.lstatSync(claudeSkillLink);
+      const stat = fs.lstatSync(targetSkillPath);
       // Entry exists (symlink, broken symlink, or directory) — remove it
       if (stat.isSymbolicLink()) {
-        fs.unlinkSync(claudeSkillLink);
+        fs.unlinkSync(targetSkillPath);
       } else if (stat.isDirectory()) {
-        fs.rmSync(claudeSkillLink, { recursive: true, force: true });
+        fs.rmSync(targetSkillPath, { recursive: true, force: true });
       } else {
-        fs.unlinkSync(claudeSkillLink);
+        fs.unlinkSync(targetSkillPath);
       }
     } catch {
       // lstatSync throws if nothing exists at the path — that's fine
     }
-    const relativeTarget = path.relative(path.dirname(claudeSkillLink), agentSkillDir);
-    fs.symlinkSync(relativeTarget, claudeSkillLink);
+    const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
+    fs.symlinkSync(relativeTarget, targetSkillPath);
 
-    yield* ui.log.success('Installed composio-cli skill for Claude Code');
+    yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
   });
 
 /**
@@ -188,6 +235,8 @@ export const installSkill = (options?: {
 export const installSkillSafe = (options?: {
   readonly releaseTag?: string;
   readonly channel?: SkillReleaseChannel;
+  readonly target?: SkillInstallTarget;
+  readonly skillName?: string;
 }) =>
   installSkill(options).pipe(
     Effect.sandbox,
@@ -195,7 +244,8 @@ export const installSkillSafe = (options?: {
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* Effect.logDebug('Skill install failed:', cause);
-        yield* ui.log.warn('Could not install Claude Code skill (non-fatal)');
+        const targetLabel = resolveTargetLabel(options?.target ?? 'claude');
+        yield* ui.log.warn(`Could not install ${targetLabel} skill (non-fatal)`);
       })
     )
   );

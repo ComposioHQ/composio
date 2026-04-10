@@ -4,7 +4,9 @@ import { FetchHttpClient, HttpClient } from '@effect/platform';
 import { withHttpServer } from 'test/__utils__/http-server';
 import {
   inferSkillReleaseChannel,
+  resolveInstalledSkillName,
   resolveSkillReleaseTag,
+  resolveTargetSkillPath,
   type SkillReleaseChannel,
 } from 'src/effects/install-skill';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -41,6 +43,41 @@ describe('install-skill', () => {
   it('infers the beta channel from beta versions', () => {
     expect(inferSkillReleaseChannel('0.2.20-beta.4')).toBe('beta');
     expect(inferSkillReleaseChannel('@composio/cli@0.2.20-beta.4')).toBe('beta');
+  });
+
+  it('defaults the installed skill name to composio-cli', () => {
+    expect(resolveInstalledSkillName()).toBe('composio-cli');
+    expect(resolveInstalledSkillName('   ')).toBe('composio-cli');
+  });
+
+  it('rejects unsafe installed skill names', () => {
+    expect(() => resolveInstalledSkillName('../bad')).toThrow(/Invalid skill name/);
+    expect(() => resolveInstalledSkillName('.')).toThrow(/Invalid skill name/);
+    expect(() => resolveInstalledSkillName('..')).toThrow(/Invalid skill name/);
+  });
+
+  it('resolves the agent-specific skill path', () => {
+    expect(
+      resolveTargetSkillPath({
+        home: '/tmp/test-home',
+        skillName: 'composio-cli',
+        target: 'claude',
+      })
+    ).toBe('/tmp/test-home/.claude/skills/composio-cli');
+    expect(
+      resolveTargetSkillPath({
+        home: '/tmp/test-home',
+        skillName: 'composio-cli',
+        target: 'codex',
+      })
+    ).toBe('/tmp/test-home/.codex/skills/composio-cli');
+    expect(
+      resolveTargetSkillPath({
+        home: '/tmp/test-home',
+        skillName: 'composio-cli',
+        target: 'openclaw',
+      })
+    ).toBe('/tmp/test-home/.openclaw/skills/composio-cli');
   });
 
   it('resolves the latest stable release when the stable channel is requested', async () => {

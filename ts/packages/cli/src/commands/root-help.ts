@@ -616,10 +616,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   tools: {
     usage: 'composio tools <command>',
     description: 'Browse and inspect tools before executing them.',
-    examples: [
-      'composio tools list gmail',
-      'composio tools info GMAIL_SEND_EMAIL',
-    ],
+    examples: ['composio tools list gmail', 'composio tools info GMAIL_SEND_EMAIL'],
     seeAlso: [
       'composio search "<query>"               Find tools by use case',
       "composio execute <slug> -d '{ ... }'    Execute a tool directly",
@@ -1187,6 +1184,10 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     `  ${dim('# Run a script with injected helpers')}`,
     `  ${name} run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
     '',
+    `  ${dim('# Manually install the composio skill when auto-install fails')}`,
+    `  ${name} --instal-skill claude`,
+    `  ${name} --instal-skill composio-cli codex`,
+    '',
     `  ${dim('# Run a multi-step script with Promise.all')}`,
     `  ${name} run '`,
     `    const [emails, issues] = await Promise.all([`,
@@ -1221,6 +1222,8 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     bold('FLAGS'),
     '  -h, --help     Show help for command',
     `  --version      Show ${name} version`,
+    '  --instal-skill [skill-name] <claude|codex|openclaw>',
+    '                  Manually install the composio skill for a supported agent',
     '',
     bold('LEARN MORE'),
     `  Use \`${name} <command> --help\` for more information about a command.`,
