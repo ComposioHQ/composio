@@ -206,6 +206,33 @@ export const ToolRouterCreateSessionConfigSchema = z
       })
       .optional()
       .describe('The workbench config for the tool router session'),
+    multiAccount: z
+      .object({
+        enable: z
+          .boolean()
+          .default(false)
+          .describe(
+            'When true, enables multi-account mode for this session. Defaults to false.'
+          ),
+        maxAccountsPerToolkit: z
+          .number()
+          .int()
+          .min(2)
+          .max(10)
+          .optional()
+          .describe(
+            'Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled.'
+          ),
+        requireExplicitSelection: z
+          .boolean()
+          .optional()
+          .describe(
+            'When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account.'
+          ),
+      })
+      .optional()
+      .describe('Multi-account configuration for this session'),
+
     experimental: z
       .object({
         assistivePrompt: z
@@ -252,6 +279,10 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [workbench.enable] - Whether to enable the workbench entirely. Defaults to true. When false, no code execution tools are available.
  * @param {boolean} [workbench.enableProxyExecution] - Whether to enable proxy execution
  * @param {number} [workbench.autoOffloadThreshold] - Auto offload threshold in characters for moving execution to workbench
+ * @param {object} [multiAccount] - Multi-account configuration for this session
+ * @param {boolean} [multiAccount.enable] - When true, enables multi-account mode. Falls back to org/project-level config when not set.
+ * @param {number} [multiAccount.maxAccountsPerToolkit] - Max connected accounts per toolkit (2-10, default 5)
+ * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
  */
 export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
 
@@ -366,7 +397,7 @@ const ToolRouterSessionSearchTimeInfoSchema = z.object({
 
 const ToolRouterSessionSearchToolSchemasSchemaRefSchema = z.object({
   args: z.object({ toolSlugs: z.array(z.string()) }),
-  message: z.string(),
+  message: z.string().optional(),
   tool: z.literal('COMPOSIO_GET_TOOL_SCHEMAS'),
 });
 

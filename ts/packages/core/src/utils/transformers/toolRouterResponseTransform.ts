@@ -39,7 +39,7 @@ interface RawToolSchema {
   output_schema?: Record<string, unknown>;
   schemaRef?: {
     args: { tool_slugs: string[] };
-    message: string;
+    message?: string;
     tool: string;
   };
 }

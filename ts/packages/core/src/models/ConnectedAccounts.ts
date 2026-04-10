@@ -14,6 +14,7 @@ import {
   ConnectedAccountUpdateStatusResponse,
   ConnectedAccountListParams as ConnectedAccountListParamsRaw,
   ConnectedAccountCreateParams as ConnectedAccountCreateParamsRaw,
+  ConnectedAccountPatchResponse,
 } from '@composio/client/resources/connected-accounts';
 import {
   CreateConnectedAccountOptions,
@@ -26,6 +27,8 @@ import {
   ConnectedAccountStatuses,
   ConnectedAccountRefreshOptions,
   ConnectedAccountRefreshOptionsSchema,
+  UpdateConnectedAccountParams,
+  UpdateConnectedAccountParamsSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
@@ -189,17 +192,17 @@ export class ConnectedAccounts {
     //   state = connectionDataParsed.data;
     // }
 
-    const response = await this.client.connectedAccounts.create({
-      auth_config: {
-        id: authConfigId,
-      },
+    const createParams: ConnectedAccountCreateParamsRaw = {
+      auth_config: { id: authConfigId },
       connection: {
         callback_url: options?.callbackUrl,
         user_id: userId,
-        state,
+        state: state as ConnectedAccountCreateParamsRaw.Connection['state'],
+        ...(options?.alias != null && { alias: options.alias }),
       },
-      // @TODO: This is a temporary fix to allow api_key to be optional, in future ideally we should fix this from API side
-    } as ConnectedAccountCreateParamsRaw);
+    };
+
+    const response = await this.client.connectedAccounts.create(createParams);
 
     const redirectUrl =
       typeof response.connectionData?.val?.redirectUrl === 'string'
@@ -266,6 +269,7 @@ export class ConnectedAccounts {
         auth_config_id: authConfigId,
         user_id: userId,
         ...(requestOptions?.data.callbackUrl && { callback_url: requestOptions.data.callbackUrl }),
+        ...(requestOptions?.data.alias != null && { alias: requestOptions.data.alias }),
       });
 
       const connectionRequest = createConnectionRequest(
@@ -460,5 +464,38 @@ export class ConnectedAccounts {
    */
   async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
+  }
+
+  /**
+   * Update a connected account's alias.
+   *
+   * @param {string} nanoid - The unique identifier of the connected account
+   * @param {UpdateConnectedAccountParams} params - The update parameters
+   * @param {string} params.alias - Human-readable alias for the account. Must be unique per userId and toolkit within the project. Pass an empty string to clear.
+   * @returns {Promise<ConnectedAccountPatchResponse>} The update response
+   *
+   * @example
+   * ```typescript
+   * // Set an alias
+   * await composio.connectedAccounts.update('conn_abc123', { alias: 'work-gmail' });
+   *
+   * // Clear an alias
+   * await composio.connectedAccounts.update('conn_abc123', { alias: '' });
+   * ```
+   */
+  async update(
+    nanoid: string,
+    params: UpdateConnectedAccountParams
+  ): Promise<ConnectedAccountPatchResponse> {
+    const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse connected account update params', {
+        cause: parsedParams.error,
+      });
+    }
+
+    return this.client.connectedAccounts.patch(nanoid, {
+      alias: parsedParams.data.alias,
+    });
   }
 }
