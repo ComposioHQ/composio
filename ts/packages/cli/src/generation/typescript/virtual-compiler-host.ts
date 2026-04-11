@@ -23,9 +23,11 @@ export function buildVirtualFileMap(
  * Overrides both `getSourceFile` and `fileExists` so that module resolution
  * can discover virtual files that don't exist on the real file system.
  *
- * @param fallback - `'throw'` raises on unknown files (for isolated test validation),
- *                   `'delegate'` falls back to the real file system (for production compilation).
- *                   Defaults to `'delegate'`.
+ * @param fallback - `'throw'` raises when a file cannot be resolved by either
+ *                   the virtual file map or the underlying compiler host,
+ *                   which helps surface unexpected missing imports during tests.
+ *                   `'delegate'` falls back to the real file system without
+ *                   throwing. Defaults to `'delegate'`.
  */
 export function patchCompilerHostWithVirtualFiles(
   tsHost: ts.CompilerHost,
@@ -57,11 +59,21 @@ export function patchCompilerHostWithVirtualFiles(
       return virtualFile;
     }
 
+    const sourceFile = ogGetSourceFile(
+      filename,
+      languageVersion,
+      onError,
+      shouldCreateNewSourceFile
+    );
+    if (sourceFile) {
+      return sourceFile;
+    }
+
     if (fallback === 'throw') {
       throw new Error(`Unexpected filename ${filename}`);
     }
 
-    return ogGetSourceFile(filename, languageVersion, onError, shouldCreateNewSourceFile);
+    return sourceFile;
   };
 }
 
