@@ -17,7 +17,7 @@ This event is only available with [V3 webhook payloads](/docs/webhook-verificati
 Add `composio.connected_account.expired` to your webhook subscription's `enabled_events`:
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "X-API-KEY: <your-composio-api-key>" \
   -H "Content-Type: application/json" \
   -d '{

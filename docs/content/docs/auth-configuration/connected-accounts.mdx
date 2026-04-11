@@ -245,7 +245,7 @@ If you need full credential values (e.g., to use tokens in your own API calls), 
 2. **API**:
 
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3/org/project/config \
+curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"mask_secret_keys_in_connected_account": false}'

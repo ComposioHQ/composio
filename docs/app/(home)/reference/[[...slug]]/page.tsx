@@ -1,4 +1,3 @@
-import type { ComponentType } from 'react';
 import { getReferenceSource, getOgImageUrl } from '@/lib/source';
 import { APIPage } from '@/components/api-page';
 import {
@@ -12,6 +11,7 @@ import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import type { ApiPageProps } from 'fumadocs-openapi/ui';
 import { PageActions } from '@/components/page-actions';
+import { VersionBadge, extractVersionFromPath } from '@/components/version-badge';
 
 interface OpenAPIPageData {
   title: string;
@@ -29,21 +29,30 @@ export default async function Page({
   const page = referenceSource.getPage(slug);
   if (!page) notFound();
 
-  // Check if this is an OpenAPI page (has getAPIPageProps method)
   if ('getAPIPageProps' in page.data) {
     const pageData = page.data as OpenAPIPageData;
+    const apiProps = pageData.getAPIPageProps();
+    const detectedVersion = apiProps.operations?.[0]?.path
+      ? extractVersionFromPath(apiProps.operations[0].path)
+      : null;
     return (
       <DocsPage full footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
-        <h1 className="text-2xl font-semibold mb-4">{pageData.title}</h1>
+        <h1 className="text-2xl font-semibold mb-4">
+          {pageData.title}
+          {detectedVersion && (
+            <span className="ml-2 align-middle">
+              <VersionBadge version={detectedVersion} />
+            </span>
+          )}
+        </h1>
         <PageActions path={page.url} />
         <DocsBody>
-          <APIPage {...pageData.getAPIPageProps()} />
+          <APIPage {...apiProps} />
         </DocsBody>
       </DocsPage>
     );
   }
 
-  // Regular MDX page - cast to any to avoid complex type issues
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mdxData = page.data as any;
   const MDX = mdxData.body;
@@ -76,7 +85,6 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
 
-  // Index page - show custom metadata
   if (!slug || slug.length === 0) {
     const ogImage = getOgImageUrl('reference', [], 'API Reference', 'REST API and SDK reference for Composio');
     return {
@@ -92,8 +100,6 @@ export async function generateMetadata({
   const page = referenceSource.getPage(slug);
   if (!page) notFound();
 
-  // Use description if available, otherwise fall back to title for SEO
-  // This handles OpenAPI pages where description may be null in the spec
   const description = page.data.description || page.data.title;
   const ogImage = getOgImageUrl('reference', page.slugs, page.data.title, description);
 

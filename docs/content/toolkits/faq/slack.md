@@ -24,7 +24,7 @@ Update the redirect URL in your Slack App under OAuth & Permissions → Redirect
 
 ## How do I set up Slack event webhooks?
 
-Enable Event Subscriptions in your Slack app. Set the Request URL to `https://backend.composio.dev/api/v3/trigger_instances/slack/default/handle`. Add events (e.g., `reaction_added`) to Subscribe to Bot Events and save. If using the Slackbot integration, add the bot to the channels you want to monitor.
+Enable Event Subscriptions in your Slack app. Set the Request URL to `https://backend.composio.dev/api/v3.1/trigger_instances/slack/default/handle`. Add events (e.g., `reaction_added`) to Subscribe to Bot Events and save. If using the Slackbot integration, add the bot to the channels you want to monitor.
 
 ## Why am I getting scope errors on Slack?
 

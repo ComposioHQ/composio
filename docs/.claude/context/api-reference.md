@@ -49,6 +49,15 @@ All in `app/global.css` under the "OpenAPI Reference" section. These target fuma
 | `div.border.rounded-lg:not(:has(*))` | Hide empty schema wrapper divs (when Error schema returns null) | Wrapper div rendered outside `schemaUI.render` hook |
 | `p.text-fd-muted-foreground.not-prose:has(> code.text-xs)` | Hide `application/json` content type labels | No hook to control content type display |
 
+## API Versioning (v3.0 / v3.1)
+
+The OpenAPI spec contains endpoints from multiple API versions (`/api/v3/...` and `/api/v3.1/...`). Both versions are displayed simultaneously:
+
+- **`fetch-openapi.mjs`**: Annotates each operation with `x-api-version` ("3.0" or "3.1") based on the path prefix
+- **`generate-api-index.ts`**: For categories with endpoints in multiple versions, generates tabbed index pages (v3.1 shown first as "latest"). Single-version categories render a plain table.
+- **`components/version-badge.tsx`**: `VersionBadge` component renders a colored badge. v3.1 gets green styling; v3.0 gets neutral. `extractVersionFromPath()` parses the version from endpoint paths.
+- **Endpoint pages** (`app/(home)/reference/[[...slug]]/page.tsx`): OpenAPI endpoint pages show a `VersionBadge` next to the title, extracted from `operations[0].path`.
+
 ## OpenAPI Spec Notes
 
 - Spec is OAS 3.0.0 with 60 endpoints
