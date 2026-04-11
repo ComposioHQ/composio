@@ -32,6 +32,8 @@ type Shell = 'bash' | 'zsh' | 'fish';
 interface ShellConfig {
   readonly shell: Shell;
   readonly rcFile: string;
+  /** File where completions are written. For fish this is a dedicated file; for others it matches rcFile. */
+  readonly completionFile: string;
   readonly pathBlock: string;
   readonly completionBlock: string | undefined;
 }
@@ -104,14 +106,27 @@ const pathBlockForShell = (shell: Shell, installDir: string): string => {
   }
 };
 
+/**
+ * Return the file path where completions should be written.
+ * Fish uses a dedicated completions directory; bash appends to the rc file.
+ */
+const completionFileForShell = (shell: Shell, rcFile: string, homedir: string): string => {
+  if (shell === 'fish') {
+    return path.join(homedir, '.config', 'fish', 'completions', 'composio.fish');
+  }
+  return rcFile;
+};
+
 const buildShellConfig = (
   shell: Shell,
   rcFile: string,
+  homedir: string,
   installDir: string,
   completionScript: string | undefined
 ): ShellConfig => ({
   shell,
   rcFile,
+  completionFile: completionFileForShell(shell, rcFile, homedir),
   pathBlock: pathBlockForShell(shell, installDir),
   completionBlock: completionScript ? `${COMPLETIONS_MARKER}\n${completionScript}` : undefined,
 });
@@ -186,7 +201,7 @@ export const installShellIntegration = (params: {
     }
 
     const rcFile = yield* resolveRcFile(rcFileCandidates(shell, os.homedir), fs);
-    const config = buildShellConfig(shell, rcFile, installDir, completionScript);
+    const config = buildShellConfig(shell, rcFile, os.homedir, installDir, completionScript);
 
     // Read existing rc file (or empty if it doesn't exist yet)
     const rcPath = config.rcFile;
@@ -198,11 +213,27 @@ export const installShellIntegration = (params: {
         )
       );
 
-    // Build blocks to append (idempotently)
-    const blocks: string[] = [];
+    // For fish, completions go to a separate file; for others they share the rc file.
+    const completionPath = config.completionFile;
+    const usesSeparateCompletionFile = completionPath !== rcPath;
+    const existingCompletionFile = usesSeparateCompletionFile
+      ? yield* fs
+          .readFileString(completionPath)
+          .pipe(
+            Effect.catchAll(e =>
+              Effect.logDebug('Completion file does not exist yet, will create:', e).pipe(
+                Effect.as('')
+              )
+            )
+          )
+      : existing;
+
+    // Build blocks to append to rc file (idempotently)
+    const rcBlocks: string[] = [];
+    let writeCompletionFile = false;
 
     if (!fileContains(existing, MARKER)) {
-      blocks.push(config.pathBlock);
+      rcBlocks.push(config.pathBlock);
       yield* ui.log.step(`PATH: will add ${tildify(installDir, os.homedir)} to $PATH`);
     } else {
       yield* ui.log.step('PATH: already configured');
@@ -212,8 +243,15 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('Completions: skipped for zsh');
     } else if (!params.completions) {
       yield* ui.log.step('Completions: skipped by default (pass --completions to enable)');
-    } else if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
-      blocks.push(config.completionBlock);
+    } else if (
+      config.completionBlock &&
+      !fileContains(existingCompletionFile, COMPLETIONS_MARKER)
+    ) {
+      if (usesSeparateCompletionFile) {
+        writeCompletionFile = true;
+      } else {
+        rcBlocks.push(config.completionBlock);
+      }
       yield* ui.log.step('Completions: will install shell completions');
     } else if (!config.completionBlock) {
       yield* ui.log.step('Completions: not available for this shell');
@@ -221,25 +259,48 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('Completions: already configured');
     }
 
-    if (blocks.length > 0) {
-      // Ensure parent directory exists (for fish config)
-      yield* fs
-        .makeDirectory(path.dirname(rcPath), { recursive: true })
-        .pipe(
-          Effect.catchAll(e =>
-            Effect.logDebug('Could not create parent directory (may already exist):', e)
-          )
-        );
+    const hasRcChanges = rcBlocks.length > 0;
+    const hasCompletionChanges = writeCompletionFile && config.completionBlock;
 
-      const appendContent = '\n' + blocks.join('\n\n') + '\n';
+    if (hasRcChanges || hasCompletionChanges) {
+      if (hasRcChanges) {
+        // Ensure parent directory exists (for fish config)
+        yield* fs
+          .makeDirectory(path.dirname(rcPath), { recursive: true })
+          .pipe(
+            Effect.catchAll(e =>
+              Effect.logDebug('Could not create parent directory (may already exist):', e)
+            )
+          );
 
-      // Atomic write: write to a temp file then rename, so a crash mid-write
-      // cannot leave the user's rc file truncated/corrupted.
-      const tmpPath = `${rcPath}.composio-tmp`;
-      yield* fs.writeFileString(tmpPath, existing + appendContent);
-      yield* fs.rename(tmpPath, rcPath);
+        const appendContent = '\n' + rcBlocks.join('\n\n') + '\n';
 
-      yield* ui.log.success(`Updated ${tildify(rcPath, os.homedir)}`);
+        // Atomic write: write to a temp file then rename, so a crash mid-write
+        // cannot leave the user's rc file truncated/corrupted.
+        const tmpPath = `${rcPath}.composio-tmp`;
+        yield* fs.writeFileString(tmpPath, existing + appendContent);
+        yield* fs.rename(tmpPath, rcPath);
+
+        yield* ui.log.success(`Updated ${tildify(rcPath, os.homedir)}`);
+      }
+
+      if (hasCompletionChanges) {
+        // Write completions to a dedicated file (e.g. ~/.config/fish/completions/composio.fish)
+        yield* fs
+          .makeDirectory(path.dirname(completionPath), { recursive: true })
+          .pipe(
+            Effect.catchAll(e =>
+              Effect.logDebug('Could not create completions directory (may already exist):', e)
+            )
+          );
+
+        const tmpPath = `${completionPath}.composio-tmp`;
+        yield* fs.writeFileString(tmpPath, config.completionBlock! + '\n');
+        yield* fs.rename(tmpPath, completionPath);
+
+        yield* ui.log.success(`Updated ${tildify(completionPath, os.homedir)}`);
+      }
+
       yield* ui.note(
         shell === 'fish' || shell === 'zsh'
           ? `source ${tildify(rcPath, os.homedir)}`

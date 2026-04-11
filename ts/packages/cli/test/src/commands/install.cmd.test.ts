@@ -106,6 +106,46 @@ describe('CLI: composio install', () => {
     });
   });
 
+  describe('[When] shell is fish with --completions', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] writes completions to dedicated completions file, not config.fish', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          process.env.SHELL = '/usr/bin/fish';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          yield* cli(['install', '--completions']);
+
+          const fs = yield* FileSystem.FileSystem;
+
+          // config.fish should have PATH but NOT completions
+          const rcPath = path.join(os.homedir, '.config', 'fish', 'config.fish');
+          const rcContents = yield* fs.readFileString(rcPath);
+          expect(rcContents).toContain('# Composio CLI');
+          expect(rcContents).toContain('set --export COMPOSIO_INSTALL_DIR');
+          expect(rcContents).not.toContain('# Composio CLI completions');
+
+          // Completions should be in the dedicated file
+          const completionPath = path.join(
+            os.homedir,
+            '.config',
+            'fish',
+            'completions',
+            'composio.fish'
+          );
+          const completionContents = yield* fs.readFileString(completionPath);
+          expect(completionContents).toContain('# Composio CLI completions');
+          expect(completionContents).toContain('complete -c composio');
+
+          const lines = yield* MockConsole.getLines();
+          const output = lines.join('\n');
+          expect(output).toContain('Completions: will install shell completions');
+          expect(output).toContain('Updated ~/.config/fish/completions/composio.fish');
+        })
+      );
+    });
+  });
+
   describe('[When] --completions is passed', () => {
     layer(TestLive())(it => {
       it.scoped('[Then] writes PATH block and installs completions', () =>
@@ -153,6 +193,43 @@ describe('CLI: composio install', () => {
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
           expect(output).toContain('Completions: skipped for zsh');
+        })
+      );
+    });
+  });
+
+  describe('[When] fish install --completions is run twice (idempotency)', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] does not duplicate entries', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          process.env.SHELL = '/usr/bin/fish';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          yield* cli(['install', '--completions']);
+          yield* cli(['install', '--completions']);
+
+          const fs = yield* FileSystem.FileSystem;
+
+          // config.fish should have exactly one PATH marker
+          const rcPath = path.join(os.homedir, '.config', 'fish', 'config.fish');
+          const rcContents = yield* fs.readFileString(rcPath);
+          const pathMarkerCount = rcContents.match(/^# Composio CLI$/gm)?.length ?? 0;
+          expect(pathMarkerCount).toBe(1);
+          expect(rcContents).not.toContain('# Composio CLI completions');
+
+          // Completions file should have exactly one completions marker
+          const completionPath = path.join(
+            os.homedir,
+            '.config',
+            'fish',
+            'completions',
+            'composio.fish'
+          );
+          const completionContents = yield* fs.readFileString(completionPath);
+          const completionsCount =
+            completionContents.match(/^# Composio CLI completions$/gm)?.length ?? 0;
+          expect(completionsCount).toBe(1);
         })
       );
     });
