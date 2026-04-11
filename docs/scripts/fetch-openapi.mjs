@@ -209,6 +209,7 @@ async function fetchAndFilterSpec() {
   const v3Spec = JSON.parse(JSON.stringify(v3Raw));
   const v3Filtered = filterPaths(v3Spec.paths);
   v3Spec.paths = v3Filtered.filteredPaths;
+  cleanOperationIds(v3Spec.paths);
   for (const methods of Object.values(v3Spec.paths)) {
     for (const op of Object.values(methods)) {
       op['x-api-version'] = '3.0';
