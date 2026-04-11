@@ -33,11 +33,8 @@ export function NavVersionSelector() {
     if (newVersion === version) return;
     const path = window.location.pathname;
 
-    // Shared pages (SDK Reference, Meta Tools) don't have v3 equivalents
-    const isSharedPage = path.includes('/sdk-reference') || path.includes('/meta-tools');
-
     if (newVersion === '3.0') {
-      if (path === '/reference' || isSharedPage) {
+      if (path === '/reference') {
         window.location.href = '/reference/v3';
       } else {
         window.location.href = path.replace('/reference/', '/reference/v3/');

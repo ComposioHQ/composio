@@ -49,6 +49,13 @@ export function proxy(request: NextRequest) {
     }
   }
 
+  // Shared pages (SDK Reference, Meta Tools) don't have v3 equivalents — redirect to v3.1
+  if (pathname.startsWith('/reference/v3/sdk-reference') || pathname.startsWith('/reference/v3/meta-tools')) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace('/reference/v3/', '/reference/');
+    return NextResponse.redirect(url, 302);
+  }
+
   // Version from URL: /reference/v3/... = 3.0, everything else = 3.1
   const version = pathname.startsWith('/reference/v3/') || pathname === '/reference/v3' ? '3.0' : '3.1';
 
