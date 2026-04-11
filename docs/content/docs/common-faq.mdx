@@ -95,7 +95,7 @@ This applies to direct tool execution only. Sessions with meta tools always use 
 </Accordion>
 
 <Accordion title="Why does the API return fewer tools than the platform UI?">
-When calling the Get Tools API (`GET /api/v3/tools`) without specifying a `toolkit_versions` parameter, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. The platform UI shows tools from the latest version.
+When calling the Get Tools API (`GET /api/v3.1/tools`) without specifying a `toolkit_versions` parameter, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. The platform UI shows tools from the latest version.
 
 To get all available tools, pass `toolkit_versions=latest`:
 
