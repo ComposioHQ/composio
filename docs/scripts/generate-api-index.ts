@@ -94,28 +94,25 @@ function generateIndexPages() {
     const tagSlug = slugify(tagName);
     const tagDescription = tagDescriptions[tagName] || `${tagName} API endpoints`;
 
-    // Build the endpoints JSON for the component
-    // Match v3.1 and v3.0 operations by operationId
-    const displayOps = ops31.length > 0 ? ops31 : ops3;
-    const v3ByOpId: Record<string, OperationEntry> = {};
-    for (const op of ops3) {
-      v3ByOpId[op.operationId] = op;
-    }
+    // Only generate v3.1 index page if the tag has v3.1 operations
+    if (ops31.length > 0) {
+      const v3ByOpId: Record<string, OperationEntry> = {};
+      for (const op of ops3) {
+        v3ByOpId[op.operationId] = op;
+      }
 
-    const endpoints = displayOps.map(op => {
-      const v3Op = v3ByOpId[op.operationId];
-      return {
-        method: op.method,
-        pathV31: op.path,
-        pathV3: v3Op ? v3Op.path : op.path.replace('/v3.1/', '/v3/'),
-        summary: op.summary,
-        href: `/reference/api-reference/${tagSlug}/${op.operationId}`,
-      };
-    });
+      const endpoints = ops31.map(op => {
+        const v3Op = v3ByOpId[op.operationId];
+        return {
+          method: op.method,
+          pathV31: op.path,
+          pathV3: v3Op ? v3Op.path : op.path.replace('/v3.1/', '/v3/'),
+          summary: op.summary,
+          href: `/reference/api-reference/${tagSlug}/${op.operationId}`,
+        };
+      });
 
-    const endpointsJson = JSON.stringify(endpoints);
-
-    const content = `---
+      const content = `---
 title: ${tagName}
 description: "${tagDescription}"
 ---
@@ -126,14 +123,14 @@ ${tagDescription}
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={${endpointsJson}} />
+<ApiEndpointsTable endpoints={${JSON.stringify(endpoints)}} />
 `;
 
-    const folderPath = join(outputDir, tagSlug);
-    mkdirSync(folderPath, { recursive: true });
-    const filePath = join(folderPath, 'index.mdx');
-    writeFileSync(filePath, content);
-    console.log(`Generated: ${tagSlug}/index.mdx`);
+      const folderPath = join(outputDir, tagSlug);
+      mkdirSync(folderPath, { recursive: true });
+      writeFileSync(join(folderPath, 'index.mdx'), content);
+      console.log(`Generated: ${tagSlug}/index.mdx`);
+    }
 
     // Also generate v3 index page with v3-specific hrefs
     if (ops3.length > 0) {
