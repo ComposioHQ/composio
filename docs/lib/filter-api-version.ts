@@ -65,17 +65,17 @@ export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T
     (node) => node.type === 'folder' && isV3Node(node),
   );
 
-  // Folders that should appear in both versions (exclude v3.1 API Reference folder)
-  const sharedFolders = children.filter(
-    (node) => node.type === 'folder' && !isV3Node(node) && !isV31ApiFolder(node),
+  // Nodes that should appear in both versions (exclude v3 nodes and v3.1 API Reference folder)
+  const sharedNodes = children.filter(
+    (node) => !isV3Node(node) && !isV31ApiFolder(node),
   );
 
   if (v3Folder?.children) {
     // Include the folder's index page (v3/index.mdx → overview) which fumadocs
     // stores in .index rather than .children
     const indexPage = v3Folder.index ? [v3Folder.index] : [];
-    return { ...tree, children: [...indexPage, ...v3Folder.children, ...sharedFolders] };
+    return { ...tree, children: [...indexPage, ...v3Folder.children, ...sharedNodes] };
   }
 
-  return { ...tree, children: [...children.filter(isV3Node), ...sharedFolders] };
+  return { ...tree, children: [...children.filter(isV3Node), ...sharedNodes] };
 }
