@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { detectApiVersion } from '@/lib/api-version';
 
 /**
  * Convert kebab-case to camelCase
@@ -12,7 +11,7 @@ function kebabToCamel(str: string): string {
  * Proxy handles:
  * 1. Markdown content negotiation for AI agents (Accept: text/markdown)
  * 2. Redirects for old Fern API reference URLs (kebab-case → camelCase)
- * 3. Sets x-api-version header based on URL path
+ * 3. Sets x-pathname header for 404 logging
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -50,12 +49,8 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Version from URL: /reference/v3/... = 3.0, everything else = 3.1
-  const version = detectApiVersion(pathname);
-
   const response = NextResponse.next();
   response.headers.set('x-pathname', pathname);
-  response.headers.set('x-api-version', version);
   return response;
 }
 

@@ -64,9 +64,11 @@ Two API versions are served side-by-side with a Stripe-style version selector in
 ```
 lib/openapi.ts               ← Creates two OpenAPI instances (v3.1 + v3.0)
 lib/source.ts                ← Combined source: v3.1 at api-reference/, v3.0 at v3/api-reference/
+lib/api-version.ts           ← Shared detectApiVersion() utility (single source of truth)
+lib/use-api-version.ts       ← Client hook wrapping detectApiVersion for React components
 lib/filter-api-version.ts    ← Tree filter: hides V3 folder for v3.1, lifts V3 children for v3.0
-proxy.ts                     ← Sets x-api-version header from URL path (/reference/v3/ → 3.0)
-app/(home)/reference/layout.tsx ← Reads header, filters tree, passes to DocsLayout
+app/(home)/reference/(v31)/layout.tsx ← v3.1 layout: hardcodes version, renders DocsLayout with filtered tree
+app/(home)/reference/v3/layout.tsx    ← v3.0 layout: hardcodes version, renders DocsLayout with filtered tree
 components/version-selector.tsx ← Dropdown in top nav, navigates between /reference/ ↔ /reference/v3/
 components/api-base-url.tsx  ← Dynamic base URL: v3.1 or v3 based on current path
 components/api-endpoints-table.tsx ← Endpoint tables in index pages, shows versioned paths
