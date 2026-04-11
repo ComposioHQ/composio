@@ -686,26 +686,16 @@ class FileHelper(WithLogger):
 
         return None
 
-    def _resolve_object_schema(self, schema: t.Dict) -> t.Optional[t.Dict]:
-        """Resolve a schema (or variant) that is an object."""
-        if schema.get("type") == "object":
+    def _resolve_schema_by_type(
+        self, schema: t.Dict, type_name: str
+    ) -> t.Optional[t.Dict]:
+        """Resolve a schema (or combiner variant) matching the given type."""
+        if schema.get("type") == type_name:
             return schema
 
         for key in ("anyOf", "oneOf", "allOf"):
             for variant in schema.get(key, []):
-                if isinstance(variant, dict) and variant.get("type") == "object":
-                    return variant
-
-        return None
-
-    def _resolve_array_schema(self, schema: t.Dict) -> t.Optional[t.Dict]:
-        """Resolve a schema (or variant) that is an array."""
-        if schema.get("type") == "array":
-            return schema
-
-        for key in ("anyOf", "oneOf", "allOf"):
-            for variant in schema.get(key, []):
-                if isinstance(variant, dict) and variant.get("type") == "array":
+                if isinstance(variant, dict) and variant.get("type") == type_name:
                     return variant
 
         return None
@@ -771,7 +761,7 @@ class FileHelper(WithLogger):
                     continue
 
             # Handle nested objects (including anyOf/oneOf/allOf with object variants)
-            resolved_schema = self._resolve_object_schema(param_schema)
+            resolved_schema = self._resolve_schema_by_type(param_schema, "object")
             if isinstance(request[_param], dict) and resolved_schema is not None:
                 request[_param] = self._substitute_file_uploads_recursively(
                     schema=resolved_schema,
@@ -781,7 +771,7 @@ class FileHelper(WithLogger):
                 continue
 
             # Handle arrays with file_uploadable items
-            resolved_array_schema = self._resolve_array_schema(param_schema)
+            resolved_array_schema = self._resolve_schema_by_type(param_schema, "array")
             if (
                 isinstance(request[_param], list)
                 and resolved_array_schema is not None
@@ -908,7 +898,7 @@ class FileHelper(WithLogger):
                     continue
 
             # Handle nested objects (including anyOf/oneOf/allOf with object variants)
-            resolved_schema = self._resolve_object_schema(param_schema)
+            resolved_schema = self._resolve_schema_by_type(param_schema, "object")
             if isinstance(param_value, dict) and resolved_schema is not None:
                 request[_param] = self._substitute_file_downloads_recursively(
                     schema=resolved_schema,
@@ -918,7 +908,7 @@ class FileHelper(WithLogger):
                 continue
 
             # Handle arrays with file_downloadable items
-            resolved_array_schema = self._resolve_array_schema(param_schema)
+            resolved_array_schema = self._resolve_schema_by_type(param_schema, "array")
             if (
                 isinstance(param_value, list)
                 and resolved_array_schema is not None
