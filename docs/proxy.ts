@@ -49,11 +49,16 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Shared pages (SDK Reference, Meta Tools) don't have v3 equivalents — redirect to v3.1
+  // Shared pages (SDK Reference, Meta Tools) don't have v3 equivalents.
+  // Rewrite to the v3.1 page but keep x-api-version as 3.0 so the selector stays correct.
   if (pathname.startsWith('/reference/v3/sdk-reference') || pathname.startsWith('/reference/v3/meta-tools')) {
+    const rewrittenPathname = pathname.replace('/reference/v3/', '/reference/');
     const url = request.nextUrl.clone();
-    url.pathname = pathname.replace('/reference/v3/', '/reference/');
-    return NextResponse.redirect(url, 302);
+    url.pathname = rewrittenPathname;
+    const response = NextResponse.rewrite(url);
+    response.headers.set('x-pathname', pathname);
+    response.headers.set('x-api-version', '3.0');
+    return response;
   }
 
   // Version from URL: /reference/v3/... = 3.0, everything else = 3.1
