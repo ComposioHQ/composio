@@ -59,6 +59,10 @@ export function NavVersionSelector() {
           e.stopPropagation();
           setOpen(!open);
         }}
+        onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`API version: ${current.label}. Switch version`}
         className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium transition-colors hover:bg-fd-accent/50"
         style={{
           borderColor: 'color-mix(in srgb, var(--composio-orange, #f97316) 40%, transparent)',
@@ -67,6 +71,7 @@ export function NavVersionSelector() {
       >
         {current.label}
         <svg
+          aria-hidden="true"
           width="10"
           height="10"
           viewBox="0 0 24 24"
@@ -83,12 +88,16 @@ export function NavVersionSelector() {
 
       {open && (
         <div
+          role="listbox"
+          aria-label="API version"
           className="absolute left-0 top-full z-50 mt-1.5 min-w-[120px] overflow-hidden rounded-lg border border-fd-border bg-fd-popover p-1 shadow-lg"
           onClick={(e) => e.stopPropagation()}
         >
           {VERSIONS.map((v) => (
             <button
               key={v.value}
+              role="option"
+              aria-selected={v.value === version}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -114,6 +123,7 @@ export function NavVersionSelector() {
               )}
               {v.value === version && (
                 <svg
+                  aria-hidden="true"
                   width="12"
                   height="12"
                   viewBox="0 0 24 24"
