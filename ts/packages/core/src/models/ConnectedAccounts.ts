@@ -491,7 +491,7 @@ export class ConnectedAccounts {
    */
   async update(
     nanoid: string,
-    params: UpdateConnectedAccountParams,
+    params: UpdateConnectedAccountParams
   ): Promise<ConnectedAccountPatchResponse> {
     const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
     if (!parsedParams.success) {

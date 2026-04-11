@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { transformToolRouterTagsParams, transformToolRouterMultiAccountParams } from '../../src/lib/toolRouterParams';
+import {
+  transformToolRouterTagsParams,
+  transformToolRouterMultiAccountParams,
+} from '../../src/lib/toolRouterParams';
 import { ToolRouterConfigTags } from '../../src/types/toolRouter.types';
 
 describe('transformToolRouterMultiAccountParams', () => {

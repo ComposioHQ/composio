@@ -53,7 +53,9 @@ describe('CLI: composio', () => {
         expect(commandMismatch._tag).toBe(ValidationError.commandMismatch(HelpDoc.p(''))._tag);
         expect(commandMismatch.error._tag).toBe('Paragraph');
         expect(commandMismatch.error.value._tag).toBe('Text');
-        expect(commandMismatch.error.value.value).toContain('Invalid subcommand for composio tools');
+        expect(commandMismatch.error.value.value).toContain(
+          'Invalid subcommand for composio tools'
+        );
         expect(commandMismatch.error.value.value).toContain("'info'");
         expect(commandMismatch.error.value.value).toContain("'list'");
         expect(commandMismatch.error.value.value).not.toContain("'version'");

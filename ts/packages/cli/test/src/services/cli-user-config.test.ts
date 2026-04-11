@@ -32,6 +32,8 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.channel, 'stable');
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
+      assertEquals(config.data.experimentalFeatures.multi_account, undefined);
+      assertEquals(config.isExperimentalFeatureEnabled('multi_account'), true);
       assertEquals(config.data.experimentalSubagentTarget, 'auto');
       assertEquals(config.data.artifactDirectory, undefined);
 
@@ -54,6 +56,8 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.channel, 'beta');
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
+      assertEquals(config.data.experimentalFeatures.multi_account, undefined);
+      assertEquals(config.isExperimentalFeatureEnabled('multi_account'), true);
       assertEquals(config.data.experimentalSubagentTarget, 'auto');
     }).pipe(Effect.provide(CliUserConfigTest));
   });
@@ -67,6 +71,7 @@ describe('ComposioCliUserConfig', () => {
       JSON.stringify({
         experimental_features: {
           listen: false,
+          multi_account: false,
         },
         artifact_directory: '/tmp/composio-artifacts',
         experimental_subagent: {
@@ -86,6 +91,8 @@ describe('ComposioCliUserConfig', () => {
       const config = yield* ComposioCliUserConfig;
       assertEquals(config.data.experimentalFeatures.listen, false);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
+      assertEquals(config.data.experimentalFeatures.multi_account, false);
+      assertEquals(config.isExperimentalFeatureEnabled('multi_account'), false);
       assertEquals(config.data.artifactDirectory, '/tmp/composio-artifacts');
       assertEquals(config.data.experimentalSubagentTarget, 'claude');
 
@@ -94,12 +101,13 @@ describe('ComposioCliUserConfig', () => {
         'utf8'
       );
       const parsed = JSON.parse(persisted) as {
-        experimental_features: { listen: boolean };
+        experimental_features: { listen: boolean; multi_account: boolean };
         artifact_directory: string;
         experimental_subagent: { target: string };
       };
 
       assertEquals(parsed.experimental_features.listen, false);
+      assertEquals(parsed.experimental_features.multi_account, false);
       assertEquals(parsed.artifact_directory, '/tmp/composio-artifacts');
       assertEquals(parsed.experimental_subagent.target, 'claude');
     }).pipe(Effect.provide(CliUserConfigTest));

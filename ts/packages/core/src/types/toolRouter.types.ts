@@ -3,7 +3,12 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
-import type { CustomTool, CustomToolkit, RegisteredCustomTool, RegisteredCustomToolkit } from './customTool.types';
+import type {
+  CustomTool,
+  CustomToolkit,
+  RegisteredCustomTool,
+  RegisteredCustomToolkit,
+} from './customTool.types';
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
@@ -211,9 +216,7 @@ export const ToolRouterCreateSessionConfigSchema = z
         enable: z
           .boolean()
           .default(false)
-          .describe(
-            'When true, enables multi-account mode for this session. Defaults to false.'
-          ),
+          .describe('When true, enables multi-account mode for this session. Defaults to false.'),
         maxAccountsPerToolkit: z
           .number()
           .int()
