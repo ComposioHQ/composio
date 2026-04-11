@@ -11,6 +11,8 @@ import { Schema } from 'effect';
  */
 export const ConnectedAccountItem = Schema.Struct({
   id: Schema.String,
+  word_id: Schema.optional(Schema.NullOr(Schema.String)),
+  alias: Schema.optional(Schema.NullOr(Schema.String)),
   status: Schema.Literal('INITIALIZING', 'INITIATED', 'ACTIVE', 'FAILED', 'EXPIRED', 'INACTIVE'),
   status_reason: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
   is_disabled: Schema.Boolean,

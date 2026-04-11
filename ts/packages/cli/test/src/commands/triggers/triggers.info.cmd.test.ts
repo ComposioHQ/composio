@@ -56,6 +56,22 @@ const testConfigProvider = ConfigProvider.fromMap(
 
 describe('CLI: composio dev triggers info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] root triggers info [Then] displays trigger info with root-level hint',
+    it => {
+      it.scoped('supports the top-level triggers info entrypoint', () =>
+        Effect.gen(function* () {
+          yield* cli(['triggers', 'info', 'GMAIL_NEW_GMAIL_MESSAGE']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('GMAIL_NEW_GMAIL_MESSAGE');
+          expect(output).toContain('composio triggers list "gmail"');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] displays trigger type info',
     it => {
       it.scoped('shows trigger details with config and payload fields', () =>
@@ -73,7 +89,7 @@ describe('CLI: composio dev triggers info', () => {
           expect(output).toContain('subject');
           expect(output).toContain('default:');
           expect(output).toContain('false');
-          expect(output).toContain('composio dev triggers list --toolkits "gmail"');
+          expect(output).toContain('composio dev triggers list "gmail"');
         })
       );
     }
@@ -104,7 +120,7 @@ describe('CLI: composio dev triggers info', () => {
           const output = lines.join('\n');
 
           expect(output).toContain('not found');
-          expect(output).toContain('composio dev triggers list');
+          expect(output).toContain('composio dev triggers list "<toolkit>"');
         })
       );
     }

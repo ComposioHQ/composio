@@ -2,36 +2,49 @@
  * CLI `composio dev toolkits list` e2e test
  *
  * Verifies that the list subcommand returns toolkits as JSON in piped mode,
- * supports --query filtering (exact, prefix, no fuzzy), and respects --limit.
+ * supports deterministic `--query` filtering, and respects `--limit`.
  */
 
-import { e2e, sanitizeOutput, parseJsonStdout, type E2ETestResult } from '@e2e-tests/utils';
+import {
+  e2e,
+  sanitizeOutput,
+  parseJsonStdout,
+  type E2ETestResult,
+} from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { describe, it, expect, beforeAll } from 'bun:test';
-
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_USER_API_KEY: string;
-  }
-}
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import {
+  startMockToolkitsListServer,
+  type MockToolkitsServer,
+} from '../../../../packages/cli/scripts/mock-toolkits-server';
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
-  env: {
-    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
-  },
   defineTests: ({ runCmd }) => {
+    let server: MockToolkitsServer;
     let exactResult: E2ETestResult;
     let prefixResult: E2ETestResult;
     let noFuzzyResult: E2ETestResult;
 
     beforeAll(async () => {
-      exactResult = await runCmd('composio dev toolkits list --query gmail --limit 1');
-      prefixResult = await runCmd('composio dev toolkits list --query gmai --limit 1');
-      noFuzzyResult = await runCmd('composio dev toolkits list --query gmal --limit 1');
+      server = await startMockToolkitsListServer();
+
+      const envPrefix = [
+        `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
+        'COMPOSIO_CACHE_DIR=/tmp/composio-toolkits-list',
+        'COMPOSIO_USER_API_KEY=uak_mock_toolkits_list',
+      ].join(' ');
+
+      exactResult = await runCmd(`${envPrefix} composio dev toolkits list --query gmail --limit 1`);
+      prefixResult = await runCmd(`${envPrefix} composio dev toolkits list --query gmai --limit 1`);
+      noFuzzyResult = await runCmd(`${envPrefix} composio dev toolkits list --query gmal --limit 1`);
     }, TIMEOUTS.FIXTURE);
+
+    afterAll(async () => {
+      await server.close();
+    });
 
     describe('composio dev toolkits list --query gmail --limit 1 (exact slug)', () => {
       it('exits successfully', () => {
@@ -99,6 +112,14 @@ e2e(import.meta.url, {
 
       it('stdout is an empty JSON array (no results)', () => {
         expect(sanitizeOutput(noFuzzyResult.stdout)).toBe('[]');
+      });
+    });
+
+    describe('mock API usage', () => {
+      it('requests the toolkit catalog for each search term', () => {
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=1');
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmai&limit=1');
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmal&limit=1');
       });
     });
   },

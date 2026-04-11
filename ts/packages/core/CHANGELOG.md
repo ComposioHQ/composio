@@ -1,5 +1,17 @@
 # @composio/core
 
+## 0.6.10
+
+### Patch Changes
+
+- 670ecc9: Add missing `alias` option to `ToolRouterAuthorizeFn` type. The `ToolRouterSession.authorize()` implementation already accepted `alias`, but the exported type didn't include it, causing type errors when passing `{ alias: 'work-gmail' }` to `session.authorize()`.
+
+## 0.6.9
+
+### Patch Changes
+
+- 5b5723a: release
+
 ## 0.6.8
 
 ### Patch Changes

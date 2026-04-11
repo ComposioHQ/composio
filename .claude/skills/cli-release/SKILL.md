@@ -6,6 +6,15 @@ description: Release the CLI — diff features since last release, run /full-cli
 
 Orchestrates a CLI release by identifying what changed since the last release, testing those changes via `/full-cli-test`, and creating a changeset PR with a patch version bump.
 
+## Background: Release Flow
+
+The CLI uses a two-channel release system:
+
+- **Beta (automatic):** Every push to `next` touching `ts/packages/cli/**` auto-builds binaries and creates a `@composio/cli@X.Y.Z-beta.<run>` prerelease. Also triggerable on any branch via `workflow_dispatch` → `build-beta`.
+- **Stable (via changeset):** Merge a changeset PR → changeset bot creates "Release: update version" PR → merge that → `package.json` version changes → workflow detects the change and creates a stable release.
+
+This skill handles the **changeset PR** side: identifying changes, testing, and opening the PR that kicks off the stable release pipeline.
+
 ## Overview
 
 Two workstreams run **in parallel**:
@@ -17,19 +26,18 @@ Once testing completes, update the PR description with test results.
 
 ## Step 1: Identify Changes Since Last Release
 
-Find the last release tag or version bump commit for `@composio/cli`:
+Find the last stable release tag for `@composio/cli`:
 
 ```bash
-# Find the last release commit (look for "Release: update version" commits that touched the CLI)
-git log --oneline --all -- ts/packages/cli/package.json | head -20
+# Find the latest stable CLI release
+gh release list --json tagName,isPrerelease --jq '[.[] | select(.tagName | startswith("@composio/cli@")) | select(.isPrerelease == false)] | last | .tagName'
 ```
 
-Look for the most recent commit where the CLI version was bumped (typically a "Release: update version" commit). Use that as the base.
-
-Then collect all commits between that base and HEAD that touch the CLI:
+Find the commit for that tag, then collect all commits between it and HEAD that touch the CLI:
 
 ```bash
-git log <base_commit>..HEAD --oneline -- ts/packages/cli/
+git log --oneline -1 <tag>          # get the base commit
+git log <base>..HEAD --oneline -- ts/packages/cli/
 ```
 
 For each commit, read the commit message and understand what it does. Categorize changes as:
@@ -50,6 +58,14 @@ Run the `/full-cli-test` skill. This executes:
 1. **Phase 1:** Monitor CI for types/lint passing
 2. **Phase 2:** Local binary build and test (including Slack integration test)
 3. **Phase 3:** Bundled binary build and test via CI (including Slack integration test)
+
+For Phase 3, trigger a beta build via `workflow_dispatch` → `build-beta` on the current branch:
+
+```bash
+gh workflow run build-cli-binaries.yml --ref <branch> -f action=build-beta
+```
+
+Then monitor the run, download the built binary artifact, and test it.
 
 Track the results of each phase — you'll need them for the PR description.
 
@@ -183,6 +199,7 @@ gh pr ready <PR_NUMBER> --undo  # Convert to draft
 - **The changeset file format is strict:** YAML frontmatter with package name in quotes and bump type, then a blank line, then the description.
 - **Feature-specific testing:** When identifying changes in Step 1, note any new commands or flags. During testing (Step 2), explicitly test those new features with the built binary beyond the standard test suite.
 - **The PR targets `next`** — this is the main development branch.
+- **Beta builds are automatic.** Every push to `next` touching CLI files creates a beta. The changeset PR is only needed to trigger the stable release pipeline.
 
 ## Reference Files
 
@@ -190,5 +207,6 @@ gh pr ready <PR_NUMBER> --undo  # Convert to draft
 |---|---|
 | `ts/packages/cli/package.json` | Current CLI version |
 | `.changeset/config.json` | Changeset configuration |
-| `.github/workflows/build-cli-binaries.yml` | CI binary build workflow |
+| `.github/workflows/build-cli-binaries.yml` | CI binary build + release workflow |
+| `.github/workflows/ts.release.yml` | Changeset bot + npm publish |
 | `ts/packages/cli/src/commands/` | CLI command implementations |

@@ -39,9 +39,14 @@ import {
   transformToolRouterManageConnectionsParams,
   transformToolRouterWorkbenchParams,
   transformToolRouterToolkitsParams,
+  transformToolRouterMultiAccountParams,
 } from '../lib/toolRouterParams';
 import { ToolRouterSession } from './ToolRouterSession';
-import { buildCustomToolsMapFromResponse, serializeCustomTools, serializeCustomToolkits } from './CustomTool';
+import {
+  buildCustomToolsMapFromResponse,
+  serializeCustomTools,
+  serializeCustomToolkits,
+} from './CustomTool';
 import type { CustomToolsMap } from '../types/customTool.types';
 
 export class ToolRouter<
@@ -121,6 +126,8 @@ export class ToolRouter<
       experimentalPayload.custom_toolkits = serializeCustomToolkits(customToolkits);
     }
 
+    const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
+
     const payload: SessionCreateParams = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
@@ -132,9 +139,8 @@ export class ToolRouter<
         routerConfig.manageConnections
       ),
       workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
-      experimental: Object.keys(experimentalPayload).length > 0
-        ? experimentalPayload
-        : undefined,
+      multi_account: multiAccountPayload,
+      experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
     };
 
     const session = await this.client.toolRouter.session.create(payload);

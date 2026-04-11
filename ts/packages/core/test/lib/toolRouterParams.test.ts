@@ -1,6 +1,56 @@
 import { describe, it, expect } from 'vitest';
-import { transformToolRouterTagsParams } from '../../src/lib/toolRouterParams';
+import { transformToolRouterTagsParams, transformToolRouterMultiAccountParams } from '../../src/lib/toolRouterParams';
 import { ToolRouterConfigTags } from '../../src/types/toolRouter.types';
+
+describe('transformToolRouterMultiAccountParams', () => {
+  it('should return undefined when params is undefined', () => {
+    expect(transformToolRouterMultiAccountParams(undefined)).toBeUndefined();
+  });
+
+  it('should return undefined when all fields are undefined (empty object)', () => {
+    expect(transformToolRouterMultiAccountParams({})).toBeUndefined();
+  });
+
+  it('should transform enable only', () => {
+    const result = transformToolRouterMultiAccountParams({ enable: true });
+    expect(result).toEqual({
+      enable: true,
+      max_accounts_per_toolkit: undefined,
+      require_explicit_selection: undefined,
+    });
+  });
+
+  it('should transform all fields', () => {
+    const result = transformToolRouterMultiAccountParams({
+      enable: true,
+      maxAccountsPerToolkit: 3,
+      requireExplicitSelection: true,
+    });
+    expect(result).toEqual({
+      enable: true,
+      max_accounts_per_toolkit: 3,
+      require_explicit_selection: true,
+    });
+  });
+
+  it('should transform with enable false', () => {
+    const result = transformToolRouterMultiAccountParams({ enable: false });
+    expect(result).toEqual({
+      enable: false,
+      max_accounts_per_toolkit: undefined,
+      require_explicit_selection: undefined,
+    });
+  });
+
+  it('should transform maxAccountsPerToolkit only', () => {
+    const result = transformToolRouterMultiAccountParams({ maxAccountsPerToolkit: 7 });
+    expect(result).toEqual({
+      enable: undefined,
+      max_accounts_per_toolkit: 7,
+      require_explicit_selection: undefined,
+    });
+  });
+});
 
 describe('transformToolRouterTagsParams', () => {
   describe('with undefined input', () => {

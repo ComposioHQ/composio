@@ -1,5 +1,28 @@
 # @composio/cli
 
+## 0.2.22
+
+### Patch Changes
+
+- Updated dependencies [670ecc9]
+  - @composio/core@0.6.10
+
+## 0.2.21
+
+### Patch Changes
+
+- Updated dependencies [5b5723a]
+  - @composio/core@0.6.9
+
+## 0.2.20
+
+### Patch Changes
+
+- 4e36db8: feat: add `composio listen` command for real-time trigger event monitoring
+  feat: add top-level `composio triggers` command (list, info subcommands)
+  fix: pre-existing CI failures across CLI and e2e suites
+  docs: document `--file` support for CLI skill uploads
+
 ## 0.2.19
 
 ### Patch Changes

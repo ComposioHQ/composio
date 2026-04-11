@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
@@ -40,6 +42,26 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
+    it.scoped('[Given] invalid tools subcommand [Then] report tools-scoped mismatch', () =>
+      Effect.gen(function* () {
+        const args = ['tools', 'search', 'metabase', 'put'];
+
+        const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+        const commandMismatch = result as CommandMismatchResult;
+
+        expect(result).toEqual(expect.any(Object));
+        expect(commandMismatch._tag).toBe(ValidationError.commandMismatch(HelpDoc.p(''))._tag);
+        expect(commandMismatch.error._tag).toBe('Paragraph');
+        expect(commandMismatch.error.value._tag).toBe('Text');
+        expect(commandMismatch.error.value.value).toContain('Invalid subcommand for composio tools');
+        expect(commandMismatch.error.value.value).toContain("'info'");
+        expect(commandMismatch.error.value.value).toContain("'list'");
+        expect(commandMismatch.error.value.value).not.toContain("'version'");
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
     it.scoped('[Given] no args [Then] prints help message', () =>
       Effect.gen(function* () {
         yield* cli([]);
@@ -57,7 +79,9 @@ describe('CLI: composio', () => {
         const args = ['--help'];
         yield* cli(args);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        expect(lines.join('\n').trim().length).toBeGreaterThan(0);
+        const output = lines.join('\n');
+        expect(output.trim().length).toBeGreaterThan(0);
+        expect(output).toContain('config.json');
       })
     );
   });
@@ -116,7 +140,7 @@ describe('CLI: composio', () => {
           .join('\n')
           .trim();
 
-        expect(output).toContain('/tmp/composio');
+        expect(output).toContain(path.join(os.tmpdir(), 'composio'));
       })
     );
   });
