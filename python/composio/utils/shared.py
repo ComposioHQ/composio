@@ -209,10 +209,13 @@ def json_schema_to_pydantic_field(
     if default is not None:
         default = _coerce_default_value(default, json_schema)
 
+    # Check requiredness against the original name before any renaming
+    is_required = name in required
+
     # Check if the field name is a reserved Pydantic name
     if name in reserved_names:
+        alias = name  # alias keeps the original schema key
         name = f"{name}_"
-        alias = name
     else:
         alias = None
 
@@ -222,7 +225,7 @@ def json_schema_to_pydantic_field(
         "alias": alias,
     }
     if not skip_default:
-        field["default"] = ... if name in required else default
+        field["default"] = ... if is_required else default
 
     return (
         name,

@@ -121,7 +121,57 @@ class TestJsonSchemaToPydanticField:
         )
 
         assert field_name == "validate_"  # Should be renamed
-        assert field_info.alias == "validate_"  # Should have alias
+        assert field_info.alias == "validate"  # Alias must be the ORIGINAL schema key
+
+    def test_reserved_field_name_required(self):
+        """Test that reserved field names remain required when listed in required."""
+        name = "validate"
+        json_schema = {
+            "type": "string",
+            "description": "A required field with reserved name",
+            "title": "Validate",
+        }
+        required = ["validate"]  # Original name in required list
+
+        field_name, field_type, field_info = json_schema_to_pydantic_field(
+            name, json_schema, required
+        )
+
+        assert field_name == "validate_"
+        assert field_info.alias == "validate"
+        assert field_info.default is PydanticUndefined  # Must stay required
+
+    def test_reserved_field_in_model(self):
+        """Test that json_schema_to_model handles reserved required fields end-to-end."""
+        schema = {
+            "title": "TestModel",
+            "type": "object",
+            "properties": {
+                "validate": {
+                    "type": "string",
+                    "description": "Must be required and aliased correctly",
+                },
+                "normal": {
+                    "type": "integer",
+                    "description": "A normal field",
+                },
+            },
+            "required": ["validate", "normal"],
+        }
+
+        Model = json_schema_to_model(schema)
+
+        # Both fields should be required (default is Ellipsis / PydanticUndefined)
+        validate_field = Model.model_fields["validate_"]
+        normal_field = Model.model_fields["normal"]
+        assert validate_field.default is PydanticUndefined
+        assert normal_field.default is PydanticUndefined
+        assert validate_field.alias == "validate"
+
+        # Model should accept data keyed by the original schema name
+        instance = Model(**{"validate": "hello", "normal": 42})
+        assert instance.validate_ == "hello"
+        assert instance.normal == 42
 
     def test_field_with_examples(self):
         """Test that examples are properly preserved in field info."""
