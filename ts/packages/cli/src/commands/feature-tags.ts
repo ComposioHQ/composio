@@ -6,6 +6,7 @@ export type TaggedValue<T> = {
 };
 
 export type CommandVisibility = {
+  readonly isDevModeEnabled: boolean;
   readonly isExperimentalFeatureEnabled: (feature: string) => boolean;
 };
 

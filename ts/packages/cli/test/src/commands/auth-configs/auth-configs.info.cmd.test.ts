@@ -45,8 +45,6 @@ describe('CLI: composio dev auth-configs info', () => {
           expect(output).toContain('OAUTH2');
           expect(output).toContain('ENABLED');
           expect(output).toContain('Yes'); // is_composio_managed
-          // Next step hint
-          expect(output).toContain('composio dev auth-configs delete');
         })
       );
     }

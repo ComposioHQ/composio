@@ -9,10 +9,12 @@ import {
 } from 'src/commands/root-help';
 
 const stableVisibility = {
+  isDevModeEnabled: true,
   isExperimentalFeatureEnabled: () => false,
 };
 
 const betaVisibility = {
+  isDevModeEnabled: true,
   isExperimentalFeatureEnabled: () => true,
 };
 

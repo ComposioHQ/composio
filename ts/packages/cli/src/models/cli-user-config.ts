@@ -11,7 +11,24 @@ export const ExperimentalFeatures = Schema.Record({
 });
 export type ExperimentalFeatures = Schema.Schema.Type<typeof ExperimentalFeatures>;
 
+export const DeveloperConfig = Schema.Struct({
+  enabled: Schema.optionalWith(Schema.Boolean, {
+    default: () => true,
+  }),
+  destructiveActions: Schema.optionalWith(Schema.Boolean, {
+    default: () => false,
+  }).pipe(Schema.fromKey('destructive_actions')),
+});
+export type DeveloperConfig = Schema.Schema.Type<typeof DeveloperConfig>;
+
 export const CliUserConfig = Schema.Struct({
+  developer: Schema.optionalWith(DeveloperConfig, {
+    default: () =>
+      DeveloperConfig.make({
+        enabled: true,
+        destructiveActions: false,
+      }),
+  }),
   experimentalFeatures: Schema.optionalWith(ExperimentalFeatures, {
     default: () => ({}),
   }).pipe(Schema.fromKey('experimental_features')),
