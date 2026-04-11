@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { Effect, Stream, String } from 'effect';
 import { Command } from '@effect/platform';
 import ts from 'typescript';
+import {
+  buildVirtualFileMap,
+  patchCompilerHostWithVirtualFiles,
+} from 'src/generation/typescript/virtual-compiler-host';
 
 interface AssertTypeScriptIsValidInput {
   files: {
@@ -28,29 +32,11 @@ export function assertTypeScriptIsValid({ files }: AssertTypeScriptIsValidInput)
     allowImportingTsExtensions: true,
   } satisfies ts.CompilerOptions;
 
-  const virtualFileMap = new Map(
-    Object.entries(files).map(
-      ([filename, code]) =>
-        [
-          filename,
-          ts.createSourceFile(filename, code, compilerOptions.target, true, ts.ScriptKind.TS),
-        ] as const
-    )
-  );
+  const virtualFileMap = buildVirtualFileMap(Object.entries(files), compilerOptions.target);
   const virtualFileNames = Array.from(virtualFileMap.keys());
 
   const tsHost = ts.createCompilerHost(compilerOptions);
-  tsHost.getSourceFile = (filename, _languageVersion) => {
-    if (virtualFileMap.has(filename)) {
-      return virtualFileMap.get(filename);
-    }
-
-    if (virtualFileMap.has(`./${filename}`)) {
-      return virtualFileMap.get(filename);
-    }
-
-    throw new Error(`Unexpected filename ${filename}`);
-  };
+  patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, 'throw');
 
   const program = ts.createProgram(virtualFileNames, compilerOptions, tsHost);
 

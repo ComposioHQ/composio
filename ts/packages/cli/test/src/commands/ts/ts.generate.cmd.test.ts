@@ -84,6 +84,31 @@ describe('CLI: composio generate ts', () => {
       yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
     });
 
+  const readGeneratedTypeScriptFiles = ({
+    fs,
+    outputDir,
+  }: {
+    fs: FileSystem.FileSystem;
+    outputDir: string;
+  }) =>
+    Effect.gen(function* () {
+      const files = yield* fs.readDirectory(outputDir);
+      const tsFiles = files
+        .map(file => path.basename(file))
+        .filter(file => file.endsWith('.ts') && !file.endsWith('.d.ts'));
+
+      const sources = yield* Effect.all(
+        tsFiles.map(file =>
+          fs
+            .readFileString(path.join(outputDir, file))
+            .pipe(Effect.map(content => [`./${file}`, content] as const))
+        ),
+        { concurrency: 'unbounded' }
+      );
+
+      return Object.fromEntries(sources);
+    });
+
   describe('[Given] valid fetched app data', () => {
     layer(
       TestLive({
@@ -779,11 +804,8 @@ describe('CLI: composio generate ts', () => {
             expect(jsFiles.length).toBeGreaterThan(0);
             expect(dtsFiles.length).toBeGreaterThan(0);
 
-            // Verify the files are valid TypeScript
-            for (const file of tsFiles) {
-              const filePath = path.join(outputDir, file);
-              assertTypeScriptIsValid({ files: { './index.ts': filePath } });
-            }
+            const filesByPath = yield* readGeneratedTypeScriptFiles({ fs, outputDir });
+            assertTypeScriptIsValid({ files: filesByPath });
           })
         );
 
@@ -893,7 +915,8 @@ describe('CLI: composio generate ts', () => {
               "
             `);
 
-            assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
+            const generatedFiles = yield* readGeneratedTypeScriptFiles({ fs, outputDir });
+            assertTypeScriptIsValid({ files: generatedFiles });
           })
         );
 
@@ -922,7 +945,8 @@ describe('CLI: composio generate ts', () => {
               expect(indexSourceCode).toContain('GMAIL');
               expect(indexSourceCode).not.toContain('SLACK');
 
-              assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
+              const generatedFiles = yield* readGeneratedTypeScriptFiles({ fs, outputDir });
+              assertTypeScriptIsValid({ files: generatedFiles });
             })
         );
 
@@ -960,7 +984,8 @@ describe('CLI: composio generate ts', () => {
               expect(indexSourceCode).toContain('GMAIL');
               expect(indexSourceCode).toContain('SLACK');
 
-              assertTypeScriptIsValid({ files: { './index.ts': indexSourceCode } });
+              const generatedFiles = yield* readGeneratedTypeScriptFiles({ fs, outputDir });
+              assertTypeScriptIsValid({ files: generatedFiles });
             })
         );
 

@@ -244,7 +244,9 @@ describe('generateTypeScriptSources', () => {
 
           "
         `);
-          assertTypeScriptIsValid({ files: { './index.ts': sources[1][1] } });
+          assertTypeScriptIsValid({
+            files: { './index.ts': sources[1][1], './slack.ts': sources[0][1] },
+          });
         })
       );
     });

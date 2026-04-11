@@ -1,5 +1,10 @@
 import ts from 'typescript';
 import { Effect, Data } from 'effect';
+import {
+  buildVirtualFileMap,
+  patchCompilerHostWithVirtualFiles,
+  formatDiagnostic,
+} from './virtual-compiler-host';
 
 export class TypeScriptTranspileError extends Data.TaggedError('error/TypeScriptTranspileError')<{
   readonly message: string;
@@ -13,10 +18,13 @@ type TranspileTypeScriptFilesParams = {
 
 /**
  * Compiles TypeScript files to JavaScript using the TypeScript compiler.
- * TODO: unify with `test/__utils__/typescript-compiler.ts`.
  */
 export function transpileTypeScriptSources({ sources, outputDir }: TranspileTypeScriptFilesParams) {
   return Effect.gen(function* () {
+    if (sources.length === 0) {
+      return yield* Effect.void;
+    }
+
     const compilerOptions = {
       target: ts.ScriptTarget.ES2022,
       module: ts.ModuleKind.NodeNext,
@@ -30,31 +38,11 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
       noEmitOnError: true,
     } satisfies ts.CompilerOptions;
 
-    const virtualFileMap = new Map(
-      sources.map(
-        ([filename, code]) =>
-          [
-            filename,
-            ts.createSourceFile(filename, code, compilerOptions.target, true, ts.ScriptKind.TS),
-          ] as const
-      )
-    );
+    const virtualFileMap = buildVirtualFileMap(sources, compilerOptions.target);
     const virtualFileNames = Array.from(virtualFileMap.keys());
-    const tsFiles = sources.map(([filePath, _]) => filePath);
-
-    if (tsFiles.length === 0) {
-      return yield* Effect.void;
-    }
 
     const tsHost = ts.createCompilerHost(compilerOptions);
-    const ogGetSourceFile = tsHost.getSourceFile;
-    tsHost.getSourceFile = (filename, languageVersion, onError, shouldCreateNewSourceFile) => {
-      if (virtualFileMap.has(filename)) {
-        return virtualFileMap.get(filename);
-      }
-
-      return ogGetSourceFile(filename, languageVersion, onError, shouldCreateNewSourceFile);
-    };
+    patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, 'delegate');
 
     const program = ts.createProgram(virtualFileNames, compilerOptions, tsHost);
     const emitResult = program.emit();
@@ -63,19 +51,6 @@ export function transpileTypeScriptSources({ sources, outputDir }: TranspileType
     const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
 
     if (diagnostics.length > 0) {
-      const formatDiagnostic = (diagnostic: ts.Diagnostic): string => {
-        if (diagnostic.file && diagnostic.start !== undefined) {
-          const { line, character } = ts.getLineAndCharacterOfPosition(
-            diagnostic.file,
-            diagnostic.start
-          );
-          const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-          return `${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`;
-        } else {
-          return ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-        }
-      };
-
       const errorMessages = diagnostics.map(d => formatDiagnostic(d)).join('\n');
       return yield* Effect.fail(
         new TypeScriptTranspileError({
