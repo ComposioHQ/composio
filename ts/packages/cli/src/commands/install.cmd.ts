@@ -294,8 +294,11 @@ export const installShellIntegration = (params: {
             )
           );
 
+        const completionContent = existingCompletionFile
+          ? existingCompletionFile + '\n' + config.completionBlock! + '\n'
+          : config.completionBlock! + '\n';
         const tmpPath = `${completionPath}.composio-tmp`;
-        yield* fs.writeFileString(tmpPath, config.completionBlock! + '\n');
+        yield* fs.writeFileString(tmpPath, completionContent);
         yield* fs.rename(tmpPath, completionPath);
 
         yield* ui.log.success(`Updated ${tildify(completionPath, os.homedir)}`);
