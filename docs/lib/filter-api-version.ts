@@ -65,9 +65,10 @@ export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T
     (node) => node.type === 'folder' && isV3Node(node),
   );
 
-  // Nodes that should appear in both versions (exclude v3 nodes and v3.1 API Reference folder)
+  // Nodes that should appear in both versions (exclude v3 nodes, v3.1 API Reference folder,
+  // and top-level pages which are version-specific — both versions have their own copies)
   const sharedNodes = children.filter(
-    (node) => !isV3Node(node) && !isV31ApiFolder(node),
+    (node) => node.type !== 'page' && !isV3Node(node) && !isV31ApiFolder(node),
   );
 
   if (v3Folder?.children) {
