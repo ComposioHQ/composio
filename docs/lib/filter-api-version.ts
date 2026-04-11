@@ -54,7 +54,10 @@ export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T
   );
 
   if (v3Folder?.children) {
-    return { ...tree, children: [...v3Folder.children, ...sharedFolders] };
+    // Include the folder's index page (v3/index.mdx → overview) which fumadocs
+    // stores in .index rather than .children
+    const indexPage = v3Folder.index ? [v3Folder.index] : [];
+    return { ...tree, children: [...indexPage, ...v3Folder.children, ...sharedFolders] };
   }
 
   return { ...tree, children: [...children.filter(isV3Node), ...sharedFolders] };
