@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { detectApiVersion } from '@/lib/api-version';
 
 /**
  * Convert kebab-case to camelCase
@@ -50,7 +51,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Version from URL: /reference/v3/... = 3.0, everything else = 3.1
-  const version = pathname.startsWith('/reference/v3/') || pathname === '/reference/v3' ? '3.0' : '3.1';
+  const version = detectApiVersion(pathname);
 
   const response = NextResponse.next();
   response.headers.set('x-pathname', pathname);

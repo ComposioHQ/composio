@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
+import { useApiVersion } from '@/lib/use-api-version';
 
 const VERSIONS = [
   { value: '3.1', label: 'v3.1', badge: 'Latest' },
@@ -11,8 +12,7 @@ const VERSIONS = [
 export function NavVersionSelector() {
   const pathname = usePathname();
   const isReferencePage = pathname.startsWith('/reference');
-  const isV3 = pathname.startsWith('/reference/v3/') || pathname === '/reference/v3';
-  const version = isV3 ? '3.0' : '3.1';
+  const version = useApiVersion();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

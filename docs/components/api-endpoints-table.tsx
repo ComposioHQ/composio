@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useApiVersion } from '@/lib/use-api-version';
 
 interface Endpoint {
   method: string;
@@ -15,8 +15,7 @@ interface Endpoint {
  * Used in auto-generated index pages.
  */
 export function ApiEndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
-  const pathname = usePathname();
-  const version = (pathname.startsWith('/reference/v3/') || pathname === '/reference/v3') ? '3.0' : '3.1';
+  const version = useApiVersion();
 
   return (
     <table>

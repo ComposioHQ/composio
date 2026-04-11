@@ -32,6 +32,23 @@ function isV3Node(node: PageTreeNode): boolean {
   return false;
 }
 
+/** Checks if a folder contains v3.1 API reference pages (URLs under /reference/api-reference/). */
+function isV31ApiFolder(node: PageTreeNode): boolean {
+  if (node.type !== 'folder') return false;
+  const hasV31ApiPage = (n: PageTreeNode): boolean => {
+    if (n.type === 'page' && typeof n.url === 'string') {
+      return n.url.startsWith('/reference/api-reference/');
+    }
+    if (n.type === 'folder') {
+      if (n.index && hasV31ApiPage(n.index)) return true;
+      return n.children?.some(hasV31ApiPage) ?? false;
+    }
+    return false;
+  };
+  if (node.index && hasV31ApiPage(node.index)) return true;
+  return node.children?.some(hasV31ApiPage) ?? false;
+}
+
 export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T {
   const children = tree.children as PageTreeNode[];
 
@@ -48,9 +65,9 @@ export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T
     (node) => node.type === 'folder' && isV3Node(node),
   );
 
-  // Folders that should appear in both versions
+  // Folders that should appear in both versions (exclude v3.1 API Reference folder)
   const sharedFolders = children.filter(
-    (node) => node.type === 'folder' && !isV3Node(node) && node.name !== 'API Reference',
+    (node) => node.type === 'folder' && !isV3Node(node) && !isV31ApiFolder(node),
   );
 
   if (v3Folder?.children) {

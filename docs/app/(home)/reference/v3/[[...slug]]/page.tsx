@@ -19,6 +19,14 @@ interface OpenAPIPageData {
   getAPIPageProps: () => ApiPageProps;
 }
 
+/**
+ * Prepend 'v3' to the slug array since Next.js strips the /v3/ route segment
+ * but the source has pages registered under v3/...
+ */
+function toSourceSlug(slug?: string[]): string[] {
+  return ['v3', ...(slug || [])];
+}
+
 export default async function Page({
   params,
 }: {
@@ -26,7 +34,7 @@ export default async function Page({
 }) {
   const { slug } = await params;
   const referenceSource = await getReferenceSource();
-  const page = referenceSource.getPage(slug);
+  const page = referenceSource.getPage(toSourceSlug(slug));
   if (!page) notFound();
 
   if ('getAPIPageProps' in page.data) {
@@ -75,7 +83,11 @@ export default async function Page({
 
 export async function generateStaticParams() {
   const referenceSource = await getReferenceSource();
-  return referenceSource.generateParams();
+  const allParams: { slug: string[] }[] = referenceSource.generateParams();
+  // Only return params that start with 'v3', with the prefix stripped
+  return allParams
+    .filter((p) => p.slug[0] === 'v3')
+    .map((p) => ({ slug: p.slug.slice(1) }));
 }
 
 export async function generateMetadata({
@@ -84,20 +96,21 @@ export async function generateMetadata({
   params: Promise<{ slug?: string[] }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const sourceSlug = toSourceSlug(slug);
 
   if (!slug || slug.length === 0) {
-    const ogImage = getOgImageUrl('reference', [], 'API Reference', 'REST API and SDK reference for Composio');
+    const ogImage = getOgImageUrl('reference', [], 'API Reference (v3)', 'REST API reference for Composio v3');
     return {
-      title: 'API Reference',
-      description: 'REST API and SDK reference for Composio',
-      alternates: { canonical: '/reference' },
+      title: 'API Reference (v3)',
+      description: 'REST API reference for Composio v3',
+      alternates: { canonical: '/reference/v3' },
       openGraph: { images: [ogImage] },
       twitter: { card: 'summary_large_image', images: [ogImage] },
     };
   }
 
   const referenceSource = await getReferenceSource();
-  const page = referenceSource.getPage(slug);
+  const page = referenceSource.getPage(sourceSlug);
   if (!page) notFound();
 
   const description = page.data.description || page.data.title;
