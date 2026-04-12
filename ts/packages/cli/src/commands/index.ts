@@ -25,6 +25,7 @@ import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
 import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
+import { connectionsCmd } from './connections.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
 import { configCmd } from './config/config.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
@@ -64,6 +65,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(rootTriggersCmd),
   tagged(rootToolsCmd$Search),
   tagged(rootConnectedAccountsCmd$Link),
+  tagged(connectionsCmd),
   tagged(rootToolsCmd$Execute),
   tagged(generateCmd),
   tagged(orgsCmd),
