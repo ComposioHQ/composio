@@ -190,15 +190,40 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         # Search tools by toolkit slugs and search term
         if toolkits is not None or search is not None:
-            tools_list.extend(
-                self._client.tools.list(
-                    toolkit_slug=none_to_omit(",".join(toolkits) if toolkits else None),
-                    search=none_to_omit(search),
-                    scopes=scopes,
-                    limit=limit,
-                    toolkit_versions=none_to_omit(self._toolkit_versions),
-                ).items
-            )
+            toolkit_slug = none_to_omit(",".join(toolkits) if toolkits else None)
+            search_param = none_to_omit(search)
+            toolkit_versions = none_to_omit(self._toolkit_versions)
+
+            if limit is not None:
+                # User specified a limit — make a single request
+                tools_list.extend(
+                    self._client.tools.list(
+                        toolkit_slug=toolkit_slug,
+                        search=search_param,
+                        scopes=scopes,
+                        limit=limit,
+                        toolkit_versions=toolkit_versions,
+                    ).items
+                )
+            else:
+                # No limit specified — auto-paginate to fetch all tools.
+                # The server defaults to 20 items per page, which silently
+                # truncates results when multiple toolkits are requested.
+                page_limit = 1000
+                cursor = None
+                while True:
+                    result = self._client.tools.list(
+                        toolkit_slug=toolkit_slug,
+                        search=search_param,
+                        scopes=scopes,
+                        limit=page_limit,
+                        cursor=none_to_omit(cursor),
+                        toolkit_versions=toolkit_versions,
+                    )
+                    tools_list.extend(result.items)
+                    cursor = result.next_cursor
+                    if not cursor or len(result.items) < page_limit:
+                        break
         return tools_list
 
     def get_raw_tool_router_meta_tools(
