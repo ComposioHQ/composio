@@ -1,0 +1,122 @@
+---
+title: Errors
+description: Composio API error codes, HTTP status codes, and troubleshooting guide
+keywords: [API errors, error codes, HTTP status codes, error handling, troubleshooting, "400 bad request", "401 unauthorized", "429 rate limit"]
+---
+
+Composio uses conventional HTTP response codes to indicate the success or failure of an API request. In general: codes in the `2xx` range indicate success, codes in the `4xx` range indicate an error with the information provided, and codes in the `5xx` range indicate an error with Composio's servers.
+
+## The error object
+
+```json
+{
+  "error": {
+    "message": "No connected account found for this user and toolkit",
+    "status": 400,
+    "request_id": "req_abc123def456",
+    "suggested_fix": "Connect the user to the toolkit first"
+  }
+}
+```
+
+### Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `message` | A human-readable message providing details about the error. |
+| `status` | The HTTP status code. |
+| `request_id` | A unique identifier for this request. Include this when contacting support. |
+| `suggested_fix` | When available, guidance on how to resolve the error. |
+
+## HTTP status codes
+
+| Code | Status | Description |
+|------|--------|-------------|
+| 200 | OK | Everything worked as expected. |
+| 400 | Bad Request | The request was unacceptable, often due to missing a required parameter. |
+| 401 | Unauthorized | No valid API key provided. |
+| 403 | Forbidden | The API key doesn't have permissions to perform the request. |
+| 404 | Not Found | The requested resource doesn't exist. |
+| 409 | Conflict | The request conflicts with another request (perhaps due to using the same idempotent key). |
+| 422 | Unprocessable Entity | The request was valid but cannot be processed. |
+| 429 | Too Many Requests | Too many requests hit the API too quickly. We recommend an exponential backoff of your requests. |
+| 500, 502, 503, 504 | Server Errors | Something went wrong on Composio's end. |
+
+## Error types
+
+### Authentication errors
+
+Composio uses two types of API keys:
+- **Project API key** (`x-api-key`) — For project-level operations
+- **Organization API key** (`x-org-api-key`) — For organization-level access across projects
+
+| Error | Cause |
+|-------|-------|
+| Invalid API key | The API key is incorrect or revoked. Verify in [Settings](https://platform.composio.dev/settings). |
+| No authentication provided | The request is missing the `x-api-key` or `x-org-api-key` header. |
+| Invalid organization key | The organization API key is incorrect or revoked. Verify in Organization Settings. |
+| Insufficient permissions | The API key doesn't have access to this resource. |
+
+<Callout>
+See [Authentication Troubleshooting](/docs/troubleshooting/authentication) for more help.
+</Callout>
+
+### Tool errors
+
+Errors that occur when fetching or executing tools.
+
+| Error | Cause |
+|-------|-------|
+| Tool not found | The tool slug doesn't exist. Tool slugs are case-sensitive and use `SCREAMING_SNAKE_CASE`. |
+| No connected account | The user hasn't connected to this toolkit yet. |
+| Tool execution failed | The external service returned an error. Check tool parameters and user permissions. |
+
+<Callout>
+See [Tools Troubleshooting](/docs/troubleshooting/tools) for more help.
+</Callout>
+
+### Connection errors
+
+Errors related to connected accounts.
+
+| Error | Cause |
+|-------|-------|
+| Connected account not found | The `connectedAccountId` doesn't exist or was deleted. |
+| Auth refresh required | The OAuth token has expired. Prompt the user to re-authenticate. |
+| Connected account deleted | The connection was removed. Create a new connection. |
+
+### Trigger errors
+
+Errors related to trigger subscriptions.
+
+| Error | Cause |
+|-------|-------|
+| Trigger not found | The trigger slug doesn't exist for this toolkit. |
+| Trigger instance deleted | The trigger subscription or its connected account was removed. |
+
+<Callout>
+See [Triggers Troubleshooting](/docs/troubleshooting/triggers) for more help.
+</Callout>
+
+## Rate limiting
+
+When you hit rate limits, you'll receive a `429` status code. See [Rate Limits](/reference/v3/rate-limits) for details on limits by plan and best practices for handling rate limit errors.
+
+## Getting help
+
+When contacting support, include the `request_id` from the error response.
+
+<Cards>
+  <Card title="Troubleshooting" href="/docs/troubleshooting">
+    Common issues and solutions
+  </Card>
+  <Card title="Discord" href="https://discord.com/channels/1170785031560646836/1268871288156323901">
+    Community support
+  </Card>
+  <Card title="Email" href="mailto:support@composio.dev">
+    Contact support team
+  </Card>
+  <Card title="GitHub" href="https://github.com/ComposioHQ/composio/issues/new?labels=bug">
+    Report a bug
+  </Card>
+</Cards>

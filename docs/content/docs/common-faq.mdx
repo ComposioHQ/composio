@@ -95,12 +95,12 @@ This applies to direct tool execution only. Sessions with meta tools always use 
 </Accordion>
 
 <Accordion title="Why does the API return fewer tools than the platform UI?">
-When calling the Get Tools API (`GET /api/v3/tools`) without specifying a `toolkit_versions` parameter, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. The platform UI shows tools from the latest version.
+When calling the Get Tools API (`GET /api/v3.1/tools`) without specifying a `toolkit_versions` parameter, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. The platform UI shows tools from the latest version.
 
 To get all available tools, pass `toolkit_versions=latest`:
 
 ```bash
-curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+curl 'https://backend.composio.dev/api/v3.1/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
   -H 'x-api-key: YOUR_API_KEY'
 ```
 
@@ -198,7 +198,7 @@ Use your own credentials when you're going to production and users will see OAut
 Call the toolkits API and check the `composio_managed_auth_schemes` field:
 
 ```bash
-curl 'https://backend.composio.dev/api/v3/toolkits/github' \
+curl 'https://backend.composio.dev/api/v3.1/toolkits/github' \
   -H 'x-api-key: YOUR_API_KEY'
 ```
 
@@ -207,7 +207,7 @@ If the array is empty, you'll need to provide your own credentials.
 To fetch all toolkits and filter by managed auth availability, use the list endpoint:
 
 ```bash
-curl 'https://backend.composio.dev/api/v3/toolkits' \
+curl 'https://backend.composio.dev/api/v3.1/toolkits' \
   -H 'x-api-key: YOUR_API_KEY'
 ```
 

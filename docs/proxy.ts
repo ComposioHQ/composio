@@ -11,6 +11,7 @@ function kebabToCamel(str: string): string {
  * Proxy handles:
  * 1. Markdown content negotiation for AI agents (Accept: text/markdown)
  * 2. Redirects for old Fern API reference URLs (kebab-case → camelCase)
+ * 3. Sets x-pathname header for 404 logging
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -23,18 +24,24 @@ export function proxy(request: NextRequest) {
   }
 
   // Handle old Fern API reference URLs (kebab-case → camelCase)
-  // Example: /reference/api-reference/tools/get-tools → /reference/api-reference/tools/getTools
-  if (pathname.startsWith('/reference/api-reference/')) {
-    const segments = pathname.split('/');
+  // v3.1: /reference/api-reference/{tag}/{operationId}
+  // v3.0: /reference/v3/api-reference/{tag}/{operationId}
+  const apiRefPrefix = pathname.startsWith('/reference/v3/api-reference/')
+    ? '/reference/v3/api-reference/'
+    : pathname.startsWith('/reference/api-reference/')
+      ? '/reference/api-reference/'
+      : null;
 
-    // Convert kebab-case segments to camelCase (only operation IDs after index 3)
-    // Structure: /reference/api-reference/{tag}/{operationId}
+  if (apiRefPrefix) {
+    const rest = pathname.slice(apiRefPrefix.length);
+    const segments = rest.split('/');
+    // segments[0] = tag, segments[1+] = operationId parts — only camelCase the operationId
     const newSegments = segments.map((segment, index) => {
-      if (index <= 3) return segment; // Keep /reference/api-reference/{tag} as-is
+      if (index === 0) return segment; // keep tag as-is
       return kebabToCamel(segment);
     });
 
-    const newPathname = newSegments.join('/');
+    const newPathname = apiRefPrefix + newSegments.join('/');
     if (newPathname !== pathname) {
       const url = request.nextUrl.clone();
       url.pathname = newPathname;

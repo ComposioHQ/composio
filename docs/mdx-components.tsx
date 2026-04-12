@@ -24,6 +24,8 @@ import { ManagedAuthList } from '@/components/toolkits/managed-auth-list';
 import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
+import { ApiBaseUrl } from '@/components/api-base-url';
+import { ApiEndpointsTable } from '@/components/api-endpoints-table';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -99,6 +101,8 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     StepTitle,
     Glossary,
     GlossaryTerm,
+    ApiBaseUrl,
+    ApiEndpointsTable,
     // Lucide icons
     ShieldCheck,
     RouteIcon,

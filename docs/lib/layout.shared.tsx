@@ -2,6 +2,7 @@ import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import Image from 'next/image';
 import { Play } from 'lucide-react';
 import { SearchAndAskAI, SearchAndAskAIMobile } from '@/components/ask-ai-button';
+import { NavVersionSelector } from '@/components/version-selector';
 
 // Composio Logo Component with light/dark mode switching
 function ComposioLogo() {
@@ -53,7 +54,7 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
-        text: 'Reference',
+        text: <span className="inline-flex items-center gap-1">Reference <NavVersionSelector /></span>,
         url: '/reference',
         active: 'nested-url',
       },

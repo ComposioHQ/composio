@@ -60,14 +60,14 @@ jobs:
         id: changes
         run: |
           cd ..
-          git add -N docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
-          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null; then
+          git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
+          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "No changes detected"
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "Changes detected:"
-            git diff --stat docs/public/data/ docs/public/openapi.json docs/content/reference/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
+            git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
           fi
 
       - name: Create Pull Request
@@ -83,15 +83,17 @@ jobs:
 
             ## What changed
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
-            - **OpenAPI spec** (`docs/public/openapi.json`) — latest API specification fetched from production
-            - **API reference pages** (`docs/content/reference/api-reference/*.mdx`) — regenerated index pages from the updated OpenAPI spec
+            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from production
+            - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
             - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/reference/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
           branch: docs/auto-update-data
           base: next
           add-paths: |
             docs/public/data/
             docs/public/openapi.json
+            docs/public/openapi-v3.json
             docs/content/reference/api-reference/
+            docs/content/reference/v3/api-reference/
             docs/content/reference/meta-tools/
 
       - name: Request review from trigger actor

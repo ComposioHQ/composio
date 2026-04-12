@@ -1,18 +1,32 @@
 /**
- * Generates simple markdown index pages for each OpenAPI tag.
- * These pages provide:
- * - Tag description from OpenAPI spec
- * - Links to all endpoints in that tag
+ * Generates markdown index pages for each OpenAPI tag.
+ * Reads both v3.1 and v3.0 specs and generates a table that
+ * uses the ApiEndpointsTable component to switch versions dynamically.
  *
  * Run: bun scripts/generate-api-index.ts
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+
+interface OpenAPIOperation {
+  summary?: string;
+  tags?: string[];
+  description?: string;
+  operationId?: string;
+  'x-api-version'?: string;
+}
 
 interface OpenAPISpec {
   tags: Array<{ name: string; description?: string }>;
-  paths: Record<string, Record<string, { summary?: string; tags?: string[]; description?: string; operationId?: string }>>;
+  paths: Record<string, Record<string, OpenAPIOperation>>;
+}
+
+interface OperationEntry {
+  summary: string;
+  method: string;
+  path: string;
+  operationId: string;
 }
 
 function slugify(text: string): string {
@@ -22,83 +36,83 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-function generateIndexPages() {
-  // Read OpenAPI spec
-  const specPath = join(process.cwd(), 'public/openapi.json');
-  const spec: OpenAPISpec = JSON.parse(readFileSync(specPath, 'utf-8'));
+function getOperationsByTag(spec: OpenAPISpec): Record<string, OperationEntry[]> {
+  const tagOps: Record<string, OperationEntry[]> = {};
 
-  // Build tag -> operations map
-  const tagOperations: Record<string, Array<{ summary: string; description?: string; method: string; path: string; operationId: string }>> = {};
-  const tagDescriptions: Record<string, string> = {};
-
-  // Get tag descriptions
   for (const tag of spec.tags) {
-    tagDescriptions[tag.name] = tag.description || '';
-    tagOperations[tag.name] = [];
+    tagOps[tag.name] = [];
   }
 
-  // For endpoints that exist under multiple API versions (e.g. /api/v3/ and /api/v3.1/),
-  // only show the latest version. Extract version from path like /api/v3.1/tools/... → "3.1"
-  const supersededPaths: Set<string> = new Set();
-  const versionedPaths = new Map<string, { version: string; fullPath: string }[]>();
-
-  for (const path of Object.keys(spec.paths)) {
-    const match = path.match(/^\/api\/v([\d.]+)\/(.+)$/);
-    if (!match) continue;
-    const [, version, rest] = match;
-    if (!versionedPaths.has(rest)) versionedPaths.set(rest, []);
-    versionedPaths.get(rest)!.push({ version, fullPath: path });
-  }
-
-  for (const entries of versionedPaths.values()) {
-    if (entries.length <= 1) continue;
-    // Sort by version descending; keep only the latest
-    entries.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
-    for (const entry of entries.slice(1)) {
-      supersededPaths.add(entry.fullPath);
-    }
-  }
-
-  // Group operations by tag
   for (const [path, methods] of Object.entries(spec.paths)) {
-    // Skip endpoints superseded by a newer API version
-    if (supersededPaths.has(path)) continue;
     for (const [method, operation] of Object.entries(methods)) {
       if (operation.tags) {
         for (const tag of operation.tags) {
-          if (!tagOperations[tag]) {
-            tagOperations[tag] = [];
-          }
-          const summaryFallback = operation.summary || `${method.toUpperCase()} ${path}`;
-          tagOperations[tag].push({
-            summary: summaryFallback,
-            description: operation.description,
+          if (!tagOps[tag]) tagOps[tag] = [];
+          tagOps[tag].push({
+            summary: operation.summary || `${method.toUpperCase()} ${path}`,
             method: method.toUpperCase(),
             path,
-            operationId: operation.operationId || slugify(summaryFallback),
+            operationId: operation.operationId || slugify(operation.summary || path),
           });
         }
       }
     }
   }
 
-  // Generate MDX files for each tag as index.mdx inside folders
+  return tagOps;
+}
+
+function generateIndexPages() {
+  const specV31Path = join(process.cwd(), 'public/openapi.json');
+  const specV3Path = join(process.cwd(), 'public/openapi-v3.json');
+
+  const specV31: OpenAPISpec = JSON.parse(readFileSync(specV31Path, 'utf-8'));
+  const v31Ops = getOperationsByTag(specV31);
+
+  let v3Ops: Record<string, OperationEntry[]> = {};
+  if (existsSync(specV3Path)) {
+    const specV3: OpenAPISpec = JSON.parse(readFileSync(specV3Path, 'utf-8'));
+    v3Ops = getOperationsByTag(specV3);
+  }
+
+  // Collect tag descriptions from v3.1 spec
+  const tagDescriptions: Record<string, string> = {};
+  for (const tag of specV31.tags) {
+    tagDescriptions[tag.name] = tag.description || '';
+  }
+
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
 
-  for (const [tagName, operations] of Object.entries(tagOperations)) {
-    if (operations.length === 0) continue;
+  // Get all unique tag names
+  const allTags = new Set([...Object.keys(v31Ops), ...Object.keys(v3Ops)]);
+
+  for (const tagName of allTags) {
+    const ops31 = v31Ops[tagName] || [];
+    const ops3 = v3Ops[tagName] || [];
+    if (ops31.length === 0 && ops3.length === 0) continue;
 
     const tagSlug = slugify(tagName);
     const tagDescription = tagDescriptions[tagName] || `${tagName} API endpoints`;
 
-    // Generate endpoint table
-    const tableRows = operations.map(op => {
-      const url = `/reference/api-reference/${tagSlug}/${op.operationId}`;
+    // Only generate v3.1 index page if the tag has v3.1 operations
+    if (ops31.length > 0) {
+      const v3ByOpId: Record<string, OperationEntry> = {};
+      for (const op of ops3) {
+        v3ByOpId[op.operationId] = op;
+      }
 
-      return `| \`${op.method} ${op.path}\` | [${op.summary}](${url}) |`;
-    }).join('\n');
+      const endpoints = ops31.map(op => {
+        const v3Op = v3ByOpId[op.operationId];
+        return {
+          method: op.method,
+          pathV31: op.path,
+          pathV3: v3Op ? v3Op.path : op.path.replace('/v3.1/', '/v3/'),
+          summary: op.summary,
+          href: `/reference/api-reference/${tagSlug}/${op.operationId}`,
+        };
+      });
 
-    const content = `---
+      const content = `---
 title: ${tagName}
 description: "${tagDescription}"
 ---
@@ -109,17 +123,44 @@ ${tagDescription}
 
 ## Endpoints
 
-| Endpoint | Quick Link |
-|----------|------------|
-${tableRows}
+<ApiEndpointsTable endpoints={${JSON.stringify(endpoints)}} />
 `;
 
-    // Create folder and write index.mdx inside
-    const folderPath = join(outputDir, tagSlug);
-    mkdirSync(folderPath, { recursive: true });
-    const filePath = join(folderPath, 'index.mdx');
-    writeFileSync(filePath, content);
-    console.log(`Generated: ${tagSlug}/index.mdx`);
+      const folderPath = join(outputDir, tagSlug);
+      mkdirSync(folderPath, { recursive: true });
+      writeFileSync(join(folderPath, 'index.mdx'), content);
+      console.log(`Generated: ${tagSlug}/index.mdx`);
+    }
+
+    // Also generate v3 index page with v3-specific hrefs
+    if (ops3.length > 0) {
+      const v3Endpoints = ops3.map(op => ({
+        method: op.method,
+        pathV31: op.path.replace('/v3/', '/v3.1/'),
+        pathV3: op.path,
+        summary: op.summary,
+        href: `/reference/v3/api-reference/${tagSlug}/${op.operationId}`,
+      }));
+
+      const v3Content = `---
+title: ${tagName}
+description: "${tagDescription}"
+---
+
+{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+
+${tagDescription}
+
+## Endpoints
+
+<ApiEndpointsTable endpoints={${JSON.stringify(v3Endpoints)}} />
+`;
+
+      const v3FolderPath = join(process.cwd(), 'content/reference/v3/api-reference', tagSlug);
+      mkdirSync(v3FolderPath, { recursive: true });
+      writeFileSync(join(v3FolderPath, 'index.mdx'), v3Content);
+      console.log(`Generated: v3/api-reference/${tagSlug}/index.mdx`);
+    }
   }
 
   console.log('Done generating API index pages');

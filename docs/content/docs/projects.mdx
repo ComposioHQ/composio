@@ -34,7 +34,7 @@ Project management endpoints use the `x-org-api-key` header, not the regular `x-
 ### Create a project
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3/org/owner/project/new \
+curl -X POST https://backend.composio.dev/api/v3.1/org/owner/project/new \
   -H "x-org-api-key: YOUR_ORG_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -56,7 +56,7 @@ The response includes the project ID and, if requested, an API key:
 ### List projects
 
 ```bash
-curl https://backend.composio.dev/api/v3/org/owner/project/list \
+curl https://backend.composio.dev/api/v3.1/org/owner/project/list \
   -H "x-org-api-key: YOUR_ORG_API_KEY"
 ```
 
@@ -65,7 +65,7 @@ Supports pagination with `limit` and `cursor` query parameters.
 ### Get project details
 
 ```bash
-curl https://backend.composio.dev/api/v3/org/owner/project/proj_abc123xyz456 \
+curl https://backend.composio.dev/api/v3.1/org/owner/project/proj_abc123xyz456 \
   -H "x-org-api-key: YOUR_ORG_API_KEY"
 ```
 
@@ -76,7 +76,7 @@ Returns the full project object including its API keys.
 Each project has settings that control security, logging, and display behavior. These endpoints use your **project API key** (`x-api-key`), not the org key.
 
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3/org/project/config \
+curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
