@@ -254,7 +254,7 @@ export const installShellIntegration = (params: {
           ? `source ${tildify(rcPath, os.homedir)}`
           : 'exec $SHELL';
       yield* ui.note(restartHint, 'Restart your shell to apply changes');
-    } else {
+    } else if (!fishCompletionFile) {
       yield* ui.log.success('Shell integration already configured — nothing to do.');
     }
 
