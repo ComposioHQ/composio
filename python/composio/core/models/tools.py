@@ -211,8 +211,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 )
             else:
                 # No explicit limit: auto-paginate to fetch all results
+                _MAX_PAGES = 10  # Safety cap to prevent infinite loops
                 cursor: t.Optional[str] = None
-                while True:
+                for _ in range(_MAX_PAGES):
                     response = self._client.tools.list(
                         toolkit_slug=none_to_omit(
                             ",".join(toolkits) if toolkits else None

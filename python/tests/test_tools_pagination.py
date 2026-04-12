@@ -204,3 +204,18 @@ class TestToolsPagination:
 
         assert len(result) == 1
         assert mock_client.tools.list.call_count == 1
+
+    def test_pagination_safety_cap(self):
+        """Pagination stops after max pages to prevent infinite loops."""
+        mock_client = Mock()
+        # Always return a next_cursor — simulates a buggy API
+        mock_client.tools.list.return_value = _make_list_response(
+            [_make_tool("T")], next_cursor="always_more"
+        )
+
+        tools = _make_tools_instance(mock_client)
+        result = tools.get_raw_composio_tools(toolkits=["github"])
+
+        # Should stop after 10 pages (safety cap), not loop forever
+        assert mock_client.tools.list.call_count == 10
+        assert len(result) == 10
