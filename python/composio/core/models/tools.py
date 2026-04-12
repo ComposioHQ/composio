@@ -160,6 +160,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 ),
             )
 
+    _MAX_PAGE_SIZE = 1000
+
     def get_raw_composio_tools(
         self,
         tools: t.Optional[list[str]] = None,
@@ -170,6 +172,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
     ) -> list[Tool]:
         """
         Get a list of tool schemas based on the provided filters.
+
+        When no explicit limit is provided and querying by toolkits or search,
+        automatically paginates through all pages using cursor-based pagination
+        to return the complete result set.
         """
         if tools is None and search is None and toolkits is None:
             raise InvalidParams(
@@ -190,15 +196,37 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         # Search tools by toolkit slugs and search term
         if toolkits is not None or search is not None:
-            tools_list.extend(
-                self._client.tools.list(
-                    toolkit_slug=none_to_omit(",".join(toolkits) if toolkits else None),
-                    search=none_to_omit(search),
-                    scopes=scopes,
-                    limit=limit,
-                    toolkit_versions=none_to_omit(self._toolkit_versions),
-                ).items
-            )
+            if limit is not None:
+                # Explicit limit: single request, backward compatible
+                tools_list.extend(
+                    self._client.tools.list(
+                        toolkit_slug=none_to_omit(
+                            ",".join(toolkits) if toolkits else None
+                        ),
+                        search=none_to_omit(search),
+                        scopes=scopes,
+                        limit=limit,
+                        toolkit_versions=none_to_omit(self._toolkit_versions),
+                    ).items
+                )
+            else:
+                # No explicit limit: auto-paginate to fetch all results
+                cursor: t.Optional[str] = None
+                while True:
+                    response = self._client.tools.list(
+                        toolkit_slug=none_to_omit(
+                            ",".join(toolkits) if toolkits else None
+                        ),
+                        search=none_to_omit(search),
+                        scopes=scopes,
+                        limit=self._MAX_PAGE_SIZE,
+                        cursor=none_to_omit(cursor),
+                        toolkit_versions=none_to_omit(self._toolkit_versions),
+                    )
+                    tools_list.extend(response.items)
+                    cursor = response.next_cursor
+                    if not cursor:
+                        break
         return tools_list
 
     def get_raw_tool_router_meta_tools(
