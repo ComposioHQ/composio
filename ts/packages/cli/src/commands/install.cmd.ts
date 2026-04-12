@@ -208,10 +208,19 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('PATH: already configured');
     }
 
+    // Fish uses a dedicated completions directory instead of appending to config.fish.
+    // Writing completions inline into config.fish pollutes it and can break startup
+    // due to unbalanced quotes in long completion descriptions.
+    let fishCompletionFile: string | undefined;
+
     if (shell === 'zsh') {
       yield* ui.log.step('Completions: skipped for zsh');
     } else if (!params.completions) {
       yield* ui.log.step('Completions: skipped by default (pass --completions to enable)');
+    } else if (shell === 'fish' && completionScript) {
+      // Fish completions go to ~/.config/fish/completions/composio.fish
+      fishCompletionFile = path.join(os.homedir, '.config', 'fish', 'completions', 'composio.fish');
+      yield* ui.log.step('Completions: will install to fish completions directory');
     } else if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
       blocks.push(config.completionBlock);
       yield* ui.log.step('Completions: will install shell completions');
@@ -240,14 +249,32 @@ export const installShellIntegration = (params: {
       yield* fs.rename(tmpPath, rcPath);
 
       yield* ui.log.success(`Updated ${tildify(rcPath, os.homedir)}`);
-      yield* ui.note(
+      const restartHint =
         shell === 'fish' || shell === 'zsh'
           ? `source ${tildify(rcPath, os.homedir)}`
-          : 'exec $SHELL',
-        'Restart your shell to apply changes'
-      );
+          : 'exec $SHELL';
+      yield* ui.note(restartHint, 'Restart your shell to apply changes');
     } else {
       yield* ui.log.success('Shell integration already configured — nothing to do.');
+    }
+
+    // Write fish completions to the dedicated completions directory.
+    // Fish auto-loads files from ~/.config/fish/completions/ on demand,
+    // so we never append completion definitions into config.fish.
+    if (fishCompletionFile && completionScript) {
+      yield* fs
+        .makeDirectory(path.dirname(fishCompletionFile), { recursive: true })
+        .pipe(
+          Effect.catchAll(e =>
+            Effect.logDebug('Could not create fish completions directory:', e)
+          )
+        );
+
+      const tmpCompletionPath = `${fishCompletionFile}.composio-tmp`;
+      yield* fs.writeFileString(tmpCompletionPath, `${COMPLETIONS_MARKER}\n${completionScript}\n`);
+      yield* fs.rename(tmpCompletionPath, fishCompletionFile);
+
+      yield* ui.log.success(`Completions installed to ${tildify(fishCompletionFile, os.homedir)}`);
     }
 
     yield* ui.outro('Done');
