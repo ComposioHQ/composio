@@ -101,7 +101,7 @@ export const connectionsCmd = Command.make(
           hint = 'No connections found. Connect your first app with:\n> composio link github';
         }
         yield* ui.log.warn(hint);
-        yield* ui.output(JSON.stringify({ items: [], total: 0 }, null, 2));
+        yield* ui.output(formatConnectedAccountsJson([]));
         return;
       }
 

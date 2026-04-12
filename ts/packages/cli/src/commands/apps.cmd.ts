@@ -1,9 +1,11 @@
+import process from 'node:process';
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
+import { extractMessage } from 'src/utils/api-error-extraction';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -108,6 +110,7 @@ export const appsCmd = Command.make(
             import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
           >
         | undefined;
+      let sessionFailed = false;
       if (sessionContext) {
         sessionItems = yield* Effect.tryPromise(() =>
           sessionContext.client.toolRouter.session.toolkits(sessionContext.sessionId, {
@@ -119,10 +122,21 @@ export const appsCmd = Command.make(
           Effect.map(r => r.items),
           Effect.catchAll(error =>
             Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
-              Effect.as(undefined)
+              Effect.as(
+                [] as ReadonlyArray<
+                  import('@composio/client/resources/tool-router').SessionToolkitsResponse.Item
+                >
+              )
             )
           )
         );
+        if (sessionItems.length === 0) {
+          sessionFailed = true;
+          sessionItems = undefined;
+        }
+      } else if (consumerUserId) {
+        // Session creation itself failed (caught in parallel fetch above).
+        sessionFailed = true;
       }
 
       let unified = mergeToolkitData(catalogResult.items, sessionItems);
@@ -131,7 +145,7 @@ export const appsCmd = Command.make(
       const isConnectedFilter = Option.getOrUndefined(connected);
       if (isConnectedFilter && sessionItems) {
         unified = unified.filter(t => t.connected?.status === 'ACTIVE');
-      } else if (isConnectedFilter && !sessionItems) {
+      } else if (isConnectedFilter && sessionFailed) {
         yield* ui.log.warn(
           '`--connected` filter could not be applied — session data unavailable.'
         );
@@ -151,7 +165,18 @@ export const appsCmd = Command.make(
       );
 
       yield* ui.output(formatToolkitsJson(unified));
-    })
+    }).pipe(
+      Effect.catchAll(error =>
+        Effect.gen(function* () {
+          const ui = yield* TerminalUI;
+          yield* ui.log.error(
+            extractMessage(error) ?? 'An error occurred while fetching apps.'
+          );
+          yield* ui.output('[]');
+          process.exitCode = 1;
+        })
+      )
+    )
 ).pipe(
   Command.withDescription(
     [
