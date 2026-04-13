@@ -5,6 +5,7 @@ on:
     types: [opened, reopened, edited]
 
 permissions:
+  contents: read
   issues: write
 
 jobs:
@@ -12,70 +13,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Classify issue with Claude Sonnet
-        id: classify
-        uses: actions/github-script@v8
+        uses: anthropics/claude-code-action@v1
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Read the issue title and body from the ISSUE_TITLE and ISSUE_BODY environment variables.
+
+            Classify the issue for routing and determine whether it is a bug report.
+
+            Allowed categories:
+            - docs
+            - py
+            - ts
+            - cli
+            - tool-request
+            - other
+
+            Use semantic meaning, not only keywords.
+            Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.
+            Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.
+            Choose py only when the issue is primarily about the Python SDK.
+            Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.
+            Choose docs only when the issue is primarily about documentation.
+            Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.
+            Set is_bug to false for feature requests, questions, maintenance, cleanup, and tool requests.
+
+            Write exactly one JSON object to `.github/issue-triage-result.json` with this schema:
+            {"category":"docs|py|ts|cli|tool-request|other","is_bug":true,"reason":"short sentence"}
+
+            Do not modify any other files.
+          claude_args: |
+            --model claude-sonnet-4-6
+            --allowedTools "Read,Write,Edit"
+
+      - name: Read triage result
+        id: classify
+        uses: actions/github-script@v8
+        with:
           script: |
-            const title = process.env.ISSUE_TITLE || "";
-            const body = process.env.ISSUE_BODY || "";
-
-            const prompt = [
-              "Classify this GitHub issue for routing and determine whether it is a bug report.",
-              "",
-              "Allowed categories:",
-              "- docs",
-              "- py",
-              "- ts",
-              "- cli",
-              "- tool-request",
-              "- other",
-              "",
-              "Use semantic meaning, not only keywords.",
-              "Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.",
-              "Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.",
-              "Choose py only when the issue is primarily about the Python SDK.",
-              "Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.",
-              "Choose docs only when the issue is primarily about documentation.",
-              "Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.",
-              "Set is_bug to false for feature requests, questions, maintenance, cleanup, and tool requests.",
-              "",
-              "Return strict JSON with this schema only:",
-              '{"category":"docs|py|ts|cli|tool-request|other","is_bug":true,"reason":"short sentence"}',
-              "",
-              `Title: ${title}`,
-              "",
-              "Body:",
-              body
-            ].join("\n");
-
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
-              method: "POST",
-              headers: {
-                "content-type": "application/json",
-                "x-api-key": process.env.ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01"
-              },
-              body: JSON.stringify({
-                model: "claude-sonnet-4-20250514",
-                max_tokens: 200,
-                temperature: 0,
-                messages: [{ role: "user", content: prompt }]
-              })
-            });
-
-            if (!response.ok) {
-              const text = await response.text();
-              core.setFailed(`Anthropic classification failed: ${response.status} ${text}`);
-              return;
-            }
-
-            const data = await response.json();
-            const text = data?.content?.map((item) => item.text || "").join("").trim() || "";
+            const fs = require("fs");
+            const path = ".github/issue-triage-result.json";
+            const text = fs.readFileSync(path, "utf8").trim();
 
             let parsed;
             try {
