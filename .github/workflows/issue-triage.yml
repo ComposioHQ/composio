@@ -25,7 +25,7 @@ jobs:
             const body = process.env.ISSUE_BODY || "";
 
             const prompt = [
-              "Classify this GitHub issue into exactly one category.",
+              "Classify this GitHub issue for routing and determine whether it is a bug report.",
               "",
               "Allowed categories:",
               "- docs",
@@ -41,9 +41,11 @@ jobs:
               "Choose py only when the issue is primarily about the Python SDK.",
               "Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.",
               "Choose docs only when the issue is primarily about documentation.",
+              "Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.",
+              "Set is_bug to false for feature requests, questions, maintenance, cleanup, and tool requests.",
               "",
               "Return strict JSON with this schema only:",
-              '{"category":"docs|py|ts|cli|tool-request|other","reason":"short sentence"}',
+              '{"category":"docs|py|ts|cli|tool-request|other","is_bug":true,"reason":"short sentence"}',
               "",
               `Title: ${title}`,
               "",
@@ -90,16 +92,19 @@ jobs:
             }
 
             core.setOutput("category", parsed.category);
+            core.setOutput("is_bug", parsed.is_bug ? "true" : "false");
             core.setOutput("reason", parsed.reason || "");
 
       - name: Apply labels, assignees, and tool-request handling
         uses: actions/github-script@v8
         env:
           CATEGORY: ${{ steps.classify.outputs.category }}
+          IS_BUG: ${{ steps.classify.outputs.is_bug }}
           REASON: ${{ steps.classify.outputs.reason }}
         with:
           script: |
             const category = process.env.CATEGORY;
+            const isBug = process.env.IS_BUG === "true";
             const reason = process.env.REASON;
             const issue_number = context.payload.issue.number;
             const owner = context.repo.owner;
@@ -107,6 +112,10 @@ jobs:
 
             const labels = [];
             const assignees = [];
+
+            if (isBug) {
+              labels.push("bug");
+            }
 
             if (category === "docs") {
               labels.push("docs");
