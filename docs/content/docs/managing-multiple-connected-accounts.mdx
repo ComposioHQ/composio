@@ -1,87 +1,195 @@
 ---
 title: Managing multiple connected accounts
-description: Handle users with multiple accounts for the same toolkit
-keywords: [multiple accounts, work personal, switch account]
+description: Handle users with multiple accounts for the same toolkit using multi-account mode and aliases
+keywords: [multiple accounts, multi-account, work personal, switch account, alias, account selection]
 ---
 
-Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail accounts). This is useful when users need to manage different email accounts, GitHub organizations, or separate work and personal contexts. This guide explains how to connect, select, and manage multiple accounts. For background on how users, sessions, and connected accounts relate, see [Users & Sessions](/docs/users-and-sessions).
+Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail accounts). This guide covers how to enable multi-account mode, label accounts with aliases, and select which account to use.
 
-## Default account behavior
+## Multi-account mode
 
-When multiple accounts are connected for the same toolkit:
-- Each session can only use **one account per toolkit** at a time
-- Sessions use the **most recently connected account** by default
-- You can override this by explicitly selecting an account
-- Each account maintains its own authentication and permissions
+By default, each session uses **one account per toolkit**. Enable multi-account mode to let users connect and use multiple accounts for the same toolkit within a single session.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    multi_account={
+        "enable": True,
+        "max_accounts_per_toolkit": 3,
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  multiAccount: {
+    enable: true,
+    maxAccountsPerToolkit: 3,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+### Configuration options
+
+| Option (TS / Python) | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enable` | `boolean` | `false` | Enable multi-account mode for this session |
+| `maxAccountsPerToolkit` / `max_accounts_per_toolkit` | `number` | `5` | Maximum connected accounts per toolkit (2-10) |
+| `requireExplicitSelection` / `require_explicit_selection` | `boolean` | `false` | When true, the agent must specify which account to use via [`connectedAccounts` pinning](#selecting-a-specific-account-for-a-session) instead of defaulting to the most recent |
+
+When multi-account mode is disabled (the default), each session uses the most recently connected account for each toolkit.
 
 ## Connecting multiple accounts
 
-Call `session.authorize()` multiple times for the same toolkit. Each authorization creates a separate connected account with its own ID. The most recently connected account becomes the active one for that session. New sessions will also use the most recent account unless you [explicitly select a different one](#selecting-a-specific-account-for-a-session).
+Call `session.authorize()` multiple times for the same toolkit. Each call creates a separate connected account.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123", multi_account={"enable": True})
+
+# Connect work account
+work_auth = session.authorize("gmail", alias="work-gmail")
+print(f"Connect work Gmail: {work_auth.redirect_url}")
+work_connection = work_auth.wait_for_connection()
+
+# Connect personal account
+personal_auth = session.authorize("gmail", alias="personal-gmail")
+print(f"Connect personal Gmail: {personal_auth.redirect_url}")
+personal_connection = personal_auth.wait_for_connection()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  multiAccount: { enable: true },
+});
+
+// Connect work account
+const workAuth = await session.authorize("gmail", { alias: "work-gmail" });
+console.log(`Connect work Gmail: ${workAuth.redirectUrl}`);
+const workConnection = await workAuth.waitForConnection();
+
+// Connect personal account
+const personalAuth = await session.authorize("gmail", { alias: "personal-gmail" });
+console.log(`Connect personal Gmail: ${personalAuth.redirectUrl}`);
+const personalConnection = await personalAuth.waitForConnection();
+```
+</Tab>
+</Tabs>
+
+## Aliases
+
+Aliases are human-readable labels for connected accounts (e.g., `"work-gmail"`, `"personal-github"`). They make it easier for agents and users to identify which account is which.
+
+- Must be unique per user and toolkit within a project
+- Can be set during connection or updated after
+
+### Setting an alias during connection
+
+Pass `alias` to `session.authorize()`, `connectedAccounts.initiate()`, or `connectedAccounts.link()`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(user_id="user_123")
 
-# Connect first account (work)
-work_auth = session.authorize("gmail")
-print(f"Connect work Gmail: {work_auth.redirect_url}")
-work_connection = work_auth.wait_for_connection()
-print(f"Work account connected: {work_connection.id}")
+# Via session.authorize()
+connection_request = session.authorize("gmail", alias="work-gmail")
 
-# Connect second account (personal)
-personal_auth = session.authorize("gmail")
-print(f"Connect personal Gmail: {personal_auth.redirect_url}")
-personal_connection = personal_auth.wait_for_connection()
-print(f"Personal account connected: {personal_connection.id}")
+# Via connectedAccounts.initiate()
+connection_request = composio.connected_accounts.initiate(
+    "user_123",
+    "ac_auth_config_id",
+    alias="work-gmail",
+)
+
+# Via connectedAccounts.link()
+connection_request = composio.connected_accounts.link(
+    "user_123",
+    "ac_auth_config_id",
+    alias="work-gmail",
+)
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
 const session = await composio.create("user_123");
+// ---cut---
+// Via session.authorize()
+const connectionRequest = await session.authorize("gmail", { alias: "work-gmail" });
 
-// Connect first account (work)
-const workAuth = await session.authorize("gmail");
-console.log(`Connect work Gmail: ${workAuth.redirectUrl}`);
-const workConnection = await workAuth.waitForConnection();
-console.log(`Work account connected: ${workConnection.id}`);
+// Via connectedAccounts.initiate()
+const connectionRequest2 = await composio.connectedAccounts.initiate(
+  "user_123",
+  "ac_auth_config_id",
+  { alias: "work-gmail" },
+);
 
-// Connect second account (personal)
-const personalAuth = await session.authorize("gmail");
-console.log(`Connect personal Gmail: ${personalAuth.redirectUrl}`);
-const personalConnection = await personalAuth.waitForConnection();
-console.log(`Personal account connected: ${personalConnection.id}`);
+// Via connectedAccounts.link()
+const connectionRequest3 = await composio.connectedAccounts.link(
+  "user_123",
+  "ac_auth_config_id",
+  { alias: "work-gmail" },
+);
 ```
 </Tab>
 </Tabs>
 
-<Callout type="info">
-Store the account IDs returned after connection to explicitly select accounts later.
-</Callout>
-
-## Selecting a specific account for a session
-
-Each session can only use one account per toolkit at a time. To use a specific account in a session, pass it in the session config:
+### Updating or clearing an alias
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-# This session will use a specific Gmail account
+# Set or update an alias
+composio.connected_accounts.update("ca_abc123", alias="work-gmail")
+
+# Clear an alias
+composio.connected_accounts.update("ca_abc123", alias="")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Set or update an alias
+await composio.connectedAccounts.update("ca_abc123", { alias: "work-gmail" });
+
+// Clear an alias
+await composio.connectedAccounts.update("ca_abc123", { alias: "" });
+```
+</Tab>
+</Tabs>
+
+## Selecting a specific account for a session
+
+Pin a session to specific accounts by passing their IDs in the session config. To retrieve connected account IDs, see [List accounts](/docs/auth-configuration/connected-accounts#list-accounts).
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
 session = composio.create(
     user_id="user_123",
     connected_accounts={
-        "gmail": "ca_specific_account_id",  # Connected account ID
-    },
-)
-
-# To switch accounts, create a new session with a different account ID
-session2 = composio.create(
-    user_id="user_123",
-    connected_accounts={
-        "gmail": "ca_different_account_id",  # Different account
+        "gmail": "ca_work_gmail_id",
+        "github": "ca_personal_github_id",
     },
 )
 ```
@@ -91,30 +199,19 @@ session2 = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-// This session will use a specific Gmail account
 const session = await composio.create("user_123", {
   connectedAccounts: {
-    gmail: "ca_specific_account_id",  // Connected account ID
-  },
-});
-
-// To switch accounts, create a new session with a different account ID
-const session2 = await composio.create("user_123", {
-  connectedAccounts: {
-    gmail: "ca_different_account_id",  // Different account
+    gmail: "ca_work_gmail_id",
+    github: "ca_personal_github_id",
   },
 });
 ```
 </Tab>
 </Tabs>
 
-## Listing all user accounts
+## Viewing session's active accounts
 
-To list all accounts a user has connected (not just the active one), see [List accounts](/docs/auth-configuration/connected-accounts#list-accounts).
-
-## Viewing session's active account
-
-Use `session.toolkits()` to see which account is currently active in the session:
+Use `session.toolkits()` to see which accounts are currently active:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -122,7 +219,7 @@ Use `session.toolkits()` to see which account is currently active in the session
 toolkits = session.toolkits()
 
 for toolkit in toolkits.items:
-    if toolkit.connection.connected_account:
+    if toolkit.connection and toolkit.connection.connected_account:
         print(f"{toolkit.name}: {toolkit.connection.connected_account.id}")
 ```
 </Tab>

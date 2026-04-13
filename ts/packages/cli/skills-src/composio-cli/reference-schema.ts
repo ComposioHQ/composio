@@ -1,4 +1,8 @@
-import { CLI_EXPERIMENTAL_FEATURES, type CliReleaseChannel } from '../../src/experimental-features';
+import {
+  CLI_EXPERIMENTAL_FEATURES,
+  isExperimentalFeatureEnabledByDefault,
+  type CliReleaseChannel,
+} from '../../src/experimental-features';
 
 export type SkillReleaseChannel = CliReleaseChannel;
 
@@ -34,6 +38,7 @@ export type ReferenceDocument = {
 
 const TOP_LEVEL_COMMANDS = new Set([
   'artifacts',
+  'config',
   'dev',
   'execute',
   'link',
@@ -47,11 +52,21 @@ const TOP_LEVEL_COMMANDS = new Set([
   'whoami',
 ]);
 
-export const resolveSkillBuildContext = (channel: SkillReleaseChannel): SkillBuildContext => ({
+export const resolveSkillBuildContext = (
+  channel: SkillReleaseChannel,
+  overrides?: Partial<Record<SkillFeatureFlag, boolean>>
+): SkillBuildContext => ({
   channel,
   experimentalFeatures: {
-    [CLI_EXPERIMENTAL_FEATURES.LISTEN]: channel === 'beta',
-    [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]: channel === 'beta',
+    [CLI_EXPERIMENTAL_FEATURES.LISTEN]: isExperimentalFeatureEnabledByDefault(
+      CLI_EXPERIMENTAL_FEATURES.LISTEN,
+      channel
+    ),
+    [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]: isExperimentalFeatureEnabledByDefault(
+      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT,
+      channel
+    ),
+    ...overrides,
   },
 });
 

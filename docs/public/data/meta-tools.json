@@ -439,7 +439,7 @@
                 "examples": [
                   "GMAIL_SEND_EMAIL",
                   "SLACK_SEND_MESSAGE",
-                  "GITHUB_CREATE_ISSUE"
+                  "GITHUB_CREATE_AN_ISSUE"
                 ],
                 "minLength": 1,
                 "title": "Tool Slug",
@@ -547,7 +547,7 @@
                       "log_id": "log_XYZ789",
                       "successful": true
                     },
-                    "tool_slug": "GITHUB_CREATE_ISSUE"
+                    "tool_slug": "GITHUB_CREATE_AN_ISSUE"
                   },
                   {
                     "error": "No active connected account found for toolkit: gmail",

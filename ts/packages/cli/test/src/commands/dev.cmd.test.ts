@@ -14,8 +14,8 @@ describe('CLI: composio dev', () => {
         yield* cli(['dev', '--help']);
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
-        expect(output).toContain('SAFE COMMANDS');
-        expect(output).toContain('GUARDED COMMANDS');
+        expect(output).toContain('PROJECT');
+        expect(output).toContain('GUARDED');
         expect(output).toContain('--mode <on|off>');
       })
     );
@@ -34,7 +34,7 @@ describe('CLI: composio dev', () => {
 
         expect(output).toContain('Developer mode is off');
         expect(output).toContain('composio dev --mode on');
-        expect(output).not.toContain('SAFE COMMANDS');
+        expect(output).not.toContain('PROJECT');
       })
     );
 

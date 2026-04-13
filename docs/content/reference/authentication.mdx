@@ -35,14 +35,14 @@ For organization-level access across multiple projects, use the `x-org-api-key` 
 Include your API key in the request header:
 
 ```bash
-curl https://backend.composio.dev/api/v3/tools \
+curl https://backend.composio.dev/api/v3.1/tools \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
 
 For organization-level endpoints:
 
 ```bash
-curl https://backend.composio.dev/api/v3/org/projects \
+curl https://backend.composio.dev/api/v3.1/org/projects \
   -H "x-org-api-key: $COMPOSIO_ORG_API_KEY"
 ```
 

@@ -1,0 +1,46 @@
+---
+title: "Multi-Account Mode & Connection Aliases"
+description: "Enable multiple connected accounts per toolkit and label them with human-readable aliases"
+date: "2026-04-09"
+---
+
+This release adds two features for managing multiple accounts per toolkit.
+
+## Multi-account mode
+
+Sessions now support a `multiAccount` config that lets users connect and use multiple accounts for the same toolkit (e.g., work and personal Gmail) within a single session.
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
+  multiAccount: {
+    enable: true,
+    maxAccountsPerToolkit: 3,
+  },
+});
+```
+
+By default, multi-account mode is disabled and each session uses one account per toolkit.
+
+## Connection aliases
+
+Connected accounts can now have human-readable aliases (e.g., `"work-gmail"`, `"personal-github"`). Aliases can be set during connection or updated after.
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+// ---cut---
+// Set alias during connection
+await session.authorize('gmail', { alias: 'work-gmail' });
+
+// Update alias on an existing account
+await composio.connectedAccounts.update('ca_abc123', { alias: 'work-gmail' });
+```
+
+Aliases must be unique per user and toolkit within a project.
+
+See the [multi-account guide](/docs/managing-multiple-connected-accounts) for full details.

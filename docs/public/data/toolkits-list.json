@@ -4,7 +4,7 @@
     "name": "Gmail",
     "logo": "https://logos.composio.dev/api/gmail",
     "category": "email",
-    "toolCount": 60,
+    "toolCount": 62,
     "triggerCount": 2
   },
   {
@@ -68,7 +68,7 @@
     "name": "Outlook",
     "logo": "https://logos.composio.dev/api/outlook",
     "category": "email",
-    "toolCount": 299,
+    "toolCount": 300,
     "triggerCount": 5
   },
   {
@@ -764,7 +764,7 @@
     "name": "Google Super",
     "logo": "https://logos.composio.dev/api/googlesuper",
     "category": "file management & storage",
-    "toolCount": 429,
+    "toolCount": 431,
     "triggerCount": 20
   },
   {
@@ -828,7 +828,7 @@
     "name": "Zoom",
     "logo": "https://logos.composio.dev/api/zoom",
     "category": "video conferencing",
-    "toolCount": 74,
+    "toolCount": 104,
     "triggerCount": 11
   },
   {
@@ -4328,6 +4328,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "google_chat",
+    "name": "Google Chat",
+    "logo": "https://logos.composio.dev/api/google_chat",
+    "category": "productivity",
+    "toolCount": 36,
+    "triggerCount": 0
+  },
+  {
     "slug": "google_classroom",
     "name": "Google Classroom",
     "logo": "https://logos.composio.dev/api/google_classroom",
@@ -6768,6 +6776,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "sanity",
+    "name": "Sanity",
+    "logo": "https://logos.composio.dev/api/sanity",
+    "category": "developer tools",
+    "toolCount": 16,
+    "triggerCount": 0
+  },
+  {
     "slug": "sap_successfactors",
     "name": "SAP SuccessFactors",
     "logo": "https://logos.composio.dev/api/sap_successfactors",
@@ -7448,6 +7464,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "swarmsyncai",
+    "name": "Swarmsyncai",
+    "logo": "https://logos.composio.dev/api/swarmsyncai",
+    "category": "developer tools",
+    "toolCount": 91,
+    "triggerCount": 0
+  },
+  {
     "slug": "sympla",
     "name": "Sympla",
     "logo": "https://logos.composio.dev/api/sympla",
@@ -7973,30 +7997,6 @@
     "logo": "https://logos.composio.dev/api/webvizio",
     "category": "project management",
     "toolCount": 2,
-    "triggerCount": 0
-  },
-  {
-    "slug": "whautomate",
-    "name": "Whautomate",
-    "logo": "https://logos.composio.dev/api/whautomate",
-    "category": "ai chatbots",
-    "toolCount": 17,
-    "triggerCount": 0
-  },
-  {
-    "slug": "whoisfreaks",
-    "name": "Whoisfreaks",
-    "logo": "https://logos.composio.dev/api/whoisfreaks",
-    "category": "developer tools",
-    "toolCount": 17,
-    "triggerCount": 0
-  },
-  {
-    "slug": "whop",
-    "name": "Whop",
-    "logo": "https://logos.composio.dev/api/whop",
-    "category": "ecommerce",
-    "toolCount": 19,
     "triggerCount": 0
   }
 ]

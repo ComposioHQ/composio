@@ -163,6 +163,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'orgs', description: 'Manage default organization context (list, switch)' }),
   tagged({ name: 'version', description: 'Display CLI version' }),
   tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
+  tagged({ name: 'config', description: 'View and manage CLI configuration' }),
 ];
 
 // ── Render helpers ─────────────────────────────────────────────────────
@@ -442,20 +443,37 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
   }),
   link: {
-    usage: 'composio link [<toolkit>] [--no-wait]',
+    usage: 'composio link [<toolkit>] [--no-wait] [--alias text] [--list]',
     description:
       'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf. Opens a browser for OAuth authorization and waits for confirmation.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
+    options: [
+      {
+        name: '--alias <text>',
+        description:
+          'Alias for the connected account. Required when creating an additional account for the same toolkit (requires multi_account experimental feature)',
+      },
+    ],
     flags: [
       {
         name: '--no-wait',
         description: 'Print link info and exit without waiting for authorization',
       },
+      {
+        name: '--list',
+        description:
+          'List existing connected accounts for the toolkit instead of creating a new link',
+      },
     ],
-    examples: ['composio link github'],
+    examples: [
+      'composio link github',
+      'composio link gmail --alias work',
+      'composio link github --list',
+    ],
     seeAlso: [
       'composio search "<query>"               Find tools to use after linking',
       "composio execute <slug> -d '{ ... }'    Execute a tool with your connected account",
+      'composio config experimental             Manage experimental features',
     ],
   },
   run: {
@@ -680,6 +698,15 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   // ── Tools commands ────────────────────────────────────────────────────
 
+  tools: {
+    usage: 'composio tools <command>',
+    description: 'Browse and inspect tools before executing them.',
+    examples: ['composio tools list gmail', 'composio tools info GMAIL_SEND_EMAIL'],
+    seeAlso: [
+      'composio search "<query>"               Find tools by use case',
+      "composio execute <slug> -d '{ ... }'    Execute a tool directly",
+    ],
+  },
   'tools list': {
     usage: 'composio tools list <toolkit> [--query text] [--tags text] [--limit integer]',
     description: 'List available tools for a toolkit.',
@@ -981,6 +1008,24 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
     flags: [{ name: '--case-sensitive', description: 'Case-sensitive filtering' }],
   },
+  config: {
+    usage: 'composio config <subcommand>',
+    description: 'View and manage CLI configuration.',
+    seeAlso: ['composio config experimental'],
+  },
+  'config experimental': {
+    usage: 'composio config experimental [<feature>] [on|off]',
+    description: 'View or toggle experimental feature flags.',
+    args: [
+      { name: '<feature>', description: 'Feature name (e.g., listen, multi_account)' },
+      { name: 'on|off', description: 'Enable or disable the feature' },
+    ],
+    examples: [
+      'composio config experimental                     # List all features',
+      'composio config experimental listen              # Show current state',
+      'composio config experimental multi_account on    # Enable multi_account',
+    ],
+  },
   'dev logs triggers': {
     usage:
       'composio dev logs triggers [--trigger text] [--trigger-id text] [--limit integer] [--time 5m|30m|6h|1d|1w] [<log_id>]',
@@ -1219,6 +1264,10 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     `  ${dim('# Run a script with injected helpers')}`,
     `  ${name} run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
     '',
+    `  ${dim('# Manually install the composio skill when auto-install fails')}`,
+    `  ${name} --instal-skill claude`,
+    `  ${name} --instal-skill composio-cli codex`,
+    '',
     `  ${dim('# Run a multi-step script with Promise.all')}`,
     `  ${name} run '`,
     `    const [emails, issues] = await Promise.all([`,
@@ -1253,6 +1302,8 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     bold('FLAGS'),
     '  -h, --help     Show help for command',
     `  --version      Show ${name} version`,
+    '  --instal-skill [skill-name] <claude|codex|openclaw>',
+    '                  Manually install the composio skill for a supported agent',
     '',
     bold('LEARN MORE'),
     `  Use \`${name} <command> --help\` for more information about a command.`,
