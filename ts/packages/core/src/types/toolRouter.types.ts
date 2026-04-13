@@ -323,6 +323,7 @@ export const ToolkitConnectionStateSchema = z
 
 export const ToolkitConnectionsDetailsSchema = z.object({
   items: z.array(ToolkitConnectionStateSchema),
+  cursor: z.string().optional(),
   nextCursor: z.string().optional(),
   totalPages: z.number(),
 });
@@ -348,56 +349,17 @@ export type ToolRouterAuthorizeFn = (
   options?: { callbackUrl?: string; alias?: string }
 ) => Promise<ConnectionRequest>;
 
-export const DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT = 20;
 export const MAX_TOOL_ROUTER_TOOLKITS_LIMIT = 50;
 
 export const ToolRouterToolkitsOptionsSchema = z
   .object({
     toolkits: z.array(z.string()).optional(),
-    nextCursor: z.string().optional(),
     cursor: z.string().optional(),
-    page: z.number().int().min(1).optional(),
-    offset: z.number().int().min(0).optional(),
     limit: z.number().int().positive().max(MAX_TOOL_ROUTER_TOOLKITS_LIMIT).optional(),
     isConnected: z.boolean().optional(),
     search: z.string().optional(),
   })
-  .superRefine((value, ctx) => {
-    if (
-      value.cursor !== undefined &&
-      value.nextCursor !== undefined &&
-      value.cursor !== value.nextCursor
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['cursor'],
-        message: '`cursor` and `nextCursor` must match when both are provided',
-      });
-    }
-
-    const hasCursor = value.cursor !== undefined || value.nextCursor !== undefined;
-    const hasPage = value.page !== undefined;
-    const hasOffset = value.offset !== undefined;
-
-    if ((hasCursor && hasPage) || (hasCursor && hasOffset) || (hasPage && hasOffset)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['cursor'],
-        message: 'Use only one pagination strategy: cursor/nextCursor, page, or offset',
-      });
-    }
-
-    if (value.offset !== undefined) {
-      const effectiveLimit = value.limit ?? DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT;
-      if (value.offset % effectiveLimit !== 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['offset'],
-          message: `offset must be a multiple of limit (${effectiveLimit})`,
-        });
-      }
-    }
-  });
+  .strict();
 export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptionsSchema>;
 
 export type ToolRouterToolkitsFn = (

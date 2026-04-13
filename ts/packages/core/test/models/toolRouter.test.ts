@@ -1650,6 +1650,7 @@ describe('ToolRouter', () => {
       });
 
       expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('cursor', 'cursor_789');
       expect(result).toHaveProperty('nextCursor', 'cursor_789');
       expect(result).toHaveProperty('totalPages', 2);
       expect(result.items).toHaveLength(3);
@@ -1661,7 +1662,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.toolkits({
         limit: 10,
-        nextCursor: 'cursor_abc',
+        cursor: 'cursor_abc',
       });
 
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
@@ -1674,90 +1675,18 @@ describe('ToolRouter', () => {
       expect(result.items).toHaveLength(3);
     });
 
-    it('should accept cursor as an alias for nextCursor', async () => {
+    it('should keep accepting nextCursor as a legacy alias', async () => {
       mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
 
       const session = await toolRouter.create(userId);
       const result = await session.toolkits({
         limit: 10,
-        cursor: 'cursor_alias',
-      });
+        nextCursor: 'cursor_alias',
+      } as never);
 
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: 'cursor_alias',
         limit: 10,
-        toolkits: undefined,
-        is_connected: undefined,
-        search: undefined,
-      });
-
-      expect(result.items).toHaveLength(3);
-    });
-
-    it('should convert page pagination into the backend cursor format', async () => {
-      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
-
-      const session = await toolRouter.create(userId);
-      const result = await session.toolkits({
-        page: 2,
-      });
-
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: Buffer.from('2-20').toString('base64'),
-        limit: 20,
-        toolkits: undefined,
-        is_connected: undefined,
-        search: undefined,
-      });
-
-      expect(result.items).toHaveLength(3);
-    });
-
-    it('should convert offset pagination into the backend cursor format', async () => {
-      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
-
-      const session = await toolRouter.create(userId);
-      const result = await session.toolkits({
-        offset: 20,
-      });
-
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: Buffer.from('2-20').toString('base64'),
-        limit: 20,
-        toolkits: undefined,
-        is_connected: undefined,
-        search: undefined,
-      });
-
-      expect(result.items).toHaveLength(3);
-    });
-
-    it('should not send a cursor for page 1', async () => {
-      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
-
-      const session = await toolRouter.create(userId);
-      const result = await session.toolkits({ page: 1 });
-
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: undefined,
-        limit: 20,
-        toolkits: undefined,
-        is_connected: undefined,
-        search: undefined,
-      });
-
-      expect(result.items).toHaveLength(3);
-    });
-
-    it('should not send a cursor for offset 0', async () => {
-      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
-
-      const session = await toolRouter.create(userId);
-      const result = await session.toolkits({ offset: 0 });
-
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: undefined,
-        limit: 20,
         toolkits: undefined,
         is_connected: undefined,
         search: undefined,
@@ -1808,7 +1737,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.toolkits({
         limit: 5,
-        nextCursor: 'cursor_xyz',
+        cursor: 'cursor_xyz',
         toolkits: ['github'],
       });
 
@@ -1828,7 +1757,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.toolkits({
         limit: 5,
-        nextCursor: 'cursor_xyz',
+        cursor: 'cursor_xyz',
         toolkits: ['github', 'gmail'],
         isConnected: false,
       });
@@ -1959,14 +1888,16 @@ describe('ToolRouter', () => {
       // Fetch first page
       const page1 = await session.toolkits({ limit: 2 });
       expect(page1.items).toHaveLength(2);
+      expect(page1.cursor).toBe('cursor_page2');
       expect(page1.nextCursor).toBe('cursor_page2');
 
       // Fetch second page
       const page2 = await session.toolkits({
         limit: 2,
-        nextCursor: page1.nextCursor,
+        cursor: page1.cursor,
       });
       expect(page2.items).toHaveLength(1);
+      expect(page2.cursor).toBeUndefined();
       expect(page2.nextCursor).toBeUndefined();
     });
 
@@ -2015,41 +1946,26 @@ describe('ToolRouter', () => {
       ).rejects.toThrow();
     });
 
-    it('should throw validation error for mismatched cursor aliases', async () => {
+    it('should throw validation error for unsupported page pagination', async () => {
       const session = await toolRouter.create(userId);
 
       await expect(
         session.toolkits({
-          cursor: 'cursor_abc',
-          nextCursor: 'cursor_xyz',
-        })
-      ).rejects.toThrow('`cursor` and `nextCursor` must match when both are provided');
-
-      expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
-    });
-
-    it('should throw validation error for conflicting pagination strategies', async () => {
-      const session = await toolRouter.create(userId);
-
-      await expect(
-        session.toolkits({
-          cursor: 'cursor_abc',
           page: 2,
-        })
-      ).rejects.toThrow('Use only one pagination strategy: cursor/nextCursor, page, or offset');
+        } as never)
+      ).rejects.toThrow("Unrecognized key(s) in object: 'page'");
 
       expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
     });
 
-    it('should throw validation error for offsets that do not align with the page size', async () => {
+    it('should throw validation error for unsupported offset pagination', async () => {
       const session = await toolRouter.create(userId);
 
       await expect(
         session.toolkits({
-          offset: 21,
-          limit: 20,
-        })
-      ).rejects.toThrow('offset must be a multiple of limit (20)');
+          offset: 20,
+        } as never)
+      ).rejects.toThrow("Unrecognized key(s) in object: 'offset'");
 
       expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
     });

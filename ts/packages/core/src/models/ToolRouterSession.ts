@@ -7,7 +7,6 @@ import {
   SessionExperimental,
   ToolRouterToolkitsOptions,
   ToolRouterToolkitsOptionsSchema,
-  DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT,
   ToolRouterSessionSearchResponse,
   ToolRouterSessionSearchResponseSchema,
   ToolRouterSessionExecuteResponse,
@@ -43,37 +42,18 @@ import { transformProxyParams } from './proxyParamsTransform';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
 
-function encodeToolkitPaginationCursor(page: number, limit: number): string {
-  return btoa(`${page}-${limit}`);
-}
-
-function normalizeToolkitPagination(options: ToolRouterToolkitsOptions): {
-  cursor?: string;
-  limit?: number;
-} {
-  const cursor = options.nextCursor ?? options.cursor;
-  if (cursor !== undefined) {
-    return { cursor, limit: options.limit };
+function normalizeToolkitOptionsInput(
+  options?: ToolRouterToolkitsOptions | Record<string, unknown>
+): ToolRouterToolkitsOptions | Record<string, unknown> {
+  if (!options || typeof options !== 'object' || !('nextCursor' in options)) {
+    return options ?? {};
   }
 
-  const limit = options.limit ?? DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT;
-
-  if (options.page !== undefined) {
-    return {
-      cursor: options.page > 1 ? encodeToolkitPaginationCursor(options.page, limit) : undefined,
-      limit,
-    };
-  }
-
-  if (options.offset !== undefined) {
-    const page = Math.floor(options.offset / limit) + 1;
-    return {
-      cursor: page > 1 ? encodeToolkitPaginationCursor(page, limit) : undefined,
-      limit,
-    };
-  }
-
-  return { cursor: undefined, limit: options.limit };
+  const { nextCursor, cursor, ...rest } = options as Record<string, unknown>;
+  return {
+    ...rest,
+    ...(cursor !== undefined ? { cursor } : nextCursor !== undefined ? { cursor: nextCursor } : {}),
+  };
 }
 
 export class ToolRouterSession<
@@ -243,17 +223,19 @@ export class ToolRouterSession<
    * Supports pagination and filtering by toolkit slugs.
    */
   async toolkits(options?: ToolRouterToolkitsOptions) {
-    const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(options ?? {});
+    const normalizedOptions = normalizeToolkitOptionsInput(
+      options as ToolRouterToolkitsOptions | Record<string, unknown> | undefined
+    );
+    const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(normalizedOptions);
     if (!toolkitOptions.success) {
       throw new ValidationError('Failed to parse toolkits options', {
         cause: toolkitOptions.error,
       });
     }
 
-    const pagination = normalizeToolkitPagination(toolkitOptions.data);
     const result = await this.client.toolRouter.session.toolkits(this.sessionId, {
-      cursor: pagination.cursor,
-      limit: pagination.limit,
+      cursor: toolkitOptions.data.cursor,
+      limit: toolkitOptions.data.limit,
       toolkits: toolkitOptions.data.toolkits,
       is_connected: toolkitOptions.data.isConnected,
       search: toolkitOptions.data.search,
@@ -287,9 +269,11 @@ export class ToolRouterSession<
       return connectedState;
     });
 
+    const cursor = result.next_cursor ?? undefined;
     return {
       items: toolkitConnectedStates,
-      nextCursor: result.next_cursor ?? undefined,
+      cursor,
+      nextCursor: cursor,
       totalPages: result.total_pages,
     };
   }
