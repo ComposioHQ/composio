@@ -14,21 +14,25 @@
 import type { CredentialStore } from '../core/store';
 import { MacOSSecuritySubprocessStore } from './macos-security-subprocess';
 
-/** True when running inside the Bun runtime (production CLI binary, or `bun` CLI). */
-const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined';
-
 /**
  * Resolve the appropriate macOS store for the current runtime.
  *
- * The FFI module is imported dynamically so Node doesn't choke on its
- * top-level `import 'bun:ffi'` — the failing import would crash Node
- * at module load time even if callers never intend to use it.
+ * Always returns the subprocess store today. The FFI backend is
+ * architecturally ready (see `macos-security-ffi.ts`) but is
+ * intentionally NOT selected here: direct `SecItemCopyMatching` calls
+ * from an **ad-hoc signed** composio binary trigger a macOS keychain
+ * trust dialog on read, even when the item's ACL is allow-any via
+ * `security -A`. Apple's own `/usr/bin/security` binary is Developer
+ * ID-signed by Apple and is exempt from this additional check, so
+ * shelling out reads and writes through it works consistently. The
+ * FFI path becomes viable the day the composio CLI ships with a
+ * stable Developer ID signature — one-line flip then.
+ *
+ * Signature kept async to preserve the API contract for when the FFI
+ * path is re-enabled (it needs dynamic `import('./macos-security-ffi')`
+ * to avoid a top-level `import 'bun:ffi'` that would crash Node).
  */
 export async function createMacOSStore(): Promise<CredentialStore> {
-  if (isBun) {
-    const mod = await import('./macos-security-ffi');
-    return new mod.MacOSSecurityFFIStore();
-  }
   return new MacOSSecuritySubprocessStore();
 }
 

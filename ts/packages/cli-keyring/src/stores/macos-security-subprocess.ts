@@ -116,7 +116,31 @@ export class MacOSSecuritySubprocessStore implements CredentialStore {
     const label = modifiers.label ?? defaultLabel(service, user);
     const domainArgs = domainFlag(modifiers.keychain);
 
-    // -U: update if it already exists (idempotent set).
+    // Delete-then-add pattern instead of `-U`: the `-U` flag updates
+    // the password of an existing entry but PRESERVES the old ACL.
+    // If a previous composio version wrote this entry with a
+    // per-binary ACL (e.g. the FFI ACL builder in an earlier beta),
+    // `-U` would leave that ACL in place and our `-A` flag would be
+    // silently ignored. Deleting first guarantees a fresh allow-any
+    // ACL on the next add.
+    //
+    // The delete is best-effort — if no entry exists yet (first
+    // login / clean install), `security` exits with 44 (itemNotFound)
+    // and we proceed to the add.
+    try {
+      await runCommand({
+        command: SECURITY_BIN,
+        args: ['delete-generic-password', '-a', user, '-s', service, ...domainArgs],
+      });
+    } catch {
+      // Spawn failure (e.g. /usr/bin/security missing) — the add
+      // below will hit the same failure and surface it properly.
+    }
+
+    // -A: allow ANY application to read this item without prompting
+    //     (produces a genuine allow-any ACL — the only configuration
+    //      that works reliably for reads from an ad-hoc signed
+    //      composio binary via /usr/bin/security).
     // -l: human-readable label (shown in Keychain Access).
     //
     // Password leak risk: `-w <value>` puts the secret on argv, so it
@@ -127,7 +151,7 @@ export class MacOSSecuritySubprocessStore implements CredentialStore {
     // user config — the CLI already owns that code path.
     const args = [
       'add-generic-password',
-      '-U',
+      '-A',
       '-a',
       user,
       '-s',
@@ -148,12 +172,14 @@ export class MacOSSecuritySubprocessStore implements CredentialStore {
 
     if (result.code === 0) return;
 
-    // With -U, duplicates should update in place; if we still see
-    // errSecDuplicateItem something unusual happened.
     if (result.code === EXIT_DUPLICATE_ITEM) {
       throw new KeyringError({
         kind: 'PlatformFailure',
-        cause: new Error('security add-generic-password: duplicate item despite -U flag'),
+        cause: new Error(
+          'security add-generic-password: delete-then-add produced duplicate. ' +
+            'The existing item may have an ACL that blocks deletion — ' +
+            'run `security delete-generic-password -s com.composio.cli -a default` manually.'
+        ),
       });
     }
     throw classifyExitCode(result, 'add-generic-password');
