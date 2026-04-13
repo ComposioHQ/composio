@@ -7,6 +7,7 @@ import {
   SessionExperimental,
   ToolRouterToolkitsOptions,
   ToolRouterToolkitsOptionsSchema,
+  DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT,
   ToolRouterSessionSearchResponse,
   ToolRouterSessionSearchResponseSchema,
   ToolRouterSessionExecuteResponse,
@@ -41,6 +42,39 @@ import { findCustomTool, executeCustomTool } from './customToolExecution';
 import { transformProxyParams } from './proxyParamsTransform';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
+
+function encodeToolkitPaginationCursor(page: number, limit: number): string {
+  return btoa(`${page}-${limit}`);
+}
+
+function normalizeToolkitPagination(options: ToolRouterToolkitsOptions): {
+  cursor?: string;
+  limit?: number;
+} {
+  const cursor = options.nextCursor ?? options.cursor;
+  if (cursor !== undefined) {
+    return { cursor, limit: options.limit };
+  }
+
+  const limit = options.limit ?? DEFAULT_TOOL_ROUTER_TOOLKITS_LIMIT;
+
+  if (options.page !== undefined) {
+    return {
+      cursor: options.page > 1 ? encodeToolkitPaginationCursor(options.page, limit) : undefined,
+      limit,
+    };
+  }
+
+  if (options.offset !== undefined) {
+    const page = Math.floor(options.offset / limit) + 1;
+    return {
+      cursor: page > 1 ? encodeToolkitPaginationCursor(page, limit) : undefined,
+      limit,
+    };
+  }
+
+  return { cursor: undefined, limit: options.limit };
+}
 
 export class ToolRouterSession<
   TToolCollection,
@@ -216,9 +250,10 @@ export class ToolRouterSession<
       });
     }
 
+    const pagination = normalizeToolkitPagination(toolkitOptions.data);
     const result = await this.client.toolRouter.session.toolkits(this.sessionId, {
-      cursor: toolkitOptions.data.nextCursor,
-      limit: toolkitOptions.data.limit,
+      cursor: pagination.cursor,
+      limit: pagination.limit,
       toolkits: toolkitOptions.data.toolkits,
       is_connected: toolkitOptions.data.isConnected,
       search: toolkitOptions.data.search,
