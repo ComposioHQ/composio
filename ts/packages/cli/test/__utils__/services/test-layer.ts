@@ -39,7 +39,18 @@ import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { TriggerInstanceItem } from 'src/models/triggers';
 import type { AuthConfigCreateResponse, LinkCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
-import { ComposioUserContextLive } from 'src/services/user-context';
+import {
+  ComposioUserContextLive as _unusedComposioUserContextLive,
+  rawComposioUserContextLive,
+} from 'src/services/user-context';
+import { makeKeyringService, KeyringService } from '@composio/cli-keyring/effect';
+import {
+  type CredentialStore,
+  type EntryModifiers,
+  KeyringError,
+  CredentialPersistence,
+} from '@composio/cli-keyring';
+void _unusedComposioUserContextLive;
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CliUserConfig } from 'src/models/cli-user-config';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
@@ -797,9 +808,75 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
+    /**
+     * In-memory mock keyring for tests — never touches the real macOS
+     * Keychain / Linux Secret Service. Each test gets a fresh store,
+     * so no state bleeds between runs and there is no risk of tests
+     * reading an API key a previous run happened to leave in the
+     * user's actual keychain.
+     */
+    const makeInMemoryKeyringStore = (): CredentialStore => {
+      const items = new Map<string, Uint8Array>();
+      const key = (service: string, user: string) => `${service}\0${user}`;
+      return {
+        id: 'memory',
+        vendor: 'in-memory (test)',
+        persistence: () => CredentialPersistence.ProcessOnly,
+        async setSecret(
+          service: string,
+          user: string,
+          secret: Uint8Array,
+          _modifiers: EntryModifiers
+        ) {
+          items.set(key(service, user), new Uint8Array(secret));
+        },
+        async getSecret(service: string, user: string, _modifiers: EntryModifiers) {
+          const v = items.get(key(service, user));
+          if (v === undefined) throw new KeyringError({ kind: 'NoEntry' });
+          return v;
+        },
+        async deleteCredential(service: string, user: string, _modifiers: EntryModifiers) {
+          if (!items.delete(key(service, user))) {
+            throw new KeyringError({ kind: 'NoEntry' });
+          }
+        },
+      };
+    };
+
+    const KeyringTest = Layer.succeed(
+      KeyringService,
+      makeKeyringService(makeInMemoryKeyringStore())
+    );
+
     const ComposioUserContextTest = Layer.provideMerge(
-      ComposioUserContextLive,
-      Layer.merge(BunFileSystem.layer, NodeOsTest)
+      rawComposioUserContextLive,
+      Layer.mergeAll(
+        BunFileSystem.layer,
+        NodeOsTest,
+        KeyringTest,
+        // Inlined below so the test layer is fully self-contained:
+        Layer.succeed(
+          ComposioCliUserConfig,
+          ComposioCliUserConfig.of({
+            data: {
+              channel: 'beta',
+              experimentalFeatures: {},
+              artifactDirectory: undefined,
+              experimentalSubagentTarget: 'auto',
+              dangerouslySaveApiKeyInUserConfig: false,
+            },
+            raw: CliUserConfig.make({
+              experimentalFeatures: {},
+              artifactDirectory: Option.none(),
+              experimentalSubagent: Option.none(),
+              dangerouslySaveApiKeyInUserConfig: false,
+            }),
+            channel: 'beta',
+            isExperimentalFeatureEnabled: () => true,
+            update: () => Effect.void,
+          })
+        )
+      )
     );
 
     const ComposioCliUserConfigTest = Layer.succeed(
@@ -810,11 +887,13 @@ export const TestLayer = (input?: TestLiveInput) =>
           experimentalFeatures: {},
           artifactDirectory: undefined,
           experimentalSubagentTarget: 'auto',
+          dangerouslySaveApiKeyInUserConfig: false,
         },
         raw: CliUserConfig.make({
           experimentalFeatures: {},
           artifactDirectory: Option.none(),
           experimentalSubagent: Option.none(),
+          dangerouslySaveApiKeyInUserConfig: false,
         }),
         channel: 'beta',
         isExperimentalFeatureEnabled: () => true,

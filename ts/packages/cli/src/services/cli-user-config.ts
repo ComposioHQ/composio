@@ -20,6 +20,12 @@ export type CliUserConfigResolved = {
   readonly experimentalFeatures: Readonly<Record<string, boolean>>;
   readonly artifactDirectory: string | undefined;
   readonly experimentalSubagentTarget: 'auto' | 'claude' | 'codex';
+  /**
+   * When `true`, the CLI skips the OS keyring and stores the API key
+   * in plaintext inside `user_data.json`. See the field docs in
+   * `src/models/cli-user-config.ts`. Default: `false`.
+   */
+  readonly dangerouslySaveApiKeyInUserConfig: boolean;
 };
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
@@ -52,6 +58,7 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
     onNone: () => 'auto',
     onSome: value => value.target,
   }),
+  dangerouslySaveApiKeyInUserConfig: raw.dangerouslySaveApiKeyInUserConfig,
 });
 
 export const ComposioCliUserConfigLive = Layer.effect(
@@ -67,6 +74,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
       experimentalFeatures: {},
       artifactDirectory: Option.none(),
       experimentalSubagent: Option.none(),
+      dangerouslySaveApiKeyInUserConfig: false,
     });
 
     const persist = (next: CliUserConfig) =>
@@ -100,6 +108,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
               experimentalFeatures: {},
               artifactDirectory: Option.none(),
               experimentalSubagent: Option.none(),
+              dangerouslySaveApiKeyInUserConfig: false,
             })
           )
         )

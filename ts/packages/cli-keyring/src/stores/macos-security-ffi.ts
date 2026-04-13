@@ -53,9 +53,11 @@ import { dlopen, FFIType, ptr, toArrayBuffer } from 'bun:ffi';
 import type { CredentialStore, EntryModifiers } from '../core/store';
 import { CredentialPersistence } from '../core/persistence';
 import { KeyringError } from '../core/errors';
+import { bytesToUtf8, decodeSecret, encodeSecret, runCommand } from './shared';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder('utf-8');
+const SECURITY_BIN = '/usr/bin/security';
 
 /** Encode a JS string as a NUL-terminated UTF-8 byte array (for dlopen/dlsym). */
 function cstr(s: string): Uint8Array {
@@ -198,18 +200,6 @@ const sec = dlopen(SECURITY_FRAMEWORK, {
     args: [FFIType.u64],
     returns: FFIType.i32,
   },
-  SecAccessCreate: {
-    args: [FFIType.u64, FFIType.u64, FFIType.u64],
-    returns: FFIType.i32,
-  },
-  SecAccessCopyACLList: {
-    args: [FFIType.u64, FFIType.u64],
-    returns: FFIType.i32,
-  },
-  SecACLSetSimpleContents: {
-    args: [FFIType.u64, FFIType.u64, FFIType.u64, FFIType.u64],
-    returns: FFIType.i32,
-  },
   SecCopyErrorMessageString: {
     args: [FFIType.i32, FFIType.u64],
     returns: FFIType.u64,
@@ -226,8 +216,6 @@ const K = {
   kSecClassGenericPassword: dlsymCFConstant(securityHandle, 'kSecClassGenericPassword'),
   kSecAttrService: dlsymCFConstant(securityHandle, 'kSecAttrService'),
   kSecAttrAccount: dlsymCFConstant(securityHandle, 'kSecAttrAccount'),
-  kSecAttrLabel: dlsymCFConstant(securityHandle, 'kSecAttrLabel'),
-  kSecAttrAccess: dlsymCFConstant(securityHandle, 'kSecAttrAccess'),
   kSecValueData: dlsymCFConstant(securityHandle, 'kSecValueData'),
   kSecReturnData: dlsymCFConstant(securityHandle, 'kSecReturnData'),
   kSecMatchLimit: dlsymCFConstant(securityHandle, 'kSecMatchLimit'),
@@ -267,7 +255,6 @@ const kCFStringEncodingUTF8 = 0x08000100;
 
 const errSecSuccess = 0;
 const errSecItemNotFound = -25300;
-const errSecDuplicateItem = -25299;
 const errSecAuthFailed = -25293;
 const errSecNotAvailable = -25291;
 const errSecReadOnly = -25292;
@@ -376,18 +363,6 @@ function cfStringToJs(cfString: bigint): string {
   return textDecoder.decode(buf.subarray(0, end === -1 ? buf.byteLength : end));
 }
 
-/** Create a CFData from Uint8Array. */
-function cfDataFromBytes(pool: CFPool, bytes: Uint8Array): bigint {
-  const ref = cf.symbols.CFDataCreate(0n, bytes, BigInt(bytes.byteLength));
-  if (ref === 0n) {
-    throw new KeyringError({
-      kind: 'PlatformFailure',
-      cause: new Error('CFDataCreate returned NULL'),
-    });
-  }
-  return pool.retain(ref);
-}
-
 /** Extract raw bytes from a CFData. */
 function cfDataToBytes(cfData: bigint): Uint8Array {
   const length = Number(cf.symbols.CFDataGetLength(cfData));
@@ -426,82 +401,6 @@ function cfMutableDict(pool: CFPool): bigint {
 
 function cfDictSet(dict: bigint, key: bigint, value: bigint): void {
   cf.symbols.CFDictionaryAddValue(dict, key, value);
-}
-
-// -----------------------------------------------------------------------------
-// Allow-any SecAccess builder
-// -----------------------------------------------------------------------------
-
-/**
- * Build a `SecAccessRef` that allows any application to read the
- * associated keychain item without prompting. This is the
- * Security.framework equivalent of `security add-generic-password -A`.
- *
- * Implementation follows the `security` CLI source: create a default
- * access ref, enumerate its ACLs, and replace each ACL's "simple
- * contents" with `(applicationList = NULL, description, promptSelector
- * = {version: 1, flags: 0})`. `applicationList = NULL` means "any
- * application"; `flags = 0` means "no auth prompt required".
- *
- * The resulting access ref is upgrade-stable: because no binary
- * identity is recorded, the composio binary's code signature is
- * irrelevant. Replacing this function with a `buildComposioOnlyAccess`
- * variant is the single-line flip we'll make once the CLI is signed
- * with a stable Developer ID.
- */
-function buildAllowAnyAccess(pool: CFPool, label: string): bigint {
-  const description = cfStringFromJs(pool, label);
-
-  // SecAccessCreate(description, NULL, &access) — write pointer into
-  // an 8-byte scratch slot.
-  const accessOut = new Uint8Array(8);
-  const accessView = new DataView(accessOut.buffer);
-  let status = sec.symbols.SecAccessCreate(description, 0n, BigInt(ptr(accessOut)));
-  if (status !== errSecSuccess) {
-    throw osStatusToError(status, 'SecAccessCreate');
-  }
-  const access = accessView.getBigUint64(0, true);
-  pool.retain(access);
-
-  // SecAccessCopyACLList(access, &aclList)
-  const aclListOut = new Uint8Array(8);
-  const aclListView = new DataView(aclListOut.buffer);
-  status = sec.symbols.SecAccessCopyACLList(access, BigInt(ptr(aclListOut)));
-  if (status !== errSecSuccess) {
-    throw osStatusToError(status, 'SecAccessCopyACLList');
-  }
-  const aclList = aclListView.getBigUint64(0, true);
-  pool.retain(aclList);
-
-  // CSSM_ACL_KEYCHAIN_PROMPT_SELECTOR { version: 0x0101, flags: 0 }
-  //
-  // Verified empirically via `SecACLCopySimpleContents` on a freshly
-  // created access ref — macOS hands back `01 01 00 00 00 00 00 00`
-  // as the selector bytes, so the current version tag is 0x0101
-  // (not 1 as some older CSSM docs suggest). Passing the wrong
-  // version makes SecItemAdd fail with errSecInvalidAccessRequest
-  // / "An invalid ACL was encountered".
-  const selector = new Uint8Array(8);
-  const selectorView = new DataView(selector.buffer);
-  selectorView.setUint32(0, 0x0101, true); // CSSM_ACL_KEYCHAIN_PROMPT_CURRENT_VERSION
-  selectorView.setUint32(4, 0, true); // flags = 0 → no auth prompt required
-  const selectorPtr = BigInt(ptr(selector));
-
-  const count = Number(cf.symbols.CFArrayGetCount(aclList));
-  for (let i = 0; i < count; i++) {
-    const acl = cf.symbols.CFArrayGetValueAtIndex(aclList, BigInt(i));
-    const st = sec.symbols.SecACLSetSimpleContents(
-      acl,
-      0n, // applicationList = NULL → allow any
-      description,
-      selectorPtr
-    );
-    if (st !== errSecSuccess) {
-      throw osStatusToError(st, 'SecACLSetSimpleContents');
-    }
-  }
-
-  return access;
 }
 
 // -----------------------------------------------------------------------------
@@ -558,50 +457,56 @@ export class MacOSSecurityFFIStore implements CredentialStore {
       });
     }
 
-    const pool = new CFPool();
+    // Writes delegate to `/usr/bin/security add-generic-password -A`
+    // (subprocess) because that is the ONLY path that reliably produces
+    // a genuine allow-any ACL. The Security.framework APIs
+    // (SecAccessCreate + SecACLSetSimpleContents with NULL
+    // applicationList + zero selector) should theoretically produce the
+    // same result, but in practice the items they produce still trigger
+    // the macOS trust dialog ("X wants to access key Y") when read
+    // from a different binary. Apple's `security` CLI uses internal
+    // codepaths that bypass this limitation.
+    //
+    // The write happens once per login/migration — its ~25ms cost is
+    // irrelevant relative to the network round-trip that follows. The
+    // hot path (reads on every `composio execute`) stays on FFI at
+    // ~1ms via SecItemCopyMatching.
+    const encoded = encodeSecret(secret);
+    const label = modifiers.label ?? defaultLabel(service, user);
+
+    // `-A`  = allow any application to read without prompting
+    // `-U`  = update-or-insert (idempotent set)
+    // `-l`  = human-readable label (shown in Keychain Access)
+    // `-w`  = password value (on argv — brief `ps` visibility,
+    //         documented in the package README)
+    const args = [
+      'add-generic-password',
+      '-A',
+      '-U',
+      '-a',
+      user,
+      '-s',
+      service,
+      '-l',
+      label,
+      '-w',
+      encoded,
+    ];
+
+    let result;
     try {
-      const label = modifiers.label ?? defaultLabel(service, user);
-      const access = buildAllowAnyAccess(pool, label);
-
-      const attrs = cfMutableDict(pool);
-      cfDictSet(attrs, K.kSecClass, K.kSecClassGenericPassword);
-      cfDictSet(attrs, K.kSecAttrService, cfStringFromJs(pool, service));
-      cfDictSet(attrs, K.kSecAttrAccount, cfStringFromJs(pool, user));
-      cfDictSet(attrs, K.kSecAttrLabel, cfStringFromJs(pool, label));
-      cfDictSet(attrs, K.kSecAttrAccess, access);
-      cfDictSet(attrs, K.kSecValueData, cfDataFromBytes(pool, secret));
-
-      // SecItemAdd first; if the row already exists we fall through
-      // to SecItemUpdate.
-      const status = sec.symbols.SecItemAdd(attrs, 0n);
-      if (status === errSecSuccess) return;
-
-      if (status === errSecDuplicateItem) {
-        const queryPool = new CFPool();
-        try {
-          const query = cfMutableDict(queryPool);
-          cfDictSet(query, K.kSecClass, K.kSecClassGenericPassword);
-          cfDictSet(query, K.kSecAttrService, cfStringFromJs(queryPool, service));
-          cfDictSet(query, K.kSecAttrAccount, cfStringFromJs(queryPool, user));
-
-          const update = cfMutableDict(queryPool);
-          cfDictSet(update, K.kSecValueData, cfDataFromBytes(queryPool, secret));
-          cfDictSet(update, K.kSecAttrLabel, cfStringFromJs(queryPool, label));
-
-          const upStatus = sec.symbols.SecItemUpdate(query, update);
-          if (upStatus !== errSecSuccess) {
-            throw osStatusToError(upStatus, 'SecItemUpdate');
-          }
-          return;
-        } finally {
-          queryPool.release();
-        }
-      }
-
-      throw osStatusToError(status, 'SecItemAdd');
-    } finally {
-      pool.release();
+      result = await runCommand({ command: SECURITY_BIN, args });
+    } catch (err) {
+      throw new KeyringError({ kind: 'NoStorageAccess', cause: err });
     }
+
+    if (result.code === 0) return;
+
+    const stderr = bytesToUtf8(result.stderr).trim();
+    throw new KeyringError({
+      kind: 'PlatformFailure',
+      cause: new Error(stderr || `security add-generic-password failed with exit ${result.code}`),
+    });
   }
 
   async getSecret(service: string, user: string, modifiers: EntryModifiers): Promise<Uint8Array> {
@@ -634,7 +539,18 @@ export class MacOSSecurityFFIStore implements CredentialStore {
         throw new KeyringError({ kind: 'NoEntry' });
       }
       try {
-        return cfDataToBytes(cfData);
+        const encoded = cfDataToBytes(cfData);
+        // Legacy-item compatibility: if this entry was written by a
+        // pre-base64 version of the FFI backend, the bytes won't have
+        // the `b64:` prefix. `decodeSecret` throws in that case; we
+        // fall back to returning the raw bytes so one-time reads of
+        // old entries still work (the next setPassword call
+        // rewrites them in the canonical format).
+        try {
+          return decodeSecret(bytesToUtf8(encoded));
+        } catch {
+          return encoded;
+        }
       } finally {
         cf.symbols.CFRelease(cfData);
       }

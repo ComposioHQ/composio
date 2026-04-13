@@ -1,11 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { ComposioUserContext } from 'src/services/user-context';
 
 const mockFetchResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -103,8 +104,18 @@ describe('CLI: composio login', () => {
         const userConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
         const rawUserConfig = yield* fs.readFileString(userConfigPath, 'utf8');
         const userConfig = JSON.parse(rawUserConfig) as Record<string, unknown>;
-        expect(userConfig.api_key).toBe('uak_direct_key');
+        // As of the keyring migration, the API key lives in the OS
+        // keyring (mocked in-memory for tests) and is stripped from
+        // user_data.json on login. Non-secret fields like org_id
+        // still round-trip through user_data.json as before.
+        expect(userConfig.api_key).toBeUndefined();
         expect(userConfig.org_id).toBe('org_selected');
+
+        // The resolved in-memory api key is observable via
+        // ComposioUserContext, which the CLI uses to authenticate
+        // subsequent API calls in this process.
+        const ctx = yield* ComposioUserContext;
+        expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_direct_key');
 
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('Logged in as cli@example.com in "Selected Org"');

@@ -1058,6 +1058,9 @@ importers:
       '@clack/prompts':
         specifier: 'catalog:'
         version: 1.0.1
+      '@composio/cli-keyring':
+        specifier: workspace:*
+        version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
         version: 0.1.0-alpha.66

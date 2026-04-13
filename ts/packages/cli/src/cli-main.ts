@@ -44,6 +44,12 @@ type RequiredLayer = Layer.Layer<any, any, never>;
 
 export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies RequiredLayer;
 
+// The exported `_ComposioUserContextLive` from `services/user-context`
+// already pre-provides `KeyringLive` and `ComposioCliUserConfigLive`
+// internally, so the only external dep left is `FileSystem`. Keeping
+// this shape matches what `composio-clients.ts`'s
+// `dependencies: [_ComposioUserContextLive]` arrays expect and lets
+// the `satisfies RequiredLayer` check stay tight.
 export const ComposioUserContextLive = Layer.provide(
   _ComposioUserContextLive,
   Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
