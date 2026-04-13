@@ -1,0 +1,165 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Classify issue with Claude Sonnet
+        id: classify
+        uses: actions/github-script@v8
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        with:
+          script: |
+            const title = process.env.ISSUE_TITLE || "";
+            const body = process.env.ISSUE_BODY || "";
+
+            const prompt = [
+              "Classify this GitHub issue into exactly one category.",
+              "",
+              "Allowed categories:",
+              "- docs",
+              "- py",
+              "- ts",
+              "- cli",
+              "- tool-request",
+              "- other",
+              "",
+              "Use semantic meaning, not only keywords.",
+              "Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.",
+              "Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.",
+              "Choose py only when the issue is primarily about the Python SDK.",
+              "Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.",
+              "Choose docs only when the issue is primarily about documentation.",
+              "",
+              "Return strict JSON with this schema only:",
+              '{"category":"docs|py|ts|cli|tool-request|other","reason":"short sentence"}',
+              "",
+              `Title: ${title}`,
+              "",
+              "Body:",
+              body
+            ].join("\n");
+
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-api-key": process.env.ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01"
+              },
+              body: JSON.stringify({
+                model: "claude-sonnet-4-20250514",
+                max_tokens: 200,
+                temperature: 0,
+                messages: [{ role: "user", content: prompt }]
+              })
+            });
+
+            if (!response.ok) {
+              const text = await response.text();
+              core.setFailed(`Anthropic classification failed: ${response.status} ${text}`);
+              return;
+            }
+
+            const data = await response.json();
+            const text = data?.content?.map((item) => item.text || "").join("").trim() || "";
+
+            let parsed;
+            try {
+              parsed = JSON.parse(text);
+            } catch (error) {
+              core.setFailed(`Could not parse classifier output as JSON: ${text}`);
+              return;
+            }
+
+            const allowed = new Set(["docs", "py", "ts", "cli", "tool-request", "other"]);
+            if (!allowed.has(parsed.category)) {
+              core.setFailed(`Unexpected category: ${parsed.category}`);
+              return;
+            }
+
+            core.setOutput("category", parsed.category);
+            core.setOutput("reason", parsed.reason || "");
+
+      - name: Apply labels, assignees, and tool-request handling
+        uses: actions/github-script@v8
+        env:
+          CATEGORY: ${{ steps.classify.outputs.category }}
+          REASON: ${{ steps.classify.outputs.reason }}
+        with:
+          script: |
+            const category = process.env.CATEGORY;
+            const reason = process.env.REASON;
+            const issue_number = context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const labels = [];
+            const assignees = [];
+
+            if (category === "docs") {
+              labels.push("docs");
+              assignees.push("shawnesquivel", "Sushmithamallesh");
+            } else if (category === "py") {
+              labels.push("py");
+              assignees.push("jkomyno");
+            } else if (category === "ts") {
+              labels.push("ts");
+              assignees.push("jkomyno");
+            } else if (category === "cli") {
+              labels.push("cli");
+              assignees.push("CryogenicPlanet");
+            } else if (category === "tool-request") {
+              labels.push("tool-request");
+            }
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels,
+              });
+            }
+
+            if (assignees.length > 0) {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number,
+                assignees,
+              });
+            }
+
+            if (category === "tool-request" && context.payload.issue.state === "open") {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: [
+                  "Hey, please ask for tool requests here https://request.composio.dev/boards/tool-requests",
+                  "",
+                  "I've tagged this as `tool-request` and I'm closing it here.",
+                  "",
+                  `Classifier note: ${reason}`
+                ].join("\n"),
+              });
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: "closed",
+              });
+            }

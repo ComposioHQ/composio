@@ -20,24 +20,24 @@ jobs:
           # General settings
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-before-stale: 60
-          days-before-close: 2
+          days-before-close: 0
           ascending: true
 
           # Issue settings
           stale-issue-label: "stale"
           exempt-issue-labels: "pinned,security,bug,needs-triage,roadmap,enhancement,good first issue"
           stale-issue-message: |
-            beep boop inactive for 60 days, closing in 48 hours
+            Closing due to 60 days of inactivity. Comment here if this still needs attention.
           close-issue-message: |
-            closed due to inactivity. feel free to reopen if the issue persists.
+            Closed due to inactivity. Reopen if this is still relevant.
 
           # Pull request settings
           stale-pr-label: "stale"
           exempt-pr-labels: "pinned,security,needs-review,work-in-progress,dependencies"
           stale-pr-message: |
-            beep boop inactive for 60 days, closing in 48 hours
+            Closing due to 60 days of inactivity. Comment here if this still needs attention.
           close-pr-message: |
-            closed due to inactivity. feel free to reopen if still relevant.
+            Closed due to inactivity. Reopen if this is still relevant.
 
           # Optional: Remove stale label when updated
           remove-stale-when-updated: true
