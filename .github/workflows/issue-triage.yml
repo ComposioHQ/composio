@@ -16,7 +16,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Write triage schema
+        run: |
+          cat > /tmp/issue-triage-schema.json <<'EOF'
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": ["docs", "py", "ts", "cli", "tool-request", "other"]
+              },
+              "is_bug": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "should_comment": {
+                "type": "boolean"
+              },
+              "comment_body": {
+                "type": "string"
+              }
+            },
+            "required": ["category", "is_bug", "reason", "should_comment", "comment_body"]
+          }
+          EOF
+
       - name: Classify issue with Claude Sonnet
+        id: classify
         uses: anthropics/claude-code-action@v1
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
@@ -44,29 +73,34 @@ jobs:
             Choose docs only when the issue is primarily about documentation.
             Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.
             Set is_bug to false for feature requests, questions, maintenance, cleanup, and tool requests.
+            Set should_comment to true only when the issue appears incorrect, non-actionable, or missing the information needed to reproduce or investigate.
+            Set should_comment to false otherwise.
 
-            Write exactly one JSON object to `.github/issue-triage-result.json` with this schema:
-            {"category":"docs|py|ts|cli|tool-request|other","is_bug":true,"reason":"short sentence"}
+            If should_comment is true, provide comment_body as a short issue comment addressed to the reporter.
+            The comment must:
+            - clearly say it is an automated Claude triage note
+            - clearly say Claude cannot reply back in a conversation
+            - ask for the specific missing details needed to investigate, especially repro steps, expected behavior, actual behavior, environment, logs, or screenshots when relevant
+            - stay concise and professional
 
-            Do not modify any other files.
+            If should_comment is false, set comment_body to an empty string.
           claude_args: |
             --model claude-sonnet-4-6
-            --allowedTools "Read,Write,Edit"
+            --json-schema /tmp/issue-triage-schema.json
 
-      - name: Read triage result
-        id: classify
+      - name: Apply labels, assignees, and tool-request handling
         uses: actions/github-script@v8
+        env:
+          STRUCTURED_OUTPUT: ${{ steps.classify.outputs.structured_output }}
         with:
           script: |
-            const fs = require("fs");
-            const path = ".github/issue-triage-result.json";
-            const text = fs.readFileSync(path, "utf8").trim();
-
+            const text = process.env.STRUCTURED_OUTPUT || "";
             let parsed;
+
             try {
               parsed = JSON.parse(text);
             } catch (error) {
-              core.setFailed(`Could not parse classifier output as JSON: ${text}`);
+              core.setFailed(`Could not parse structured_output as JSON: ${text}`);
               return;
             }
 
@@ -76,21 +110,11 @@ jobs:
               return;
             }
 
-            core.setOutput("category", parsed.category);
-            core.setOutput("is_bug", parsed.is_bug ? "true" : "false");
-            core.setOutput("reason", parsed.reason || "");
-
-      - name: Apply labels, assignees, and tool-request handling
-        uses: actions/github-script@v8
-        env:
-          CATEGORY: ${{ steps.classify.outputs.category }}
-          IS_BUG: ${{ steps.classify.outputs.is_bug }}
-          REASON: ${{ steps.classify.outputs.reason }}
-        with:
-          script: |
-            const category = process.env.CATEGORY;
-            const isBug = process.env.IS_BUG === "true";
-            const reason = process.env.REASON;
+            const category = parsed.category;
+            const isBug = Boolean(parsed.is_bug);
+            const reason = parsed.reason || "";
+            const shouldComment = Boolean(parsed.should_comment);
+            const commentBody = parsed.comment_body || "";
             const issue_number = context.payload.issue.number;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
@@ -133,6 +157,15 @@ jobs:
                 repo,
                 issue_number,
                 assignees,
+              });
+            }
+
+            if (category !== "tool-request" && shouldComment && commentBody.trim().length > 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: commentBody.trim(),
               });
             }
 
