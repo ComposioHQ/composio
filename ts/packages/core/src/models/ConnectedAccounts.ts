@@ -14,7 +14,6 @@ import {
   ConnectedAccountUpdateStatusResponse,
   ConnectedAccountListParams as ConnectedAccountListParamsRaw,
   ConnectedAccountCreateParams as ConnectedAccountCreateParamsRaw,
-  ConnectedAccountPatchResponse,
 } from '@composio/client/resources/connected-accounts';
 import {
   CreateConnectedAccountOptions,
@@ -471,28 +470,18 @@ export class ConnectedAccounts {
    *
    * @param {string} nanoid - The unique identifier of the connected account
    * @param {UpdateConnectedAccountParams} params - The update parameters
-   * @returns {Promise<ConnectedAccountPatchResponse>} The update response
+   * @returns {Promise<ConnectedAccountUpdateStatusResponse>} The update response
    *
    * @example
    * ```typescript
-   * // Set an alias
-   * await composio.connectedAccounts.update('ca_abc123', { alias: 'work-gmail' });
-   *
-   * // Update credentials
-   * await composio.connectedAccounts.update('ca_abc123', {
-   *   connection: {
-   *     state: {
-   *       authScheme: 'BEARER_TOKEN',
-   *       val: { token: 'new-access-token' },
-   *     },
-   *   },
-   * });
+   * // Disable an account
+   * await composio.connectedAccounts.update('ca_abc123', { enabled: false });
    * ```
    */
   async update(
     nanoid: string,
     params: UpdateConnectedAccountParams
-  ): Promise<ConnectedAccountPatchResponse> {
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
     const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
     if (!parsedParams.success) {
       throw new ValidationError('Failed to parse connected account update params', {
@@ -500,6 +489,6 @@ export class ConnectedAccounts {
       });
     }
 
-    return this.client.connectedAccounts.patch(nanoid, parsedParams.data);
+    return this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data);
   }
 }
