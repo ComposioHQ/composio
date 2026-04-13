@@ -239,7 +239,7 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
 </Tabs>
 
 <Callout type="warn">
-When no toolkit version is specified, the API returns tools from the base version (`00000000_00`), which may be fewer than what's available. Pass `toolkit_versions="latest"` or a specific version to get all tools. Never use `latest` in production. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
+Toolkit version defaults depend on API version: `v3.1` defaults to `latest`, while `v3` defaults to `00000000_00`. For production, pin a specific version instead of relying on defaults. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Callout>
 
 ## What to read next

@@ -95,12 +95,16 @@ This applies to direct tool execution only. Sessions with meta tools always use 
 </Accordion>
 
 <Accordion title="Why does the API return fewer tools than the platform UI?">
-When calling the Get Tools API (`GET /api/v3.1/tools`) without specifying a `toolkit_versions` parameter, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. The platform UI shows tools from the latest version.
+`GET /api/v3.1/tools` defaults to the latest toolkit version when `toolkit_versions` is omitted, so it should match the platform UI in most cases.
 
-To get all available tools, pass `toolkit_versions=latest`:
+If you're seeing fewer tools, you're usually either:
+- Calling the legacy `v3` endpoint (`/api/v3/tools`), which defaults to `00000000_00`
+- Explicitly passing a pinned version in `toolkit_versions`
+
+To get all available tools on `v3`, pass `toolkit_versions=latest`:
 
 ```bash
-curl 'https://backend.composio.dev/api/v3.1/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
   -H 'x-api-key: YOUR_API_KEY'
 ```
 

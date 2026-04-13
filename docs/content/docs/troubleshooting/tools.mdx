@@ -21,14 +21,15 @@ Verify the connected account has necessary permissions:
 
 ## API returning fewer tools than expected
 
-If the Get Tools API (`GET /api/v3.1/tools`) returns fewer tools than what's shown on the [platform UI](https://platform.composio.dev), you likely need to specify a toolkit version.
+If the Get Tools API returns fewer tools than what's shown on the [platform UI](https://platform.composio.dev), check which API version and toolkit version you're using.
 
-When `toolkit_versions` is not provided, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. Tools added in later versions won't appear.
+`GET /api/v3.1/tools` defaults to the latest toolkit version.
+`GET /api/v3/tools` defaults to the base version (`00000000_00`), which may exclude newer tools.
 
-To get all available tools, pass `toolkit_versions=latest`:
+To get all available tools on `v3`, pass `toolkit_versions=latest`:
 
 ```bash
-curl 'https://backend.composio.dev/api/v3.1/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+curl 'https://backend.composio.dev/api/v3/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
   -H 'x-api-key: YOUR_API_KEY'
 ```
 
