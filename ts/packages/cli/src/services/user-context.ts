@@ -213,7 +213,27 @@ export const rawComposioUserContextLive = Layer.effect(
           testUserId: Option.fromNullable(testUserId),
         };
         userData = next;
-        yield* writeJson(keyringOk ? next : { ...next });
+
+        if (keyringOk) {
+          // Keyring has the key — writeJson will strip api_key from
+          // disk automatically (useLegacyStorage is false).
+          yield* writeJson(next);
+        } else {
+          // Keyring write failed (NoStorageAccess / headless Linux).
+          // Force api_key into the JSON so it survives across
+          // process restarts. We bypass writeJson's strip logic by
+          // temporarily writing with the legacy-storage codepath.
+          const onDisk = yield* userDataToJSON(next);
+          const normalized = JSON.stringify(
+            (() => {
+              const parsed = JSON.parse(onDisk) as Record<string, unknown>;
+              if (parsed.project_id === null) delete parsed.project_id;
+              return parsed;
+            })()
+          );
+          yield* Effect.logDebug('Saving user data (keyring fallback):', normalized);
+          yield* fs.writeFileString(jsonUserConfigPath, normalized);
+        }
       });
 
     const update = (data: Partial<UserData>) =>

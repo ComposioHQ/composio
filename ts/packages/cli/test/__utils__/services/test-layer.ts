@@ -39,10 +39,7 @@ import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import type { TriggerInstanceItem } from 'src/models/triggers';
 import type { AuthConfigCreateResponse, LinkCreateResponse } from 'src/services/composio-clients';
 import type { ToolkitVersionSpec } from 'src/effects/toolkit-version-overrides';
-import {
-  ComposioUserContextLive as _unusedComposioUserContextLive,
-  rawComposioUserContextLive,
-} from 'src/services/user-context';
+import { rawComposioUserContextLive } from 'src/services/user-context';
 import { makeKeyringService, KeyringService } from '@composio/cli-keyring/effect';
 import {
   type CredentialStore,
@@ -50,7 +47,6 @@ import {
   KeyringError,
   CredentialPersistence,
 } from '@composio/cli-keyring';
-void _unusedComposioUserContextLive;
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CliUserConfig } from 'src/models/cli-user-config';
 import { UpgradeBinary } from 'src/services/upgrade-binary';

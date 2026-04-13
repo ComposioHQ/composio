@@ -474,15 +474,35 @@ export class MacOSSecurityFFIStore implements CredentialStore {
     const encoded = encodeSecret(secret);
     const label = modifiers.label ?? defaultLabel(service, user);
 
+    // Delete-then-add pattern instead of `-U` (update-if-exists).
+    //
+    // `-U` updates the password but PRESERVES the old ACL. If the
+    // entry was previously created by the FFI ACL builder (which
+    // produces per-binary ACLs — see the long comment block above),
+    // the old broken ACL survives the `-U` update and the allow-any
+    // flag from `-A` is silently ignored. Deleting first guarantees
+    // the new `add-generic-password -A` creates a fresh entry with
+    // a genuine allow-any ACL.
+    //
+    // The delete is best-effort — if the entry doesn't exist yet
+    // (first login), the delete fails with errSecItemNotFound (exit
+    // 44) and we proceed to the add.
+    try {
+      await runCommand({
+        command: SECURITY_BIN,
+        args: ['delete-generic-password', '-a', user, '-s', service],
+      });
+    } catch {
+      // Spawn failure is fine — entry may not exist.
+    }
+
     // `-A`  = allow any application to read without prompting
-    // `-U`  = update-or-insert (idempotent set)
     // `-l`  = human-readable label (shown in Keychain Access)
     // `-w`  = password value (on argv — brief `ps` visibility,
     //         documented in the package README)
     const args = [
       'add-generic-password',
       '-A',
-      '-U',
       '-a',
       user,
       '-s',

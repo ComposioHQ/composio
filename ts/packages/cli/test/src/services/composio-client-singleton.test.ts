@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { BunFileSystem } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer, Option } from 'effect';
+import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
@@ -20,6 +21,22 @@ const okResponse = () =>
   });
 
 describe('ComposioClientSingleton headers', () => {
+  // Delete any real keychain entry so the subprocess keyring read
+  // inside ComposioUserContextLive (baked into
+  // ComposioClientSingleton.Default's dependencies) finds nothing
+  // and apiKey resolves to Option.none(). Without this, the test
+  // picks up real credentials and assertions on x-user-api-key fail.
+  beforeAll(() => {
+    try {
+      execSync(
+        '/usr/bin/security delete-generic-password -s com.composio.cli -a default 2>/dev/null',
+        { stdio: 'ignore' }
+      );
+    } catch {
+      // Entry may not exist — fine.
+    }
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
