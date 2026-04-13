@@ -3,6 +3,12 @@ name: Issue Triage
 on:
   issues:
     types: [opened, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to triage retrospectively"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,6 +22,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Load issue context for dispatch runs
+        if: github.event_name == 'workflow_dispatch'
+        id: issue-context
+        uses: actions/github-script@v8
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        with:
+          script: |
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+            if (!Number.isInteger(issue_number) || issue_number <= 0) {
+              core.setFailed(`Invalid issue_number: ${process.env.ISSUE_NUMBER}`);
+              return;
+            }
+
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+            });
+
+            if (issue.pull_request) {
+              core.setFailed(`Issue #${issue_number} is a pull request, not an issue.`);
+              return;
+            }
+
+            core.setOutput("issue_number", String(issue.number));
+            core.setOutput("issue_title", issue.title || "");
+            core.setOutput("issue_body", issue.body || "");
+            core.setOutput("issue_state", issue.state || "open");
+
       - name: Write triage schema
         run: |
           cat > /tmp/issue-triage-schema.json <<'EOF'
@@ -25,7 +61,7 @@ jobs:
             "properties": {
               "category": {
                 "type": "string",
-                "enum": ["docs", "py", "ts", "cli", "tool-request", "other"]
+                "enum": ["docs", "py", "ts", "cli", "tool-request", "feature-request", "other"]
               },
               "is_bug": {
                 "type": "boolean"
@@ -48,8 +84,8 @@ jobs:
         id: classify
         uses: anthropics/claude-code-action@v1
         env:
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event_name == 'workflow_dispatch' && steps.issue-context.outputs.issue_title || github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event_name == 'workflow_dispatch' && steps.issue-context.outputs.issue_body || github.event.issue.body }}
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -63,10 +99,12 @@ jobs:
             - ts
             - cli
             - tool-request
+            - feature-request
             - other
 
             Use semantic meaning, not only keywords.
             Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.
+            Choose feature-request when the issue is asking for a product, SDK, docs, or CLI improvement that is not a tool request.
             Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.
             Choose py only when the issue is primarily about the Python SDK.
             Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.
@@ -104,7 +142,7 @@ jobs:
               return;
             }
 
-            const allowed = new Set(["docs", "py", "ts", "cli", "tool-request", "other"]);
+            const allowed = new Set(["docs", "py", "ts", "cli", "tool-request", "feature-request", "other"]);
             if (!allowed.has(parsed.category)) {
               core.setFailed(`Unexpected category: ${parsed.category}`);
               return;
@@ -115,9 +153,14 @@ jobs:
             const reason = parsed.reason || "";
             const shouldComment = Boolean(parsed.should_comment);
             const commentBody = parsed.comment_body || "";
-            const issue_number = context.payload.issue.number;
+            const issue_number = context.eventName === "workflow_dispatch"
+              ? Number("${{ steps.issue-context.outputs.issue_number }}")
+              : context.payload.issue.number;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
+            const issueState = context.eventName === "workflow_dispatch"
+              ? "${{ steps.issue-context.outputs.issue_state }}"
+              : context.payload.issue.state;
 
             const labels = [];
             const assignees = [];
@@ -138,6 +181,8 @@ jobs:
             } else if (category === "cli") {
               labels.push("cli");
               assignees.push("CryogenicPlanet");
+            } else if (category === "feature-request") {
+              labels.push("feature-request");
             } else if (category === "tool-request") {
               labels.push("tool-request");
             }
@@ -169,7 +214,7 @@ jobs:
               });
             }
 
-            if (category === "tool-request" && context.payload.issue.state === "open") {
+            if (category === "tool-request" && issueState === "open") {
               await github.rest.issues.createComment({
                 owner,
                 repo,
