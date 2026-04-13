@@ -53,6 +53,10 @@
       "dependsOn": ["^build"],
       "cache": false
     },
+    "typecheck:tsc": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
     "//#clean": {
       "cache": false
     },

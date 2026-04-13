@@ -17,29 +17,33 @@ const extractJsonObject = (output: string): Record<string, unknown> | null => {
   return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
 };
 
-const testConnectedAccounts: ConnectedAccountItem[] = [
-  {
-    id: 'con_test_link',
-    status: 'ACTIVE',
-    status_reason: null,
+const makeConnectedAccount = (overrides?: Partial<ConnectedAccountItem>): ConnectedAccountItem => ({
+  id: 'con_test_link',
+  alias: 'default',
+  word_id: 'castle',
+  status: 'ACTIVE',
+  status_reason: null,
+  is_disabled: false,
+  user_id: 'consumer-user-org_test',
+  toolkit: { slug: 'gmail' },
+  auth_config: {
+    id: 'ac_gmail_oauth',
+    auth_scheme: 'OAUTH2',
+    is_composio_managed: true,
     is_disabled: false,
-    user_id: 'default',
-    toolkit: { slug: 'gmail' },
-    auth_config: {
-      id: 'ac_gmail_oauth',
-      auth_scheme: 'OAUTH2',
-      is_composio_managed: true,
-      is_disabled: false,
-    },
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-15T00:00:00Z',
-    test_request_endpoint: '',
   },
-];
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-15T00:00:00Z',
+  test_request_endpoint: '',
+  ...overrides,
+});
 
-const connectedAccountsData = {
-  items: testConnectedAccounts,
-} satisfies TestLiveInput['connectedAccountsData'];
+const makeConnectedAccountsData = (
+  overrides?: Partial<NonNullable<TestLiveInput['connectedAccountsData']>>
+): NonNullable<TestLiveInput['connectedAccountsData']> => ({
+  items: [makeConnectedAccount()],
+  ...overrides,
+});
 
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
@@ -76,6 +80,8 @@ const RecordingTerminalUI = TerminalUI.of({
 });
 
 describe('CLI: composio dev connected-accounts link', () => {
+  const aliasPatchSpy = vi.fn();
+
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -83,7 +89,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
+      connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
     })
   )('[Given] valid toolkit link [Then] creates link and waits (default)', it => {
@@ -105,7 +111,51 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
+      connectedAccountsData: makeConnectedAccountsData(),
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] --list [Then] it shows existing accounts without opening a new link', it => {
+    it.scoped('lists alias and word_id for existing accounts', () =>
+      Effect.gen(function* () {
+        yield* cli(['link', 'gmail', '--list']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('default');
+        expect(output).toContain('castle');
+        expect(output).toContain('"toolkit": "gmail"');
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData(),
+      fixture: 'global-test-user-id',
+    })
+  )(
+    '[Given] dev connected-accounts link --list without developer project context [Then] it still uses consumer resolution',
+    it => {
+      it.scoped('lists connected accounts instead of requiring a developer project', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'connected-accounts', 'link', 'gmail', '--list']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('default');
+          expect(output).toContain('castle');
+          expect(output).not.toContain('MissingDeveloperProjectError');
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
       terminalUI: RecordingTerminalUI,
     })
@@ -134,7 +184,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
+      connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
       terminalUI: RecordingTerminalUI,
     })
@@ -174,7 +224,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
+      connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
     })
   )('[Given] composio link [Then] works for consumer toolkit linking', it => {
@@ -194,7 +244,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
+      connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
     })
   )('[Given] --no-wait [Then] outputs valid JSON parseable by jq', it => {
@@ -215,7 +265,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
+      connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
       toolRouter: {
         link: async () => ({
@@ -244,7 +294,7 @@ describe('CLI: composio dev connected-accounts link', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
-      connectedAccountsData,
+      connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
     })
   )('[Given] default (wait) [Then] waits for ACTIVE and outputs success JSON for jq', it => {
@@ -263,4 +313,58 @@ describe('CLI: composio dev connected-accounts link', () => {
         })
     );
   });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData({
+        items: [makeConnectedAccount({ status: 'INITIATED' })],
+        onPatch: params => {
+          aliasPatchSpy(params);
+        },
+      }),
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] --alias [Then] it patches the created connected account alias', it => {
+    it.scoped('updates the connected account alias through the patch API', () =>
+      Effect.gen(function* () {
+        yield* cli(['link', 'gmail', '--alias', 'work', '--no-wait']);
+
+        expect(aliasPatchSpy).toHaveBeenCalledWith({
+          path: '/api/v3/connected_accounts/con_test_link',
+          body: { alias: 'work' },
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData(),
+      toolRouter: {
+        link: async () => ({
+          connected_account_id: 'con_second_link',
+          link_token: 'lt_test_token',
+          redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+        }),
+      },
+      fixture: 'global-test-user-id',
+    })
+  )(
+    '[Given] an existing active account and no --alias [Then] link blocks the second connected account',
+    it => {
+      it.scoped('fails locally and tells the user to pass --alias', () =>
+        Effect.gen(function* () {
+          yield* cli(['link', 'gmail']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Pass --alias to create another one');
+          expect(output).toContain('con_test_link');
+          expect(output).not.toContain('"status": "success"');
+        })
+      );
+    }
+  );
 });

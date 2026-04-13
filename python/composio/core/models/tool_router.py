@@ -170,6 +170,23 @@ class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
     wait_for_connections: bool
 
 
+class ToolRouterMultiAccountConfig(te.TypedDict, total=False):
+    """Configuration for multi-account mode in tool router session.
+
+    Attributes:
+        enable: When True, enables multi-account mode. When not set, falls back to
+                org/project-level configuration.
+        max_accounts_per_toolkit: Maximum connected accounts allowed per toolkit (2-10).
+                                 Defaults to 5 when multi-account is enabled.
+        require_explicit_selection: When True, require explicit account selection when
+                                   multiple accounts are connected. Defaults to False.
+    """
+
+    enable: bool
+    max_accounts_per_toolkit: int
+    require_explicit_selection: bool
+
+
 class ToolRouterAssistivePromptConfig(te.TypedDict, total=False):
     """Configuration for assistive prompt generation.
 
@@ -434,6 +451,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         auth_configs: t.Optional[t.Dict[str, str]] = None,
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
@@ -502,6 +520,15 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                            offload to workbench.
                          Example: {'enable': False}
                          Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
+        :param multi_account: Optional multi-account configuration (ToolRouterMultiAccountConfig).
+                            Dict with:
+                            - 'enable' (bool): When True, enables multi-account mode.
+                              Falls back to org/project-level config when not set.
+                            - 'max_accounts_per_toolkit' (int): Max connected accounts per
+                              toolkit (2-10). Defaults to 5.
+                            - 'require_explicit_selection' (bool): When True, require explicit
+                              account selection when multiple accounts are connected.
+                            Example: {'enable': True, 'max_accounts_per_toolkit': 3}
         :param experimental: Optional experimental configuration (ToolRouterExperimentalConfig).
                             Note: These features are experimental and may change.
                             Dict with:
@@ -707,6 +734,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             if execution_payload:
                 create_params["workbench"] = execution_payload
 
+        if multi_account is not None:
+            create_params["multi_account"] = multi_account
+
         # Build experimental config
         # Map SDK's experimental.assistive_prompt.user_timezone to API's
         # experimental.assistive_prompt_config.user_timezone
@@ -851,6 +881,7 @@ __all__ = [
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
     "ToolRouterWorkbenchConfig",
+    "ToolRouterMultiAccountConfig",
     "ToolRouterExperimentalConfig",
     "ToolRouterAssistivePromptConfig",
     "ToolkitConnectionState",

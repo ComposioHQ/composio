@@ -1,5 +1,23 @@
 # @composio/core
 
+## 0.6.10
+
+### Patch Changes
+
+- 670ecc9: Add missing `alias` option to `ToolRouterAuthorizeFn` type. The `ToolRouterSession.authorize()` implementation already accepted `alias`, but the exported type didn't include it, causing type errors when passing `{ alias: 'work-gmail' }` to `session.authorize()`.
+
+## 0.6.9
+
+### Patch Changes
+
+- 5b5723a: release
+
+## 0.6.8
+
+### Patch Changes
+
+- 2b19ae9: Fix `customAuthParams.baseURL` not being sent to the API during tool execution. The SDK property `baseURL` is now correctly mapped to the API's expected `base_url` field.
+
 ## 0.6.7
 
 ### Patch Changes

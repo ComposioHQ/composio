@@ -3,6 +3,7 @@ import time
 from unittest.mock import Mock, patch
 
 import pytest
+from composio_client import omit
 
 from composio import exceptions
 from composio.core.models.connected_accounts import (
@@ -343,7 +344,7 @@ class TestConnectedAccounts:
         call_kwargs = mock_client.link.create.call_args.kwargs
         assert call_kwargs["auth_config_id"] == "auth-1"
         assert call_kwargs["user_id"] == "user-1"
-        assert "callback_url" not in call_kwargs
+        assert call_kwargs["callback_url"] is omit
 
     def test_initiate_with_oauth2_tokens_returns_active_connection_request(
         self, connected_accounts, mock_client

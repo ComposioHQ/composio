@@ -4,6 +4,7 @@ import { Command, Options } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Array as Arr, Effect } from 'effect';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { getCompletionScript } from 'src/effects/shell-completions';
@@ -128,7 +129,11 @@ const tildify = (p: string, homedir: string): string =>
 
 export const installShellIntegration = (params: {
   readonly completions: boolean;
-}): Effect.Effect<void, PlatformError, TerminalUI | NodeOs | FileSystem.FileSystem> =>
+}): Effect.Effect<
+  void,
+  PlatformError,
+  TerminalUI | NodeOs | FileSystem.FileSystem | ComposioCliUserConfig
+> =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const os = yield* NodeOs;
@@ -168,8 +173,15 @@ export const installShellIntegration = (params: {
     // (index.ts → install.cmd.ts → index.ts).
     let completionScript: string | undefined;
     if (params.completions && shell !== 'zsh') {
+      const cliUserConfig = yield* ComposioCliUserConfig;
       const mod = yield* Effect.promise(() => import('src/commands'));
-      const lines = yield* getCompletionScript(mod.rootCommand, shell);
+      const lines = yield* getCompletionScript(
+        mod.buildRootCommand({
+          isExperimentalFeatureEnabled: feature =>
+            cliUserConfig.isExperimentalFeatureEnabled(feature),
+        }),
+        shell
+      );
       completionScript = lines.length > 0 ? Arr.join(lines, '\n') : undefined;
     }
 

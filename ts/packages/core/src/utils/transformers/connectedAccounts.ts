@@ -9,9 +9,16 @@ import {
   ConnectedAccountRetrieveResponseSchema,
 } from '../../types/connectedAccounts.types';
 import { ConnectionDataSchema } from '../../types/connectedAccountAuthStates.types';
-import { ValidationError } from '../../errors';
 import logger from '../logger';
 import { transform } from '../transform';
+
+type RawConnectedAccountResponseWithLabels = (
+  | RawConnectedAccountRetrieveResponse
+  | RawConnectedAccountListResponse['items'][0]
+) & {
+  word_id?: string | null;
+  alias?: string | null;
+};
 
 /**
  * Transforms the raw connected account response from the Composio API to the SDK format.
@@ -28,6 +35,8 @@ import { transform } from '../transform';
 export function transformConnectedAccountResponse(
   response: RawConnectedAccountRetrieveResponse | RawConnectedAccountListResponse['items'][0]
 ): ConnectedAccountRetrieveResponse {
+  const responseWithLabels = response as RawConnectedAccountResponseWithLabels;
+
   // Safely parse the state field, filtering out unsupported auth schemes
   const parseState = (state: unknown) => {
     try {
@@ -51,6 +60,8 @@ export function transformConnectedAccountResponse(
         isComposioManaged: response.auth_config.is_composio_managed,
         isDisabled: response.auth_config.is_disabled,
       },
+      wordId: responseWithLabels.word_id ?? null,
+      alias: responseWithLabels.alias ?? null,
       data: (response as unknown as ConnectedAccountRetrieveResponse).data ?? undefined,
       state: parseState(response.state),
       status: response.status,

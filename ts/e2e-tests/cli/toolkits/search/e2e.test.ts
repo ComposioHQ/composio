@@ -13,36 +13,46 @@ import {
   type E2ETestResultWithFiles,
 } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { describe, it, expect, beforeAll } from 'bun:test';
-
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_USER_API_KEY: string;
-  }
-}
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import {
+  startMockToolkitsListServer,
+  type MockToolkitsServer,
+} from '../../../../packages/cli/scripts/mock-toolkits-server';
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
-  env: {
-    COMPOSIO_USER_API_KEY: Bun.env.COMPOSIO_USER_API_KEY,
-  },
   defineTests: ({ runCmd }) => {
+    let server: MockToolkitsServer;
     let validResult: E2ETestResult;
     let limitResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let noResultsResult: E2ETestResult;
 
     beforeAll(async () => {
-      validResult = await runCmd('composio dev toolkits search gmail');
-      limitResult = await runCmd('composio dev toolkits search gmail --limit 1');
+      server = await startMockToolkitsListServer();
+
+      const envPrefix = [
+        `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
+        'COMPOSIO_CACHE_DIR=/tmp/composio-toolkits-search',
+        'COMPOSIO_USER_API_KEY=uak_mock_toolkits_search',
+      ].join(' ');
+
+      validResult = await runCmd(`${envPrefix} composio dev toolkits search gmail`);
+      limitResult = await runCmd(`${envPrefix} composio dev toolkits search gmail --limit 1`);
       redirectResult = await runCmd({
-        command: 'composio dev toolkits search gmail --limit 1 > out.json',
+        command: `${envPrefix} composio dev toolkits search gmail --limit 1 > out.json`,
         files: ['out.json'],
       });
-      noResultsResult = await runCmd('composio dev toolkits search xyznonexistent_abc_12345');
+      noResultsResult = await runCmd(
+        `${envPrefix} composio dev toolkits search xyznonexistent_abc_12345`
+      );
     }, TIMEOUTS.FIXTURE);
+
+    afterAll(async () => {
+      await server.close();
+    });
 
     describe('composio dev toolkits search gmail (known query)', () => {
       it('exits successfully', () => {
@@ -129,6 +139,16 @@ e2e(import.meta.url, {
 
       it('stdout is an empty JSON array (no results)', () => {
         expect(sanitizeOutput(noResultsResult.stdout)).toBe('[]');
+      });
+    });
+
+    describe('mock API usage', () => {
+      it('requests the toolkit catalog for each search scenario', () => {
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=10');
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=1');
+        expect(server.requests).toContain(
+          'GET /api/v3/toolkits?search=xyznonexistent_abc_12345&limit=10'
+        );
       });
     });
   },

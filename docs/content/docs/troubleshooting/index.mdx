@@ -33,7 +33,7 @@ See [Troubleshooting MCP](/docs/troubleshooting/mcp#reporting-mcp-issues) for a 
 Add an `x-request-id` header with a UUID to your API request. This lets support trace your exact request in server logs.
 
 ```bash
-curl 'https://backend.composio.dev/api/v3/tools' \
+curl 'https://backend.composio.dev/api/v3.1/tools' \
   -H 'x-api-key: YOUR_API_KEY' \
   -H 'x-request-id: YOUR_UUID_HERE'
 ```

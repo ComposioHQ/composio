@@ -1,13 +1,13 @@
 import process from 'node:process';
 import { Effect, Option } from 'effect';
-import { Command } from '@effect/cli';
-import * as constants from 'src/constants';
+import { Command, HelpDoc, ValidationError } from '@effect/cli';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
@@ -23,10 +23,13 @@ import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
+import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
+import { configCmd } from './config/config.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { detectMaster } from 'src/services/master-detector';
@@ -34,28 +37,221 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
+import {
+  experimental,
+  type CommandVisibility,
+  type TaggedValue,
+  tagged,
+  visibleValues,
+} from './feature-tags';
 
-const $cmd = $defaultCmd.pipe(
-  Command.withSubcommands([
-    versionCmd,
-    upgradeCmd,
-    whoamiCmd,
-    loginCmd,
-    logoutCmd,
-    runCmd,
-    proxyCmd,
-    artifactsCmd,
-    installCmd,
-    devCmd,
-    rootToolsCmd,
-    rootToolsCmd$Search,
-    rootConnectedAccountsCmd$Link,
-    rootToolsCmd$Execute,
-    generateCmd,
-    orgsCmd,
-  ])
-);
-export const rootCommand = $cmd;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, any>>> = [
+  tagged(versionCmd),
+  tagged(upgradeCmd),
+  tagged(whoamiCmd),
+  tagged(loginCmd),
+  experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
+  tagged(logoutCmd),
+  tagged(runCmd),
+  tagged(proxyCmd),
+  tagged(artifactsCmd),
+  tagged(installCmd),
+  tagged(devCmd),
+  tagged(rootToolsCmd),
+  tagged(rootTriggersCmd),
+  tagged(rootToolsCmd$Search),
+  tagged(rootConnectedAccountsCmd$Link),
+  tagged(rootToolsCmd$Execute),
+  tagged(generateCmd),
+  tagged(orgsCmd),
+  tagged(configCmd),
+];
+
+export const buildRootCommand = (visibility: CommandVisibility) => {
+  const subcommands = visibleValues(ROOT_COMMANDS, visibility);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return $defaultCmd.pipe(Command.withSubcommands(subcommands as any));
+};
+
+const formatSubcommandChoices = (choices: ReadonlyArray<string>) =>
+  choices.map(choice => `'${choice}'`).join(', ');
+
+/**
+ * Internal shape of an `@effect/cli` command descriptor. The public
+ * `CommandDescriptor.getSubcommands` helper flattens nested subcommand trees
+ * and only returns the *parent* Standard node for each branch, which means we
+ * can't use it to walk deeper than one level. Walking the `_tag`-based
+ * internal tree directly is the only way to recover the full descendable
+ * structure without losing subcommand context on descent.
+ */
+type InternalDescriptor =
+  | { _tag: 'Standard'; name: string }
+  | { _tag: 'GetUserInput'; name: string }
+  | { _tag: 'Map'; command: InternalDescriptor }
+  | {
+      _tag: 'Subcommands';
+      parent: InternalDescriptor;
+      children: ReadonlyArray<InternalDescriptor>;
+    };
+
+type UnwrappedDescriptor = Exclude<InternalDescriptor, { _tag: 'Map' }>;
+
+const unwrapMaps = (cmd: InternalDescriptor): UnwrappedDescriptor => {
+  let current: InternalDescriptor = cmd;
+  while (current._tag === 'Map') {
+    current = current.command;
+  }
+  return current;
+};
+
+const getCommandName = (cmd: InternalDescriptor): string => {
+  const unwrapped = unwrapMaps(cmd);
+  if (unwrapped._tag === 'Subcommands') {
+    return getCommandName(unwrapped.parent);
+  }
+  return unwrapped.name;
+};
+
+const getChildEntries = (
+  cmd: InternalDescriptor
+): ReadonlyArray<readonly [string, InternalDescriptor]> => {
+  const unwrapped = unwrapMaps(cmd);
+  if (unwrapped._tag !== 'Subcommands') {
+    return [];
+  }
+  return unwrapped.children.map(child => [getCommandName(child), child] as const);
+};
+
+const findNestedSubcommandMismatch = (
+  argv: ReadonlyArray<string>,
+  rootCommand: ReturnType<typeof buildRootCommand>
+): ReturnType<typeof ValidationError.commandMismatch> | undefined => {
+  const args = argv.slice(2);
+  let current: InternalDescriptor = rootCommand.descriptor as unknown as InternalDescriptor;
+  const path = ['composio'];
+
+  for (const token of args) {
+    if (!token || token === '--' || token === '--help' || token === '-h' || token.startsWith('-')) {
+      return undefined;
+    }
+
+    const children = getChildEntries(current);
+    if (children.length === 0) {
+      return undefined;
+    }
+
+    const match = children.find(([name]) => name === token);
+    if (match) {
+      current = match[1];
+      path.push(token);
+      continue;
+    }
+
+    if (path.length === 1) {
+      return undefined;
+    }
+
+    const available = children.map(([name]) => name).sort();
+    return ValidationError.commandMismatch(
+      HelpDoc.p(
+        `Invalid subcommand for ${path.join(' ')} - use one of ${formatSubcommandChoices(available)}`
+      )
+    );
+  }
+
+  return undefined;
+};
+
+const ROOT_INSTALL_SKILL_FLAGS = ['--instal-skill', '--install-skill'] as const;
+const SKILL_INSTALL_TARGETS = [
+  'claude',
+  'codex',
+  'openclaw',
+] as const satisfies ReadonlyArray<SkillInstallTarget>;
+
+type RootInstallSkillRequest =
+  | {
+      _tag: 'parsed';
+      skillName?: string;
+      target: SkillInstallTarget;
+    }
+  | { _tag: 'error'; message: string };
+
+const isSkillInstallTarget = (value: string): value is SkillInstallTarget =>
+  (SKILL_INSTALL_TARGETS as ReadonlyArray<string>).includes(value);
+
+export const parseRootInstallSkillRequest = (
+  argv: ReadonlyArray<string>
+): RootInstallSkillRequest | undefined => {
+  const args = argv.slice(2);
+  for (let i = 0; i < args.length; i += 1) {
+    const token = args[i];
+    if (!token) continue;
+
+    if ((ROOT_INSTALL_SKILL_FLAGS as ReadonlyArray<string>).includes(token)) {
+      const rawValues: string[] = [];
+      for (let j = i + 1; j < args.length; j += 1) {
+        const next = args[j];
+        if (!next) continue;
+        if (next.startsWith('-')) break;
+        rawValues.push(next);
+      }
+
+      if (rawValues.length === 0) {
+        return {
+          _tag: 'error',
+          message:
+            'Missing target for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+        };
+      }
+
+      if (rawValues.length === 1) {
+        const [target] = rawValues;
+        if (!isSkillInstallTarget(target)) {
+          return {
+            _tag: 'error',
+            message: 'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+          };
+        }
+        return { _tag: 'parsed', target };
+      }
+
+      if (rawValues.length === 2) {
+        const [skillName, target] = rawValues;
+        if (!isSkillInstallTarget(target)) {
+          return {
+            _tag: 'error',
+            message: 'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+          };
+        }
+        return { _tag: 'parsed', skillName, target };
+      }
+
+      return {
+        _tag: 'error',
+        message:
+          'Too many arguments for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+      };
+    }
+
+    if (token === '--log-level') {
+      i += 1;
+      continue;
+    }
+
+    if (token.startsWith('--log-level=')) {
+      continue;
+    }
+
+    if (!token.startsWith('-')) {
+      return undefined;
+    }
+  }
+  return undefined;
+};
 
 const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = argv.slice(2);
@@ -125,6 +321,34 @@ const normalizeVersionShortFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
   return argv;
 };
 
+const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const head = argv.slice(0, 2);
+  const args = argv.slice(2);
+  const isListen = args[0] === 'listen';
+  if (!isListen) {
+    return argv;
+  }
+
+  const normalized: string[] = [...head];
+  for (let i = 0; i < args.length; i += 1) {
+    const token = args[i];
+    if (token !== '--stream') {
+      normalized.push(token ?? '');
+      continue;
+    }
+
+    const next = args[i + 1];
+    if (next === undefined || next.startsWith('-')) {
+      normalized.push('--stream=');
+      continue;
+    }
+
+    normalized.push(token);
+  }
+
+  return normalized;
+};
+
 const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
   const normalized: string[] = [...argv.slice(0, 2)];
   const args = argv.slice(2);
@@ -188,9 +412,7 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return (
-    args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'))
-  );
+  return args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'));
 };
 
 const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
@@ -209,21 +431,42 @@ const isDebugWhoIsMyMaster = (argv: ReadonlyArray<string>): boolean => {
 };
 
 export const runWithConfig = Effect.gen(function* () {
+  const cliUserConfig = yield* ComposioCliUserConfig;
+  const visibility: CommandVisibility = {
+    isExperimentalFeatureEnabled: feature => cliUserConfig.isExperimentalFeatureEnabled(feature),
+  };
   const version = yield* getVersion;
-  const run = Command.run($cmd, {
+  const rootCommand = buildRootCommand(visibility);
+  const run = Command.run(rootCommand, {
     name: 'composio',
     executable: 'composio',
     version,
   });
 
   return (argv: ReadonlyArray<string>) => {
-    const normalizedArgv = normalizeHiddenDebugFlags(normalizeVersionShortFlag(argv));
-    if (isRootHelp(normalizedArgv)) {
-      return printRootHelp();
+    const normalizedArgv = normalizeHiddenDebugFlags(
+      normalizeListenStreamFlag(normalizeVersionShortFlag(argv))
+    );
+    const installSkillRequest = parseRootInstallSkillRequest(normalizedArgv);
+    if (installSkillRequest) {
+      if (installSkillRequest._tag === 'error') {
+        return Effect.fail(new Error(installSkillRequest.message));
+      }
+      return installSkill({
+        skillName: installSkillRequest.skillName,
+        target: installSkillRequest.target,
+      });
     }
-    const subHelp = matchSubcommandHelp(normalizedArgv);
+    if (isRootHelp(normalizedArgv)) {
+      return printRootHelp(visibility);
+    }
+    const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {
-      return printSubcommandHelp(subHelp);
+      return printSubcommandHelp(subHelp, visibility);
+    }
+    const nestedMismatch = findNestedSubcommandMismatch(normalizedArgv, rootCommand);
+    if (nestedMismatch) {
+      return Effect.fail(nestedMismatch);
     }
     const parallelExecute = runParallelToolsExecuteFromArgv(normalizedArgv);
     if (parallelExecute) {
@@ -283,10 +526,4 @@ export const runWithConfig = Effect.gen(function* () {
     }
     return run(normalizedArgv);
   };
-});
-
-export const run = Command.run($cmd, {
-  name: 'composio',
-  version: constants.APP_VERSION,
-  executable: 'composio',
 });

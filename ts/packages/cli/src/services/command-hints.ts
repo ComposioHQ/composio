@@ -7,6 +7,8 @@ export type CommandHintId =
   | 'root.search'
   | 'root.tools.list'
   | 'root.tools.info'
+  | 'root.triggers.list'
+  | 'root.triggers.info'
   | 'root.execute'
   | 'root.execute.getSchema'
   | 'root.link'
@@ -39,6 +41,14 @@ export const COMMAND_HINTS: Record<CommandHintId, CommandHintNode> = {
   'root.tools.info': {
     example: params => `composio tools info "${getParam(params, 'slug', '<slug>')}"`,
     links: ['root.execute.getSchema', 'root.execute'],
+  },
+  'root.triggers.list': {
+    example: params => `composio triggers list "${getParam(params, 'toolkit', '<toolkit>')}"`,
+    links: ['root.triggers.info'],
+  },
+  'root.triggers.info': {
+    example: params => `composio triggers info "${getParam(params, 'slug', '<slug>')}"`,
+    links: ['root.triggers.list'],
   },
   'root.execute': {
     example: params =>

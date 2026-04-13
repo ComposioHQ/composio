@@ -16,7 +16,7 @@ Webhooks are the recommended way to receive trigger events in production. To sta
 Set your webhook URL in the [dashboard settings](https://platform.composio.dev?next_page=/settings/webhook) or via the [Webhook Subscriptions API](/reference/api-reference/webhooks):
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "X-API-KEY: <your-composio-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -197,7 +197,7 @@ ngrok http 8000
 Then use the ngrok URL as your webhook endpoint:
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "X-API-KEY: <your-composio-api-key>" \
   -H "Content-Type: application/json" \
   -d '{

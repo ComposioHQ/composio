@@ -9,8 +9,11 @@ import typing_extensions as te
 
 from composio import exceptions
 from composio.client import HttpClient
+from composio_client import omit
 from composio.client.types import (
     connected_account_create_params,
+    connected_account_patch_params,
+    connected_account_patch_response,
     connected_account_retrieve_response,
     connected_account_update_status_response,
 )
@@ -356,6 +359,35 @@ class ConnectedAccounts:
             enabled=False,
         )
 
+    def update(
+        self,
+        nanoid: str,
+        *,
+        alias: t.Optional[str] = None,
+        connection: t.Optional[connected_account_patch_params.Connection] = None,
+    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
+        """
+        Update a connected account's alias and/or credentials.
+
+        :param nanoid: The connected account ID (ca_xxx).
+        :param alias: Human-readable alias. Pass an empty string to clear.
+                      Must be unique per entity and toolkit within the project.
+        :param connection: Credential update with authScheme and val fields.
+        :return: Response with ``id``, ``status``, and ``success``.
+
+        Example:
+            # Set an alias
+            composio.connected_accounts.update('ca_abc123', alias='work-gmail')
+
+            # Clear an alias
+            composio.connected_accounts.update('ca_abc123', alias='')
+        """
+        return self._client.connected_accounts.patch(
+            nanoid,
+            alias=alias if alias is not None else omit,
+            connection=connection if connection is not None else omit,
+        )
+
     def initiate(
         self,
         user_id: str,
@@ -364,6 +396,7 @@ class ConnectedAccounts:
         callback_url: t.Optional[str] = None,
         allow_multiple: bool = False,
         config: t.Optional[connected_account_create_params.ConnectionState] = None,
+        alias: t.Optional[str] = None,
     ) -> ConnectionRequest:
         """
         Compound function to create a new connected account. This function creates
@@ -377,6 +410,7 @@ class ConnectedAccounts:
         :param callback_url: Callback URL to use for OAuth apps.
         :param config: The configuration to create the connected account with.
         :param allow_multiple: Whether to allow multiple connected accounts for the same user and auth config.
+        :param alias: Optional human-readable alias for the account. Must be unique per userId and toolkit within the project.
         :return: The connection request.
         """
         # Check if there are multiple connected accounts for the authConfig of the user
@@ -398,9 +432,10 @@ class ConnectedAccounts:
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
             connection["callback_url"] = callback_url
-
         if config is not None:
             connection["state"] = config
+        if alias is not None:
+            connection["alias"] = alias
 
         response = self._client.connected_accounts.create(
             auth_config={"id": auth_config_id},
@@ -419,6 +454,7 @@ class ConnectedAccounts:
         auth_config_id: str,
         *,
         callback_url: t.Optional[str] = None,
+        alias: t.Optional[str] = None,
     ) -> ConnectionRequest:
         """
         Create a Composio Connect Link for a user to connect their account to a given auth config.
@@ -452,18 +488,12 @@ class ConnectedAccounts:
             # Wait for the connection to be established
             connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
         """
-        # Prepare the request payload
-        payload: dict[str, t.Any] = {
-            "auth_config_id": auth_config_id,
-            "user_id": user_id,
-        }
-
-        # Add callback_url only if provided
-        if callback_url is not None:
-            payload["callback_url"] = callback_url
-
-        # Call the link creation endpoint
-        response = self._client.link.create(**payload)
+        response = self._client.link.create(
+            auth_config_id=auth_config_id,
+            user_id=user_id,
+            callback_url=callback_url if callback_url is not None else omit,
+            alias=alias if alias is not None else omit,
+        )
 
         return ConnectionRequest(
             id=response.connected_account_id,

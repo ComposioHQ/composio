@@ -121,6 +121,7 @@ describe('CLI analytics execute failure events', () => {
       session: {
         source: 'cli',
         command_path: 'execute',
+        cli_version: expect.any(String),
       },
       request_id: 'req_123',
     });

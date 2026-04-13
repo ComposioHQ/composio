@@ -20,6 +20,10 @@ describe('command-hints', () => {
 
   it('renders examples from the registry', () => {
     expect(commandHintExample('root.tools.list')).toContain('composio tools list');
+    expect(commandHintExample('root.triggers.list')).toContain('composio triggers list');
+    expect(commandHintExample('root.triggers.info', { slug: 'GMAIL_NEW_GMAIL_MESSAGE' })).toContain(
+      'GMAIL_NEW_GMAIL_MESSAGE'
+    );
     expect(commandHintExample('root.execute', { slug: 'GMAIL_SEND_EMAIL' })).toContain(
       'GMAIL_SEND_EMAIL'
     );

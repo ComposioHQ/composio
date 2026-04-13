@@ -354,6 +354,13 @@ const runToolsSearch = (params: {
       }
       const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
         toolkits: toolkitList,
+        cacheScope:
+          resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+            ? {
+                orgId: resolvedProject.orgId,
+                consumerUserId: resolvedProject.consumerUserId,
+              }
+            : undefined,
       });
       const searchResponse = yield* Effect.tryPromise(() =>
         client.toolRouter.session.search(sessionId, {

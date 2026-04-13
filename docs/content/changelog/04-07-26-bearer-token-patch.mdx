@@ -1,0 +1,47 @@
+---
+title: "Bearer Token Connections & Credential Patching"
+description: "Import bearer tokens for any OAuth toolkit and update credentials in place"
+date: "2026-04-07"
+---
+
+Two features for teams managing their own authentication credentials.
+
+## Bearer Token for OAuth Toolkits
+
+All OAuth2 toolkits (Gmail, GitHub, Slack, Google Docs, and more) now support `BEARER_TOKEN` as an auth scheme. Import your own access tokens directly without setting up an OAuth app.
+
+BEARER_TOKEN is injected as an alternative scheme alongside OAuth2, so existing OAuth connections are unaffected.
+
+### How to use
+
+1. Create a custom auth config with `authScheme: "BEARER_TOKEN"` for the toolkit
+2. Create a connected account with your access token
+3. Pass the auth config or connection ID to `composio.create()` for use with Tool Router
+
+<Callout type="info">
+Creating bearer token auth configs is currently available only via API and SDK — not yet supported in the dashboard UI.
+</Callout>
+
+See the [importing connections guide](/docs/importing-existing-connections) for full examples.
+
+## Credential Patching
+
+New `PATCH /api/v3/connected_accounts/{nanoid}` endpoint and SDK method — update credentials and alias on existing connections without recreating them.
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your-api-key' });
+// ---cut---
+await composio.connectedAccounts.update('ca_abc123', {
+  connection: {
+    state: {
+      authScheme: 'BEARER_TOKEN',
+      val: { token: 'rotated-access-token' },
+    },
+  },
+});
+```
+
+- **Keep access tokens updated** — call PATCH whenever you refresh the token on your end (e.g., after an OAuth refresh flow)
+- **Partial updates** — omitted fields are preserved, fields set to `null` are removed
+- **Supported schemes** — BEARER_TOKEN, API_KEY, BASIC, BASIC_WITH_JWT, GOOGLE_SERVICE_ACCOUNT, SERVICE_ACCOUNT
