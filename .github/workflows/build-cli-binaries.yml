@@ -38,6 +38,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
+          # Need HEAD^ to detect package.json version bumps for stable releases.
+          fetch-depth: 2
 
       - name: Resolve release target
         id: resolve
