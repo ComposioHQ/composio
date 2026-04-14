@@ -1,8 +1,15 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Option, Schema } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import {
+  ComposioClientSingleton,
+  ConnectedAccountListResponse,
+} from 'src/services/composio-clients';
+import {
+  formatResolveCommandProjectError,
+  resolveCommandProject,
+} from 'src/services/command-project';
 import { TerminalUI } from 'src/services/terminal-ui';
 
 const toolkit = Options.text('toolkit').pipe(
@@ -16,22 +23,23 @@ const formatConnectionsJson = (items: ReadonlyArray<ConnectedAccountItem>): stri
     return acc;
   }, new Map());
 
-  const grouped = items.reduce<Record<string, Array<{ status: string; alias?: string | null }>>>(
-    (acc, item) => {
-      const toolkit = item.toolkit.slug;
-      const entry = {
-        status: item.status,
-        ...(toolkitCounts.get(toolkit)! > 1 ? { alias: item.alias ?? null } : {}),
-      };
+  const grouped = items.reduce<
+    Record<string, Array<{ status: string; alias?: string | null; word_id?: string | null }>>
+  >((acc, item) => {
+    const toolkit = item.toolkit.slug;
+    const includeAlias = toolkitCounts.get(toolkit)! > 1;
+    const entry = {
+      status: item.status,
+      ...(includeAlias ? { alias: item.alias ?? null } : {}),
+      ...(item.word_id != null ? { word_id: item.word_id } : {}),
+    };
 
-      if (!acc[toolkit]) {
-        acc[toolkit] = [];
-      }
-      acc[toolkit].push(entry);
-      return acc;
-    },
-    {}
-  );
+    if (!acc[toolkit]) {
+      acc[toolkit] = [];
+    }
+    acc[toolkit].push(entry);
+    return acc;
+  }, {});
 
   return JSON.stringify(grouped, null, 2);
 };
@@ -41,21 +49,36 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
     if (!(yield* requireAuth)) return;
 
     const ui = yield* TerminalUI;
-    const repo = yield* ComposioToolkitsRepository;
+    const clientSingleton = yield* ComposioClientSingleton;
     const toolkitSlug = Option.getOrUndefined(toolkit);
+    const resolvedProject = yield* resolveCommandProject({
+      mode: 'consumer',
+    }).pipe(Effect.mapError(formatResolveCommandProjectError));
 
-    const result = yield* ui.withSpinner(
-      'Fetching connections...',
-      repo.listConnectedAccounts({
+    const consumerUserId = resolvedProject.consumerUserId;
+    if (!consumerUserId) {
+      return yield* Effect.fail(
+        new Error('Missing consumer user id. Run `composio login` and try again.')
+      );
+    }
+
+    const client = yield* clientSingleton.getFor({
+      orgId: resolvedProject.orgId,
+      projectId: resolvedProject.projectId,
+    });
+    const rawResult = yield* Effect.tryPromise(() =>
+      client.connectedAccounts.list({
         toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
+        user_ids: [consumerUserId],
         limit: 1000,
       })
     );
+    const result = yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult);
 
-    yield* ui.output(formatConnectionsJson(result.items));
+    yield* ui.output(formatConnectionsJson(result.items), { force: true });
   })
 ).pipe(
   Command.withDescription(
-    'List connection statuses as JSON. Includes aliases when a toolkit has multiple connections.'
+    'List connection statuses as JSON. Includes aliases for duplicate toolkits and word_ids when available.'
   )
 );
