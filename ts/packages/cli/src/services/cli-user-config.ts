@@ -26,6 +26,11 @@ export type CliUserConfigResolved = {
    * `src/models/cli-user-config.ts`. Default: `false`.
    */
   readonly dangerouslySaveApiKeyInUserConfig: boolean;
+  /**
+   * macOS keyring backend selection. See the `SecurityBackend` type in
+   * `src/models/cli-user-config.ts`. Default: `"auto"` (subprocess).
+   */
+  readonly security: 'auto' | 'keychain-subprocess' | 'keychain';
 };
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
@@ -59,6 +64,7 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
     onSome: value => value.target,
   }),
   dangerouslySaveApiKeyInUserConfig: raw.dangerouslySaveApiKeyInUserConfig,
+  security: raw.security,
 });
 
 export const ComposioCliUserConfigLive = Layer.effect(
@@ -75,6 +81,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
       artifactDirectory: Option.none(),
       experimentalSubagent: Option.none(),
       dangerouslySaveApiKeyInUserConfig: false,
+      security: 'auto',
     });
 
     const persist = (next: CliUserConfig) =>
