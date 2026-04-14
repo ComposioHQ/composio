@@ -1,11 +1,12 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { ComposioUserContext } from 'src/services/user-context';
 
 const mockFetchResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -103,8 +104,19 @@ describe('CLI: composio login', () => {
         const userConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
         const rawUserConfig = yield* fs.readFileString(userConfigPath, 'utf8');
         const userConfig = JSON.parse(rawUserConfig) as Record<string, unknown>;
+        // Default `security: "auto"` keeps the API key in plaintext
+        // `user_data.json` for backwards compatibility — same as
+        // every prior CLI release. Users opt into keyring storage
+        // by setting `security: "keychain-subprocess"` (or
+        // `"keychain"` for the experimental FFI path) in
+        // `~/.composio/config.json`.
         expect(userConfig.api_key).toBe('uak_direct_key');
         expect(userConfig.org_id).toBe('org_selected');
+
+        // ComposioUserContext also exposes the resolved key in-memory
+        // for subsequent API calls in this process.
+        const ctx = yield* ComposioUserContext;
+        expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_direct_key');
 
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain('Logged in as cli@example.com in "Selected Org"');
