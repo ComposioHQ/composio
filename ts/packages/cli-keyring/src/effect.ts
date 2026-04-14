@@ -27,7 +27,7 @@
 import { Context, Effect, Layer } from 'effect';
 import { Entry } from './core/entry';
 import type { KeyringError } from './core/errors';
-import { createDefaultStore } from './index';
+import { createDefaultStore, type MacOSBackend } from './index';
 import { type CredentialStore, type EntryModifiers, setDefaultStore } from './core/store';
 
 /**
@@ -160,6 +160,23 @@ export const KeyringLive: Layer.Layer<KeyringService> = Layer.effect(
     return makeKeyringService(store);
   })
 );
+
+/**
+ * Build a `KeyringLive` layer with an explicit macOS backend choice.
+ * Use this instead of `KeyringLive` when the CLI lets the user pick
+ * between `subprocess` (safe default) and `ffi` (experimental,
+ * requires Developer ID signing). The `backend` parameter is
+ * ignored on Linux and other platforms.
+ */
+export const KeyringLiveWithBackend = (macOSBackend: MacOSBackend): Layer.Layer<KeyringService> =>
+  Layer.effect(
+    KeyringService,
+    Effect.promise(async () => {
+      const store = await createDefaultStore({ macOSBackend });
+      setDefaultStore(store);
+      return makeKeyringService(store);
+    })
+  );
 
 /** Layer built from an explicit store — used by tests. */
 export const KeyringLayer = (store: CredentialStore): Layer.Layer<KeyringService> =>

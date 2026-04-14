@@ -14,18 +14,33 @@
 import type { CredentialStore } from '../core/store';
 import { MacOSSecuritySubprocessStore } from './macos-security-subprocess';
 
-/** True when running inside the Bun runtime (production CLI binary, or `bun` CLI). */
+/**
+ * Backend selector for `createMacOSStore`.
+ *
+ * - `"auto"` / `"subprocess"`: shell out to `/usr/bin/security` for
+ *   every operation. ~25ms per call, no ACL dialogs, works with
+ *   unsigned / ad-hoc signed callers. Safe default.
+ * - `"ffi"`: call Security.framework directly via `bun:ffi`. ~1ms
+ *   per read, but currently triggers a macOS trust dialog when the
+ *   calling binary is not signed with a stable Developer ID.
+ *   Experimental — opt-in only. Falls back to subprocess when
+ *   `bun:ffi` is unavailable (Node runtime).
+ */
+export type MacOSBackend = 'auto' | 'subprocess' | 'ffi';
+
 const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined';
 
 /**
  * Resolve the appropriate macOS store for the current runtime.
  *
- * The FFI module is imported dynamically so Node doesn't choke on its
- * top-level `import 'bun:ffi'` — the failing import would crash Node
- * at module load time even if callers never intend to use it.
+ * Defaults to `"auto"` which picks the subprocess backend — the only
+ * path that reliably avoids macOS keychain trust dialogs for ad-hoc
+ * signed binaries. Callers can opt into `"ffi"` for the ~25× perf win
+ * if and only if the calling binary is signed with a stable Developer
+ * ID certificate (dialogs appear otherwise).
  */
-export async function createMacOSStore(): Promise<CredentialStore> {
-  if (isBun) {
+export async function createMacOSStore(backend: MacOSBackend = 'auto'): Promise<CredentialStore> {
+  if (backend === 'ffi' && isBun) {
     const mod = await import('./macos-security-ffi');
     return new mod.MacOSSecurityFFIStore();
   }
@@ -36,8 +51,7 @@ export async function createMacOSStore(): Promise<CredentialStore> {
  * Synchronous variant — returns the subprocess backend unconditionally.
  * Callers that cannot await (e.g. `createDefaultStore()` used by the
  * CLI's synchronous Effect layer construction) can use this at the
- * cost of giving up the FFI perf win. The CLI itself should prefer the
- * async path.
+ * cost of giving up the FFI opt-in.
  */
 export function createMacOSStoreSync(): CredentialStore {
   return new MacOSSecuritySubprocessStore();
