@@ -458,6 +458,16 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
+  ts/e2e-tests/runtimes/node/tool-router-pagination:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
   ts/e2e-tests/runtimes/node/typescript-mjs-import-nodenext:
     devDependencies:
       '@composio/cli':
