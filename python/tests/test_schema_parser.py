@@ -1099,6 +1099,49 @@ class TestBooleanSchemas:
         assert result.__origin__ is t.Union
 
 
+class TestNullOnlyCombiner:
+    """Regression tests for null-only anyOf/oneOf schemas (GH-3171)."""
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_null_only(self):
+        """anyOf with only null branch should return Optional[Any]."""
+        result = json_schema_to_pydantic_type({"anyOf": [{"type": "null"}]})
+        assert result == t.Optional[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_oneof_null_only(self):
+        """oneOf with only null branch should return Optional[Any]."""
+        result = json_schema_to_pydantic_type({"oneOf": [{"type": "null"}]})
+        assert result == t.Optional[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_false_and_null(self):
+        """anyOf with false + null should return Optional[Any] after filtering."""
+        result = json_schema_to_pydantic_type(
+            {"anyOf": [False, {"type": "null"}]}
+        )
+        assert result == t.Optional[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_direct_null_still_works(self):
+        """Direct null type should still return Optional[Any]."""
+        result = json_schema_to_pydantic_type({"type": "null"})
+        assert result == t.Optional[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_string_and_null_not_affected(self):
+        """anyOf with string + null should still return Optional[str]."""
+        result = json_schema_to_pydantic_type(
+            {"anyOf": [{"type": "string"}, {"type": "null"}]}
+        )
+        assert result == t.Optional[str]
+
+
 class TestBooleanDefaultCoercion:
     """Regression tests for PLEN-1311 - Boolean default type mismatch in LangchainProvider."""
 
