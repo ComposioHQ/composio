@@ -77,6 +77,7 @@
     "@zed-industries/codex-acp": "^0.10.0",
     "@clack/core": "catalog:",
     "@clack/prompts": "catalog:",
+    "@composio/cli-keyring": "workspace:*",
     "@composio/client": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/json-schema-to-zod": "workspace:*",

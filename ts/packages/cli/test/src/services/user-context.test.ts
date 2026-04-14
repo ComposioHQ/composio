@@ -4,11 +4,74 @@ import { FileSystem } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
-import { ComposioUserContext, ComposioUserContextLive } from 'src/services/user-context';
+import { ComposioUserContext, rawComposioUserContextLive } from 'src/services/user-context';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { UserData, UserDataWithDefaults, userDataToJSON } from 'src/models/user-data';
 import { extendConfigProvider } from 'src/services/config';
+import { CliUserConfig } from 'src/models/cli-user-config';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { makeKeyringService, KeyringService } from '@composio/cli-keyring/effect';
+import {
+  type CredentialStore,
+  type EntryModifiers,
+  KeyringError,
+  CredentialPersistence,
+} from '@composio/cli-keyring';
 import path from 'node:path';
+
+const InMemoryKeyringLayer = (() => {
+  const items = new Map<string, Uint8Array>();
+  const key = (s: string, u: string) => `${s}\0${u}`;
+  const store: CredentialStore = {
+    id: 'memory',
+    vendor: 'test',
+    persistence: () => CredentialPersistence.ProcessOnly,
+    async setSecret(s: string, u: string, secret: Uint8Array, _m: EntryModifiers) {
+      items.set(key(s, u), new Uint8Array(secret));
+    },
+    async getSecret(s: string, u: string, _m: EntryModifiers) {
+      const v = items.get(key(s, u));
+      if (!v) throw new KeyringError({ kind: 'NoEntry' });
+      return v;
+    },
+    async deleteCredential(s: string, u: string, _m: EntryModifiers) {
+      if (!items.delete(key(s, u))) throw new KeyringError({ kind: 'NoEntry' });
+    },
+  };
+  return Layer.succeed(KeyringService, makeKeyringService(store));
+})();
+
+const MockCliUserConfigLayer = Layer.succeed(
+  ComposioCliUserConfig,
+  ComposioCliUserConfig.of({
+    data: {
+      channel: 'beta',
+      developerModeEnabled: true,
+      developerDangerousCommandsEnabled: false,
+      experimentalFeatures: {},
+      artifactDirectory: undefined,
+      experimentalSubagentTarget: 'auto',
+      security: 'auto',
+    },
+    raw: CliUserConfig.make({
+      developer: { enabled: true, destructiveActions: false },
+      experimentalFeatures: {},
+      artifactDirectory: Option.none(),
+      experimentalSubagent: Option.none(),
+      security: 'auto',
+    }),
+    channel: 'beta',
+    isDevModeEnabled: () => true,
+    areDeveloperDangerousCommandsEnabled: () => false,
+    isExperimentalFeatureEnabled: () => true,
+    update: () => Effect.void,
+  })
+);
+
+const ComposioUserContextLive = Layer.provide(
+  rawComposioUserContextLive,
+  Layer.mergeAll(InMemoryKeyringLayer, MockCliUserConfigLayer)
+);
 
 describe('ComposioUserContext', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
