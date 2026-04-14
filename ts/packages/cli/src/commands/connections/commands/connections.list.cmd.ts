@@ -16,38 +16,44 @@ const formatConnectionsJson = (items: ReadonlyArray<ConnectedAccountItem>): stri
     return acc;
   }, new Map());
 
-  return JSON.stringify(
-    items.map(item => ({
-      toolkit: item.toolkit.slug,
-      status: item.status,
-      ...(toolkitCounts.get(item.toolkit.slug)! > 1 ? { alias: item.alias ?? null } : {}),
-    })),
-    null,
-    2
+  const grouped = items.reduce<Record<string, Array<{ status: string; alias?: string | null }>>>(
+    (acc, item) => {
+      const toolkit = item.toolkit.slug;
+      const entry = {
+        status: item.status,
+        ...(toolkitCounts.get(toolkit)! > 1 ? { alias: item.alias ?? null } : {}),
+      };
+
+      if (!acc[toolkit]) {
+        acc[toolkit] = [];
+      }
+      acc[toolkit].push(entry);
+      return acc;
+    },
+    {}
   );
+
+  return JSON.stringify(grouped, null, 2);
 };
 
-export const connectionsCmd$List = Command.make(
-  'list',
-  { toolkit },
-  ({ toolkit }) =>
-    Effect.gen(function* () {
-      if (!(yield* requireAuth)) return;
+export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit }) =>
+  Effect.gen(function* () {
+    if (!(yield* requireAuth)) return;
 
-      const ui = yield* TerminalUI;
-      const repo = yield* ComposioToolkitsRepository;
-      const toolkitSlug = Option.getOrUndefined(toolkit);
+    const ui = yield* TerminalUI;
+    const repo = yield* ComposioToolkitsRepository;
+    const toolkitSlug = Option.getOrUndefined(toolkit);
 
-      const result = yield* ui.withSpinner(
-        'Fetching connections...',
-        repo.listConnectedAccounts({
-          toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
-          limit: 1000,
-        })
-      );
+    const result = yield* ui.withSpinner(
+      'Fetching connections...',
+      repo.listConnectedAccounts({
+        toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
+        limit: 1000,
+      })
+    );
 
-      yield* ui.output(formatConnectionsJson(result.items));
-    })
+    yield* ui.output(formatConnectionsJson(result.items));
+  })
 ).pipe(
   Command.withDescription(
     'List connection statuses as JSON. Includes aliases when a toolkit has multiple connections.'

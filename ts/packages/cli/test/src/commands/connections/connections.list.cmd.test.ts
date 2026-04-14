@@ -89,13 +89,15 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list']);
 
         const output = write.mock.calls.map(call => String(call[0])).join('');
-        const parsed = JSON.parse(output) as Array<Record<string, string>>;
+        const parsed = JSON.parse(output) as Record<string, Array<Record<string, string>>>;
 
-        expect(parsed).toEqual([
-          { toolkit: 'gmail', status: 'ACTIVE' },
-          { toolkit: 'github', status: 'ACTIVE', alias: 'work' },
-          { toolkit: 'github', status: 'FAILED', alias: 'personal' },
-        ]);
+        expect(parsed).toEqual({
+          gmail: [{ status: 'ACTIVE' }],
+          github: [
+            { status: 'ACTIVE', alias: 'work' },
+            { status: 'FAILED', alias: 'personal' },
+          ],
+        });
       })
     );
   });
@@ -110,12 +112,14 @@ describe('CLI: composio connections list', () => {
         yield* cli(['connections', 'list', '--toolkit', 'github']);
 
         const output = write.mock.calls.map(call => String(call[0])).join('');
-        const parsed = JSON.parse(output) as Array<Record<string, string>>;
+        const parsed = JSON.parse(output) as Record<string, Array<Record<string, string>>>;
 
-        expect(parsed).toEqual([
-          { toolkit: 'github', status: 'ACTIVE', alias: 'work' },
-          { toolkit: 'github', status: 'FAILED', alias: 'personal' },
-        ]);
+        expect(parsed).toEqual({
+          github: [
+            { status: 'ACTIVE', alias: 'work' },
+            { status: 'FAILED', alias: 'personal' },
+          ],
+        });
       })
     );
   });
