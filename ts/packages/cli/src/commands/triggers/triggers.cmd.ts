@@ -5,7 +5,6 @@ import { triggersCmd$Status } from './commands/triggers.status.cmd';
 import { triggersCmd$Create } from './commands/triggers.create.cmd';
 import { triggersCmd$Enable } from './commands/triggers.enable.cmd';
 import { triggersCmd$Disable } from './commands/triggers.disable.cmd';
-import { triggersCmd$Delete } from './commands/triggers.delete.cmd';
 import { triggersCmd$Listen } from './commands/triggers.listen.cmd';
 
 /**
@@ -26,6 +25,5 @@ export const triggersCmd = Command.make('triggers').pipe(
     triggersCmd$Create,
     triggersCmd$Enable,
     triggersCmd$Disable,
-    triggersCmd$Delete,
   ])
 );

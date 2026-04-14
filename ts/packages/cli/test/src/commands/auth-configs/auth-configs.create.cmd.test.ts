@@ -8,13 +8,26 @@ const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
+const dangerousDevConfig = {
+  cliUserConfig: {
+    developerDangerousCommandsEnabled: true,
+  },
+} satisfies TestLiveInput;
+
 describe('CLI: composio dev auth-configs create', () => {
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] --toolkit "gmail" [Then] creates with Composio managed auth',
     it => {
       it.scoped('creates successfully', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
+          yield* cli([
+            'dev',
+            'auth-configs',
+            'create',
+            '--toolkit',
+            'gmail',
+            '--dangerously-allow',
+          ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -26,12 +39,20 @@ describe('CLI: composio dev auth-configs create', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] named config --toolkit "gmail" [Then] creates with name',
     it => {
       it.scoped('creates with name successfully', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'auth-configs', 'create', 'my-config', '--toolkit', 'gmail']);
+          yield* cli([
+            'dev',
+            'auth-configs',
+            'create',
+            'my-config',
+            '--toolkit',
+            'gmail',
+            '--dangerously-allow',
+          ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -42,7 +63,7 @@ describe('CLI: composio dev auth-configs create', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] --auth-scheme "OAUTH2" [Then] creates with custom auth',
     it => {
       it.scoped('creates with custom auth scheme', () =>
@@ -55,6 +76,7 @@ describe('CLI: composio dev auth-configs create', () => {
             'gmail',
             '--auth-scheme',
             'OAUTH2',
+            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -68,6 +90,7 @@ describe('CLI: composio dev auth-configs create', () => {
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
+      ...dangerousDevConfig,
       authConfigsData: {
         createResponse: {
           auth_config: { id: 'ac_custom', auth_scheme: 'API_KEY', is_composio_managed: false },
@@ -78,7 +101,7 @@ describe('CLI: composio dev auth-configs create', () => {
   )('[Given] custom create response [Then] shows correct details', it => {
     it.scoped('shows custom response data', () =>
       Effect.gen(function* () {
-        yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'slack']);
+        yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'slack', '--dangerously-allow']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -89,7 +112,7 @@ describe('CLI: composio dev auth-configs create', () => {
     );
   });
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] invalid JSON in --custom-credentials [Then] shows error',
     it => {
       it.scoped('shows JSON parse error', () =>
@@ -104,6 +127,7 @@ describe('CLI: composio dev auth-configs create', () => {
             'OAUTH2',
             '--custom-credentials',
             '{invalid json}',
+            '--dangerously-allow',
           ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -114,24 +138,41 @@ describe('CLI: composio dev auth-configs create', () => {
     }
   );
 
-  layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
-      Effect.gen(function* () {
-        yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = lines.join('\n');
+  layer(TestLive({ ...dangerousDevConfig }))(
+    '[Given] no API key [Then] warns user to login',
+    it => {
+      it.scoped('warns user to login', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'dev',
+            'auth-configs',
+            'create',
+            '--toolkit',
+            'gmail',
+            '--dangerously-allow',
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
 
-        expect(output).toContain('not logged in');
-      })
-    );
-  });
+          expect(output).toContain('not logged in');
+        })
+      );
+    }
+  );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider }))(
+  layer(TestLive({ baseConfigProvider: testConfigProvider, ...dangerousDevConfig }))(
     '[Given] next step hint [Then] includes auth config ID',
     it => {
       it.scoped('shows next step hint', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'auth-configs', 'create', '--toolkit', 'gmail']);
+          yield* cli([
+            'dev',
+            'auth-configs',
+            'create',
+            '--toolkit',
+            'gmail',
+            '--dangerously-allow',
+          ]);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 

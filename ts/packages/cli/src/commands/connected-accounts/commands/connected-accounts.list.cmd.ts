@@ -1,10 +1,17 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
-import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { Effect, Option, Schema } from 'effect';
+import {
+  ComposioClientSingleton,
+  ConnectedAccountListResponse,
+} from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
+import {
+  formatResolveCommandProjectError,
+  resolveCommandProject,
+} from 'src/services/command-project';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
 
 const toolkits = Options.text('toolkits').pipe(
@@ -51,21 +58,31 @@ export const connectedAccountsCmd$List = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
-      const repo = yield* ComposioToolkitsRepository;
+      const clientSingleton = yield* ComposioClientSingleton;
 
       const toolkitSlugs = Option.isSome(toolkits)
         ? toolkits.value.split(',').map(s => s.trim())
         : undefined;
+      const resolvedProject = yield* resolveCommandProject({
+        mode: 'developer',
+      }).pipe(Effect.mapError(formatResolveCommandProjectError));
+      const client = yield* clientSingleton.getFor({
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
+      });
 
-      const result = yield* ui.withSpinner(
+      const rawResult = yield* ui.withSpinner(
         'Fetching connected accounts...',
-        repo.listConnectedAccounts({
-          toolkit_slugs: toolkitSlugs,
-          user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-          statuses: Option.isSome(status) ? [status.value] : undefined,
-          limit: clampLimit(limit),
-        })
+        Effect.tryPromise(() =>
+          client.connectedAccounts.list({
+            toolkit_slugs: toolkitSlugs,
+            user_ids: Option.isSome(userId) ? [userId.value] : undefined,
+            statuses: Option.isSome(status) ? [status.value] : undefined,
+            limit: clampLimit(limit),
+          })
+        )
       );
+      const result = yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult);
 
       if (result.items.length === 0) {
         let hint: string;

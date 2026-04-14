@@ -204,6 +204,7 @@ runWithArgs.pipe(
     return Effect.gen(function* () {
       const cliUserConfig = yield* ComposioCliUserConfig;
       const visibility = {
+        isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
         isExperimentalFeatureEnabled: (feature: string) =>
           cliUserConfig.isExperimentalFeatureEnabled(feature),
       };
@@ -255,6 +256,7 @@ runWithArgs.pipe(
           yield* Console.error(message);
           const cliUserConfig = yield* ComposioCliUserConfig;
           const visibility = {
+            isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
             isExperimentalFeatureEnabled: (feature: string) =>
               cliUserConfig.isExperimentalFeatureEnabled(feature),
           };

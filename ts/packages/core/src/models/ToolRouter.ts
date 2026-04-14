@@ -128,7 +128,7 @@ export class ToolRouter<
 
     const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateParams & { multi_account?: Record<string, unknown> } = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,

@@ -4,6 +4,11 @@ import { bold, dim, gray } from 'src/ui/colors';
 import {
   type CommandVisibility,
   experimental,
+  type HelpLevel,
+  full,
+  isTaggedValueVisible,
+  isTaggedValueVisibleForHelpLevel,
+  simple,
   tagged,
   visibleValues,
   type TaggedValue,
@@ -24,7 +29,7 @@ type CompactCommand = {
 // ── Core workflow commands ──────────────────────────────────────────────
 
 const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
-  tagged({
+  simple({
     name: 'search',
     description: 'Find tools by use case across all toolkits/apps.',
     usage: 'search <query...> [--toolkits text] [--limit integer] [--human]',
@@ -38,7 +43,7 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
       { name: '--human', description: 'Show formatted output instead of default JSON' },
     ],
   }),
-  tagged({
+  simple({
     name: 'execute',
     description:
       'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
@@ -63,7 +68,7 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
       { name: '--get-schema', description: 'Fetch and print the CLI-facing input schema' },
     ],
   }),
-  tagged({
+  simple({
     name: 'link',
     description: 'Connect your account for a toolkit/app.',
     usage: 'link [<toolkit>]',
@@ -149,17 +154,10 @@ const OTHER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   }),
 ];
 
-const DEVELOPER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
-  tagged({
-    name: 'dev',
-    description:
-      'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.',
-  }),
-  tagged({
-    name: 'generate',
-    description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
-  }),
-];
+const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
+  name: 'generate',
+  description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
+});
 
 // ── Account commands ───────────────────────────────────────────────────
 
@@ -171,6 +169,32 @@ const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'version', description: 'Display CLI version' }),
   tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
   tagged({ name: 'config', description: 'View and manage CLI configuration' }),
+];
+
+const FULL_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  full({
+    name: 'files',
+    description: 'Show where CLI config, cache, and session artifacts live',
+  }),
+  full({ name: 'tools list', description: 'List tools for a toolkit with query/tag filters' }),
+  full({ name: 'tools info', description: 'Inspect a tool summary and cached schema details' }),
+  full({ name: 'triggers list', description: 'List trigger types for a toolkit' }),
+  full({ name: 'triggers info', description: 'Inspect a trigger type and schema summary' }),
+  full({ name: 'connections list', description: 'Print toolkit connection statuses as JSON' }),
+  full({ name: 'generate ts', description: 'Generate TypeScript stubs for selected toolkits' }),
+  full({ name: 'generate py', description: 'Generate Python stubs for selected toolkits' }),
+  full({
+    name: 'dev init',
+    description: 'Initialize a developer project in the current directory',
+  }),
+  full({
+    name: 'dev playground-execute',
+    description: 'Execute tools against developer playground users and auth configs',
+  }),
+  full({
+    name: 'dev listen',
+    description: 'Stream developer-project realtime trigger events with optional forwarding',
+  }),
 ];
 
 // ── Render helpers ─────────────────────────────────────────────────────
@@ -195,6 +219,131 @@ function renderCompactCommands(commands: ReadonlyArray<CompactCommand>): string[
   const maxLen = Math.max(...commands.map(c => c.name.length));
   return commands.map(cmd => `  ${cmd.name.padEnd(maxLen + 2)}${cmd.description}`);
 }
+
+function renderDevHelp(visibility: CommandVisibility, helpLevel: HelpLevel = 'default'): string {
+  const lines: string[] = [
+    '',
+    bold('USAGE'),
+    visibility.isDevModeEnabled
+      ? '  composio dev [--mode on|off] <command> [options]'
+      : '  composio dev [--mode on|off]',
+    '',
+    bold('DESCRIPTION'),
+    visibility.isDevModeEnabled
+      ? '  Developer workflows for local project setup, playground execution, logs, and developer-scoped management.'
+      : '  Developer mode is off. Only mode switching is available until you turn it back on.',
+    '',
+    bold('MODE'),
+    '  --mode <on|off>         Turn developer mode on or off.',
+    '',
+  ];
+
+  if (!visibility.isDevModeEnabled) {
+    if (helpLevel !== 'simple') {
+      lines.push(bold('EXAMPLES'));
+      lines.push('  composio dev --mode on');
+      lines.push('  composio dev --mode off');
+      lines.push('');
+      lines.push(bold('NOTE'));
+      lines.push(
+        '  Developer mode is for engineers building with the CLI. It unlocks more advanced commands like creating or updating auth configs and connected accounts.'
+      );
+      lines.push('');
+    }
+    return lines.join('\n');
+  }
+
+  lines.push(bold('PROJECT'));
+  lines.push('  dev init                 Initialize this directory with a developer project');
+  lines.push('');
+
+  lines.push(bold('EXECUTION'));
+  lines.push('  dev playground-execute   Execute a tool against a developer playground user');
+  lines.push('  dev listen               Listen to developer-project trigger events');
+  lines.push('  dev logs tools           Browse tool logs');
+  lines.push('  dev logs triggers        Browse trigger logs');
+  lines.push('');
+
+  lines.push(bold('TOOLKITS'));
+  lines.push('  dev toolkits list        Browse available toolkits');
+  lines.push('  dev toolkits info        Inspect a toolkit');
+  lines.push('  dev toolkits search      Search toolkits');
+  lines.push('  dev toolkits version     Inspect toolkit versions');
+  lines.push('');
+
+  lines.push(bold('AUTH CONFIGS'));
+  lines.push('  dev auth-configs list    List auth configs');
+  lines.push('  dev auth-configs info    View one auth config');
+  lines.push('  dev auth-configs create  Create an auth config');
+  lines.push('');
+
+  lines.push(bold('CONNECTED ACCOUNTS'));
+  lines.push('  dev connected-accounts link   Link a connected account');
+  lines.push('  dev connected-accounts list   List connected accounts');
+  lines.push('  dev connected-accounts info   View one connected account');
+  lines.push('  dev connected-accounts whoami Resolve an account identity');
+  lines.push('');
+
+  lines.push(bold('TRIGGERS'));
+  lines.push('  dev triggers list        List trigger types');
+  lines.push('  dev triggers info        View one trigger type');
+  lines.push('  dev triggers status      Inspect trigger instances');
+  lines.push('  dev triggers create      Create a trigger instance');
+  lines.push('  dev triggers enable      Enable a trigger instance');
+  lines.push('  dev triggers disable     Disable a trigger instance [guarded]');
+  lines.push('');
+
+  lines.push(bold('PROJECTS'));
+  lines.push('  dev projects list        List projects');
+  lines.push('  dev projects switch      Switch default project');
+  lines.push('');
+
+  lines.push(bold('GUARDED'));
+  lines.push('  dev triggers disable     Disable a trigger instance');
+  lines.push(
+    '  This requires `developer.destructive_actions: true` in `~/.composio/config.json` and `--dangerously-allow` on the command line.'
+  );
+  lines.push('');
+  if (helpLevel !== 'simple') {
+    lines.push(bold('EXAMPLES'));
+    lines.push('  composio dev --mode off');
+    lines.push('  composio dev toolkits list');
+    lines.push(
+      '  composio dev playground-execute GMAIL_SEND_EMAIL --dangerously-allow -d \'{ recipient_email: "a@b.com" }\''
+    );
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+export const HELP_LEVELS = [
+  'simple',
+  'default',
+  'full',
+] as const satisfies ReadonlyArray<HelpLevel>;
+
+export const parseHelpLevel = (token: string | undefined): HelpLevel | undefined => {
+  if (!token) {
+    return undefined;
+  }
+  if (token === 'verbose') {
+    return 'full';
+  }
+  return HELP_LEVELS.find(level => level === token);
+};
+
+const splitTrailingHelpLevel = (
+  args: ReadonlyArray<string>
+): { args: ReadonlyArray<string>; helpLevel: HelpLevel } => {
+  const trailingLevel = parseHelpLevel(args[args.length - 1]);
+  if (!trailingLevel) {
+    return { args, helpLevel: 'default' };
+  }
+
+  return {
+    args: args.slice(0, -1),
+    helpLevel: trailingLevel,
+  };
+};
 
 // ── Subcommand help definitions ────────────────────────────────────────
 
@@ -389,6 +538,17 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio search "<query>"               Find tools to use after linking',
       "composio execute <slug> -d '{ ... }'    Execute a tool with your connected account",
       'composio config experimental             Manage experimental features',
+    ],
+  },
+  'connections list': {
+    usage: 'composio connections list [--toolkit <text>]',
+    description:
+      'Print connected toolkit statuses as JSON. Adds aliases when a toolkit has multiple connections.',
+    options: [{ name: '--toolkit <text>', description: 'Filter to a single toolkit slug' }],
+    examples: ['composio connections list', 'composio connections list --toolkit gmail'],
+    seeAlso: [
+      'composio link <toolkit>                 Connect a new account for a toolkit',
+      'composio dev connected-accounts list    Inspect the full connected-account table',
     ],
   },
   run: {
@@ -828,12 +988,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       { name: '--custom-credentials <text>', description: 'Custom credentials JSON' },
     ],
   },
-  'dev auth-configs delete': {
-    usage: 'composio dev auth-configs delete [-y, --yes] [<id>]',
-    description: 'Delete an auth config.',
-    args: [{ name: '<id>', description: 'Auth config ID' }],
-    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
-  },
   'dev connected-accounts list': {
     usage:
       'composio dev connected-accounts list [--toolkits text] [--user-id text] [--status text] [--limit integer]',
@@ -854,12 +1008,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     usage: 'composio dev connected-accounts whoami [<id>]',
     description: 'Show the external account profile for a connected account.',
     args: [{ name: '<id>', description: 'Connected account ID' }],
-  },
-  'dev connected-accounts delete': {
-    usage: 'composio dev connected-accounts delete [-y, --yes] [<id>]',
-    description: 'Delete a connected account.',
-    args: [{ name: '<id>', description: 'Connected account ID' }],
-    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
   },
   'dev triggers list': {
     usage: 'composio dev triggers list <toolkit> [--limit integer]',
@@ -907,25 +1055,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     usage: 'composio dev triggers disable [<id>]',
     description: 'Disable a trigger instance.',
     args: [{ name: '<id>', description: 'Trigger instance ID' }],
-  },
-  'dev triggers delete': {
-    usage: 'composio dev triggers delete [-y, --yes] [<id>]',
-    description: 'Delete a trigger instance.',
-    args: [{ name: '<id>', description: 'Trigger instance ID' }],
-    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
-  },
-  'dev orgs list': {
-    usage: 'composio dev orgs list [--limit integer]',
-    description: 'List organizations and show current global selection.',
-    options: [{ name: '--limit <integer>', description: 'Number of results' }],
-  },
-  'dev orgs switch': {
-    usage: 'composio dev orgs switch [--org-id text] [--limit integer]',
-    description: 'Switch default organization context.',
-    options: [
-      { name: '--org-id <text>', description: 'Organization ID to switch to' },
-      { name: '--limit <integer>', description: 'Number of orgs to show in picker' },
-    ],
   },
   'dev projects list': {
     usage: 'composio dev projects list [--org-id text] [--limit integer]',
@@ -992,8 +1121,20 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
 const getVisibleSubcommandHelp = (
   cmd: string,
-  visibility: CommandVisibility
+  visibility: CommandVisibility,
+  helpLevel: HelpLevel = 'default'
 ): Option.Option<SubcommandHelp> => {
+  if (cmd === 'dev') {
+    return Option.some({
+      usage: 'composio dev [--mode on|off]',
+      description: 'Developer mode and developer-scoped workflows.',
+    });
+  }
+
+  if (cmd.startsWith('dev ') && !visibility.isDevModeEnabled) {
+    return Option.none();
+  }
+
   const entry = SUBCOMMAND_HELP[cmd];
   if (!entry) {
     return Option.none();
@@ -1003,16 +1144,13 @@ const getVisibleSubcommandHelp = (
     return Option.some(entry);
   }
 
-  if (!entry.tags || entry.tags.length === 0) {
-    return Option.some(entry.value);
-  }
-
-  return entry.tags.every(tag => visibility.isExperimentalFeatureEnabled(tag))
+  return isTaggedValueVisible(entry, visibility) &&
+    isTaggedValueVisibleForHelpLevel(entry, helpLevel)
     ? Option.some(entry.value)
     : Option.none();
 };
 
-function renderSubcommandHelp(cmd: SubcommandHelp): string {
+function renderSubcommandHelp(cmd: SubcommandHelp, helpLevel: HelpLevel): string {
   const lines: string[] = [
     '',
     bold('USAGE'),
@@ -1047,7 +1185,7 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
     lines.push('');
   }
 
-  if (cmd.injectedHelpers && cmd.injectedHelpers.length > 0) {
+  if (helpLevel !== 'simple' && cmd.injectedHelpers && cmd.injectedHelpers.length > 0) {
     lines.push(bold('INJECTED HELPERS'));
     const maxLen = Math.max(...cmd.injectedHelpers.map(h => h.name.length));
     for (const helper of cmd.injectedHelpers) {
@@ -1056,7 +1194,7 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
     lines.push('');
   }
 
-  if (cmd.examples && cmd.examples.length > 0) {
+  if (helpLevel !== 'simple' && cmd.examples && cmd.examples.length > 0) {
     lines.push(bold('EXAMPLES'));
     for (const ex of cmd.examples) {
       lines.push(`  ${ex}`);
@@ -1064,7 +1202,7 @@ function renderSubcommandHelp(cmd: SubcommandHelp): string {
     lines.push('');
   }
 
-  if (cmd.seeAlso && cmd.seeAlso.length > 0) {
+  if (helpLevel !== 'simple' && cmd.seeAlso && cmd.seeAlso.length > 0) {
     lines.push(bold('SEE ALSO'));
     for (const sa of cmd.seeAlso) {
       lines.push(`  ${sa}`);
@@ -1083,7 +1221,7 @@ export function matchSubcommandHelp(
   argv: ReadonlyArray<string>,
   visibility: CommandVisibility
 ): string | undefined {
-  const args = argv.slice(2);
+  const { args } = splitTrailingHelpLevel(argv.slice(2));
   if (args.length < 2) return undefined;
   const last = args[args.length - 1];
   if (last !== '--help' && last !== '-h') return undefined;
@@ -1099,11 +1237,13 @@ export function matchSubcommandHelp(
 
 export function printSubcommandHelp(
   cmd: string,
-  visibility: CommandVisibility
+  visibility: CommandVisibility,
+  helpLevel: HelpLevel = 'default'
 ): Effect.Effect<void> {
-  const help = getVisibleSubcommandHelp(cmd, visibility);
+  if (cmd === 'dev') return Console.log(renderDevHelp(visibility, helpLevel));
+  const help = getVisibleSubcommandHelp(cmd, visibility, helpLevel);
   if (Option.isNone(help)) return Console.log(`Unknown command: ${cmd}`);
-  return Console.log(renderSubcommandHelp(help.value));
+  return Console.log(renderSubcommandHelp(help.value, helpLevel));
 }
 
 /**
@@ -1114,7 +1254,8 @@ export function matchCommandFromArgv(
   argv: ReadonlyArray<string>,
   visibility: CommandVisibility
 ): string | undefined {
-  const args = argv.slice(2).filter(a => a !== '--help' && a !== '-h' && !a.startsWith('--'));
+  const { args: helpArgs } = splitTrailingHelpLevel(argv.slice(2));
+  const args = helpArgs.filter(a => a !== '--help' && a !== '-h' && !a.startsWith('--'));
   // Try longest match first: "dev toolkits list" → "dev toolkits" → "dev"
   for (let len = Math.min(args.length, 3); len > 0; len--) {
     const key = args.slice(0, len).join(' ');
@@ -1127,9 +1268,10 @@ export function matchCommandFromArgv(
  * Get rendered help text for a command, or undefined if not found.
  */
 export function getCommandHelpText(cmd: string, visibility: CommandVisibility): string | undefined {
+  if (cmd === 'dev') return renderDevHelp(visibility);
   return Option.match(getVisibleSubcommandHelp(cmd, visibility), {
     onNone: () => undefined,
-    onSome: help => renderSubcommandHelp(help),
+    onSome: help => renderSubcommandHelp(help, 'default'),
   });
 }
 
@@ -1140,8 +1282,73 @@ export function getCommandHelpText(cmd: string, visibility: CommandVisibility): 
  * Core workflow commands are shown first with full usage/options.
  * Housekeeping and developer commands are shown compactly at the bottom.
  */
-export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void> {
+export function printRootHelp(
+  visibility: CommandVisibility,
+  helpLevel: HelpLevel = 'default'
+): Effect.Effect<void> {
   const name = 'composio';
+  const developerCommands: ReadonlyArray<CompactCommand> = [
+    {
+      name: 'dev',
+      description: visibility.isDevModeEnabled
+        ? 'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.'
+        : 'Developer mode toggle. Use `composio dev --mode on` to enable developer workflows.',
+    },
+    GENERATE_COMMAND.value,
+  ];
+  const coreCommands = visibleValues(CORE_COMMANDS, visibility, helpLevel);
+  const otherCommands = visibleValues(OTHER_COMMANDS, visibility, helpLevel);
+  const accountCommands = visibleValues(ACCOUNT_COMMANDS, visibility, helpLevel);
+  const fullCommands = visibleValues(FULL_COMMANDS, visibility, helpLevel);
+  const exampleLines =
+    helpLevel === 'simple'
+      ? [
+          `  ${dim('# Find tools')}`,
+          `  ${name} search "send an email"`,
+          '',
+          `  ${dim('# Execute a tool')}`,
+          `  ${name} execute GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
+          '',
+          `  ${dim('# Connect an account when execute tells you to')}`,
+          `  ${name} link github`,
+          '',
+        ]
+      : [
+          `  ${dim('# Find tools — supports multiple queries at once')}`,
+          `  ${name} search "send an email" "create github issue"`,
+          `  ${name} search "list calendar events" --toolkits google_calendar --limit 5`,
+          '',
+          `  ${dim('# Connect your account for a toolkit')}`,
+          `  ${name} link github`,
+          '',
+          `  ${dim('# Execute a tool')}`,
+          `  ${name} execute GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
+          '',
+          `  ${dim('# Execute multiple tools in parallel')}`,
+          `  ${name} execute -p GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hi" }' \\`,
+          `                     SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL -d '{ channel: "general", text: "Hello" }'`,
+          '',
+          `  ${dim('# Call an API directly through proxy')}`,
+          `  ${name} proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail`,
+          '',
+          `  ${dim('# Run a script with injected helpers')}`,
+          `  ${name} run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
+          '',
+          `  ${dim('# Manually install the composio skill when auto-install fails')}`,
+          `  ${name} --instal-skill claude`,
+          `  ${name} --instal-skill composio-cli codex`,
+          '',
+          `  ${dim('# Run a multi-step script with Promise.all')}`,
+          `  ${name} run '`,
+          `    const [emails, issues] = await Promise.all([`,
+          `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
+          `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "acme", repo: "app", state: "open" }),`,
+          `    ]);`,
+          `    const brief = await experimental_subAgent(\`Summarize:\\n\${emails.prompt()}\\n\${issues.prompt()}\`);`,
+          `    console.log(brief);`,
+          `  '`,
+          '',
+        ];
 
   const lines: string[] = [
     '',
@@ -1150,60 +1357,39 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     `Try ${bold('execute')} sooner than you'd think — it validates inputs, checks connections, and tells`,
     'you what to fix.',
     '',
-    `Use ${bold('dev')} when you are building an agent with Composio's SDK and want scaffolding,`,
-    'playground execution, logs, and developer-scoped management commands.',
+    visibility.isDevModeEnabled
+      ? `Use ${bold('dev')} when you are building an agent with Composio's SDK and want scaffolding,`
+      : `Use ${bold('dev')} to control access to developer-only workflows.`,
+    visibility.isDevModeEnabled
+      ? 'playground execution, logs, and developer-scoped management commands.'
+      : 'Developer mode is currently off.',
     '',
     bold('USAGE'),
     `  ${name} <command> [options]`,
+    `  ${name} --help [simple|default|full]`,
+    '',
+    bold('MODE'),
+    `  ${helpLevel} help`,
     '',
     bold('CORE COMMANDS'),
-    ...renderDetailedCommands(name, visibleValues(CORE_COMMANDS, visibility)),
+    ...renderDetailedCommands(name, coreCommands),
     gray('  Typical flow: search → execute (link and tools when needed)'),
     '',
-    bold('TOOLS'),
-    ...renderCompactCommands(visibleValues(OTHER_COMMANDS, visibility)),
+    ...(otherCommands.length > 0
+      ? [bold('TOOLS'), ...renderCompactCommands(otherCommands), '']
+      : []),
     '',
     bold('EXAMPLES'),
-    `  ${dim('# Find tools — supports multiple queries at once')}`,
-    `  ${name} search "send an email" "create github issue"`,
-    `  ${name} search "list calendar events" --toolkits google_calendar --limit 5`,
-    '',
-    `  ${dim('# Connect your account for a toolkit')}`,
-    `  ${name} link github`,
-    '',
-    `  ${dim('# Execute a tool')}`,
-    `  ${name} execute GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug" }'`,
-    '',
-    `  ${dim('# Execute multiple tools in parallel')}`,
-    `  ${name} execute -p GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hi" }' \\`,
-    `                     SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL -d '{ channel: "general", text: "Hello" }'`,
-    '',
-    `  ${dim('# Call an API directly through proxy')}`,
-    `  ${name} proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail`,
-    '',
-    `  ${dim('# Run a script with injected helpers')}`,
-    `  ${name} run 'const me = await execute("GITHUB_GET_THE_AUTHENTICATED_USER"); console.log(me)'`,
-    '',
-    `  ${dim('# Manually install the composio skill when auto-install fails')}`,
-    `  ${name} --instal-skill claude`,
-    `  ${name} --instal-skill composio-cli codex`,
-    '',
-    `  ${dim('# Run a multi-step script with Promise.all')}`,
-    `  ${name} run '`,
-    `    const [emails, issues] = await Promise.all([`,
-    `      execute("GMAIL_FETCH_EMAILS", { max_results: 5 }),`,
-    `      execute("GITHUB_LIST_REPOSITORY_ISSUES", { owner: "acme", repo: "app", state: "open" }),`,
-    `    ]);`,
-    `    const brief = await experimental_subAgent(\`Summarize:\\n\${emails.prompt()}\\n\${issues.prompt()}\`);`,
-    `    console.log(brief);`,
-    `  '`,
-    '',
-    bold('DEVELOPER COMMANDS'),
-    ...renderCompactCommands(visibleValues(DEVELOPER_COMMANDS, visibility)),
-    '',
-    bold('ACCOUNT'),
-    ...renderCompactCommands(visibleValues(ACCOUNT_COMMANDS, visibility)),
-    '',
+    ...exampleLines,
+    ...(developerCommands.length > 0
+      ? [bold('DEVELOPER COMMANDS'), ...renderCompactCommands(developerCommands), '']
+      : []),
+    ...(accountCommands.length > 0
+      ? [bold('ACCOUNT'), ...renderCompactCommands(accountCommands), '']
+      : []),
+    ...(fullCommands.length > 0
+      ? [bold('MORE COMMANDS'), ...renderCompactCommands(fullCommands), '']
+      : []),
     bold('FILES') + dim('  (composio files --help)'),
     `  ${bold('~/.composio/')}`,
     `    CLI configuration and cache directory. Contains your auth state`,
@@ -1220,7 +1406,7 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     `    the current directory's session.`,
     '',
     bold('FLAGS'),
-    '  -h, --help     Show help for command',
+    '  -h, --help [mode]  Show help for command (simple, default, full)',
     `  --version      Show ${name} version`,
     '  --instal-skill [skill-name] <claude|codex|openclaw>',
     '                  Manually install the composio skill for a supported agent',

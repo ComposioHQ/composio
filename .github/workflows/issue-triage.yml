@@ -1,0 +1,284 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to triage retrospectively"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Load issue context for dispatch runs
+        if: github.event_name == 'workflow_dispatch'
+        id: issue-context
+        uses: actions/github-script@v8
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        with:
+          script: |
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+            if (!Number.isInteger(issue_number) || issue_number <= 0) {
+              core.setFailed(`Invalid issue_number: ${process.env.ISSUE_NUMBER}`);
+              return;
+            }
+
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+            });
+
+            if (issue.pull_request) {
+              core.setFailed(`Issue #${issue_number} is a pull request, not an issue.`);
+              return;
+            }
+
+            core.setOutput("issue_number", String(issue.number));
+            core.setOutput("issue_title", issue.title || "");
+            core.setOutput("issue_body", issue.body || "");
+            core.setOutput("issue_state", issue.state || "open");
+
+      - name: Write triage schema
+        run: |
+          cat > /tmp/issue-triage-schema.json <<'EOF'
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": ["docs", "py", "ts", "cli", "tool-request", "feature-request", "other"]
+              },
+              "is_bug": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "should_comment": {
+                "type": "boolean"
+              },
+              "comment_body": {
+                "type": "string"
+              }
+            },
+            "required": ["category", "is_bug", "reason", "should_comment", "comment_body"]
+          }
+          EOF
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Classify issue with Claude Sonnet
+        id: classify
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ISSUE_TITLE: ${{ github.event_name == 'workflow_dispatch' && steps.issue-context.outputs.issue_title || github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event_name == 'workflow_dispatch' && steps.issue-context.outputs.issue_body || github.event.issue.body }}
+        run: |
+          set -uo pipefail
+
+          which claude
+          claude --version || true
+
+          PROMPT=$(cat <<'EOF'
+          Read the issue title and body from the ISSUE_TITLE and ISSUE_BODY environment variables.
+
+          Classify the issue for routing and determine whether it is a bug report.
+
+          Allowed categories:
+          - docs
+          - py
+          - ts
+          - cli
+          - tool-request
+          - feature-request
+          - other
+
+          Use semantic meaning, not only keywords.
+          Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.
+          Choose feature-request when the issue is asking for a product, SDK, docs, or CLI improvement that is not a tool request.
+          Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.
+          Choose py only when the issue is primarily about the Python SDK.
+          Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.
+          Choose docs only when the issue is primarily about documentation.
+          Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.
+          Set is_bug to false for feature requests, questions, maintenance, cleanup, and tool requests.
+          Set should_comment to true only when the issue appears incorrect, non-actionable, or missing the information needed to reproduce or investigate.
+          Set should_comment to false otherwise.
+
+          If should_comment is true, provide comment_body as a short issue comment addressed to the reporter.
+          The comment must:
+          - clearly say it is an automated Claude triage note
+          - clearly say Claude cannot reply back in a conversation
+          - ask for the specific missing details needed to investigate, especially repro steps, expected behavior, actual behavior, environment, logs, or screenshots when relevant
+          - stay concise and professional
+
+          If should_comment is false, set comment_body to an empty string.
+          EOF
+          )
+
+          set +e
+          claude -p "$PROMPT" \
+            --model claude-sonnet-4-6 \
+            --max-turns 10 \
+            --output-format json \
+            --dangerously-skip-permissions \
+            --append-system-prompt "Respond with ONLY a raw JSON object (no markdown fences, no prose) that matches the schema in /tmp/issue-triage-schema.json." \
+            > /tmp/claude-response.json 2> /tmp/claude-stderr.log
+          CLAUDE_EXIT=$?
+          set -e
+
+          echo "--- claude exit code: $CLAUDE_EXIT ---"
+          echo "--- claude stderr ---"
+          cat /tmp/claude-stderr.log || true
+          echo "--- end stderr ---"
+          echo "--- raw claude response ---"
+          cat /tmp/claude-response.json || true
+          echo
+          echo "--- end raw ---"
+
+          if [ "$CLAUDE_EXIT" -ne 0 ]; then
+            echo "Claude CLI failed with exit code $CLAUDE_EXIT"
+            exit 1
+          fi
+
+          STRUCTURED=$(jq -r '.result' /tmp/claude-response.json)
+
+          # Strip optional ```json fences just in case
+          STRUCTURED=$(echo "$STRUCTURED" | sed -E 's/^```(json)?//; s/```$//' | jq -c .)
+
+          echo "--- parsed structured output ---"
+          echo "$STRUCTURED"
+          echo "--- end parsed ---"
+
+          {
+            echo "structured_output<<CLAUDE_EOF"
+            echo "$STRUCTURED"
+            echo "CLAUDE_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Apply labels, assignees, and tool-request handling
+        uses: actions/github-script@v8
+        env:
+          STRUCTURED_OUTPUT: ${{ steps.classify.outputs.structured_output }}
+        with:
+          script: |
+            const text = process.env.STRUCTURED_OUTPUT || "";
+            let parsed;
+
+            try {
+              parsed = JSON.parse(text);
+            } catch (error) {
+              core.setFailed(`Could not parse structured_output as JSON: ${text}`);
+              return;
+            }
+
+            const allowed = new Set(["docs", "py", "ts", "cli", "tool-request", "feature-request", "other"]);
+            if (!allowed.has(parsed.category)) {
+              core.setFailed(`Unexpected category: ${parsed.category}`);
+              return;
+            }
+
+            const category = parsed.category;
+            const isBug = Boolean(parsed.is_bug);
+            const reason = parsed.reason || "";
+            const shouldComment = Boolean(parsed.should_comment);
+            const commentBody = parsed.comment_body || "";
+            const issue_number = context.eventName === "workflow_dispatch"
+              ? Number("${{ steps.issue-context.outputs.issue_number }}")
+              : context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueState = context.eventName === "workflow_dispatch"
+              ? "${{ steps.issue-context.outputs.issue_state }}"
+              : context.payload.issue.state;
+
+            const labels = [];
+            const assignees = [];
+
+            if (isBug) {
+              labels.push("bug");
+            }
+
+            if (category === "docs") {
+              labels.push("docs");
+              assignees.push("shawnesquivel", "Sushmithamallesh");
+            } else if (category === "py") {
+              labels.push("py");
+              assignees.push("jkomyno");
+            } else if (category === "ts") {
+              labels.push("ts");
+              assignees.push("jkomyno");
+            } else if (category === "cli") {
+              labels.push("cli");
+              assignees.push("CryogenicPlanet");
+            } else if (category === "feature-request") {
+              labels.push("feature-request");
+            } else if (category === "tool-request") {
+              labels.push("tool-request");
+            }
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels,
+              });
+            }
+
+            if (assignees.length > 0) {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number,
+                assignees,
+              });
+            }
+
+            if (category !== "tool-request" && shouldComment && commentBody.trim().length > 0) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: commentBody.trim(),
+              });
+            }
+
+            if (category === "tool-request" && issueState === "open") {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: [
+                  "🤖 beep boop — hey, I think this is a tool request! Please file it at https://request.composio.dev/boards/tool-requests so the team can track and prioritize it.",
+                  "",
+                  "I've tagged this as `tool-request` and closed it here.",
+                  "",
+                  "If you think I got this wrong, feel free to reopen the issue.",
+                ].join("\n"),
+              });
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: "closed",
+              });
+            }

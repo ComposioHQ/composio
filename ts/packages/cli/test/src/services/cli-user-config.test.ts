@@ -30,6 +30,8 @@ describe('ComposioCliUserConfig', () => {
     return Effect.gen(function* () {
       const config = yield* ComposioCliUserConfig;
       assertEquals(config.channel, 'stable');
+      assertEquals(config.data.developerModeEnabled, true);
+      assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
       assertEquals(config.data.experimentalFeatures.multi_account, undefined);
@@ -54,6 +56,8 @@ describe('ComposioCliUserConfig', () => {
     return Effect.gen(function* () {
       const config = yield* ComposioCliUserConfig;
       assertEquals(config.channel, 'beta');
+      assertEquals(config.data.developerModeEnabled, true);
+      assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
       assertEquals(config.data.experimentalFeatures.multi_account, undefined);
@@ -69,6 +73,10 @@ describe('ComposioCliUserConfig', () => {
     fs.writeFileSync(
       path.join(cwd, '.composio', 'config.json'),
       JSON.stringify({
+        developer: {
+          enabled: false,
+          destructive_actions: true,
+        },
         experimental_features: {
           listen: false,
           multi_account: false,
@@ -89,6 +97,8 @@ describe('ComposioCliUserConfig', () => {
     return Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const config = yield* ComposioCliUserConfig;
+      assertEquals(config.data.developerModeEnabled, false);
+      assertEquals(config.data.developerDangerousCommandsEnabled, true);
       assertEquals(config.data.experimentalFeatures.listen, false);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
       assertEquals(config.data.experimentalFeatures.multi_account, false);
@@ -101,15 +111,72 @@ describe('ComposioCliUserConfig', () => {
         'utf8'
       );
       const parsed = JSON.parse(persisted) as {
+        developer: {
+          enabled: boolean;
+          destructive_actions: boolean;
+        };
         experimental_features: { listen: boolean; multi_account: boolean };
         artifact_directory: string;
         experimental_subagent: { target: string };
       };
 
+      assertEquals(parsed.developer.enabled, false);
+      assertEquals(parsed.developer.destructive_actions, true);
       assertEquals(parsed.experimental_features.listen, false);
       assertEquals(parsed.experimental_features.multi_account, false);
       assertEquals(parsed.artifact_directory, '/tmp/composio-artifacts');
       assertEquals(parsed.experimental_subagent.target, 'claude');
+    }).pipe(Effect.provide(CliUserConfigTest));
+  });
+
+  it.scoped('loads legacy flat developer keys and persists nested developer config', () => {
+    const cwd = tempy.temporaryDirectory();
+    const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3-beta.4']]) satisfies Map<string, string>;
+    fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+    fs.writeFileSync(
+      path.join(cwd, '.composio', 'config.json'),
+      JSON.stringify({
+        developer_mode_enabled: false,
+        developer_dangerous_commands_enabled: true,
+      })
+    );
+
+    const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+    const CliUserConfigTest = Layer.provideMerge(
+      ComposioCliUserConfigLive,
+      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+    );
+
+    return Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const config = yield* ComposioCliUserConfig;
+      assertEquals(config.data.developerModeEnabled, false);
+      assertEquals(config.data.developerDangerousCommandsEnabled, true);
+
+      yield* config.update({
+        developer: {
+          ...config.raw.developer,
+          enabled: true,
+        },
+      });
+
+      const persisted = yield* fileSystem.readFileString(
+        path.join(cwd, '.composio', 'config.json'),
+        'utf8'
+      );
+      const parsed = JSON.parse(persisted) as {
+        developer: {
+          enabled: boolean;
+          destructive_actions: boolean;
+        };
+        developer_mode_enabled?: boolean;
+        developer_dangerous_commands_enabled?: boolean;
+      };
+
+      assertEquals(parsed.developer.enabled, true);
+      assertEquals(parsed.developer.destructive_actions, true);
+      assertEquals(parsed.developer_mode_enabled, undefined);
+      assertEquals(parsed.developer_dangerous_commands_enabled, undefined);
     }).pipe(Effect.provide(CliUserConfigTest));
   });
   it.effect('resolves sync config path from COMPOSIO_CACHE_DIR when provided', () => {

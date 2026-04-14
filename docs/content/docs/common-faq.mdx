@@ -91,6 +91,8 @@ You can request new tools or toolkits on the [tool request board](https://reques
 <Accordion title="How do I work with toolkit versions?">
 Composio toolkits are versioned using date-based identifiers (e.g., `20251027_00`). You can pin versions at SDK initialization or per tool execution to keep behavior consistent across deployments.
 
+**When to use `latest` vs a pinned version:** Use `latest` when tool outputs and trigger payloads are consumed by an LLM or AI agent — agents adapt to response changes dynamically and benefit from always having the newest tools. Pin to a specific version when your code parses outputs programmatically (e.g., destructuring fields, mapping to a schema, or feeding into a typed pipeline).
+
 This applies to direct tool execution only. Sessions with meta tools always use the latest version. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Accordion>
 

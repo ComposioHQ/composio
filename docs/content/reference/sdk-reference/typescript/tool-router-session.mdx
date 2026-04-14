@@ -28,7 +28,7 @@ Initiate an authorization flow for a toolkit.
 Returns a ConnectionRequest with a redirect URL for the user.
 
 ```typescript
-async authorize(toolkit: string, options?: { callbackUrl?: string }): Promise<ConnectionRequest>
+async authorize(toolkit: string, options?: { alias?: string; callbackUrl?: string }): Promise<ConnectionRequest>
 ```
 
 **Parameters**
