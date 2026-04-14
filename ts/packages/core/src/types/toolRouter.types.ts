@@ -323,7 +323,6 @@ export const ToolkitConnectionStateSchema = z
 
 export const ToolkitConnectionsDetailsSchema = z.object({
   items: z.array(ToolkitConnectionStateSchema),
-  cursor: z.string().optional(),
   nextCursor: z.string().optional(),
   totalPages: z.number(),
 });
@@ -349,18 +348,21 @@ export type ToolRouterAuthorizeFn = (
   options?: { callbackUrl?: string; alias?: string }
 ) => Promise<ConnectionRequest>;
 
-export const MAX_TOOL_ROUTER_TOOLKITS_LIMIT = 50;
-
 export const ToolRouterToolkitsOptionsSchema = z
   .object({
     toolkits: z.array(z.string()).optional(),
     cursor: z.string().optional(),
-    limit: z.number().int().positive().max(MAX_TOOL_ROUTER_TOOLKITS_LIMIT).optional(),
+    /** @deprecated Use `cursor`. Kept as a runtime alias for backward compatibility. */
+    nextCursor: z.string().optional(),
+    limit: z.number().optional(),
     isConnected: z.boolean().optional(),
     search: z.string().optional(),
   })
-  .strict();
-export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptionsSchema>;
+  .transform(({ nextCursor, cursor, ...rest }) => ({
+    ...rest,
+    cursor: cursor ?? nextCursor,
+  }));
+export type ToolRouterToolkitsOptions = z.input<typeof ToolRouterToolkitsOptionsSchema>;
 
 export type ToolRouterToolkitsFn = (
   options?: ToolRouterToolkitsOptions

@@ -42,20 +42,6 @@ import { transformProxyParams } from './proxyParamsTransform';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
 
-function normalizeToolkitOptionsInput(
-  options?: ToolRouterToolkitsOptions | Record<string, unknown>
-): ToolRouterToolkitsOptions | Record<string, unknown> {
-  if (!options || typeof options !== 'object' || !('nextCursor' in options)) {
-    return options ?? {};
-  }
-
-  const { nextCursor, cursor, ...rest } = options as Record<string, unknown>;
-  return {
-    ...rest,
-    ...(cursor !== undefined ? { cursor } : nextCursor !== undefined ? { cursor: nextCursor } : {}),
-  };
-}
-
 export class ToolRouterSession<
   TToolCollection,
   TTool,
@@ -223,10 +209,7 @@ export class ToolRouterSession<
    * Supports pagination and filtering by toolkit slugs.
    */
   async toolkits(options?: ToolRouterToolkitsOptions) {
-    const normalizedOptions = normalizeToolkitOptionsInput(
-      options as ToolRouterToolkitsOptions | Record<string, unknown> | undefined
-    );
-    const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(normalizedOptions);
+    const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(options ?? {});
     if (!toolkitOptions.success) {
       throw new ValidationError('Failed to parse toolkits options', {
         cause: toolkitOptions.error,
@@ -269,11 +252,9 @@ export class ToolRouterSession<
       return connectedState;
     });
 
-    const cursor = result.next_cursor ?? undefined;
     return {
       items: toolkitConnectedStates,
-      cursor,
-      nextCursor: cursor,
+      nextCursor: result.next_cursor ?? undefined,
       totalPages: result.total_pages,
     };
   }

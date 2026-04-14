@@ -1650,7 +1650,6 @@ describe('ToolRouter', () => {
       });
 
       expect(result).toHaveProperty('items');
-      expect(result).toHaveProperty('cursor', 'cursor_789');
       expect(result).toHaveProperty('nextCursor', 'cursor_789');
       expect(result).toHaveProperty('totalPages', 2);
       expect(result.items).toHaveLength(3);
@@ -1682,7 +1681,7 @@ describe('ToolRouter', () => {
       const result = await session.toolkits({
         limit: 10,
         nextCursor: 'cursor_alias',
-      } as never);
+      });
 
       expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
         cursor: 'cursor_alias',
@@ -1888,16 +1887,14 @@ describe('ToolRouter', () => {
       // Fetch first page
       const page1 = await session.toolkits({ limit: 2 });
       expect(page1.items).toHaveLength(2);
-      expect(page1.cursor).toBe('cursor_page2');
       expect(page1.nextCursor).toBe('cursor_page2');
 
       // Fetch second page
       const page2 = await session.toolkits({
         limit: 2,
-        cursor: page1.cursor,
+        cursor: page1.nextCursor,
       });
       expect(page2.items).toHaveLength(1);
-      expect(page2.cursor).toBeUndefined();
       expect(page2.nextCursor).toBeUndefined();
     });
 
@@ -1944,42 +1941,6 @@ describe('ToolRouter', () => {
           limit: 'invalid' as unknown as number, // Invalid type
         })
       ).rejects.toThrow();
-    });
-
-    it('should throw validation error for unsupported page pagination', async () => {
-      const session = await toolRouter.create(userId);
-
-      await expect(
-        session.toolkits({
-          page: 2,
-        } as never)
-      ).rejects.toThrow("Unrecognized key(s) in object: 'page'");
-
-      expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
-    });
-
-    it('should throw validation error for unsupported offset pagination', async () => {
-      const session = await toolRouter.create(userId);
-
-      await expect(
-        session.toolkits({
-          offset: 20,
-        } as never)
-      ).rejects.toThrow("Unrecognized key(s) in object: 'offset'");
-
-      expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
-    });
-
-    it('should throw validation error for limits above the backend maximum', async () => {
-      const session = await toolRouter.create(userId);
-
-      await expect(
-        session.toolkits({
-          limit: 51,
-        })
-      ).rejects.toThrow('Number must be less than or equal to 50');
-
-      expect(mockClient.toolRouter.session.toolkits).not.toHaveBeenCalled();
     });
   });
 
