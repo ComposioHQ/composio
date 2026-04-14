@@ -7,6 +7,7 @@ packages:
   - ts/e2e-tests/runtimes/cloudflare/*
   - ts/examples/*
   - ts/packages/cli
+  - ts/packages/cli-keyring
   - ts/packages/core
   - ts/packages/json-schema-to-zod
   - ts/packages/providers/*
