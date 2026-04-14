@@ -352,7 +352,6 @@ export const ToolRouterToolkitsOptionsSchema = z
   .object({
     toolkits: z.array(z.string()).optional(),
     cursor: z.string().optional(),
-    /** @deprecated Use `cursor`. Kept as a runtime alias for backward compatibility. */
     nextCursor: z.string().optional(),
     limit: z.number().optional(),
     isConnected: z.boolean().optional(),
