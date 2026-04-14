@@ -1,8 +1,11 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Option, Schema } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import {
+  ComposioClientSingleton,
+  ConnectedAccountListResponse,
+} from 'src/services/composio-clients';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -52,7 +55,8 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       mode: 'consumer',
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
 
-    if (!resolvedProject.consumerUserId) {
+    const consumerUserId = resolvedProject.consumerUserId;
+    if (!consumerUserId) {
       return yield* Effect.fail(
         new Error('Missing consumer user id. Run `composio login` and try again.')
       );
@@ -62,13 +66,14 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const result = yield* Effect.tryPromise(() =>
+    const rawResult = yield* Effect.tryPromise(() =>
       client.connectedAccounts.list({
         toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
-        user_ids: [resolvedProject.consumerUserId],
+        user_ids: [consumerUserId],
         limit: 1000,
       })
     );
+    const result = yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult);
 
     yield* ui.output(formatConnectionsJson(result.items), { force: true });
   })

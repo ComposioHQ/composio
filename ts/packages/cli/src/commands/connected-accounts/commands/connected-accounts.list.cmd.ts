@@ -1,6 +1,9 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
-import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { Effect, Option, Schema } from 'effect';
+import {
+  ComposioClientSingleton,
+  ConnectedAccountListResponse,
+} from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
@@ -68,7 +71,7 @@ export const connectedAccountsCmd$List = Command.make(
         projectId: resolvedProject.projectId,
       });
 
-      const result = yield* ui.withSpinner(
+      const rawResult = yield* ui.withSpinner(
         'Fetching connected accounts...',
         Effect.tryPromise(() =>
           client.connectedAccounts.list({
@@ -79,6 +82,7 @@ export const connectedAccountsCmd$List = Command.make(
           })
         )
       );
+      const result = yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult);
 
       if (result.items.length === 0) {
         let hint: string;
