@@ -43,7 +43,7 @@ export {
 } from './core/store';
 
 import type { CredentialStore } from './core/store';
-import { createMacOSStore, createMacOSStoreSync } from './stores/macos-security';
+import { createMacOSStore, createMacOSStoreSync, type MacOSBackend } from './stores/macos-security';
 import { LinuxSecretToolStore } from './stores/linux-secret-tool';
 import { UnsupportedPlatformStore } from './stores/unsupported';
 
@@ -58,10 +58,12 @@ import { UnsupportedPlatformStore } from './stores/unsupported';
  * Call this once at process startup, pass the result to
  * `setDefaultStore`, and use `new Entry(service, user)` everywhere.
  */
-export async function createDefaultStore(): Promise<CredentialStore> {
+export async function createDefaultStore(
+  options: { macOSBackend?: MacOSBackend } = {}
+): Promise<CredentialStore> {
   switch (process.platform) {
     case 'darwin':
-      return await createMacOSStore();
+      return await createMacOSStore(options.macOSBackend ?? 'auto');
     case 'linux':
       return new LinuxSecretToolStore();
     default:
@@ -87,7 +89,7 @@ export function createDefaultStoreSync(): CredentialStore {
   }
 }
 
-export { createMacOSStore, createMacOSStoreSync } from './stores/macos-security';
+export { createMacOSStore, createMacOSStoreSync, type MacOSBackend } from './stores/macos-security';
 export { MacOSSecuritySubprocessStore } from './stores/macos-security-subprocess';
 export { LinuxSecretToolStore } from './stores/linux-secret-tool';
 export { UnsupportedPlatformStore } from './stores/unsupported';

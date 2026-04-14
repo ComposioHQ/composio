@@ -12,9 +12,9 @@ import * as constants from 'src/constants';
 import type { PlatformError } from '@effect/platform/Error';
 import type { ParseError } from 'effect/ParseResult';
 import { APP_CONFIG } from 'src/effects/app-config';
-import { KeyringService, KeyringLive } from '@composio/cli-keyring/effect';
+import { KeyringService, KeyringLiveWithBackend } from '@composio/cli-keyring/effect';
 import type { KeyringServiceShape } from '@composio/cli-keyring/effect';
-import { KeyringError } from '@composio/cli-keyring';
+import { KeyringError, type MacOSBackend } from '@composio/cli-keyring';
 import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/cli-user-config';
 
 /**
@@ -52,12 +52,12 @@ const writeKeyring = (deps: KeyringDeps, password: string) =>
       Effect.catchAll(err =>
         Effect.gen(function* () {
           if (err instanceof KeyringError && err.kind === 'NoStorageAccess') {
-            yield* Effect.logWarning(
+            yield* Effect.logDebug(
               'OS keyring unavailable, storing api_key in user_data.json as plaintext. ' +
                 `Reason: ${err.message}`
             );
           } else {
-            yield* Effect.logWarning(
+            yield* Effect.logDebug(
               'Unexpected keyring error while writing api_key, falling back to plaintext: ' +
                 (err instanceof Error ? err.message : String(err))
             );
@@ -83,11 +83,15 @@ const readKeyring = (deps: KeyringDeps) =>
           if (err instanceof KeyringError && err.kind === 'NoEntry') {
             yield* Effect.logDebug('No keyring entry found for Composio API key');
           } else if (err instanceof KeyringError && err.kind === 'NoStorageAccess') {
-            yield* Effect.logWarning(
+            // Expected normal path on headless Linux / containers /
+            // CI — log at debug to avoid polluting stdout on every
+            // CLI invocation. Only the first write attempt would
+            // warn loudly (see `writeKeyring`).
+            yield* Effect.logDebug(
               'OS keyring unavailable, falling back to user_data.json. ' + `Reason: ${err.message}`
             );
           } else {
-            yield* Effect.logWarning(
+            yield* Effect.logDebug(
               'Unexpected keyring error while reading api_key, falling back to plaintext: ' +
                 (err instanceof Error ? err.message : String(err))
             );
@@ -330,10 +334,28 @@ export const rawComposioUserContextLive = Layer.effect(
 );
 
 /**
- * Public layer that pre-provides the keyring and CLI-config deps,
- * leaving only `FileSystem` as the external requirement.
+ * Map the config's `security` field onto the cli-keyring package's
+ * `MacOSBackend` parameter.
  */
-export const ComposioUserContextLive = Layer.provide(
-  rawComposioUserContextLive,
-  Layer.mergeAll(KeyringLive, ComposioCliUserConfigLive)
+const resolveMacOSBackend = (
+  security: 'auto' | 'keychain-subprocess' | 'keychain'
+): MacOSBackend => (security === 'keychain' ? 'ffi' : 'auto');
+
+/**
+ * Public layer that pre-provides the keyring and CLI-config deps,
+ * leaving only `FileSystem` as the external requirement. The keyring
+ * backend is chosen dynamically from the user's `config.json`
+ * `security` field — `"auto"` / `"keychain-subprocess"` select the
+ * subprocess path (default); `"keychain"` opts into the experimental
+ * FFI path (requires Developer ID-signed binary to avoid dialogs).
+ */
+export const ComposioUserContextLive = Layer.unwrapEffect(
+  Effect.gen(function* () {
+    const cliConfig = yield* ComposioCliUserConfig;
+    const backend = resolveMacOSBackend(cliConfig.data.security);
+    return Layer.provide(
+      rawComposioUserContextLive,
+      Layer.mergeAll(KeyringLiveWithBackend(backend), ComposioCliUserConfigLive)
+    );
+  }).pipe(Effect.provide(ComposioCliUserConfigLive))
 );
