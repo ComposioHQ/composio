@@ -205,7 +205,7 @@ const connectionRequest = await composio.connectedAccounts.initiate(
 ### link()
 
 ```typescript
-async link(userId: string, authConfigId: string, options?: { callbackUrl?: string }): Promise<ConnectionRequest>
+async link(userId: string, authConfigId: string, options?: { alias?: string; callbackUrl?: string }): Promise<ConnectionRequest>
 ```
 
 **Parameters**
@@ -312,6 +312,34 @@ async refresh(nanoid: string, options?: { redirectUrl?: string; validateCredenti
 ```typescript
 // Refresh a connected account's credentials
 const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123');
+```
+
+---
+
+### update()
+
+Update a connected account's alias and/or credentials.
+
+```typescript
+async update(nanoid: string, params: ConnectedAccountUpdateStatusParams): Promise<ConnectedAccountUpdateStatusResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `string` | The unique identifier of the connected account |
+| `params` | `ConnectedAccountUpdateStatusParams` | The update parameters |
+
+**Returns**
+
+`Promise<ConnectedAccountUpdateStatusResponse>` — The update response
+
+**Example**
+
+```typescript
+// Disable an account
+await composio.connectedAccounts.update('ca_abc123', { enabled: false });
 ```
 
 ---

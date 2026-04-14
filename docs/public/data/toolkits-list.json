@@ -68,7 +68,7 @@
     "name": "Outlook",
     "logo": "https://logos.composio.dev/api/outlook",
     "category": "email",
-    "toolCount": 300,
+    "toolCount": 301,
     "triggerCount": 5
   },
   {
@@ -988,7 +988,7 @@
     "name": "Contentful",
     "logo": "https://logos.composio.dev/api/contentful",
     "category": "developer tools",
-    "toolCount": 105,
+    "toolCount": 106,
     "triggerCount": 0
   },
   {

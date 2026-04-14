@@ -38,7 +38,7 @@ def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
 Authorize a toolkit for the user and get a connection request.  Initiates the OAuth flow and returns a ConnectionRequest with redirect URL.
 
 ```python
-def authorize(toolkit: str, callback_url: str | None = ...) -> ConnectionRequest
+def authorize(toolkit: str, callback_url: str | None = ..., alias: str | None = ...) -> ConnectionRequest
 ```
 
 **Parameters**
@@ -47,6 +47,7 @@ def authorize(toolkit: str, callback_url: str | None = ...) -> ConnectionRequest
 |------|------|
 | `toolkit` | `str` |
 | `callback_url?` | `str \| None` |
+| `alias?` | `str \| None` |
 
 **Returns**
 

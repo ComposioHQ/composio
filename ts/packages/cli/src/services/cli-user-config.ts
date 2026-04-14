@@ -22,6 +22,13 @@ export type CliUserConfigResolved = {
   readonly experimentalFeatures: Readonly<Record<string, boolean>>;
   readonly artifactDirectory: string | undefined;
   readonly experimentalSubagentTarget: 'auto' | 'claude' | 'codex';
+  /**
+   * Where the CLI stores the Composio API key. See the
+   * `SecurityBackend` type in `src/models/cli-user-config.ts`.
+   * Default: `"auto"` (plaintext `user_data.json`, backwards-compatible
+   * with every prior CLI release).
+   */
+  readonly security: 'auto' | 'json' | 'keychain-subprocess' | 'keychain';
 };
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
@@ -58,6 +65,7 @@ const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserC
     onNone: () => 'auto',
     onSome: value => value.target,
   }),
+  security: raw.security,
 });
 
 export const ComposioCliUserConfigLive = Layer.effect(
@@ -77,6 +85,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
       experimentalFeatures: {},
       artifactDirectory: Option.none(),
       experimentalSubagent: Option.none(),
+      security: 'auto',
     });
 
     const normalizeRawConfigJson = (value: unknown): unknown => {
@@ -144,6 +153,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
               experimentalFeatures: {},
               artifactDirectory: Option.none(),
               experimentalSubagent: Option.none(),
+              security: 'auto',
             })
           )
         )

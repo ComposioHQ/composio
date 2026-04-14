@@ -5,12 +5,44 @@ description: Manage connected accounts.  This class is used to manage connected 
 
 ## Methods
 
+### update()
+
+Update a connected account's alias and/or credentials.
+
+```python
+def update(nanoid: str, alias: str | None = ..., connection: connected_account_patch_params.Connection | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `alias?` | `str \| None` |
+| `connection?` | `connected_account_patch_params.Connection \| None` |
+
+**Returns**
+
+`connected_account_patch_response.ConnectedAccountPatchRes...` — Response with ``id``, ``status``, and ``success``.
+
+**Example**
+
+```python
+# Set an alias
+    composio.connected_accounts.update('ca_abc123', alias='work-gmail')
+
+    # Clear an alias
+    composio.connected_accounts.update('ca_abc123', alias='')
+```
+
+---
+
 ### initiate()
 
 Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the `wait_for_connection` method.
 
 ```python
-def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ...) -> ConnectionRequest
+def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ..., alias: str | None = ...) -> ConnectionRequest
 ```
 
 **Parameters**
@@ -22,6 +54,7 @@ def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., 
 | `callback_url?` | `str \| None` |
 | `allow_multiple?` | `bool` |
 | `config?` | `connected_account_create_params.ConnectionState \| None` |
+| `alias?` | `str \| None` |
 
 **Returns**
 
@@ -34,7 +67,7 @@ def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., 
 Create a Composio Connect Link for a user to connect their account to a given auth config.  This method will return an external link which you can use for the user to connect their account.
 
 ```python
-def link(user_id: str, auth_config_id: str, callback_url: str | None = ...) -> ConnectionRequest
+def link(user_id: str, auth_config_id: str, callback_url: str | None = ..., alias: str | None = ...) -> ConnectionRequest
 ```
 
 **Parameters**
@@ -44,6 +77,7 @@ def link(user_id: str, auth_config_id: str, callback_url: str | None = ...) -> C
 | `user_id` | `str` |
 | `auth_config_id` | `str` |
 | `callback_url?` | `str \| None` |
+| `alias?` | `str \| None` |
 
 **Returns**
 
@@ -96,4 +130,4 @@ def wait_for_connection(id: str, timeout: float | None = ...) -> connected_accou
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/connected_accounts.py#L318)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/connected_accounts.py#L321)

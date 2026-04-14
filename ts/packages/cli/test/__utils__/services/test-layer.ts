@@ -816,6 +816,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
       artifactDirectory: Option.none(),
       experimentalSubagent: Option.none(),
+      security: 'auto',
     });
 
     const ComposioCliUserConfigTest = Layer.succeed(
@@ -829,6 +830,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
             artifactDirectory: undefined,
             experimentalSubagentTarget: 'auto' as const,
+            security: 'auto' as const,
           };
         },
         get raw() {

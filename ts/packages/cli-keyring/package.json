@@ -1,0 +1,90 @@
+{
+  "name": "@composio/cli-keyring",
+  "version": "0.1.0",
+  "description": "Cross-platform OS credential store access for the Composio CLI (macOS Keychain, Linux Secret Service).",
+  "main": "src/index.ts",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/cli-keyring"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./effect": {
+      "import": {
+        "types": "./dist/effect.d.mts",
+        "default": "./dist/effect.mjs"
+      },
+      "require": {
+        "types": "./dist/effect.d.cts",
+        "default": "./dist/effect.cjs"
+      },
+      "default": {
+        "types": "./dist/effect.d.cts",
+        "default": "./dist/effect.cjs"
+      }
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build": "pnpm exec tsdown",
+    "test": "vitest run",
+    "typecheck:src": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "pnpm exec tsgo --noEmit -p ./tsconfig.test.json",
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
+    "typecheck:src:tsc": "tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test:tsc": "tsc --noEmit -p ./tsconfig.test.json",
+    "typecheck:tsc": "pnpm run typecheck:src:tsc && pnpm run typecheck:test:tsc"
+  },
+  "keywords": [
+    "composio",
+    "keyring",
+    "keychain",
+    "credential",
+    "secret-service",
+    "libsecret"
+  ],
+  "author": "Composio",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "@types/node": "^24.0.1",
+    "bun-types": "^1.3.11",
+    "effect": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "effect": ">=3.17.0"
+  },
+  "peerDependenciesMeta": {
+    "effect": {
+      "optional": true
+    }
+  }
+}

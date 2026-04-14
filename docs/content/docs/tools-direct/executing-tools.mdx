@@ -246,6 +246,10 @@ console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
 The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for all configuration options.
 </Callout>
 
+<Callout type="info">
+**Choosing a version strategy:** Use `latest` when tool outputs are consumed by an LLM or AI agent — agents adapt to schema changes dynamically. Pin to a specific version when your code parses outputs programmatically. See [choosing between `latest` and a pinned version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
+</Callout>
+
 ### Proxy Execute
 
 You can proxy requests to any supported toolkit API and let Composio inject the authentication state. This is useful when you need an API endpoint that isn't available as a predefined tool.

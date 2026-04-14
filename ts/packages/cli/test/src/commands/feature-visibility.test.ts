@@ -1,12 +1,15 @@
 import { CommandDescriptor } from '@effect/cli';
-import { HashMap } from 'effect';
+import { layer } from '@effect/vitest';
+import { Effect, HashMap } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { buildRootCommand } from 'src/commands';
 import {
   getCommandHelpText,
   matchCommandFromArgv,
   matchSubcommandHelp,
+  printSubcommandHelp,
 } from 'src/commands/root-help';
+import { MockConsole, TestLive } from 'test/__utils__';
 
 const stableVisibility = {
   isDevModeEnabled: true,
@@ -43,5 +46,30 @@ describe('CLI experimental feature visibility', () => {
     expect(matchCommandFromArgv(['bun', 'composio', 'listen'], betaVisibility)).toBe('listen');
     expect(getCommandHelpText('listen', stableVisibility)).toBe(undefined);
     expect(getCommandHelpText('listen', betaVisibility)).toContain('composio listen');
+  });
+
+  it('accepts help mode suffixes when matching subcommand help', () => {
+    expect(
+      matchSubcommandHelp(['bun', 'composio', 'search', '--help', 'simple'], stableVisibility)
+    ).toBe('search');
+    expect(
+      matchSubcommandHelp(['bun', 'composio', 'search', '--help', 'full'], stableVisibility)
+    ).toBe('search');
+  });
+});
+
+describe('CLI help levels', () => {
+  layer(TestLive())(it => {
+    it.scoped('renders compact subcommand help in simple mode', () =>
+      Effect.gen(function* () {
+        yield* printSubcommandHelp('run', stableVisibility, 'simple');
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('USAGE');
+        expect(output).toContain('DESCRIPTION');
+        expect(output).not.toContain('EXAMPLES');
+        expect(output).not.toContain('INJECTED HELPERS');
+      })
+    );
   });
 });
