@@ -2,6 +2,7 @@ import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { extendConfigProvider } from 'src/services/config';
+import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 
@@ -26,7 +27,7 @@ const testConnections: ConnectedAccountItem[] = [
     status: 'ACTIVE',
     status_reason: null,
     is_disabled: false,
-    user_id: 'default',
+    user_id: 'consumer-user-org_test',
     toolkit: { slug: 'gmail' },
     auth_config: {
       id: 'ac_gmail_oauth',
@@ -41,11 +42,11 @@ const testConnections: ConnectedAccountItem[] = [
   {
     id: 'con_github_work',
     alias: 'work',
-    word_id: null,
+    word_id: 'castle',
     status: 'ACTIVE',
     status_reason: null,
     is_disabled: false,
-    user_id: 'default',
+    user_id: 'consumer-user-org_test',
     toolkit: { slug: 'github' },
     auth_config: {
       id: 'ac_github_oauth',
@@ -60,11 +61,11 @@ const testConnections: ConnectedAccountItem[] = [
   {
     id: 'con_github_personal',
     alias: 'personal',
-    word_id: null,
+    word_id: 'forest',
     status: 'FAILED',
     status_reason: 'Token expired',
     is_disabled: false,
-    user_id: 'default',
+    user_id: 'consumer-user-org_test',
     toolkit: { slug: 'github' },
     auth_config: {
       id: 'ac_github_oauth_2',
@@ -90,6 +91,8 @@ describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
     it.scoped('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
       Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
         yield* cli(['connections', 'list']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -98,8 +101,35 @@ describe('CLI: composio connections list', () => {
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE' }],
           github: [
-            { status: 'ACTIVE', alias: 'work' },
-            { status: 'FAILED', alias: 'personal' },
+            { status: 'ACTIVE', alias: 'work', word_id: 'castle' },
+            { status: 'FAILED', alias: 'personal', word_id: 'forest' },
+          ],
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData,
+      stdin: { isTTY: true, data: '' },
+    })
+  )(it => {
+    it.scoped('[Given] interactive stdout [Then] still prints the JSON payload', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['connections', 'list']);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const parsed = parseJsonFromLines(lines);
+
+        expect(parsed).toEqual({
+          gmail: [{ status: 'ACTIVE' }],
+          github: [
+            { status: 'ACTIVE', alias: 'work', word_id: 'castle' },
+            { status: 'FAILED', alias: 'personal', word_id: 'forest' },
           ],
         });
       })
@@ -109,6 +139,8 @@ describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
     it.scoped('[Given] --toolkit github [Then] filters the JSON output', () =>
       Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
         yield* cli(['connections', 'list', '--toolkit', 'github']);
 
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -116,10 +148,53 @@ describe('CLI: composio connections list', () => {
 
         expect(parsed).toEqual({
           github: [
-            { status: 'ACTIVE', alias: 'work' },
-            { status: 'FAILED', alias: 'personal' },
+            { status: 'ACTIVE', alias: 'work', word_id: 'castle' },
+            { status: 'FAILED', alias: 'personal', word_id: 'forest' },
           ],
         });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: {
+        items: [
+          ...testConnections,
+          {
+            id: 'con_slack_dev_only',
+            alias: null,
+            word_id: null,
+            status: 'ACTIVE',
+            status_reason: null,
+            is_disabled: false,
+            user_id: 'developer-user-org_test',
+            toolkit: { slug: 'slack' },
+            auth_config: {
+              id: 'ac_slack_oauth',
+              auth_scheme: 'OAUTH2',
+              is_composio_managed: true,
+              is_disabled: false,
+            },
+            created_at: '2026-03-01T00:00:00Z',
+            updated_at: '2026-03-05T00:00:00Z',
+            test_request_endpoint: '',
+          },
+        ],
+      },
+    })
+  )(it => {
+    it.scoped('[Given] mixed user scopes [Then] only consumer-project connections are listed', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['connections', 'list']);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const parsed = parseJsonFromLines(lines);
+
+        expect(parsed).not.toHaveProperty('slack');
       })
     );
   });
