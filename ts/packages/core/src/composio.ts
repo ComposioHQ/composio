@@ -10,7 +10,7 @@ import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
 import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
-import { checkForLatestVersionFromNPM } from './utils/version';
+import { checkForLatestVersionFromGitHub } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
@@ -307,9 +307,9 @@ export class Composio<
       this.provider.name ?? this.provider.constructor.name ?? 'unknown'
     );
 
-    // Check for the latest version of the Composio SDK from NPM.
+    // Check for the latest version of the Composio SDK from GitHub releases.
     if (!this.config.disableVersionCheck) {
-      checkForLatestVersionFromNPM(version);
+      checkForLatestVersionFromGitHub(version);
     }
   }
 

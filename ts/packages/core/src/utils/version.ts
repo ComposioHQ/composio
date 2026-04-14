@@ -2,6 +2,16 @@ import logger from './logger';
 import { IS_DEVELOPMENT_OR_CI } from './constants';
 import semver from 'semver';
 
+const GITHUB_RELEASES_URL =
+  'https://api.github.com/repos/ComposioHQ/composio/releases?per_page=100';
+const CORE_RELEASE_TAG_RE = /^@composio\/core@(\d+\.\d+\.\d+)$/;
+
+type GitHubRelease = {
+  tag_name?: unknown;
+  prerelease?: unknown;
+  draft?: unknown;
+};
+
 /**
  * Compares two semantic versions and returns true if the first version is newer than the second.
  * @param version1 The first version to compare
@@ -20,12 +30,45 @@ export function isNewerVersion(version1: string, version2: string): boolean {
 }
 
 /**
- * Checks for the latest version of the Composio SDK from NPM.
+ * Extracts the latest stable @composio/core release version from a GitHub releases response.
+ */
+export function parseLatestVersionFromGitHubReleases(releases: unknown): string | undefined {
+  if (!Array.isArray(releases)) {
+    return undefined;
+  }
+
+  let latestVersion: string | undefined;
+
+  for (const release of releases) {
+    if (typeof release !== 'object' || release === null) {
+      continue;
+    }
+
+    const { tag_name, prerelease, draft } = release as GitHubRelease;
+    if (prerelease === true || draft === true || typeof tag_name !== 'string') {
+      continue;
+    }
+
+    const match = CORE_RELEASE_TAG_RE.exec(tag_name);
+    if (!match) {
+      continue;
+    }
+
+    const [, version] = match;
+    if (!latestVersion || semver.gt(version, latestVersion)) {
+      latestVersion = version;
+    }
+  }
+
+  return latestVersion;
+}
+
+/**
+ * Checks for the latest version of the Composio SDK from GitHub releases.
  * If a newer version is available, it logs a warning to the console.
  */
-export async function checkForLatestVersionFromNPM(currentVersion: string) {
+export async function checkForLatestVersionFromGitHub(currentVersion: string) {
   try {
-    const packageName = '@composio/core';
     const currentVersionFromPackageJson = currentVersion;
 
     // ignore if the current version is not a valid semantic version
@@ -42,10 +85,23 @@ export async function checkForLatestVersionFromNPM(currentVersion: string) {
       return;
     }
 
-    // @TODO: Check if fetch is available, if not use node-fetch
-    const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`);
-    const data = await response.json();
-    const latestVersion = data.version;
+    const response = await fetch(GITHUB_RELEASES_URL, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': `composio-core/${currentVersionFromPackageJson}`,
+      },
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const releases = await response.json();
+    const latestVersion = parseLatestVersionFromGitHubReleases(releases);
+
+    if (!latestVersion) {
+      return;
+    }
 
     if (semver.gt(latestVersion, currentVersionFromPackageJson) && !IS_DEVELOPMENT_OR_CI) {
       logger.info(
