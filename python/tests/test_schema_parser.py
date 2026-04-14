@@ -1120,9 +1120,7 @@ class TestNullOnlyCombiner:
     @pytest.mark.schema
     def test_anyof_false_and_null(self):
         """anyOf with false + null should return Optional[Any] after filtering."""
-        result = json_schema_to_pydantic_type(
-            {"anyOf": [False, {"type": "null"}]}
-        )
+        result = json_schema_to_pydantic_type({"anyOf": [False, {"type": "null"}]})
         assert result == t.Optional[t.Any]
 
     @pytest.mark.unit
