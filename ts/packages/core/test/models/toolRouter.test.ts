@@ -1650,7 +1650,7 @@ describe('ToolRouter', () => {
       });
 
       expect(result).toHaveProperty('items');
-      expect(result).toHaveProperty('nextCursor', 'cursor_789');
+      expect(result).toHaveProperty('cursor', 'cursor_789');
       expect(result).toHaveProperty('totalPages', 2);
       expect(result.items).toHaveLength(3);
     });
@@ -1669,26 +1669,6 @@ describe('ToolRouter', () => {
         limit: 10,
         toolkits: undefined,
         is_connected: undefined,
-      });
-
-      expect(result.items).toHaveLength(3);
-    });
-
-    it('should keep accepting nextCursor as a legacy alias', async () => {
-      mockClient.toolRouter.session.toolkits.mockResolvedValueOnce(mockToolkitsResponse);
-
-      const session = await toolRouter.create(userId);
-      const result = await session.toolkits({
-        limit: 10,
-        nextCursor: 'cursor_alias',
-      });
-
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: 'cursor_alias',
-        limit: 10,
-        toolkits: undefined,
-        is_connected: undefined,
-        search: undefined,
       });
 
       expect(result.items).toHaveLength(3);
@@ -1861,7 +1841,7 @@ describe('ToolRouter', () => {
       const result = await session.toolkits();
 
       expect(result.items).toHaveLength(0);
-      expect(result.nextCursor).toBeUndefined();
+      expect(result.cursor).toBeUndefined();
       expect(result.totalPages).toBe(0);
     });
 
@@ -1887,15 +1867,15 @@ describe('ToolRouter', () => {
       // Fetch first page
       const page1 = await session.toolkits({ limit: 2 });
       expect(page1.items).toHaveLength(2);
-      expect(page1.nextCursor).toBe('cursor_page2');
+      expect(page1.cursor).toBe('cursor_page2');
 
       // Fetch second page
       const page2 = await session.toolkits({
         limit: 2,
-        cursor: page1.nextCursor,
+        cursor: page1.cursor,
       });
       expect(page2.items).toHaveLength(1);
-      expect(page2.nextCursor).toBeUndefined();
+      expect(page2.cursor).toBeUndefined();
     });
 
     it('should handle API errors', async () => {

@@ -514,7 +514,7 @@ console.log('Connected:', connectedAccount);
 Query the connection state of toolkits in the session.
 
 ```typescript
-const { items, nextCursor, totalPages } = await session.toolkits();
+const { items, cursor, totalPages } = await session.toolkits();
 
 for (const toolkit of items) {
   console.log(`${toolkit.name} (${toolkit.slug})`);
@@ -527,7 +527,7 @@ for (const toolkit of items) {
 
 // Pagination support
 const moreToolkits = await session.toolkits({
-  cursor: nextCursor,
+  cursor,
   limit: 10,
 });
 
@@ -854,7 +854,7 @@ The response includes:
       }
     }
   ],
-  nextCursor: 'cursor_abc',
+  cursor: 'cursor_abc',
   totalPages: 1
 }
 ```

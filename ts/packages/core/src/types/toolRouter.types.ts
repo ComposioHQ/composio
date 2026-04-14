@@ -323,7 +323,7 @@ export const ToolkitConnectionStateSchema = z
 
 export const ToolkitConnectionsDetailsSchema = z.object({
   items: z.array(ToolkitConnectionStateSchema),
-  nextCursor: z.string().optional(),
+  cursor: z.string().optional(),
   totalPages: z.number(),
 });
 export type ToolkitConnectionsDetails = z.infer<typeof ToolkitConnectionsDetailsSchema>;
@@ -348,20 +348,14 @@ export type ToolRouterAuthorizeFn = (
   options?: { callbackUrl?: string; alias?: string }
 ) => Promise<ConnectionRequest>;
 
-export const ToolRouterToolkitsOptionsSchema = z
-  .object({
-    toolkits: z.array(z.string()).optional(),
-    cursor: z.string().optional(),
-    nextCursor: z.string().optional(),
-    limit: z.number().optional(),
-    isConnected: z.boolean().optional(),
-    search: z.string().optional(),
-  })
-  .transform(({ nextCursor, cursor, ...rest }) => ({
-    ...rest,
-    cursor: cursor ?? nextCursor,
-  }));
-export type ToolRouterToolkitsOptions = z.input<typeof ToolRouterToolkitsOptionsSchema>;
+export const ToolRouterToolkitsOptionsSchema = z.object({
+  toolkits: z.array(z.string()).optional(),
+  cursor: z.string().optional(),
+  limit: z.number().optional(),
+  isConnected: z.boolean().optional(),
+  search: z.string().optional(),
+});
+export type ToolRouterToolkitsOptions = z.infer<typeof ToolRouterToolkitsOptionsSchema>;
 
 export type ToolRouterToolkitsFn = (
   options?: ToolRouterToolkitsOptions

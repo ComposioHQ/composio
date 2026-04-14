@@ -254,7 +254,7 @@ export class ToolRouterSession<
 
     return {
       items: toolkitConnectedStates,
-      nextCursor: result.next_cursor ?? undefined,
+      cursor: result.next_cursor ?? undefined,
       totalPages: result.total_pages,
     };
   }
