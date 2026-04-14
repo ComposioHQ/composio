@@ -27,6 +27,7 @@ import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
 import { configCmd } from './config/config.cmd';
+import { rootConnectionsCmd } from './connections/connections.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -64,6 +65,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(rootToolsCmd$Search),
   tagged(rootConnectedAccountsCmd$Link),
   tagged(rootToolsCmd$Execute),
+  tagged(rootConnectionsCmd),
   tagged(generateCmd),
   tagged(orgsCmd),
   tagged(configCmd),

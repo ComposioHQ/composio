@@ -71,6 +71,7 @@ describe('CLI: composio', () => {
         const output = lines.join('\n');
         expect(output).toContain('Usage:');
         expect(output).toContain('composio');
+        expect(output).toContain('composio connections list');
       })
     );
   });

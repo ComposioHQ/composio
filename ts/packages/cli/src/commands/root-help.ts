@@ -147,6 +147,10 @@ const OTHER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
     name: 'composio artifacts cwd',
     description: 'Print the cwd-scoped session artifact directory',
   }),
+  tagged({
+    name: 'composio connections list',
+    description: 'Print toolkit connection statuses as JSON',
+  }),
 ];
 
 const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
@@ -474,6 +478,17 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio search "<query>"               Find tools to use after linking',
       "composio execute <slug> -d '{ ... }'    Execute a tool with your connected account",
       'composio config experimental             Manage experimental features',
+    ],
+  },
+  'connections list': {
+    usage: 'composio connections list [--toolkit <text>]',
+    description:
+      'Print connected toolkit statuses as JSON. Adds aliases when a toolkit has multiple connections.',
+    options: [{ name: '--toolkit <text>', description: 'Filter to a single toolkit slug' }],
+    examples: ['composio connections list', 'composio connections list --toolkit gmail'],
+    seeAlso: [
+      'composio link <toolkit>                 Connect a new account for a toolkit',
+      'composio dev connected-accounts list    Inspect the full connected-account table',
     ],
   },
   run: {
