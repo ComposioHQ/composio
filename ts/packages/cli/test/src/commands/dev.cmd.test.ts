@@ -60,7 +60,9 @@ describe('CLI: composio dev', () => {
         expect(output).toContain('Developer mode is off');
       })
     );
+  });
 
+  layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
     it.scoped('blocks destructive dev commands until config enables them', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'triggers', 'disable', 'trg_123']);
