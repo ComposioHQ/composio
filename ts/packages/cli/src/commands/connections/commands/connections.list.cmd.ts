@@ -20,7 +20,7 @@ const formatConnectionsJson = (items: ReadonlyArray<ConnectedAccountItem>): stri
     items.map(item => ({
       toolkit: item.toolkit.slug,
       status: item.status,
-      ...(toolkitCounts.get(item.toolkit.slug)! > 1 && item.alias ? { alias: item.alias } : {}),
+      ...(toolkitCounts.get(item.toolkit.slug)! > 1 ? { alias: item.alias ?? null } : {}),
     })),
     null,
     2

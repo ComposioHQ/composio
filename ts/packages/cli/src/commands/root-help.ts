@@ -144,12 +144,12 @@ const OTHER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
     description: 'List available trigger types in a toolkit',
   }),
   tagged({
-    name: 'composio artifacts cwd',
-    description: 'Print the cwd-scoped session artifact directory',
-  }),
-  tagged({
     name: 'composio connections list',
     description: 'Print toolkit connection statuses as JSON',
+  }),
+  tagged({
+    name: 'composio artifacts cwd',
+    description: 'Print the cwd-scoped session artifact directory',
   }),
 ];
 
