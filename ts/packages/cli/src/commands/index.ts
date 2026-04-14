@@ -19,7 +19,12 @@ import {
   runParallelToolsExecuteFromArgv,
   showToolsExecuteInputHelp,
 } from './tools/commands/tools.execute.cmd';
-import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-help';
+import {
+  printRootHelp,
+  matchSubcommandHelp,
+  parseHelpLevel,
+  printSubcommandHelp,
+} from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
@@ -413,7 +418,13 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'));
+  return (
+    args.length === 0 ||
+    (args.length >= 1 &&
+      args.length <= 2 &&
+      (args[0] === '--help' || args[0] === '-h') &&
+      (args.length === 1 || parseHelpLevel(args[1]) !== undefined))
+  );
 };
 
 const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
@@ -503,11 +514,12 @@ export const runWithConfig = Effect.gen(function* () {
       });
     }
     if (isRootHelp(normalizedArgv)) {
-      return printRootHelp(visibility);
+      return printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
     }
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {
-      return printSubcommandHelp(subHelp, visibility);
+      const helpLevel = parseHelpLevel(normalizedArgv[normalizedArgv.length - 1]) ?? 'default';
+      return printSubcommandHelp(subHelp, visibility, helpLevel);
     }
     const nestedMismatch = findNestedSubcommandMismatch(normalizedArgv, rootCommand);
     if (nestedMismatch) {
