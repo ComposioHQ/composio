@@ -1,10 +1,22 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
-import { afterEach, vi } from 'vitest';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { extendConfigProvider } from 'src/services/config';
-import { cli, TestLive } from 'test/__utils__';
+import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
+
+const parseJsonFromLines = (lines: ReadonlyArray<string>) => {
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i];
+    if (!line) continue;
+    try {
+      return JSON.parse(line) as Record<string, Array<Record<string, string>>>;
+    } catch {
+      // continue
+    }
+  }
+  throw new Error('Expected JSON output but none found');
+};
 
 const testConnections: ConnectedAccountItem[] = [
   {
@@ -75,21 +87,13 @@ const testConfigProvider = ConfigProvider.fromMap(
 ).pipe(extendConfigProvider);
 
 describe('CLI: composio connections list', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
     it.scoped('[Given] no filter [Then] prints connection JSON with aliases for duplicates', () =>
       Effect.gen(function* () {
-        const write = vi
-          .spyOn(process.stdout, 'write')
-          .mockImplementation((() => true) as typeof process.stdout.write);
-
         yield* cli(['connections', 'list']);
 
-        const output = write.mock.calls.map(call => String(call[0])).join('');
-        const parsed = JSON.parse(output) as Record<string, Array<Record<string, string>>>;
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const parsed = parseJsonFromLines(lines);
 
         expect(parsed).toEqual({
           gmail: [{ status: 'ACTIVE' }],
@@ -105,14 +109,10 @@ describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
     it.scoped('[Given] --toolkit github [Then] filters the JSON output', () =>
       Effect.gen(function* () {
-        const write = vi
-          .spyOn(process.stdout, 'write')
-          .mockImplementation((() => true) as typeof process.stdout.write);
-
         yield* cli(['connections', 'list', '--toolkit', 'github']);
 
-        const output = write.mock.calls.map(call => String(call[0])).join('');
-        const parsed = JSON.parse(output) as Record<string, Array<Record<string, string>>>;
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const parsed = parseJsonFromLines(lines);
 
         expect(parsed).toEqual({
           github: [
