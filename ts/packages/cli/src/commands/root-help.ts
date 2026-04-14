@@ -149,17 +149,10 @@ const OTHER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   }),
 ];
 
-const DEVELOPER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
-  tagged({
-    name: 'dev',
-    description:
-      'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.',
-  }),
-  tagged({
-    name: 'generate',
-    description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
-  }),
-];
+const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
+  name: 'generate',
+  description: 'Generate type stubs for toolkits, tools, and triggers (TypeScript | Python).',
+});
 
 // ── Account commands ───────────────────────────────────────────────────
 
@@ -194,6 +187,98 @@ function renderDetailedCommands(name: string, commands: ReadonlyArray<DetailedCo
 function renderCompactCommands(commands: ReadonlyArray<CompactCommand>): string[] {
   const maxLen = Math.max(...commands.map(c => c.name.length));
   return commands.map(cmd => `  ${cmd.name.padEnd(maxLen + 2)}${cmd.description}`);
+}
+
+function renderDevHelp(visibility: CommandVisibility): string {
+  const lines: string[] = [
+    '',
+    bold('USAGE'),
+    visibility.isDevModeEnabled
+      ? '  composio dev [--mode on|off] <command> [options]'
+      : '  composio dev [--mode on|off]',
+    '',
+    bold('DESCRIPTION'),
+    visibility.isDevModeEnabled
+      ? '  Developer workflows for local project setup, playground execution, logs, and developer-scoped management.'
+      : '  Developer mode is off. Only mode switching is available until you turn it back on.',
+    '',
+    bold('MODE'),
+    '  --mode <on|off>         Turn developer mode on or off.',
+    '',
+  ];
+
+  if (!visibility.isDevModeEnabled) {
+    lines.push(bold('EXAMPLES'));
+    lines.push('  composio dev --mode on');
+    lines.push('  composio dev --mode off');
+    lines.push('');
+    lines.push(bold('NOTE'));
+    lines.push(
+      '  Developer mode is for engineers building with the CLI. It unlocks more advanced commands like creating or updating auth configs and connected accounts.'
+    );
+    lines.push('');
+    return lines.join('\n');
+  }
+
+  lines.push(bold('PROJECT'));
+  lines.push('  dev init                 Initialize this directory with a developer project');
+  lines.push('');
+
+  lines.push(bold('EXECUTION'));
+  lines.push('  dev playground-execute   Execute a tool against a developer playground user');
+  lines.push('  dev listen               Listen to developer-project trigger events');
+  lines.push('  dev logs tools           Browse tool logs');
+  lines.push('  dev logs triggers        Browse trigger logs');
+  lines.push('');
+
+  lines.push(bold('TOOLKITS'));
+  lines.push('  dev toolkits list        Browse available toolkits');
+  lines.push('  dev toolkits info        Inspect a toolkit');
+  lines.push('  dev toolkits search      Search toolkits');
+  lines.push('  dev toolkits version     Inspect toolkit versions');
+  lines.push('');
+
+  lines.push(bold('AUTH CONFIGS'));
+  lines.push('  dev auth-configs list    List auth configs');
+  lines.push('  dev auth-configs info    View one auth config');
+  lines.push('  dev auth-configs create  Create an auth config');
+  lines.push('');
+
+  lines.push(bold('CONNECTED ACCOUNTS'));
+  lines.push('  dev connected-accounts link   Link a connected account');
+  lines.push('  dev connected-accounts list   List connected accounts');
+  lines.push('  dev connected-accounts info   View one connected account');
+  lines.push('  dev connected-accounts whoami Resolve an account identity');
+  lines.push('');
+
+  lines.push(bold('TRIGGERS'));
+  lines.push('  dev triggers list        List trigger types');
+  lines.push('  dev triggers info        View one trigger type');
+  lines.push('  dev triggers status      Inspect trigger instances');
+  lines.push('  dev triggers create      Create a trigger instance');
+  lines.push('  dev triggers enable      Enable a trigger instance');
+  lines.push('  dev triggers disable     Disable a trigger instance [guarded]');
+  lines.push('');
+
+  lines.push(bold('PROJECTS'));
+  lines.push('  dev projects list        List projects');
+  lines.push('  dev projects switch      Switch default project');
+  lines.push('');
+
+  lines.push(bold('GUARDED'));
+  lines.push('  dev triggers disable     Disable a trigger instance');
+  lines.push(
+    '  This requires `developer.destructive_actions: true` in `~/.composio/config.json` and `--dangerously-allow` on the command line.'
+  );
+  lines.push('');
+  lines.push(bold('EXAMPLES'));
+  lines.push('  composio dev --mode off');
+  lines.push('  composio dev toolkits list');
+  lines.push(
+    '  composio dev playground-execute GMAIL_SEND_EMAIL --dangerously-allow -d \'{ recipient_email: "a@b.com" }\''
+  );
+  lines.push('');
+  return lines.join('\n');
 }
 
 // ── Subcommand help definitions ────────────────────────────────────────
@@ -828,12 +913,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       { name: '--custom-credentials <text>', description: 'Custom credentials JSON' },
     ],
   },
-  'dev auth-configs delete': {
-    usage: 'composio dev auth-configs delete [-y, --yes] [<id>]',
-    description: 'Delete an auth config.',
-    args: [{ name: '<id>', description: 'Auth config ID' }],
-    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
-  },
   'dev connected-accounts list': {
     usage:
       'composio dev connected-accounts list [--toolkits text] [--user-id text] [--status text] [--limit integer]',
@@ -854,12 +933,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     usage: 'composio dev connected-accounts whoami [<id>]',
     description: 'Show the external account profile for a connected account.',
     args: [{ name: '<id>', description: 'Connected account ID' }],
-  },
-  'dev connected-accounts delete': {
-    usage: 'composio dev connected-accounts delete [-y, --yes] [<id>]',
-    description: 'Delete a connected account.',
-    args: [{ name: '<id>', description: 'Connected account ID' }],
-    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
   },
   'dev triggers list': {
     usage: 'composio dev triggers list <toolkit> [--limit integer]',
@@ -907,25 +980,6 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     usage: 'composio dev triggers disable [<id>]',
     description: 'Disable a trigger instance.',
     args: [{ name: '<id>', description: 'Trigger instance ID' }],
-  },
-  'dev triggers delete': {
-    usage: 'composio dev triggers delete [-y, --yes] [<id>]',
-    description: 'Delete a trigger instance.',
-    args: [{ name: '<id>', description: 'Trigger instance ID' }],
-    flags: [{ name: '-y, --yes', description: 'Skip confirmation prompt' }],
-  },
-  'dev orgs list': {
-    usage: 'composio dev orgs list [--limit integer]',
-    description: 'List organizations and show current global selection.',
-    options: [{ name: '--limit <integer>', description: 'Number of results' }],
-  },
-  'dev orgs switch': {
-    usage: 'composio dev orgs switch [--org-id text] [--limit integer]',
-    description: 'Switch default organization context.',
-    options: [
-      { name: '--org-id <text>', description: 'Organization ID to switch to' },
-      { name: '--limit <integer>', description: 'Number of orgs to show in picker' },
-    ],
   },
   'dev projects list': {
     usage: 'composio dev projects list [--org-id text] [--limit integer]',
@@ -994,6 +1048,17 @@ const getVisibleSubcommandHelp = (
   cmd: string,
   visibility: CommandVisibility
 ): Option.Option<SubcommandHelp> => {
+  if (cmd === 'dev') {
+    return Option.some({
+      usage: 'composio dev [--mode on|off]',
+      description: 'Developer mode and developer-scoped workflows.',
+    });
+  }
+
+  if (cmd.startsWith('dev ') && !visibility.isDevModeEnabled) {
+    return Option.none();
+  }
+
   const entry = SUBCOMMAND_HELP[cmd];
   if (!entry) {
     return Option.none();
@@ -1101,6 +1166,7 @@ export function printSubcommandHelp(
   cmd: string,
   visibility: CommandVisibility
 ): Effect.Effect<void> {
+  if (cmd === 'dev') return Console.log(renderDevHelp(visibility));
   const help = getVisibleSubcommandHelp(cmd, visibility);
   if (Option.isNone(help)) return Console.log(`Unknown command: ${cmd}`);
   return Console.log(renderSubcommandHelp(help.value));
@@ -1127,6 +1193,7 @@ export function matchCommandFromArgv(
  * Get rendered help text for a command, or undefined if not found.
  */
 export function getCommandHelpText(cmd: string, visibility: CommandVisibility): string | undefined {
+  if (cmd === 'dev') return renderDevHelp(visibility);
   return Option.match(getVisibleSubcommandHelp(cmd, visibility), {
     onNone: () => undefined,
     onSome: help => renderSubcommandHelp(help),
@@ -1142,6 +1209,15 @@ export function getCommandHelpText(cmd: string, visibility: CommandVisibility): 
  */
 export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void> {
   const name = 'composio';
+  const developerCommands: ReadonlyArray<CompactCommand> = [
+    {
+      name: 'dev',
+      description: visibility.isDevModeEnabled
+        ? 'Developer workflows and management: init, logs, projects, toolkits, accounts, and triggers.'
+        : 'Developer mode toggle. Use `composio dev --mode on` to enable developer workflows.',
+    },
+    GENERATE_COMMAND.value,
+  ];
 
   const lines: string[] = [
     '',
@@ -1150,8 +1226,12 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     `Try ${bold('execute')} sooner than you'd think — it validates inputs, checks connections, and tells`,
     'you what to fix.',
     '',
-    `Use ${bold('dev')} when you are building an agent with Composio's SDK and want scaffolding,`,
-    'playground execution, logs, and developer-scoped management commands.',
+    visibility.isDevModeEnabled
+      ? `Use ${bold('dev')} when you are building an agent with Composio's SDK and want scaffolding,`
+      : `Use ${bold('dev')} to control access to developer-only workflows.`,
+    visibility.isDevModeEnabled
+      ? 'playground execution, logs, and developer-scoped management commands.'
+      : 'Developer mode is currently off.',
     '',
     bold('USAGE'),
     `  ${name} <command> [options]`,
@@ -1199,7 +1279,7 @@ export function printRootHelp(visibility: CommandVisibility): Effect.Effect<void
     `  '`,
     '',
     bold('DEVELOPER COMMANDS'),
-    ...renderCompactCommands(visibleValues(DEVELOPER_COMMANDS, visibility)),
+    ...renderCompactCommands(developerCommands),
     '',
     bold('ACCOUNT'),
     ...renderCompactCommands(visibleValues(ACCOUNT_COMMANDS, visibility)),

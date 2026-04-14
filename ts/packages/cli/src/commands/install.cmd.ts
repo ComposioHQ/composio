@@ -177,6 +177,7 @@ export const installShellIntegration = (params: {
       const mod = yield* Effect.promise(() => import('src/commands'));
       const lines = yield* getCompletionScript(
         mod.buildRootCommand({
+          isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
           isExperimentalFeatureEnabled: feature =>
             cliUserConfig.isExperimentalFeatureEnabled(feature),
         }),

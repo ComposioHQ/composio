@@ -125,6 +125,12 @@ export interface TestLiveInput {
     events?: ReadonlyArray<Record<string, unknown>>;
   };
 
+  cliUserConfig?: {
+    developerModeEnabled?: boolean;
+    developerDangerousCommandsEnabled?: boolean;
+    experimentalFeatures?: Record<string, boolean>;
+  };
+
   /**
    * Mock stdin for commands that read input.
    */
@@ -802,23 +808,44 @@ export const TestLayer = (input?: TestLiveInput) =>
       Layer.merge(BunFileSystem.layer, NodeOsTest)
     );
 
+    let rawCliUserConfig = CliUserConfig.make({
+      developer: {
+        enabled: input?.cliUserConfig?.developerModeEnabled ?? true,
+        destructiveActions: input?.cliUserConfig?.developerDangerousCommandsEnabled ?? false,
+      },
+      experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
+      artifactDirectory: Option.none(),
+      experimentalSubagent: Option.none(),
+    });
+
     const ComposioCliUserConfigTest = Layer.succeed(
       ComposioCliUserConfig,
       ComposioCliUserConfig.of({
-        data: {
-          channel: 'beta',
-          experimentalFeatures: {},
-          artifactDirectory: undefined,
-          experimentalSubagentTarget: 'auto',
+        get data() {
+          return {
+            channel: 'beta' as const,
+            developerModeEnabled: rawCliUserConfig.developer.enabled,
+            developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
+            experimentalFeatures: rawCliUserConfig.experimentalFeatures,
+            artifactDirectory: undefined,
+            experimentalSubagentTarget: 'auto' as const,
+          };
         },
-        raw: CliUserConfig.make({
-          experimentalFeatures: {},
-          artifactDirectory: Option.none(),
-          experimentalSubagent: Option.none(),
-        }),
+        get raw() {
+          return rawCliUserConfig;
+        },
         channel: 'beta',
-        isExperimentalFeatureEnabled: () => true,
-        update: () => Effect.void,
+        isDevModeEnabled: () => rawCliUserConfig.developer.enabled,
+        areDeveloperDangerousCommandsEnabled: () => rawCliUserConfig.developer.destructiveActions,
+        isExperimentalFeatureEnabled: feature =>
+          rawCliUserConfig.experimentalFeatures[feature] ?? true,
+        update: next =>
+          Effect.sync(() => {
+            rawCliUserConfig = CliUserConfig.make({
+              ...rawCliUserConfig,
+              ...next,
+            });
+          }),
       })
     );
 
