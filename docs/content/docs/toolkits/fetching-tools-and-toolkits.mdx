@@ -83,7 +83,7 @@ const allToolkits: any[] = [];
 let cursor: string | undefined;
 
 do {
-  const { items, cursor: nextCursor } = await session.toolkits({ limit: 20, cursor });
+  const { items, nextCursor } = await session.toolkits({ limit: 20, nextCursor: cursor });
   allToolkits.push(...items);
   cursor = nextCursor;
 } while (cursor);

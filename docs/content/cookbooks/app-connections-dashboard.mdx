@@ -50,7 +50,7 @@ The `GET` handler creates a session and returns every toolkit's name, logo, and 
 `session.toolkits()` returns each toolkit with a `connection` object. When `connection.isActive` is `true`, the user has already authorized that app. We also return the `connectedAccountId` so the frontend can disconnect later.
 
 <Callout>
-`session.toolkits()` paginates results. This example fetches up to 50. Use the `cursor` value from the response to fetch the next page.
+`session.toolkits()` paginates results. This example fetches up to 50. Use the `nextCursor` value from the response to fetch the next page.
 </Callout>
 
 ## Connect an app
