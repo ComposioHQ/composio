@@ -23,6 +23,8 @@ import { BaseComposioProvider } from '../provider/BaseProvider';
 import { ComposioConfig } from '../composio';
 import {
   ToolRouterCreateSessionConfig,
+  ToolRouterUseSessionConfig,
+  ToolRouterUseSessionConfigSchema,
   Session,
   SessionExperimental,
   MCPServerType,
@@ -43,6 +45,7 @@ import {
 } from '../lib/toolRouterParams';
 import { ToolRouterSession } from './ToolRouterSession';
 import {
+  buildCustomToolsMap,
   buildCustomToolsMapFromResponse,
   serializeCustomTools,
   serializeCustomToolkits,
@@ -186,13 +189,30 @@ export class ToolRouter<
    * console.log(session.mcp.headers);
    * ```
    */
-  async use(id: string): Promise<Session<TToolCollection, TTool, TProvider>> {
+  async use(
+    id: string,
+    config?: ToolRouterUseSessionConfig
+  ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const session = await this.client.toolRouter.session.retrieve(id);
+
+    const routerConfig = ToolRouterUseSessionConfigSchema.parse(config);
+    const customTools = routerConfig?.experimental?.customTools;
+    const customToolkits = routerConfig?.experimental?.customToolkits;
+    const userId = routerConfig?.userId;
+
+    let customToolsMap: CustomToolsMap | undefined;
+    if (customTools?.length || customToolkits?.length) {
+      customToolsMap = buildCustomToolsMap(customTools ?? [], customToolkits);
+    }
+
     return new ToolRouterSession<TToolCollection, TTool, TProvider>(
       this.client,
       this.config,
       session.session_id,
-      this.createMCPServerConfig(session.mcp)
+      this.createMCPServerConfig(session.mcp),
+      undefined,
+      customToolsMap,
+      userId
     );
   }
 }

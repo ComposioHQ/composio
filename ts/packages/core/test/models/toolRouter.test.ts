@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
 import ComposioClient from '@composio/client';
 import { telemetry } from '../../src/telemetry/Telemetry';
@@ -6,6 +7,7 @@ import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 import { ToolRouterCreateSessionConfig, Session } from '../../src/types/toolRouter.types';
+import { createCustomTool, createCustomToolkit } from '../../src/models/CustomTool';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -2493,6 +2495,96 @@ describe('ToolRouter', () => {
       // Both should have been called once
       expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(1);
+    });
+
+    it('should support custom tools when resuming a session', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const execute = vi.fn().mockResolvedValue({ result: 'ok' });
+      const customTool = createCustomTool('MY_TOOL', {
+        name: 'My Tool',
+        description: 'A test custom tool',
+        inputParams: z.object({ value: z.string() }),
+        execute,
+      });
+
+      const session = await toolRouter.use(sessionId, {
+        userId: 'user_123',
+        experimental: { customTools: [customTool] },
+      });
+
+      const registered = session.customTools();
+      expect(registered).toHaveLength(1);
+      expect(registered[0].slug).toBe('LOCAL_MY_TOOL');
+      expect(registered[0].name).toBe('My Tool');
+    });
+
+    it('should support custom toolkits when resuming a session', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const toolInKit = createCustomTool('KIT_TOOL', {
+        name: 'Kit Tool',
+        description: 'A tool inside a toolkit',
+        inputParams: z.object({ x: z.number() }),
+        execute: vi.fn().mockResolvedValue({ x: 1 }),
+      });
+      const customToolkit = createCustomToolkit('MY_KIT', {
+        name: 'My Kit',
+        description: 'A test toolkit',
+        tools: [toolInKit],
+      });
+
+      const session = await toolRouter.use(sessionId, {
+        userId: 'user_123',
+        experimental: { customToolkits: [customToolkit] },
+      });
+
+      const registeredKits = session.customToolkits();
+      expect(registeredKits).toHaveLength(1);
+      expect(registeredKits[0].slug).toBe('MY_KIT');
+
+      const registeredTools = session.customTools();
+      expect(registeredTools).toHaveLength(1);
+      expect(registeredTools[0].slug).toBe('LOCAL_MY_KIT_KIT_TOOL');
+    });
+
+    it('should throw if custom tools are provided without userId', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const customTool = createCustomTool('NO_USER_TOOL', {
+        name: 'No User Tool',
+        description: 'Tool without userId',
+        inputParams: z.object({ v: z.string() }),
+        execute: vi.fn().mockResolvedValue({}),
+      });
+
+      await expect(
+        toolRouter.use(sessionId, {
+          experimental: { customTools: [customTool] },
+        })
+      ).rejects.toThrow('userId is required when custom tools are bound to a session.');
+    });
+
+    it('should execute a custom tool when resuming a session', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+
+      const execute = vi.fn().mockResolvedValue({ output: 'hello' });
+      const customTool = createCustomTool('EXEC_TOOL', {
+        name: 'Exec Tool',
+        description: 'Executable custom tool',
+        inputParams: z.object({ msg: z.string() }),
+        execute,
+      });
+
+      const session = await toolRouter.use(sessionId, {
+        userId: 'user_123',
+        experimental: { customTools: [customTool] },
+      });
+
+      const result = await session.execute('LOCAL_EXEC_TOOL', { msg: 'hello' });
+
+      expect(execute).toHaveBeenCalledWith({ msg: 'hello' }, expect.objectContaining({ userId: 'user_123' }));
+      expect(result).toMatchObject({ data: { output: 'hello' }, error: null });
     });
   });
 });

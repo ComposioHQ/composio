@@ -289,6 +289,40 @@ export const ToolRouterCreateSessionConfigSchema = z
  */
 export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
 
+/**
+ * Config for resuming an existing tool router session via `composio.use()`.
+ *
+ * Provide `userId` and `experimental.customTools` / `experimental.customToolkits`
+ * to restore custom-tool routing on a resumed session. `userId` is required when
+ * any custom tools or toolkits are supplied.
+ */
+export const ToolRouterUseSessionConfigSchema = z
+  .object({
+    /** User ID — required when experimental.customTools or experimental.customToolkits are provided. */
+    userId: z.string().optional(),
+    experimental: z
+      .object({
+        customTools: z
+          .array(z.custom<CustomTool>())
+          .optional()
+          .describe(
+            'Custom tools to restore in this session. Created via experimental_createTool() from @composio/core.'
+          ),
+        customToolkits: z
+          .array(z.custom<CustomToolkit>())
+          .optional()
+          .describe(
+            'Custom toolkits to restore in this session. Created via experimental_createToolkit() from @composio/core.'
+          ),
+      })
+      .optional()
+      .describe('Experimental features — not stable, may be modified or removed'),
+  })
+  .optional()
+  .describe('Config for resuming an existing tool router session');
+
+export type ToolRouterUseSessionConfig = z.infer<typeof ToolRouterUseSessionConfigSchema>;
+
 export const ToolkitConnectionStateSchema = z
   .object({
     slug: z.string().describe('The slug of a toolkit'),
