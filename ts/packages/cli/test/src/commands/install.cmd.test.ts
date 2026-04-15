@@ -106,6 +106,46 @@ describe('CLI: composio install', () => {
     });
   });
 
+  describe('[When] shell is fish and --completions is passed', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] keeps PATH in config.fish and writes completions to composio.fish', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          process.env.SHELL = '/usr/bin/fish';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          yield* cli(['install', '--completions']);
+
+          const fs = yield* FileSystem.FileSystem;
+          const rcPath = path.join(os.homedir, '.config', 'fish', 'config.fish');
+          const completionsPath = path.join(
+            os.homedir,
+            '.config',
+            'fish',
+            'completions',
+            'composio.fish'
+          );
+          const rcContents = yield* fs.readFileString(rcPath);
+          const completionContents = yield* fs.readFileString(completionsPath);
+
+          expect(rcContents).toContain('# Composio CLI');
+          expect(rcContents).toContain('set --export COMPOSIO_INSTALL_DIR');
+          expect(rcContents).not.toContain('# Composio CLI completions');
+
+          expect(completionContents).toContain('# Composio CLI completions');
+          expect(completionContents).toContain('complete -c composio');
+
+          const lines = yield* MockConsole.getLines();
+          const output = lines.join('\n');
+          expect(output).toContain('Completions: will install shell completions at ~/.config/fish/completions/composio.fish');
+          expect(output).toContain('Updated ~/.config/fish/config.fish');
+          expect(output).toContain('Updated ~/.config/fish/completions/composio.fish');
+          expect(output).toContain('exec fish');
+        })
+      );
+    });
+  });
+
   describe('[When] --completions is passed', () => {
     layer(TestLive())(it => {
       it.scoped('[Then] writes PATH block and installs completions', () =>

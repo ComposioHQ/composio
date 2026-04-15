@@ -18,7 +18,8 @@ curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh
 - Detects your platform and architecture automatically
 - Downloads the appropriate binary from GitHub releases
 - Installs to `~/.composio/bin/composio`
-- Updates your shell configuration (.bashrc, .zshrc, or .config/fish/config.fish)
+- Updates your shell configuration (.bashrc, .zshrc, or `.config/fish/config.fish`)
+- Installs fish completions in `~/.config/fish/completions/composio.fish` when `--completions` is enabled
 - Adds the binary to your PATH
 
 ## Manual Installation
@@ -130,7 +131,7 @@ If `composio` is not found after installation:
    source ~/.zshrc
    
    # For fish
-   source ~/.config/fish/config.fish
+   exec fish
    ```
 
 3. **Check if the binary exists:**
@@ -174,7 +175,8 @@ rm -rf ~/.composio
 
 # Remove from shell configuration
 # Edit ~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish
-# and remove the lines that were added by the installer:
+# and, for fish completions, ~/.config/fish/completions/composio.fish
+# then remove the lines that were added by the installer:
 # export COMPOSIO_INSTALL="$HOME/.composio"
 # export PATH="$COMPOSIO_INSTALL/bin:$PATH"
 ```
