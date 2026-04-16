@@ -525,7 +525,7 @@
       {
         "slug": "COMPOSIO_GET_TOOL_SCHEMAS",
         "name": "Get Tool Schemas",
-        "description": "Retrieve input schemas for tools by slug. Returns complete parameter definitions required to execute each tool. Make sure to call this tool whenever the response of COMPOSIO_SEARCH_TOOLS does not provide a complete schema for a tool - you must never invent or guess any input parameters."
+        "description": "Retrieve input schemas for tools by slug. Returns complete parameter definitions required to execute each tool. Only pass tool slugs returned by COMPOSIO_SEARCH_TOOLS — never guess or fabricate slugs. If unsure of the exact slug, call COMPOSIO_SEARCH_TOOLS first."
       }
     ],
     "triggers": [],
@@ -102347,32 +102347,7 @@
         "description": "Tool to search for people by name, title, or keywords. Use when you need to discover individuals matching specific criteria after obtaining an API key."
       }
     ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "API_KEY",
-        "name": "rocketreach_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "API Key",
-                "type": "string",
-                "description": "Your RocketReach API key",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
+    "triggers": []
   },
   {
     "slug": "interzoid",

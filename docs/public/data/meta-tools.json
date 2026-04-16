@@ -3,7 +3,7 @@
     "slug": "COMPOSIO_GET_TOOL_SCHEMAS",
     "name": "get_tool_schemas",
     "displayName": "Get Tool Schemas",
-    "description": "Retrieve input schemas for tools by slug. Returns complete parameter definitions required to execute each tool. Make sure to call this tool whenever the response of COMPOSIO_SEARCH_TOOLS does not provide a complete schema for a tool - you must never invent or guess any input parameters.",
+    "description": "Retrieve input schemas for tools by slug. Returns complete parameter definitions required to execute each tool. Only pass tool slugs returned by COMPOSIO_SEARCH_TOOLS — never guess or fabricate slugs. If unsure of the exact slug, call COMPOSIO_SEARCH_TOOLS first.",
     "tags": [
       "readOnlyHint"
     ],
@@ -95,6 +95,10 @@
                   "input_schema": {
                     "type": "object",
                     "description": "Input schema for the tool"
+                  },
+                  "output_schema": {
+                    "type": "object",
+                    "description": "Output schema for the tool when requested via the include field"
                   }
                 },
                 "required": [
@@ -110,23 +114,19 @@
                 "type": "string"
               }
             },
-            "session": {
-              "additionalProperties": false,
-              "description": "Session info echoed back to reinforce reuse: { id: string, instructions: string }",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "instructions": {
+            "suggestions": {
+              "description": "For each not-found slug, a list of similar existing tool slugs (up to 3). Call again with the correct slugs to get their schemas.",
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
                   "type": "string"
                 }
-              },
-              "required": [
-                "id",
-                "instructions"
-              ],
-              "title": "Session",
-              "type": "object"
+              }
+            },
+            "not_found_message": {
+              "description": "Action message when slugs are not found. Check suggestions for possible matches and call again with correct slugs.",
+              "type": "string"
             }
           },
           "required": [

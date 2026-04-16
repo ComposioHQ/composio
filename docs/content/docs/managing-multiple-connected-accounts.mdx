@@ -45,7 +45,7 @@ const session = await composio.create("user_123", {
 |--------|------|---------|-------------|
 | `enable` | `boolean` | `false` | Enable multi-account mode for this session |
 | `maxAccountsPerToolkit` / `max_accounts_per_toolkit` | `number` | `5` | Maximum connected accounts per toolkit (2-10) |
-| `requireExplicitSelection` / `require_explicit_selection` | `boolean` | `false` | When true, the agent must specify which account to use via [`connectedAccounts` pinning](#selecting-a-specific-account-for-a-session) instead of defaulting to the most recent |
+| `requireExplicitSelection` / `require_explicit_selection` | `boolean` | `false` | When true and a toolkit has multiple active connected accounts, the agent must provide the `account` parameter in the tool execution call to select which account to use. `account` can be either a connected account ID or an alias (see the Aliases section below). When false, the default account (most recently connected active account) is used automatically |
 
 When multi-account mode is disabled (the default), each session uses the most recently connected account for each toolkit.
 
