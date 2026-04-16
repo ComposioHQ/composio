@@ -180,7 +180,7 @@
     "name": "Slackbot",
     "logo": "https://logos.composio.dev/api/slackbot",
     "category": "team chat",
-    "toolCount": 88,
+    "toolCount": 89,
     "triggerCount": 5
   },
   {
@@ -1725,6 +1725,14 @@
     "logo": "https://logos.composio.dev/api/intercom",
     "category": "customer support",
     "toolCount": 133,
+    "triggerCount": 0
+  },
+  {
+    "slug": "highlevel",
+    "name": "Highlevel",
+    "logo": "https://logos.composio.dev/api/highlevel",
+    "category": "marketing automation",
+    "toolCount": 94,
     "triggerCount": 0
   },
   {
@@ -6664,6 +6672,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "rize",
+    "name": "Rize",
+    "logo": "https://logos.composio.dev/api/rize",
+    "category": "productivity",
+    "toolCount": 8,
+    "triggerCount": 0
+  },
+  {
     "slug": "rkvst",
     "name": "Rkvst",
     "logo": "https://logos.composio.dev/api/rkvst",
@@ -7981,22 +7997,6 @@
     "logo": "https://logos.composio.dev/api/webscraper_io",
     "category": "developer tools",
     "toolCount": 10,
-    "triggerCount": 0
-  },
-  {
-    "slug": "webscraping_ai",
-    "name": "WebScraping.AI",
-    "logo": "https://logos.composio.dev/api/webscraping_ai",
-    "category": "ai web scraping",
-    "toolCount": 7,
-    "triggerCount": 0
-  },
-  {
-    "slug": "webvizio",
-    "name": "Webvizio",
-    "logo": "https://logos.composio.dev/api/webvizio",
-    "category": "project management",
-    "toolCount": 2,
     "triggerCount": 0
   }
 ]

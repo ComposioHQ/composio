@@ -7964,7 +7964,7 @@
               "type": "string",
               "format": "projectId",
               "description": "Unique identifier (Nano ID) of the project to retrieve",
-              "example": "proj_abc123xyz456"
+              "example": "pr_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "Unique identifier (Nano ID) of the project to retrieve",
@@ -8184,7 +8184,7 @@
               "type": "string",
               "format": "projectId",
               "description": "Unique identifier (Nano ID) of the project to delete",
-              "example": "proj_abc123xyz456"
+              "example": "pr_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "Unique identifier (Nano ID) of the project to delete",
@@ -15994,7 +15994,7 @@
                       "type": "string",
                       "format": "toolRouterSessionId",
                       "description": "The identifier of the session",
-                      "example": "trs_123456789"
+                      "example": "trs_1a2b3c4d5e6f"
                     },
                     "mcp": {
                       "type": "object",
@@ -16010,7 +16010,7 @@
                           "type": "string",
                           "format": "uri",
                           "description": "The URL of the MCP server",
-                          "example": "https://app.composio.dev/tool_router/v3/trs_123456789/mcp"
+                          "example": "https://app.composio.dev/tool_router/v3/trs_1a2b3c4d5e6f/mcp"
                         }
                       },
                       "required": [
@@ -16242,6 +16242,24 @@
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        },
+                        "multi_account": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration."
+                            },
+                            "max_accounts_per_toolkit": {
+                              "type": "integer",
+                              "description": "Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled."
+                            },
+                            "require_explicit_selection": {
+                              "type": "boolean",
+                              "description": "When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account."
+                            }
+                          },
+                          "description": "Multi-account configuration for this session."
                         }
                       },
                       "required": [
@@ -16410,6 +16428,16 @@
           },
           "403": {
             "description": "Forbidden. The user is not authorized to create a tool router session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request timeout. The session creation took too long to complete.",
             "content": {
               "application/json": {
                 "schema": {
@@ -16820,7 +16848,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The session ID returned when creating the session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -16840,7 +16868,7 @@
                       "type": "string",
                       "format": "toolRouterSessionId",
                       "description": "The identifier of the session",
-                      "example": "trs_123456789"
+                      "example": "trs_1a2b3c4d5e6f"
                     },
                     "mcp": {
                       "type": "object",
@@ -16856,7 +16884,7 @@
                           "type": "string",
                           "format": "uri",
                           "description": "The URL of the MCP server",
-                          "example": "https://app.composio.dev/tool_router/v3/trs_123456789/mcp"
+                          "example": "https://app.composio.dev/tool_router/v3/trs_1a2b3c4d5e6f/mcp"
                         }
                       },
                       "required": [
@@ -17088,6 +17116,24 @@
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        },
+                        "multi_account": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration."
+                            },
+                            "max_accounts_per_toolkit": {
+                              "type": "integer",
+                              "description": "Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled."
+                            },
+                            "require_explicit_selection": {
+                              "type": "boolean",
+                              "description": "When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account."
+                            }
+                          },
+                          "description": "Multi-account configuration for this session."
                         }
                       },
                       "required": [
@@ -17998,7 +18044,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The session ID returned when creating the session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -18796,7 +18842,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -18968,7 +19014,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -19109,7 +19155,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -19256,7 +19302,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
