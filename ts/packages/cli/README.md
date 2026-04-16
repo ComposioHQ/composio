@@ -22,7 +22,7 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 ### Optional Flags
 
 - `--log-level`: Set the log verbosity level. Accepted values: all, trace, debug, info, warning, error, fatal, none
-- `--instal-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for a supported agent when automatic installation fails. `--install-skill` is accepted as an alias.
+- `--install-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for a supported agent when automatic installation fails. `--instal-skill` is still accepted as a backward-compatible alias.
 
 ## 🧭 Commands
 
@@ -45,7 +45,7 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 - `composio generate py [-o, --output-dir <directory>] [--toolkits <toolkit>]`: Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
 - `composio generate ts [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]`: Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
 - `composio upgrade [--beta]`: Self-update the Composio CLI from the stable channel, or from the beta channel with `--beta`.
-- `composio --instal-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for Claude, Codex, or OpenClaw.
+- `composio --install-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for Claude, Codex, or OpenClaw.
 
 ## Configuration
 

@@ -4,6 +4,7 @@ import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
+import { APP_VERSION } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { extendConfigProvider } from 'src/services/config';
 
@@ -72,6 +73,10 @@ describe('ComposioClientSingleton headers', () => {
 
     expect(headers.get('x-user-api-key')).toBe('uak_from_user_env');
     expect(headers.has('x-api-key')).toBe(false);
+    expect(headers.get('x-framework')).toBe('cli');
+    expect(headers.get('x-source')).toBe('CLI');
+    expect(headers.get('x-runtime')).toBe('NODEJS');
+    expect(headers.get('x-sdk-version')).toBe(APP_VERSION);
   });
 
   it('does not read COMPOSIO_API_KEY for user auth', async () => {
@@ -104,5 +109,6 @@ describe('ComposioClientSingleton headers', () => {
 
     expect(headers.get('x-user-api-key')).toBeNull();
     expect(headers.has('x-api-key')).toBe(false);
+    expect(headers.get('x-source')).toBe('CLI');
   });
 });
