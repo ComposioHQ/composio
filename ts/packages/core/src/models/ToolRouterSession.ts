@@ -217,7 +217,7 @@ export class ToolRouterSession<
     }
 
     const result = await this.client.toolRouter.session.toolkits(this.sessionId, {
-      cursor: toolkitOptions.data.nextCursor,
+      cursor: toolkitOptions.data.cursor,
       limit: toolkitOptions.data.limit,
       toolkits: toolkitOptions.data.toolkits,
       is_connected: toolkitOptions.data.isConnected,
@@ -254,7 +254,7 @@ export class ToolRouterSession<
 
     return {
       items: toolkitConnectedStates,
-      nextCursor: result.next_cursor ?? undefined,
+      cursor: result.next_cursor ?? undefined,
       totalPages: result.total_pages,
     };
   }

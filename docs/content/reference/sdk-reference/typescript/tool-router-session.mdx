@@ -153,7 +153,7 @@ Query the connection state of toolkits in the session.
 Supports pagination and filtering by toolkit slugs.
 
 ```typescript
-async toolkits(options?: { isConnected?: boolean; limit?: number; nextCursor?: string; search?: string; toolkits?: string[] }): Promise<...>
+async toolkits(options?: { cursor?: string; isConnected?: boolean; limit?: number; search?: string; toolkits?: string[] }): Promise<...>
 ```
 
 **Parameters**
