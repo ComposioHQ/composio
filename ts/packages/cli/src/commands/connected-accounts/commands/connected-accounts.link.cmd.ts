@@ -224,6 +224,20 @@ const getConsumerCacheScope = (resolvedProject: {
 
 const normalizeAlias = (rawAlias: string) => rawAlias.trim();
 
+const resolveNormalizedAliasOption = (alias: Option.Option<string>) =>
+  Effect.gen(function* () {
+    if (Option.isNone(alias)) {
+      return Option.none<string>();
+    }
+
+    const normalizedAlias = normalizeAlias(alias.value);
+    if (normalizedAlias.length === 0) {
+      return yield* Effect.fail(new Error('`--alias` cannot be empty.'));
+    }
+
+    return Option.some(normalizedAlias);
+  });
+
 const listActiveConnectedAccounts = (params: {
   readonly client: RawComposioClient;
   readonly userId: string;
@@ -287,32 +301,6 @@ const ensureAliasForAdditionalAccount = (params: {
       'Existing accounts'
     );
     return false as const;
-  });
-
-const patchConnectedAccountAlias = (params: {
-  readonly ui: TerminalUI;
-  readonly client: RawComposioClient;
-  readonly connectedAccountId: string;
-  readonly alias: Option.Option<string>;
-}) =>
-  Effect.gen(function* () {
-    if (Option.isNone(params.alias)) {
-      return;
-    }
-
-    const normalizedAlias = normalizeAlias(params.alias.value);
-    if (normalizedAlias.length === 0) {
-      return yield* Effect.fail(new Error('`--alias` cannot be empty.'));
-    }
-
-    yield* params.ui.withSpinner(
-      `Assigning alias "${normalizedAlias}"...`,
-      Effect.tryPromise(() =>
-        params.client.patch(`/api/v3/connected_accounts/${params.connectedAccountId}`, {
-          body: { alias: normalizedAlias },
-        })
-      )
-    );
   });
 
 const resolveLinkUserId = (params: {
@@ -533,6 +521,7 @@ const handleLegacyAuthConfigLink = (params: {
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
+    const normalizedAlias = yield* resolveNormalizedAliasOption(params.alias);
     const existingAccounts = yield* listActiveConnectedAccounts({
       client,
       userId: resolvedUserId.value,
@@ -545,6 +534,7 @@ const handleLegacyAuthConfigLink = (params: {
           client.link.create({
             auth_config_id: params.authConfigId,
             user_id: resolvedUserId.value,
+            ...(Option.isSome(normalizedAlias) && { alias: normalizedAlias.value }),
           })
         )
       )
@@ -572,19 +562,12 @@ const handleLegacyAuthConfigLink = (params: {
     const { connectedAccountId, redirectUrl } = validatedLink.value;
     const canContinue = yield* ensureAliasForAdditionalAccount({
       ui: params.ui,
-      alias: params.alias,
+      alias: normalizedAlias,
       connectedAccountId,
       existingAccounts,
       scopeDescription: `user "${resolvedUserId.value}" in auth config "${params.authConfigId}"`,
     });
     if (!canContinue) return;
-
-    yield* patchConnectedAccountAlias({
-      ui: params.ui,
-      client,
-      connectedAccountId,
-      alias: params.alias,
-    });
 
     if (params.noWait) {
       yield* showRedirectUrl(params.ui, redirectUrl);
@@ -627,6 +610,7 @@ const runConnectedAccountsLink = (params: {
     )
       ? params.alias
       : Option.none<string>();
+    const normalizedAliasOption = yield* resolveNormalizedAliasOption(aliasOption);
 
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
@@ -729,9 +713,18 @@ const runConnectedAccountsLink = (params: {
           const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
             manageConnections: true,
             cacheScope: getConsumerCacheScope(resolvedProject),
+            excludeConnectedAccountsForToolkits: [toolkitSlug],
+            multiAccount: Option.isSome(normalizedAliasOption)
+              ? {
+                  enable: true,
+                }
+              : undefined,
           });
           return yield* Effect.tryPromise(() =>
-            client.toolRouter.session.link(sessionId, { toolkit: toolkitSlug })
+            client.toolRouter.session.link(sessionId, {
+              toolkit: toolkitSlug,
+              ...(Option.isSome(normalizedAliasOption) && { alias: normalizedAliasOption.value }),
+            })
           );
         })
       )
@@ -767,19 +760,12 @@ const runConnectedAccountsLink = (params: {
     const { connectedAccountId: connAccountId, redirectUrl } = validatedLink.value;
     const canContinue = yield* ensureAliasForAdditionalAccount({
       ui,
-      alias: aliasOption,
+      alias: normalizedAliasOption,
       connectedAccountId: connAccountId,
       existingAccounts,
       scopeDescription: `user "${resolvedUserId.value}" in toolkit "${toolkitSlug}"`,
     });
     if (!canContinue) return;
-
-    yield* patchConnectedAccountAlias({
-      ui,
-      client,
-      connectedAccountId: connAccountId,
-      alias: aliasOption,
-    });
 
     if (params.noWait) {
       yield* showRedirectUrl(ui, redirectUrl);
