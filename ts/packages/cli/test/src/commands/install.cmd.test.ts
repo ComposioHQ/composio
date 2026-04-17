@@ -146,6 +146,47 @@ describe('CLI: composio install', () => {
     });
   });
 
+  describe('[When] fish already has legacy completions in config.fish', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] does not duplicate completions into composio.fish', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          process.env.SHELL = '/usr/bin/fish';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          const rcPath = path.join(os.homedir, '.config', 'fish', 'config.fish');
+          const completionsPath = path.join(
+            os.homedir,
+            '.config',
+            'fish',
+            'completions',
+            'composio.fish'
+          );
+
+          yield* fs.writeFileString(
+            rcPath,
+            '# existing config\n# Composio CLI\nset --export COMPOSIO_INSTALL_DIR /old\n# Composio CLI completions\ncomplete -c composio -f\n'
+          );
+
+          yield* cli(['install', '--completions']);
+
+          const rcContents = yield* fs.readFileString(rcPath);
+          expect(rcContents.match(/^# Composio CLI completions$/gm)?.length ?? 0).toBe(1);
+
+          const completionsExists = yield* fs.exists(completionsPath);
+          expect(completionsExists).toBe(false);
+
+          const lines = yield* MockConsole.getLines();
+          const output = lines.join('\n');
+          expect(output).toContain('PATH: already configured');
+          expect(output).toContain('Completions: already configured');
+          expect(output).toContain('Shell integration already configured');
+        })
+      );
+    });
+  });
+
   describe('[When] --completions is passed', () => {
     layer(TestLive())(it => {
       it.scoped('[Then] writes PATH block and installs completions', () =>

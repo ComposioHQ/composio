@@ -8,7 +8,10 @@ const sanitizeFishDescription = (description: string): string =>
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"');
+    .replace(/"/g, '\\"')
+    .replace(/\$/g, '\\$')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
 
 const sanitizeFishCompletionLine = (line: string): string => {
   const normalized = line.replace(/\s*\n\s*/g, ' ');

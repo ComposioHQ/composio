@@ -6,7 +6,7 @@ import { getCompletionScript } from 'src/effects/shell-completions';
 describe('shell-completions', () => {
   it('sanitizes fish completion descriptions with quotes and newlines', async () => {
     const query = Options.text('query').pipe(
-      Options.withDescription("User's query\nCan span multiple lines")
+      Options.withDescription('User says "$HOME"\nCan run (date)')
     );
 
     const command = Command.make('demo', { query }, () => Effect.void).pipe(
@@ -17,6 +17,6 @@ describe('shell-completions', () => {
     const joined = lines.join('\n');
 
     expect(lines.every(line => !line.includes('\n'))).toBe(true);
-    expect(joined).toContain(`-d "User's query Can span multiple lines"`);
+    expect(joined).toContain(`-d "User says \\\"\\$HOME\\\" Can run \\(date\\)"`);
   });
 });

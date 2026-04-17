@@ -133,11 +133,12 @@ const tildify = (p: string, homedir: string): string =>
 const readOrEmpty = (
   targetPath: string,
   fs: FileSystem.FileSystem
-): Effect.Effect<string, never> =>
-  fs.readFileString(targetPath).pipe(
-    Effect.catchAll(e =>
-      Effect.logDebug('Managed shell file does not exist yet, will create:', e).pipe(Effect.as(''))
-    )
+): Effect.Effect<string, PlatformError> =>
+  Effect.catchIf(
+    fs.readFileString(targetPath),
+    (error): error is PlatformError =>
+      error._tag === 'SystemError' && error.reason === 'NotFound',
+    error => Effect.logDebug('Managed shell file does not exist yet, will create:', error).pipe(Effect.as(''))
   );
 
 // ---------------------------------------------------------------------------
@@ -211,6 +212,9 @@ export const installShellIntegration = (params: {
     const existingRc = yield* readOrEmpty(rcPath, fs);
     const existingCompletions =
       completionPath === rcPath ? existingRc : yield* readOrEmpty(completionPath, fs);
+    const hasExistingCompletions =
+      fileContains(existingCompletions, COMPLETIONS_MARKER) ||
+      (completionPath !== rcPath && fileContains(existingRc, COMPLETIONS_MARKER));
 
     const rcBlocks: string[] = [];
     const completionBlocks: string[] = [];
@@ -226,7 +230,7 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('Completions: skipped for zsh');
     } else if (!params.completions) {
       yield* ui.log.step('Completions: skipped by default (pass --completions to enable)');
-    } else if (config.completionBlock && !fileContains(existingCompletions, COMPLETIONS_MARKER)) {
+    } else if (config.completionBlock && !hasExistingCompletions) {
       completionBlocks.push(config.completionBlock);
       const targetLabel =
         shell === 'fish'
