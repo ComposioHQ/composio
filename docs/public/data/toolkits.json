@@ -10748,7 +10748,7 @@
     ],
     "toolCount": 233,
     "triggerCount": 2,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HUBSPOT_ADD_ASSET_ASSOCIATION",
@@ -11967,7 +11967,7 @@
                 "type": "string",
                 "description": "Scopes to request from the user, comma separated",
                 "required": false,
-                "default": "account-info.security.read,accounting,cms.domains.read,cms.domains.write,crm.export,crm.import,crm.lists.read,crm.lists.write,crm.objects.companies.read,crm.objects.companies.write,crm.objects.contacts.read,crm.objects.contacts.write,crm.objects.deals.read,crm.objects.deals.write,crm.objects.marketing_events.read,crm.objects.marketing_events.write,crm.objects.owners.read,crm.objects.quotes.read,crm.objects.quotes.write,crm.schemas.companies.read,crm.schemas.companies.write,crm.schemas.contacts.read,crm.schemas.contacts.write,oauth,settings.users.read,settings.users.write,tickets,timeline,e-commerce,crm.objects.custom.read,crm.schemas.custom.read,content,sales-email-read"
+                "default": "account-info.security.read,accounting,cms.domains.read,cms.domains.write,crm.export,crm.import,crm.lists.read,crm.lists.write,crm.objects.companies.read,crm.objects.companies.write,crm.objects.contacts.read,crm.objects.contacts.write,crm.objects.deals.read,crm.objects.deals.write,crm.objects.leads.read,crm.objects.leads.write,crm.objects.marketing_events.read,crm.objects.marketing_events.write,crm.objects.owners.read,crm.objects.quotes.read,crm.objects.quotes.write,crm.schemas.companies.read,crm.schemas.companies.write,crm.schemas.contacts.read,crm.schemas.contacts.write,oauth,settings.users.read,settings.users.write,tickets,timeline,e-commerce,crm.objects.custom.read,crm.schemas.custom.read,content,sales-email-read"
               },
               {
                 "name": "optional_scopes",
