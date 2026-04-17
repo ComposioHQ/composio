@@ -33,6 +33,18 @@ If your MCP client gets `401 Unauthorized`, include your Composio project API ke
 
 When `require_mcp_api_key` is enabled on your project, requests without this header are rejected.
 
+## Connection times out in Claude Desktop or Claude.ai
+
+Claude Desktop and Claude.ai use OAuth to authenticate MCP connectors. If you use a Platform MCP URL (the URL shown on the MCP server page in the dashboard), the connection will fail because that URL requires API key authentication and does not support OAuth.
+
+Use the Connect MCP URL instead:
+
+```
+https://connect.composio.dev/mcp
+```
+
+See [Composio Connect](/docs/composio-connect) for client-specific setup instructions.
+
 ## Testing and debugging
 
 If experiencing issues, test your MCP server with:
