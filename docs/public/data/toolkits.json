@@ -13,7 +13,7 @@
     ],
     "toolCount": 62,
     "triggerCount": 2,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GMAIL_ADD_LABEL_TO_EMAIL",
@@ -5065,7 +5065,7 @@
     ],
     "toolCount": 46,
     "triggerCount": 7,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLECALENDAR_ACL_DELETE",
@@ -5401,7 +5401,7 @@
     ],
     "toolCount": 48,
     "triggerCount": 5,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
@@ -5759,7 +5759,7 @@
     ],
     "toolCount": 48,
     "triggerCount": 16,
-    "version": "20260414_01",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLESHEETS_ADD_SHEET",
@@ -6149,7 +6149,7 @@
     ],
     "toolCount": 151,
     "triggerCount": 5,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SLACK_ADD_CALL_PARTICIPANTS",
@@ -7723,7 +7723,7 @@
     ],
     "toolCount": 301,
     "triggerCount": 5,
-    "version": "20260415_01",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "OUTLOOK_ACCEPT_EVENT",
@@ -9902,7 +9902,7 @@
     ],
     "toolCount": 89,
     "triggerCount": 7,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE",
@@ -10452,7 +10452,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 10,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLEDOCS_COPY_DOCUMENT",
@@ -10748,7 +10748,7 @@
     ],
     "toolCount": 233,
     "triggerCount": 2,
-    "version": "20260417_00",
+    "version": "20260417_01",
     "tools": [
       {
         "slug": "HUBSPOT_ADD_ASSET_ASSOCIATION",
@@ -11967,7 +11967,7 @@
                 "type": "string",
                 "description": "Scopes to request from the user, comma separated",
                 "required": false,
-                "default": "account-info.security.read,accounting,cms.domains.read,cms.domains.write,crm.export,crm.import,crm.lists.read,crm.lists.write,crm.objects.companies.read,crm.objects.companies.write,crm.objects.contacts.read,crm.objects.contacts.write,crm.objects.deals.read,crm.objects.deals.write,crm.objects.leads.read,crm.objects.leads.write,crm.objects.marketing_events.read,crm.objects.marketing_events.write,crm.objects.owners.read,crm.objects.quotes.read,crm.objects.quotes.write,crm.schemas.companies.read,crm.schemas.companies.write,crm.schemas.contacts.read,crm.schemas.contacts.write,oauth,settings.users.read,settings.users.write,tickets,timeline,e-commerce,crm.objects.custom.read,crm.schemas.custom.read,content,sales-email-read"
+                "default": "account-info.security.read,accounting,cms.domains.read,cms.domains.write,crm.export,crm.import,crm.lists.read,crm.lists.write,crm.objects.companies.read,crm.objects.companies.write,crm.objects.contacts.read,crm.objects.contacts.write,crm.objects.deals.read,crm.objects.deals.write,crm.objects.marketing_events.read,crm.objects.marketing_events.write,crm.objects.owners.read,crm.objects.quotes.read,crm.objects.quotes.write,crm.schemas.companies.read,crm.schemas.companies.write,crm.schemas.contacts.read,crm.schemas.contacts.write,oauth,settings.users.read,settings.users.write,tickets,timeline,e-commerce,crm.objects.custom.read,crm.schemas.custom.read,content,sales-email-read"
               },
               {
                 "name": "optional_scopes",
@@ -12025,7 +12025,7 @@
     ],
     "toolCount": 33,
     "triggerCount": 3,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "LINEAR_CREATE_ATTACHMENT",
@@ -12299,7 +12299,7 @@
     ],
     "toolCount": 25,
     "triggerCount": 6,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "AIRTABLE_CREATE_BASE",
@@ -12887,7 +12887,7 @@
     ],
     "toolCount": 97,
     "triggerCount": 3,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "JIRA_ADD_ATTACHMENT",
@@ -13551,7 +13551,7 @@
     ],
     "toolCount": 30,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "FIRECRAWL_AGENT_CANCEL",
@@ -13819,7 +13819,7 @@
     ],
     "toolCount": 50,
     "triggerCount": 4,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "YOUTUBE_ADD_VIDEO_TO_PLAYLIST",
@@ -14159,7 +14159,7 @@
     ],
     "toolCount": 89,
     "triggerCount": 5,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SLACKBOT_ADD_CALL_PARTICIPANTS",
@@ -14705,7 +14705,7 @@
     ],
     "toolCount": 560,
     "triggerCount": 6,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CANVAS_ABORT_QUIZ_REPORT_GENERATION",
@@ -17644,7 +17644,7 @@
     ],
     "toolCount": 107,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "BITBUCKET_APPROVE_PULL_REQUEST",
@@ -18248,7 +18248,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 5,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLETASKS_BATCH_EXECUTE",
@@ -20278,7 +20278,7 @@
     ],
     "toolCount": 144,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "WRIKE_BULK_MODIFY_GROUPS",
@@ -21206,7 +21206,7 @@
     ],
     "toolCount": 207,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SENTRY_ACCESS_PROJECT_INFORMATION",
@@ -23379,7 +23379,7 @@
     ],
     "toolCount": 164,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MICROSOFT_TEAMS_ADD_CHAT_MEMBER",
@@ -27768,7 +27768,7 @@
     ],
     "toolCount": 60,
     "triggerCount": 9,
-    "version": "20260415_01",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ONE_DRIVE_CHECKIN_ITEM",
@@ -30897,7 +30897,7 @@
     ],
     "toolCount": 216,
     "triggerCount": 7,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SALESFORCE_ACCOUNT_CREATION_WITH_CONTENT_TYPE_OPTION",
@@ -35644,7 +35644,7 @@
     ],
     "toolCount": 506,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "POSTHOG_ADD_DASHBOARD_COLLABORATORS_WITH_ACCESS_LEVEL",
@@ -45003,7 +45003,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLEMEET_CREATE_MEET",
@@ -45033,7 +45033,7 @@
       {
         "slug": "GOOGLEMEET_GET_RECORDINGS_BY_CONFERENCE_RECORD_ID",
         "name": "Get recordings by conference record ID",
-        "description": "Retrieves recordings from Google Meet for a given conference record ID. Only returns recordings if recording was enabled and permitted by the organizer's domain policies; a valid conferenceRecord_id does not guarantee recordings exist. After a meeting ends, recordings may take several minutes to process — an empty result may be temporary, not permanent."
+        "description": "Retrieves recordings from Google Meet for a given conference record ID. Only returns recordings if recording was enabled and permitted by the organizer's domain policies; a valid conference_record_id does not guarantee recordings exist. After a meeting ends, recordings may take several minutes to process — an empty result may be temporary, not permanent."
       },
       {
         "slug": "GOOGLEMEET_GET_TRANSCRIPT",
@@ -45048,7 +45048,7 @@
       {
         "slug": "GOOGLEMEET_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID",
         "name": "Get transcripts by conference record ID",
-        "description": "Retrieves all transcripts for a specific Google Meet conference using its conferenceRecord_id. Transcripts require processing time after a meeting ends — empty results may be transient; retry after a delay before concluding no transcripts exist. Returns results only if transcription was enabled during the meeting and permitted by the organizer's domain policies; an empty list may also indicate transcription was never generated."
+        "description": "Retrieves all transcripts for a specific Google Meet conference using its conference_record_id. Transcripts require processing time after a meeting ends — empty results may be transient; retry after a delay before concluding no transcripts exist. Returns results only if transcription was enabled during the meeting and permitted by the organizer's domain policies; an empty list may also indicate transcription was never generated."
       },
       {
         "slug": "GOOGLEMEET_LIST_CONFERENCE_RECORDS",
@@ -45209,7 +45209,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ZOHO_CONVERT_ZOHO_LEAD",
@@ -45509,7 +45509,7 @@
     ],
     "toolCount": 177,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "DROPBOX_ACTIVATE_TEAM_FOLDER",
@@ -47216,7 +47216,7 @@
     ],
     "toolCount": 62,
     "triggerCount": 20,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CONFLUENCE_ADD_CONTENT_LABEL",
@@ -52279,7 +52279,7 @@
     ],
     "toolCount": 63,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLEBIGQUERY_CANCEL_JOB",
@@ -59371,7 +59371,7 @@
     ],
     "toolCount": 431,
     "triggerCount": 20,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -60441,7 +60441,7 @@
       {
         "slug": "GOOGLESUPER_GET_RECORDINGS_BY_CONFERENCE_RECORD_ID",
         "name": "Get recordings by conference record ID",
-        "description": "Retrieves recordings from Google Meet for a given conference record ID. Only returns recordings if recording was enabled and permitted by the organizer's domain policies; a valid conferenceRecord_id does not guarantee recordings exist. After a meeting ends, recordings may take several minutes to process — an empty result may be temporary, not permanent."
+        "description": "Retrieves recordings from Google Meet for a given conference record ID. Only returns recordings if recording was enabled and permitted by the organizer's domain policies; a valid conference_record_id does not guarantee recordings exist. After a meeting ends, recordings may take several minutes to process — an empty result may be temporary, not permanent."
       },
       {
         "slug": "GOOGLESUPER_GET_RECURRING_AUDIENCE_LIST",
@@ -60516,7 +60516,7 @@
       {
         "slug": "GOOGLESUPER_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID",
         "name": "Get transcripts by conference record ID",
-        "description": "Retrieves all transcripts for a specific Google Meet conference using its conferenceRecord_id. Transcripts require processing time after a meeting ends — empty results may be transient; retry after a delay before concluding no transcripts exist. Returns results only if transcription was enabled during the meeting and permitted by the organizer's domain policies; an empty list may also indicate transcription was never generated."
+        "description": "Retrieves all transcripts for a specific Google Meet conference using its conference_record_id. Transcripts require processing time after a meeting ends — empty results may be transient; retry after a delay before concluding no transcripts exist. Returns results only if transcription was enabled during the meeting and permitted by the organizer's domain policies; an empty list may also indicate transcription was never generated."
       },
       {
         "slug": "GOOGLESUPER_GET_VACATION_SETTINGS",
@@ -62333,7 +62333,7 @@
     ],
     "toolCount": 68,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ROCKETLANE_ADD_ASSIGNEE_TO_TASK",
@@ -62717,12 +62717,12 @@
     ],
     "toolCount": 104,
     "triggerCount": 11,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ZOOM_ADD_A_MEETING_REGISTRANT",
         "name": "Add a meeting registrant",
-        "description": "Registers a participant for a Zoom meeting that has registration enabled. **Prerequisites:** - The meeting host must have a **licensed (paid) Zoom account** - this will NOT work with free/basic accounts - The meeting must have registration enabled (approval_type = 0 for automatic or 1 for manual approval) - Maximum of 4,999 registrants per meeting **Required fields:** meetingId, first_name, last_name, email **Optional fields:** address, city, state, zip, country, phone, comments, industry, job_title, org, language, auto_approve **Common errors:** - \"Only available for paid users\" - The meeting host needs a licensed Zoom account - \"Registration has not been enabled\" - Enable registration via update_a_meeting with approval_type = 0 or 1 - \"Meeting not found\" - Invalid meeting ID or meeting has ended"
+        "description": "Registers a participant for a Zoom meeting that has registration enabled. **Prerequisites:** - The meeting host must have a **licensed (paid) Zoom account** - this will NOT work with free/basic accounts - The meeting must have registration enabled (approval_type = 0 for automatic or 1 for manual approval) - Maximum of 4,999 registrants per meeting **Required fields:** meeting_id, first_name, last_name, email **Optional fields:** address, city, state, zip, country, phone, comments, industry, job_title, org, language, auto_approve **Common errors:** - \"Only available for paid users\" - The meeting host needs a licensed Zoom account - \"Registration has not been enabled\" - Enable registration via update_a_meeting with approval_type = 0 or 1 - \"Meeting not found\" - Invalid meeting ID or meeting has ended"
       },
       {
         "slug": "ZOOM_ADD_A_WEBINAR_REGISTRANT",
@@ -67640,7 +67640,7 @@
     ],
     "toolCount": 77,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MIRO_ATTACH_TAG_TO_ITEM",
@@ -68095,7 +68095,7 @@
     ],
     "toolCount": 89,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SHARE_POINT_ADD_ATTACHMENT_TO_LIST_ITEM",
@@ -69013,6 +69013,260 @@
     ]
   },
   {
+    "slug": "breezy_hr",
+    "name": "Breezy Hr",
+    "logo": "https://logos.composio.dev/api/breezy_hr",
+    "description": "Integrate Breezy HR to streamline your recruiting and applicant tracking processes.",
+    "category": "hr talent & recruitment",
+    "authSchemes": [],
+    "toolCount": 48,
+    "triggerCount": 0,
+    "version": "20260417_00",
+    "tools": [
+      {
+        "slug": "BREEZY_HR_ADD_CANDIDATE_CUSTOM_ATTRIBUTE",
+        "name": "Add Candidate Custom Attribute",
+        "description": "Add or update a custom attribute for a candidate in Breezy HR. Use when you need to store custom metadata, internal notes, evaluation scores, or any other custom data for a candidate application. If the attribute name already exists for this candidate, its value will be updated with the new value."
+      },
+      {
+        "slug": "BREEZY_HR_ADD_CANDIDATE_DOCUMENT",
+        "name": "Add Candidate Document",
+        "description": "Upload a document file for an existing candidate in Breezy HR. Use when you need to attach additional documents (cover letters, portfolios, certifications, or other files) to a candidate's application. The file is sent as multipart/form-data with the field name 'data'. This action is idempotent - uploading a document with the same name may create a duplicate or update the existing document depending on Breezy HR behavior."
+      },
+      {
+        "slug": "BREEZY_HR_ADD_CANDIDATE_EDUCATION",
+        "name": "Add Candidate Education",
+        "description": "Add an education entry to an existing candidate in Breezy HR. Use this action when you need to record a candidate's educational background, such as degrees, certifications, or school attendance. If an education entry already exists for the same school, it will be updated with the provided values."
+      },
+      {
+        "slug": "BREEZY_HR_ADD_CANDIDATE_NOTE",
+        "name": "Add Candidate Note",
+        "description": "Adds a note to a candidate's discussion stream in Breezy HR. Use this action when you need to record observations, interview feedback, or any communication about a candidate directly in their profile. The note becomes part of the candidate's activity history and is visible to all users with access to the candidate."
+      },
+      {
+        "slug": "BREEZY_HR_ADD_CANDIDATE_RESUME",
+        "name": "Add candidate resume",
+        "description": "Attach a resume file to an existing candidate in Breezy HR. Use when you need to add or update a candidate's resume document. The file is sent as multipart/form-data with the field name 'file'."
+      },
+      {
+        "slug": "BREEZY_HR_ADD_CANDIDATE_WORK_HISTORY",
+        "name": "Add Candidate Work History",
+        "description": "Add a work history entry to an existing candidate in Breezy HR. Use this action when you need to record a candidate's employment history, such as previous job positions, companies, and work responsibilities. If a work history entry already exists for the same company, it will be updated with the provided values."
+      },
+      {
+        "slug": "BREEZY_HR_CREATE_CANDIDATE",
+        "name": "Add candidate to position",
+        "description": "Add a new candidate to a position in Breezy HR. Use when you need to create or add a candidate to a specific job position. This action allows you to programmatically add candidates to positions with various details including contact information, education, work history, social profiles, and custom attributes. The candidate can be marked as 'sourced' (direct hire) or 'applied' (applicant tracking). Note: If origin is 'applied', email_address is required. For 'sourced' candidates, email is optional but recommended."
+      },
+      {
+        "slug": "BREEZY_HR_CREATE_CANDIDATE_FROM_RESUME",
+        "name": "Create Candidate From Resume",
+        "description": "Upload and parse a resume file to create a new candidate in Breezy HR. Use this action when you need to add a new job candidate by uploading their resume. The resume is parsed and candidate information is automatically extracted and associated with the specified position. The candidate will be placed in the default 'applied' stage unless a different stage_id is specified."
+      },
+      {
+        "slug": "BREEZY_HR_CREATE_POSITION",
+        "name": "Create Position",
+        "description": "Create a new position in Breezy HR. Use when you need to add a new job opening to your company's hiring pipeline with specific details like title, description, location, and employment type. This action creates a position that can then accept applications from candidates. The position will be created in draft state by default unless otherwise specified."
+      },
+      {
+        "slug": "BREEZY_HR_CREATE_WEBHOOK_ENDPOINT",
+        "name": "Create Webhook Endpoint",
+        "description": "Create a new webhook endpoint to receive event notifications from Breezy HR. Use this action when you need to set up real-time notifications for events such as candidates being added, deleted, or having their status updated. The response includes a secret key that should be stored securely to verify incoming webhook signatures. This action is idempotent based on the endpoint URL and subscribed events."
+      },
+      {
+        "slug": "BREEZY_HR_DELETE_WEBHOOK_ENDPOINT",
+        "name": "Delete Webhook Endpoint",
+        "description": "Delete an existing webhook endpoint from Breezy HR. Use this action when you need to remove a webhook endpoint that is no longer needed for receiving real-time notifications about Breezy HR events such as candidate additions, deletions, or status updates. This action is irreversible — the webhook endpoint cannot be recovered once deleted."
+      },
+      {
+        "slug": "BREEZY_HR_GET_CANDIDATE",
+        "name": "Get Candidate",
+        "description": "Retrieve candidate details by ID for a given position in Breezy HR. Use this action when you need to fetch the full profile and details of a specific candidate applying to a specific job position. This includes contact information, social accounts, recruitment stage, rating, source, and other candidate metadata. This is a read-only operation that does not modify any candidate data."
+      },
+      {
+        "slug": "BREEZY_HR_GET_CANDIDATE_CONVERSATION",
+        "name": "Get Candidate Conversation",
+        "description": "Retrieve the conversation stream for a specific candidate applying to a position. Use when you need to view all messages exchanged with a candidate, including messages sent by the hiring team and responses from the candidate. The conversation includes timestamps, message content, attachments, and sender information."
+      },
+      {
+        "slug": "BREEZY_HR_GET_CANDIDATE_META",
+        "name": "Get Candidate Meta",
+        "description": "Retrieves candidate meta data by ID for a given position. Use this action when you need to fetch all metadata information (assessments, documents, scorecards, etc.) associated with a specific candidate for a specific job position. The metadata includes various aspects of the candidate's interaction and evaluation such as assessments, background checks, conversation history, documents, questionnaires, references, schedule, scorecards, stream activity, tasks, and team notes."
+      },
+      {
+        "slug": "BREEZY_HR_GET_CANDIDATE_RESUME",
+        "name": "Get Candidate Resume",
+        "description": "Retrieve a candidate's resume file from a specific job position in Breezy HR. Use this action when you need to download and review a candidate's resume/CV for a specific job application. The resume is typically returned as a PDF or Word document. This action streams the resume file directly from Breezy HR's servers."
+      },
+      {
+        "slug": "BREEZY_HR_GET_CANDIDATE_STREAM",
+        "name": "Get Candidate Stream",
+        "description": "Retrieves the last 50 candidate discussion stream events by candidate ID for a given position. Use this action when you need to view the conversation history, activity timeline, status changes, or all interactions related to a specific candidate within a job position. This is useful for tracking candidate engagement, reviewing hiring team notes, or monitoring the progression through the pipeline."
+      },
+      {
+        "slug": "BREEZY_HR_GET_COMPANY",
+        "name": "Get Company Information",
+        "description": "Retrieves complete information about a company in Breezy HR. Use when you need to fetch company details, settings, or profile information for a specific Breezy HR company account."
+      },
+      {
+        "slug": "BREEZY_HR_GET_PIPELINE",
+        "name": "Get Pipeline",
+        "description": "Retrieves pipeline stages by pipeline ID for a specified company. Use when you need to fetch the hiring workflow stages associated with a particular pipeline, including stage names, icons, action counts, and associated actions."
+      },
+      {
+        "slug": "BREEZY_HR_GET_POSITION",
+        "name": "Get Position",
+        "description": "Retrieves detailed information about a specific job position by its ID. Use this action when you have a company ID and position ID and need to fetch the complete position details including description, location, requirements, and settings."
+      },
+      {
+        "slug": "BREEZY_HR_GET_POSITION_TEAM",
+        "name": "Get Position Team",
+        "description": "Retrieves user objects of all team members assigned to a specific job position. Use this action when you need to view the hiring team members associated with a particular position, including their names, email addresses, usernames, roles (Hiring Team Member or Hiring Manager), and account details. This is useful for understanding who has access to and responsibility for a specific job posting in your Breezy HR account."
+      },
+      {
+        "slug": "BREEZY_HR_GET_QUESTIONNAIRE",
+        "name": "Get Questionnaire",
+        "description": "Retrieves a questionnaire by its ID for a specific company. Use this action when you need to fetch the details, questions, and settings of an existing questionnaire in Breezy HR."
+      },
+      {
+        "slug": "BREEZY_HR_GET_TEMPLATE",
+        "name": "Get Email Template",
+        "description": "Retrieves an email template by its ID for a specific company. Use this action when you need to fetch the details, subject line, body content, and settings of an existing email template in Breezy HR."
+      },
+      {
+        "slug": "BREEZY_HR_GET_USER",
+        "name": "Get User",
+        "description": "Retrieves information about the authenticated user or a specific user by ID. Use this action when you need to fetch user profile details, including name, email, role, and other account information from Breezy HR. If user_id is not provided, the action returns the currently authenticated user's information."
+      },
+      {
+        "slug": "BREEZY_HR_GET_USER_DETAILS",
+        "name": "Get User Details",
+        "description": "Retrieves the details for the configurations of each company the authenticated user belongs to. This includes company information, hiring pipelines, questionnaires, templates, tasks, scorecards, and team member data. Use this action when you need to fetch comprehensive user and company configuration data for the authenticated user across all accessible companies."
+      },
+      {
+        "slug": "BREEZY_HR_GET_WEBHOOK_ENDPOINT",
+        "name": "Get Webhook Endpoint",
+        "description": "Retrieves detailed information about a specific webhook endpoint by its ID. Use this action when you need to fetch details about an existing webhook endpoint, including its configuration, subscribed events, status, and delivery statistics. This is a read-only operation that does not modify any data."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_CANDIDATE_ASSESSMENTS",
+        "name": "List Candidate Assessments",
+        "description": "Retrieves all 3rd party assessments a candidate has taken for a specific position. Use this action when you need to: - View the assessment history for a specific candidate - Check the status of ongoing or pending assessments - Retrieve assessment results and reports - Verify candidate has completed required pre-employment assessments This action queries the Breezy HR API to get all assessments associated with a candidate within a specific position and company context."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_CANDIDATE_BACKGROUND_CHECKS",
+        "name": "List Candidate Background Checks",
+        "description": "Retrieves all 3rd party background checks for a candidate. Use this action when you need to: - View the background check history for a specific candidate - Check the status of ongoing background checks - Retrieve background check results and reports This action queries the Breezy HR API to get all background checks associated with a candidate within a specific position and company context."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_CANDIDATE_CUSTOM_ATTRIBUTES",
+        "name": "List candidate custom attributes",
+        "description": "Retrieves all candidate-specific custom attributes configured for a company. Use this action when you need to list all available custom fields that can be used to store additional candidate information beyond the standard Breezy HR candidate fields. These custom attributes can include things like desired salary, source of application, department preferences, or any other company-specific data points. This is a read-only operation that does not modify any data."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_CANDIDATE_CUSTOM_FIELDS",
+        "name": "List Candidate Custom Fields",
+        "description": "Retrieves all custom field values for a specific candidate in the context of a job position. Use when you need to get the values of custom fields that have been filled out for a candidate in a specific job application, such as source of application, desired salary, department preference, or any other company-defined custom data points. This is a read-only operation that does not modify any data."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_CANDIDATE_DOCUMENTS",
+        "name": "List Candidate Documents",
+        "description": "Retrieve candidate documents by candidate ID for a given position. Use when you need to list all documents associated with a specific candidate for a specific job position. The documents may include resumes, cover letters, portfolios, or other relevant files."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_CANDIDATE_QUESTIONNAIRES",
+        "name": "List Candidate Questionnaires",
+        "description": "Retrieves all questionnaires for a specific candidate. Use this action when you need to: - View all questionnaires associated with a candidate - Check the status of questionnaire submissions - Retrieve questionnaire completion dates and scores - Track pending or overdue questionnaires This action queries the Breezy HR API to get all questionnaires associated with a candidate within a specific position and company context."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_COMPANIES",
+        "name": "List Companies",
+        "description": "Retrieve the companies associated with the authenticated user. Use this action when you need to discover what companies are accessible to the authenticated user, such as for listing available workspaces or checking company details."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_PIPELINES",
+        "name": "List Company Pipelines",
+        "description": "Retrieve all pipelines for a company. Use this action when you need to list all hiring pipelines configured in a Breezy HR company account. This action is read-only and returns pipeline information including stages, positions, and settings."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_POSITION_CUSTOM_ATTRIBUTES",
+        "name": "List Position Custom Attributes",
+        "description": "Retrieve all position-specific custom attributes defined for a company in Breezy HR. Use this action when you need to discover what custom fields are available for job positions, such as for building forms, validating attribute values, or understanding position data structure."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_POSITION_CUSTOM_FIELDS",
+        "name": "List Position Custom Fields",
+        "description": "Retrieve all custom fields for a specific position in Breezy HR. Use this action when you need to fetch the custom field values assigned to a particular job position, such as when reviewing candidate applications or updating position details. This action retrieves the custom field values (name, value, and security flag) that are associated with the specified position."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_POSITIONS",
+        "name": "List Breezy HR Positions",
+        "description": "Retrieves all job positions for a specified company, optionally filtered by state. Use when you need to find available job openings, list company positions, or get position details for a Breezy HR company account. The state filter defaults to 'published' to return only active job listings."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_QUESTIONNAIRES",
+        "name": "List company questionnaires",
+        "description": "Retrieves all company questionnaires from Breezy HR. Use this action when you need to fetch all available questionnaires associated with a specific company in the Breezy HR system."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_TEMPLATES",
+        "name": "List Company Templates",
+        "description": "Retrieves all company email templates from Breezy HR. Use this action when you need to fetch all available email templates associated with a specific company in the Breezy HR system. This is useful for finding templates to use in candidate communications, customizing email workflows, or managing company communication templates."
+      },
+      {
+        "slug": "BREEZY_HR_LIST_WEBHOOK_ENDPOINTS",
+        "name": "List Webhook Endpoints",
+        "description": "Retrieves all webhook endpoints configured for a specified company in Breezy HR. Use when you need to list all registered webhook endpoints, audit which events are being monitored, or check the configuration of existing webhooks. This action is read-only and idempotent."
+      },
+      {
+        "slug": "BREEZY_HR_PAUSE_WEBHOOK_ENDPOINT",
+        "name": "Pause Webhook Endpoint",
+        "description": "Pause webhook delivery to an endpoint in Breezy HR. Use when you need to temporarily stop receiving webhook notifications without deleting the endpoint configuration. The endpoint remains configured and can be resumed later. This action is useful during maintenance windows, debugging scenarios, or when you need to temporarily halt webhook processing while keeping the endpoint configuration intact. The endpoint status changes to 'paused' while the 'enabled' flag remains true, allowing for easy resumption."
+      },
+      {
+        "slug": "BREEZY_HR_RESUME_WEBHOOK_ENDPOINT",
+        "name": "Resume Webhook Endpoint",
+        "description": "Resume webhook delivery to a paused endpoint in Breezy HR. Use when you need to resume webhook delivery to an endpoint that was previously paused. Once resumed, the endpoint will start receiving webhook notifications for subscribed events again."
+      },
+      {
+        "slug": "BREEZY_HR_SEARCH_CANDIDATES",
+        "name": "Search Candidates by Email",
+        "description": "Search for candidates by their email address across all positions in a company. Use when you need to find candidates with a specific email address, verify if a candidate exists in the system, or retrieve candidate information based on email. This is a read-only operation that searches across all positions and pipelines."
+      },
+      {
+        "slug": "BREEZY_HR_UPDATE_CANDIDATE",
+        "name": "Update Candidate",
+        "description": "Tool to update a candidate on a specific position in Breezy HR. Use when you need to modify candidate information such as their headline, contact details, social profiles, tags, or other details on an existing candidate application. The candidate must already exist for the specified position. This action makes a PUT request to update the candidate's information."
+      },
+      {
+        "slug": "BREEZY_HR_UPDATE_CANDIDATE_SCORECARD",
+        "name": "Update candidate scorecard",
+        "description": "Update a candidate's scorecard for a specific position in a company. Use this action when you need to record a candidate's evaluation score and optional notes during the hiring process. This action is idempotent — calling it multiple times with the same parameters will update (not duplicate) the scorecard."
+      },
+      {
+        "slug": "BREEZY_HR_UPDATE_CANDIDATE_STAGE",
+        "name": "Update Candidate Stage",
+        "description": "Move a candidate to a specified stage in the hiring pipeline. Use when you need to advance, move, or reassign a candidate to a different stage in the recruitment process (e.g., from 'applied' to 'interviewing', or 'interviewing' to 'offer'). The action requires the company ID, position ID, candidate ID, and the target stage ID."
+      },
+      {
+        "slug": "BREEZY_HR_UPDATE_POSITION",
+        "name": "Update Position",
+        "description": "Tool to update details of an existing position in Breezy HR. Use when you need to modify any attributes of an existing job position such as the name, description, department, employment type, category, education requirements, experience level, location, tags, or other position properties. The position must already exist for the specified company. This action makes a PUT request to update the position's information."
+      },
+      {
+        "slug": "BREEZY_HR_UPDATE_POSITION_STATE",
+        "name": "Update position state",
+        "description": "Update the state of an existing position in Breezy HR. Use when you need to change a position's workflow state (e.g., from draft to published, or closing a position after hiring is complete). This action is commonly used during recruitment workflow management."
+      },
+      {
+        "slug": "BREEZY_HR_UPDATE_WEBHOOK_ENDPOINT",
+        "name": "Update Webhook Endpoint",
+        "description": "Update an existing webhook endpoint to receive event notifications from Breezy HR. Use when you need to modify the configuration of an existing webhook endpoint, such as changing the target URL, updating the description, modifying subscribed events, or enabling/disabling the endpoint. The endpoint must already exist for the specified company. This action makes a PUT request to update the webhook endpoint's configuration."
+      }
+    ],
+    "triggers": []
+  },
+  {
     "slug": "launch_darkly",
     "name": "LaunchDarkly",
     "logo": "https://logos.composio.dev/api/launch_darkly",
@@ -69023,7 +69277,7 @@
     ],
     "toolCount": 248,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "LAUNCH_DARKLY_ADD_MEMBER_TO_TEAMS",
@@ -70779,7 +71033,7 @@
     ],
     "toolCount": 106,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CONTENTFUL_ACTIVATE_CONTENT_TYPE",
@@ -71619,7 +71873,7 @@
     ],
     "toolCount": 25,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ABLY_BATCH_PRESENCE",
@@ -71854,7 +72108,7 @@
     ],
     "toolCount": 86,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "NETSUITE_ASYNC_GET_JOB_STATUS",
@@ -80014,7 +80268,7 @@
     ],
     "toolCount": 52,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "WEBFLOW_CREATE_ASSET_FOLDER",
@@ -80363,7 +80617,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260407_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "AMCARDS_GET_API_SCHEMA",
@@ -84056,7 +84310,7 @@
     ],
     "toolCount": 64,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "LEVER_ADD_OPPORTUNITY_LINKS",
@@ -85536,7 +85790,7 @@
     ],
     "toolCount": 69,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLE_ANALYTICS_ARCHIVE_CUSTOM_DIMENSION",
@@ -86445,7 +86699,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ZOHO_DESK_CREATE_TICKET",
@@ -87301,7 +87555,7 @@
     ],
     "toolCount": 840,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "DATAROBOT_ADD_USERS_TO_GROUP",
@@ -94856,7 +95110,7 @@
     ],
     "toolCount": 30,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MAINTAINX_CREATE_CATEGORY",
@@ -95209,7 +95463,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "EPIC_GAMES_DELETE_PRESET_METADATA_KEY",
@@ -98120,7 +98374,7 @@
     ],
     "toolCount": 41,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "XERO_CREATE_BANK_TRANSACTION",
@@ -98530,7 +98784,7 @@
     ],
     "toolCount": 298,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ACTIVE_CAMPAIGN_ADD_BROWSE_SESSION_CART",
@@ -100072,7 +100326,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ZOHO_MAIL_ACCOUNTS_LIST_ACCOUNTS",
@@ -101678,7 +101932,7 @@
     ],
     "toolCount": 94,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HIGHLEVEL_CHECK_ACCOUNT_FUNDS",
@@ -103398,7 +103652,7 @@
     ],
     "toolCount": 137,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ZOHO_INVOICE_ADD_CREDITNOTE_TO_INVOICES",
@@ -106153,7 +106407,7 @@
     ],
     "toolCount": 159,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ACTIVE_TRAIL_ADD_GROUP_MEMBER",
@@ -107365,7 +107619,7 @@
     ],
     "toolCount": 119,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "AFFINDA_ADD_TAG_TO_DOCUMENTS",
@@ -113454,7 +113708,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "APIPIE_AI_ANONYMIZE_TEXT",
@@ -113656,7 +113910,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "APPCIRCLE_BUILD_REPO_WEBHOOK_CALLBACK_STANDARD",
@@ -120589,7 +120843,7 @@
     ],
     "toolCount": 92,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "BLAZEMETER_CONVERT_TRANSACTIONS",
@@ -122838,7 +123092,7 @@
     ],
     "toolCount": 31,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "BOTSTAR_CREATE_BOT",
@@ -125824,7 +126078,7 @@
     ],
     "toolCount": 38,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CALENDARHERO_ADD_CALENDAR_CONNECTION",
@@ -126554,7 +126808,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CAMPAYN_CREATE_CONTACT",
@@ -128024,7 +128278,7 @@
     ],
     "toolCount": 117,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CELIGO_ASSIGN_EXPORT_ERROR",
@@ -134783,7 +135037,7 @@
     ],
     "toolCount": 150,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CLOUDCART_ADD_CATEGORY_PROPERTIES",
@@ -135834,7 +136088,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20260410_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CLOUDFLARE_BROWSER_RENDERING_CAPTURE_SCREENSHOT",
@@ -137043,7 +137297,7 @@
     ],
     "toolCount": 16,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CODEREADR_COLLECT_DATA_WITH_QUESTIONS",
@@ -138667,7 +138921,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CONVERSION_TOOLS_CONVERT_EXCEL_TO_HTML",
@@ -141654,7 +141908,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CRAFTMYPDF_ADD_TEXT_TO_PDF",
@@ -143714,7 +143968,7 @@
     ],
     "toolCount": 40,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "CUSTOMGPT_ACTIVATE_PERSONA_VERSION",
@@ -152475,7 +152729,7 @@
     ],
     "toolCount": 38,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "DOCSBOT_AI_CAPTURE_CONVERSATION_LEAD",
@@ -154028,7 +154282,7 @@
     ],
     "toolCount": 38,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "DOPPLER_MARKETING_AUTOMATION_ADD_SUBSCRIBER",
@@ -154453,7 +154707,7 @@
     ],
     "toolCount": 11,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "DOTSIMPLE_CREATE_TAG",
@@ -155938,7 +156192,7 @@
     ],
     "toolCount": 10,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "EAGLE_DOC_ANY_DOC_OCR",
@@ -160771,7 +161025,7 @@
     ],
     "toolCount": 38,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "EVERHOUR_CLIENT_CREATE",
@@ -161480,7 +161734,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "EXPOFP_ADD_CATEGORY",
@@ -163509,7 +163763,7 @@
     ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "FINDYMAIL_ADD_EXCLUDED_DOMAIN",
@@ -164371,7 +164625,7 @@
     ],
     "toolCount": 124,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "FIREBERRY_CREATE_A_COMPETITOR",
@@ -165032,7 +165286,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "FIRMAO_CREATE_INVOICE",
@@ -165943,7 +166197,7 @@
     ],
     "toolCount": 23,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "FOLK_CREATE_COMPANY",
@@ -168978,7 +169232,7 @@
     ],
     "toolCount": 22,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GETPROSPECT_APPLY_COUPON_CODE",
@@ -169390,7 +169644,7 @@
     ],
     "toolCount": 150,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GIGASHEET_APPEND_DATASET",
@@ -173877,7 +174131,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 1,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOOGLESLIDES_CREATE_PRESENTATION",
@@ -174291,7 +174545,7 @@
     ],
     "toolCount": 90,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GOSQUARED_ACCOUNT_ADD_SHARED_USER",
@@ -175282,7 +175536,7 @@
     ],
     "toolCount": 143,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "GRIPTAPE_ASSISTANT_CREATION",
@@ -177895,7 +178149,7 @@
     ],
     "toolCount": 48,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HANDWRYTTEN_ADD_RECIPIENT",
@@ -178914,7 +179168,7 @@
     ],
     "toolCount": 129,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HELP_SCOUT_CREATE_CHAT_HANDLE",
@@ -179970,7 +180224,7 @@
     ],
     "toolCount": 99,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HERE_AUTOSUGGEST",
@@ -180952,7 +181206,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HEYZINE_CREATE_FLIPBOOK_LINK",
@@ -181260,7 +181514,7 @@
     ],
     "toolCount": 42,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HONEYHIVE_ADD_DATAPOINTS_TO_DATASET",
@@ -182269,7 +182523,7 @@
     ],
     "toolCount": 122,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "HUB_PLANNER_ADD_CLIENTS_TO_PROJECT",
@@ -185980,7 +186234,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "INFLUXDB_CLOUD_ADD_DASHBOARD_CELL",
@@ -188556,7 +188810,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "JOTFORM_CLONE_FORM",
@@ -189980,7 +190234,7 @@
     ],
     "toolCount": 47,
     "triggerCount": 0,
-    "version": "20260413_01",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "KIBANA_DELETE_ALERTING_RULES",
@@ -190354,7 +190608,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "KIEAI_ADD_INSTRUMENTAL",
@@ -191317,7 +191571,7 @@
     ],
     "toolCount": 13,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "LAGROWTHMACHINE_ADD_RB2B_VISITOR_TO_AUDIENCE",
@@ -193052,7 +193306,7 @@
     ],
     "toolCount": 28,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "LINKEDIN_ADS_CREATE_AD_ACCOUNT",
@@ -193770,7 +194024,7 @@
     ],
     "toolCount": 30,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "LODGIFY_CREATE_CALLMEBACK_REQUEST",
@@ -194740,7 +194994,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MAILBLUSTER_CREATE_LEAD",
@@ -195993,7 +196247,7 @@
     ],
     "toolCount": 25,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MAKE_CREATE_ORGANIZATIONS",
@@ -196278,7 +196532,7 @@
     ],
     "toolCount": 32,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MAPBOX_GEOCODE_BATCH_V6",
@@ -196754,7 +197008,7 @@
     ],
     "toolCount": 177,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MAXIO_ALLOCATE_COMPONENT",
@@ -202650,7 +202904,7 @@
     ],
     "toolCount": 8,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "MSG91_CREATE_USER_EVENTS",
@@ -203323,7 +203577,7 @@
     ],
     "toolCount": 136,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "NASA_BROWSE_NEO",
@@ -206524,7 +206778,7 @@
     ],
     "toolCount": 48,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "NOZBE_TEAMS_CREATE_ATTACHMENT",
@@ -208590,7 +208844,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "ONESIGNAL_REST_API_BEGIN_LIVE_ACTIVITY",
@@ -209957,7 +210211,7 @@
     ],
     "toolCount": 17,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "OPTIMOROUTE_CREATE_ORDER",
@@ -212458,7 +212712,7 @@
     ],
     "toolCount": 112,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "PAYSTACK_ADD_PRODUCTS_TO_PAGE",
@@ -213105,7 +213359,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "PDF_CO_ACCOUNT_BALANCE_INFO",
@@ -214063,7 +214317,7 @@
     ],
     "toolCount": 9,
     "triggerCount": 0,
-    "version": "20260415_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "PERIGON_GET_ARTICLES",
@@ -214260,7 +214514,7 @@
     ],
     "toolCount": 69,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "PERSONA_ADD_TAG_TO_ACCOUNT",
@@ -215231,7 +215485,7 @@
     ],
     "toolCount": 48,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "PINECONE_CANCEL_BULK_IMPORT",
@@ -216643,7 +216897,7 @@
     ],
     "toolCount": 90,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "POLYGON_GET10_K_SECTIONS",
@@ -217732,7 +217986,7 @@
     ],
     "toolCount": 60,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "POSTGRID_CANCEL_BOX",
@@ -218260,7 +218514,7 @@
     ],
     "toolCount": 135,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "POSTMAN_CREATE_A_COLLECTION",
@@ -219671,7 +219925,7 @@
     ],
     "toolCount": 64,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "PROABONO_ANONYMIZE_CUSTOMER",
@@ -220676,7 +220930,7 @@
     ],
     "toolCount": 6,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "PUSH_BY_TECHULUS_DELETE_TEAM_MEMBER_OR_INVITE",
@@ -221541,7 +221795,7 @@
     ],
     "toolCount": 105,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "QUICKBOOKS_CAPTURE_CHARGE",
@@ -221966,7 +222220,7 @@
       {
         "slug": "QUICKBOOKS_QUERY_ACCOUNT",
         "name": "Query Account Entities",
-        "description": "Query Account entities in QuickBooks using SQL-like syntax. IMPORTANT: Queries the Account entity ONLY (chart of accounts). For other entities (Purchase, Invoice, Bill, Payment, etc.), use their respective query actions. NOTE: API returns ALL fields with values regardless of SELECT clause (projections not supported). Supports: WHERE clauses (=, <, >, LIKE, IN), pattern matching (%), ORDER BY, pagination (MAXRESULTS up to 1000, STARTPOSITION), COUNT. Common fields: Id, Name, AccountType, AccountSubType, Classification, Active, FullyQualifiedName, CurrentBalance, AcctNum, Description, SubAccount. Examples: - SELECT * FROM Account WHERE AccountType = 'Expense' MAXRESULTS 100 - SELECT * FROM Account WHERE Active = true ORDER BY Name - SELECT * FROM Account WHERE Name LIKE '%Checking%'"
+        "description": "Query Account entities in QuickBooks using SQL-like syntax. IMPORTANT: Queries the Account entity ONLY (chart of accounts). For other entities (Purchase, Invoice, Bill, Payment, etc.), use their respective query actions. NOTE: API returns ALL fields with values regardless of SELECT clause (projections not supported). CRITICAL RESTRICTIONS: Parentheses and OR operator are NOT supported. Use IN operator for multiple values: WHERE AccountType IN ('Bank', 'Credit Card') Supports: WHERE clauses (=, <, >, LIKE, IN), AND operator, pattern matching (%), ORDER BY, pagination (MAXRESULTS up to 1000, STARTPOSITION), COUNT. Common fields: Id, Name, AccountType, AccountSubType, Classification, Active, FullyQualifiedName, CurrentBalance, AcctNum, Description, SubAccount. Examples: - SELECT * FROM Account WHERE AccountType = 'Expense' MAXRESULTS 100 - SELECT * FROM Account WHERE Active = true ORDER BY Name - SELECT * FROM Account WHERE AccountType IN ('Bank', 'Credit Card')"
       },
       {
         "slug": "QUICKBOOKS_QUERY_ATTACHABLE",
@@ -232494,7 +232748,7 @@
     ],
     "toolCount": 63,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SALESFLARE_ADD_ACCOUNT_CONTACTS",
@@ -232850,7 +233104,7 @@
     ],
     "toolCount": 25,
     "triggerCount": 0,
-    "version": "20260413_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SALESFORCE_SERVICE_CLOUD_AGENT_SENSITIVE_DATA_RULE_TRIGGERED",
@@ -233837,7 +234091,7 @@
     ],
     "toolCount": 40,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SCALE_AI_ADD_STUDIO_ASSIGNMENTS",
@@ -236349,7 +236603,7 @@
     ],
     "toolCount": 18,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SERPHOUSE_ACCOUNT_INFO",
@@ -237279,7 +237533,7 @@
     ],
     "toolCount": 12,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SHIPDAY_ADD_A_CARRIER",
@@ -238319,7 +238573,7 @@
     ],
     "toolCount": 41,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SHORT_IO_ADD_TAG_TO_LINKS_BULK",
@@ -246663,7 +246917,7 @@
     ],
     "toolCount": 37,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SVIX_APP_CREATE",
@@ -246889,7 +247143,7 @@
     ],
     "toolCount": 44,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "SWAGGERHUB_ADD_ACCESS_CONTROL_FOR_TEAMS",
@@ -249636,7 +249890,7 @@
     ],
     "toolCount": 14,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "TEAMCAMP_CREATE_PROJECT",
@@ -251016,7 +251270,7 @@
     ],
     "toolCount": 15,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "TICKETMASTER_EXECUTE_SEASON_TICKETING_COMMAND",
@@ -252351,7 +252605,7 @@
     ],
     "toolCount": 82,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "TOMTOM_ASSETS_LIST_FONTS",
@@ -254722,7 +254976,7 @@
     ],
     "toolCount": 35,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "TYPEFORM_CREATE_ACCOUNT_WORKSPACE",
@@ -256410,7 +256664,7 @@
     ],
     "toolCount": 38,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "VAPI_ASSISTANT_CONTROLLER_UPDATE",
@@ -256803,7 +257057,7 @@
     ],
     "toolCount": 146,
     "triggerCount": 0,
-    "version": "20260414_00",
+    "version": "20260417_00",
     "tools": [
       {
         "slug": "VERCEL_ADD_ENVIRONMENT_VARIABLE",
@@ -258114,97 +258368,6 @@
                 "default": null
               }
             ]
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "webscraper_io",
-    "name": "Webscraper io",
-    "logo": "https://logos.composio.dev/api/webscraper_io",
-    "description": "WebScraper.IO is a web scraping tool that makes web data extraction easy and accessible for everyone through a cloud-based API.",
-    "category": "developer tools",
-    "authSchemes": [
-      "API_KEY"
-    ],
-    "toolCount": 10,
-    "triggerCount": 0,
-    "version": "20260413_00",
-    "tools": [
-      {
-        "slug": "WEBSCRAPER_IO_CREATE_SITEMAP",
-        "name": "Create Sitemap",
-        "description": "Tool to create a new sitemap configuration for web scraping. Use when you need to define a new scraping structure with start URLs and selector rules for data extraction from a website."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_DELETE_SITEMAP",
-        "name": "Delete Sitemap",
-        "description": "Tool to permanently delete a sitemap configuration from Web Scraper Cloud account. Use when you need to remove a sitemap that is no longer needed."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_DISABLE_SITEMAP_SCHEDULER",
-        "name": "Disable Sitemap Scheduler",
-        "description": "Tool to disable automatic scheduling for a sitemap. Use when you need to stop automated scraping jobs from running on a schedule."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_ENABLE_SITEMAP_SCHEDULER",
-        "name": "Enable Sitemap Scheduler",
-        "description": "Tool to enable and configure automatic scheduling for sitemap scraping jobs. Use when you need to automate scraping jobs to run at specific times using cron expressions with customizable request intervals, page load delays, driver types, and proxy settings."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_GET_ACCOUNT_INFO",
-        "name": "Get Account Info",
-        "description": "Tool to retrieve account information including email and page credits. Use when you need to check account details or available credits."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_GET_SCRAPING_JOBS",
-        "name": "Get Scraping Jobs",
-        "description": "Tool to retrieve all scraping jobs for the account with optional filtering and pagination. Use when you need to list scraping jobs, check job status, or filter jobs by sitemap or tag."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_GET_SITEMAP",
-        "name": "Get Sitemap",
-        "description": "Tool to retrieve a specific sitemap configuration by ID. Use when you need to inspect or reference an existing sitemap's configuration."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_GET_SITEMAPS",
-        "name": "Get Sitemaps",
-        "description": "Tool to retrieve all sitemaps for the authenticated account with pagination support. Use when you need to list available sitemaps or filter them by tag. Supports optional pagination via page parameter and filtering by tag name."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_GET_SITEMAP_SCHEDULER",
-        "name": "Get Sitemap Scheduler",
-        "description": "Tool to retrieve scheduler configuration for a sitemap. Use when you need to check scheduling settings including cron configuration and proxy settings."
-      },
-      {
-        "slug": "WEBSCRAPER_IO_UPDATE_SITEMAP",
-        "name": "Update Sitemap",
-        "description": "Tool to update an existing sitemap configuration including structure, URLs, and selectors. Use when you need to modify sitemap settings."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "API_KEY",
-        "name": "webscraper_io_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "API Token",
-                "type": "string",
-                "description": "Your WebScraper.IO API token. Get it from Account Info > API settings in your Web Scraper Cloud dashboard.",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
           }
         }
       }

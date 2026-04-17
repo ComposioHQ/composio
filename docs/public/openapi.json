@@ -124,6 +124,49 @@
       }
     },
     "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "number"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "status": {
+                "type": "number"
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "suggested_fix": {
+                "type": "string"
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "message",
+              "code",
+              "slug",
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "Tool": {
         "type": "object",
         "properties": {
@@ -406,49 +449,6 @@
           "total_pages",
           "current_page",
           "total_items"
-        ]
-      },
-      "Error": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "object",
-            "properties": {
-              "message": {
-                "type": "string"
-              },
-              "code": {
-                "type": "number"
-              },
-              "slug": {
-                "type": "string"
-              },
-              "status": {
-                "type": "number"
-              },
-              "request_id": {
-                "type": "string"
-              },
-              "suggested_fix": {
-                "type": "string"
-              },
-              "errors": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "message",
-              "code",
-              "slug",
-              "status"
-            ]
-          }
-        },
-        "required": [
-          "error"
         ]
       },
       "PatchConnectedAccountBody": {
@@ -786,6 +786,429 @@
     "parameters": {}
   },
   "paths": {
+    "/api/v3.1/logs/tool_execution": {
+      "post": {
+        "summary": "Search and retrieve tool execution logs",
+        "description": "Search and retrieve tool execution logs with filtering, pagination, and time range support.",
+        "tags": [
+          "Logs"
+        ],
+        "operationId": "postLogsToolExecution",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "filters": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "field": {
+                          "type": "string",
+                          "enum": [
+                            "tool_slug",
+                            "toolkit_slug",
+                            "connected_account_id",
+                            "auth_config_id",
+                            "status",
+                            "user_id",
+                            "session_id",
+                            "sandbox_id",
+                            "request_id",
+                            "log_id"
+                          ]
+                        },
+                        "operator": {
+                          "type": "string",
+                          "enum": [
+                            "==",
+                            "!=",
+                            "contains",
+                            "not_contains"
+                          ]
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "field",
+                        "operator",
+                        "value"
+                      ]
+                    },
+                    "default": []
+                  },
+                  "time_range": {
+                    "type": "object",
+                    "properties": {
+                      "from": {
+                        "type": "number",
+                        "description": "Start time in epoch milliseconds"
+                      },
+                      "to": {
+                        "type": "number",
+                        "description": "End time in epoch milliseconds"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "to"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved tool logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "logs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "ISO 8601 timestamp"
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "Log event type, e.g. tool.execution, trigger.message, connected_account.created"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "success",
+                              "failed"
+                            ]
+                          },
+                          "level": {
+                            "type": "string",
+                            "enum": [
+                              "info",
+                              "error",
+                              "warn"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
+                          "metrics": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
+                          "parent": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "log_id": {
+                                "type": "string"
+                              },
+                              "tool_slug": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "log_id",
+                              "tool_slug"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "timestamp",
+                          "type",
+                          "status",
+                          "level",
+                          "metadata",
+                          "metrics",
+                          "parent"
+                        ]
+                      }
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "logs",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/logs/tool_execution/{id}": {
+      "get": {
+        "summary": "Get log details by ID",
+        "description": "Retrieve detailed log information by log ID.",
+        "tags": [
+          "Logs"
+        ],
+        "operationId": "getLogsToolExecutionById",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The log ID"
+            },
+            "required": true,
+            "description": "The log ID",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved log details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "ISO 8601 timestamp"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "Log event type, e.g. tool.execution, trigger.message, connected_account.created"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "failed"
+                      ]
+                    },
+                    "level": {
+                      "type": "string",
+                      "enum": [
+                        "info",
+                        "error",
+                        "warn"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "metrics": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "parent": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "log_id": {
+                          "type": "string"
+                        },
+                        "tool_slug": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "log_id",
+                        "tool_slug"
+                      ]
+                    },
+                    "timings": {
+                      "type": "object",
+                      "properties": {
+                        "start_time": {
+                          "type": "number",
+                          "description": "Epoch milliseconds"
+                        },
+                        "end_time": {
+                          "type": "number",
+                          "description": "Epoch milliseconds"
+                        }
+                      },
+                      "required": [
+                        "start_time",
+                        "end_time"
+                      ]
+                    },
+                    "context": {
+                      "type": "object",
+                      "properties": {
+                        "session_id": {
+                          "type": "string"
+                        },
+                        "trace_id": {
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "host": {
+                          "type": "string"
+                        },
+                        "framework": {
+                          "type": "string"
+                        },
+                        "language": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "timestamp",
+                    "type",
+                    "status",
+                    "level",
+                    "metadata",
+                    "metrics",
+                    "parent",
+                    "context",
+                    "source",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Log not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
     "/api/v3.1/tools": {
       "get": {
         "summary": "List available tools",
@@ -2724,6 +3147,1980 @@
           },
           "500": {
             "description": "Internal server error - Something went wrong on the server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/tool_router/session": {
+      "post": {
+        "summary": "Create a new tool router session",
+        "description": "Creates a new session for the tool router feature. This endpoint initializes a new session with specified toolkits and their authentication configurations. The session provides an isolated environment for testing and managing tool routing logic with scoped MCP server access.",
+        "tags": [
+          "Tool Router"
+        ],
+        "operationId": "postToolRouterSession",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The identifier of the user who is initiating the session, ideally a unique identifier from your database like a user ID or email address",
+                    "example": "user_123456789"
+                  },
+                  "toolkits": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "enable": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Only these specific toolkits will be enabled",
+                            "example": [
+                              "gmail",
+                              "slack",
+                              "github"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "enable"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Enable only specific toolkits (allowlist)"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "disable": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "These specific toolkits will be disabled",
+                            "example": [
+                              "gmail",
+                              "slack"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "disable"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Disable specific toolkits (denylist)"
+                      }
+                    ],
+                    "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
+                  },
+                  "auth_configs": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "format": "authConfigId"
+                    },
+                    "description": "The auth configs to use for the session. This will override the default behavior and use the given auth config when specific toolkits are being executed",
+                    "example": {
+                      "gmail": "ac_1a2b3c4d5e6f",
+                      "slack": "ac_7g8h9i0j1k2l"
+                    }
+                  },
+                  "connected_accounts": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "format": "connectedAccountId"
+                    },
+                    "description": "The connected accounts to use for the session. This will override the default behaviour and use the given connected account when specific toolkits are being executed",
+                    "example": {
+                      "github": "ca_3m4n5o6p7q8r"
+                    }
+                  },
+                  "manage_connections": {
+                    "type": "object",
+                    "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": true,
+                        "description": "Whether to enable the connection manager for automatic connection handling. If true, we will provide a tool your agent can use to initiate connections to toolkits if it doesnt exist. If set to false, then you have to manage connections manually.",
+                        "example": true
+                      },
+                      "callback_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "The URL to redirect to after a user completes authentication for a connected account. This allows you to handle the auth callback in your own application.",
+                        "example": "https://your-app.com/auth/callback"
+                      },
+                      "enable_wait_for_connections": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": false,
+                        "description": "When true, the COMPOSIO_WAIT_FOR_CONNECTIONS tool is available for agents to poll connection status after sharing auth URLs. Default is false (disabled). May not work reliably with GPT models.",
+                        "example": false
+                      },
+                      "enable_connection_removal": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": true,
+                        "description": "Enable the \"remove\" action in COMPOSIO_MANAGE_CONNECTIONS to allow deleting connected accounts. Default true."
+                      }
+                    },
+                    "default": {
+                      "enable": true,
+                      "enable_wait_for_connections": false,
+                      "enable_connection_removal": true
+                    },
+                    "additionalProperties": false,
+                    "description": "Configuration for connection management settings"
+                  },
+                  "tools": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Only these specific tools will be available for this toolkit",
+                              "example": [
+                                "GMAIL_SEND_EMAIL",
+                                "GMAIL_FETCH_EMAILS"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "enable"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "disable": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "These specific tools will be disabled for this toolkit",
+                              "example": [
+                                "SLACK_ADD_EMOJI"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "disable"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "tags": {
+                              "anyOf": [
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "readOnlyHint",
+                                      "destructiveHint",
+                                      "idempotentHint",
+                                      "openWorldHint"
+                                    ]
+                                  }
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "enable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "readOnlyHint",
+                                          "destructiveHint",
+                                          "idempotentHint",
+                                          "openWorldHint"
+                                        ]
+                                      },
+                                      "description": "Tags that the tool must have at least one of"
+                                    },
+                                    "disable": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "readOnlyHint",
+                                          "destructiveHint",
+                                          "idempotentHint",
+                                          "openWorldHint"
+                                        ]
+                                      },
+                                      "description": "Tags that the tool must NOT have any of"
+                                    }
+                                  }
+                                }
+                              ],
+                              "description": "MCP tags to filter tools. Array format is treated as enabled list. Object format supports both enabled and disabled lists.",
+                              "example": {
+                                "enable": [
+                                  "openWorldHint"
+                                ],
+                                "disable": [
+                                  "destructiveHint"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "tags"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "description": "Tool-level configuration per toolkit - either specify enable tools (whitelist), disable tools (blacklist), or filter by MCP tags for each toolkit",
+                    "example": {
+                      "gmail": {
+                        "enable": [
+                          "GMAIL_SEND_EMAIL",
+                          "GMAIL_FETCH_EMAILS"
+                        ]
+                      },
+                      "slack": {
+                        "disable": [
+                          "SLACK_ADD_EMOJI"
+                        ]
+                      },
+                      "slack_bot": {
+                        "tags": {
+                          "enable": [
+                            "destructiveHint"
+                          ],
+                          "disable": [
+                            "openWorldHint"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "tags": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "readOnlyHint",
+                            "destructiveHint",
+                            "idempotentHint",
+                            "openWorldHint"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "enable": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "readOnlyHint",
+                                "destructiveHint",
+                                "idempotentHint",
+                                "openWorldHint"
+                              ]
+                            },
+                            "description": "Tags that the tool must have at least one of"
+                          },
+                          "disable": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "readOnlyHint",
+                                "destructiveHint",
+                                "idempotentHint",
+                                "openWorldHint"
+                              ]
+                            },
+                            "description": "Tags that the tool must NOT have any of"
+                          }
+                        }
+                      }
+                    ],
+                    "description": "Global MCP tool annotation hints for filtering. Array format is treated as enabled list. Object format supports both enabled (tool must have at least one) and disabled (tool must NOT have any) lists. Toolkit-level tags override this. Toolkit enabled/disabled lists take precedence over tag filtering.",
+                    "example": {
+                      "enable": [
+                        "openWorldHint"
+                      ],
+                      "disable": [
+                        "destructiveHint"
+                      ]
+                    }
+                  },
+                  "workbench": {
+                    "type": "object",
+                    "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
+                        "example": true
+                      },
+                      "enable_proxy_execution": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether proxy execution is enabled. When enabled, workbench can call URLs and APIs directly.",
+                        "example": true
+                      },
+                      "auto_offload_threshold": {
+                        "type": "number",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "description": "Character threshold for automatic offloading. When workbench response exceeds this threshold, it will be automatically offloaded. Default is picked automatically based on the response size.",
+                        "example": 20000
+                      }
+                    },
+                    "default": {
+                      "enable": true,
+                      "enable_proxy_execution": true
+                    },
+                    "additionalProperties": false,
+                    "description": "Configuration for workbench behavior"
+                  },
+                  "multi_account": {
+                    "type": "object",
+                    "properties": {
+                      "enable": {
+                        "type": "boolean",
+                        "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration.",
+                        "example": true
+                      },
+                      "max_accounts_per_toolkit": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 10,
+                        "description": "Maximum number of connected accounts allowed per toolkit. Must be between 2 and 10.",
+                        "example": 5
+                      },
+                      "require_explicit_selection": {
+                        "type": "boolean",
+                        "description": "When true, the agent must explicitly select which account to use. When false (default), the first/default account is used automatically.",
+                        "example": false
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "Configure multi-account behavior. When enabled, users can connect multiple accounts per toolkit."
+                  },
+                  "experimental": {
+                    "type": "object",
+                    "properties": {
+                      "assistive_prompt_config": {
+                        "type": "object",
+                        "properties": {
+                          "user_timezone": {
+                            "type": "string",
+                            "description": "IANA timezone identifier (e.g., 'America/New_York', 'Europe/London'). Used to customize the system prompt with timezone-aware instructions.",
+                            "example": "America/New_York"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "description": "Customize assistive prompt generation (e.g., timezone)."
+                      },
+                      "custom_toolkits": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "slug": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "^[a-zA-Z0-9_-]+$",
+                              "description": "Unique slug for the toolkit. Must not conflict with existing Composio toolkit slugs. Alphanumeric, underscores, and hyphens only.",
+                              "example": "ecommerce"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "description": "Display name shown to the LLM and in search results.",
+                              "example": "E-Commerce API"
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 2048,
+                              "description": "Used for BM25 search matching and shown in toolkit connection statuses.",
+                              "example": "Internal e-commerce API for order management and fulfillment"
+                            },
+                            "tools": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "slug": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "pattern": "^[a-zA-Z0-9_-]+$",
+                                    "description": "Tool slug. Combined with toolkit slug to form LOCAL_<TOOLKIT>_<TOOL> (max 60 chars total).",
+                                    "example": "GET_CUSTOMER_ORDERS"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 128,
+                                    "description": "Human-readable display name",
+                                    "example": "Get Customer Orders"
+                                  },
+                                  "description": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 5120,
+                                    "description": "Used for BM25 search matching and shown to the LLM.",
+                                    "example": "Fetch recent orders for a customer by their email address"
+                                  },
+                                  "input_schema": {
+                                    "type": "object",
+                                    "additionalProperties": {},
+                                    "description": "Must have type: \"object\" and a properties field.",
+                                    "example": {
+                                      "type": "object",
+                                      "properties": {
+                                        "email": {
+                                          "type": "string",
+                                          "description": "Customer email"
+                                        }
+                                      },
+                                      "required": [
+                                        "email"
+                                      ]
+                                    }
+                                  },
+                                  "output_schema": {
+                                    "type": "object",
+                                    "additionalProperties": {},
+                                    "description": "Optional output schema for the tool response."
+                                  }
+                                },
+                                "required": [
+                                  "slug",
+                                  "name",
+                                  "description",
+                                  "input_schema"
+                                ]
+                              },
+                              "minItems": 1,
+                              "maxItems": 100,
+                              "description": "Tools in this custom toolkit"
+                            }
+                          },
+                          "required": [
+                            "slug",
+                            "name",
+                            "description",
+                            "tools"
+                          ]
+                        },
+                        "description": "Custom toolkits with grouped tools. Toolkit slugs must not conflict with existing Composio toolkits. All tools are no-auth."
+                      },
+                      "custom_tools": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "slug": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "^[a-zA-Z0-9_-]+$",
+                              "description": "Tool slug. Forms LOCAL_<TOOL> (standalone) or LOCAL_<TOOLKIT>_<TOOL> (extending). Max 60 chars total.",
+                              "example": "GET_IMPORTANT_EMAILS"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "description": "Human-readable display name",
+                              "example": "Get Important Emails"
+                            },
+                            "description": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 5120,
+                              "description": "Used for BM25 search matching and shown to the LLM.",
+                              "example": "Fetch emails marked as important from the last 24 hours"
+                            },
+                            "input_schema": {
+                              "type": "object",
+                              "additionalProperties": {},
+                              "description": "Must have type: \"object\" and a properties field.",
+                              "example": {
+                                "type": "object",
+                                "properties": {
+                                  "limit": {
+                                    "type": "number",
+                                    "description": "Max results to return"
+                                  }
+                                }
+                              }
+                            },
+                            "output_schema": {
+                              "type": "object",
+                              "additionalProperties": {},
+                              "description": "JSON Schema describing tool output (optional)"
+                            },
+                            "extends_toolkit": {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "If set, must be a valid Composio toolkit slug. The tool inherits that toolkit's auth/connection status. If omitted, the tool is standalone (no-auth).",
+                              "example": "gmail"
+                            }
+                          },
+                          "required": [
+                            "slug",
+                            "name",
+                            "description",
+                            "input_schema"
+                          ]
+                        },
+                        "description": "Custom tools to include in search. Standalone tools need no auth. Tools with extends_toolkit inherit the Composio toolkit's connection."
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                    "x-experimental": true
+                  }
+                },
+                "required": [
+                  "user_id"
+                ]
+              },
+              "examples": {
+                "Session with all toolkits": {
+                  "value": {
+                    "user_id": "user_123456789"
+                  }
+                },
+                "Session with only specific toolkits": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "gmail",
+                        "slack"
+                      ]
+                    }
+                  }
+                },
+                "Session with only specific toolkits disabled": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "disable": [
+                        "gmail",
+                        "slack"
+                      ]
+                    }
+                  }
+                },
+                "Session with connection manager enabled": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "manage_connections": {
+                      "enable": true
+                    }
+                  }
+                },
+                "Session with connection manager and specific toolkits": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "gmail",
+                        "slack"
+                      ]
+                    },
+                    "manage_connections": {
+                      "enable": true
+                    }
+                  }
+                },
+                "Session with custom callback URL": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "github",
+                        "slack"
+                      ]
+                    },
+                    "manage_connections": {
+                      "enable": true,
+                      "callback_url": "https://your-app.com/auth/callback"
+                    }
+                  }
+                },
+                "Session with workbench configuration": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "gmail"
+                      ]
+                    },
+                    "workbench": {
+                      "enable_proxy_execution": true,
+                      "auto_offload_threshold": 10000
+                    }
+                  }
+                },
+                "Session with global tags filter": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "gmail",
+                        "slack"
+                      ]
+                    },
+                    "tags": [
+                      "readOnlyHint",
+                      "idempotentHint"
+                    ]
+                  }
+                },
+                "Session with auth config overrides": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "gmail",
+                        "slack"
+                      ]
+                    },
+                    "auth_configs": {
+                      "gmail": "ac_1a2b3c4d5e6f",
+                      "slack": "ac_7g8h9i0j1k2l"
+                    }
+                  }
+                },
+                "Session with connected account overrides": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "gmail",
+                        "slack"
+                      ]
+                    },
+                    "connected_accounts": {
+                      "gmail": "ca_1a2b3c4d5e6f",
+                      "slack": "ca_7g8h9i0j1k2l"
+                    }
+                  }
+                },
+                "Session with comprehensive configuration": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "enable": [
+                        "gmail",
+                        "slack",
+                        "github"
+                      ]
+                    },
+                    "auth_configs": {
+                      "gmail": "ac_1a2b3c4d5e6f",
+                      "slack": "ac_7g8h9i0j1k2l"
+                    },
+                    "connected_accounts": {
+                      "github": "ca_3m4n5o6p7q8r"
+                    },
+                    "manage_connections": {
+                      "enable": true,
+                      "callback_url": "https://your-app.com/auth/callback"
+                    },
+                    "tools": {
+                      "gmail": {
+                        "enable": [
+                          "GMAIL_SEND_EMAIL",
+                          "GMAIL_FETCH_EMAILS"
+                        ]
+                      },
+                      "slack": {
+                        "disable": [
+                          "SLACK_ADD_EMOJI"
+                        ]
+                      },
+                      "slack_bot": {
+                        "tags": [
+                          "destructiveHint"
+                        ]
+                      }
+                    },
+                    "tags": [
+                      "destructiveHint",
+                      "idempotentHint"
+                    ],
+                    "workbench": {
+                      "enable_proxy_execution": true,
+                      "auto_offload_threshold": 10000
+                    }
+                  }
+                },
+                "Session with disabled toolkits and global tags": {
+                  "value": {
+                    "user_id": "user_123456789",
+                    "toolkits": {
+                      "disable": [
+                        "gmail"
+                      ]
+                    },
+                    "tags": [
+                      "readOnlyHint"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session successfully created. Returns the session ID and MCP server URL for the created session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session_id": {
+                      "type": "string",
+                      "format": "toolRouterSessionId",
+                      "description": "The identifier of the session",
+                      "example": "trs_1a2b3c4d5e6f"
+                    },
+                    "mcp": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "http"
+                          ],
+                          "description": "The type of the MCP server. Can be http"
+                        },
+                        "url": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "The URL of the MCP server",
+                          "example": "https://app.composio.dev/tool_router/v3/trs_1a2b3c4d5e6f/mcp"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "url"
+                      ]
+                    },
+                    "tool_router_tools": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of available tools in this session"
+                    },
+                    "config": {
+                      "type": "object",
+                      "properties": {
+                        "user_id": {
+                          "type": "string",
+                          "description": "User identifier for this session"
+                        },
+                        "toolkits": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "enabled": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "enabled"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "disabled": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "required": [
+                                "disabled"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ],
+                          "description": "Toolkit configuration - either enabled list or disabled list"
+                        },
+                        "auth_configs": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string",
+                            "format": "authConfigId"
+                          },
+                          "description": "Auth config overrides per toolkit"
+                        },
+                        "connected_accounts": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string",
+                            "format": "connectedAccountId"
+                          },
+                          "description": "Connected account overrides per toolkit"
+                        },
+                        "manage_connections": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "boolean",
+                              "default": true,
+                              "description": "Whether to enable the connection manager for automatic connection handling"
+                            },
+                            "callback_url": {
+                              "type": "string",
+                              "format": "uri",
+                              "description": "Custom callback URL for connected account auth flows"
+                            },
+                            "enable_wait_for_connections": {
+                              "type": "boolean",
+                              "default": false,
+                              "description": "Enable the COMPOSIO_WAIT_FOR_CONNECTIONS tool for polling connection status. Default false. May not work reliably with GPT models."
+                            },
+                            "enable_connection_removal": {
+                              "type": "boolean",
+                              "default": true,
+                              "description": "Enable the \"remove\" action in COMPOSIO_MANAGE_CONNECTIONS. Default true."
+                            }
+                          },
+                          "description": "Manage connections configuration"
+                        },
+                        "tools": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "enabled": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "enabled"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "disabled": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "disabled"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tags": {
+                                    "type": "object",
+                                    "properties": {
+                                      "enabled": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        },
+                                        "description": "Tags that the tool must have at least one of"
+                                      },
+                                      "disabled": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "enum": [
+                                            "readOnlyHint",
+                                            "destructiveHint",
+                                            "idempotentHint",
+                                            "openWorldHint"
+                                          ]
+                                        },
+                                        "description": "Tags that the tool must NOT have any of"
+                                      }
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "tags"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "description": "Tool-level configuration per toolkit"
+                        },
+                        "tags": {
+                          "type": "object",
+                          "properties": {
+                            "enabled": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              },
+                              "description": "Tags that the tool must have at least one of"
+                            },
+                            "disabled": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "readOnlyHint",
+                                  "destructiveHint",
+                                  "idempotentHint",
+                                  "openWorldHint"
+                                ]
+                              },
+                              "description": "Tags that the tool must NOT have any of"
+                            }
+                          },
+                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
+                        },
+                        "workbench": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
+                            },
+                            "proxy_execution_enabled": {
+                              "type": "boolean",
+                              "description": "Whether proxy execution is enabled in the workbench"
+                            },
+                            "auto_offload_threshold": {
+                              "type": "number",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "description": "Character threshold after which tool execution response are saved to a file in workbench. Default is 20k."
+                            }
+                          },
+                          "default": {
+                            "enable": true,
+                            "proxy_execution_enabled": true
+                          },
+                          "description": "Workbench configuration"
+                        },
+                        "multi_account": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration."
+                            },
+                            "max_accounts_per_toolkit": {
+                              "type": "integer",
+                              "description": "Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled."
+                            },
+                            "require_explicit_selection": {
+                              "type": "boolean",
+                              "description": "When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account."
+                            }
+                          },
+                          "description": "Multi-account configuration for this session."
+                        }
+                      },
+                      "required": [
+                        "user_id"
+                      ],
+                      "description": "The session configuration including user, toolkits, and overrides"
+                    },
+                    "experimental": {
+                      "type": "object",
+                      "properties": {
+                        "assistive_prompt": {
+                          "type": "string",
+                          "description": "The assistive system prompt for the tool router session"
+                        },
+                        "custom_toolkits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "slug": {
+                                "type": "string",
+                                "minLength": 1,
+                                "pattern": "^[a-zA-Z0-9_-]+$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              },
+                              "description": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2048
+                              },
+                              "tools": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "slug": {
+                                      "type": "string",
+                                      "description": "Prefixed tool slug (e.g. LOCAL_CRM_FIND_CUSTOMER)"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 128
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 5120
+                                    },
+                                    "input_schema": {
+                                      "type": "object",
+                                      "additionalProperties": {}
+                                    },
+                                    "output_schema": {
+                                      "type": "object",
+                                      "additionalProperties": {}
+                                    },
+                                    "original_slug": {
+                                      "type": "string",
+                                      "description": "Original tool slug as provided by the user"
+                                    }
+                                  },
+                                  "required": [
+                                    "slug",
+                                    "name",
+                                    "description",
+                                    "input_schema",
+                                    "original_slug"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "slug",
+                              "name",
+                              "description",
+                              "tools"
+                            ]
+                          },
+                          "description": "User-defined custom toolkits with grouped tools (no-auth)"
+                        },
+                        "custom_tools": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "slug": {
+                                "type": "string",
+                                "description": "Prefixed tool slug (e.g. LOCAL_GMAIL_GET_IMPORTANT_EMAILS)"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 128
+                              },
+                              "description": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 5120
+                              },
+                              "input_schema": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "output_schema": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "extends_toolkit": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "original_slug": {
+                                "type": "string",
+                                "description": "Original tool slug as provided by the user"
+                              }
+                            },
+                            "required": [
+                              "slug",
+                              "name",
+                              "description",
+                              "input_schema",
+                              "original_slug"
+                            ]
+                          },
+                          "description": "Custom tools — standalone or extending Composio toolkits"
+                        }
+                      },
+                      "description": "Experimental features including the generated system prompt. Only returned on session creation, not on GET.",
+                      "x-experimental": true
+                    }
+                  },
+                  "required": [
+                    "session_id",
+                    "mcp",
+                    "tool_router_tools",
+                    "config"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. This may occur if the user_id format is invalid, toolkit names are invalid, or auth_config_id IDs are malformed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. Authentication is required or the provided credentials are invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. The user is not authorized to create a tool router session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request timeout. The session creation took too long to complete.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error. An unexpected error occurred while processing the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/org/usage/summary": {
+      "post": {
+        "summary": "Org usage summary",
+        "description": "Aggregated metering usage for the authenticated organization. By default includes all projects; use `filters.project_id` to restrict to one or more projects (must belong to the org). Values are summed from raw metering events grouped by `entity_type`.",
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "postOrgUsageSummary",
+        "security": [
+          {
+            "OrgApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "number",
+                    "description": "Inclusive range start (Unix epoch milliseconds). Defaults to 30 days before `to`."
+                  },
+                  "to": {
+                    "type": "number",
+                    "description": "Exclusive range end (Unix epoch milliseconds). Defaults to now."
+                  },
+                  "entity_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Filter to these metering entity types. Omit for all types."
+                  },
+                  "filters": {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these external end-user IDs. OR logic within the array."
+                      },
+                      "session_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these session IDs. OR logic within the array."
+                      },
+                      "project_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "format": "projectId"
+                        },
+                        "description": "Restrict aggregates to one or more projects (must belong to the authenticated organization). OR logic within the array. Omit for org-wide totals."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usage aggregates for the organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entities": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "unit": {
+                            "type": "string"
+                          },
+                          "total_quantity": {
+                            "type": "string"
+                          },
+                          "event_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "unit",
+                          "total_quantity",
+                          "event_count"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "entities"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid time range, entity_types, or query parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown project_id or project not in this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to load usage from analytics store or feature configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/org/usage/{entity_type}": {
+      "post": {
+        "summary": "Org usage breakdown",
+        "description": "Grouped metering usage breakdown for the authenticated organization. Groups results by a single dimension or column key. By default includes all projects; use `filters.project_id` to restrict.",
+        "tags": [
+          "Organization"
+        ],
+        "operationId": "postOrgUsageByEntityType",
+        "security": [
+          {
+            "OrgApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Metering entity type to break down (e.g. `tool_calls`, `sessions`)."
+            },
+            "required": true,
+            "description": "Metering entity type to break down (e.g. `tool_calls`, `sessions`).",
+            "name": "entity_type",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "number",
+                    "description": "Inclusive range start (Unix epoch milliseconds). Defaults to 30 days before `to`."
+                  },
+                  "to": {
+                    "type": "number",
+                    "description": "Exclusive range end (Unix epoch milliseconds). Defaults to now."
+                  },
+                  "group_by": {
+                    "type": "string",
+                    "description": "Dimension or column to group results by. Defaults to `tool_slug` for tool_calls and `user_id` for sessions."
+                  },
+                  "order_by": {
+                    "type": "string",
+                    "enum": [
+                      "key",
+                      "total_quantity",
+                      "event_count"
+                    ],
+                    "description": "Field to order groups by. Defaults to `total_quantity`."
+                  },
+                  "order_direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "description": "Sort direction. Defaults to `desc`."
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000,
+                    "description": "Maximum number of groups to return. Defaults to 100, max 1000."
+                  },
+                  "filters": {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these external end-user IDs. OR logic within the array."
+                      },
+                      "session_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these session IDs. OR logic within the array."
+                      },
+                      "project_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "format": "projectId"
+                        },
+                        "description": "Restrict aggregates to one or more projects (must belong to the authenticated organization). OR logic within the array. Omit for org-wide totals."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usage breakdown for the organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entity_type": {
+                      "type": "string"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "total_quantity": {
+                      "type": "string"
+                    },
+                    "event_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "total_quantity": {
+                            "type": "string"
+                          },
+                          "event_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "total_quantity",
+                          "event_count"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "entity_type",
+                    "unit",
+                    "total_quantity",
+                    "event_count",
+                    "groups"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid entity_type, group_by, time range, or query parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown project_id or project not in this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to load usage from analytics store or feature configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/project/usage/summary": {
+      "post": {
+        "summary": "Project usage summary",
+        "description": "Aggregated metering usage for the authenticated project only. Values are summed from raw metering events grouped by `entity_type`.",
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "postProjectUsageSummary",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "number",
+                    "description": "Inclusive range start (Unix epoch milliseconds). Defaults to 30 days before `to`."
+                  },
+                  "to": {
+                    "type": "number",
+                    "description": "Exclusive range end (Unix epoch milliseconds). Defaults to now."
+                  },
+                  "entity_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Filter to these metering entity types. Omit for all types."
+                  },
+                  "filters": {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these external end-user IDs. OR logic within the array."
+                      },
+                      "session_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these session IDs. OR logic within the array."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usage aggregates for the project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entities": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "unit": {
+                            "type": "string"
+                          },
+                          "total_quantity": {
+                            "type": "string"
+                          },
+                          "event_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "unit",
+                          "total_quantity",
+                          "event_count"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "entities"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid time range, entity_types, or query parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to load usage from analytics store or feature configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-api-version": "3.1"
+      }
+    },
+    "/api/v3.1/project/usage/{entity_type}": {
+      "post": {
+        "summary": "Project usage breakdown",
+        "description": "Grouped metering usage breakdown for the authenticated project. Groups results by a single dimension or column key.",
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "postProjectUsageByEntityType",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {
+            "UserApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Metering entity type to break down (e.g. `tool_calls`, `sessions`)."
+            },
+            "required": true,
+            "description": "Metering entity type to break down (e.g. `tool_calls`, `sessions`).",
+            "name": "entity_type",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "number",
+                    "description": "Inclusive range start (Unix epoch milliseconds). Defaults to 30 days before `to`."
+                  },
+                  "to": {
+                    "type": "number",
+                    "description": "Exclusive range end (Unix epoch milliseconds). Defaults to now."
+                  },
+                  "group_by": {
+                    "type": "string",
+                    "description": "Dimension or column to group results by. Defaults to `tool_slug` for tool_calls and `user_id` for sessions."
+                  },
+                  "order_by": {
+                    "type": "string",
+                    "enum": [
+                      "key",
+                      "total_quantity",
+                      "event_count"
+                    ],
+                    "description": "Field to order groups by. Defaults to `total_quantity`."
+                  },
+                  "order_direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ],
+                    "description": "Sort direction. Defaults to `desc`."
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000,
+                    "description": "Maximum number of groups to return. Defaults to 100, max 1000."
+                  },
+                  "filters": {
+                    "type": "object",
+                    "properties": {
+                      "user_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these external end-user IDs. OR logic within the array."
+                      },
+                      "session_id": {
+                        "type": "array",
+                        "nullable": true,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "Filter to events matching these session IDs. OR logic within the array."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usage breakdown for the project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entity_type": {
+                      "type": "string"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "total_quantity": {
+                      "type": "string"
+                    },
+                    "event_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "total_quantity": {
+                            "type": "string"
+                          },
+                          "event_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "total_quantity",
+                          "event_count"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "entity_type",
+                    "unit",
+                    "total_quantity",
+                    "event_count",
+                    "groups"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid entity_type, group_by, time range, or query parameters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to load usage from analytics store or feature configuration.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7038,137 +9435,6 @@
         "x-api-version": "3.1"
       }
     },
-    "/api/v3.1/org/usage/summary": {
-      "get": {
-        "summary": "Org usage summary",
-        "description": "Aggregated metering usage for the authenticated organization across all projects. Requires ClickHouse logging (`USE_CLICKHOUSE_FOR_LOGS`). Values are summed from raw metering events grouped by `entity_type`.",
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "getOrgUsageSummary",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time."
-            },
-            "required": false,
-            "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time.",
-            "name": "start_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Exclusive range end (ISO 8601). Defaults to now."
-            },
-            "required": false,
-            "description": "Exclusive range end (ISO 8601). Defaults to now.",
-            "name": "end_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "string"
-              },
-              "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types."
-            },
-            "required": false,
-            "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types.",
-            "name": "entity_types",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Usage aggregates for the organization.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "rows": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "entity_type": {
-                            "type": "string"
-                          },
-                          "unit": {
-                            "type": "string"
-                          },
-                          "total_quantity": {
-                            "type": "string"
-                          },
-                          "event_count": {
-                            "type": "integer",
-                            "minimum": 0
-                          }
-                        },
-                        "required": [
-                          "entity_type",
-                          "unit",
-                          "total_quantity",
-                          "event_count"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "rows"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid time range, entity_types, or query parameters.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to load usage from analytics store or feature configuration.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.1"
-      }
-    },
     "/api/v3.1/org/project/config": {
       "get": {
         "summary": "Get project configuration",
@@ -7427,145 +9693,6 @@
           },
           "500": {
             "description": "Internal server error. An unexpected error occurred while processing the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.1"
-      }
-    },
-    "/api/v3.1/org/project/usage/summary": {
-      "get": {
-        "summary": "Project usage summary",
-        "description": "Aggregated metering usage for the authenticated project only. Requires ClickHouse logging (`USE_CLICKHOUSE_FOR_LOGS`). Values are summed from raw metering events grouped by `entity_type`.",
-        "tags": [
-          "Projects"
-        ],
-        "operationId": "getOrgProjectUsageSummary",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time."
-            },
-            "required": false,
-            "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time.",
-            "name": "start_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Exclusive range end (ISO 8601). Defaults to now."
-            },
-            "required": false,
-            "description": "Exclusive range end (ISO 8601). Defaults to now.",
-            "name": "end_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "string"
-              },
-              "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types."
-            },
-            "required": false,
-            "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types.",
-            "name": "entity_types",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Usage aggregates for the project.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "rows": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "entity_type": {
-                            "type": "string"
-                          },
-                          "unit": {
-                            "type": "string"
-                          },
-                          "total_quantity": {
-                            "type": "string"
-                          },
-                          "event_count": {
-                            "type": "integer",
-                            "minimum": 0
-                          }
-                        },
-                        "required": [
-                          "entity_type",
-                          "unit",
-                          "total_quantity",
-                          "event_count"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "rows"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid time range, entity_types, or query parameters.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to load usage from analytics store or feature configuration.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15216,1238 +17343,6 @@
           },
           "500": {
             "description": "Internal server error - An unexpected error occurred during processing",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.1"
-      }
-    },
-    "/api/v3.1/tool_router/session": {
-      "post": {
-        "summary": "Create a new tool router session",
-        "description": "Creates a new session for the tool router feature. This endpoint initializes a new session with specified toolkits and their authentication configurations. The session provides an isolated environment for testing and managing tool routing logic with scoped MCP server access.",
-        "tags": [
-          "Tool Router"
-        ],
-        "operationId": "postToolRouterSession",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "user_id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "The identifier of the user who is initiating the session, ideally a unique identifier from your database like a user ID or email address",
-                    "example": "user_123456789"
-                  },
-                  "toolkits": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "enable": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "Only these specific toolkits will be enabled",
-                            "example": [
-                              "gmail",
-                              "slack",
-                              "github"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "enable"
-                        ],
-                        "additionalProperties": false,
-                        "description": "Enable only specific toolkits (allowlist)"
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "disable": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            },
-                            "description": "These specific toolkits will be disabled",
-                            "example": [
-                              "gmail",
-                              "slack"
-                            ]
-                          }
-                        },
-                        "required": [
-                          "disable"
-                        ],
-                        "additionalProperties": false,
-                        "description": "Disable specific toolkits (denylist)"
-                      }
-                    ],
-                    "description": "Toolkit configuration - specify either enable toolkits (allowlist) or disable toolkits (denylist). Mutually exclusive."
-                  },
-                  "auth_configs": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string",
-                      "format": "authConfigId"
-                    },
-                    "description": "The auth configs to use for the session. This will override the default behavior and use the given auth config when specific toolkits are being executed",
-                    "example": {
-                      "gmail": "ac_1a2b3c4d5e6f",
-                      "slack": "ac_7g8h9i0j1k2l"
-                    }
-                  },
-                  "connected_accounts": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string",
-                      "format": "connectedAccountId"
-                    },
-                    "description": "The connected accounts to use for the session. This will override the default behaviour and use the given connected account when specific toolkits are being executed",
-                    "example": {
-                      "github": "ca_3m4n5o6p7q8r"
-                    }
-                  },
-                  "manage_connections": {
-                    "type": "object",
-                    "properties": {
-                      "enable": {
-                        "type": "boolean",
-                        "nullable": true,
-                        "default": true,
-                        "description": "Whether to enable the connection manager for automatic connection handling. If true, we will provide a tool your agent can use to initiate connections to toolkits if it doesnt exist. If set to false, then you have to manage connections manually.",
-                        "example": true
-                      },
-                      "callback_url": {
-                        "type": "string",
-                        "format": "uri",
-                        "description": "The URL to redirect to after a user completes authentication for a connected account. This allows you to handle the auth callback in your own application.",
-                        "example": "https://your-app.com/auth/callback"
-                      },
-                      "enable_wait_for_connections": {
-                        "type": "boolean",
-                        "nullable": true,
-                        "default": false,
-                        "description": "When true, the COMPOSIO_WAIT_FOR_CONNECTIONS tool is available for agents to poll connection status after sharing auth URLs. Default is false (disabled). May not work reliably with GPT models.",
-                        "example": false
-                      },
-                      "enable_connection_removal": {
-                        "type": "boolean",
-                        "nullable": true,
-                        "default": true,
-                        "description": "Enable the \"remove\" action in COMPOSIO_MANAGE_CONNECTIONS to allow deleting connected accounts. Default true."
-                      }
-                    },
-                    "default": {
-                      "enable": true,
-                      "enable_wait_for_connections": false,
-                      "enable_connection_removal": true
-                    },
-                    "additionalProperties": false,
-                    "description": "Configuration for connection management settings"
-                  },
-                  "tools": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "anyOf": [
-                        {
-                          "type": "object",
-                          "properties": {
-                            "enable": {
-                              "type": "array",
-                              "items": {
-                                "type": "string"
-                              },
-                              "description": "Only these specific tools will be available for this toolkit",
-                              "example": [
-                                "GMAIL_SEND_EMAIL",
-                                "GMAIL_FETCH_EMAILS"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "enable"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "disable": {
-                              "type": "array",
-                              "items": {
-                                "type": "string"
-                              },
-                              "description": "These specific tools will be disabled for this toolkit",
-                              "example": [
-                                "SLACK_ADD_EMOJI"
-                              ]
-                            }
-                          },
-                          "required": [
-                            "disable"
-                          ],
-                          "additionalProperties": false
-                        },
-                        {
-                          "type": "object",
-                          "properties": {
-                            "tags": {
-                              "anyOf": [
-                                {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string",
-                                    "enum": [
-                                      "readOnlyHint",
-                                      "destructiveHint",
-                                      "idempotentHint",
-                                      "openWorldHint"
-                                    ]
-                                  }
-                                },
-                                {
-                                  "type": "object",
-                                  "properties": {
-                                    "enable": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string",
-                                        "enum": [
-                                          "readOnlyHint",
-                                          "destructiveHint",
-                                          "idempotentHint",
-                                          "openWorldHint"
-                                        ]
-                                      },
-                                      "description": "Tags that the tool must have at least one of"
-                                    },
-                                    "disable": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string",
-                                        "enum": [
-                                          "readOnlyHint",
-                                          "destructiveHint",
-                                          "idempotentHint",
-                                          "openWorldHint"
-                                        ]
-                                      },
-                                      "description": "Tags that the tool must NOT have any of"
-                                    }
-                                  }
-                                }
-                              ],
-                              "description": "MCP tags to filter tools. Array format is treated as enabled list. Object format supports both enabled and disabled lists.",
-                              "example": {
-                                "enable": [
-                                  "openWorldHint"
-                                ],
-                                "disable": [
-                                  "destructiveHint"
-                                ]
-                              }
-                            }
-                          },
-                          "required": [
-                            "tags"
-                          ],
-                          "additionalProperties": false
-                        }
-                      ]
-                    },
-                    "description": "Tool-level configuration per toolkit - either specify enable tools (whitelist), disable tools (blacklist), or filter by MCP tags for each toolkit",
-                    "example": {
-                      "gmail": {
-                        "enable": [
-                          "GMAIL_SEND_EMAIL",
-                          "GMAIL_FETCH_EMAILS"
-                        ]
-                      },
-                      "slack": {
-                        "disable": [
-                          "SLACK_ADD_EMOJI"
-                        ]
-                      },
-                      "slack_bot": {
-                        "tags": {
-                          "enable": [
-                            "destructiveHint"
-                          ],
-                          "disable": [
-                            "openWorldHint"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  "tags": {
-                    "anyOf": [
-                      {
-                        "type": "array",
-                        "items": {
-                          "type": "string",
-                          "enum": [
-                            "readOnlyHint",
-                            "destructiveHint",
-                            "idempotentHint",
-                            "openWorldHint"
-                          ]
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "enable": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "enum": [
-                                "readOnlyHint",
-                                "destructiveHint",
-                                "idempotentHint",
-                                "openWorldHint"
-                              ]
-                            },
-                            "description": "Tags that the tool must have at least one of"
-                          },
-                          "disable": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "enum": [
-                                "readOnlyHint",
-                                "destructiveHint",
-                                "idempotentHint",
-                                "openWorldHint"
-                              ]
-                            },
-                            "description": "Tags that the tool must NOT have any of"
-                          }
-                        }
-                      }
-                    ],
-                    "description": "Global MCP tool annotation hints for filtering. Array format is treated as enabled list. Object format supports both enabled (tool must have at least one) and disabled (tool must NOT have any) lists. Toolkit-level tags override this. Toolkit enabled/disabled lists take precedence over tag filtering.",
-                    "example": {
-                      "enable": [
-                        "openWorldHint"
-                      ],
-                      "disable": [
-                        "destructiveHint"
-                      ]
-                    }
-                  },
-                  "workbench": {
-                    "type": "object",
-                    "properties": {
-                      "enable": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Set to false to disable the workbench entirely. When disabled, no code execution tools are available in the session.",
-                        "example": true
-                      },
-                      "enable_proxy_execution": {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Whether proxy execution is enabled. When enabled, workbench can call URLs and APIs directly.",
-                        "example": true
-                      },
-                      "auto_offload_threshold": {
-                        "type": "number",
-                        "minimum": 0,
-                        "exclusiveMinimum": true,
-                        "description": "Character threshold for automatic offloading. When workbench response exceeds this threshold, it will be automatically offloaded. Default is picked automatically based on the response size.",
-                        "example": 20000
-                      }
-                    },
-                    "default": {
-                      "enable": true,
-                      "enable_proxy_execution": true
-                    },
-                    "additionalProperties": false,
-                    "description": "Configuration for workbench behavior"
-                  },
-                  "multi_account": {
-                    "type": "object",
-                    "properties": {
-                      "enable": {
-                        "type": "boolean",
-                        "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration.",
-                        "example": true
-                      },
-                      "max_accounts_per_toolkit": {
-                        "type": "integer",
-                        "minimum": 2,
-                        "maximum": 10,
-                        "description": "Maximum number of connected accounts allowed per toolkit. Must be between 2 and 10.",
-                        "example": 5
-                      },
-                      "require_explicit_selection": {
-                        "type": "boolean",
-                        "description": "When true, the agent must explicitly select which account to use. When false (default), the first/default account is used automatically.",
-                        "example": false
-                      }
-                    },
-                    "additionalProperties": false,
-                    "description": "Configure multi-account behavior. When enabled, users can connect multiple accounts per toolkit."
-                  },
-                  "experimental": {
-                    "type": "object",
-                    "properties": {
-                      "assistive_prompt_config": {
-                        "type": "object",
-                        "properties": {
-                          "user_timezone": {
-                            "type": "string",
-                            "description": "IANA timezone identifier (e.g., 'America/New_York', 'Europe/London'). Used to customize the system prompt with timezone-aware instructions.",
-                            "example": "America/New_York"
-                          }
-                        },
-                        "additionalProperties": false,
-                        "description": "Customize assistive prompt generation (e.g., timezone)."
-                      },
-                      "custom_toolkits": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "slug": {
-                              "type": "string",
-                              "minLength": 1,
-                              "pattern": "^[a-zA-Z0-9_-]+$",
-                              "description": "Unique slug for the toolkit. Must not conflict with existing Composio toolkit slugs. Alphanumeric, underscores, and hyphens only.",
-                              "example": "ecommerce"
-                            },
-                            "name": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 128,
-                              "description": "Display name shown to the LLM and in search results.",
-                              "example": "E-Commerce API"
-                            },
-                            "description": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 2048,
-                              "description": "Used for BM25 search matching and shown in toolkit connection statuses.",
-                              "example": "Internal e-commerce API for order management and fulfillment"
-                            },
-                            "tools": {
-                              "type": "array",
-                              "items": {
-                                "type": "object",
-                                "properties": {
-                                  "slug": {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "pattern": "^[a-zA-Z0-9_-]+$",
-                                    "description": "Tool slug. Combined with toolkit slug to form LOCAL_<TOOLKIT>_<TOOL> (max 60 chars total).",
-                                    "example": "GET_CUSTOMER_ORDERS"
-                                  },
-                                  "name": {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 128,
-                                    "description": "Human-readable display name",
-                                    "example": "Get Customer Orders"
-                                  },
-                                  "description": {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 5120,
-                                    "description": "Used for BM25 search matching and shown to the LLM.",
-                                    "example": "Fetch recent orders for a customer by their email address"
-                                  },
-                                  "input_schema": {
-                                    "type": "object",
-                                    "additionalProperties": {},
-                                    "description": "Must have type: \"object\" and a properties field.",
-                                    "example": {
-                                      "type": "object",
-                                      "properties": {
-                                        "email": {
-                                          "type": "string",
-                                          "description": "Customer email"
-                                        }
-                                      },
-                                      "required": [
-                                        "email"
-                                      ]
-                                    }
-                                  },
-                                  "output_schema": {
-                                    "type": "object",
-                                    "additionalProperties": {},
-                                    "description": "Optional output schema for the tool response."
-                                  }
-                                },
-                                "required": [
-                                  "slug",
-                                  "name",
-                                  "description",
-                                  "input_schema"
-                                ]
-                              },
-                              "minItems": 1,
-                              "maxItems": 100,
-                              "description": "Tools in this custom toolkit"
-                            }
-                          },
-                          "required": [
-                            "slug",
-                            "name",
-                            "description",
-                            "tools"
-                          ]
-                        },
-                        "description": "Custom toolkits with grouped tools. Toolkit slugs must not conflict with existing Composio toolkits. All tools are no-auth."
-                      },
-                      "custom_tools": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "slug": {
-                              "type": "string",
-                              "minLength": 1,
-                              "pattern": "^[a-zA-Z0-9_-]+$",
-                              "description": "Tool slug. Forms LOCAL_<TOOL> (standalone) or LOCAL_<TOOLKIT>_<TOOL> (extending). Max 60 chars total.",
-                              "example": "GET_IMPORTANT_EMAILS"
-                            },
-                            "name": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 128,
-                              "description": "Human-readable display name",
-                              "example": "Get Important Emails"
-                            },
-                            "description": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 5120,
-                              "description": "Used for BM25 search matching and shown to the LLM.",
-                              "example": "Fetch emails marked as important from the last 24 hours"
-                            },
-                            "input_schema": {
-                              "type": "object",
-                              "additionalProperties": {},
-                              "description": "Must have type: \"object\" and a properties field.",
-                              "example": {
-                                "type": "object",
-                                "properties": {
-                                  "limit": {
-                                    "type": "number",
-                                    "description": "Max results to return"
-                                  }
-                                }
-                              }
-                            },
-                            "output_schema": {
-                              "type": "object",
-                              "additionalProperties": {},
-                              "description": "JSON Schema describing tool output (optional)"
-                            },
-                            "extends_toolkit": {
-                              "type": "string",
-                              "minLength": 1,
-                              "description": "If set, must be a valid Composio toolkit slug. The tool inherits that toolkit's auth/connection status. If omitted, the tool is standalone (no-auth).",
-                              "example": "gmail"
-                            }
-                          },
-                          "required": [
-                            "slug",
-                            "name",
-                            "description",
-                            "input_schema"
-                          ]
-                        },
-                        "description": "Custom tools to include in search. Standalone tools need no auth. Tools with extends_toolkit inherit the Composio toolkit's connection."
-                      }
-                    },
-                    "additionalProperties": false,
-                    "description": "Experimental features - not stable, may be modified or removed in future versions.",
-                    "x-experimental": true
-                  }
-                },
-                "required": [
-                  "user_id"
-                ]
-              },
-              "examples": {
-                "Session with all toolkits": {
-                  "value": {
-                    "user_id": "user_123456789"
-                  }
-                },
-                "Session with only specific toolkits": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "gmail",
-                        "slack"
-                      ]
-                    }
-                  }
-                },
-                "Session with only specific toolkits disabled": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "disable": [
-                        "gmail",
-                        "slack"
-                      ]
-                    }
-                  }
-                },
-                "Session with connection manager enabled": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "manage_connections": {
-                      "enable": true
-                    }
-                  }
-                },
-                "Session with connection manager and specific toolkits": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "gmail",
-                        "slack"
-                      ]
-                    },
-                    "manage_connections": {
-                      "enable": true
-                    }
-                  }
-                },
-                "Session with custom callback URL": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "github",
-                        "slack"
-                      ]
-                    },
-                    "manage_connections": {
-                      "enable": true,
-                      "callback_url": "https://your-app.com/auth/callback"
-                    }
-                  }
-                },
-                "Session with workbench configuration": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "gmail"
-                      ]
-                    },
-                    "workbench": {
-                      "enable_proxy_execution": true,
-                      "auto_offload_threshold": 10000
-                    }
-                  }
-                },
-                "Session with global tags filter": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "gmail",
-                        "slack"
-                      ]
-                    },
-                    "tags": [
-                      "readOnlyHint",
-                      "idempotentHint"
-                    ]
-                  }
-                },
-                "Session with auth config overrides": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "gmail",
-                        "slack"
-                      ]
-                    },
-                    "auth_configs": {
-                      "gmail": "ac_1a2b3c4d5e6f",
-                      "slack": "ac_7g8h9i0j1k2l"
-                    }
-                  }
-                },
-                "Session with connected account overrides": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "gmail",
-                        "slack"
-                      ]
-                    },
-                    "connected_accounts": {
-                      "gmail": "ca_1a2b3c4d5e6f",
-                      "slack": "ca_7g8h9i0j1k2l"
-                    }
-                  }
-                },
-                "Session with comprehensive configuration": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "enable": [
-                        "gmail",
-                        "slack",
-                        "github"
-                      ]
-                    },
-                    "auth_configs": {
-                      "gmail": "ac_1a2b3c4d5e6f",
-                      "slack": "ac_7g8h9i0j1k2l"
-                    },
-                    "connected_accounts": {
-                      "github": "ca_3m4n5o6p7q8r"
-                    },
-                    "manage_connections": {
-                      "enable": true,
-                      "callback_url": "https://your-app.com/auth/callback"
-                    },
-                    "tools": {
-                      "gmail": {
-                        "enable": [
-                          "GMAIL_SEND_EMAIL",
-                          "GMAIL_FETCH_EMAILS"
-                        ]
-                      },
-                      "slack": {
-                        "disable": [
-                          "SLACK_ADD_EMOJI"
-                        ]
-                      },
-                      "slack_bot": {
-                        "tags": [
-                          "destructiveHint"
-                        ]
-                      }
-                    },
-                    "tags": [
-                      "destructiveHint",
-                      "idempotentHint"
-                    ],
-                    "workbench": {
-                      "enable_proxy_execution": true,
-                      "auto_offload_threshold": 10000
-                    }
-                  }
-                },
-                "Session with disabled toolkits and global tags": {
-                  "value": {
-                    "user_id": "user_123456789",
-                    "toolkits": {
-                      "disable": [
-                        "gmail"
-                      ]
-                    },
-                    "tags": [
-                      "readOnlyHint"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Session successfully created. Returns the session ID and MCP server URL for the created session.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "session_id": {
-                      "type": "string",
-                      "format": "toolRouterSessionId",
-                      "description": "The identifier of the session",
-                      "example": "trs_1a2b3c4d5e6f"
-                    },
-                    "mcp": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "http"
-                          ],
-                          "description": "The type of the MCP server. Can be http"
-                        },
-                        "url": {
-                          "type": "string",
-                          "format": "uri",
-                          "description": "The URL of the MCP server",
-                          "example": "https://app.composio.dev/tool_router/v3/trs_1a2b3c4d5e6f/mcp"
-                        }
-                      },
-                      "required": [
-                        "type",
-                        "url"
-                      ]
-                    },
-                    "tool_router_tools": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      },
-                      "description": "List of available tools in this session"
-                    },
-                    "config": {
-                      "type": "object",
-                      "properties": {
-                        "user_id": {
-                          "type": "string",
-                          "description": "User identifier for this session"
-                        },
-                        "toolkits": {
-                          "anyOf": [
-                            {
-                              "type": "object",
-                              "properties": {
-                                "enabled": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string"
-                                  }
-                                }
-                              },
-                              "required": [
-                                "enabled"
-                              ],
-                              "additionalProperties": false
-                            },
-                            {
-                              "type": "object",
-                              "properties": {
-                                "disabled": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "string"
-                                  }
-                                }
-                              },
-                              "required": [
-                                "disabled"
-                              ],
-                              "additionalProperties": false
-                            }
-                          ],
-                          "description": "Toolkit configuration - either enabled list or disabled list"
-                        },
-                        "auth_configs": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "string",
-                            "format": "authConfigId"
-                          },
-                          "description": "Auth config overrides per toolkit"
-                        },
-                        "connected_accounts": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "string",
-                            "format": "connectedAccountId"
-                          },
-                          "description": "Connected account overrides per toolkit"
-                        },
-                        "manage_connections": {
-                          "type": "object",
-                          "properties": {
-                            "enabled": {
-                              "type": "boolean",
-                              "default": true,
-                              "description": "Whether to enable the connection manager for automatic connection handling"
-                            },
-                            "callback_url": {
-                              "type": "string",
-                              "format": "uri",
-                              "description": "Custom callback URL for connected account auth flows"
-                            },
-                            "enable_wait_for_connections": {
-                              "type": "boolean",
-                              "default": false,
-                              "description": "Enable the COMPOSIO_WAIT_FOR_CONNECTIONS tool for polling connection status. Default false. May not work reliably with GPT models."
-                            },
-                            "enable_connection_removal": {
-                              "type": "boolean",
-                              "default": true,
-                              "description": "Enable the \"remove\" action in COMPOSIO_MANAGE_CONNECTIONS. Default true."
-                            }
-                          },
-                          "description": "Manage connections configuration"
-                        },
-                        "tools": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "enabled": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                },
-                                "required": [
-                                  "enabled"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "disabled": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "string"
-                                    }
-                                  }
-                                },
-                                "required": [
-                                  "disabled"
-                                ],
-                                "additionalProperties": false
-                              },
-                              {
-                                "type": "object",
-                                "properties": {
-                                  "tags": {
-                                    "type": "object",
-                                    "properties": {
-                                      "enabled": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string",
-                                          "enum": [
-                                            "readOnlyHint",
-                                            "destructiveHint",
-                                            "idempotentHint",
-                                            "openWorldHint"
-                                          ]
-                                        },
-                                        "description": "Tags that the tool must have at least one of"
-                                      },
-                                      "disabled": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "string",
-                                          "enum": [
-                                            "readOnlyHint",
-                                            "destructiveHint",
-                                            "idempotentHint",
-                                            "openWorldHint"
-                                          ]
-                                        },
-                                        "description": "Tags that the tool must NOT have any of"
-                                      }
-                                    }
-                                  }
-                                },
-                                "required": [
-                                  "tags"
-                                ],
-                                "additionalProperties": false
-                              }
-                            ]
-                          },
-                          "description": "Tool-level configuration per toolkit"
-                        },
-                        "tags": {
-                          "type": "object",
-                          "properties": {
-                            "enabled": {
-                              "type": "array",
-                              "items": {
-                                "type": "string",
-                                "enum": [
-                                  "readOnlyHint",
-                                  "destructiveHint",
-                                  "idempotentHint",
-                                  "openWorldHint"
-                                ]
-                              },
-                              "description": "Tags that the tool must have at least one of"
-                            },
-                            "disabled": {
-                              "type": "array",
-                              "items": {
-                                "type": "string",
-                                "enum": [
-                                  "readOnlyHint",
-                                  "destructiveHint",
-                                  "idempotentHint",
-                                  "openWorldHint"
-                                ]
-                              },
-                              "description": "Tags that the tool must NOT have any of"
-                            }
-                          },
-                          "description": "MCP tool annotation hints for filtering tools with enabled/disabled support. enabled: tags that the tool must have at least one of. disabled: tags that the tool must NOT have any of. Both conditions must be satisfied."
-                        },
-                        "workbench": {
-                          "type": "object",
-                          "properties": {
-                            "enable": {
-                              "type": "boolean",
-                              "description": "Whether the workbench (code execution sandbox) is enabled. When false, COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL are not exposed."
-                            },
-                            "proxy_execution_enabled": {
-                              "type": "boolean",
-                              "description": "Whether proxy execution is enabled in the workbench"
-                            },
-                            "auto_offload_threshold": {
-                              "type": "number",
-                              "minimum": 0,
-                              "exclusiveMinimum": true,
-                              "description": "Character threshold after which tool execution response are saved to a file in workbench. Default is 20k."
-                            }
-                          },
-                          "default": {
-                            "enable": true,
-                            "proxy_execution_enabled": true
-                          },
-                          "description": "Workbench configuration"
-                        },
-                        "multi_account": {
-                          "type": "object",
-                          "properties": {
-                            "enable": {
-                              "type": "boolean",
-                              "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration."
-                            },
-                            "max_accounts_per_toolkit": {
-                              "type": "integer",
-                              "description": "Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled."
-                            },
-                            "require_explicit_selection": {
-                              "type": "boolean",
-                              "description": "When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account."
-                            }
-                          },
-                          "description": "Multi-account configuration for this session."
-                        }
-                      },
-                      "required": [
-                        "user_id"
-                      ],
-                      "description": "The session configuration including user, toolkits, and overrides"
-                    },
-                    "experimental": {
-                      "type": "object",
-                      "properties": {
-                        "assistive_prompt": {
-                          "type": "string",
-                          "description": "The assistive system prompt for the tool router session"
-                        },
-                        "custom_toolkits": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "slug": {
-                                "type": "string",
-                                "minLength": 1,
-                                "pattern": "^[a-zA-Z0-9_-]+$"
-                              },
-                              "name": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 128
-                              },
-                              "description": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 2048
-                              },
-                              "tools": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "slug": {
-                                      "type": "string",
-                                      "description": "Prefixed tool slug (e.g. LOCAL_CRM_FIND_CUSTOMER)"
-                                    },
-                                    "name": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 128
-                                    },
-                                    "description": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 5120
-                                    },
-                                    "input_schema": {
-                                      "type": "object",
-                                      "additionalProperties": {}
-                                    },
-                                    "output_schema": {
-                                      "type": "object",
-                                      "additionalProperties": {}
-                                    },
-                                    "original_slug": {
-                                      "type": "string",
-                                      "description": "Original tool slug as provided by the user"
-                                    }
-                                  },
-                                  "required": [
-                                    "slug",
-                                    "name",
-                                    "description",
-                                    "input_schema",
-                                    "original_slug"
-                                  ]
-                                }
-                              }
-                            },
-                            "required": [
-                              "slug",
-                              "name",
-                              "description",
-                              "tools"
-                            ]
-                          },
-                          "description": "User-defined custom toolkits with grouped tools (no-auth)"
-                        },
-                        "custom_tools": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "slug": {
-                                "type": "string",
-                                "description": "Prefixed tool slug (e.g. LOCAL_GMAIL_GET_IMPORTANT_EMAILS)"
-                              },
-                              "name": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 128
-                              },
-                              "description": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 5120
-                              },
-                              "input_schema": {
-                                "type": "object",
-                                "additionalProperties": {}
-                              },
-                              "output_schema": {
-                                "type": "object",
-                                "additionalProperties": {}
-                              },
-                              "extends_toolkit": {
-                                "type": "string",
-                                "minLength": 1
-                              },
-                              "original_slug": {
-                                "type": "string",
-                                "description": "Original tool slug as provided by the user"
-                              }
-                            },
-                            "required": [
-                              "slug",
-                              "name",
-                              "description",
-                              "input_schema",
-                              "original_slug"
-                            ]
-                          },
-                          "description": "Custom tools — standalone or extending Composio toolkits"
-                        }
-                      },
-                      "description": "Experimental features including the generated system prompt. Only returned on session creation, not on GET.",
-                      "x-experimental": true
-                    }
-                  },
-                  "required": [
-                    "session_id",
-                    "mcp",
-                    "tool_router_tools",
-                    "config"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request. This may occur if the user_id format is invalid, toolkit names are invalid, or auth_config_id IDs are malformed.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized. Authentication is required or the provided credentials are invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden. The user is not authorized to create a tool router session.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "408": {
-            "description": "Request timeout. The session creation took too long to complete.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error. An unexpected error occurred while processing the request.",
             "content": {
               "application/json": {
                 "schema": {

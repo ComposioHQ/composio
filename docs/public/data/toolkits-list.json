@@ -968,6 +968,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "breezy_hr",
+    "name": "Breezy Hr",
+    "logo": "https://logos.composio.dev/api/breezy_hr",
+    "category": "hr talent & recruitment",
+    "toolCount": 48,
+    "triggerCount": 0
+  },
+  {
     "slug": "launch_darkly",
     "name": "LaunchDarkly",
     "logo": "https://logos.composio.dev/api/launch_darkly",
@@ -7989,14 +7997,6 @@
     "logo": "https://logos.composio.dev/api/wati",
     "category": "marketing automation",
     "toolCount": 5,
-    "triggerCount": 0
-  },
-  {
-    "slug": "webscraper_io",
-    "name": "Webscraper io",
-    "logo": "https://logos.composio.dev/api/webscraper_io",
-    "category": "developer tools",
-    "toolCount": 10,
     "triggerCount": 0
   }
 ]
