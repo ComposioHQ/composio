@@ -19,6 +19,14 @@ export interface CreateToolRouterSessionOptions {
   };
   /** Explicit connected-account pins by toolkit slug. */
   readonly connectedAccounts?: Record<string, string>;
+  /** Toolkits whose connected-account pins should be omitted from the session. */
+  readonly excludeConnectedAccountsForToolkits?: ReadonlyArray<string>;
+  /** Enable Tool Router multi-account mode for this session. */
+  readonly multiAccount?: {
+    readonly enable?: boolean;
+    readonly maxAccountsPerToolkit?: number;
+    readonly requireExplicitSelection?: boolean;
+  };
 }
 
 /**
@@ -38,6 +46,16 @@ export const createToolRouterSession = (
     const mergeConnectedAccounts = (...mappings: Array<Record<string, string> | undefined>) => {
       const merged = Object.assign({}, ...mappings.filter(Boolean));
       return Object.keys(merged).length > 0 ? merged : undefined;
+    };
+    const excludedToolkits = new Set(
+      (options?.excludeConnectedAccountsForToolkits ?? []).map(toolkit => toolkit.toLowerCase())
+    );
+    const filterConnectedAccounts = (mapping: Record<string, string> | undefined) => {
+      if (!mapping) return undefined;
+      const filtered = Object.fromEntries(
+        Object.entries(mapping).filter(([toolkit]) => !excludedToolkits.has(toolkit.toLowerCase()))
+      );
+      return Object.keys(filtered).length > 0 ? filtered : undefined;
     };
 
     const cachedAuthConfigs = options?.cacheScope
@@ -60,9 +78,11 @@ export const createToolRouterSession = (
           connectedToolkits: options?.toolkits ?? [],
           authConfigs: cachedAuthConfigs.value.authConfigs,
           connectedAccounts: mergeConnectedAccounts(
-            Option.isSome(cachedConnectedAccounts)
-              ? cachedConnectedAccounts.value.connectedAccounts
-              : undefined,
+            filterConnectedAccounts(
+              Option.isSome(cachedConnectedAccounts)
+                ? cachedConnectedAccounts.value.connectedAccounts
+                : undefined
+            ),
             options?.connectedAccounts
           ),
           availableConnectedAccounts: Option.isSome(cachedConnectedAccounts)
@@ -75,7 +95,7 @@ export const createToolRouterSession = (
           Effect.map(connectionContext => ({
             ...connectionContext,
             connectedAccounts: mergeConnectedAccounts(
-              connectionContext.connectedAccounts,
+              filterConnectedAccounts(connectionContext.connectedAccounts),
               options?.connectedAccounts
             ),
           }))
@@ -102,6 +122,13 @@ export const createToolRouterSession = (
         auth_configs: connectionContext.authConfigs,
         connected_accounts: connectionContext.connectedAccounts,
         manage_connections: { enable: options?.manageConnections ?? false },
+        multi_account: options?.multiAccount
+          ? {
+              enable: options.multiAccount.enable,
+              max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
+              require_explicit_selection: options.multiAccount.requireExplicitSelection,
+            }
+          : undefined,
         toolkits:
           options?.toolkits && options.toolkits.length > 0
             ? { enable: [...options.toolkits] }

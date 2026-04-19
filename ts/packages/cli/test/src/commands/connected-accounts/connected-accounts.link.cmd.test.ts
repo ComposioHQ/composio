@@ -80,7 +80,17 @@ const RecordingTerminalUI = TerminalUI.of({
 });
 
 describe('CLI: composio dev connected-accounts link', () => {
-  const aliasPatchSpy = vi.fn();
+  const toolRouterCreateSpy = vi.fn(async () => ({
+    session_id: 'trs_test_session',
+    config: { user_id: 'consumer-user-org_test' },
+    mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
+    tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
+  }));
+  const toolRouterLinkSpy = vi.fn(async () => ({
+    connected_account_id: 'con_test_link',
+    link_token: 'lt_test_token',
+    redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+  }));
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -319,20 +329,31 @@ describe('CLI: composio dev connected-accounts link', () => {
       baseConfigProvider: testConfigProvider,
       connectedAccountsData: makeConnectedAccountsData({
         items: [makeConnectedAccount({ status: 'INITIATED' })],
-        onPatch: params => {
-          aliasPatchSpy(params);
-        },
       }),
+      toolRouter: {
+        create: toolRouterCreateSpy,
+        link: toolRouterLinkSpy,
+      },
       fixture: 'global-test-user-id',
     })
-  )('[Given] --alias [Then] it patches the created connected account alias', it => {
-    it.scoped('updates the connected account alias through the patch API', () =>
+  )('[Given] --alias [Then] it passes alias during link creation', it => {
+    it.scoped('sends alias to the tool router link API instead of patching afterward', () =>
       Effect.gen(function* () {
         yield* cli(['link', 'gmail', '--alias', 'work', '--no-wait']);
-
-        expect(aliasPatchSpy).toHaveBeenCalledWith({
-          path: '/api/v3/connected_accounts/con_test_link',
-          body: { alias: 'work' },
+        expect(toolRouterCreateSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            connected_accounts: undefined,
+            manage_connections: { enable: true },
+            multi_account: {
+              enable: true,
+              max_accounts_per_toolkit: undefined,
+              require_explicit_selection: undefined,
+            },
+          })
+        );
+        expect(toolRouterLinkSpy).toHaveBeenCalledWith('trs_test_session', {
+          toolkit: 'gmail',
+          alias: 'work',
         });
       })
     );

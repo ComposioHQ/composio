@@ -12,3 +12,15 @@ cadbd463fddb5b31c901d2c222b73354b6d87327:docs/content/docs/tools-direct/toolkit-
 e921d2d767a779fcaf40fb4f1fde789424d4b7c9:docs/content/docs/importing-existing-connections.mdx:curl-auth-header:207
 786f40ade6a3a7287c4c79694830edf3c02001d5:docs/content/docs/importing-existing-connections.mdx:curl-auth-header:247
 786f40ade6a3a7287c4c79694830edf3c02001d5:docs/content/docs/importing-existing-connections.mdx:curl-auth-header:287
+
+# Observability docs curl examples with placeholder API keys (not real secrets)
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/logs.mdx:curl-auth-header:14
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/logs.mdx:curl-auth-header:94
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/logs.mdx:curl-auth-header:114
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/logs.mdx:curl-auth-header:129
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/logs.mdx:curl-auth-header:143
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/usage.mdx:curl-auth-header:39
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/usage.mdx:curl-auth-header:76
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/usage.mdx:curl-auth-header:155
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/usage.mdx:curl-auth-header:171
+be30c1c2be63d5b8651ba520779c19662d5fd6c3:docs/content/docs/observability/usage.mdx:curl-auth-header:185

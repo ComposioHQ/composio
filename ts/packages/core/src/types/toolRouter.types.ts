@@ -323,7 +323,7 @@ export const ToolkitConnectionStateSchema = z
 
 export const ToolkitConnectionsDetailsSchema = z.object({
   items: z.array(ToolkitConnectionStateSchema),
-  nextCursor: z.string().optional(),
+  cursor: z.string().optional(),
   totalPages: z.number(),
 });
 export type ToolkitConnectionsDetails = z.infer<typeof ToolkitConnectionsDetailsSchema>;
@@ -350,7 +350,7 @@ export type ToolRouterAuthorizeFn = (
 
 export const ToolRouterToolkitsOptionsSchema = z.object({
   toolkits: z.array(z.string()).optional(),
-  nextCursor: z.string().optional(),
+  cursor: z.string().optional(),
   limit: z.number().optional(),
   isConnected: z.boolean().optional(),
   search: z.string().optional(),

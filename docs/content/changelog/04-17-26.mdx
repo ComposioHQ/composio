@@ -1,0 +1,29 @@
+---
+title: "Observability APIs: tool execution logs and usage metering"
+description: "Query individual tool execution logs and aggregated usage counts for your org or project via v3.1 REST endpoints."
+date: "2026-04-17"
+---
+
+Two new v3.1 observability API surfaces are live.
+
+## Tool execution logs
+
+Search, filter, and paginate individual tool execution events. Use this for debugging failures, inspecting request/response payloads, and tracing user activity.
+
+- `POST /api/v3.1/logs/tool_execution` — list with filters, time range, and cursor pagination.
+- `GET /api/v3.1/logs/tool_execution/{id}` — full detail including request payload, response body, timings, and source metadata.
+
+Authentication: project API key (`x-api-key`) or session cookie.
+
+See the [tool execution logs guide](/docs/observability/logs).
+
+## Usage metering
+
+Aggregated counts of tool calls and sessions, sourced from ClickHouse. Summary endpoints return totals; breakdown endpoints group results by tool, toolkit, user, session, or project.
+
+- `POST /api/v3.1/org/usage/summary` and `POST /api/v3.1/org/usage/{entity_type}` — org scope (`x-org-api-key` or org JWT).
+- `POST /api/v3.1/project/usage/summary` and `POST /api/v3.1/project/usage/{entity_type}` — project scope (`x-api-key` or cookie).
+
+Entity types: `tool_calls`, `sessions`. Time ranges are epoch milliseconds; max range 366 days.
+
+See the [usage metering guide](/docs/observability/usage).

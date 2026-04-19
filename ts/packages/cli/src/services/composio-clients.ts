@@ -26,6 +26,7 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
+import * as constants from 'src/constants';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
@@ -1306,12 +1307,28 @@ export const findDeveloperProjectByName = (params: {
 const normalizeApiKey = (rawApiKey?: string): string | undefined =>
   typeof rawApiKey === 'string' && rawApiKey.trim().length > 0 ? rawApiKey : undefined;
 
+const detectCliRuntime = (): string => {
+  if (typeof Bun !== 'undefined') {
+    return 'BUN';
+  }
+
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    return 'NODEJS';
+  }
+
+  return 'UNKNOWN';
+};
+
 const buildDefaultHeaders = (params: {
   userApiKey?: string;
   orgId?: string;
   projectId?: string;
 }): Record<string, string> | undefined => {
   const defaultHeaders = {
+    'x-framework': 'cli',
+    'x-source': 'CLI',
+    'x-runtime': detectCliRuntime(),
+    'x-sdk-version': constants.APP_VERSION,
     ...(params.userApiKey
       ? ({ 'x-user-api-key': params.userApiKey } satisfies Record<string, string>)
       : {}),

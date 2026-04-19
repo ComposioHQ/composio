@@ -1,0 +1,149 @@
+---
+title: Tool execution logs
+description: Search, filter, and inspect individual tool execution logs for debugging and forensics.
+keywords: ['logs', 'tool execution', 'debugging', 'observability']
+---
+
+The Logs API returns **individual tool execution events** — one record per tool call. Use it to debug failures, inspect request/response payloads, and trace specific user activity. For aggregated counts (how many tool calls happened), use the [Usage API](/docs/observability/usage) instead.
+
+All endpoints in this section require a **project API key** (`x-api-key`) or a valid session cookie.
+
+## List logs
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
+  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "limit": 20,
+    "time_range": {
+      "from": 1744848000000,
+      "to": 1744934400000
+    },
+    "filters": [
+      { "field": "toolkit_slug", "operator": "==", "value": "gmail" },
+      { "field": "status", "operator": "==", "value": "failed" }
+    ]
+  }'
+```
+
+The response contains a page of log entries and a `next_cursor`:
+
+```json
+{
+  "logs": [
+    {
+      "id": "log_-jRTWClpBoVo",
+      "timestamp": "2026-04-17T10:25:00.000Z",
+      "type": "tool.execution",
+      "status": "failed",
+      "level": "error",
+      "message": "GMAIL_SEND_EMAIL failed: invalid recipient",
+      "metadata": { /* tool, toolkit, user_id, connected_account_id, ... */ },
+      "metrics": { "duration_ms": 202 },
+      "parent": null
+    }
+  ],
+  "next_cursor": "eyJwYWdlIjoyfQ=="
+}
+```
+
+Pass `next_cursor` back as `cursor` on the next request to paginate. When `next_cursor` is `null`, you've reached the end.
+
+### Filter fields
+
+Pass one or more filters in the `filters` array. Filters are **AND**-combined.
+
+| Field | What it matches |
+|---|---|
+| `tool_slug` | The specific tool that was called (e.g. `GMAIL_SEND_EMAIL`) |
+| `toolkit_slug` | The toolkit (e.g. `gmail`, `slack`, `github`) |
+| `connected_account_id` | The connected account used for the call |
+| `auth_config_id` | The auth config (integration) behind the connected account |
+| `status` | `success` or `failed` |
+| `user_id` | Entity that initiated the call |
+| `session_id` | Tool router session, if routed through a session |
+| `sandbox_id` | Sandbox the call ran in, if applicable |
+| `request_id` | Request ID (useful for correlating with your own logs) |
+| `log_id` | Exact log ID (equivalent to the detail endpoint) |
+
+### Operators
+
+| Operator | Meaning |
+|---|---|
+| `==` | Exact match |
+| `!=` | Not equal |
+| `contains` | Substring match |
+| `not_contains` | Substring does not match |
+
+### Parameters
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `limit` | number | `20` | Max 100 |
+| `cursor` | string \| null | `null` | Opaque pagination token from previous response |
+| `filters` | array | `[]` | AND-combined |
+| `time_range.from` | number | — | Epoch milliseconds |
+| `time_range.to` | number | — | Epoch milliseconds |
+
+## Get a single log
+
+Fetch one log by ID to get the **full** payload, including request/response bodies, timing breakdowns, and source metadata:
+
+```bash
+curl https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
+  -H "x-api-key: YOUR_PROJECT_API_KEY"
+```
+
+The detail response includes everything from the list shape plus:
+
+- `timings` — `start_time` and `end_time` in epoch ms
+- `context` — `session_id`, `trace_id`, `request_id`
+- `source` — `host` (e.g. `mcp`, `sdk`, `api`), `framework`, `language`
+- `data` — the full request payload and response body
+
+This is the endpoint to call when you need to reconstruct *exactly* what happened — e.g. when debugging a 500 from a user report.
+
+## Recipes
+
+### Find failed Gmail tool calls in the last hour
+
+```bash
+NOW=$(date +%s)000
+HOUR_AGO=$(( $(date +%s) - 3600 ))000
+curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
+  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"time_range\": { \"from\": ${HOUR_AGO}, \"to\": ${NOW} },
+    \"filters\": [
+      { \"field\": \"toolkit_slug\", \"operator\": \"==\", \"value\": \"gmail\" },
+      { \"field\": \"status\", \"operator\": \"==\", \"value\": \"failed\" }
+    ]
+  }"
+```
+
+### Get failures for a specific user
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
+  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": [
+      { "field": "user_id", "operator": "==", "value": "user_abc123" },
+      { "field": "status", "operator": "==", "value": "failed" }
+    ]
+  }'
+```
+
+### Fetch a single log's full request/response
+
+```bash
+curl https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
+  -H "x-api-key: YOUR_PROJECT_API_KEY"
+```
+
+## Reference
+
+See the [Projects API reference](/reference/api-reference/projects) for the generated schema.

@@ -5088,137 +5088,6 @@
         "x-api-version": "3.0"
       }
     },
-    "/api/v3/org/usage/summary": {
-      "get": {
-        "summary": "Org usage summary",
-        "description": "Aggregated metering usage for the authenticated organization across all projects. Requires ClickHouse logging (`USE_CLICKHOUSE_FOR_LOGS`). Values are summed from raw metering events grouped by `entity_type`.",
-        "tags": [
-          "Organization"
-        ],
-        "operationId": "getOrgUsageSummary",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time."
-            },
-            "required": false,
-            "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time.",
-            "name": "start_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Exclusive range end (ISO 8601). Defaults to now."
-            },
-            "required": false,
-            "description": "Exclusive range end (ISO 8601). Defaults to now.",
-            "name": "end_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "string"
-              },
-              "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types."
-            },
-            "required": false,
-            "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types.",
-            "name": "entity_types",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Usage aggregates for the organization.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "rows": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "entity_type": {
-                            "type": "string"
-                          },
-                          "unit": {
-                            "type": "string"
-                          },
-                          "total_quantity": {
-                            "type": "string"
-                          },
-                          "event_count": {
-                            "type": "integer",
-                            "minimum": 0
-                          }
-                        },
-                        "required": [
-                          "entity_type",
-                          "unit",
-                          "total_quantity",
-                          "event_count"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "rows"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid time range, entity_types, or query parameters.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to load usage from analytics store or feature configuration.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.0"
-      }
-    },
     "/api/v3/org/project/config": {
       "get": {
         "summary": "Get project configuration",
@@ -5477,145 +5346,6 @@
           },
           "500": {
             "description": "Internal server error. An unexpected error occurred while processing the request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.0"
-      }
-    },
-    "/api/v3/org/project/usage/summary": {
-      "get": {
-        "summary": "Project usage summary",
-        "description": "Aggregated metering usage for the authenticated project only. Requires ClickHouse logging (`USE_CLICKHOUSE_FOR_LOGS`). Values are summed from raw metering events grouped by `entity_type`.",
-        "tags": [
-          "Projects"
-        ],
-        "operationId": "getOrgProjectUsageSummary",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time."
-            },
-            "required": false,
-            "description": "Inclusive range start (ISO 8601). Defaults to 30 days before end_time.",
-            "name": "start_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Exclusive range end (ISO 8601). Defaults to now."
-            },
-            "required": false,
-            "description": "Exclusive range end (ISO 8601). Defaults to now.",
-            "name": "end_time",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "string"
-              },
-              "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types."
-            },
-            "required": false,
-            "description": "Filter to these metering entity types (comma-separated or repeated query keys). Omit for all types.",
-            "name": "entity_types",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Usage aggregates for the project.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "rows": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "entity_type": {
-                            "type": "string"
-                          },
-                          "unit": {
-                            "type": "string"
-                          },
-                          "total_quantity": {
-                            "type": "string"
-                          },
-                          "event_count": {
-                            "type": "integer",
-                            "minimum": 0
-                          }
-                        },
-                        "required": [
-                          "entity_type",
-                          "unit",
-                          "total_quantity",
-                          "event_count"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "rows"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid time range, entity_types, or query parameters.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to load usage from analytics store or feature configuration.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6014,7 +5744,7 @@
               "type": "string",
               "format": "projectId",
               "description": "Unique identifier (Nano ID) of the project to retrieve",
-              "example": "proj_abc123xyz456"
+              "example": "pr_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "Unique identifier (Nano ID) of the project to retrieve",
@@ -6234,7 +5964,7 @@
               "type": "string",
               "format": "projectId",
               "description": "Unique identifier (Nano ID) of the project to delete",
-              "example": "proj_abc123xyz456"
+              "example": "pr_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "Unique identifier (Nano ID) of the project to delete",
@@ -15822,7 +15552,7 @@
                       "type": "string",
                       "format": "toolRouterSessionId",
                       "description": "The identifier of the session",
-                      "example": "trs_123456789"
+                      "example": "trs_1a2b3c4d5e6f"
                     },
                     "mcp": {
                       "type": "object",
@@ -15838,7 +15568,7 @@
                           "type": "string",
                           "format": "uri",
                           "description": "The URL of the MCP server",
-                          "example": "https://app.composio.dev/tool_router/v3/trs_123456789/mcp"
+                          "example": "https://app.composio.dev/tool_router/v3/trs_1a2b3c4d5e6f/mcp"
                         }
                       },
                       "required": [
@@ -16070,6 +15800,24 @@
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        },
+                        "multi_account": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration."
+                            },
+                            "max_accounts_per_toolkit": {
+                              "type": "integer",
+                              "description": "Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled."
+                            },
+                            "require_explicit_selection": {
+                              "type": "boolean",
+                              "description": "When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account."
+                            }
+                          },
+                          "description": "Multi-account configuration for this session."
                         }
                       },
                       "required": [
@@ -16238,6 +15986,16 @@
           },
           "403": {
             "description": "Forbidden. The user is not authorized to create a tool router session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Request timeout. The session creation took too long to complete.",
             "content": {
               "application/json": {
                 "schema": {
@@ -16648,7 +16406,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The session ID returned when creating the session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -16668,7 +16426,7 @@
                       "type": "string",
                       "format": "toolRouterSessionId",
                       "description": "The identifier of the session",
-                      "example": "trs_123456789"
+                      "example": "trs_1a2b3c4d5e6f"
                     },
                     "mcp": {
                       "type": "object",
@@ -16684,7 +16442,7 @@
                           "type": "string",
                           "format": "uri",
                           "description": "The URL of the MCP server",
-                          "example": "https://app.composio.dev/tool_router/v3/trs_123456789/mcp"
+                          "example": "https://app.composio.dev/tool_router/v3/trs_1a2b3c4d5e6f/mcp"
                         }
                       },
                       "required": [
@@ -16916,6 +16674,24 @@
                             "proxy_execution_enabled": true
                           },
                           "description": "Workbench configuration"
+                        },
+                        "multi_account": {
+                          "type": "object",
+                          "properties": {
+                            "enable": {
+                              "type": "boolean",
+                              "description": "When true, enables multi-account mode for this session. When not set, falls back to org/project-level configuration."
+                            },
+                            "max_accounts_per_toolkit": {
+                              "type": "integer",
+                              "description": "Maximum number of connected accounts allowed per toolkit. Defaults to 5 when multi-account is enabled."
+                            },
+                            "require_explicit_selection": {
+                              "type": "boolean",
+                              "description": "When true, require explicit account selection when multiple accounts are connected. When false (default), use the first/default account."
+                            }
+                          },
+                          "description": "Multi-account configuration for this session."
                         }
                       },
                       "required": [
@@ -17826,7 +17602,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The session ID returned when creating the session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -18624,7 +18400,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -18796,7 +18572,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -18937,7 +18713,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",
@@ -19084,7 +18860,7 @@
               "type": "string",
               "format": "toolRouterSessionId",
               "description": "The unique identifier of the tool router session",
-              "example": "trs_123456789"
+              "example": "trs_1a2b3c4d5e6f"
             },
             "required": true,
             "description": "The unique identifier of the tool router session",

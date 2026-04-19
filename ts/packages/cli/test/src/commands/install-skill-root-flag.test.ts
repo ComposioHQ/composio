@@ -1,9 +1,11 @@
 import { describe, expect, it } from '@effect/vitest';
 import { parseRootInstallSkillRequest } from 'src/commands';
 
-describe('CLI: --instal-skill', () => {
+describe('CLI: --install-skill', () => {
   it('parses the default skill name when only a target is provided', () => {
-    expect(parseRootInstallSkillRequest(['node', 'composio', '--instal-skill', 'claude'])).toEqual({
+    expect(
+      parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'claude'])
+    ).toEqual({
       _tag: 'parsed',
       target: 'claude',
     });
@@ -11,7 +13,13 @@ describe('CLI: --instal-skill', () => {
 
   it('parses an explicit skill name and target', () => {
     expect(
-      parseRootInstallSkillRequest(['node', 'composio', '--instal-skill', 'composio-cli', 'codex'])
+      parseRootInstallSkillRequest([
+        'node',
+        'composio',
+        '--install-skill',
+        'composio-cli',
+        'codex',
+      ])
     ).toEqual({
       _tag: 'parsed',
       skillName: 'composio-cli',
@@ -19,9 +27,9 @@ describe('CLI: --instal-skill', () => {
     });
   });
 
-  it('accepts the --install-skill alias', () => {
+  it('accepts the legacy --instal-skill alias', () => {
     expect(
-      parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'openclaw'])
+      parseRootInstallSkillRequest(['node', 'composio', '--instal-skill', 'openclaw'])
     ).toEqual({
       _tag: 'parsed',
       target: 'openclaw',
@@ -35,7 +43,7 @@ describe('CLI: --instal-skill', () => {
         'composio',
         '--log-level',
         'debug',
-        '--instal-skill',
+        '--install-skill',
         'claude',
       ])
     ).toEqual({
@@ -51,17 +59,20 @@ describe('CLI: --instal-skill', () => {
   });
 
   it('returns a helpful error when the target is missing', () => {
-    expect(parseRootInstallSkillRequest(['node', 'composio', '--instal-skill'])).toEqual({
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill'])).toEqual({
       _tag: 'error',
       message:
-        'Missing target for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+        'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
     });
   });
 
   it('returns a helpful error for invalid targets', () => {
-    expect(parseRootInstallSkillRequest(['node', 'composio', '--instal-skill', 'cursor'])).toEqual({
-      _tag: 'error',
-      message: 'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
-    });
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'cursor'])).toEqual(
+      {
+        _tag: 'error',
+        message:
+          'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
+      }
+    );
   });
 });

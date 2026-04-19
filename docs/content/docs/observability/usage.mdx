@@ -1,0 +1,203 @@
+---
+title: Usage metering
+description: Query aggregated tool call and session counts for your org or project, with rich filtering and breakdown options.
+keywords: ['usage', 'metering', 'analytics', 'billing', 'observability']
+---
+
+The Usage API returns **aggregated counts** of tool calls and sessions, sourced from ClickHouse. Use it to power billing dashboards, customer-facing analytics, or internal utilization reports. For individual events, use the [Logs API](/docs/observability/logs).
+
+There are two query shapes:
+
+- **Summary** — totals across one or more entity types in a time window.
+- **Breakdown** — one entity type, grouped by a dimension (tool, user, session, etc.).
+
+Each shape comes in an org-scoped and a project-scoped flavor.
+
+## Authentication
+
+| Endpoint | Header | Scope |
+|---|---|---|
+| `POST /api/v3.1/org/usage/summary` | `x-org-api-key` *(or org JWT)* | All projects in your org |
+| `POST /api/v3.1/org/usage/{entity_type}` | `x-org-api-key` *(or org JWT)* | All projects in your org |
+| `POST /api/v3.1/project/usage/summary` | `x-api-key` *(or cookie)* | Single project |
+| `POST /api/v3.1/project/usage/{entity_type}` | `x-api-key` *(or cookie)* | Single project |
+
+The org endpoints accept a `project_id` filter so you can slice by project without rotating keys.
+
+## Entity types
+
+| Entity type | What it counts |
+|---|---|
+| `tool_calls` | Every tool execution (successful or failed) |
+| `sessions` | Tool router sessions created |
+
+## Summary
+
+Totals across entity types for a time window.
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/project/usage/summary \
+  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "from": 1744848000000,
+    "to": 1744934400000,
+    "entity_types": ["tool_calls", "sessions"]
+  }'
+```
+
+Response:
+
+```json
+{
+  "entities": {
+    "tool_calls": { "unit": "count", "total_quantity": "142", "event_count": 142 },
+    "sessions":  { "unit": "count", "total_quantity": "8",   "event_count": 8 }
+  }
+}
+```
+
+### Summary parameters
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `from` | number | 30 days ago | Epoch milliseconds |
+| `to` | number | now | Epoch milliseconds |
+| `entity_types` | string[] | all | Subset of `tool_calls`, `sessions` |
+| `filters.user_id` | string \| string[] | — | Filter events by initiating user |
+| `filters.session_id` | string \| string[] | — | Filter events by tool router session |
+| `filters.project_id` | string \| string[] | — | Only meaningful on org endpoints; ignored on project endpoints |
+
+## Breakdown
+
+One entity type, grouped by a dimension. Useful for answering "top N" questions.
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
+  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "from": 1744848000000,
+    "to": 1744934400000,
+    "group_by": "toolkit_slug",
+    "order_by": "total_quantity",
+    "order_direction": "desc",
+    "limit": 10
+  }'
+```
+
+Response:
+
+```json
+{
+  "entity_type": "tool_calls",
+  "unit": "count",
+  "total_quantity": "142",
+  "event_count": 142,
+  "groups": [
+    { "key": "github", "total_quantity": "80", "event_count": 80 },
+    { "key": "slack",  "total_quantity": "62", "event_count": 62 }
+  ]
+}
+```
+
+### Breakdown `group_by` options
+
+| Entity | Org scope | Project scope | Default |
+|---|---|---|---|
+| `tool_calls` | `tool_slug`, `toolkit_slug`, `connected_account_id`, `user_id`, `session_id`, `project_id` | same minus `project_id` | `tool_slug` |
+| `sessions` | `user_id`, `project_id` | `user_id` | `user_id` |
+
+### Breakdown parameters
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `from` | number | 30 days ago | Epoch ms |
+| `to` | number | now | Epoch ms |
+| `group_by` | string | see table | Dimension to group by |
+| `order_by` | string | `total_quantity` | One of `key`, `total_quantity`, `event_count` |
+| `order_direction` | `"asc"` \| `"desc"` | `"desc"` | |
+| `limit` | number | 50 | Max groups returned |
+| `filters` | object | — | See Filters below |
+
+## Filters
+
+Filters live in a `filters` object on the request body. Each filter value can be a **single string** or an **array of strings**:
+
+- Within a single field, values are OR-combined (`user_id: ["a", "b"]` matches events for user *a or b*).
+- Across fields, filters are AND-combined.
+
+```json
+{
+  "filters": {
+    "user_id": ["user_123", "user_456"],
+    "session_id": "sess_abc"
+  }
+}
+```
+
+The `project_id` filter is only meaningful on the org-scoped endpoints. Project endpoints accept the field but ignore it (your key already pins the scope to a single project).
+
+## Time ranges
+
+- `from` and `to` are **epoch milliseconds**.
+- `from` defaults to 30 days before `to`.
+- `to` defaults to the current time.
+- Maximum range: **366 days**. Longer ranges return a 400.
+
+## Recipes
+
+### Top 10 tools my org called last week
+
+```bash
+WEEK_AGO=$(( $(date +%s) - 604800 ))000
+NOW=$(date +%s)000
+curl -X POST https://backend.composio.dev/api/v3.1/org/usage/tool_calls \
+  -H "x-org-api-key: YOUR_ORG_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"from\": ${WEEK_AGO},
+    \"to\": ${NOW},
+    \"group_by\": \"tool_slug\",
+    \"limit\": 10
+  }"
+```
+
+### Tool call count per user for my project this month
+
+```bash
+MONTH_AGO=$(( $(date +%s) - 2592000 ))000
+NOW=$(date +%s)000
+curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
+  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"from\": ${MONTH_AGO},
+    \"to\": ${NOW},
+    \"group_by\": \"user_id\",
+    \"limit\": 50
+  }"
+```
+
+### Which toolkits is a specific user using?
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
+  -H "x-api-key: YOUR_PROJECT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "group_by": "toolkit_slug",
+    "filters": { "user_id": "user_abc123" }
+  }'
+```
+
+## Self-hosted deployments
+
+If your Composio instance is self-hosted **without ClickHouse enabled**, the usage endpoints return `500`. The Logs API does not depend on ClickHouse and remains available.
+
+## Reference
+
+See the auto-generated reference for full schemas:
+
+- [Organization API reference](/reference/api-reference/organization) — org-level usage endpoints
+- [Projects API reference](/reference/api-reference/projects) — project-level usage endpoints

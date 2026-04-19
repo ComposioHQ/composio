@@ -171,7 +171,7 @@ const findNestedSubcommandMismatch = (
   return undefined;
 };
 
-const ROOT_INSTALL_SKILL_FLAGS = ['--instal-skill', '--install-skill'] as const;
+const ROOT_INSTALL_SKILL_FLAGS = ['--install-skill', '--instal-skill'] as const;
 const SKILL_INSTALL_TARGETS = [
   'claude',
   'codex',
@@ -210,7 +210,7 @@ export const parseRootInstallSkillRequest = (
         return {
           _tag: 'error',
           message:
-            'Missing target for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+            'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
         };
       }
 
@@ -219,7 +219,8 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message: 'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+            message:
+              'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
           };
         }
         return { _tag: 'parsed', target };
@@ -230,7 +231,8 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message: 'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+            message:
+              'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
           };
         }
         return { _tag: 'parsed', skillName, target };
@@ -239,7 +241,7 @@ export const parseRootInstallSkillRequest = (
       return {
         _tag: 'error',
         message:
-          'Too many arguments for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+          'Too many arguments for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
       };
     }
 
