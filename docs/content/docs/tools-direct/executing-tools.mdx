@@ -310,7 +310,7 @@ Composio handles file operations automatically. Pass file paths to tools that ne
 
 ### File Upload
 
-Pass local file paths, URLs, or File objects to tools that accept files:
+Pass local file paths, URLs, or File objects to tools that accept files. The SDK uploads the file to Composio's storage and converts it to the format the tool expects — you don't need to construct the file metadata object (`s3key`, `name`, `mimetype`) yourself.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -340,6 +340,41 @@ const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
 });
 
 console.log(result.data);  // Contains Google Drive file details
+```
+  </Tab>
+</Tabs>
+
+This also works with public URLs. For example, to send a Gmail email with an attachment from a URL:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+result = composio.tools.execute(
+    slug="GMAIL_SEND_EMAIL",
+    user_id="user-1235***",
+    arguments={
+        "recipient_email": "recipient@example.com",
+        "subject": "Report attached",
+        "body": "Please find the report attached.",
+        "attachment": "https://example.com/report.pdf",
+    },
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const result = await composio.tools.execute('GMAIL_SEND_EMAIL', {
+  userId: 'user-1235***',
+  arguments: {
+    recipient_email: 'recipient@example.com',
+    subject: 'Report attached',
+    body: 'Please find the report attached.',
+    attachment: 'https://example.com/report.pdf',
+  },
+});
 ```
   </Tab>
 </Tabs>
