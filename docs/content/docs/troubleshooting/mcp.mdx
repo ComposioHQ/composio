@@ -26,12 +26,21 @@ Verify your URL format matches one of these patterns:
 
 ## Getting 401 Unauthorized errors
 
-If your MCP client gets `401 Unauthorized`, include your Composio project API key in request headers:
+Organizations created after March 5, 2026 have `require_mcp_api_key` enabled by default. When this setting is enabled, all MCP server requests must include your Composio API key as the `x-api-key` header.
 
 - Header name: `x-api-key`
 - Value: your project API key from the Composio dashboard
 
-When `require_mcp_api_key` is enabled on your project, requests without this header are rejected.
+### Disabling API key enforcement
+
+If you don't need API key enforcement, disable it in [Project Settings](https://platform.composio.dev) under **Project Configuration** by toggling off **Require API Key for MCP**, or via the API:
+
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3/org/project/config \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"require_mcp_api_key": false}'
+```
 
 ## Testing and debugging
 
