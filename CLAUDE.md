@@ -1,404 +1,88 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Composio SDK monorepo -- TypeScript and Python SDKs for connecting LLMs to 500+ external tools.
 
-## Overview
+## Repository Structure
 
-This is the Composio SDK v3 repository containing both TypeScript and Python SDKs. The main development focus is on the TypeScript SDK located in `/ts/` directory. The project uses a monorepo structure with multiple packages and examples.
-
-## Memories and Notes
-
-- For documentation tasks, refer to `docs/CLAUDE.md`
-
-## Effect.ts Reference Source
-
-The CLI package (`@composio/cli`) is built on the Effect.ts ecosystem. A local copy of the Effect source code is available as a git submodule:
-
-- **Location:** `ts/vendor/effect/`
-- **Repo:** [Effect-TS/effect](https://github.com/Effect-TS/effect)
-- **Branch:** `main`
-
-When working on CLI code, reference the Effect source for accurate patterns:
-- `ts/vendor/effect/packages/effect/src/` — core Effect runtime
-- `ts/vendor/effect/packages/cli/src/` — @effect/cli (Command, Options, Args)
-- `ts/vendor/effect/packages/platform/src/` — @effect/platform (FileSystem, Terminal)
-
-**Important:** The submodule is for **read-only reference only**. Do not modify files in `ts/vendor/`. The CLI's actual dependencies come from npm via `pnpm install`.
-
-## Clack Reference Source
-
-The CLI uses [`@clack/prompts`](https://github.com/bombshell-dev/clack) for interactive terminal UI. A local copy of the Clack source code is available as a git submodule:
-
-- **Location:** `ts/vendor/clack/`
-- **Repo:** [bombshell-dev/clack](https://github.com/bombshell-dev/clack)
-
-When working on CLI prompts and terminal UI, reference the Clack source for accurate APIs:
-- `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (high-level API: text, select, confirm, spinner, etc.)
-- `ts/vendor/clack/packages/core/src/` — `@clack/core` (low-level primitives)
-
-See `ts/packages/cli/AGENTS.md` for detailed Clack usage guidelines.
-
-**Important:** The submodule is for **read-only reference only**. Do not modify files in `ts/vendor/`. The CLI's actual `@clack/prompts` dependency comes from npm via `pnpm install`.
-
-## Common Development Commands
-
-### Build and Development
-```bash
-# Build all packages
-pnpm build
-
-# Build only TypeScript packages  
-pnpm build:packages
-
-# Clean build artifacts
-pnpm clean
-pnpm clean:workspace
-
-# Lint code
-pnpm lint
-pnpm lint:fix
-
-# Format code
-pnpm format
-
-# Run tests
-pnpm test
-```
-
-### Package Management
-```bash
-# Install dependencies
-pnpm install
-
-# Check peer dependencies
-pnpm check:peer-deps
-
-# Update peer dependencies  
-pnpm update:peer-deps
-```
-
-### Creating New Components
-```bash
-# Create a new provider
-pnpm create:provider <provider-name> [--agentic]
-
-# Create a new example
-pnpm create:example <example-name>
-```
-
-### Release Management
-```bash
-# Create changeset for releases
-pnpm changeset
-
-# Version packages
-pnpm changeset:version
-
-# Publish packages
-pnpm changeset:release
-```
-
-## Project Architecture
-
-### Repository Structure
 ```
 composio/
-├── ts/                      # TypeScript SDK (main development)
-│   ├── packages/
-│   │   ├── core/           # Core SDK functionality
-│   │   ├── providers/      # AI provider integrations (OpenAI, Anthropic, etc.)
-│   │   ├── cli/           # Command-line interface
-│   │   ├── json-schema-to-zod/ # Schema conversion utility
-│   │   └── ts-builders/   # TypeScript code generation utilities
-│   └── examples/          # Usage examples for different providers
-├── python/                # Python SDK
-├── docs/                  # Documentation (Fumadocs)
-└── examples/              # Cross-platform examples
+├── ts/packages/core/          # @composio/core -- main SDK
+├── ts/packages/cli/           # @composio/cli -- CLI (Effect.ts + Bun)
+├── ts/packages/cli-keyring/   # @composio/cli-keyring -- OS keyring for API key storage
+├── ts/packages/providers/     # AI provider integrations (openai, anthropic, google, langchain, vercel, mastra, llamaindex, cloudflare, claude-agent-sdk, openai-agents)
+├── ts/packages/json-schema-to-zod/  # Schema conversion utility
+├── ts/packages/ts-builders/   # TypeScript AST code generation
+├── ts/e2e-tests/              # Runtime compatibility tests (Node, Deno, Cloudflare)
+├── ts/vendor/                 # Read-only git submodules (effect, clack) -- DO NOT modify
+├── python/                    # Python SDK (composio v0.11.5)
+├── docs/                      # Documentation site (Fumadocs) -- see docs/CLAUDE.md
+└── .agents/skills/            # AI agent skills (bug-fixing, cli-test, e2e, etc.)
 ```
 
-### Core Packages
+## Delegated CLAUDE.md Files
 
-**@composio/core** - Main SDK functionality:
-- `src/composio.ts` - Main Composio class
-- `src/models/` - Core models (Tools, Toolkits, ConnectedAccounts, etc.)
-- `src/provider/` - Base provider implementations
-- `src/services/` - Internal services (telemetry, pusher)
-- `src/types/` - TypeScript type definitions
-- `src/utils/` - Utility functions and helpers
+- `docs/CLAUDE.md` -- documentation site tasks
+- `ts/packages/cli/CLAUDE.md` -- CLI development (Effect.ts architecture, commands, services)
 
-**Provider Packages** - AI integrations:
-- `@composio/openai` - OpenAI integration
-- `@composio/anthropic` - Anthropic integration
-- `@composio/google` - Google GenAI integration
-- `@composio/langchain` - LangChain integration
-- `@composio/vercel` - Vercel AI integration
-- `@composio/mastra` - Mastra integration
+## Commands
 
-### Key Concepts
+```bash
+# TypeScript
+pnpm build                    # Build all packages
+pnpm build:packages           # Build only TS packages
+pnpm lint && pnpm lint:fix    # Lint
+pnpm format                   # Prettier
+pnpm test                     # Run all tests (Vitest)
+cd ts/packages/core && pnpm test  # Core tests only
+pnpm test:e2e                 # E2E: Node + Deno + Cloudflare
+pnpm test:e2e:node            # E2E: Node only (CJS/ESM, Docker)
 
-**Tools** - Individual functions that can be executed (e.g., GITHUB_CREATE_REPO, GMAIL_SEND_EMAIL)
+# Python (always activate venv first)
+cd python && make env && source .venv/bin/activate
+make fmt                      # Ruff format
+make chk                      # Lint + type check (ruff + mypy)
+make tst                      # pytest
+pytest -m core                # Core tests only
 
-**Toolkits** - Collections of related tools grouped by service (e.g., github, gmail, slack)
+# Release
+pnpm changeset                # Create changeset
+pnpm changeset:version        # Version packages
+pnpm changeset:release        # Publish
+```
 
-**Connected Accounts** - User authentication/authorization for external services
+## Tooling
 
-**Auth Configs** - Configuration for different authentication methods
+- **Node.js**: 20.19.0 (`.nvmrc`), **Bun**: 1.3.10, **pnpm**: 10.28.0
+- **Python**: >=3.10, uses `uv` + `nox` for automation
+- TypeScript uses Vitest, ESLint, Prettier, Husky pre-commit hooks
+- Python uses Ruff (lint+format), mypy (types), pytest
 
-**Custom Tools** - User-defined tools with custom logic
+## Key Files
 
-**Providers** - Integrations with AI frameworks (OpenAI, Anthropic, etc.)
+- **SDK entry**: `ts/packages/core/src/index.ts`, `ts/packages/core/src/composio.ts`
+- **Experimental exports**: `ts/packages/core/src/experimental/index.ts`
+- **Types**: `ts/packages/core/src/types/`
+- **Build configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
+- **Python SDK**: `python/composio/` (deps: `pysher`, `pydantic>=2.6.4`, `composio-client==1.33.0`)
+- **Python config**: `python/config/` (pytest.ini, mypy.ini, ruff.toml)
 
-**Modifiers** - Middleware to transform tool inputs/outputs
+## Gotchas
 
-## Development Workflow
-
-### For Tool Development
-1. Tools are auto-generated from OpenAPI specifications
-2. Custom tools can be created using the Custom Tools API
-3. Tool execution happens through the main Composio class
-
-### For Provider Development
-1. Use `pnpm create:provider <name>` to scaffold new providers
-2. Implement required methods: `wrapTool`, `wrapTools`
-3. For agentic providers, also implement execution handlers
-4. Add comprehensive tests and documentation
-
-### Testing
-- Unit tests use Vitest
-- Run tests with `pnpm test`
-- Tests are located in `test/` directories within each package
-- Mock implementations are available in `test/utils/mocks/`
-
-### Code Quality
-- ESLint configuration in `eslint.config.mjs`
-- Prettier for code formatting
-- TypeScript strict mode enabled
-- Comprehensive TSDoc documentation required
-- Husky pre-commit hooks for quality checks
+- Default branch is `next`, not `master`.
+- `ts/vendor/` submodules (Effect, Clack) are read-only reference. CLI deps come from npm.
+- CLI uses `@composio/cli-keyring` for secure API key storage (OS keyring, not plaintext).
+- Provider packages live under `ts/packages/providers/<name>/`, not at top level.
+- Python `composio-client` version in `pyproject.toml` must match `setup.py`.
+- When updating GitHub Actions, sync tool versions in `ts/docs/internal/release.md`.
+- Scaffold new providers with `pnpm create:provider <name> [--agentic]`.
+- `session.toolkits()` supports pagination -- do not assume all results in one call.
 
 ## Environment Variables
 
 ```bash
-COMPOSIO_API_KEY          # Required: Your Composio API key
-COMPOSIO_BASE_URL         # Optional: Custom API base URL
-COMPOSIO_LOG_LEVEL        # Optional: Logging level (silent, error, warn, info, debug)
-COMPOSIO_DISABLE_TELEMETRY # Optional: Set to "true" to disable telemetry
-DEVELOPMENT               # Development mode flag
-CI                       # CI environment flag
-```
-
-## Key Files and Locations
-
-- **Main SDK Entry**: `ts/packages/core/src/index.ts`
-- **Core Composio Class**: `ts/packages/core/src/composio.ts`
-- **Type Definitions**: `ts/packages/core/src/types/`
-- **Error Classes**: `ts/packages/core/src/errors/`
-- **Examples**: `ts/examples/` and `examples/`
-- **Documentation**: `docs/`
-- **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
-- **E2E Tests**: `ts/e2e-tests/`
-
-## Maintenance Tasks
-
-### When Updating GitHub Actions
-
-When modifying files in `.github/workflows/`, update the "Prerequisites" section in `ts/docs/internal/release.md` with the current tool versions:
-
-- **Node.js**: `cat .nvmrc`
-- **Bun**: `cat .bun-version`
-- **pnpm**: `cat package.json | jq -r .packageManager | cut -d'@' -f2`
-
-## Testing Commands
-
-```bash
-# Run all tests
-pnpm test
-
-# Run tests for core package only
-cd ts/packages/core && pnpm test
-
-# Run tests with UI
-pnpm test:ui
-```
-
-### TypeScript E2E Tests
-
-E2E tests for `@composio/core` are located in `ts/e2e-tests/` and test runtime compatibility across different JavaScript environments.
-
-```bash
-# Run all e2e tests (Node.js + Deno + Cloudflare)
-pnpm test:e2e
-
-# Run only Node.js e2e tests (CJS/ESM compatibility, runs in Docker)
-pnpm test:e2e:node
-
-# Run only Deno e2e tests (npm: specifier compatibility, runs in Docker)
-pnpm test:e2e:deno
-
-# Run only Cloudflare Workers e2e tests
-pnpm test:e2e:cloudflare
-
-# Run Node.js tests with a specific Node version
-COMPOSIO_E2E_NODE_VERSION=22.12.0 pnpm test:e2e:node
-
-# Run Deno tests with a specific Deno version
-COMPOSIO_E2E_DENO_VERSION=2.6.7 pnpm test:e2e:deno
-```
-
-**E2E Test Structure:**
-```
-ts/e2e-tests/
-├── _utils/                    # Shared Docker infrastructure
-├── runtimes/
-│   ├── node/                  # Node.js runtime tests
-│   │   ├── cjs-basic/         # CommonJS compatibility
-│   │   └── esm-basic/         # ESM compatibility
-│   ├── deno/                  # Deno runtime tests
-│   │   └── esm-basic/         # npm: specifier compatibility
-│   └── cloudflare/            # Cloudflare runtime tests
-│       └── cf-workers-basic/  # Cloudflare Workers tests
-└── README.md                  # E2E test documentation
-```
-
-> **Note:** When adding new e2e tests, update `ts/e2e-tests/README.md` with the new test information.
-
-## Common Patterns
-
-### Tool Execution
-```typescript
-const composio = new Composio({ apiKey: 'your-key' });
-const result = await composio.tools.execute('TOOL_NAME', {
-  userId: 'user-id',
-  arguments: { /* tool args */ }
-});
-```
-
-### Provider Integration
-```typescript
-import { OpenAIProvider } from '@composio/openai';
-const provider = new OpenAIProvider({ apiKey: 'openai-key' });
-const tools = await composio.tools.get('user-id', { toolkits: ['github'] });
-const wrappedTools = provider.wrapTools(tools);
-```
-
-### Custom Tool Creation
-```typescript
-import { z } from 'zod';
-
-const customTool = await composio.tools.createCustomTool({
-  name: 'My Tool',
-  description: 'Tool description',
-  slug: 'MY_TOOL',
-  inputParams: z.object({
-    param: z.string().describe('Parameter description')
-  }),
-  execute: async (input) => {
-    // Implementation
-    return {
-      data: { result: input.param },
-      error: null,
-      successful: true
-    };
-  }
-});
-```
-
-This monorepo uses pnpm workspaces and Turbo for efficient builds and development.
-
-## Python SDK Development
-
-### Setup
-The Python SDK is located in the `/python/` directory and uses `uv` for dependency management and `nox` for automation.
-
-### Environment Setup
-```bash
-# Create and setup Python development environment
-cd python
-make env
-source .venv/bin/activate
-```
-
-### Python Development Commands
-```bash
-# Setup environment (creates virtual env with all dependencies)
-make env
-
-# Sync dependencies (when in an existing environment)
-make sync
-
-# Install provider packages
-make provider
-
-# Format code using ruff
-make fmt
-# Or directly: nox -s fmt
-
-# Check linting and type issues
-make chk
-# Or directly: nox -s chk
-
-# Fix linting issues
-nox -s fix
-
-# Run tests (requires implementing tst session)
-make tst
-# Or directly: nox -s tst
-
-# Run sanity tests (requires implementing snt session)  
-make snt
-# Or directly: nox -s snt
-
-# Clean build artifacts
-make clean-build
-
-# Bump version
-make bump
-
-# Build packages
-make build
-```
-
-### Python Project Structure
-```
-python/
-├── composio/           # Main SDK package
-├── providers/          # Provider implementations
-├── tests/             # Test suite
-├── examples/          # Usage examples
-├── scripts/           # Development scripts
-├── config/            # Configuration files
-│   ├── pytest.ini     # Pytest configuration
-│   ├── mypy.ini       # MyPy type checking config
-│   ├── ruff.toml     # Ruff linter/formatter config
-│   └── codecov.yml   # Code coverage config
-├── Makefile          # Development shortcuts
-├── noxfile.py        # Nox automation sessions
-└── pyproject.toml    # Project configuration
-```
-
-### Python Code Quality
-- **Formatter**: Ruff (Black-compatible, 88 char line length)
-- **Linter**: Ruff with custom configuration
-- **Type Checker**: mypy with strict optional typing
-- **Test Framework**: pytest with custom markers (core, openai, langchain, agno)
-- **Python Version**: >=3.10, <4
-- **Dependency Managers**: uv
-
-### Python Testing
-```bash
-# Run tests with pytest markers
-pytest -m core        # Run core tests only
-pytest -m openai      # Run OpenAI provider tests
-pytest -m langchain   # Run LangChain provider tests
-pytest -m agno       # Run Agno provider tests
-```
-
-### Python Package Dependencies
-- Core: `pysher`, `pydantic>=2.6.4`, `composio-client==1.4.0`, `typing-extensions>=4.0.0`, `openai`
-- Dev: `nox`, `pytest`, `ruff`, `langchain_openai`, `fastapi`, `twine`, `click`, `semver`
-
-### Python Environment Variables
-Same as TypeScript SDK, with additional:
-```bash
-OPENAI_API_KEY    # Required for OpenAI provider examples
+COMPOSIO_API_KEY              # Required: API key
+COMPOSIO_BASE_URL             # Optional: custom API URL
+COMPOSIO_LOG_LEVEL            # Optional: silent|error|warn|info|debug
+COMPOSIO_DISABLE_TELEMETRY    # Optional: "true" to disable
+COMPOSIO_USER_API_KEY         # Optional: user-level API key (CLI login)
 ```
