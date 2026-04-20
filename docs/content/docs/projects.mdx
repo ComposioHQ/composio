@@ -33,6 +33,8 @@ Project management endpoints use the `x-org-api-key` header, not the regular `x-
 
 ### Create a project
 
+There is no limit on the number of projects per organization. Project names must be unique within the organization.
+
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/org/owner/project/new \
   -H "x-org-api-key: YOUR_ORG_API_KEY" \
