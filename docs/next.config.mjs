@@ -25,6 +25,38 @@ const config = {
       { source: '/:path*.mdx', destination: '/llms.mdx/:path*' },
     ];
   },
+  async headers() {
+    const discoveryLinks = [
+      '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+      '</openapi.json>; rel="service-desc"; type="application/vnd.oai.openapi+json;version=3.1"',
+      '</reference/api-reference>; rel="service-doc"; type="text/html"',
+      '</.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
+      '</.well-known/mcp/server-card.json>; rel="describedby"; type="application/json"',
+      '</.well-known/openid-configuration>; rel="describedby"; type="application/json"',
+      '</.well-known/oauth-protected-resource>; rel="describedby"; type="application/json"',
+    ].join(', ');
+
+    return [
+      {
+        source: '/',
+        headers: [
+          {
+            key: 'Link',
+            value: discoveryLinks,
+          },
+        ],
+      },
+      {
+        source: '/docs',
+        headers: [
+          {
+            key: 'Link',
+            value: discoveryLinks,
+          },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       {

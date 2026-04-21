@@ -6,6 +6,7 @@ import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import { PostHogProvider } from '@/components/posthog-provider';
 import { DecimalWidget } from '@/components/decimal-widget';
 import CustomSearchDialog from '@/components/custom-search-dialog';
+import { WebMCPProvider } from '@/components/webmcp-provider';
 import { source } from '@/lib/source';
 
 const defaultLinkSlugs = [
@@ -106,6 +107,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       </head>
       <body className="flex flex-col min-h-dvh font-sans">
         <Analytics />
+        <WebMCPProvider />
         <PostHogProvider>
           <RootProvider
             theme={{

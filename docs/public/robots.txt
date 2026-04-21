@@ -1,6 +1,12 @@
 # Composio Docs - https://docs.composio.dev
+#
+# The Content-Signal directive declares how automated systems may use site content:
+# - search: search indexing and search result snippets
+# - ai-input: retrieval or grounding input for AI-generated answers
+# - ai-train: model training or fine-tuning
 
 User-agent: *
+Content-Signal: ai-train=no, search=yes, ai-input=yes
 Allow: /
 
 # Sitemaps
