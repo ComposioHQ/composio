@@ -117,8 +117,10 @@ jobs:
           Choose py only when the issue is primarily about the Python SDK.
           Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.
           Choose docs only when the issue is primarily about documentation.
+          Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug.
+          If an issue reports broken behavior in an existing tool or integration and it does not clearly belong to docs, py, ts, or cli, choose other.
           Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.
-          Set is_bug to false for feature requests, questions, maintenance, cleanup, and tool requests.
+          Set is_bug to false for feature requests, questions, maintenance, cleanup, and true new-tool requests.
           Set should_comment to true only when the issue appears incorrect, non-actionable, or missing the information needed to reproduce or investigate.
           Set should_comment to false otherwise.
 
@@ -195,7 +197,7 @@ jobs:
               return;
             }
 
-            const category = parsed.category;
+            let category = parsed.category;
             const isBug = Boolean(parsed.is_bug);
             const reason = parsed.reason || "";
             const shouldComment = Boolean(parsed.should_comment);
@@ -211,6 +213,14 @@ jobs:
 
             const labels = [];
             const assignees = [];
+
+            // A broken existing tool/integration is a bug, not a new tool request.
+            if (isBug && category === "tool-request") {
+              category = "other";
+              core.info(
+                `Normalizing contradictory classifier output for issue #${issue_number}: bug reports cannot be categorized as tool-request. Original reason: ${reason}`
+              );
+            }
 
             if (isBug) {
               labels.push("bug");
