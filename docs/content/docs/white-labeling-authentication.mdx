@@ -4,13 +4,14 @@ description: Remove Composio branding from your auth flows
 keywords: [branding, own oauth, custom redirect, white label]
 ---
 
-There are three places where Composio branding shows up during authentication:
+There are four places where Composio branding shows up during authentication:
 
 | Where | What users see | How to fix |
 |-------|---------------|------------|
 | [**Connect Link page**](#customizing-the-connect-link) | Composio logo and name on the hosted auth page | Change logo + app title in dashboard |
 | [**OAuth consent screen**](#using-your-own-oauth-apps) | "Composio wants to access your account" on Google, GitHub, etc. | Use your own OAuth app |
 | [**Browser address bar**](#routing-the-callback-through-your-domain) | `backend.composio.dev` flashes during OAuth redirect-back | Proxy the redirect through your domain |
+| [**Post-auth success page**](#redirecting-users-after-authentication) | Composio-branded success page after OAuth completes | Pass a `callbackUrl` when initiating the connection |
 
 ## Customizing the Connect Link
 
@@ -238,6 +239,34 @@ flowchart TD
 <Callout type="info">
 For FAQs and setup guides for individual toolkits, browse the [toolkits page](/toolkits).
 </Callout>
+
+## Redirecting users after authentication
+
+By default, after OAuth completes, users land on a Composio-hosted success page that shows Composio branding. To bypass this page and send users to your own domain instead, pass a `callbackUrl` when calling `session.authorize()`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+connection_request = session.authorize(
+    "gmail",
+    callback_url="https://your-app.com/callback"
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const connectionRequest = await session.authorize("gmail", {
+  callbackUrl: "https://your-app.com/callback",
+});
+```
+</Tab>
+</Tabs>
+
+After authentication, Composio redirects the user to your callback URL instead of the default success page. For full details on the parameters appended to your callback URL, see [Manually authenticating users → Redirecting users after authentication](/docs/authenticating-users/manually-authenticating#redirecting-users-after-authentication).
 
 ## What to read next
 
