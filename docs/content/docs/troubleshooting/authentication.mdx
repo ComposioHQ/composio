@@ -33,7 +33,7 @@ If you're moving from Composio-managed auth to your own OAuth app, existing conn
 - **Scope mismatch**: Ensure requested scopes are configured in both auth config and OAuth app
 - **Expired tokens**: Try refreshing the connection
 - **Rate limits**: Some providers limit authentication attempts
-- **Credentials showing as `REDACTED`**: The "Mask Connected Account Secrets" setting is enabled on your account, which redacts all sensitive credential data. Navigate to **Settings → Project Settings → Project Configuration** and disable "Mask Connected Account Secrets" to view actual values
+- **Credentials showing as `REDACTED`**: For Composio-managed auth configs, secrets are always redacted. For customer-owned auth configs, this is controlled by the "Mask Connected Account Secrets" project setting. Disable it in **Settings → Project Settings → Project Configuration** only if you need raw values for customer-owned connections.
 
 ## Reporting authentication issues
 

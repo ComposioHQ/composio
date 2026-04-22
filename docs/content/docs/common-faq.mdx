@@ -259,9 +259,14 @@ The Connect Link logo and app title customization does not remove the "Secured b
 <Accordions>
 
 <Accordion title="Why are my connected account secrets showing `abcd...` or `REDACTED`?">
-Connected account secrets are masked by default for security. The API returns the first 4 characters followed by `...` (e.g., `gho_...`). Values shorter than 4 characters show as `REDACTED`.
+Connected account secrets are masked for security.
+
+- For **Composio-managed auth configs** (`is_composio_managed: true`), secrets are always returned as `REDACTED`.
+- For **customer-owned auth configs**, the API returns the first 4 characters followed by `...` (e.g., `gho_...`) when project masking is enabled. Values shorter than 4 characters show as `REDACTED`.
 
 To disable masking, go to **Settings → Project Settings → Project Configuration** and turn off "Mask Connected Account Secrets", or use the Patch Project Config API.
+
+Turning off masking only affects customer-owned auth configs.
 
 See [Connected accounts](/docs/auth-configuration/connected-accounts#get-account-credentials) for full details.
 </Accordion>

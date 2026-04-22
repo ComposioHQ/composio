@@ -57,6 +57,10 @@ The returned `auth_config_id` should be stored securely in your database for fut
 
 You can also provide your own authentication details. The required `credentials` and `authScheme` depend on the auth type.
 
+<Callout type="warn">
+`GET /auth_configs` and `GET /auth_configs/{id}` do not return secret credentials in a recoverable form. Keep secrets like `client_secret`, `developer_token`, or API keys in your own secret manager when you create the auth config.
+</Callout>
+
 ### Using your own OAuth2 credentials
 
 Setting up and using your own OAuth2 credentials is the recommended way when going to production or expecting high usage.

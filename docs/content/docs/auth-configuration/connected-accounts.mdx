@@ -221,9 +221,12 @@ Deletion is permanent. Users must re-authenticate to reconnect.
 
 ## Credential masking
 
-By default, sensitive fields in connected account responses are partially masked for security. This affects fields like `access_token`, `refresh_token`, `api_key`, `bearer_token`, `password`, and other secrets.
+Sensitive fields in connected account responses are masked for security. This affects fields like `access_token`, `refresh_token`, `api_key`, `bearer_token`, `password`, and other secrets.
 
-Instead of returning full values, the API returns the first 4 characters followed by `...`:
+- **Composio-managed auth configs** (`is_composio_managed: true`): credentials are always returned as `REDACTED`, regardless of your project masking setting.
+- **Customer-owned auth configs**: credentials follow your project setting for `mask_secret_keys_in_connected_account`.
+
+For customer-owned auth configs with masking enabled, the API returns the first 4 characters followed by `...`:
 
 ```json
 {
@@ -233,11 +236,11 @@ Instead of returning full values, the API returns the first 4 characters followe
 }
 ```
 
-Values shorter than 4 characters are replaced with `REDACTED`.
+For customer-owned auth configs, values shorter than 4 characters are replaced with `REDACTED`.
 
 This applies to the Get Connected Account and List Connected Accounts endpoints.
 
-### Disabling masking
+### Disabling masking (customer-owned auth configs)
 
 If you need full credential values (e.g., to use tokens in your own API calls), disable masking via either:
 
@@ -252,7 +255,7 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
 ```
 
 <Callout type="warn">
-Disabling masking exposes full credentials in API responses. Only disable this if your application needs direct access to tokens and you have appropriate security measures in place.
+Disabling masking affects only customer-owned auth configs. Composio-managed auth configs continue to return `REDACTED` values.
 </Callout>
 
 ## Multiple accounts
