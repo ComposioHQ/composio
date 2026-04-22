@@ -14,7 +14,7 @@ Composio exposes two v3.1 REST APIs for inspecting activity in your org or proje
 | See how many tool calls or sessions happened in a window | [Usage summary](/docs/observability/usage#summary) |
 | Break usage down by tool, toolkit, user, or session | [Usage breakdown](/docs/observability/usage#breakdown) |
 
-Logs record **individual events** and are primarily for debugging. Usage queries return **aggregated counts** from ClickHouse and are primarily for dashboards, billing integrations, and customer-facing analytics.
+Logs record **individual events** and are primarily for debugging. Usage queries return **aggregated counts** and are primarily for dashboards, billing integrations, and customer-facing analytics.
 
 ## Authentication at a glance
 
@@ -29,8 +29,6 @@ Each endpoint family takes a specific credential. Use the right one for the scop
 The org-level usage endpoints accept a `project_id` filter so you can slice by project without rotating keys.
 
 ## Reference
-
-For full request/response schemas, see the auto-generated reference:
 
 - [Organization API reference](/reference/api-reference/organization) — org-level usage endpoints
 - [Projects API reference](/reference/api-reference/projects) — project-level usage endpoints and project-scoped APIs

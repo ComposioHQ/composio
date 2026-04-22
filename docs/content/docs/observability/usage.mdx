@@ -4,7 +4,7 @@ description: Query aggregated tool call and session counts for your org or proje
 keywords: ['usage', 'metering', 'analytics', 'billing', 'observability']
 ---
 
-The Usage API returns **aggregated counts** of tool calls and sessions, sourced from ClickHouse. Use it to power billing dashboards, customer-facing analytics, or internal utilization reports. For individual events, use the [Logs API](/docs/observability/logs).
+The Usage API returns **aggregated counts** of tool calls and sessions. Use it to power billing dashboards, customer-facing analytics, or internal utilization reports. For individual events, use the [Logs API](/docs/observability/logs).
 
 There are two query shapes:
 
@@ -191,13 +191,11 @@ curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
   }'
 ```
 
-## Self-hosted deployments
+## What to read next
 
-If your Composio instance is self-hosted **without ClickHouse enabled**, the usage endpoints return `500`. The Logs API does not depend on ClickHouse and remains available.
-
-## Reference
-
-See the auto-generated reference for full schemas:
-
-- [Organization API reference](/reference/api-reference/organization) — org-level usage endpoints
-- [Projects API reference](/reference/api-reference/projects) — project-level usage endpoints
+<Cards>
+  <Card icon={<Terminal />} title="Tool execution logs" href="/docs/observability/logs" description="Debug individual tool executions with full request/response payloads" />
+  <Card icon={<Wrench />} title="Tools and toolkits" href="/docs/tools-and-toolkits" description="Understand how tools and toolkits work in Composio" />
+  <Card icon={<Database />} title="Organization API reference" href="/reference/api-reference/organization" description="Full request and response schemas for org-level usage endpoints" />
+  <Card icon={<Database />} title="Projects API reference" href="/reference/api-reference/projects" description="Full request and response schemas for project-level usage endpoints" />
+</Cards>

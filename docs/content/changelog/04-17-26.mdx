@@ -19,7 +19,7 @@ See the [tool execution logs guide](/docs/observability/logs).
 
 ## Usage metering
 
-Aggregated counts of tool calls and sessions, sourced from ClickHouse. Summary endpoints return totals; breakdown endpoints group results by tool, toolkit, user, session, or project.
+Aggregated counts of tool calls and sessions. Summary endpoints return totals; breakdown endpoints group results by tool, toolkit, user, session, or project.
 
 - `POST /api/v3.1/org/usage/summary` and `POST /api/v3.1/org/usage/{entity_type}` — org scope (`x-org-api-key` or org JWT).
 - `POST /api/v3.1/project/usage/summary` and `POST /api/v3.1/project/usage/{entity_type}` — project scope (`x-api-key` or cookie).

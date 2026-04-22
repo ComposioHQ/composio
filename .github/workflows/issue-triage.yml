@@ -117,8 +117,9 @@ jobs:
           Choose py only when the issue is primarily about the Python SDK.
           Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.
           Choose docs only when the issue is primarily about documentation.
+          Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug.
           Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.
-          Set is_bug to false for feature requests, questions, maintenance, cleanup, and tool requests.
+          Set is_bug to false for feature requests, questions, maintenance, cleanup, and true new-tool requests.
           Set should_comment to true only when the issue appears incorrect, non-actionable, or missing the information needed to reproduce or investigate.
           Set should_comment to false otherwise.
 
@@ -211,6 +212,13 @@ jobs:
 
             const labels = [];
             const assignees = [];
+            const suppressToolRequestHandling = isBug && category === "tool-request";
+
+            if (suppressToolRequestHandling) {
+              core.info(
+                `Suppressing tool-request handling for issue #${issue_number} because it is classified as a bug. Original reason: ${reason}`
+              );
+            }
 
             if (isBug) {
               labels.push("bug");
@@ -230,7 +238,7 @@ jobs:
               assignees.push("CryogenicPlanet");
             } else if (category === "feature-request") {
               labels.push("feature-request");
-            } else if (category === "tool-request") {
+            } else if (category === "tool-request" && !suppressToolRequestHandling) {
               labels.push("tool-request");
             }
 
@@ -252,7 +260,11 @@ jobs:
               });
             }
 
-            if (category !== "tool-request" && shouldComment && commentBody.trim().length > 0) {
+            if (
+              (category !== "tool-request" || suppressToolRequestHandling) &&
+              shouldComment &&
+              commentBody.trim().length > 0
+            ) {
               await github.rest.issues.createComment({
                 owner,
                 repo,
@@ -261,7 +273,7 @@ jobs:
               });
             }
 
-            if (category === "tool-request" && issueState === "open") {
+            if (category === "tool-request" && !suppressToolRequestHandling && issueState === "open") {
               await github.rest.issues.createComment({
                 owner,
                 repo,
