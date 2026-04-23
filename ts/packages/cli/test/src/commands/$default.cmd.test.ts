@@ -1,8 +1,9 @@
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Console, Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 import { afterEach, vi } from 'vitest';
 
@@ -16,6 +17,40 @@ type CommandMismatchResult = {
     };
   };
 };
+
+const terminalUIWithConfirm = (confirmed: boolean) =>
+  TerminalUI.of({
+    output: data => Console.log(data),
+    intro: title => Console.log(`-- ${title} --`),
+    outro: message => Console.log(`-- ${message} --`),
+    log: {
+      info: message => Console.log(message),
+      success: message => Console.log(message),
+      warn: message => Console.warn(message),
+      error: message => Console.error(message),
+      step: message => Console.log(message),
+      message: message => Console.log(message),
+    },
+    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
+    select: (_message, options) => Effect.succeed(options[0]!.value),
+    confirm: () => Effect.succeed(confirmed),
+    withSpinner: (message, effect, options) =>
+      Effect.gen(function* () {
+        const result = yield* effect;
+        const successMsg =
+          typeof options?.successMessage === 'function'
+            ? options.successMessage(result)
+            : (options?.successMessage ?? message);
+        yield* Console.log(successMsg);
+        return result;
+      }),
+    useMakeSpinner: (_message, use) =>
+      use({
+        message: () => Effect.void,
+        stop: () => Effect.void,
+        error: () => Effect.void,
+      }),
+  });
 
 describe('CLI: composio', () => {
   afterEach(() => {
@@ -238,7 +273,9 @@ describe('CLI: composio', () => {
           .spyOn(process.stdout, 'write')
           .mockImplementation((() => true) as typeof process.stdout.write);
 
-        yield* cli(['debug', 'api-info']);
+        yield* cli(['debug', 'api-info']).pipe(
+          Effect.provideService(TerminalUI, terminalUIWithConfirm(true))
+        );
         const output = write.mock.calls.map(call => String(call[0])).join('\n');
 
         expect(output).toContain('"apiKey": "uak_test_key"');
