@@ -1,9 +1,8 @@
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
-import { Console, Effect } from 'effect';
+import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
-import { TerminalUI } from 'src/services/terminal-ui';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 import { afterEach, vi } from 'vitest';
 
@@ -17,40 +16,6 @@ type CommandMismatchResult = {
     };
   };
 };
-
-const terminalUIWithConfirm = (confirmed: boolean) =>
-  TerminalUI.of({
-    output: data => Console.log(data),
-    intro: title => Console.log(`-- ${title} --`),
-    outro: message => Console.log(`-- ${message} --`),
-    log: {
-      info: message => Console.log(message),
-      success: message => Console.log(message),
-      warn: message => Console.warn(message),
-      error: message => Console.error(message),
-      step: message => Console.log(message),
-      message: message => Console.log(message),
-    },
-    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
-    select: (_message, options) => Effect.succeed(options[0]!.value),
-    confirm: () => Effect.succeed(confirmed),
-    withSpinner: (message, effect, options) =>
-      Effect.gen(function* () {
-        const result = yield* effect;
-        const successMsg =
-          typeof options?.successMessage === 'function'
-            ? options.successMessage(result)
-            : (options?.successMessage ?? message);
-        yield* Console.log(successMsg);
-        return result;
-      }),
-    useMakeSpinner: (_message, use) =>
-      use({
-        message: () => Effect.void,
-        stop: () => Effect.void,
-        error: () => Effect.void,
-      }),
-  });
 
 describe('CLI: composio', () => {
   afterEach(() => {
@@ -193,94 +158,6 @@ describe('CLI: composio', () => {
         const output = write.mock.calls.map(call => String(call[0])).join('\n');
 
         expect(output).toContain('"master": "codex"');
-      })
-    );
-  });
-
-  layer(TestLive({ fixture: 'user-config-with-global-context' }))(it => {
-    it.scoped('[Given] debug api-info [Then] it uses whoami org context', () =>
-      Effect.gen(function* () {
-        const originalFetch = globalThis.fetch;
-        vi.spyOn(globalThis, 'fetch').mockImplementation((async (
-          requestInput: RequestInfo | URL,
-          init?: RequestInit
-        ) => {
-          const url =
-            typeof requestInput === 'string'
-              ? requestInput
-              : requestInput instanceof URL
-                ? requestInput.toString()
-                : requestInput.url;
-
-          if (url.includes('/api/v3/auth/session/info')) {
-            return new Response(
-              JSON.stringify({
-                project: {
-                  name: 'Session Project',
-                  id: 'proj_999',
-                  org_id: 'org_session',
-                  nano_id: 'proj_nano_999',
-                  email: 'project@example.com',
-                  created_at: '2026-03-27T00:00:00.000Z',
-                  updated_at: '2026-03-27T00:00:00.000Z',
-                  org: {
-                    name: 'Session Org',
-                    id: 'org_session',
-                    plan: 'enterprise',
-                  },
-                },
-                org_member: {
-                  id: 'om_123',
-                  user_id: 'usr_123',
-                  email: 'person@example.com',
-                  name: 'Test Person',
-                  role: 'admin',
-                },
-                api_key: null,
-              }),
-              {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' },
-              }
-            );
-          }
-
-          if (url.includes('/api/v3/org/consumer/project/resolve')) {
-            const headers = new Headers(
-              requestInput instanceof Request ? requestInput.headers : undefined
-            );
-            new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
-            const orgId = headers.get('x-org-id') ?? 'org_test';
-            return new Response(
-              JSON.stringify({
-                project_id: 'consumer_project_id_test',
-                project_nano_id: 'consumer_project_test',
-                project_name: 'Consumer Project',
-                org_id: orgId,
-                project_type: 'CONSUMER',
-                consumer_user_id: `consumer-user-${orgId}`,
-              }),
-              {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' },
-              }
-            );
-          }
-
-          return originalFetch(requestInput, init);
-        }) as typeof globalThis.fetch);
-        const write = vi
-          .spyOn(process.stdout, 'write')
-          .mockImplementation((() => true) as typeof process.stdout.write);
-
-        yield* cli(['debug', 'api-info']).pipe(
-          Effect.provideService(TerminalUI, terminalUIWithConfirm(true))
-        );
-        const output = write.mock.calls.map(call => String(call[0])).join('\n');
-
-        expect(output).toContain('"apiKey": "uak_test_key"');
-        expect(output).toContain('"orgId": "org_1"');
-        expect(output).toContain('"consumerUserId": "consumer-user-org_1"');
       })
     );
   });

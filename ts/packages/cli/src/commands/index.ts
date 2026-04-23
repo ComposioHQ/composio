@@ -43,7 +43,6 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
-import { resolveWhoamiInfo } from 'src/services/whoami';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
 import {
@@ -550,7 +549,7 @@ export const runWithConfig = Effect.gen(function* () {
         if (!apiKey) {
           return yield* Effect.fail(new Error('No user API key found in the current CLI session.'));
         }
-        const whoami = yield* resolveWhoamiInfo;
+        const orgId = Option.getOrUndefined(ctx.data.orgId);
         const consumerProject = yield* resolveCommandProject({ mode: 'consumer' }).pipe(
           Effect.mapError(formatResolveCommandProjectError),
           Effect.option
@@ -559,8 +558,8 @@ export const runWithConfig = Effect.gen(function* () {
           process.stdout.write(
             `${JSON.stringify(
               {
-                apiKey: whoami.apiKey ?? apiKey,
-                orgId: whoami.defaultOrgId ?? null,
+                apiKey,
+                orgId: orgId ?? null,
                 consumerUserId:
                   Option.isSome(consumerProject) && consumerProject.value.projectType === 'CONSUMER'
                     ? (consumerProject.value.consumerUserId ?? null)
