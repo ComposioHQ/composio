@@ -14,13 +14,12 @@ BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS: t.Tuple[str, ...] = (
     ".gnupg",
     ".kube",
     ".docker",
+    ".claude",  # may contain API keys and project context read by assistants
     ".password-store",
     "keychains",
 )
 
-_SECRET_LIKE_BASENAME = re.compile(
-    r"^(\.env(\.|$)|\.netrc$|\.pgpass$)", re.IGNORECASE
-)
+_SECRET_LIKE_BASENAME = re.compile(r"^(\.env(\.|$)|\.netrc$|\.pgpass$)", re.IGNORECASE)
 _DEFAULT_PRIVATE_KEY_BASENAME = re.compile(
     r"^id_(rsa|ed25519|ecdsa|dsa|ecdsa_sk)(\.old)?$", re.IGNORECASE
 )
@@ -48,8 +47,9 @@ def _get_block_reason(
     deny.update(s.lower() for s in extra)
 
     segments = _normalize_path_segments(file_path)
-    for seg in segments:
-        if seg.lower() in deny:
+    # Case-insensitive segment match: lower each path component once per check.
+    for seg, key in zip(segments, (s.lower() for s in segments), strict=True):
+        if key in deny:
             return f'path segment "{seg}" is in the sensitive file upload denylist'
 
     if not segments:
