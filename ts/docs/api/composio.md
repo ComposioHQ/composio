@@ -11,7 +11,7 @@ const composio = new Composio({
   apiKey: 'your-api-key',
   baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
   allowTracking: true, // Optional: Enable/disable telemetry
-  dangerouslyAllowAutoUploadDownloadFiles: false, // Optional: opt in to automatic file handling (default false)
+  dangerouslyAllowAutoUploadDownloadFiles: false, // Optional: set to true to opt in to automatic file handling (default: false)
   sensitiveFileUploadProtection: true, // Optional: block uploads from sensitive paths (Node; default true)
   fileUploadPathDenySegments: undefined, // Optional: extra path component denylist
   provider: new OpenAIProvider(), // Optional: Custom provider
