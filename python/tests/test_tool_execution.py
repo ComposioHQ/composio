@@ -888,6 +888,7 @@ class TestToolExecution:
             client=mock_client,
             provider=mock_provider,
             toolkit_versions={"github": "20251201_01"},
+            dangerously_allow_auto_upload_download_files=True,
         )
 
         github_tool = self.create_mock_tool("GITHUB_GET_REPOS", "github")
