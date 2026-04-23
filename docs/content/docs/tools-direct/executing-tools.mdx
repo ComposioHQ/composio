@@ -451,7 +451,7 @@ import os
 from composio import Composio, before_file_upload
 
 @before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
-def audit_path(path: str, tool: str, toolkit: str) -> str:
+def audit_path(path: str, tool: str, toolkit: str) -> str | bool:
     return path
 
 composio = Composio()
