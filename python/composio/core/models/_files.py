@@ -18,10 +18,14 @@ from composio.client.types import Tool
 from composio.exceptions import (
     ErrorDownloadingFile,
     ErrorUploadingFile,
+    FileUploadAbortedError,
     ResponseTooLargeError,
     SDKFileNotFoundError,
 )
 from composio.utils import mimetypes
+from composio.utils.sensitive_file_upload_paths import (
+    assert_safe_local_file_upload_path,
+)
 from composio.utils.logging import WithLogger
 
 if t.TYPE_CHECKING:
@@ -416,6 +420,12 @@ class FileUploadable(BaseModel):
         file: t.Union[str, Path],
         tool: str,
         toolkit: str,
+        *,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        before_file_upload: t.Optional[
+            t.Callable[[str, str, str], t.Union[str, bool]]
+        ] = None,
     ) -> te.Self:
         """Create a FileUploadable from a local file path or public URL.
 
@@ -427,14 +437,44 @@ class FileUploadable(BaseModel):
         :param file: Local file path or public URL
         :param tool: The tool slug
         :param toolkit: The toolkit slug
+        :param sensitive_file_upload_protection: When True, block paths on the built-in denylist.
+        :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in list.
+        :param before_file_upload: Optional ``(path, tool, toolkit) -> str | bool``; return a new path string, or False to abort.
         :return: FileUploadable instance with S3 key
         """
+        file_str = str(file) if isinstance(file, Path) else file
+
         # Check if it's a URL
-        if isinstance(file, str) and _is_url(file):
-            return cls.from_url(client=client, url=file, tool=tool, toolkit=toolkit)
+        if isinstance(file_str, str) and _is_url(file_str):
+            path_in = file_str
+            if before_file_upload is not None:
+                out = before_file_upload(path_in, tool, toolkit)
+                if out is False:
+                    raise FileUploadAbortedError(
+                        "File upload was aborted because before_file_upload returned False."
+                    )
+                if isinstance(out, str):
+                    path_in = out
+            return cls.from_url(client=client, url=path_in, tool=tool, toolkit=toolkit)
+
+        path_in = file_str
+        if before_file_upload is not None:
+            out = before_file_upload(path_in, tool, toolkit)
+            if out is False:
+                raise FileUploadAbortedError(
+                    "File upload was aborted because before_file_upload returned False."
+                )
+            if isinstance(out, str):
+                path_in = out
+
+        assert_safe_local_file_upload_path(
+            path_in,
+            enabled=sensitive_file_upload_protection,
+            additional_deny_segments=file_upload_path_deny_segments,
+        )
 
         # Handle as local file path
-        file = Path(file)
+        file = Path(path_in)
         if not file.exists():
             raise SDKFileNotFoundError(
                 f"File not found: {file}. Please provide a valid file path."
@@ -487,11 +527,23 @@ class FileDownloadable(BaseModel):
         return outfile
 
 
+BeforeFileUpload = t.Callable[[str, str, str], t.Union[str, bool]]
+
+
 class FileHelper(WithLogger):
-    def __init__(self, client: HttpClient, outdir: t.Optional[str] = None):
+    def __init__(
+        self,
+        client: HttpClient,
+        outdir: t.Optional[str] = None,
+        *,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+    ) -> None:
         super().__init__()
         self._client = client
         self._outdir = Path(outdir or LOCAL_OUTPUT_FILE_DIRECTORY)
+        self._sensitive_file_upload_protection = sensitive_file_upload_protection
+        self._file_upload_path_deny_segments = file_upload_path_deny_segments
 
     def _has_file_property(
         self, schema: t.Dict, property_name: str = "file_uploadable"
@@ -691,6 +743,8 @@ class FileHelper(WithLogger):
         tool: Tool,
         schema: t.Dict,
         request: t.Dict,
+        *,
+        before_file_upload: t.Optional[BeforeFileUpload] = None,
     ) -> t.Dict:
         if "properties" not in schema:
             return request
@@ -714,6 +768,9 @@ class FileHelper(WithLogger):
                     file=request[_param],
                     tool=tool.slug,
                     toolkit=tool.toolkit.slug,
+                    sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+                    file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                    before_file_upload=before_file_upload,
                 ).model_dump()
                 continue
 
@@ -731,6 +788,9 @@ class FileHelper(WithLogger):
                         file=request[_param],
                         tool=tool.slug,
                         toolkit=tool.toolkit.slug,
+                        sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+                        file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                        before_file_upload=before_file_upload,
                     ).model_dump()
                     continue
 
@@ -743,6 +803,7 @@ class FileHelper(WithLogger):
                         schema=uploadable_variant,
                         request=request[_param],
                         tool=tool,
+                        before_file_upload=before_file_upload,
                     )
                     continue
 
@@ -755,6 +816,7 @@ class FileHelper(WithLogger):
                     schema=param_schema,
                     request=request[_param],
                     tool=tool,
+                    before_file_upload=before_file_upload,
                 )
                 continue
 
@@ -777,6 +839,9 @@ class FileHelper(WithLogger):
                                             file=item,
                                             tool=tool.slug,
                                             toolkit=tool.toolkit.slug,
+                                            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+                                            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                                            before_file_upload=before_file_upload,
                                         ).model_dump()
                                     )
                             elif isinstance(item, dict):
@@ -785,6 +850,7 @@ class FileHelper(WithLogger):
                                         schema=items_schema,
                                         request=item,
                                         tool=tool,
+                                        before_file_upload=before_file_upload,
                                     )
                                 )
                             else:
@@ -795,11 +861,18 @@ class FileHelper(WithLogger):
 
         return request
 
-    def substitute_file_uploads(self, tool: Tool, request: t.Dict) -> t.Dict:
+    def substitute_file_uploads(
+        self,
+        tool: Tool,
+        request: t.Dict,
+        *,
+        before_file_upload: t.Optional[BeforeFileUpload] = None,
+    ) -> t.Dict:
         return self._substitute_file_uploads_recursively(
             tool=tool,
             schema=tool.input_parameters,
             request=request,
+            before_file_upload=before_file_upload,
         )
 
     def _is_file_downloadable(self, schema: t.Dict) -> bool:

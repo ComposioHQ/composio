@@ -177,3 +177,18 @@ getConfig(): ComposioConfig
 `ComposioConfig` — The configuration SDK is initialized with
 
 ---
+
+## File upload security
+
+When `autoUploadDownloadFiles` is true (default), the SDK can read local file paths and upload them before tool execution. The constructor accepts options that work together with the optional `beforeFileUpload` modifier on `tools.execute` (see [Executing tools: security](/docs/tools-direct/executing-tools#security-for-local-file-paths)).
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sensitiveFileUploadProtection` | `boolean` | `true` | When true, local path strings for auto-upload and `files.upload` are checked against a built-in denylist of path segments (for example `.ssh`, `.aws`) and credential-like file names. Set to `false` only if you accept the security tradeoff. |
+| `fileUploadPathDenySegments` | `string[]` | `undefined` | Additional single path *components* (directory or file names) merged with the built-in list; matched anywhere in the resolved path. |
+
+Pass **`beforeFileUpload`** on the **third argument** to `composio.tools.execute` (with `beforeExecute` / `afterExecute`), not on the constructor. The hook runs for each `file_uploadable` value before read/upload: return a path string, `false` to abort, or throw.
+
+**Related errors:** `ComposioSensitiveFilePathBlockedError`, `ComposioFileUploadAbortedError` (from `@composio/core`).
+
+---

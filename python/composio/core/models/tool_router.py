@@ -365,6 +365,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         provider: t.Optional["BaseProvider[TTool, TToolCollection]"] = None,
         auto_upload_download_files: t.Optional[bool] = None,
         dangerously_allow_auto_upload_download_files: bool = False,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
     ):
         """
         Initialize ToolRouter instance.
@@ -373,9 +375,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param provider: Optional provider for tool wrapping
         :param auto_upload_download_files: Deprecated. Use ``dangerously_allow_auto_upload_download_files``.
         :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
+        :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
+        :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
         """
         super().__init__(client)
         self._provider = provider
+        self._sensitive_file_upload_protection = sensitive_file_upload_protection
+        self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._auto_upload_download_files = resolve_auto_upload_download_files_enabled(
             dangerously_allow_auto_upload_download_files=dangerously_allow_auto_upload_download_files,
             auto_upload_download_files=auto_upload_download_files,
@@ -813,6 +819,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             client=self._client,
             provider=self._provider,
             auto_upload_download_files=self._auto_upload_download_files,
+            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
@@ -866,6 +874,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             client=self._client,
             provider=self._provider,
             auto_upload_download_files=self._auto_upload_download_files,
+            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),

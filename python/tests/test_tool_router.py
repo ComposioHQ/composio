@@ -970,7 +970,9 @@ class TestToolRouter:
         mock_tools_class.assert_called_once_with(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=False,
+            dangerously_allow_auto_upload_download_files=False,
+            sensitive_file_upload_protection=True,
+            file_upload_path_deny_segments=None,
         )
 
         # Verify get_raw_tool_router_meta_tools was called
@@ -1262,7 +1264,11 @@ class TestToolRouterExecution:
         # Create a real Tools instance to test the execute function
         from composio.core.models.tools import Tools as RealTools
 
-        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
         execute_fn = real_tools._wrap_execute_tool_for_tool_router(
             session_id="session_123"
         )
@@ -1309,7 +1315,11 @@ class TestToolRouterExecution:
         from composio.core.models._modifiers import Modifier
         from composio.core.models.tools import Tools as RealTools
 
-        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
 
         modifiers = [
             Modifier(
@@ -1348,7 +1358,11 @@ class TestToolRouterExecution:
         # Create a real execute function
         from composio.core.models.tools import Tools as RealTools
 
-        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
         execute_fn = real_tools._wrap_execute_tool_for_tool_router(
             session_id="session_123"
         )

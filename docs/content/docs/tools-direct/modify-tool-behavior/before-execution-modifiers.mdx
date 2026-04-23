@@ -178,6 +178,32 @@ const agenticTools = await composio.tools.get(
   </Tab>
 </Tabs>
 
+## Before file upload (Python)
+
+For tools with `file_uploadable` parameters, the SDK can read a local path and upload the file before calling the Composio API. To audit, rewrite, or block those paths, use the [`@before_file_upload`](/reference/sdk-reference/python/index#before_file_upload) decorator and pass the decorated callables in `modifiers` to `tools.get`, `tools.execute`, or a tool router session’s `tools(modifiers=...)`.
+
+See [Executing tools: security for local file paths](/docs/tools-direct/executing-tools#security-for-local-file-paths) for constructor options, errors, and a full tabbed example.
+
+```python
+from composio import Composio, before_file_upload
+
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit_path(path: str, tool: str, toolkit: str) -> str | bool:
+    # return a new path string, or False to abort the upload
+    return path
+
+composio = Composio()
+composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": "/path/to/document.pdf"},
+    user_id="user_123",
+    modifiers=[audit_path],
+)
+```
+
+- **Composition:** `before_file_upload`-type modifiers in the `modifiers` list are applied in **list order** (after filtering by each modifier’s `tools` / `toolkits` scope). Chaining works like a pipeline: each hook receives the path produced by the previous one.
+- **Relative to `before_execute`:** automatic file substitution runs **before** `before_execute` modifiers, matching TypeScript behavior (including tool router `execute_meta`).
+
 ## What to read next
 
 <Cards>

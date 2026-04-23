@@ -12,6 +12,8 @@ const composio = new Composio({
   baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
   allowTracking: true, // Optional: Enable/disable telemetry
   autoUploadDownloadFiles: true, // Optional: Enable/disable automatic file handling
+  sensitiveFileUploadProtection: true, // Optional: block uploads from sensitive paths (Node; default true)
+  fileUploadPathDenySegments: undefined, // Optional: extra path component denylist
   provider: new OpenAIProvider(), // Optional: Custom provider
 });
 ```
@@ -26,6 +28,8 @@ The `Composio` constructor accepts a configuration object with the following pro
 | `baseURL`               | string                   | No       | `https://api.composio.dev` | The base URL for the Composio API              |
 | `allowTracking`         | boolean                  | No       | `true`                     | Whether to allow analytics/tracking            |
 | `autoUploadDownloadFiles`| boolean                 | No       | `true`                     | Whether to automatically handle file operations |
+| `sensitiveFileUploadProtection` | `boolean`        | No       | `true` (Node)              | When true, local upload paths are checked against a denylist of sensitive segments and credential-like names before read/upload. |
+| `fileUploadPathDenySegments` | `string[]`         | No       | `undefined`                | Additional path *components* merged with the built-in denylist. |
 | `provider`              | `BaseComposioProvider`   | No       | `new OpenAIProvider()`     | The provider to use for this Composio instance |
 
 ## Properties
@@ -103,3 +107,26 @@ const composio = new Composio({
   autoUploadDownloadFiles: false,
 });
 ```
+
+### Per-execution `beforeFileUpload` modifier
+
+Use the **third argument** to `composio.tools.execute` to intercept each file read before upload (in addition to global `sensitiveFileUploadProtection` on the client):
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+
+await composio.tools.execute(
+  'SOME_FILE_TOOL',
+  { userId: 'u', arguments: { file: '/tmp/report.pdf' }, dangerouslySkipVersionCheck: true },
+  {
+    beforeFileUpload: async ({ path, toolSlug, toolkitSlug }) => {
+      // return path, a different path, or false to abort
+      return path;
+    },
+  }
+);
+```
+
+See [Auto upload and download](./advanced/auto-upload-download.md#security-sensitive-local-paths) for the security model and error types.

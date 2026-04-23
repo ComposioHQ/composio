@@ -77,6 +77,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         client: HttpClient,
         provider: t.Optional[BaseProvider[t.Any, t.Any]],
         auto_upload_download_files: bool,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
@@ -86,6 +88,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._client = client
         self._provider = provider
         self._auto_upload_download_files = auto_upload_download_files
+        self._sensitive_file_upload_protection = sensitive_file_upload_protection
+        self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self.session_id = session_id
         self.mcp = mcp
         self.experimental = experimental
@@ -107,6 +111,17 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         if self._custom_tools_map is None:
             return False
         return len(self._custom_tools_map.by_final_slug) > 0
+
+    def _tool_router_backend_execute(
+        self,
+        tools_model: t.Any,
+        modifiers: t.Optional["Modifiers"] = None,
+    ) -> t.Callable[..., t.Any]:
+        """Backend execute_meta wrapper with this session's file-upload settings."""
+        return tools_model._wrap_execute_tool_for_tool_router(
+            session_id=self.session_id,
+            modifiers=modifiers,
+        )
 
     def tools(self, modifiers: t.Optional["Modifiers"] = None) -> TToolCollection:
         """
@@ -131,7 +146,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         tools_model = ToolsModel(
             client=self._client,
             provider=self._provider,
-            auto_upload_download_files=self._auto_upload_download_files,
+            dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
+            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
         )
 
         router_tools = tools_model.get_raw_tool_router_meta_tools(
@@ -159,9 +176,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         if self._has_custom_tools():
             execute_fn = self._create_routing_execute_fn(tools_model, modifiers)
         else:
-            execute_fn = tools_model._wrap_execute_tool_for_tool_router(
-                session_id=self.session_id,
-                modifiers=modifiers,
+            execute_fn = self._tool_router_backend_execute(
+                tools_model, modifiers=modifiers
             )
 
         return t.cast(
@@ -182,9 +198,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Applies before_execute/after_execute modifiers around the overall
         COMPOSIO_MULTI_EXECUTE_TOOL call, consistent with the standard path.
         """
-        backend_execute = tools_model._wrap_execute_tool_for_tool_router(
-            session_id=self.session_id,
-            modifiers=modifiers,
+        backend_execute = self._tool_router_backend_execute(
+            tools_model, modifiers=modifiers
         )
 
         def routing_execute(slug: str, arguments: t.Dict) -> t.Dict:
@@ -251,9 +266,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         tool_items = input_args.get("tools")
         if not isinstance(tool_items, list) or len(tool_items) == 0:
             # Fallback: send to backend as-is (no modifiers — caller handles them)
-            return tools_model._wrap_execute_tool_for_tool_router(
-                session_id=self.session_id,
-            )(COMPOSIO_MULTI_EXECUTE_TOOL, input_args)
+            return self._tool_router_backend_execute(tools_model)(
+                COMPOSIO_MULTI_EXECUTE_TOOL,
+                input_args,
+            )
 
         parsed = [self._parse_tool_item(item) for item in tool_items]
 
@@ -269,9 +285,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # All remote — just forward entire payload (no modifiers — caller handles them)
         if not local_items:
-            return tools_model._wrap_execute_tool_for_tool_router(
-                session_id=self.session_id,
-            )(COMPOSIO_MULTI_EXECUTE_TOOL, input_args)
+            return self._tool_router_backend_execute(tools_model)(
+                COMPOSIO_MULTI_EXECUTE_TOOL,
+                input_args,
+            )
 
         ctx = self._session_context
         assert ctx is not None
@@ -298,9 +315,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if remote_indices:
                 remote_tool_items = [tool_items[i] for i in remote_indices]
                 remote_input = {**input_args, "tools": remote_tool_items}
-                execute_fn = tools_model._wrap_execute_tool_for_tool_router(
-                    session_id=self.session_id,
-                )
+                execute_fn = self._tool_router_backend_execute(tools_model)
                 remote_future = pool.submit(
                     execute_fn,
                     COMPOSIO_MULTI_EXECUTE_TOOL,

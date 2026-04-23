@@ -1,0 +1,143 @@
+---
+title: 'SDK file upload hardening: sensitive path blocking and upload hooks'
+description: 'TypeScript and Python SDKs now block automatic uploads from common credential locations by default, support extra denylist segments, and offer a before-upload hook. New error types when a path is blocked or a hook aborts the upload.'
+date: '2026-04-23'
+---
+
+The Composio SDKs add defense-in-depth for **automatic file uploads** (when a tool input is marked `file_uploadable` and the SDK reads a local path and sends the file to Composio storage). The goal is to reduce the risk of agent or app code accidentally exfiltrating secrets, SSH keys, or project env files that sit under well-known paths on disk.
+
+**URLs and `File` objects are not subject to the path-based denylist** in the same way as string paths; the checks apply to resolved local filesystem paths used for auto-upload and the programmatic upload helpers that accept paths.
+
+### SDK versions
+
+| SDK        | Version (includes this behavior)  |
+| ---------- | --------------------------------- |
+| TypeScript | `@composio/core` v0.6.11 or later |
+| Python     | `composio` v0.11.6 or later       |
+
+### What changed
+
+- **Default sensitive path protection** — Before reading and uploading, the SDK checks the resolved local path against a built-in list of path segments (for example `.ssh`, `.aws`, `.claude`, `.kube`) and file-name patterns (for example `.env`, default SSH private key names, `credentials`). If the path matches, the upload is refused unless you change configuration.
+- **Extra denylist segments** — You can add path component names to merge with the built-in list (for example a proprietary secrets directory name).
+- **`beforeFileUpload` / `before_file_upload` hook** — Optional hook for each file upload: return a different path, return `false` to abort, or throw. TypeScript: pass `beforeFileUpload` on the third argument to `tools.execute`. Python: use [`@before_file_upload`](/reference/sdk-reference/python/index#before_file_upload) in the `modifiers` list (same as other Python modifiers), not a separate keyword. Use this to enforce app-specific policies, audit logging, or copy-on-write to a safe temp file before upload. See [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python).
+- **New errors** — `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked, and `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` or a hook throws in an aborting way.
+- **Python: modifier order** — `substitute_file_uploads` runs before `before_execute` modifiers, matching TypeScript behavior (including Tool Router `execute_meta`).
+
+### Examples
+
+#### Configure the client (defaults + extra denylist segments)
+
+Keep the built-in blocklist enabled and add path **component** names (anywhere in the resolved path) that your app treats as secret:
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  sensitiveFileUploadProtection: true,
+  fileUploadPathDenySegments: ['company-secrets', 'private-keys'],
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    sensitive_file_upload_protection=True,
+    file_upload_path_deny_segments=("company-secrets", "private-keys"),
+)
+```
+</Tab>
+</Tabs>
+
+#### Run a hook before each automatic file read
+
+Return a new path, return `false` / `False` to abort, or throw. TypeScript passes `beforeFileUpload` in the **third** argument to `tools.execute`. In Python, use [`@before_file_upload`](/reference/sdk-reference/python/index#before_file_upload) in `modifiers`:
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, type beforeFileUploadModifier } from '@composio/core';
+import path from 'node:path';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+
+const beforeFileUpload: beforeFileUploadModifier = async ctx => {
+  // e.g. log, rewrite path, or return false to block
+  return ctx.path;
+};
+
+await composio.tools.execute(
+  'GOOGLEDRIVE_UPLOAD_FILE',
+  {
+    userId: 'user-123',
+    arguments: { file_to_upload: path.join(__dirname, 'document.pdf') },
+    dangerouslySkipVersionCheck: true,
+  },
+  { beforeFileUpload },
+);
+```
+</Tab>
+<Tab value="Python">
+```python
+import os
+
+from composio import Composio, before_file_upload
+
+
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def before_upload(path: str, tool: str, toolkit: str) -> "str | bool":
+    return path
+
+
+composio = Composio()
+
+composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+    user_id="user-123",
+    modifiers=[before_upload],
+)
+```
+</Tab>
+</Tabs>
+
+### Opting out
+
+Set **`sensitiveFileUploadProtection: false`** (TypeScript) or **`sensitive_file_upload_protection=False`** (Python) only if you have a clear reason and accept the security tradeoff. Prefer copying files to a non-sensitive path or using the hook to gate uploads.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  sensitiveFileUploadProtection: false,
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    sensitive_file_upload_protection=False,
+)
+```
+</Tab>
+</Tabs>
+
+### Where to read more
+
+- [Executing tools: automatic file handling and security options](/docs/tools-direct/executing-tools#security-for-local-file-paths) — configuration and code patterns.
+- [TypeScript `Composio` client](/reference/sdk-reference/typescript/composio#file-upload-security) — related constructor options in the reference.
+- TypeScript SDK (repository): `ts/docs/advanced/auto-upload-download.md` — extended guide with error types and edge cases.

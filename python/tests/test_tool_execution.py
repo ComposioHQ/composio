@@ -1,5 +1,6 @@
 """Test tool execution with toolkit versions and argument serialization."""
 
+import typing as t
 from unittest.mock import Mock, patch
 
 import pytest
@@ -844,6 +845,85 @@ class TestToolExecution:
             # Verify execution succeeded and response was modified
             assert result["successful"] is True
             assert result["data"]["modified"] is True
+
+    def test_merge_before_file_upload_scopes_by_tool(self):
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        scoped = before_file_upload(tools=["OTHER_TOOL"])(lambda p, t, k: p + "_X")
+        fn = merge_before_file_upload([scoped], tool="MY", toolkit="gh")
+        assert fn is not None
+        assert fn("/a", "MY", "gh") == "/a"
+
+        all_tools = before_file_upload(lambda p, t, k: p + "_Y")
+        fn2 = merge_before_file_upload([all_tools], tool="MY", toolkit="gh")
+        assert fn2 is not None
+        assert fn2("/a", "MY", "gh") == "/a_Y"
+
+    def test_merge_before_file_upload_chains_modifiers(self):
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        m1 = before_file_upload(lambda p, t, k: f"{p}|1")
+        m2 = before_file_upload(lambda p, t, k: f"{p}|2")
+        fn = merge_before_file_upload([m1, m2], tool="T", toolkit="k")
+        assert fn is not None
+        assert fn("p", "T", "k") == "p|1|2"
+
+    def test_execute_includes_before_file_upload_modifier_in_compose(
+        self,
+    ):
+        """``before_file_upload`` in ``modifiers`` is composed into substitute_file_uploads."""
+        from composio.core.models._modifiers import before_file_upload
+
+        mock_client = Mock()
+        mock_provider = Mock()
+        mock_provider.name = "test_provider"
+
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            toolkit_versions={"github": "20251201_01"},
+        )
+
+        github_tool = self.create_mock_tool("GITHUB_GET_REPOS", "github")
+
+        with patch.object(
+            tools, "get_raw_composio_tool_by_slug", return_value=github_tool
+        ):
+            mock_client.tools.retrieve.return_value = github_tool
+
+            mock_execute_response = Mock()
+            mock_execute_response.model_dump.return_value = {
+                "data": {"result": "success"},
+                "error": None,
+                "successful": True,
+            }
+            mock_client.tools.execute.return_value = mock_execute_response
+
+            cap: t.Dict = {}
+
+            def capture_sub(**kwargs):
+                cap["bfu"] = kwargs.get("before_file_upload")
+                return kwargs["request"]
+
+            with patch.object(
+                tools._file_helper, "substitute_file_uploads", side_effect=capture_sub
+            ):
+                mod = before_file_upload(lambda p, t, k: f"{p}>")
+                tools.execute(
+                    slug="GITHUB_GET_REPOS",
+                    arguments={"owner": "a", "repo": "b"},
+                    modifiers=[mod],
+                )
+
+            bfu = cap.get("bfu")
+            assert bfu is not None
+            assert bfu("/p", "GITHUB_GET_REPOS", "github") == "/p>"
 
     def test_execute_with_environment_variable_toolkit_version(self):
         """Test that execute uses environment variable for toolkit version."""

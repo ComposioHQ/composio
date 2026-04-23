@@ -385,6 +385,89 @@ console.log(result);
   </Tab>
 </Tabs>
 
+## Security for local file paths
+
+Automatic upload reads local paths (or uses them in `files.upload`) and sends file content to Composio storage. To reduce the chance of **accidentally uploading secrets** (SSH keys, cloud credentials, `.env` files, or assistant project folders), the SDK checks resolved paths against a **default denylist** of path segments and file-name patterns. **HTTP/HTTPS URLs and `File` objects are not matched like local path strings**; only local string paths go through this check.
+
+<Callout type="warn">
+Disabling protection or wiring a hook that always approves paths can allow **exfiltration of sensitive files** if an LLM or malicious input points at credential locations. Prefer keeping protection on, adding [`fileUploadPathDenySegments`](/reference/sdk-reference/typescript/composio#file-upload-security) (TypeScript) / `file_upload_path_deny_segments` (Python) for your own secret directories, and using a [`beforeFileUpload`](/reference/sdk-reference/typescript/composio#file-upload-security) / `before_file_upload` hook for auditing or strict allowlists. On Python, you can use the `@before_file_upload` decorator with `modifiers=[...]` the same way as `@before_execute` — see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) on the before-execution modifiers page.
+</Callout>
+
+**Constructor options (defaults protect sensitive locations):**
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+  <Tab value="TypeScript">
+```typescript
+// @errors: 2353
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  // default true — block paths under built-in segments (e.g. .ssh, .aws) and risky basenames
+  sensitiveFileUploadProtection: true,
+  // optional: extra path *components* anywhere in the resolved path, merged with the built-in list
+  fileUploadPathDenySegments: ['internal-only-secrets'],
+});
+```
+  </Tab>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    sensitive_file_upload_protection=True,
+    file_upload_path_deny_segments=("internal-only-secrets",),
+)
+```
+  </Tab>
+</Tabs>
+
+**Per-execution upload hook** (run after the path is chosen but before read/upload; return a new path, `false` to abort, or throw). TypeScript passes `beforeFileUpload` on the **third** argument to `tools.execute`. In Python, add **`@before_file_upload`** functions to the `modifiers` list for `get` / `execute` (see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python)).
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, type beforeFileUploadModifier } from '@composio/core';
+import path from 'node:path';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const beforeFileUpload: beforeFileUploadModifier = async ctx => ctx.path;
+// ---cut---
+await composio.tools.execute(
+  'GOOGLEDRIVE_UPLOAD_FILE',
+  {
+    userId: 'user-4235***',
+    arguments: { file_to_upload: path.join(__dirname, 'document.pdf') },
+    dangerouslySkipVersionCheck: true,
+  },
+  { beforeFileUpload }
+);
+```
+  </Tab>
+  <Tab value="Python">
+```python
+import os
+from composio import Composio, before_file_upload
+
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit_path(path: str, tool: str, toolkit: str) -> str | bool:
+    return path
+
+composio = Composio()
+
+composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+    user_id="user-1235***",
+    modifiers=[audit_path],
+)
+```
+  </Tab>
+</Tabs>
+
+**Errors:** `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked; `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` (or equivalent abort).
+
 ### Disabling Auto File Handling
 
 You can disable automatic file handling when initializing the TypeScript SDK. When disabled, handle file uploads and downloads manually using `files.upload` and `files.download`:

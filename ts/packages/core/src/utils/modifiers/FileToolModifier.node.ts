@@ -6,8 +6,17 @@ import {
 } from '../../types/tool.types';
 import ComposioClient from '@composio/client';
 import logger from '../logger';
-import { ComposioFileUploadError } from '../../errors/FileModifierErrors';
-import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../fileUtils.node';
+import {
+  ComposioFileUploadAbortedError,
+  ComposioFileUploadError,
+  ComposioSensitiveFilePathBlockedError,
+} from '../../errors/FileModifierErrors';
+import type { beforeFileUploadModifier } from '../../types/modifiers.types';
+import {
+  downloadFileFromS3,
+  getFileDataAfterUploadingToS3,
+  type GetFileDataAfterUploadingToS3Options,
+} from '../fileUtils.node';
 import {
   isPlainObject,
   transformProperties,
@@ -28,7 +37,12 @@ const hydrateFiles = async (
     toolSlug: string;
     toolkitSlug: string;
     client: ComposioClient;
-  }
+  } & Pick<
+    GetFileDataAfterUploadingToS3Options,
+    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments'
+  > & {
+      beforeFileUpload?: beforeFileUploadModifier;
+    }
 ): Promise<unknown> => {
   // ──────────────────────────────────────────────────────────────────────────
   // 1. Direct file upload
@@ -37,11 +51,65 @@ const hydrateFiles = async (
     // Upload only if the runtime value is a string (i.e., a local path) or blob
     if (typeof value !== 'string' && !(value instanceof File)) return value;
 
-    logger.debug(`Uploading file "${value}"`);
+    const runBeforeFileUpload = async (path: string): Promise<string> => {
+      if (!ctx.beforeFileUpload) {
+        return path;
+      }
+      const out = await ctx.beforeFileUpload({
+        path,
+        toolSlug: ctx.toolSlug,
+        toolkitSlug: ctx.toolkitSlug,
+      });
+      if (out === false) {
+        throw new ComposioFileUploadAbortedError(
+          'File upload was aborted because beforeFileUpload returned false.'
+        );
+      }
+      return out;
+    };
+
+    if (typeof value === 'string') {
+      const pathOrUrl = await runBeforeFileUpload(value);
+      logger.debug(`Uploading file "${pathOrUrl}"`);
+      return getFileDataAfterUploadingToS3(pathOrUrl, {
+        toolSlug: ctx.toolSlug,
+        toolkitSlug: ctx.toolkitSlug,
+        client: ctx.client,
+        sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
+        fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+      });
+    }
+
+    // File
+    if (ctx.beforeFileUpload) {
+      const out = await ctx.beforeFileUpload({
+        path: value.name,
+        toolSlug: ctx.toolSlug,
+        toolkitSlug: ctx.toolkitSlug,
+      });
+      if (out === false) {
+        throw new ComposioFileUploadAbortedError(
+          'File upload was aborted because beforeFileUpload returned false.'
+        );
+      }
+      if (typeof out === 'string' && out !== value.name) {
+        logger.debug(`Uploading file from path "${out}" (replaced File: ${value.name})`);
+        return getFileDataAfterUploadingToS3(out, {
+          toolSlug: ctx.toolSlug,
+          toolkitSlug: ctx.toolkitSlug,
+          client: ctx.client,
+          sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
+          fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+        });
+      }
+    }
+    logger.debug(`Uploading file "${value.name}"`);
     return getFileDataAfterUploadingToS3(value, {
       toolSlug: ctx.toolSlug,
       toolkitSlug: ctx.toolkitSlug,
       client: ctx.client,
+      sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
     });
   }
 
@@ -234,9 +302,17 @@ const hydrateDownloads = async (
 
 export class FileToolModifier {
   private client: ComposioClient;
+  private fileUploadPathOptions: Pick<
+    GetFileDataAfterUploadingToS3Options,
+    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments'
+  > & { beforeFileUpload?: beforeFileUploadModifier };
 
-  constructor(client: ComposioClient) {
+  constructor(
+    client: ComposioClient,
+    fileUploadPathOptions: FileToolModifier['fileUploadPathOptions'] = {}
+  ) {
     this.client = client;
+    this.fileUploadPathOptions = fileUploadPathOptions;
   }
 
   async modifyToolSchema(toolSlug: string, toolkitSlug: string, schema: Tool): Promise<Tool> {
@@ -274,9 +350,16 @@ export class FileToolModifier {
         toolSlug,
         toolkitSlug,
         client: this.client,
+        ...this.fileUploadPathOptions,
       });
       return { ...params, arguments: newArgs as ToolExecuteParams['arguments'] };
     } catch (error) {
+      if (
+        error instanceof ComposioSensitiveFilePathBlockedError ||
+        error instanceof ComposioFileUploadAbortedError
+      ) {
+        throw error;
+      }
       throw new ComposioFileUploadError('Failed to upload file', {
         cause: error,
       });

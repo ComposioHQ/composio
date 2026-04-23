@@ -73,6 +73,18 @@ def my_modifier(...):
     ...
 ```
 
+### before_file_upload
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L236)
+
+```python
+@before_file_upload(modifier: BeforeFileUploadCallable | None = ..., tools: List[str | None] = ..., toolkits: List[str | None] = ...)
+def my_modifier(path: str, tool: str, toolkit: str) -> str | bool:
+    ...
+```
+
+Builds a [Modifier](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py) for the file-upload hook. See [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) for usage and examples.
+
 ### schema_modifier
 
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L222)

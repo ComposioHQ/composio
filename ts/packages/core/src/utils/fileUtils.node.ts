@@ -7,6 +7,26 @@ import logger from './logger';
 import { getRandomShortId } from './uuid';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './buffer';
 import type { FileDownloadData, FileUploadData } from '../types/files.types';
+import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths.node';
+
+/**
+ * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
+ */
+export type GetFileDataAfterUploadingToS3Options = {
+  toolSlug: string;
+  toolkitSlug: string;
+  client: ComposioClient;
+  /**
+   * When false, skips the sensitive-path blocklist. URLs and {@link File} objects are never checked.
+   * @default true
+   */
+  sensitiveFileUploadProtection?: boolean;
+  /**
+   * Extra path segments (one directory/file component) to block anywhere in the resolved path;
+   * merged with the built-in list.
+   */
+  fileUploadPathDenySegments?: string[];
+};
 
 // Helper function to get file extension from MIME type
 const getExtensionFromMimeType = (mimeType: string): string => {
@@ -222,14 +242,20 @@ export const getFileDataAfterUploadingToS3 = async (
     toolSlug,
     toolkitSlug,
     client,
-  }: {
-    toolSlug: string;
-    toolkitSlug: string;
-    client: ComposioClient;
-  }
+    sensitiveFileUploadProtection,
+    fileUploadPathDenySegments,
+  }: GetFileDataAfterUploadingToS3Options
 ): Promise<FileUploadData> => {
   if (!file) {
     throw new Error('Either path or blob must be provided');
+  }
+
+  if (
+    sensitiveFileUploadProtection !== false &&
+    typeof file === 'string' &&
+    !file.startsWith('http')
+  ) {
+    assertSafeFileUploadPath(file, { additionalDenySegments: fileUploadPathDenySegments });
   }
 
   const fileData = await readFile(file);

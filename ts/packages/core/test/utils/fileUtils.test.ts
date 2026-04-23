@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as path from 'node:path';
 import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils.node';
 import ComposioClient from '@composio/client';
+import { ComposioSensitiveFilePathBlockedError } from '../../src/errors/FileModifierErrors';
 
 // Mock the uuid module
 vi.mock('../../src/utils/uuid', () => ({
@@ -30,15 +32,15 @@ vi.mock('os', () => ({
   homedir: vi.fn(() => '/home/test'),
 }));
 
-// Mock path module
-vi.mock('path', () => ({
-  default: {
-    join: vi.fn((...args) => args.join('/')),
-    basename: vi.fn(path => path.split('/').pop()),
-  },
-  join: vi.fn((...args) => args.join('/')),
-  basename: vi.fn(path => path.split('/').pop()),
-}));
+// Mock path module (keep resolve/join for sensitive path checks; basename stays mocked for fileUtils)
+vi.mock('path', async importOriginal => {
+  const actual = await importOriginal<typeof import('node:path')>();
+  return {
+    ...actual,
+    default: actual,
+    basename: vi.fn((p: string) => p.split('/').pop() ?? p),
+  };
+});
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -367,6 +369,16 @@ describe('fileUtils', () => {
   // Note: Local file handling tests are covered in the existing fileModifiers.test.ts
 
   describe('Error handling', () => {
+    it('refuses sensitive local paths before read or S3 (built-in denylist)', async () => {
+      await expect(
+        getFileDataAfterUploadingToS3(path.join('/home/test', '.aws', 'creds'), {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        })
+      ).rejects.toThrow(ComposioSensitiveFilePathBlockedError);
+    });
+
     it('should handle fetch errors for URLs', async () => {
       mockFetch.mockResolvedValue({
         ok: false,

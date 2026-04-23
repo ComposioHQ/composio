@@ -11,7 +11,19 @@ import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../utils/file
 import { telemetry } from '../telemetry/Telemetry';
 
 export class Files {
-  constructor(private readonly client: ComposioClient) {
+  private readonly fileUploadPathOptions: {
+    sensitiveFileUploadProtection?: boolean;
+    fileUploadPathDenySegments?: string[];
+  };
+
+  constructor(
+    private readonly client: ComposioClient,
+    fileUploadPathOptions: {
+      sensitiveFileUploadProtection?: boolean;
+      fileUploadPathDenySegments?: string[];
+    } = {}
+  ) {
+    this.fileUploadPathOptions = fileUploadPathOptions;
     telemetry.instrument(this, 'Files');
   }
 
@@ -45,6 +57,8 @@ export class Files {
       toolSlug,
       toolkitSlug,
       client: this.client,
+      sensitiveFileUploadProtection: this.fileUploadPathOptions.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: this.fileUploadPathOptions.fileUploadPathDenySegments,
     });
     return fileData;
   }
