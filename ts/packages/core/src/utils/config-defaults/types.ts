@@ -9,6 +9,6 @@ import type { BaseComposioProvider } from '../../provider/BaseProvider';
 export type ConfigDefaults = Required<
   Pick<
     ComposioConfig<BaseComposioProvider<never, never, never>>,
-    'autoUploadDownloadFiles' | 'allowTracking' | 'toolkitVersions'
+    'dangerouslyAllowAutoUploadDownloadFiles' | 'allowTracking' | 'toolkitVersions'
   >
 >;

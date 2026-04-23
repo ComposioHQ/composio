@@ -25,6 +25,7 @@ from composio.core.provider._openai import (
 )
 from composio.core.provider.base import BaseProvider
 from composio.core.types import ToolkitVersionParam
+from composio.utils.auto_upload_download import resolve_auto_upload_download_files_enabled
 from composio.utils.logging import WithLogger
 from composio.utils.toolkit_version import get_toolkit_versions
 
@@ -40,6 +41,7 @@ class SDKConfig(te.TypedDict):
     allow_tracking: te.NotRequired[bool]
     file_download_dir: te.NotRequired[str]
     toolkit_versions: te.NotRequired[ToolkitVersionParam]
+    dangerously_allow_auto_upload_download_files: te.NotRequired[bool]
     auto_upload_download_files: te.NotRequired[bool]
 
 
@@ -103,7 +105,9 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
                                 - A dictionary mapping toolkit names to specific versions
                                 - A string (e.g., 'latest', '20250906_01') to use the same version for all toolkits
                                 - None or omitted to use 'latest' as default
-        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
+        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file
+            upload and download during tool execution. Defaults to False.
+        :param auto_upload_download_files: Deprecated. Use ``dangerously_allow_auto_upload_download_files`` instead.
         """
         WithLogger.__init__(self)
         api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
@@ -120,6 +124,18 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         # Process toolkit versions with environment variable support
         toolkit_versions = get_toolkit_versions(kwargs.get("toolkit_versions"))
 
+        _auto_upload_download_enabled = resolve_auto_upload_download_files_enabled(
+            dangerously_allow_auto_upload_download_files=kwargs.get(
+                "dangerously_allow_auto_upload_download_files", False
+            ),
+            auto_upload_download_files=(
+                kwargs["auto_upload_download_files"]
+                if "auto_upload_download_files" in kwargs
+                else None
+            ),
+            warn_stacklevel=3,
+        )
+
         allow_tracking.set(kwargs.get("allow_tracking", True))
         self._client = HttpClient(
             environment=kwargs.get("environment", "production"),
@@ -135,7 +151,7 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             provider=actual_provider,
             file_download_dir=kwargs.get("file_download_dir"),
             toolkit_versions=toolkit_versions,
-            auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
+            dangerously_allow_auto_upload_download_files=_auto_upload_download_enabled,
         )
 
         self.toolkits = Toolkits(client=self._client)
@@ -153,7 +169,7 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         self.tool_router = ToolRouter(
             client=self._client,
             provider=actual_provider,
-            auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
+            dangerously_allow_auto_upload_download_files=_auto_upload_download_enabled,
         )
         self.create = self.tool_router.create
         self.use = self.tool_router.use

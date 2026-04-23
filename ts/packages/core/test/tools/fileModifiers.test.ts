@@ -1354,11 +1354,11 @@ describe('Tools with autoUploadDownloadFiles', () => {
     availableVersions: ['20251201_01'],
   };
 
-  describe('when autoUploadDownloadFiles is false', () => {
+  describe('when dangerouslyAllowAutoUploadDownloadFiles is false', () => {
     beforeEach(async () => {
       context.tools = new Tools(mockClient as unknown as ComposioClient, {
         provider: context.mockProvider,
-        autoUploadDownloadFiles: false,
+        dangerouslyAllowAutoUploadDownloadFiles: false,
       });
 
       // Mock the tool execution

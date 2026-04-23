@@ -24,6 +24,7 @@ from composio.core.provider.base import BaseProvider
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
+from composio.utils.auto_upload_download import resolve_auto_upload_download_files_enabled
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
 
@@ -100,7 +101,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         provider: BaseProvider[TTool, TToolCollection],
         file_download_dir: t.Optional[str] = None,
         toolkit_versions: t.Optional[ToolkitVersionParam] = None,
-        auto_upload_download_files: bool = True,
+        auto_upload_download_files: t.Optional[bool] = None,
+        dangerously_allow_auto_upload_download_files: bool = False,
     ):
         """
         Initialize the tools resource.
@@ -109,14 +111,19 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         :param provider: The provider to use for the tools resource.
         :param file_download_dir: Output directory for downloadable files
         :param toolkit_versions: The versions of the toolkits to use. Defaults to 'latest' if not provided.
-        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
+        :param auto_upload_download_files: Deprecated. Use ``dangerously_allow_auto_upload_download_files``.
+        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
         """
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
         self._file_helper = FileHelper(client=self._client, outdir=file_download_dir)
         self._toolkit_versions = toolkit_versions
-        self._auto_upload_download_files = auto_upload_download_files
+        self._auto_upload_download_files = resolve_auto_upload_download_files_enabled(
+            dangerously_allow_auto_upload_download_files=dangerously_allow_auto_upload_download_files,
+            auto_upload_download_files=auto_upload_download_files,
+            warn_stacklevel=3,
+        )
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider

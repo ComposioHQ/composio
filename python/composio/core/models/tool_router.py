@@ -31,6 +31,7 @@ from composio.core.models.tool_router_session import ToolRouterSession
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
+from composio.utils.auto_upload_download import resolve_auto_upload_download_files_enabled
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -360,18 +361,24 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self,
         client: HttpClient,
         provider: t.Optional["BaseProvider[TTool, TToolCollection]"] = None,
-        auto_upload_download_files: bool = True,
+        auto_upload_download_files: t.Optional[bool] = None,
+        dangerously_allow_auto_upload_download_files: bool = False,
     ):
         """
         Initialize ToolRouter instance.
 
         :param client: HTTP client for API calls
         :param provider: Optional provider for tool wrapping
-        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
+        :param auto_upload_download_files: Deprecated. Use ``dangerously_allow_auto_upload_download_files``.
+        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
         """
         super().__init__(client)
         self._provider = provider
-        self._auto_upload_download_files = auto_upload_download_files
+        self._auto_upload_download_files = resolve_auto_upload_download_files_enabled(
+            dangerously_allow_auto_upload_download_files=dangerously_allow_auto_upload_download_files,
+            auto_upload_download_files=auto_upload_download_files,
+            warn_stacklevel=3,
+        )
 
     def _create_mcp_server_config(
         self,

@@ -20,6 +20,10 @@ import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
+import {
+  resolveAutoUploadDownloadFilesEnabled,
+  warnDeprecatedAutoUploadDownloadFiles,
+} from './utils/autoUploadDownloadFiles';
 
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
@@ -41,9 +45,14 @@ export type ComposioConfig<
    */
   allowTracking?: boolean;
   /**
+   * Opt in to automatic file upload and download during tool execution (reads local paths
+   * and fetches URLs marked as file-uploadable in tool schemas). Disabled by default.
+   * @default false
+   */
+  dangerouslyAllowAutoUploadDownloadFiles?: boolean;
+  /**
    * Whether to automatically upload and download files during tool execution.
-   * @example true, false
-   * @default true
+   * @deprecated Use `dangerouslyAllowAutoUploadDownloadFiles` instead.
    */
   autoUploadDownloadFiles?: boolean;
   /**
@@ -245,14 +254,19 @@ export class Composio<
      * Keep a reference to the config object.
      * This is useful for creating a builder pattern, debugging and logging.
      */
+    if (config?.autoUploadDownloadFiles !== undefined) {
+      warnDeprecatedAutoUploadDownloadFiles();
+    }
+
     this.config = {
       ...config,
       baseURL: baseURLParsed,
       apiKey: apiKeyParsed,
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
       allowTracking: config?.allowTracking ?? CONFIG_DEFAULTS.allowTracking,
-      autoUploadDownloadFiles:
-        config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles,
+      dangerouslyAllowAutoUploadDownloadFiles:
+        config?.dangerouslyAllowAutoUploadDownloadFiles ??
+        CONFIG_DEFAULTS.dangerouslyAllowAutoUploadDownloadFiles,
       provider: config?.provider ?? this.provider,
     };
 
