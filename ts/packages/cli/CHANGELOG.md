@@ -1,5 +1,12 @@
 # @composio/cli
 
+## 0.2.25
+
+### Patch Changes
+
+- Updated dependencies [27ed0c9]
+  - @composio/core@0.6.11
+
 ## 0.2.24
 
 Manual version bump to realign with the GitHub release tag. The 0.2.23 release workflow misclassified the version-bump merge as a beta due to a shallow-checkout bug in `.github/workflows/build-cli-binaries.yml`, so binaries built from that commit landed on `@composio/cli@0.2.24-beta.209` and, after `promote-stable`, on the GitHub tag `@composio/cli@0.2.24`. npm was left at 0.2.23. This release bumps npm to 0.2.24 so the published package and the GitHub release match. Fix for the underlying workflow bug: #3212.
