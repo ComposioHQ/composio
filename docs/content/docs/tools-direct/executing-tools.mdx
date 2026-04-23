@@ -468,9 +468,9 @@ composio.tools.execute(
 
 **Errors:** `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked; `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` (or equivalent abort).
 
-### Disabling Auto File Handling
+### Automatic file handling (off by default)
 
-You can disable automatic file handling when initializing the TypeScript SDK. When disabled, handle file uploads and downloads manually using `files.upload` and `files.download`:
+The TypeScript SDK does **not** auto-upload or auto-download file fields unless you set `dangerouslyAllowAutoUploadDownloadFiles: true`. With the default, handle file uploads and downloads manually using `files.upload` and `files.download`:
 
 ```typescript
 import { Composio } from '@composio/core';
@@ -478,7 +478,7 @@ import path from 'path';
 // ---cut---
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  autoUploadDownloadFiles: false
+  // Default: dangerouslyAllowAutoUploadDownloadFiles is false; set true only to opt in
 });
 
 // Now you need to handle files manually using composio.files API

@@ -20,11 +20,6 @@ import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
-import {
-  resolveAutoUploadDownloadFilesEnabled,
-  warnDeprecatedAutoUploadDownloadFiles,
-} from './utils/autoUploadDownloadFiles';
-
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
@@ -50,11 +45,6 @@ export type ComposioConfig<
    * @default false
    */
   dangerouslyAllowAutoUploadDownloadFiles?: boolean;
-  /**
-   * Whether to automatically upload and download files during tool execution.
-   * @deprecated Use `dangerouslyAllowAutoUploadDownloadFiles` instead.
-   */
-  autoUploadDownloadFiles?: boolean;
   /**
    * When true, local file paths for auto-upload and `files.upload` are checked against
    * a built-in denylist of sensitive path segments (e.g. `.ssh`, `.aws`) and
@@ -267,10 +257,6 @@ export class Composio<
      * Keep a reference to the config object.
      * This is useful for creating a builder pattern, debugging and logging.
      */
-    if (config?.autoUploadDownloadFiles !== undefined) {
-      warnDeprecatedAutoUploadDownloadFiles();
-    }
-
     this.config = {
       ...config,
       baseURL: baseURLParsed,

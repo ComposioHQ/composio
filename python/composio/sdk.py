@@ -41,7 +41,6 @@ class SDKConfig(te.TypedDict):
     file_download_dir: te.NotRequired[str]
     toolkit_versions: te.NotRequired[ToolkitVersionParam]
     dangerously_allow_auto_upload_download_files: te.NotRequired[bool]
-    auto_upload_download_files: te.NotRequired[bool]
     sensitive_file_upload_protection: te.NotRequired[bool]
     file_upload_path_deny_segments: te.NotRequired[t.Sequence[str]]
 
@@ -108,7 +107,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
                                 - None or omitted to use 'latest' as default
         :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file
             upload and download during tool execution. Defaults to False.
-        :param auto_upload_download_files: Deprecated. Use ``dangerously_allow_auto_upload_download_files`` instead.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload. Defaults to True.
         :param file_upload_path_deny_segments: Extra path segment names merged with the built-in denylist.
         """
@@ -151,11 +149,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             dangerously_allow_auto_upload_download_files=kwargs.get(
                 "dangerously_allow_auto_upload_download_files", False
             ),
-            auto_upload_download_files=(
-                kwargs["auto_upload_download_files"]
-                if "auto_upload_download_files" in kwargs
-                else None
-            ),
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
         )
@@ -177,11 +170,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             provider=actual_provider,
             dangerously_allow_auto_upload_download_files=kwargs.get(
                 "dangerously_allow_auto_upload_download_files", False
-            ),
-            auto_upload_download_files=(
-                kwargs["auto_upload_download_files"]
-                if "auto_upload_download_files" in kwargs
-                else None
             ),
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,

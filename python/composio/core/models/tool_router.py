@@ -31,9 +31,6 @@ from composio.core.models.tool_router_session import ToolRouterSession
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
-from composio.utils.auto_upload_download import (
-    resolve_auto_upload_download_files_enabled,
-)
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -363,7 +360,6 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self,
         client: HttpClient,
         provider: t.Optional["BaseProvider[TTool, TToolCollection]"] = None,
-        auto_upload_download_files: t.Optional[bool] = None,
         dangerously_allow_auto_upload_download_files: bool = False,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
@@ -373,7 +369,6 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
         :param client: HTTP client for API calls
         :param provider: Optional provider for tool wrapping
-        :param auto_upload_download_files: Deprecated. Use ``dangerously_allow_auto_upload_download_files``.
         :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
         :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
@@ -382,11 +377,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self._provider = provider
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
-        self._auto_upload_download_files = resolve_auto_upload_download_files_enabled(
-            dangerously_allow_auto_upload_download_files=dangerously_allow_auto_upload_download_files,
-            auto_upload_download_files=auto_upload_download_files,
-            warn_stacklevel=3,
-        )
+        self._auto_upload_download_files = bool(dangerously_allow_auto_upload_download_files)
 
     def _create_mcp_server_config(
         self,
@@ -818,7 +809,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         return ToolRouterSession(
             client=self._client,
             provider=self._provider,
-            auto_upload_download_files=self._auto_upload_download_files,
+            dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             session_id=session.session_id,
@@ -873,7 +864,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         return ToolRouterSession(
             client=self._client,
             provider=self._provider,
-            auto_upload_download_files=self._auto_upload_download_files,
+            dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
             session_id=session.session_id,

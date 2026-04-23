@@ -1326,7 +1326,7 @@ describe('FileToolModifier', () => {
   });
 });
 
-describe('Tools with autoUploadDownloadFiles', () => {
+describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
   const context = createTestContext();
   setupTest(context);
 

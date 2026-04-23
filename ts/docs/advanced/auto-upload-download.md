@@ -124,22 +124,13 @@ Example tool response with file download:
 }
 ```
 
-## Disabling Auto File Handling
+## Default: auto file handling is off
 
-You can disable automatic file handling when initializing the SDK:
-
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio({
-  apiKey: 'your-api-key',
-  autoUploadDownloadFiles: false
-});
-```
+Automatic file upload/download during tool execution is **disabled** unless you pass `dangerouslyAllowAutoUploadDownloadFiles: true` to the `Composio` constructor.
 
 ## Manual File Handling
 
-When auto file handling is disabled, you'll need to handle the file operations yourself using the `composio.files` API:
+When auto file handling is not enabled, you'll need to handle the file operations yourself using the `composio.files` API:
 
 ### Manual Upload
 

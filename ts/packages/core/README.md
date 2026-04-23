@@ -124,7 +124,7 @@ interface ComposioConfig {
   allowTracking?: boolean; // Enable/disable telemetry (default: true)
   dangerouslyAllowAutoUploadDownloadFiles?: boolean; // Opt-in for automatic file upload/download during tool execution (default: false)
   /** @deprecated Use `dangerouslyAllowAutoUploadDownloadFiles` instead. */
-  autoUploadDownloadFiles?: boolean;
+  dangerouslyAllowAutoUploadDownloadFiles?: boolean;
   provider?: TProvider; // Custom provider (default: OpenAIProvider)
   host?: string; // Name of the host service which is using the SDK, this is for telemetry
   defaultHeaders?: ComposioRequestHeaders; // Request headers to be passed to the Composio API client

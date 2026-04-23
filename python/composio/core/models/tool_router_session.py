@@ -76,7 +76,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         client: HttpClient,
         provider: t.Optional[BaseProvider[t.Any, t.Any]],
-        auto_upload_download_files: bool,
+        dangerously_allow_auto_upload_download_files: bool,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
         session_id: str,
@@ -87,7 +87,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     ) -> None:
         self._client = client
         self._provider = provider
-        self._auto_upload_download_files = auto_upload_download_files
+        self._auto_upload_download_files = dangerously_allow_auto_upload_download_files
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self.session_id = session_id

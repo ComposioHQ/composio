@@ -182,7 +182,7 @@ class TestAutoUploadDownloadFilesEnabled:
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=True,
+            dangerously_allow_auto_upload_download_files=True,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -557,28 +557,3 @@ class TestAutoUploadDownloadFilesWithSDK:
                     is True
                 )
 
-    def test_sdk_passes_true_when_legacy_enabled(self):
-        """Legacy auto_upload_download_files=True is forwarded to Tools (deprecated)."""
-        from composio.sdk import Composio
-
-        with patch("composio.sdk.HttpClient"):
-            with patch.object(Tools, "__init__", return_value=None) as mock_init:
-                mock_provider = Mock()
-                mock_provider.name = "test"
-
-                with pytest.warns(
-                    DeprecationWarning, match="auto_upload_download_files"
-                ):
-                    Composio(
-                        provider=mock_provider,
-                        api_key="test-key",
-                        auto_upload_download_files=True,
-                    )
-
-                mock_init.assert_called()
-                call_kwargs = mock_init.call_args[1]
-                assert call_kwargs.get("auto_upload_download_files") is True
-                assert (
-                    call_kwargs.get("dangerously_allow_auto_upload_download_files")
-                    is False
-                )

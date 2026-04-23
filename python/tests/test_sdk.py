@@ -57,7 +57,6 @@ class TestComposioSDK:
             "file_download_dir",
             "toolkit_versions",
             "dangerously_allow_auto_upload_download_files",
-            "auto_upload_download_files",
             "sensitive_file_upload_protection",
             "file_upload_path_deny_segments",
         }

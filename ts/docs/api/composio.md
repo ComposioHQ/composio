@@ -11,7 +11,7 @@ const composio = new Composio({
   apiKey: 'your-api-key',
   baseURL: 'https://api.composio.dev', // Optional: Custom API endpoint
   allowTracking: true, // Optional: Enable/disable telemetry
-  autoUploadDownloadFiles: true, // Optional: Enable/disable automatic file handling
+  dangerouslyAllowAutoUploadDownloadFiles: false, // Optional: opt in to automatic file handling (default false)
   sensitiveFileUploadProtection: true, // Optional: block uploads from sensitive paths (Node; default true)
   fileUploadPathDenySegments: undefined, // Optional: extra path component denylist
   provider: new OpenAIProvider(), // Optional: Custom provider
@@ -27,7 +27,7 @@ The `Composio` constructor accepts a configuration object with the following pro
 | `apiKey`                | string                   | Yes      | -                          | Your Composio API key                          |
 | `baseURL`               | string                   | No       | `https://api.composio.dev` | The base URL for the Composio API              |
 | `allowTracking`         | boolean                  | No       | `true`                     | Whether to allow analytics/tracking            |
-| `autoUploadDownloadFiles`| boolean                 | No       | `true`                     | Whether to automatically handle file operations |
+| `dangerouslyAllowAutoUploadDownloadFiles` | boolean          | No       | `false`                    | Opt in to automatic file upload/download during tool execution |
 | `sensitiveFileUploadProtection` | `boolean`        | No       | `true` (Node)              | When true, local upload paths are checked against a denylist of sensitive segments and credential-like names before read/upload. |
 | `fileUploadPathDenySegments` | `string[]`         | No       | `undefined`                | Additional path *components* merged with the built-in denylist. |
 | `provider`              | `BaseComposioProvider`   | No       | `new OpenAIProvider()`     | The provider to use for this Composio instance |
@@ -97,14 +97,16 @@ const composio = new Composio({
 });
 ```
 
-### Disable Automatic File Handling
+### Automatic file handling (opt-in)
+
+Automatic upload/download of file-marked tool fields is **off** by default. Set `dangerouslyAllowAutoUploadDownloadFiles: true` only if you intend to use that behavior:
 
 ```typescript
 import { Composio } from '@composio/core';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  autoUploadDownloadFiles: false,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
 });
 ```
 

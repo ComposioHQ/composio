@@ -576,7 +576,7 @@ def _session(deps, **overrides):
     kwargs = dict(
         client=deps["client"],
         provider=deps["provider"],
-        auto_upload_download_files=True,
+        dangerously_allow_auto_upload_download_files=True,
         session_id="s",
         mcp=MagicMock(),
         experimental=deps["experimental"],
@@ -644,7 +644,7 @@ class TestToolRouterSessionCustomTools:
         s = ToolRouterSession(
             client=MagicMock(),
             provider=MagicMock(),
-            auto_upload_download_files=True,
+            dangerously_allow_auto_upload_download_files=True,
             session_id="s",
             mcp=MagicMock(),
             experimental=MagicMock(),
@@ -663,7 +663,7 @@ class TestMultiExecuteRouting:
         return ToolRouterSession(
             client=MagicMock(),
             provider=MagicMock(),
-            auto_upload_download_files=True,
+            dangerously_allow_auto_upload_download_files=True,
             session_id="s",
             mcp=MagicMock(),
             experimental=MagicMock(),

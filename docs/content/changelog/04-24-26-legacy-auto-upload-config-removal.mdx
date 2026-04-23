@@ -1,0 +1,77 @@
+---
+title: 'SDKs remove legacy automatic file handling config'
+description: 'SDKs remove deprecated `autoUploadDownloadFiles` / `auto_upload_download_files`. Automatic file handling is off unless you set `dangerouslyAllowAutoUploadDownloadFiles` / `dangerously_allow_auto_upload_download_files`. Minor releases.'
+date: '2026-04-24'
+---
+
+The Composio SDKs no longer accept the legacy flags that previously controlled automatic file upload and download during tool execution. Automatic handling of `file_uploadable` fields stays **off by default**; you opt in with the explicit `dangerously*` option only.
+
+<Callout type="warn">
+**Breaking change**
+
+Those legacy properties are removed from the public constructors and config types. Code that still passes them must migrate. Anyone who **relied on the old default-on behavior** (no file flag in the constructor) must now **explicitly** set the `dangerously*` flag to `true` to keep automatic path/URL file handling.
+</Callout>
+
+### SDK versions (minor releases)
+
+| Package | Previous | This release |
+| ------- | -------- | ------------ |
+| TypeScript `@composio/core` | v0.6.11 | **v0.7.0** |
+| Python `composio` | v0.11.6 | **v0.12.0** |
+
+Other `@composio/*` npm packages that depend on core are published as **minor** bumps in the same release train so they pick up the updated `ComposioConfig` surface.
+
+### Migration
+
+Earlier SDK versions treated automatic file upload/download for `file_uploadable` tool fields as **on by default** (TypeScript: `autoUploadDownloadFiles` defaulted to `true` when unset; Python followed the same idea for `auto_upload_download_files` in prior releases). **That default is now off.** If you still want that behavior, you must **explicitly** set `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python).
+
+**TypeScript — before (legacy):**
+
+```typescript
+// If you omitted autoUploadDownloadFiles, it used to default to true
+new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+});
+
+// Equivalent when you set it explicitly:
+new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  autoUploadDownloadFiles: true,
+});
+```
+
+**TypeScript — going forward** (set `true` to match either legacy pattern above):
+
+```typescript
+new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+});
+```
+
+To leave automatic file handling **off** (new default), omit `dangerouslyAllowAutoUploadDownloadFiles` or set it to `false`.
+
+**Python — before (legacy):**
+
+```python
+# If you omitted auto_upload_download_files, it used to default to True (prior releases)
+Composio(api_key="...")
+
+# Equivalent when you set it explicitly:
+Composio(api_key="...", auto_upload_download_files=True)
+```
+
+**Python — going forward** (set `True` to match either legacy pattern above):
+
+```python
+Composio(api_key="...", dangerously_allow_auto_upload_download_files=True)
+```
+
+If you construct `ToolRouterSession` directly (unusual), the keyword argument is now `dangerously_allow_auto_upload_download_files` instead of `auto_upload_download_files`.
+
+### What else changed
+
+- TypeScript: `resolveAutoUploadDownloadFilesEnabled` only considers `dangerouslyAllowAutoUploadDownloadFiles`; the old deprecation warning for the legacy property is removed.
+- Python: the small `composio.utils.auto_upload_download` helper that merged legacy + new flags is removed; `Tools` and `ToolRouter` take only the explicit opt-in boolean.
+
+Documentation for [executing tools](/docs/tools-direct/executing-tools) and the TypeScript [Composio reference](/reference/sdk-reference/typescript/composio) is updated to describe defaults and the opt-in flag.
