@@ -238,6 +238,66 @@ _if you are looking for the older sdk, you can find them [here](https://github.c
 
 It integrates with major AI clients like Cursor, Claude Desktop, VS Code, Claude Code and any custom MCP‑compatible client. You can switch between these clients and your integrations follow you.
 
+## Frequently Asked Questions (FAQ)
+
+### General Questions
+
+**Q: What is Composio?**  
+A: Composio is a platform that provides 500+ pre-built tool integrations for AI agents. It allows your agents to interact with external services like Gmail, Slack, GitHub, Notion, and many more with minimal setup.
+
+**Q: Which AI frameworks does Composio support?**  
+A: Composio supports a wide range of AI frameworks including OpenAI, Anthropic, LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, Google Gemini, and more. See the [Provider Support table](#provider-support) above for the complete list.
+
+**Q: Is Composio free to use?**  
+A: Yes, Composio offers a free tier with access to many integrations. Premium features and higher rate limits are available with paid plans. Visit [composio.dev](https://composio.dev) for pricing details.
+
+**Q: How do I authenticate with external services?**  
+A: Composio handles OAuth and API key authentication for you. Use the Composio dashboard or CLI to connect your accounts, then reference them in your agent code. See the [authentication docs](https://docs.composio.dev) for detailed instructions.
+
+### Installation & Setup
+
+**Q: I'm getting import errors after installation**  
+A: Make sure you've installed the correct provider package for your framework. For example:
+- `pip install composio-openai` for OpenAI
+- `pip install composio-langchain` for LangChain
+- `npm install @composio/openai` for TypeScript + OpenAI
+
+**Q: How do I update the Composio SDK?**  
+A: 
+- Python: `pip install --upgrade composio`
+- TypeScript: `npm update @composio/core`
+
+**Q: Can I use Composio in browser environments?**  
+A: The TypeScript SDK supports browser environments. However, some tool integrations may require server-side execution due to CORS or security restrictions.
+
+### Troubleshooting
+
+**Agent not calling tools correctly**
+- Ensure you've passed the tools to your agent correctly
+- Check that the model you're using supports function calling
+- Verify the tool connection in the Composio dashboard
+
+**Authentication errors**
+- Re-authenticate your account in the Composio dashboard
+- Check that the connected account has the necessary permissions
+- Ensure you're using the correct `user_id` when fetching tools
+
+**Tools not appearing in agent**
+- Verify the toolkit name is correct (e.g., `HACKERNEWS`, `GMAIL`)
+- Check that the integration is enabled in your dashboard
+- Try fetching tools with `composio.tools.get()` and inspect the output
+
+**Rate limiting issues**
+- Composio applies rate limits based on your plan tier
+- Implement retry logic in your agent for transient errors
+- Consider caching responses when appropriate
+
+### Getting More Help
+
+- 📚 **Documentation**: [docs.composio.dev](https://docs.composio.dev)
+- 💬 **Discord Community**: [Join our Discord](https://discord.gg/composio)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/ComposioHQ/composio/issues)
+- 📧 **Support**: [support@composio.dev](mailto:support@composio.dev)
 
 ## Contributing
 
