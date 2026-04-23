@@ -1,9 +1,9 @@
 import { Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
+import { resolveWhoamiInfo } from 'src/services/whoami';
 
 /**
  * CLI command to display your account information.
@@ -24,27 +24,16 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
       yield* ctx.data.apiKey.pipe(
         Option.match({
           onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
-          onSome: apiKey =>
+          onSome: () =>
             Effect.gen(function* () {
-              const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
-              const testUserId = Option.getOrUndefined(ctx.data.testUserId);
-              const sessionInfo = yield* getSessionInfoByUserApiKey({
-                baseURL: ctx.data.baseURL,
-                userApiKey: apiKey,
-              }).pipe(Effect.option);
-              const email = Option.map(sessionInfo, info => info.org_member.email).pipe(
-                Option.getOrUndefined
-              );
-              const orgName = Option.map(sessionInfo, info => info.project.org.name).pipe(
-                Option.getOrUndefined
-              );
+              const info = yield* resolveWhoamiInfo;
 
               yield* ui.note(
                 [
-                  `Email: ${email ?? 'unknown'}`,
-                  `Default Org: ${orgName ?? 'unknown'}`,
-                  `Default Org ID: ${defaultOrgId ?? 'not set'}`,
-                  `Test User ID: ${testUserId ?? 'not set'}`,
+                  `Email: ${info.email ?? 'unknown'}`,
+                  `Default Org: ${info.defaultOrgName ?? 'unknown'}`,
+                  `Default Org ID: ${info.defaultOrgId ?? 'not set'}`,
+                  `Test User ID: ${info.testUserId ?? 'not set'}`,
                 ].join('\n'),
                 'Global User Context'
               );
@@ -56,10 +45,10 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               );
               yield* ui.output(
                 JSON.stringify({
-                  email: email ?? null,
-                  default_org_name: orgName ?? null,
-                  default_org_id: defaultOrgId ?? null,
-                  test_user_id: testUserId ?? null,
+                  email: info.email ?? null,
+                  default_org_name: info.defaultOrgName ?? null,
+                  default_org_id: info.defaultOrgId ?? null,
+                  test_user_id: info.testUserId ?? null,
                 })
               );
             }),

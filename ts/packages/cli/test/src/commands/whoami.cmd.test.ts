@@ -49,6 +49,58 @@ describe('CLI: composio whoami', () => {
     );
   });
 
+  layer(TestLive({ fixture: 'user-config-with-global-context' }))(
+    'with mismatched session org',
+    it => {
+      it.scoped(
+        '[Given] session org differs from default org [Then] does not pair wrong org name',
+        () =>
+          Effect.gen(function* () {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+              new Response(
+                JSON.stringify({
+                  project: {
+                    name: 'Session Project',
+                    id: 'proj_999',
+                    org_id: 'org_session',
+                    nano_id: 'proj_nano_999',
+                    email: 'project@example.com',
+                    created_at: '2026-03-27T00:00:00.000Z',
+                    updated_at: '2026-03-27T00:00:00.000Z',
+                    org: {
+                      name: 'Session Org',
+                      id: 'org_session',
+                      plan: 'enterprise',
+                    },
+                  },
+                  org_member: {
+                    id: 'om_123',
+                    user_id: 'usr_123',
+                    email: 'person@example.com',
+                    name: 'Test Person',
+                    role: 'admin',
+                  },
+                  api_key: null,
+                }),
+                {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' },
+                }
+              )
+            );
+
+            yield* cli(['whoami']);
+
+            const lines = yield* MockConsole.getLines();
+            const output = lines.join('\n');
+            expect(output).toContain(`"email":"person@example.com"`);
+            expect(output).toContain(`"default_org_name":null`);
+            expect(output).toContain(`"default_org_id":"org_1"`);
+          })
+      );
+    }
+  );
+
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('with session info', it => {
     it.scoped('[Given] session info is available [Then] prints email and org name', () =>
       Effect.gen(function* () {
