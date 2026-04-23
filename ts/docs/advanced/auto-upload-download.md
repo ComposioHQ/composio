@@ -9,6 +9,37 @@ The file handling system in Composio SDK is:
 - **Opt-out**: Enabled by default but can be disabled
 - **Automatic**: Handles file uploads and downloads transparently
 - **Configurable**: Can be disabled for manual file handling
+- **Sensitive path protection (Node)**: Local string paths used for upload are checked by default against a denylist of path segments and file names (see below)
+
+## Security: sensitive local paths
+
+Auto-upload reads local files and sends them to Composio storage. That is powerful for agents, but it also means a model or caller could pass a path that points at **secrets on disk** (API keys, SSH private keys, cloud CLI config). To reduce accidental exfiltration:
+
+- **`sensitiveFileUploadProtection`** (default `true`) — Before reading a file, the SDK resolves the path and checks it against a built-in list of path *components* (for example `.ssh`, `.aws`, `.claude`, `.kube`) and patterns for credential-like basenames (for example `.env`, default SSH private key names, a file named `credentials`). If the path matches, upload fails with `ComposioSensitiveFilePathBlockedError` unless you disable protection.
+- **`fileUploadPathDenySegments`** — Optional extra path component names (single directory or file name) merged with the built-in list, anywhere in the resolved path.
+- **`beforeFileUpload`** — Not a constructor option. Pass it as part of the **third argument** to `composio.tools.execute` (with `beforeExecute` / `afterExecute`). The hook receives `{ path, toolSlug, toolkitSlug }` for each `file_uploadable` value. Return a string path to upload instead, `false` to abort (`ComposioFileUploadAbortedError`), or throw.
+
+**Not path-checked the same way:** HTTP/HTTPS URLs and `File` objects do not go through the local path denylist logic in the same manner as string paths that refer to the local filesystem.
+
+**Disabling protection:** `sensitiveFileUploadProtection: false` turns off the denylist checks. Only use this if you understand the risk and have another control (for example a strict allowlist in `beforeFileUpload`).
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  sensitiveFileUploadProtection: true,
+  fileUploadPathDenySegments: ['my-team-secrets'],
+});
+
+await composio.tools.execute(
+  'YOUR_TOOL',
+  { userId: 'u', arguments: { file: '/safe/path/doc.pdf' }, dangerouslySkipVersionCheck: true },
+  {
+    beforeFileUpload: async ({ path }) => path,
+  }
+);
+```
 
 ## How It Works
 
@@ -174,19 +205,28 @@ Downloaded files are stored in a temporary directory:
 The SDK includes specific error types for file operations:
 
 ```typescript
-import { ComposioFileUploadError } from '@composio/core';
+import {
+  ComposioFileUploadError,
+  ComposioSensitiveFilePathBlockedError,
+  ComposioFileUploadAbortedError,
+} from '@composio/core';
 
 try {
   await composio.tools.execute('your-tool', {
+    userId: 'u',
     arguments: {
-      file: '/path/to/file.txt'
-    }
+      file: '/path/to/file.txt',
+    },
+    dangerouslySkipVersionCheck: true,
   });
 } catch (error) {
-  if (error instanceof ComposioFileUploadError) {
+  if (error instanceof ComposioSensitiveFilePathBlockedError) {
+    console.error('Blocked sensitive path:', error.message);
+  } else if (error instanceof ComposioFileUploadAbortedError) {
+    console.error('Upload aborted by beforeFileUpload:', error.message);
+  } else if (error instanceof ComposioFileUploadError) {
     console.error('File upload failed:', error.message);
-    // Handle file upload error
-    // Possible fixes will be included in error.possibleFixes
+    // Possible fixes may be included in error.possibleFixes
   }
   throw error;
 }

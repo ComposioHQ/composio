@@ -65,10 +65,22 @@ class SchemaModifier(t.Protocol):
     ) -> "Tool": ...
 
 
+class BeforeFileUploadCallable(t.Protocol):
+    """Called for each local file path before read/upload (``file_uploadable``)."""
+
+    def __call__(
+        self,
+        path: str,
+        tool: str,
+        toolkit: str,
+    ) -> t.Union[str, bool]: ...
+
+
 ModifierSlug: t.TypeAlias = str
 AfterExecuteModifierL: t.TypeAlias = t.Literal["after_execute"]
 BeforeExecuteModifierL: t.TypeAlias = t.Literal["before_execute"]
 SchemaModifierL: t.TypeAlias = t.Literal["schema"]
+BeforeFileUploadModifierL: t.TypeAlias = t.Literal["before_file_upload"]
 
 
 class Modifier:
@@ -80,6 +92,7 @@ class Modifier:
             | SchemaModifier
             | BeforeExecuteMeta
             | AfterExecuteMeta
+            | BeforeFileUploadCallable
         ],
         type_: (
             AfterExecuteModifierL
@@ -87,6 +100,7 @@ class Modifier:
             | SchemaModifierL
             | AfterExecuteMetaModifierL
             | BeforeExecuteMetaModifierL
+            | BeforeFileUploadModifierL
         ),
         tools: t.List[str],
         toolkits: t.List[str],
@@ -199,6 +213,53 @@ def before_execute(
             t.Callable[[BeforeExecute], Modifier],
             functools.partial(
                 before_execute,
+                tools=tools or [],
+                toolkits=toolkits or [],
+            ),
+        )
+
+    raise ValueError("Either tools or toolkits must be provided")
+
+
+@t.overload
+def before_file_upload(modifier: t.Optional[BeforeFileUploadCallable]) -> Modifier: ...
+
+
+@t.overload
+def before_file_upload(
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> t.Callable[[BeforeFileUploadCallable], Modifier]: ...
+
+
+def before_file_upload(
+    modifier: t.Optional[BeforeFileUploadCallable] = None,
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> Modifier | t.Callable[[BeforeFileUploadCallable], Modifier]:
+    """
+    Build a ``Modifier`` for the file-upload hook (same scoping pattern as
+    :func:`before_execute`).
+
+    Pass the returned ``Modifier`` in ``modifiers=[...]`` on
+    :meth:`composio.core.models.tools.Tools.execute` or ``tools.get``. Multiple
+    such modifiers are composed in list order.
+    """
+    if modifier is not None:
+        return Modifier(
+            modifier=modifier,
+            type_="before_file_upload",
+            tools=tools or [],
+            toolkits=toolkits or [],
+        )
+
+    if tools is not None or toolkits is not None:
+        return t.cast(
+            t.Callable[[BeforeFileUploadCallable], Modifier],
+            functools.partial(
+                before_file_upload,
                 tools=tools or [],
                 toolkits=toolkits or [],
             ),
@@ -325,6 +386,43 @@ def after_execute_meta(
 
 
 Modifiers = t.List[Modifier]
+
+
+def merge_before_file_upload(
+    modifiers: t.Optional[Modifiers],
+    tool: str,
+    toolkit: str,
+) -> t.Optional[BeforeFileUploadCallable]:
+    """Compose ``before_file_upload``-type :class:`Modifier`\\ s for this *tool* / *toolkit*.
+
+    Scoping matches :class:`Modifier` (empty ``tools`` and ``toolkits`` = all tools).
+    """
+    to_chain = [
+        m
+        for m in (modifiers or [])
+        if m.type == "before_file_upload" and m.modifier is not None
+    ]
+    if not to_chain:
+        return None
+
+    def _applies(m: Modifier) -> bool:
+        if len(m.tools) == 0 and len(m.toolkits) == 0:
+            return True
+        return tool in m.tools or toolkit in m.toolkits
+
+    def combined(path: str, tool: str, toolkit: str) -> t.Union[str, bool]:
+        p: str = path
+        for m in to_chain:
+            if not _applies(m):
+                continue
+            out = t.cast(BeforeFileUploadCallable, m.modifier)(p, tool, toolkit)
+            if out is False:
+                return False
+            if isinstance(out, str):
+                p = out
+        return p
+
+    return combined
 
 
 @t.overload

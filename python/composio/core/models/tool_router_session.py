@@ -79,9 +79,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         auto_upload_download_files: bool,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
@@ -93,7 +90,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._auto_upload_download_files = auto_upload_download_files
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
-        self._before_file_upload = before_file_upload
         self.session_id = session_id
         self.mcp = mcp
         self.experimental = experimental
@@ -125,7 +121,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         return tools_model._wrap_execute_tool_for_tool_router(
             session_id=self.session_id,
             modifiers=modifiers,
-            before_file_upload=self._before_file_upload,
         )
 
     def tools(self, modifiers: t.Optional["Modifiers"] = None) -> TToolCollection:
@@ -154,7 +149,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             auto_upload_download_files=self._auto_upload_download_files,
             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
-            before_file_upload=self._before_file_upload,
         )
 
         router_tools = tools_model.get_raw_tool_router_meta_tools(

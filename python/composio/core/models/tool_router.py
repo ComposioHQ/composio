@@ -363,9 +363,6 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         auto_upload_download_files: bool = True,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
     ):
         """
         Initialize ToolRouter instance.
@@ -375,14 +372,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
         :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
-        :param before_file_upload: Optional hook called before each local file is read for upload.
         """
         super().__init__(client)
         self._provider = provider
         self._auto_upload_download_files = auto_upload_download_files
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
-        self._before_file_upload = before_file_upload
 
     def _create_mcp_server_config(
         self,
@@ -817,7 +812,6 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             auto_upload_download_files=self._auto_upload_download_files,
             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
-            before_file_upload=self._before_file_upload,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
@@ -873,7 +867,6 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             auto_upload_download_files=self._auto_upload_download_files,
             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
-            before_file_upload=self._before_file_upload,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),

@@ -536,14 +536,12 @@ class FileHelper(WithLogger):
         *,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
-        before_file_upload: t.Optional[BeforeFileUpload] = None,
     ) -> None:
         super().__init__()
         self._client = client
         self._outdir = Path(outdir or LOCAL_OUTPUT_FILE_DIRECTORY)
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
-        self._before_file_upload = before_file_upload
 
     def _has_file_property(
         self, schema: t.Dict, property_name: str = "file_uploadable"
@@ -868,16 +866,11 @@ class FileHelper(WithLogger):
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
     ) -> t.Dict:
-        bfu = (
-            before_file_upload
-            if before_file_upload is not None
-            else self._before_file_upload
-        )
         return self._substitute_file_uploads_recursively(
             tool=tool,
             schema=tool.input_parameters,
             request=request,
-            before_file_upload=bfu,
+            before_file_upload=before_file_upload,
         )
 
     def _is_file_downloadable(self, schema: t.Dict) -> bool:

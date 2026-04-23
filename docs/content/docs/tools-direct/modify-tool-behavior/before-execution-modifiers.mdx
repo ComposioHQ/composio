@@ -178,6 +178,13 @@ const agenticTools = await composio.tools.get(
   </Tab>
 </Tabs>
 
+## Before file upload (Python) {#before-file-upload-python}
+
+For tools with `file_uploadable` parameters, the SDK can read a local path and upload the file before calling the Composio API. To audit, rewrite, or block those paths, use the [`@before_file_upload`](/docs/reference/sdk-reference/python/index#before_file_upload) decorator and pass the decorated callables in `modifiers` to `tools.get`, `tools.execute`, or a tool router session’s `tools(modifiers=...)`.
+
+- **Composition:** `before_file_upload`-type modifiers in the `modifiers` list are applied in **list order** (after filtering by each modifier’s `tools` / `toolkits` scope). Chaining works like a pipeline: each hook receives the path produced by the previous one.
+- **Relative to `before_execute`:** automatic file substitution runs **before** `before_execute` modifiers, matching TypeScript behavior (including tool router `execute_meta`).
+
 ## What to read next
 
 <Cards>

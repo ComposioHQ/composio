@@ -43,9 +43,6 @@ class SDKConfig(te.TypedDict):
     auto_upload_download_files: te.NotRequired[bool]
     sensitive_file_upload_protection: te.NotRequired[bool]
     file_upload_path_deny_segments: te.NotRequired[t.Sequence[str]]
-    before_file_upload: te.NotRequired[
-        t.Callable[[str, str, str], t.Union[str, bool]]
-    ]
 
 
 class Composio(t.Generic[TTool, TToolCollection], WithLogger):
@@ -111,7 +108,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload. Defaults to True.
         :param file_upload_path_deny_segments: Extra path segment names merged with the built-in denylist.
-        :param before_file_upload: Optional ``(path, tool_slug, toolkit_slug) -> str | bool`` run before each local file is read for upload; return False to abort.
         """
         WithLogger.__init__(self)
         api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
@@ -144,9 +140,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = kwargs.get(
             "file_upload_path_deny_segments"
         )
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = kwargs.get("before_file_upload")
         self.tools = Tools(
             client=self._client,
             provider=actual_provider,
@@ -155,7 +148,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
-            before_file_upload=before_file_upload,
         )
 
         self.toolkits = Toolkits(client=self._client)
@@ -176,7 +168,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
-            before_file_upload=before_file_upload,
         )
         self.create = self.tool_router.create
         self.use = self.tool_router.use

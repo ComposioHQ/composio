@@ -8,6 +8,7 @@ from .core.models.tool_router_session_files import RemoteFile
 from .core.models.tools import (
     after_execute,
     before_execute,
+    before_file_upload,
     schema_modifier,
 )
 from .core.models.webhook_events import (
@@ -43,6 +44,7 @@ __all__ = (
     "WebhookEventType",
     "after_execute",
     "before_execute",
+    "before_file_upload",
     "is_connection_expired_event",
     "schema_modifier",
     "__version__",

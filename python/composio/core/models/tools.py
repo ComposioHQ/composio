@@ -33,6 +33,8 @@ from ._modifiers import (
     after_execute,
     apply_modifier_by_type,
     before_execute,
+    before_file_upload,
+    merge_before_file_upload,
     schema_modifier,
 )
 
@@ -103,9 +105,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         auto_upload_download_files: bool = True,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
     ):
         """
         Initialize the tools resource.
@@ -117,7 +116,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
         :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
-        :param before_file_upload: Optional ``(path, tool_slug, toolkit_slug) -> str | bool`` called before each upload.
         """
         self._client = client
         self._custom_tools = CustomTools(client)
@@ -127,7 +125,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             outdir=file_download_dir,
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
-            before_file_upload=before_file_upload,
         )
         self._toolkit_versions = toolkit_versions
         self._auto_upload_download_files = auto_upload_download_files
@@ -291,9 +288,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
     ) -> TToolCollection:
         """Get a list of tools based on the provided filters."""
         tools_list = self.get_raw_composio_tools(
@@ -350,7 +344,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 execute_tool=self._wrap_execute_tool(
                     user_id=user_id,
                     modifiers=modifiers,
-                    before_file_upload=before_file_upload,
                 ),
             ),
         )
@@ -366,9 +359,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         scopes: t.Optional[t.List[str]] = None,
         modifiers: t.Optional[Modifiers] = None,
         limit: t.Optional[int] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
     ) -> TToolCollection:
         """
         Get a tool or list of tools based on the provided arguments.
@@ -394,7 +384,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 user_id=user_id,
                 tools=[slug],
                 modifiers=modifiers,
-                before_file_upload=before_file_upload,
             )
         return self._get(
             user_id=user_id,
@@ -404,16 +393,12 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             scopes=scopes,
             modifiers=modifiers,
             limit=limit,
-            before_file_upload=before_file_upload,
         )
 
     def _wrap_execute_tool(
         self,
         modifiers: t.Optional[Modifiers] = None,
         user_id: t.Optional[str] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
     ) -> AgenticProviderExecuteFn:
         """Wrap the execute tool function"""
         return t.cast(
@@ -422,7 +407,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 self.execute,
                 modifiers=modifiers,
                 user_id=user_id,
-                before_file_upload=before_file_upload,
                 # Dangerously skip version check for agentic tool execution via providers
                 # This can be safe because most agentic flows users fetch latest version and then execute the tool
                 dangerously_skip_version_check=True,
@@ -433,9 +417,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         self,
         session_id: str,
         modifiers: t.Optional[Modifiers] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
     ) -> AgenticProviderExecuteFn:
         """
         Create an execute function for tool router that uses the session's execute_meta endpoint.
@@ -446,7 +427,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         :param session_id: The session ID
         :param modifiers: Optional modifiers to apply before and after execution
-        :param before_file_upload: Optional hook for each file read; overrides the FileHelper default.
         :return: Execute function for tool router
         """
 
@@ -481,10 +461,16 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 self._tool_schemas[slug] = tool
 
             if self._auto_upload_download_files:
+                meta_tk = tool.toolkit.slug if tool.toolkit else "unknown"
+                bfu = merge_before_file_upload(
+                    modifiers,
+                    tool=slug,
+                    toolkit=meta_tk,
+                )
                 arguments = self._file_helper.substitute_file_uploads(
                     tool=tool,
                     request=arguments,
-                    before_file_upload=before_file_upload,
+                    before_file_upload=bfu,
                 )
 
             # Apply before_execute modifiers
@@ -631,9 +617,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         version: t.Optional[str] = None,
         dangerously_skip_version_check: t.Optional[bool] = None,
         modifiers: t.Optional[Modifiers] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
     ) -> ToolExecutionResponse:
         """
         Execute a tool with the provided parameters.
@@ -651,8 +634,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         :param text: The text to pass to the tool.
         :param version: The version of the tool to execute (overrides the SDK-level toolkit versions for this execution).
         :param dangerously_skip_version_check: Skip the version check for 'latest' version. This might cause unexpected behavior when new versions are released.
-        :param modifiers: The modifiers to apply to the tool.
-        :param before_file_upload: Optional hook run before each file path is read; overrides the instance default from ``Composio()``.
+        :param modifiers: The modifiers to apply to the tool (include ``@before_file_upload`` for file path hooks).
         :return: The response from the tool.
         """
 
@@ -674,10 +656,16 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             self._tool_schemas[slug] = tool
 
         if self._auto_upload_download_files:
+            tk = tool.toolkit.slug if tool.toolkit else "unknown"
+            bfu = merge_before_file_upload(
+                modifiers,
+                tool=slug,
+                toolkit=tk,
+            )
             arguments = self._file_helper.substitute_file_uploads(
                 tool=tool,
                 request=arguments,
-                before_file_upload=before_file_upload,
+                before_file_upload=bfu,
             )
 
         if modifiers is not None:
@@ -791,5 +779,6 @@ __all__ = [
     "Modifiers",
     "after_execute",
     "before_execute",
+    "before_file_upload",
     "schema_modifier",
 ]

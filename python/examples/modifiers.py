@@ -1,6 +1,12 @@
 import os
 
-from composio import Composio, after_execute, before_execute, schema_modifier
+from composio import (
+    Composio,
+    after_execute,
+    before_execute,
+    before_file_upload,
+    schema_modifier,
+)
 from composio.types import Tool, ToolExecuteParams, ToolExecutionResponse
 
 composio = Composio()
@@ -15,6 +21,12 @@ def before_execute_modifier(
     # Perform modifications on the request
     print("before_execute_modifier", tool, toolkit)
     return params
+
+
+@before_file_upload(tools=["HACKERNEWS_GET_USER"])
+def rewrite_upload_path(path: str, tool: str, toolkit: str) -> str:
+    """Optional: same pattern as before_execute; use for per-tool file path policy."""
+    return path
 
 
 @after_execute(tools=["HACKERNEWS_GET_USER"])
@@ -38,6 +50,7 @@ response = composio.tools.execute(
     arguments={"username": "pg"},
     modifiers=[
         before_execute_modifier,
+        rewrite_upload_path,
         after_execute_modifier,
     ],
 )
