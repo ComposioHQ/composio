@@ -31,7 +31,9 @@ from composio.core.models.tool_router_session import ToolRouterSession
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
-from composio.utils.auto_upload_download import resolve_auto_upload_download_files_enabled
+from composio.utils.auto_upload_download import (
+    resolve_auto_upload_download_files_enabled,
+)
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[

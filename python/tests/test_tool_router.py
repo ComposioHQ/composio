@@ -966,11 +966,11 @@ class TestToolRouter:
         session = tool_router.create(user_id="user_123")
         result = session.tools()
 
-        # Verify Tools was instantiated
+        # Verify Tools was instantiated (resolved flag; default ToolRouter is off)
         mock_tools_class.assert_called_once_with(
             client=mock_client,
             provider=mock_provider,
-            dangerously_allow_auto_upload_download_files=True,
+            auto_upload_download_files=False,
         )
 
         # Verify get_raw_tool_router_meta_tools was called

@@ -465,7 +465,10 @@ class TestAutoUploadDownloadFilesWithSDK:
 
                 mock_init.assert_called()
                 call_kwargs = mock_init.call_args[1]
-                assert call_kwargs.get("dangerously_allow_auto_upload_download_files") is False
+                assert (
+                    call_kwargs.get("dangerously_allow_auto_upload_download_files")
+                    is False
+                )
 
     def test_sdk_passes_true_when_dangerously_enabled(self):
         """Test that Composio SDK passes through dangerously_allow_auto_upload_download_files."""
@@ -484,7 +487,10 @@ class TestAutoUploadDownloadFilesWithSDK:
 
                 mock_init.assert_called()
                 call_kwargs = mock_init.call_args[1]
-                assert call_kwargs.get("dangerously_allow_auto_upload_download_files") is True
+                assert (
+                    call_kwargs.get("dangerously_allow_auto_upload_download_files")
+                    is True
+                )
 
     def test_sdk_passes_true_when_legacy_enabled(self):
         """Legacy auto_upload_download_files=True still enables the feature (deprecated)."""
@@ -495,7 +501,9 @@ class TestAutoUploadDownloadFilesWithSDK:
                 mock_provider = Mock()
                 mock_provider.name = "test"
 
-                with pytest.warns(DeprecationWarning, match="auto_upload_download_files"):
+                with pytest.warns(
+                    DeprecationWarning, match="auto_upload_download_files"
+                ):
                     Composio(
                         provider=mock_provider,
                         api_key="test-key",
@@ -504,4 +512,7 @@ class TestAutoUploadDownloadFilesWithSDK:
 
                 mock_init.assert_called()
                 call_kwargs = mock_init.call_args[1]
-                assert call_kwargs.get("dangerously_allow_auto_upload_download_files") is True
+                assert (
+                    call_kwargs.get("dangerously_allow_auto_upload_download_files")
+                    is True
+                )

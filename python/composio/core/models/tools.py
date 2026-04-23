@@ -24,7 +24,9 @@ from composio.core.provider.base import BaseProvider
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
-from composio.utils.auto_upload_download import resolve_auto_upload_download_files_enabled
+from composio.utils.auto_upload_download import (
+    resolve_auto_upload_download_files_enabled,
+)
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
 

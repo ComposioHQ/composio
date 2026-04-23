@@ -25,7 +25,9 @@ from composio.core.provider._openai import (
 )
 from composio.core.provider.base import BaseProvider
 from composio.core.types import ToolkitVersionParam
-from composio.utils.auto_upload_download import resolve_auto_upload_download_files_enabled
+from composio.utils.auto_upload_download import (
+    resolve_auto_upload_download_files_enabled,
+)
 from composio.utils.logging import WithLogger
 from composio.utils.toolkit_version import get_toolkit_versions
 
