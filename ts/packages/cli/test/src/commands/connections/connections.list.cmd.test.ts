@@ -1,7 +1,8 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { ConfigProvider, Console, Effect } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { extendConfigProvider } from 'src/services/config';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -86,6 +87,40 @@ const connectedAccountsData = {
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
+
+const terminalUIWithConfirm = (confirmed: boolean) =>
+  TerminalUI.of({
+    output: data => Console.log(data),
+    intro: title => Console.log(`-- ${title} --`),
+    outro: message => Console.log(`-- ${message} --`),
+    log: {
+      info: message => Console.log(message),
+      success: message => Console.log(message),
+      warn: message => Console.warn(message),
+      error: message => Console.error(message),
+      step: message => Console.log(message),
+      message: message => Console.log(message),
+    },
+    note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
+    select: (_message, options) => Effect.succeed(options[0]!.value),
+    confirm: () => Effect.succeed(confirmed),
+    withSpinner: (message, effect, options) =>
+      Effect.gen(function* () {
+        const result = yield* effect;
+        const successMsg =
+          typeof options?.successMessage === 'function'
+            ? options.successMessage(result)
+            : (options?.successMessage ?? message);
+        yield* Console.log(successMsg);
+        return result;
+      }),
+    useMakeSpinner: (_message, use) =>
+      use({
+        message: (_msg: string) => Effect.void,
+        stop: (msg?: string) => (msg ? Console.log(msg) : Effect.void),
+        error: (msg?: string) => (msg ? Console.error(msg) : Effect.void),
+      }),
+  });
 
 describe('CLI: composio connections list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(it => {
@@ -196,6 +231,91 @@ describe('CLI: composio connections list', () => {
 
         expect(parsed).not.toHaveProperty('slack');
       })
+    );
+  });
+});
+
+describe('CLI: composio connections remove', () => {
+  const confirmedDeleteCalls: string[] = [];
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: {
+        items: testConnections,
+        onDelete: nanoid => confirmedDeleteCalls.push(nanoid),
+      },
+      terminalUI: terminalUIWithConfirm(true),
+    })
+  )(it => {
+    it.scoped('[Given] a unique toolkit selector and consent [Then] removes that connection', () =>
+      Effect.gen(function* () {
+        confirmedDeleteCalls.length = 0;
+
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['connections', 'remove', 'gmail']);
+
+        expect(confirmedDeleteCalls).toEqual(['con_gmail_active']);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        expect(lines.join('\n')).toContain('Removed gmail connection.');
+      })
+    );
+  });
+
+  const deniedDeleteCalls: string[] = [];
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: {
+        items: testConnections,
+        onDelete: nanoid => deniedDeleteCalls.push(nanoid),
+      },
+      terminalUI: terminalUIWithConfirm(false),
+    })
+  )(it => {
+    it.scoped('[Given] consent is denied [Then] does not remove the connection', () =>
+      Effect.gen(function* () {
+        deniedDeleteCalls.length = 0;
+
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['connections', 'remove', 'work']);
+
+        expect(deniedDeleteCalls).toEqual([]);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        expect(lines.join('\n')).toContain('No connection removed.');
+      })
+    );
+  });
+
+  const ambiguousDeleteCalls: string[] = [];
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: {
+        items: testConnections,
+        onDelete: nanoid => ambiguousDeleteCalls.push(nanoid),
+      },
+      terminalUI: terminalUIWithConfirm(true),
+    })
+  )(it => {
+    it.scoped(
+      '[Given] a selector matches multiple accounts [Then] asks for a unique selector',
+      () =>
+        Effect.gen(function* () {
+          ambiguousDeleteCalls.length = 0;
+
+          const userContext = yield* ComposioUserContext;
+          yield* userContext.login('test_api_key', 'org_test');
+          yield* cli(['connections', 'remove', 'github']);
+
+          expect(ambiguousDeleteCalls).toEqual([]);
+
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(lines.join('\n')).toContain('Multiple connections matched "github"');
+        })
     );
   });
 });

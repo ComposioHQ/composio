@@ -1470,6 +1470,46 @@ importers:
         specifier: 'catalog:'
         version: 4.3.6
 
+  ts/packages/skill-builder:
+    dependencies:
+      '@composio/skill-spec':
+        specifier: workspace:*
+        version: link:../skill-spec
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.1
+        version: 24.10.13
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260403.1)(publint@0.3.17)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.10.13)(@vitest/ui@3.2.4)(tsx@4.21.0)(yaml@2.8.2)
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+
+  ts/packages/skill-spec:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.1
+        version: 24.10.13
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260403.1)(publint@0.3.17)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.10.13)(@vitest/ui@3.2.4)(tsx@4.21.0)(yaml@2.8.2)
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+
   ts/packages/ts-builders:
     dependencies:
       '@babel/helper-validator-identifier':

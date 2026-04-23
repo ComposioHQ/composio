@@ -11,6 +11,8 @@ packages:
   - ts/packages/core
   - ts/packages/json-schema-to-zod
   - ts/packages/providers/*
+  - ts/packages/skill-builder
+  - ts/packages/skill-spec
   - ts/packages/ts-builders
   - ts/packages/wrappers/*
 

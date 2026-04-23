@@ -181,6 +181,7 @@ const FULL_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   full({ name: 'triggers list', description: 'List trigger types for a toolkit' }),
   full({ name: 'triggers info', description: 'Inspect a trigger type and schema summary' }),
   full({ name: 'connections list', description: 'Print toolkit connection statuses as JSON' }),
+  full({ name: 'connections remove', description: 'Interactively remove a toolkit connection' }),
   full({ name: 'generate ts', description: 'Generate TypeScript stubs for selected toolkits' }),
   full({ name: 'generate py', description: 'Generate Python stubs for selected toolkits' }),
   full({
@@ -549,6 +550,26 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     seeAlso: [
       'composio link <toolkit>                 Connect a new account for a toolkit',
       'composio dev connected-accounts list    Inspect the full connected-account table',
+    ],
+  },
+  'connections remove': {
+    usage: 'composio connections remove <account>',
+    description:
+      'Interactively remove a connected toolkit account. The command prompts for confirmation and defaults to No.',
+    args: [
+      {
+        name: '<account>',
+        description: 'Toolkit slug, alias, word_id, or connected account ID',
+      },
+    ],
+    examples: [
+      'composio connections remove gmail',
+      'composio connections remove work',
+      'composio connections remove castle',
+    ],
+    seeAlso: [
+      'composio connections list                Find connection selectors',
+      'composio link <toolkit>                  Reconnect a toolkit account',
     ],
   },
   run: {

@@ -109,6 +109,7 @@ export interface TestLiveInput {
     items?: ConnectedAccountItem[];
     linkResponse?: LinkCreateResponse;
     onPatch?: (params: { path: string; body: Record<string, unknown> | undefined }) => void;
+    onDelete?: (nanoid: string) => void;
   };
 
   /**
@@ -1057,6 +1058,14 @@ export const TestLayer = (input?: TestLiveInput) =>
             throw new Error(`Connected account "${nanoid}" not found`);
           }
           return found;
+        },
+        delete: async (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            throw new Error(`Connected account "${nanoid}" not found`);
+          }
+          connectedAccountsData.onDelete?.(nanoid);
+          return {};
         },
       },
       triggerInstances: {
