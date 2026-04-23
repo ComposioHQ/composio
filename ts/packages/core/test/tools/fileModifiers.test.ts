@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FileToolModifier } from '#file_tool_modifier';
 import ComposioClient from '@composio/client';
 import { Tool } from '../../src/types/tool.types';
-import { ComposioFileUploadError } from '../../src/errors/FileModifierErrors';
+import {
+  ComposioFileUploadAbortedError,
+  ComposioFileUploadError,
+} from '../../src/errors/FileModifierErrors';
 import * as fileUtils from '../../src/utils/fileUtils.node';
 import { Tools } from '../../src/models/Tools';
 import { createTestContext, setupTest, mockToolExecution } from '../utils/toolExecuteUtils';
@@ -328,6 +331,59 @@ describe('FileToolModifier', () => {
       });
       expect(result.arguments?.file).toEqual(mockFileData);
       expect(result.arguments?.text).toBe('some text');
+    });
+
+    it('should call beforeFileUpload and use returned path for string files', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const withHook = new FileToolModifier(mockClient, {
+        beforeFileUpload: async ({ path, toolSlug, toolkitSlug }) => {
+          expect(toolSlug).toBe('test-tool');
+          expect(toolkitSlug).toBe('test-toolkit');
+          return path.replace('original', 'rewritten');
+        },
+      });
+
+      const params = {
+        arguments: { file: '/path/to/original.txt' },
+        userId: 'test-user',
+      };
+
+      const result = await withHook.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith(
+        '/path/to/rewritten.txt',
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        }
+      );
+      expect(result.arguments?.file).toEqual(mockFileData);
+    });
+
+    it('should throw ComposioFileUploadAbortedError when beforeFileUpload returns false', async () => {
+      const withHook = new FileToolModifier(mockClient, {
+        beforeFileUpload: async () => false,
+      });
+
+      await expect(
+        withHook.fileUploadModifier(mockTool, {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          params: { arguments: { file: '/any/path' }, userId: 'u' },
+        })
+      ).rejects.toThrow(ComposioFileUploadAbortedError);
+      expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
     });
 
     it('should throw ComposioFileUploadError on upload failure', async () => {

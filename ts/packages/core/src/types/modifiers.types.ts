@@ -180,6 +180,19 @@ export type afterExecuteModifier = (context: {
 }) => Promise<ToolExecuteResponse> | ToolExecuteResponse;
 
 /**
+ * Called for each `file_uploadable` value before the SDK reads the file and uploads to storage.
+ * For a string, `path` is the local path or URL. For a `File` object, `path` is the file's name; you may return
+ * a different filesystem path to upload instead, or return `false` to abort the upload. Throwing an error also aborts.
+ */
+export type beforeFileUploadModifier = (context: {
+  path: string;
+  toolSlug: string;
+  toolkitSlug: string;
+}) => Promise<string | false> | string | false;
+
+type BeforeFileUploadHook = { beforeFileUpload?: beforeFileUploadModifier };
+
+/**
  * Modifier for altering the tool schema before it's exposed to consumers.
  *
  * This function allows you to customize the metadata, parameters, and behavior definitions
@@ -349,7 +362,7 @@ export type ToolOptions = {
    * This allows customizing input/output parameters, descriptions, and other metadata.
    */
   modifySchema?: TransformToolSchemaModifier;
-};
+} & BeforeFileUploadHook;
 
 /**
  * Options for configuring tool execution behavior.
@@ -390,7 +403,7 @@ export type ExecuteToolModifiers = {
    * This allows transforming the response or implementing custom error handling.
    */
   afterExecute?: afterExecuteModifier;
-};
+} & BeforeFileUploadHook;
 
 /**
  * Type alias for meta tool execution arguments.

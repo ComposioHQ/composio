@@ -47,6 +47,19 @@ export type ComposioConfig<
    */
   autoUploadDownloadFiles?: boolean;
   /**
+   * When true, local file paths for auto-upload and `files.upload` are checked against
+   * a built-in denylist of sensitive path segments (e.g. `.ssh`, `.aws`) and
+   * credential-like file names (e.g. `.env`, default SSH private key names). URLs and
+   * {@link File} objects are not path-checked.
+   * @default true
+   */
+  sensitiveFileUploadProtection?: boolean;
+  /**
+   * Extra path components (a single directory or file name) to treat as sensitive when
+   * they appear anywhere in the resolved path. Merged with the built-in list.
+   */
+  fileUploadPathDenySegments?: string[];
+  /**
    * The tool provider to use for this Composio instance.
    * @example new OpenAIProvider()
    */
@@ -253,6 +266,8 @@ export class Composio<
       allowTracking: config?.allowTracking ?? CONFIG_DEFAULTS.allowTracking,
       autoUploadDownloadFiles:
         config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles,
+      sensitiveFileUploadProtection: config?.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: config?.fileUploadPathDenySegments,
       provider: config?.provider ?? this.provider,
     };
 
@@ -274,7 +289,10 @@ export class Composio<
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client, this.config);
     this.authConfigs = new AuthConfigs(this.client);
-    this.files = new Files(this.client);
+    this.files = new Files(this.client, {
+      sensitiveFileUploadProtection: this.config.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: this.config.fileUploadPathDenySegments,
+    });
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.toolRouter = new ToolRouter(this.client, this.config);
 
