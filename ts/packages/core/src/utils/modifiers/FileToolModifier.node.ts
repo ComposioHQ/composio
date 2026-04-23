@@ -354,10 +354,10 @@ export class FileToolModifier {
       });
       return { ...params, arguments: newArgs as ToolExecuteParams['arguments'] };
     } catch (error) {
-      if (error instanceof ComposioSensitiveFilePathBlockedError) {
-        throw error;
-      }
-      if (error instanceof ComposioFileUploadAbortedError) {
+      if (
+        error instanceof ComposioSensitiveFilePathBlockedError ||
+        error instanceof ComposioFileUploadAbortedError
+      ) {
         throw error;
       }
       throw new ComposioFileUploadError('Failed to upload file', {

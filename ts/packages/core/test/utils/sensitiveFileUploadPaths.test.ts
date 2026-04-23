@@ -21,6 +21,9 @@ describe('sensitiveFileUploadPaths', () => {
     expect(isBlockedSensitiveFileUploadPath(path.join(os.homedir(), '.ssh', 'id_ed25519'))).toBe(
       true
     );
+    expect(
+      isBlockedSensitiveFileUploadPath(path.join(os.homedir(), '.claude', 'settings.json'))
+    ).toBe(true);
   });
 
   it('blocks .env-style basenames', () => {

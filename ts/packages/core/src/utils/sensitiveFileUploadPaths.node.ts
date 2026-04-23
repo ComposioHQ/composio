@@ -17,6 +17,7 @@ export const BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS: readonly string[] = [
   '.gnupg',
   '.kube',
   '.docker',
+  '.claude', // may contain API keys and project context read by assistants
   '.password-store',
   'keychains', // e.g. ~/Library/Keychains
 ];
@@ -57,17 +58,19 @@ function getSensitiveFileUploadPathBlockReason(
   additionalDenySegments?: string[]
 ): string | null {
   const segments = normalizePathSegments(filePath);
+  const isWin = process.platform === 'win32';
   const deny = new Set(
     [
       ...BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
       ...(additionalDenySegments ?? []).map(s => s.trim()).filter(Boolean),
-    ].map(s => (process.platform === 'win32' ? s.toLowerCase() : s))
+    ].map(s => (isWin ? s.toLowerCase() : s))
   );
 
-  for (const seg of segments) {
-    const key = process.platform === 'win32' ? seg.toLowerCase() : seg;
-    if (deny.has(key)) {
-      return `path segment "${seg}" is in the sensitive file upload denylist`;
+  // Windows: compare segments case-insensitively; map once instead of toLowerCase per iteration.
+  const segmentsForMatch = isWin ? segments.map(s => s.toLowerCase()) : segments;
+  for (let i = 0; i < segments.length; i++) {
+    if (deny.has(segmentsForMatch[i]!)) {
+      return `path segment "${segments[i]}" is in the sensitive file upload denylist`;
     }
   }
 
