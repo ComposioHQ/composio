@@ -23,7 +23,9 @@ from composio.exceptions import (
     SDKFileNotFoundError,
 )
 from composio.utils import mimetypes
-from composio.utils.sensitive_file_upload_paths import assert_safe_local_file_upload_path
+from composio.utils.sensitive_file_upload_paths import (
+    assert_safe_local_file_upload_path,
+)
 from composio.utils.logging import WithLogger
 
 if t.TYPE_CHECKING:

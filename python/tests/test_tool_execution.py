@@ -847,11 +847,12 @@ class TestToolExecution:
             assert result["data"]["modified"] is True
 
     def test_merge_before_file_upload_scopes_by_tool(self):
-        from composio.core.models._modifiers import before_file_upload, merge_before_file_upload
-
-        scoped = before_file_upload(tools=["OTHER_TOOL"])(
-            lambda p, t, k: p + "_X"
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
         )
+
+        scoped = before_file_upload(tools=["OTHER_TOOL"])(lambda p, t, k: p + "_X")
         fn = merge_before_file_upload([scoped], tool="MY", toolkit="gh")
         assert fn is not None
         assert fn("/a", "MY", "gh") == "/a"
@@ -862,7 +863,10 @@ class TestToolExecution:
         assert fn2("/a", "MY", "gh") == "/a_Y"
 
     def test_merge_before_file_upload_chains_modifiers(self):
-        from composio.core.models._modifiers import before_file_upload, merge_before_file_upload
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
 
         m1 = before_file_upload(lambda p, t, k: f"{p}|1")
         m2 = before_file_upload(lambda p, t, k: f"{p}|2")
