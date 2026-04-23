@@ -173,6 +173,71 @@ class TestAutoUploadDownloadFilesEnabled:
 
                 mock_upload.assert_called_once()
 
+    def test_execute_runs_substitute_before_before_execute(
+        self, mock_client, mock_provider
+    ):
+        """File substitution runs before before_execute modifiers (same order as TypeScript)."""
+        from composio.core.models._modifiers import Modifier
+
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            auto_upload_download_files=True,
+            toolkit_versions={"test_toolkit": "20251201_01"},
+        )
+
+        mock_tool = create_mock_tool(
+            slug="TEST_TOOL",
+            toolkit_slug="test_toolkit",
+            input_parameters={
+                "type": "object",
+                "properties": {
+                    "file": {"type": "string", "file_uploadable": True},
+                },
+            },
+            output_parameters={"type": "object", "properties": {}},
+        )
+        tools._tool_schemas["TEST_TOOL"] = mock_tool
+
+        seen_in_modifier: list = []
+
+        def before_modifier(tool: str, toolkit: str, params):  # type: ignore[no-untyped-def]
+            seen_in_modifier.append(dict(params["arguments"]))
+            return params
+
+        modifiers = [
+            Modifier(
+                modifier=before_modifier, type_="before_execute", tools=[], toolkits=[]
+            ),
+        ]
+
+        with patch.object(
+            tools._file_helper,
+            "substitute_file_uploads",
+            return_value={"file": "after_substitute"},
+        ) as mock_sub:
+            mock_execute_response = Mock()
+            mock_execute_response.model_dump.return_value = {
+                "data": {},
+                "error": None,
+                "successful": True,
+            }
+            mock_client.tools.execute.return_value = mock_execute_response
+
+            with patch.object(
+                tools, "get_raw_composio_tool_by_slug", return_value=mock_tool
+            ):
+                tools.execute(
+                    slug="TEST_TOOL",
+                    arguments={"file": "/tmp/x"},
+                    modifiers=modifiers,
+                    dangerously_skip_version_check=True,
+                )
+
+        mock_sub.assert_called_once()
+        assert len(seen_in_modifier) == 1
+        assert seen_in_modifier[0] == {"file": "after_substitute"}
+
     def test_execute_calls_substitute_file_downloads(self, mock_client, mock_provider):
         """Test that execute calls substitute_file_downloads when enabled."""
         tools = Tools(

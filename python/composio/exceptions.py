@@ -168,6 +168,14 @@ class ErrorUploadingFile(FileError):
     pass
 
 
+class SensitiveFilePathBlockedError(FileError):
+    """Raised when a local file path is refused before upload (sensitive directory or credential-like name)."""
+
+
+class FileUploadAbortedError(FileError):
+    """Raised when a ``before_file_upload`` hook returns ``False``."""
+
+
 class ErrorDownloadingFile(FileError):
     pass
 
