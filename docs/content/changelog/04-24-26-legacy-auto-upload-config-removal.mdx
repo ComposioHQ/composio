@@ -28,6 +28,7 @@ Earlier SDK versions treated automatic file upload/download for `file_uploadable
 **TypeScript — before (legacy):**
 
 ```typescript
+// @noErrors
 // If you omitted autoUploadDownloadFiles, it used to default to true
 new Composio({
   apiKey: process.env.COMPOSIO_API_KEY!,
@@ -43,6 +44,7 @@ new Composio({
 **TypeScript — going forward** (set `true` to match either legacy pattern above):
 
 ```typescript
+// @noErrors
 new Composio({
   apiKey: process.env.COMPOSIO_API_KEY!,
   dangerouslyAllowAutoUploadDownloadFiles: true,

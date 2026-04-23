@@ -377,7 +377,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self._provider = provider
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
-        self._auto_upload_download_files = bool(dangerously_allow_auto_upload_download_files)
+        self._auto_upload_download_files = bool(
+            dangerously_allow_auto_upload_download_files
+        )
 
     def _create_mcp_server_config(
         self,

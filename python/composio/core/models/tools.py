@@ -127,7 +127,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             file_upload_path_deny_segments=file_upload_path_deny_segments,
         )
         self._toolkit_versions = toolkit_versions
-        self._auto_upload_download_files = bool(dangerously_allow_auto_upload_download_files)
+        self._auto_upload_download_files = bool(
+            dangerously_allow_auto_upload_download_files
+        )
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider

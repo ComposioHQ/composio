@@ -49,6 +49,7 @@ pip install composio
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: "your_api_key" });
@@ -72,6 +73,7 @@ A standalone tool handles internal app logic that doesn't need Composio auth. `c
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
@@ -132,6 +134,7 @@ Pass custom tools via the `experimental` option. `session.tools()` returns both 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 
@@ -194,6 +197,7 @@ pip install composio
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: "your_api_key" });
@@ -217,6 +221,7 @@ An extension tool wraps a Composio toolkit's API with custom business logic. It 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
@@ -296,6 +301,7 @@ Pass custom tools via the `experimental` option. Extension tools inherit auth fr
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 
@@ -360,6 +366,7 @@ pip install composio
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: "your_api_key" });
@@ -383,6 +390,7 @@ A custom toolkit groups related standalone tools under a namespace. Tools inside
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
@@ -441,6 +449,7 @@ Pass custom toolkits via the `experimental` option. `session.tools()` returns bo
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, experimental_createToolkit } from "@composio/core";
 import { z } from "zod/v3";
 
@@ -529,6 +538,7 @@ Use these methods to list registered tools and toolkits. Slugs include their fin
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 const composio = new Composio({ apiKey: "your_api_key" });
 const session = await composio.create("user_1");
@@ -552,6 +562,7 @@ Use `session.execute()` to run custom tools directly, outside of an agent loop. 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from "@composio/core";
 const composio = new Composio({ apiKey: "your_api_key" });
 const session = await composio.create("user_1");
