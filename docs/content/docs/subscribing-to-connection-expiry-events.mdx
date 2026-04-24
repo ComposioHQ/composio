@@ -29,6 +29,10 @@ curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   }'
 ```
 
+<Callout>
+If you also need to know which trigger instance was paused because of the expired connection, subscribe to `composio.trigger.disabled` as well. That event is emitted when Composio disables a trigger on your behalf with `data.disabled_reason: "connection_expired"`.
+</Callout>
+
 ## Handle the event
 
 When a connection expires, Composio sends a webhook with the connected account details:
@@ -121,6 +125,8 @@ export default async function webhookHandler(req: NextApiRequest, res: NextApiRe
 ## Re-authenticate the user
 
 Use `session.authorize()` to generate a new Connect Link for the expired toolkit. The user completes OAuth again, and the connected account returns to `ACTIVE` status.
+
+Any trigger that Composio auto-disabled because of `connection_expired` is re-enabled automatically when the connected account becomes `ACTIVE` again.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">

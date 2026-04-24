@@ -11,8 +11,15 @@ Check the error message — the connected account might not have sufficient perm
 
 - **Polling triggers** (e.g., Gmail): These check for new events on an interval you configure. For Composio managed auth, intervals below 15 minutes are not supported.
 - **Webhook URL**: Ensure your URL is publicly accessible and returns a `2xx` status code.
-- **Trigger status**: Verify the trigger is enabled, not disabled.
+- **Trigger status**: Verify the trigger is enabled, not disabled. Some triggers are disabled automatically by Composio when the connected account expires, a provider webhook subscription refresh fails, or polling repeatedly fails.
 - **Logs**: Check the [trigger logs](https://platform.composio.dev?next_page=/logs/triggers) in the dashboard for delivery attempts and errors.
+
+If you need to react immediately when Composio pauses a trigger, subscribe to `composio.trigger.disabled` on your V3 webhook subscription. Check `data.disabled_reason` to distinguish between:
+
+- `connection_expired`: Re-authenticate the connected account. The trigger is auto-re-enabled when the account returns to `ACTIVE`.
+- `subscription_auth_failure`: Re-authenticate the connected account so Composio can refresh the provider webhook subscription again.
+- `subscription_refresh_failure`: Retry once the provider is healthy, then re-enable the trigger.
+- `polling_failure_in_composio_infra`: Re-enable the trigger after the underlying polling issue is resolved.
 
 ## Type errors with trigger payloads
 

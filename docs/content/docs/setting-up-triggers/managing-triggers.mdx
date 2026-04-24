@@ -85,6 +85,10 @@ await composio.triggers.enable('ti_abcd123');
   </Tab>
 </Tabs>
 
+<Callout>
+Triggers can also be disabled automatically by Composio if the connected account expires, a provider webhook subscription cannot be refreshed, or polling repeatedly fails. Subscribe to [`composio.trigger.disabled`](/docs/setting-up-triggers/subscribing-to-events) if you need to detect those platform-initiated disables in real time.
+</Callout>
+
 You can also toggle triggers from the dashboard:
 
 1. Go to [Auth Configs](https://platform.composio.dev?next_page=/auth-configs) and select your auth config
