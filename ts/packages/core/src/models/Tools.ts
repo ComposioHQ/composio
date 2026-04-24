@@ -57,6 +57,7 @@ import { ToolExecuteMetaParams } from '../types/tool.types';
 import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveAutoUploadDownloadFilesEnabled } from '../utils/autoUploadDownloadFiles';
+import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -74,6 +75,8 @@ export class Tools<
   private fileUploadPathOptions: {
     sensitiveFileUploadProtection?: boolean;
     fileUploadPathDenySegments?: string[];
+    fileUploadAllowlist?: string[];
+    fileDownloadDir?: string;
   };
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
@@ -92,6 +95,12 @@ export class Tools<
     this.fileUploadPathOptions = {
       sensitiveFileUploadProtection: config?.sensitiveFileUploadProtection,
       fileUploadPathDenySegments: config?.fileUploadPathDenySegments,
+      // The allowlist is only enforced during automatic upload (see
+      // FileToolModifier). Manual `composio.files.upload()` calls don't see it.
+      fileUploadAllowlist: this.autoUploadDownloadFiles
+        ? resolveEffectiveUploadAllowlist(config?.fileUploadDirs)
+        : undefined,
+      fileDownloadDir: config?.fileDownloadDir,
     };
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);

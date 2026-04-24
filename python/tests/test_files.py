@@ -1322,6 +1322,66 @@ class TestFileUploadableFromUrl:
 
         assert "Fetch failed" in str(exc_info.value)
 
+    def test_before_file_upload_hook_receives_source_url(self):
+        """from_path emits ``source="url"`` to the hook for http(s) inputs.
+
+        We abort from the hook to avoid the downstream network path; the
+        pre-abort capture is what we're asserting on.
+        """
+        from composio.exceptions import FileUploadAbortedError
+
+        mock_client = MagicMock()
+        seen = {}
+
+        def hook(ctx):
+            seen.update(ctx)
+            return False
+
+        with pytest.raises(FileUploadAbortedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file="https://example.com/photo.png",
+                tool="SEND_EMAIL",
+                toolkit="gmail",
+                before_file_upload=hook,
+            )
+
+        assert seen == {
+            "path": "https://example.com/photo.png",
+            "source": "url",
+            "tool": "SEND_EMAIL",
+            "toolkit": "gmail",
+        }
+
+    def test_before_file_upload_hook_receives_source_path(self, tmp_path):
+        """from_path emits ``source="path"`` to the hook for local inputs."""
+        from composio.exceptions import FileUploadAbortedError
+
+        f = tmp_path / "doc.txt"
+        f.write_text("hello")
+        mock_client = MagicMock()
+        seen = {}
+
+        def hook(ctx):
+            seen.update(ctx)
+            return False
+
+        with pytest.raises(FileUploadAbortedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file=str(f),
+                tool="MY_TOOL",
+                toolkit="my_toolkit",
+                before_file_upload=hook,
+            )
+
+        assert seen == {
+            "path": str(f),
+            "source": "path",
+            "tool": "MY_TOOL",
+            "toolkit": "my_toolkit",
+        }
+
 
 class TestFileHelperWithUrls:
     """Test cases for FileHelper handling URLs in file uploads."""

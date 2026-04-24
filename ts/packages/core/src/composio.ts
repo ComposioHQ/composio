@@ -20,6 +20,7 @@ import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
+import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
@@ -58,6 +59,33 @@ export type ComposioConfig<
    * they appear anywhere in the resolved path. Merged with the built-in list.
    */
   fileUploadPathDenySegments?: string[];
+  /**
+   * Allowlist of directories from which the SDK is allowed to read local files
+   * during **automatic** file upload (when
+   * `dangerouslyAllowAutoUploadDownloadFiles: true`). Manual
+   * `composio.files.upload()` calls are NOT subject to this allowlist.
+   *
+   * - `undefined` (default) → `[<home>/.composio/temp]`.
+   * - `false` → reject every local path during auto-upload. URLs
+   *   (`http(s)://...`) and `File`/`Blob` objects continue to work.
+   * - `string[]` (non-empty) → use as the allowlist. A file is accepted iff
+   *   its symlink-resolved absolute path is inside one of these directories
+   *   on a path-component boundary (so `/tmp/foo` allows `/tmp/foo/bar` but
+   *   NOT `/tmp/foo-bar`).
+   * - `[]` → behaves like `false` (kept as an alias; prefer `false` for
+   *   readability).
+   * - Providing any value **replaces** the default. Include `~/.composio/temp`
+   *   in your list if you want the default staging dir to keep working.
+   * - On Windows, entries are compared case-insensitively.
+   */
+  fileUploadDirs?: string[] | false;
+  /**
+   * Directory where files downloaded during tool execution (and
+   * `composio.files.download()`) are written. Defaults to
+   * `<home>/.composio/files`. Path is expanded at SDK-init time; relative
+   * paths resolve against `process.cwd()`.
+   */
+  fileDownloadDir?: string;
   /**
    * The tool provider to use for this Composio instance.
    * @example new OpenAIProvider()
@@ -268,6 +296,8 @@ export class Composio<
         CONFIG_DEFAULTS.dangerouslyAllowAutoUploadDownloadFiles,
       sensitiveFileUploadProtection: config?.sensitiveFileUploadProtection,
       fileUploadPathDenySegments: config?.fileUploadPathDenySegments,
+      fileUploadDirs: expandHomeAndResolveMany(config?.fileUploadDirs),
+      fileDownloadDir: expandHomeAndResolve(config?.fileDownloadDir),
       provider: config?.provider ?? this.provider,
     };
 
@@ -292,6 +322,7 @@ export class Composio<
     this.files = new Files(this.client, {
       sensitiveFileUploadProtection: this.config.sensitiveFileUploadProtection,
       fileUploadPathDenySegments: this.config.fileUploadPathDenySegments,
+      fileDownloadDir: this.config.fileDownloadDir,
     });
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.toolRouter = new ToolRouter(this.client, this.config);

@@ -371,6 +371,80 @@ describe('FileToolModifier', () => {
       expect(result.arguments?.file).toEqual(mockFileData);
     });
 
+    it('should pass source="path" to beforeFileUpload for local filesystem paths', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const hook = vi.fn(async ({ path }) => path);
+      const withHook = new FileToolModifier(mockClient, { beforeFileUpload: hook });
+
+      await withHook.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: { arguments: { file: '/path/to/a.txt' }, userId: 'u' },
+      });
+
+      expect(hook).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/path/to/a.txt', source: 'path' })
+      );
+    });
+
+    it('should pass source="url" to beforeFileUpload for http(s) URLs', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const hook = vi.fn(async ({ path }) => path);
+      const withHook = new FileToolModifier(mockClient, { beforeFileUpload: hook });
+
+      await withHook.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: { file: 'https://example.com/report.pdf' },
+          userId: 'u',
+        },
+      });
+
+      expect(hook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: 'https://example.com/report.pdf',
+          source: 'url',
+        })
+      );
+    });
+
+    it('should pass source="file" to beforeFileUpload for File objects', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const hook = vi.fn(async () => undefined as unknown as string);
+      const withHook = new FileToolModifier(mockClient, { beforeFileUpload: hook });
+
+      const fileObject = new File(['x'], 'uploaded.txt', { type: 'text/plain' });
+      await withHook.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: { arguments: { file: fileObject }, userId: 'u' },
+      });
+
+      // `path` is the File's name, not a filesystem path.
+      expect(hook).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'uploaded.txt', source: 'file' })
+      );
+    });
+
     it('should throw ComposioFileUploadAbortedError when beforeFileUpload returns false', async () => {
       const withHook = new FileToolModifier(mockClient, {
         beforeFileUpload: async () => false,

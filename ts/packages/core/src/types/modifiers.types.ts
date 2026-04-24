@@ -180,12 +180,30 @@ export type afterExecuteModifier = (context: {
 }) => Promise<ToolExecuteResponse> | ToolExecuteResponse;
 
 /**
- * Called for each `file_uploadable` value before the SDK reads the file and uploads to storage.
- * For a string, `path` is the local path or URL. For a `File` object, `path` is the file's name; you may return
- * a different filesystem path to upload instead, or return `false` to abort the upload. Throwing an error also aborts.
+ * Discriminates what kind of input the hook is seeing:
+ *
+ * - `'path'` — a local filesystem path string.
+ * - `'url'`  — an `http(s)://...` URL string.
+ * - `'file'` — a `File` object; `path` holds `file.name` (a filename, NOT a
+ *   filesystem path). Returning a string from the hook in this case replaces
+ *   the `File` with a local-path upload.
+ */
+export type BeforeFileUploadSource = 'path' | 'url' | 'file';
+
+/**
+ * Called for each `file_uploadable` value before the SDK reads the file and
+ * uploads to storage.
+ *
+ * - `context.path` holds the local path, the URL, or the `File`'s name
+ *   depending on `context.source`.
+ * - Return a string to replace the input (e.g. rewrite the path, redirect a
+ *   URL, or swap a `File` for a filesystem path).
+ * - Return `false` to abort the upload with `ComposioFileUploadAbortedError`.
+ * - Throwing an error also aborts.
  */
 export type beforeFileUploadModifier = (context: {
   path: string;
+  source: BeforeFileUploadSource;
   toolSlug: string;
   toolkitSlug: string;
 }) => Promise<string | false> | string | false;

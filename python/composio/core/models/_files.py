@@ -26,10 +26,14 @@ from composio.utils import mimetypes
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
+from composio.utils.upload_dir_allowlist import (
+    assert_path_inside_upload_dirs,
+)
 from composio.utils.logging import WithLogger
 
 if t.TYPE_CHECKING:
     from .tools import ToolExecutionResponse
+    from ._modifiers import BeforeFileUploadContextCallable  # noqa: F401
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
 _FILE_UPLOAD = "/api/v3/files/upload/request"
@@ -86,9 +90,12 @@ except OSError as e:
     ) from e
 
 
-LOCAL_OUTPUT_FILE_DIRECTORY = LOCAL_CACHE_DIRECTORY / "outputs"
+LOCAL_OUTPUT_FILE_DIRECTORY = LOCAL_CACHE_DIRECTORY / "files"
 """
-Local output file directory name for composio tools
+Default local directory into which files downloaded during tool execution are
+written. Previously ``<cache>/outputs``; now ``<cache>/files`` for parity with
+the TypeScript SDK. Override by passing ``file_download_dir=...`` to Composio,
+or by setting ``outdir`` on ``FileHelper`` directly.
 """
 
 
@@ -423,9 +430,8 @@ class FileUploadable(BaseModel):
         *,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
-        before_file_upload: t.Optional[
-            t.Callable[[str, str, str], t.Union[str, bool]]
-        ] = None,
+        file_upload_allowlist: t.Optional[t.Sequence[Path]] = None,
+        before_file_upload: t.Optional["BeforeFileUploadContextCallable"] = None,
     ) -> te.Self:
         """Create a FileUploadable from a local file path or public URL.
 
@@ -439,7 +445,17 @@ class FileUploadable(BaseModel):
         :param toolkit: The toolkit slug
         :param sensitive_file_upload_protection: When True, block paths on the built-in denylist.
         :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in list.
-        :param before_file_upload: Optional ``(path, tool, toolkit) -> str | bool``; return a new path string, or False to abort.
+        :param file_upload_allowlist: When provided (not None), local paths must
+            resolve inside one of these directories on a component boundary.
+            Pass ``None`` to skip the check (e.g. manual upload APIs). URLs are
+            never checked against the allowlist. An empty sequence means
+            "no paths are allowed" (fail-closed).
+        :param before_file_upload: Optional context-form hook produced by
+            :func:`composio.core.models._modifiers.merge_before_file_upload`.
+            Receives ``{"path", "source", "tool", "toolkit"}`` where ``source``
+            is ``"url"`` for ``http(s)://...`` inputs and ``"path"`` for local
+            filesystem paths. Return a new string to substitute, or ``False``
+            to abort.
         :return: FileUploadable instance with S3 key
         """
         file_str = str(file) if isinstance(file, Path) else file
@@ -448,7 +464,14 @@ class FileUploadable(BaseModel):
         if isinstance(file_str, str) and _is_url(file_str):
             path_in = file_str
             if before_file_upload is not None:
-                out = before_file_upload(path_in, tool, toolkit)
+                out = before_file_upload(
+                    {
+                        "path": path_in,
+                        "source": "url",
+                        "tool": tool,
+                        "toolkit": toolkit,
+                    }
+                )
                 if out is False:
                     raise FileUploadAbortedError(
                         "File upload was aborted because before_file_upload returned False."
@@ -459,13 +482,27 @@ class FileUploadable(BaseModel):
 
         path_in = file_str
         if before_file_upload is not None:
-            out = before_file_upload(path_in, tool, toolkit)
+            out = before_file_upload(
+                {
+                    "path": path_in,
+                    "source": "path",
+                    "tool": tool,
+                    "toolkit": toolkit,
+                }
+            )
             if out is False:
                 raise FileUploadAbortedError(
                     "File upload was aborted because before_file_upload returned False."
                 )
             if isinstance(out, str):
                 path_in = out
+
+        # Allowlist check runs BEFORE the denylist / existence checks when enabled,
+        # so the "configure file_upload_dirs" hint fires first for the common case
+        # (user has auto-upload on but hasn't configured dirs). Caller passes
+        # ``None`` to bypass the allowlist (manual upload APIs).
+        if file_upload_allowlist is not None:
+            assert_path_inside_upload_dirs(path_in, file_upload_allowlist)
 
         assert_safe_local_file_upload_path(
             path_in,
@@ -527,7 +564,11 @@ class FileDownloadable(BaseModel):
         return outfile
 
 
-BeforeFileUpload = t.Callable[[str, str, str], t.Union[str, bool]]
+# Internal alias — ``FileHelper`` receives the already-adapted context-form
+# callable produced by :func:`merge_before_file_upload`.
+from composio.core.models._modifiers import (  # noqa: E402
+    BeforeFileUploadContextCallable as BeforeFileUpload,
+)
 
 
 class FileHelper(WithLogger):
@@ -538,12 +579,24 @@ class FileHelper(WithLogger):
         *,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_allowlist: t.Optional[t.Sequence[Path]] = None,
     ) -> None:
+        """
+        :param outdir: Where files downloaded during tool execution are written.
+            Defaults to ``~/.composio/files``.
+        :param file_upload_allowlist: Directories from which local files may be
+            auto-uploaded. ``None`` disables the allowlist check (used when
+            auto-upload is off, or for manual upload APIs). An empty list means
+            "no paths allowed" (fail-closed).
+        """
         super().__init__()
         self._client = client
-        self._outdir = Path(outdir or LOCAL_OUTPUT_FILE_DIRECTORY)
+        self._outdir = Path(outdir) if outdir else LOCAL_OUTPUT_FILE_DIRECTORY
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
+        self._file_upload_allowlist: t.Optional[t.Sequence[Path]] = (
+            list(file_upload_allowlist) if file_upload_allowlist is not None else None
+        )
 
     def _has_file_property(
         self, schema: t.Dict, property_name: str = "file_uploadable"
@@ -770,6 +823,7 @@ class FileHelper(WithLogger):
                     toolkit=tool.toolkit.slug,
                     sensitive_file_upload_protection=self._sensitive_file_upload_protection,
                     file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                    file_upload_allowlist=self._file_upload_allowlist,
                     before_file_upload=before_file_upload,
                 ).model_dump()
                 continue
@@ -790,6 +844,7 @@ class FileHelper(WithLogger):
                         toolkit=tool.toolkit.slug,
                         sensitive_file_upload_protection=self._sensitive_file_upload_protection,
                         file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                        file_upload_allowlist=self._file_upload_allowlist,
                         before_file_upload=before_file_upload,
                     ).model_dump()
                     continue
@@ -841,6 +896,7 @@ class FileHelper(WithLogger):
                                             toolkit=tool.toolkit.slug,
                                             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
                                             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                                            file_upload_allowlist=self._file_upload_allowlist,
                                             before_file_upload=before_file_upload,
                                         ).model_dump()
                                     )

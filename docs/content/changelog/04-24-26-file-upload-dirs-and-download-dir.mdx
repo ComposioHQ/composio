@@ -1,0 +1,218 @@
+---
+title: 'File handling controls: upload allowlist, download directory, and `source` on the upload hook'
+description: 'New `fileUploadDirs` / `file_upload_dirs` allowlist gates automatic file uploads to directories you choose. New `fileDownloadDir` in the TypeScript SDK (parity with Python) controls where downloads land; the Python default directory moves for parity. The `beforeFileUpload` / `before_file_upload` hook now receives a `source` field so you can discriminate local paths from URLs (and, on TypeScript, `File` objects) without reparsing the input.'
+date: '2026-04-24'
+---
+
+Three related changes land together, covering the full auto-upload/download
+surface: **what** the SDK is allowed to read, **where** it writes, and **what
+your hook sees** about each input.
+
+1. `fileUploadDirs` / `file_upload_dirs` — an allowlist for automatic uploads,
+   stacking with the existing sensitive-path denylist.
+2. `fileDownloadDir` in TypeScript (parity with Python's `file_download_dir`)
+   and a new default path for Python downloads.
+3. A `source` field on the `beforeFileUpload` / `before_file_upload` hook
+   context so you can tell a local path apart from a URL (and, on TypeScript,
+   from a `File` object) without reparsing the string.
+
+### SDK versions
+
+| SDK        | Version (includes this behavior)  |
+| ---------- | --------------------------------- |
+| TypeScript | `@composio/core` v0.6.12 or later |
+| Python     | `composio` v0.11.7 or later       |
+
+### What changed
+
+**Upload allowlist**
+
+- **New `fileUploadDirs` / `file_upload_dirs` option** — when not set, defaults to `[~/.composio/temp]` (a Composio-owned staging directory). Pass `false` (or `[]`) to reject every local path — URLs and `File`/`Blob` objects still work. Passing a non-empty list **replaces** the default — include `~/.composio/temp` yourself if you still want the default staging path to work.
+- **Allowlist only enforced for automatic uploads** — Manual uploads via `composio.files.upload(...)` are *not* subject to the allowlist. The allowlist exists to constrain what models and prompt-injected tools can ask the SDK to read.
+- **Path semantics** — Paths are compared after `realpath` resolution (so symlinks pointing outside the allowlist are rejected) and on a path-component boundary (so `/tmp/foo` allows `/tmp/foo/bar` but NOT `/tmp/foo-bar`). Windows comparisons are case-insensitive. URLs (`http(s)://...`) are never path-checked.
+- **New errors** — `ComposioFileUploadPathNotAllowedError` / `FileUploadPathNotAllowedError` when a path is outside the allowlist. `ComposioFileNotFoundError` (TS) / `SDKFileNotFoundError` (Python, existing) when the local path does not exist. Error messages explain exactly how to extend `fileUploadDirs` or disable the check.
+- **Denylist still applies** — `sensitive_file_upload_protection` / `sensitiveFileUploadProtection` runs *after* the allowlist check. `dangerouslyAllowAutoUploadDownloadFiles: true` does NOT disable the denylist.
+
+**Download directory**
+
+- **TypeScript: `fileDownloadDir`** — Mirrors Python's `file_download_dir`. Files from tool responses marked `file_downloadable` are streamed here. Default: `~/.composio/files`.
+- **Python: default download dir renamed** — `~/.composio/outputs/<toolkit>/<tool>/` → `~/.composio/files/<toolkit>/<tool>/`. If you were reading the old path directly, update it to the new path or set `file_download_dir=` explicitly.
+
+**`source` on the upload hook**
+
+- **TypeScript** — `beforeFileUploadModifier` callbacks receive `source: 'path' | 'url' | 'file'` alongside the existing `path` / `toolSlug` / `toolkitSlug` fields. For `'file'` inputs, `path` holds `file.name` (a filename, not a filesystem path).
+- **Python** — the `@before_file_upload` decorator now accepts a single-argument context form in addition to the legacy `(path, tool, toolkit)` form. The context dict is `{"path", "source", "tool", "toolkit"}` where `source` is `"path"` or `"url"`.
+- **Back-compat** — TypeScript callers that ignored extra fields already work unchanged. Python callers declared with three positional parameters are auto-adapted, so no migration is required.
+
+### Examples
+
+#### Restrict automatic uploads to specific directories
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  // Replaces the default `[~/.composio/temp]`. List every directory you want
+  // the SDK to read from during tool execution.
+  fileUploadDirs: ['/srv/agent/uploads', '~/.composio/temp'],
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    dangerously_allow_auto_upload_download_files=True,
+    # Replaces the default `[~/.composio/temp]`.
+    file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
+)
+```
+</Tab>
+</Tabs>
+
+#### Block every filesystem path (URLs and in-memory files only)
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: false, // reject every local path; URLs and File objects still work
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+composio = Composio(
+    api_key="your_composio_key",
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=False,  # reject every local path; URLs and in-memory bytes still work
+)
+```
+</Tab>
+</Tabs>
+
+`file_upload_dirs=[]` / `fileUploadDirs: []` behaves identically — prefer
+`False` / `false` for readability.
+
+#### Customize the download directory
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  fileDownloadDir: '/var/app/composio-downloads', // default: ~/.composio/files
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+composio = Composio(
+    api_key="your_composio_key",
+    file_download_dir="/var/app/composio-downloads",  # default: ~/.composio/files
+)
+```
+</Tab>
+</Tabs>
+
+#### Discriminate local paths from URLs in the upload hook
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, type beforeFileUploadModifier } from '@composio/core';
+
+const beforeFileUpload: beforeFileUploadModifier = async ctx => {
+  switch (ctx.source) {
+    case 'path':
+      // ctx.path is a local filesystem path — audit / rewrite here
+      return ctx.path;
+    case 'url':
+      // ctx.path is an http(s):// URL — typically just pass through
+      return ctx.path;
+    case 'file':
+      // ctx.path is the File's `name`. Return a filesystem path to swap the
+      // File for a local-path upload, or return it unchanged to keep
+      // streaming the in-memory File/Blob.
+      return ctx.path;
+  }
+};
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+
+await composio.tools.execute(
+  'SOME_FILE_TOOL',
+  { userId: 'u', arguments: { file: '/tmp/report.pdf' } },
+  { beforeFileUpload }
+);
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio, before_file_upload
+
+# New, preferred form: single `context` argument.
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit(ctx) -> str | bool:
+    # ctx = {"path": ..., "source": "path" | "url", "tool": ..., "toolkit": ...}
+    if ctx["source"] == "url":
+        return ctx["path"]  # let remote URLs through untouched
+    # audit / rewrite / return False to abort
+    return ctx["path"]
+
+# Legacy 3-arg form still works unchanged.
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def legacy(path: str, tool: str, toolkit: str) -> str | bool:
+    return path
+
+composio = Composio()
+composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": "/path/to/document.pdf"},
+    user_id="user_123",
+    modifiers=[audit],
+)
+```
+</Tab>
+</Tabs>
+
+In Python, a hook declared with exactly three positional parameters is treated
+as the legacy form. Use `def hook(ctx): ...` (anything other than three
+positional) to opt in to the new context form.
+
+### Behavioral precedence for automatic uploads
+
+When `dangerouslyAllowAutoUploadDownloadFiles` is `true`, each local path goes
+through these checks in order:
+
+1. **Allowlist** — `fileUploadDirs` / `file_upload_dirs`. Fails first with an error pointing at the exact list.
+2. **Existence / readability** — path must exist as a file and be readable. Missing files raise `ComposioFileNotFoundError` / `SDKFileNotFoundError`.
+3. **`beforeFileUpload` hook** — can rewrite, accept, or abort. Sees `source` so it can scope its logic to local paths only.
+4. **Sensitive-path denylist** — `sensitive_file_upload_protection` (.ssh, .aws, .env, etc.). Still enforced regardless of the allowlist.
+
+`composio.files.upload(...)` (TS) skips step 1 and step 3 (manual upload is
+considered explicit user intent). Steps 2 and 4 still apply.
+
+### Migration notes
+
+- **Python `file_download_dir` default moved** — If you were reading from `~/.composio/outputs/...` directly, switch to `~/.composio/files/...` or pass `file_download_dir=` explicitly. The return value of `composio.tools.execute(...)` continues to include the final path, so code that consumes the returned path needs no changes.
+- **Auto-upload behavior may change** — If you were already using `dangerouslyAllowAutoUploadDownloadFiles: true` with files living outside `~/.composio/temp`, set `fileUploadDirs` to include the parent directories your tools stage files into.
+- **Upload hook signature** — No changes required. Existing TypeScript hooks that only use `path` / `toolSlug` / `toolkitSlug` keep working. Existing Python hooks declared as `(path, tool, toolkit) -> ...` keep working via automatic adaptation; opt in to the context form when you need `source`.
+
+### Where to read more
+
+- [TypeScript `Composio` client](/reference/sdk-reference/typescript/composio#restricting-automatic-uploads-to-specific-directories) — constructor options.
+- [Executing tools: automatic file handling](/docs/tools-direct/executing-tools#security-for-local-file-paths) — end-to-end configuration for the auto-upload flow.
+- [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) — the `@before_file_upload` decorator and scoping.

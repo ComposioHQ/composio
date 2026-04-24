@@ -59,6 +59,7 @@ class TestComposioSDK:
             "dangerously_allow_auto_upload_download_files",
             "sensitive_file_upload_protection",
             "file_upload_path_deny_segments",
+            "file_upload_dirs",
         }
         assert set(SDKConfig.__annotations__.keys()) == expected_fields
 

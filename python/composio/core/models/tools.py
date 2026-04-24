@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import typing as t
+from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel as PydanticBaseModel
@@ -26,6 +27,7 @@ from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
+from composio.utils.upload_dir_allowlist import resolve_effective_upload_allowlist
 
 from ._modifiers import (
     Modifiers,
@@ -105,6 +107,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         dangerously_allow_auto_upload_download_files: bool = False,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_dirs: t.Union[t.Sequence[str], t.Literal[False], None] = None,
     ):
         """
         Initialize the tools resource.
@@ -116,7 +119,24 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
         :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
+        :param file_upload_dirs: Allowlist of directories from which local files may
+            be auto-uploaded. Only consulted when
+            ``dangerously_allow_auto_upload_download_files=True``. See Composio docs
+            for details.
         """
+        self._auto_upload_download_files = bool(
+            dangerously_allow_auto_upload_download_files
+        )
+        # Resolve allowlist once, but only if auto-upload is enabled. When it's
+        # disabled there's no auto-upload code path, so we pass ``None`` and
+        # FileHelper won't run the allowlist check either way. Manual APIs (if
+        # ever added in the future) should also pass ``None``.
+        resolved_allowlist: t.Optional[t.List[Path]] = (
+            resolve_effective_upload_allowlist(file_upload_dirs)
+            if self._auto_upload_download_files
+            else None
+        )
+
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
@@ -125,11 +145,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             outdir=file_download_dir,
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
+            file_upload_allowlist=resolved_allowlist,
         )
         self._toolkit_versions = toolkit_versions
-        self._auto_upload_download_files = bool(
-            dangerously_allow_auto_upload_download_files
-        )
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider

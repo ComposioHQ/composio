@@ -184,13 +184,21 @@ For tools with `file_uploadable` parameters, the SDK can read a local path and u
 
 See [Executing tools: security for local file paths](/docs/tools-direct/executing-tools#security-for-local-file-paths) for constructor options, errors, and a full tabbed example.
 
+The hook takes either a single `context` argument (preferred) or the legacy
+3-arg `(path, tool, toolkit)` form. The context object exposes
+`context["source"]` — `"path"` for local filesystem inputs and `"url"` for
+`http(s)://...` inputs — so you can scope audits to just local paths:
+
 ```python
 from composio import Composio, before_file_upload
 
 @before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
-def audit_path(path: str, tool: str, toolkit: str) -> str | bool:
+def audit_path(ctx) -> str | bool:
+    # ctx = {"path": ..., "source": "path" | "url", "tool": ..., "toolkit": ...}
+    if ctx["source"] != "path":
+        return ctx["path"]  # let URLs through untouched
     # return a new path string, or False to abort the upload
-    return path
+    return ctx["path"]
 
 composio = Composio()
 composio.tools.execute(

@@ -432,7 +432,13 @@ composio = Composio(
 import { Composio, type beforeFileUploadModifier } from '@composio/core';
 import path from 'node:path';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const beforeFileUpload: beforeFileUploadModifier = async ctx => ctx.path;
+// ctx.source is 'path' | 'url' | 'file' — useful if you only want to audit
+// local paths and let URLs / File objects pass through unchanged.
+const beforeFileUpload: beforeFileUploadModifier = async ctx => {
+  if (ctx.source !== 'path') return ctx.path;
+  // ...audit ctx.path...
+  return ctx.path;
+};
 // ---cut---
 await composio.tools.execute(
   'GOOGLEDRIVE_UPLOAD_FILE',
@@ -450,9 +456,14 @@ await composio.tools.execute(
 import os
 from composio import Composio, before_file_upload
 
+# New form: take a single ``context`` arg; ``context["source"]`` is "path"
+# or "url". The legacy ``(path, tool, toolkit)`` 3-arg form is still accepted.
 @before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
-def audit_path(path: str, tool: str, toolkit: str) -> str | bool:
-    return path
+def audit_path(ctx) -> str | bool:
+    if ctx["source"] != "path":
+        return ctx["path"]
+    # ...audit ctx["path"]...
+    return ctx["path"]
 
 composio = Composio()
 

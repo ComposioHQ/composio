@@ -8,6 +8,7 @@ import { getRandomShortId } from './uuid';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './buffer';
 import type { FileDownloadData, FileUploadData } from '../types/files.types';
 import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths.node';
+import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -26,6 +27,15 @@ export type GetFileDataAfterUploadingToS3Options = {
    * merged with the built-in list.
    */
   fileUploadPathDenySegments?: string[];
+  /**
+   * When provided, the local path must resolve inside one of these directories
+   * (after symlink resolution, on a component boundary) or upload is rejected.
+   * Intended for automatic upload during tool execution; manual
+   * `composio.files.upload()` calls pass `undefined` here to skip enforcement.
+   *
+   * An empty array means "no paths are allowed" (fail-closed).
+   */
+  fileUploadAllowlist?: string[];
 };
 
 // Helper function to get file extension from MIME type
@@ -244,18 +254,23 @@ export const getFileDataAfterUploadingToS3 = async (
     client,
     sensitiveFileUploadProtection,
     fileUploadPathDenySegments,
+    fileUploadAllowlist,
   }: GetFileDataAfterUploadingToS3Options
 ): Promise<FileUploadData> => {
   if (!file) {
     throw new Error('Either path or blob must be provided');
   }
 
-  if (
-    sensitiveFileUploadProtection !== false &&
-    typeof file === 'string' &&
-    !file.startsWith('http')
-  ) {
-    assertSafeFileUploadPath(file, { additionalDenySegments: fileUploadPathDenySegments });
+  const isLocalPath = typeof file === 'string' && !file.startsWith('http');
+
+  if (isLocalPath && fileUploadAllowlist !== undefined) {
+    assertPathInsideUploadDirs(file as string, fileUploadAllowlist);
+  }
+
+  if (sensitiveFileUploadProtection !== false && isLocalPath) {
+    assertSafeFileUploadPath(file as string, {
+      additionalDenySegments: fileUploadPathDenySegments,
+    });
   }
 
   const fileData = await readFile(file);
@@ -281,10 +296,16 @@ export const downloadFileFromS3 = async ({
   toolSlug,
   s3Url,
   mimeType,
+  fileDownloadDir,
 }: {
   toolSlug: string;
   s3Url: string;
   mimeType: string;
+  /**
+   * Absolute path to the directory to save the file into. When omitted, falls
+   * back to `<home>/.composio/files` (the legacy default).
+   */
+  fileDownloadDir?: string;
 }): Promise<FileDownloadData> => {
   const response = await fetch(s3Url);
   if (!response.ok) {
@@ -294,7 +315,10 @@ export const downloadFileFromS3 = async ({
 
   const extension = getExtensionFromMimeType(mimeType);
   const fileName = generateTimestampedFilename(extension, `${toolSlug}_`);
-  const filePath = saveFile(fileName, new Uint8Array(data), true);
+  const filePath = saveFile(fileName, new Uint8Array(data), {
+    isTempFile: fileDownloadDir === undefined,
+    outputDir: fileDownloadDir,
+  });
   return {
     name: fileName,
     mimeType: mimeType,
@@ -354,23 +378,50 @@ export const getComposioTempFilesDir = (createDirIfNotExists: boolean = false) =
 };
 
 /**
- * Saves a file to the Composio directory.
- * @param file - The name of the file to save.
- * @param content - The content of the file to save. Can be a string or Uint8Array.
- * @param isTempFile - Whether the file is a temporary file.
- * @returns The path to the saved file.
+ * Saves a file to a local directory.
+ *
+ * Directory precedence (highest first):
+ *   1. `options.outputDir` (explicit, absolute or relative; created if missing)
+ *   2. `options.isTempFile === true` → `<home>/.composio/files`
+ *   3. fallback → `<home>/.composio`
+ *
+ * @returns The absolute path to the saved file, or `null` if the runtime has
+ *          no filesystem (e.g. Cloudflare Workers) or the save failed.
  */
 export const saveFile = (
   file: string,
   content: string | Uint8Array,
-  isTempFile: boolean = false
+  options: { isTempFile?: boolean; outputDir?: string } | boolean = {}
 ) => {
+  // Back-compat: legacy callers passed a boolean `isTempFile` positional.
+  const opts: { isTempFile?: boolean; outputDir?: string } =
+    typeof options === 'boolean' ? { isTempFile: options } : options;
+
   try {
     if (!platform.supportsFileSystem) {
       logger.debug('File system operations are not supported in this runtime environment');
       return null;
     }
-    const composioFilesDir = isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
+
+    let composioFilesDir: string | null | undefined;
+    if (opts.outputDir) {
+      const absDir = platform.joinPath(opts.outputDir); // platform.joinPath normalizes
+      try {
+        if (!platform.existsSync(absDir)) {
+          platform.mkdirSync(absDir);
+        }
+        composioFilesDir = absDir;
+      } catch (err) {
+        logger.warn(
+          `fileDownloadDir "${absDir}" is not writable, falling back to the default ` +
+            `(~/.composio/files). Error: ${err}`
+        );
+        composioFilesDir = getComposioTempFilesDir(true);
+      }
+    } else {
+      composioFilesDir = opts.isTempFile ? getComposioTempFilesDir(true) : getComposioDir(true);
+    }
+
     if (!composioFilesDir) {
       return null;
     }

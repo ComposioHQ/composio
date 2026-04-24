@@ -973,6 +973,7 @@ class TestToolRouter:
             dangerously_allow_auto_upload_download_files=False,
             sensitive_file_upload_protection=True,
             file_upload_path_deny_segments=None,
+            file_upload_dirs=None,
         )
 
         # Verify get_raw_tool_router_meta_tools was called
