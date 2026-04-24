@@ -138,7 +138,7 @@ For toolkits with Composio-managed auth, you don't need to configure anything. F
 <Accordion title="Can a user connect multiple accounts for the same app?">
 Yes. For example, a user can connect both a personal and work Gmail account. Call `session.authorize()` multiple times for the same toolkit. Each session uses the most recently connected account by default, but you can pin a specific account when creating the session.
 
-For direct tool execution, use `initiate()` with `allow_multiple: true` and pass the `connected_account_id` when executing. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
+For direct tool execution, use `link()` to create each hosted connection and pass the `connected_account_id` when executing. If you're creating non-OAuth or direct-credential connections, `initiate()` still supports `allow_multiple`. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
 </Accordion>
 
 <Accordion title="How does token refresh work?">

@@ -28,7 +28,7 @@ The default mode where Composio provides its own OAuth app credentials for each 
 </GlossaryTerm>
 
 <GlossaryTerm name="Connect Link">
-A hosted page where a user authorizes access to a toolkit. Returned as a `redirect_url` from `session.authorize()` or `connectedAccounts.initiate()`. Composio manages the full OAuth flow. See [Authentication](/docs/authentication).
+A hosted page where a user authorizes access to a toolkit. Returned as a `redirect_url` from `session.authorize()` or `connectedAccounts.link()`. Composio manages the full OAuth flow. See [Authentication](/docs/authentication).
 </GlossaryTerm>
 
 <GlossaryTerm name="Connected Account">
@@ -52,7 +52,7 @@ An open protocol for connecting AI models to external tools. Every session expos
 </GlossaryTerm>
 
 <GlossaryTerm name="Manual Authentication">
-Authenticating users from your own code using `session.authorize()` or `connectedAccounts.initiate()`, as opposed to letting the AI agent handle it via in-chat authentication. See [Manual authentication](/docs/authenticating-users/manually-authenticating).
+Authenticating users from your own code using `session.authorize()`, `connectedAccounts.link()`, or `connectedAccounts.initiate()` for direct-credential schemes, as opposed to letting the AI agent handle it via in-chat authentication. See [Manual authentication](/docs/authenticating-users/manually-authenticating).
 </GlossaryTerm>
 
 <GlossaryTerm name="Meta Tools">

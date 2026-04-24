@@ -183,7 +183,7 @@ https://your-app.com/callback?user_id=user_123&status=success&connected_account_
 
 #### OAuth Connections
 
-For OAuth flows, you'll redirect users to complete authorization. You can specify a callback URL to control where users return after authentication:
+For Composio-managed OAuth flows, use `link()` and redirect users to complete authorization. It is the recommended path for hosted OAuth consent. You can specify a callback URL to control where users return after authentication:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -198,11 +198,10 @@ auth_config_id = "your_auth_config_id"
 # Use a unique identifier for each user in your application
 user_id = "user-1349-129-12"
 
-connection_request = composio.connected_accounts.initiate(
-  user_id=user_id,
-  auth_config_id=auth_config_id,
-  config={"auth_scheme": "OAUTH2"},
-  callback_url="https://www.yourapp.com/callback"
+connection_request = composio.connected_accounts.link(
+    user_id=user_id,
+    auth_config_id=auth_config_id,
+    callback_url="https://www.yourapp.com/callback"
 )
 print(f"Redirect URL: {connection_request.redirect_url}")
 
@@ -227,13 +226,9 @@ const authConfigId = 'your_auth_config_id';
 // Use a unique identifier for each user in your application
 const userId = 'user_4567';
 
-const connRequest = await composio.connectedAccounts.initiate(
-  userId,
-  authConfigId,
-  {
-    callbackUrl: 'https://www.yourapp.com/callback',
-  }
-);
+const connRequest = await composio.connectedAccounts.link(userId, authConfigId, {
+  callbackUrl: 'https://www.yourapp.com/callback',
+});
 console.log(`Redirect URL: ${connRequest.redirectUrl}`);
 
 const connectedAccount = await connRequest.waitForConnection();
@@ -249,7 +244,7 @@ console.log(`Connection established: ${connectedAccount.id}`);
 </Tabs>
 
 <Callout type="info">
-When using callback URLs with `initiate()`, the appended query parameters use camelCase (`connectedAccountId`, `appName`) instead of snake_case. See [Redirecting users after authentication](#redirecting-users-after-authentication).
+Use `initiate()` when you need to pass credentials or auth inputs directly, such as API keys, bearer tokens, basic auth, or provider-specific fields like a Zendesk subdomain.
 </Callout>
 
 #### Services with Additional Parameters
@@ -449,7 +444,7 @@ print(connected_account.id)
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const connectionRequest = await composio.connectedAccounts.initiate('user_123', 'ac_123', {});
+const connectionRequest = await composio.connectedAccounts.link('user_123', 'ac_123');
 // ---cut---
 // Wait for the connection to be established
 const connectedAccount = await connectionRequest.waitForConnection();

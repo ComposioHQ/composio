@@ -101,7 +101,7 @@ Aliases are human-readable labels for connected accounts (e.g., `"work-gmail"`, 
 
 ### Setting an alias during connection
 
-Pass `alias` to `session.authorize()`, `connectedAccounts.initiate()`, or `connectedAccounts.link()`:
+Pass `alias` to `session.authorize()` or `connectedAccounts.link()`. If you're creating a non-OAuth or direct-credential connection, `initiate()` also accepts `alias`.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -110,13 +110,6 @@ session = composio.create(user_id="user_123")
 
 # Via session.authorize()
 connection_request = session.authorize("gmail", alias="work-gmail")
-
-# Via connectedAccounts.initiate()
-connection_request = composio.connected_accounts.initiate(
-    "user_123",
-    "ac_auth_config_id",
-    alias="work-gmail",
-)
 
 # Via connectedAccounts.link()
 connection_request = composio.connected_accounts.link(
@@ -135,15 +128,8 @@ const session = await composio.create("user_123");
 // Via session.authorize()
 const connectionRequest = await session.authorize("gmail", { alias: "work-gmail" });
 
-// Via connectedAccounts.initiate()
-const connectionRequest2 = await composio.connectedAccounts.initiate(
-  "user_123",
-  "ac_auth_config_id",
-  { alias: "work-gmail" },
-);
-
 // Via connectedAccounts.link()
-const connectionRequest3 = await composio.connectedAccounts.link(
+const connectionRequest2 = await composio.connectedAccounts.link(
   "user_123",
   "ac_auth_config_id",
   { alias: "work-gmail" },

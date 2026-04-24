@@ -834,7 +834,7 @@ The callback URL for creating custom OAuth configs is now `https://backend.compo
 
 The primary change in connected accounts and user IDs is that user IDs are now a more prominent concept compared to entities in previous versions.
 
-We have simplified the process of connecting a user to a toolkit. Instead of multiple methods and parameters for initiating a connection, both the SDK and API now require only a `user_id` and `auth_config_id` to initiate a connection.
+We have simplified the process of connecting a user to a toolkit. Instead of multiple methods and parameters for starting a connection flow, the SDK and API center around a `user_id` plus `auth_config_id`.
 
 This approach is more explicit and works well with the ability for developers to have multiple auth configs for a given toolkit.
 
@@ -906,7 +906,7 @@ if (connectionRequest?.redirectUrl) {
   </Tab>
 </Tabs>
 
-The current process for initiating a connection is as follows:
+The current process for initiating a managed OAuth connection is as follows:
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
@@ -917,8 +917,8 @@ linear_auth_config_id = "ac_1234"
 user_id = "user@email.com"
 composio = Composio()
 
-# Create a new connected account
-connection_request = composio.connected_accounts.initiate(
+# Create a new connection request
+connection_request = composio.connected_accounts.link(
     user_id=user_id,
     auth_config_id=linear_auth_config_id,
 )
@@ -939,7 +939,7 @@ const linearAuthConfigId = "ac_1234";
 const userId = "user@email.com";
 
 // Initiate the OAuth connection request
-const connRequest = await composio.connectedAccounts.initiate(userId, linearAuthConfigId);
+const connRequest = await composio.connectedAccounts.link(userId, linearAuthConfigId);
 
 const { redirectUrl, id } = connRequest;
 console.log(redirectUrl);
@@ -1268,6 +1268,10 @@ This list is not exhaustive. Please refer to the [API Reference](/reference) for
 | `POST /api/v1/connectedAccounts/{connectedAccountId}/disable` | `PATCH /api/v3/connected_accounts/{nanoId}/status` |
 | `POST /api/v1/connectedAccounts/{connectedAccountId}/enable` | `PATCH /api/v3/connected_accounts/{nanoId}/status` |
 | `POST /api/v1/connectedAccounts/{connectedAccountId}/reinitiate` | `POST /api/v3/connected_accounts/{nanoid}/refresh` |
+
+<Callout type="info">
+For Composio-managed OAuth connection flows, use `POST /api/v3/connected_accounts/link` (or `connectedAccounts.link()` in the SDK). `POST /api/v3/connected_accounts` remains for custom auth configs and direct-credential flows such as API keys, bearer tokens, and basic auth.
+</Callout>
 
 ### Triggers
 
