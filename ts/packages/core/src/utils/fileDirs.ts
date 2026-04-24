@@ -58,8 +58,11 @@ export function expandHomeAndResolveMany<T extends string[] | false | undefined>
 ): T extends false ? false : T extends undefined ? undefined : string[] {
   if (list === undefined) return undefined as never;
   if (list === false) return false as never;
+  // tsgo doesn't narrow `T` to `string[]` after the two guards above, so we
+  // widen locally before iterating.
+  const items = list as string[];
   const out: string[] = [];
-  for (const raw of list) {
+  for (const raw of items) {
     if (typeof raw !== 'string' || raw.trim() === '') continue;
     const resolved = expandHomeAndResolve(raw);
     if (resolved) out.push(resolved);
