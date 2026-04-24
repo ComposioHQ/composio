@@ -254,7 +254,13 @@ The examples above configure toolkit versions at SDK initialization. You can als
 
 You can proxy requests to any supported toolkit API and let Composio inject the authentication state. This is useful when you need an API endpoint that isn't available as a predefined tool.
 
-The `endpoint` can be a relative path or absolute URL. Composio uses the `connected_account_id` to determine the toolkit and resolve relative paths against the appropriate base URL.
+Proxy execute requires auth context. Pass `connected_account_id` / `connectedAccountId`, or provide `custom_connection_data` if you're supplying auth manually.
+
+The `endpoint` can be a relative path or absolute URL. Relative paths are resolved against the connected account's base URL. Absolute URLs are only accepted when they use the same scheme and registrable domain as that base URL. Cross-subdomain requests on the same registrable domain still work.
+
+<Callout type="warn">
+Prefer relative endpoints when possible. They resolve against the connected account's base URL and avoid same-domain validation issues.
+</Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">

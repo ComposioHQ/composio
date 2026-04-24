@@ -214,6 +214,8 @@ composio = Composio(api_key="your_api_key")
 
 An extension tool wraps a Composio toolkit's API with custom business logic. It inherits auth via `extendsToolkit` / `extends_toolkit`, so `ctx.proxyExecute()` / `ctx.proxy_execute()` handles credentials automatically.
 
+Prefer relative `endpoint` values in proxy calls. They resolve against the toolkit base URL. Absolute URLs are only accepted when they stay on the same scheme and registrable domain as that base URL.
+
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
@@ -235,7 +237,7 @@ const sendPromoEmail = experimental_createTool("SEND_PROMO_EMAIL", {
 
     const res = await ctx.proxyExecute({
       toolkit: "gmail",
-      endpoint: "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+      endpoint: "/gmail/v1/users/me/messages/send",
       method: "POST",
       body: { raw },
     });
@@ -278,7 +280,7 @@ def send_promo_email(input: PromoEmailInput, ctx):
 
     res = ctx.proxy_execute(
         toolkit="gmail",
-        endpoint="https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        endpoint="/gmail/v1/users/me/messages/send",
         method="POST",
         body={"raw": raw},
     )

@@ -164,12 +164,16 @@ Use `run` when you want loops, conditionals, `Promise.all`, `search()` inside a 
 
 ## Call raw APIs with proxy
 
-Use `composio proxy` when you want authenticated access to a toolkit API endpoint directly rather than going through a dedicated Composio tool.
+Use `composio proxy` when you want authenticated access to a toolkit API endpoint directly rather than going through a dedicated Composio tool. The command uses your linked account for the toolkit you pass with `--toolkit`.
 
 ```bash
-composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
-composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'
+composio proxy /gmail/v1/users/me/profile --toolkit gmail
+composio proxy /gmail/v1/users/me/drafts --toolkit gmail -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'
 ```
+
+<Callout type="warn">
+Prefer relative endpoints. If you pass an absolute URL, it must stay on the same scheme and registrable domain as the toolkit account's base URL.
+</Callout>
 
 Use `proxy` when:
 
