@@ -61,7 +61,7 @@ asyncio.run(main())
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.9+
 - OpenAI Agents framework
 - Composio (with valid API key)
 

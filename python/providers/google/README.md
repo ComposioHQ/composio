@@ -41,9 +41,9 @@ composio = Composio(provider=GoogleProvider())
 Fetch GitHub tools for the user from Composio and attach them to a Gemini model.
 
 ```python
-tool = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
-model = GenerativeModel("gemini-1.5-pro", tools=[tool])
+model = GenerativeModel("gemini-1.5-pro", tools=tools)
 chat = model.start_chat()
 ```
 
