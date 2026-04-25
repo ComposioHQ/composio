@@ -11,12 +11,10 @@ Facilitate the integration of Anthropic's Claude with Composio to empower Claude
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio core and the Anthropic provider
 pip install composio composio-anthropic anthropic
-
-# Connect your GitHub account (also available in the dashboard)
-composio link github
 ```
+
+Connect your GitHub account from the [Composio dashboard](https://platform.composio.dev/) before running the example.
 
 > Looking for the Claude Agent SDK? See `composio-claude-agent-sdk` instead.
 

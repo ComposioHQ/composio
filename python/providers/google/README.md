@@ -11,12 +11,10 @@ Streamline the integration of Composio with Google AI Python to enhance the capa
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio core and the Google (Vertex AI) provider
 pip install composio composio-google google-cloud-aiplatform
-
-# Connect your GitHub account (also available in the dashboard)
-composio link github
 ```
+
+Connect your GitHub account from the [Composio dashboard](https://platform.composio.dev/) before running the example.
 
 > Using the standalone `google-genai` SDK instead? See the `composio-gemini` provider.
 
@@ -27,7 +25,7 @@ composio link github
 Prepare your environment by initializing necessary imports from Google AI Python and Composio.
 
 ```python
-from vertexai.generative_models import GenerativeModel
+from vertexai.generative_models import GenerativeModel, Tool
 
 from composio import Composio
 from composio_google import GoogleProvider
@@ -38,12 +36,17 @@ composio = Composio(provider=GoogleProvider())
 
 ### Step 2: Integrating GitHub Tools with Composio
 
-Fetch GitHub tools for the user from Composio and attach them to a Gemini model.
+Fetch GitHub tools for the user from Composio. `GoogleProvider` returns
+`vertexai.generative_models.FunctionDeclaration` objects, so wrap them in a
+`Tool` before handing them to `GenerativeModel`.
 
 ```python
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+declarations = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
-model = GenerativeModel("gemini-1.5-pro", tools=tools)
+model = GenerativeModel(
+    "gemini-1.5-pro",
+    tools=[Tool(function_declarations=declarations)],
+)
 chat = model.start_chat()
 ```
 

@@ -11,12 +11,10 @@ Integrate Composio with LangGraph agentic workflows and enable them to interact 
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio core and the LangGraph provider
 pip install composio composio-langgraph langgraph langchain_openai
-
-# Connect your GitHub account (also available in the dashboard)
-composio link github
 ```
+
+Connect your GitHub account from the [Composio dashboard](https://platform.composio.dev/) before running the example.
 
 ### Usage Steps
 

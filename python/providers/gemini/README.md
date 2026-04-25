@@ -11,12 +11,10 @@ Streamline the integration of Composio with the Google GenAI (Gemini) SDK to enh
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio core and the Gemini provider
 pip install composio composio-gemini google-genai
-
-# Connect your GitHub account (also available in the dashboard)
-composio link github
 ```
+
+Connect your GitHub account from the [Composio dashboard](https://platform.composio.dev/) before running the example.
 
 ### Usage Steps
 

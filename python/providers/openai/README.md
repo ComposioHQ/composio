@@ -11,12 +11,10 @@ Facilitate the integration of OpenAI with Composio to empower OpenAI models to d
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio core and the OpenAI provider
 pip install composio composio-openai openai
-
-# Connect your GitHub account (also available in the dashboard)
-composio link github
 ```
+
+Connect your GitHub account from the [Composio dashboard](https://platform.composio.dev/) before running the example.
 
 ### Usage Steps
 
