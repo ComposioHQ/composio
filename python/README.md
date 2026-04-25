@@ -20,31 +20,48 @@ The Composio Python SDK allows you to interact with the Composio Platform. It pr
 
 ```bash
 pip install composio
-# or
-pip install composio-core
 ```
+
+> **Note:** `composio-core` is the legacy SDK and is no longer maintained. Install `composio` for the current SDK.
 
 ### Provider-Specific Installations
 
-For specific AI framework integrations:
+For specific AI framework integrations, install the matching provider package alongside `composio`:
 
 ```bash
 # OpenAI integration
-pip install composio-openai
+pip install composio composio-openai
 
-# LangChain integration  
-pip install composio-langchain
+# OpenAI Agents SDK integration
+pip install composio composio-openai-agents
+
+# Anthropic (Claude) integration
+pip install composio composio-anthropic
+
+# Claude Agent SDK integration
+pip install composio composio-claude-agent-sdk
+
+# LangChain integration
+pip install composio composio-langchain
+
+# LangGraph integration
+pip install composio composio-langgraph
 
 # CrewAI integration
-pip install composio-crewai
+pip install composio composio-crewai
 
-# Anthropic integration
-pip install composio-anthropic
+# LlamaIndex integration
+pip install composio composio-llamaindex
+
+# Google GenAI / Gemini integration
+pip install composio composio-google
+pip install composio composio-gemini
+
+# Google ADK integration
+pip install composio composio-google-adk
 
 # AutoGen integration
-pip install composio-autogen
-
-# And many more...
+pip install composio composio-autogen
 ```
 
 ## Getting Started
@@ -162,33 +179,25 @@ print(result)
 #### LangChain Integration
 
 ```python
-from composio_langchain import ComposioToolSet
+from composio import Composio
+from composio_langchain import LangchainProvider
+from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
-# Initialize the toolset
-toolset = ComposioToolSet()
+# Initialize Composio with the LangChain provider
+composio = Composio(provider=LangchainProvider())
 
 # Get tools for a specific toolkit
-tools = toolset.get_tools(toolkits=["GITHUB"])
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 
 # Initialize LLM
 llm = ChatOpenAI(model="gpt-4o")
 
 # Create agent with tools
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from langchain.prompts import ChatPromptTemplate
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant"),
-    ("user", "{input}"),
-    ("assistant", "{agent_scratchpad}")
-])
-
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
+agent = create_agent(model=llm, tools=tools, system_prompt="You are a helpful assistant")
 
 # Execute task
-result = agent_executor.invoke({"input": "Star the composiohq/composio repository"})
+result = agent.invoke({"messages": [{"role": "user", "content": "Star the composiohq/composio repository"}]})
 print(result)
 ```
 
@@ -198,7 +207,7 @@ The Composio constructor accepts the following configuration options:
 
 ```python
 from composio import Composio
-from composio.core.provider import OpenAIProvider
+from composio_openai import OpenAIProvider
 
 composio = Composio(
     api_key="your-api-key",  # Your Composio API key

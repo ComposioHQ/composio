@@ -5,26 +5,31 @@ This package integrates the OpenAI Agents framework with Composio, allowing you 
 ## Installation
 
 ```bash
-pip install composio_openai_agents
+pip install composio composio-openai-agents openai-agents
 ```
 
 ## Usage
 
 ```python
 import asyncio
+
 import dotenv
 from agents import Agent, Runner
 
-from composio_openai_agents import Action, ComposioToolSet
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
 
 # Load environment variables from .env
 dotenv.load_dotenv()
 
-# Initialize Composio toolset
-composio_toolset = ComposioToolSet()
+# Initialize Composio with the OpenAI Agents provider
+composio = Composio(provider=OpenAIAgentsProvider())
 
 # Get all the tools
-tools = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+tools = composio.tools.get(
+    user_id="default",
+    tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+)
 
 # Create an agent with the tools
 agent = Agent(
@@ -33,10 +38,15 @@ agent = Agent(
     tools=tools,
 )
 
+
 # Run the agent
 async def main():
-    result = await Runner.run(agent, "Star the repository composiohq/composio on GitHub")
+    result = await Runner.run(
+        starting_agent=agent,
+        input="Star the repository composiohq/composio on GitHub",
+    )
     print(result.final_output)
+
 
 asyncio.run(main())
 ```
@@ -51,7 +61,7 @@ asyncio.run(main())
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - OpenAI Agents framework
 - Composio (with valid API key)
 

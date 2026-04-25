@@ -1,66 +1,71 @@
-## 🚀🔗 Integrating Composio with Google AI Python
+## 🚀🔗 Integrating Composio with Google AI Python (Vertex AI)
 
-Streamline the integration of Composio with Google AI Python to enhance the capabilities of Gemini models, allowing them to interact directly with external applications and expanding their operational scope.
+Streamline the integration of Composio with Google AI Python to enhance the capabilities of Gemini models on Vertex AI, allowing them to interact directly with external applications and expanding their operational scope.
 
 ### Objective
 
-- **Automate starring a GitHub repository** using conversational instructions via Google AI Python's Function Calling feature.
+- **Automate starring a GitHub repository** using conversational instructions via Gemini's function-calling feature on Vertex AI.
 
 ### Installation and Setup
 
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio LangChain package
-pip install composio-google
+# Install Composio core and the Google (Vertex AI) provider
+pip install composio composio-google google-cloud-aiplatform
 
 # Connect your GitHub account
-composio-cli add github
+composio add github
 
-# View available applications you can connect with
-composio-cli show-apps
+# View available toolkits you can connect with
+composio toolkits
 ```
+
+> Using the standalone `google-genai` SDK instead? See the `composio-gemini` provider.
 
 ### Usage Steps
 
 #### 1. Import Base Packages
 
-Prepare your environment by initializing necessary imports from Google AI Python and setting up your client.
+Prepare your environment by initializing necessary imports from Google AI Python and Composio.
 
 ```python
 from vertexai.generative_models import GenerativeModel
 
-# Initialize Google AI Python client
-model = GenerativeModel("gemini-pro")
+from composio import Composio
+from composio_google import GoogleProvider
+
+# Initialize Composio with the Google provider
+composio = Composio(provider=GoogleProvider())
 ```
 
 ### Step 2: Integrating GitHub Tools with Composio
 
-This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for Google AI Python operations.
-```python
-from composio_google import App, ComposioToolset
+Fetch GitHub tools for the user from Composio and attach them to a Gemini model.
 
-toolset = ComposioToolset()
-actions = toolset.get_tools(apps=[App.GITHUB])
+```python
+tool = composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+model = GenerativeModel("gemini-1.5-pro", tools=[tool])
+chat = model.start_chat()
 ```
 
 ### Step 3: Agent Execution
 
-This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
+Send a message to Gemini.
 
 ```python
-# Define task
 task = "Star a repo composiohq/composio on GitHub"
 
-# Send a message to the model
 response = chat.send_message(task)
+print(response)
 ```
 
 ### Step 4: Validate Execution Response
 
-Execute the following code to validate the response, ensuring that the intended task has been successfully completed.
+Have Composio handle any tool calls the model produced and return the results.
 
 ```python
-result = composio_toolset.handle_response(response)
+result = composio.provider.handle_response(user_id="default", response=response)
 print("Function call result:", result)
 ```

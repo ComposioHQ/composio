@@ -1,71 +1,77 @@
 ## 🚀🔗 Leveraging Claude with Composio
 
-Facilitate the integration of Claude with Composio to empower Claude models to directly interact with external applications, broadening their capabilities and application scope.
+Facilitate the integration of Anthropic's Claude with Composio to empower Claude models to directly interact with external applications, broadening their capabilities and application scope.
 
 ### Objective
 
-- **Automate starring a GitHub repository** using conversational instructions via Claude Function Calls.
+- **Automate starring a GitHub repository** using conversational instructions via Claude tool use.
 
 ### Installation and Setup
 
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio LangChain package
-pip install composio-claude
+# Install Composio core and the Anthropic provider
+pip install composio composio-anthropic anthropic
 
 # Connect your GitHub account
-composio-cli add github
+composio add github
 
-# View available applications you can connect with
-composio-cli show-apps
+# View available toolkits you can connect with
+composio toolkits
 ```
+
+> Looking for the Claude Agent SDK? See `composio-claude-agent-sdk` instead.
 
 ### Usage Steps
 
 #### 1. Import Base Packages
 
-Prepare your environment by initializing necessary imports from Claude and setting up your client.
+Prepare your environment by initializing necessary imports from Anthropic and Composio.
 
 ```python
 import anthropic
 
+from composio import Composio
+from composio_anthropic import AnthropicProvider
+
 # Initialize Claude client
 client = anthropic.Anthropic()
+
+# Initialize Composio with the Anthropic provider
+composio = Composio(provider=AnthropicProvider())
 ```
 
 ### Step 2: Integrating GitHub Tools with Composio
 
-This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.
-```python
-from composio_claude import App, ComposioToolSet
+Fetch GitHub tools for the user from Composio. Tools are returned in the Claude tool-use format, ready to pass to `messages.create`.
 
-toolset = ComposioToolSet()
-actions = toolset.get_tools(tools=App.GITHUB)
+```python
+tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
 ```
 
 ### Step 3: Agent Execution
 
-This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
+Send a request to Claude with the Composio-provided tools.
 
 ```python
-my_task = "Star a repo composiohq/composio on GitHub"
+task = "Star me composiohq/composio repo in github."
 
-# Create a chat completion request to decide on the action
-response = client.beta.tools.messages.create(
+response = client.messages.create(
     model="claude-3-opus-20240229",
     max_tokens=1024,
-    tools= actions,
-    messages=[{"role": "user", "content": "Star me composiohq/composio repo in github."}],
+    tools=tools,
+    messages=[{"role": "user", "content": task}],
 )
-pprint(response)
+
+print(response)
 ```
 
 ### Step 4: Validate Execution Response
 
-Execute the following code to validate the response, ensuring that the intended task has been successfully completed.
+Have Composio handle any tool calls the model produced and return the results.
 
 ```python
-result = toolset.handle_tool_calls(response)
-pprint(result)
+result = composio.provider.handle_tool_calls(user_id="default", response=response)
+print(result)
 ```
