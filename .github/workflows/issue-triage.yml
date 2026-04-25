@@ -183,7 +183,6 @@ jobs:
         env:
           STRUCTURED_OUTPUT: ${{ steps.classify.outputs.structured_output }}
           PLAIN_API_KEY: ${{ secrets.PLAIN_API_KEY }}
-          PLAIN_SUPPORT_EMAIL: ${{ vars.PLAIN_SUPPORT_EMAIL || 'github-support@composio.dev' }}
         with:
           script: |
             const text = process.env.STRUCTURED_OUTPUT || "";
@@ -342,8 +341,31 @@ jobs:
               return json.data;
             }
 
+            async function getIssueAuthorPlainCustomer() {
+              const login = issue.user?.login || "unknown";
+              let publicEmail = issue.user?.email || null;
+              let displayName = issue.user?.name || login;
+
+              if (login !== "unknown") {
+                try {
+                  const { data: user } = await github.rest.users.getByUsername({ username: login });
+                  publicEmail = user.email || publicEmail;
+                  displayName = user.name || displayName;
+                } catch (error) {
+                  core.warning(`Could not fetch GitHub user profile for ${login}: ${error.message}`);
+                }
+              }
+
+              return {
+                email: publicEmail || (issue.user?.id ? `${issue.user.id}+${login}@users.noreply.github.com` : `${login}@users.noreply.github.com`),
+                fullName: displayName,
+                shortName: login,
+                externalId: `github:user:${login}`,
+              };
+            }
+
             async function forwardSupportIssueToPlain() {
-              const supportEmail = process.env.PLAIN_SUPPORT_EMAIL || "github-support@composio.dev";
+              const plainCustomer = await getIssueAuthorPlainCustomer();
               const customerData = await plainGraphql(
                 `mutation upsertCustomer($input: UpsertCustomerInput!) {
                   upsertCustomer(input: $input) {
@@ -354,17 +376,17 @@ jobs:
                 }`,
                 {
                   input: {
-                    identifier: { emailAddress: supportEmail },
+                    identifier: { emailAddress: plainCustomer.email },
                     onCreate: {
-                      fullName: "GitHub Support Triage",
-                      shortName: "GitHub Support",
-                      email: { email: supportEmail, isVerified: true },
-                      externalId: "github-support-triage",
+                      fullName: plainCustomer.fullName,
+                      shortName: plainCustomer.shortName,
+                      email: { email: plainCustomer.email, isVerified: Boolean(issue.user?.email) },
+                      externalId: plainCustomer.externalId,
                     },
                     onUpdate: {
-                      fullName: { value: "GitHub Support Triage" },
-                      shortName: { value: "GitHub Support" },
-                      externalId: { value: "github-support-triage" },
+                      fullName: { value: plainCustomer.fullName },
+                      shortName: { value: plainCustomer.shortName },
+                      externalId: { value: plainCustomer.externalId },
                     },
                   },
                 }
