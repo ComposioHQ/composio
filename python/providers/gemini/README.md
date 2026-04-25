@@ -14,11 +14,8 @@ Ensure you have the necessary packages installed and connect your GitHub account
 # Install Composio core and the Gemini provider
 pip install composio composio-gemini google-genai
 
-# Connect your GitHub account
-composio add github
-
-# View available toolkits you can connect with
-composio toolkits
+# Connect your GitHub account (also available in the dashboard)
+composio link github
 ```
 
 ### Usage Steps

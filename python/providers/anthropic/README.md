@@ -14,11 +14,8 @@ Ensure you have the necessary packages installed and connect your GitHub account
 # Install Composio core and the Anthropic provider
 pip install composio composio-anthropic anthropic
 
-# Connect your GitHub account
-composio add github
-
-# View available toolkits you can connect with
-composio toolkits
+# Connect your GitHub account (also available in the dashboard)
+composio link github
 ```
 
 > Looking for the Claude Agent SDK? See `composio-claude-agent-sdk` instead.
