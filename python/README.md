@@ -53,8 +53,10 @@ pip install composio composio-crewai
 # LlamaIndex integration
 pip install composio composio-llamaindex
 
-# Google GenAI / Gemini integration
+# Google Vertex AI integration
 pip install composio composio-google
+
+# Google GenAI / Gemini integration
 pip install composio composio-gemini
 
 # Google ADK integration
@@ -207,7 +209,6 @@ The Composio constructor accepts the following configuration options:
 
 ```python
 from composio import Composio
-from composio_openai import OpenAIProvider
 
 composio = Composio(
     api_key="your-api-key",  # Your Composio API key
@@ -216,7 +217,7 @@ composio = Composio(
     max_retries=3,  # Maximum number of retries
     allow_tracking=True,  # Enable/disable telemetry (default: True)
     file_download_dir="./downloads",  # Directory for file downloads
-    provider=OpenAIProvider(),  # Custom provider (default: OpenAIProvider)
+    # provider=OpenAIProvider(),  # Default; install `composio-openai` to import explicitly
     toolkit_versions={ "github": "12202025_01" }  # Toolkit versions to use
 )
 ```
