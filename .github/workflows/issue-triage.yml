@@ -62,7 +62,7 @@ jobs:
             "properties": {
               "category": {
                 "type": "string",
-                "enum": ["docs", "py", "ts", "cli", "tool-request", "feature-request", "other"]
+                "enum": ["docs", "py", "ts", "cli", "tool-request", "feature-request", "support", "other"]
               },
               "is_bug": {
                 "type": "boolean"
@@ -108,11 +108,14 @@ jobs:
           - cli
           - tool-request
           - feature-request
+          - support
           - other
 
           Use semantic meaning, not only keywords.
           Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.
           Choose feature-request when the issue is asking for a product, SDK, docs, or CLI improvement that is not a tool request.
+          Choose support when the issue is primarily a product/support question or account/integration configuration problem rather than a code defect in this repository. This includes managed OAuth app configuration, provider app verification or consent-screen blocks, requested scopes for hosted/managed integrations, dashboard/back-office setup, billing/account questions, and usage questions where the SDK appears to be behaving as designed.
+          For example, an issue about Google Drive managed OAuth scopes or Google blocking the managed app should be support, not ts and not a bug, unless the issue clearly identifies a defect in SDK code.
           Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.
           Choose py only when the issue is primarily about the Python SDK.
           Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.
@@ -120,7 +123,7 @@ jobs:
           Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug.
           Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.
           Set is_bug to false for feature requests, questions, maintenance, cleanup, and true new-tool requests.
-          Set should_comment to true only when the issue appears incorrect, non-actionable, or missing the information needed to reproduce or investigate.
+          Set should_comment to true when the issue appears incorrect, non-actionable, missing the information needed to reproduce or investigate, or when category is support.
           Set should_comment to false otherwise.
 
           If should_comment is true, provide comment_body as a short issue comment addressed to the reporter.
@@ -128,6 +131,7 @@ jobs:
           - clearly say it is an automated Claude triage note
           - clearly say Claude cannot reply back in a conversation
           - ask for the specific missing details needed to investigate, especially repro steps, expected behavior, actual behavior, environment, logs, or screenshots when relevant
+          - for support issues, say this does not look like an SDK bug and that it is being routed to support
           - stay concise and professional
 
           If should_comment is false, set comment_body to an empty string.
@@ -178,6 +182,8 @@ jobs:
         uses: actions/github-script@v8
         env:
           STRUCTURED_OUTPUT: ${{ steps.classify.outputs.structured_output }}
+          PLAIN_API_KEY: ${{ secrets.PLAIN_API_KEY }}
+          PLAIN_SUPPORT_EMAIL: ${{ vars.PLAIN_SUPPORT_EMAIL || 'github-support@composio.dev' }}
         with:
           script: |
             const text = process.env.STRUCTURED_OUTPUT || "";
@@ -190,7 +196,7 @@ jobs:
               return;
             }
 
-            const allowed = new Set(["docs", "py", "ts", "cli", "tool-request", "feature-request", "other"]);
+            const allowed = new Set(["docs", "py", "ts", "cli", "tool-request", "feature-request", "support", "other"]);
             if (!allowed.has(parsed.category)) {
               core.setFailed(`Unexpected category: ${parsed.category}`);
               return;
@@ -210,9 +216,16 @@ jobs:
               ? "${{ steps.issue-context.outputs.issue_state }}"
               : context.payload.issue.state;
 
+            const { data: issue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number,
+            });
+
             const labels = [];
             const assignees = [];
             const suppressToolRequestHandling = isBug && category === "tool-request";
+            const isSupport = category === "support";
 
             if (suppressToolRequestHandling) {
               core.info(
@@ -220,7 +233,7 @@ jobs:
               );
             }
 
-            if (isBug) {
+            if (isBug && !isSupport) {
               labels.push("bug");
             }
 
@@ -238,8 +251,40 @@ jobs:
               assignees.push("CryogenicPlanet");
             } else if (category === "feature-request") {
               labels.push("feature-request");
+            } else if (isSupport) {
+              labels.push("support");
             } else if (category === "tool-request" && !suppressToolRequestHandling) {
               labels.push("tool-request");
+            }
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, name, color, description });
+              }
+            }
+
+            if (isSupport) {
+              await ensureLabel("support", "0e8a16", "Needs support team follow-up");
+              for (const staleLabel of ["bug", "ts"]) {
+                try {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number, name: staleLabel });
+                } catch (error) {
+                  if (error.status !== 404) throw error;
+                }
+              }
+              try {
+                await github.rest.issues.removeAssignees({
+                  owner,
+                  repo,
+                  issue_number,
+                  assignees: ["jkomyno"],
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
             }
 
             if (labels.length > 0) {
@@ -261,6 +306,7 @@ jobs:
             }
 
             if (
+              !isSupport &&
               (category !== "tool-request" || suppressToolRequestHandling) &&
               shouldComment &&
               commentBody.trim().length > 0
@@ -270,6 +316,111 @@ jobs:
                 repo,
                 issue_number,
                 body: commentBody.trim(),
+              });
+            }
+
+            async function plainGraphql(query, variables) {
+              const apiKey = process.env.PLAIN_API_KEY;
+              if (!apiKey) {
+                core.warning("PLAIN_API_KEY is not configured; skipping Plain support forwarding.");
+                return null;
+              }
+
+              const response = await fetch("https://core-api.uk.plain.com/graphql/v1", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${apiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ query, variables }),
+              });
+              const json = await response.json().catch(() => ({}));
+              if (!response.ok || json.errors) {
+                core.warning(`Plain API request failed: ${JSON.stringify(json)}`);
+                return null;
+              }
+              return json.data;
+            }
+
+            async function forwardSupportIssueToPlain() {
+              const supportEmail = process.env.PLAIN_SUPPORT_EMAIL || "github-support@composio.dev";
+              const customerData = await plainGraphql(
+                `mutation upsertCustomer($input: UpsertCustomerInput!) {
+                  upsertCustomer(input: $input) {
+                    result
+                    customer { id }
+                    error { message type code fields { field message type } }
+                  }
+                }`,
+                {
+                  input: {
+                    identifier: { emailAddress: supportEmail },
+                    onCreate: {
+                      fullName: "GitHub Support Triage",
+                      shortName: "GitHub Support",
+                      email: { email: supportEmail, isVerified: true },
+                      externalId: "github-support-triage",
+                    },
+                    onUpdate: {
+                      fullName: { value: "GitHub Support Triage" },
+                      shortName: { value: "GitHub Support" },
+                      externalId: { value: "github-support-triage" },
+                    },
+                  },
+                }
+              );
+              const customer = customerData?.upsertCustomer?.customer;
+              const customerError = customerData?.upsertCustomer?.error;
+              if (!customer?.id) {
+                core.warning(`Could not upsert Plain support customer: ${JSON.stringify(customerError)}`);
+                return null;
+              }
+
+              const body = issue.body || "_No issue body provided._";
+              const plainText = [
+                `GitHub issue routed as support: ${issue.html_url}`,
+                `Reporter: @${issue.user?.login || "unknown"}`,
+                `Classification reason: ${reason || "No reason provided."}`,
+                "",
+                "Issue body:",
+                body.length > 8000 ? `${body.slice(0, 8000)}\n\n[truncated]` : body,
+              ].join("\n");
+
+              const threadData = await plainGraphql(
+                `mutation createThread($input: CreateThreadInput!) {
+                  createThread(input: $input) {
+                    thread { id ref }
+                    error { message type code fields { field message type } }
+                  }
+                }`,
+                {
+                  input: {
+                    title: `[GitHub #${issue.number}] ${issue.title}`,
+                    customerIdentifier: { customerId: customer.id },
+                    externalId: `github:${owner}/${repo}:issues/${issue.number}`,
+                    components: [{ componentText: { text: plainText } }],
+                  },
+                }
+              );
+              const thread = threadData?.createThread?.thread;
+              const threadError = threadData?.createThread?.error;
+              if (!thread?.id) {
+                core.warning(`Could not create Plain support thread: ${JSON.stringify(threadError)}`);
+                return null;
+              }
+              core.info(`Forwarded support issue #${issue.number} to Plain thread ${thread.ref || thread.id}`);
+              return thread;
+            }
+
+            if (isSupport) {
+              const thread = await forwardSupportIssueToPlain();
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: thread
+                  ? `🤖 Automated Claude triage note: this does not look like an SDK bug, so I've labeled it as \`support\` and forwarded it to Plain for the support team. Claude cannot reply back in a conversation.`
+                  : `🤖 Automated Claude triage note: this does not look like an SDK bug, so I've labeled it as \`support\` for support team follow-up. Claude cannot reply back in a conversation.`,
               });
             }
 
