@@ -1,6 +1,6 @@
 import { readFileSync, mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { arch as getArch, homedir, platform as getPlatform } from 'node:os';
 import { dirname, join } from 'node:path';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
@@ -16,16 +16,22 @@ import { APP_VERSION, GITHUB_REPO } from '../constants';
  *   checkForUpdateInBackground()    — fire-and-forget fetch, no await
  *
  * Strategy:
- *   Uses GitHub's `git/matching-refs` API with the prefix
- *   `tags/@composio/cli@` so only CLI tags are returned (tiny payload,
- *   no monorepo noise). The result is cached to ~/.composio/update-check.json
- *   and refreshed at most once every 24 hours.
+ *   Uses GitHub's releases API and only considers stable @composio/cli releases
+ *   that include the binary asset for the current platform. The result is cached
+ *   to ~/.composio/update-check.json and refreshed at most once every 24 hours.
  */
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-/** Matches `refs/tags/@composio/cli@<semver>` — excludes prereleases. */
-const CLI_REF_RE = /^refs\/tags\/@composio\/cli@(\d+\.\d+\.\d+)$/;
+/** Matches `@composio/cli@<semver>` — excludes prereleases. */
+const CLI_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+)$/;
+
+export interface UpdateCheckRelease {
+  tag_name?: unknown;
+  prerelease?: unknown;
+  draft?: unknown;
+  assets?: unknown;
+}
 
 export interface UpdateCheckState {
   lastChecked: string; // ISO-8601
@@ -39,34 +45,63 @@ export interface UpdateCheckConfig {
   readonly stateFile: string;
   readonly currentVersion: string;
   readonly checkIntervalMs: number;
-  readonly refsUrl: string;
+  readonly releasesUrl: string;
+  readonly binaryAssetName: string | undefined;
   readonly accessToken: string | undefined;
   readonly fetchFn: (url: string, init?: RequestInit) => Promise<Response>;
 }
 
 const _home = join(homedir(), '.composio');
 
+function getCurrentBinaryAssetName(): string | undefined {
+  const platform = getPlatform();
+  const rawArch = getArch();
+  if (platform !== 'darwin' && platform !== 'linux') return undefined;
+
+  const arch = rawArch === 'arm64' || rawArch === 'aarch64' ? 'aarch64' : rawArch;
+  if (arch !== 'x64' && arch !== 'aarch64') return undefined;
+
+  return `composio-${platform}-${arch}.zip`;
+}
+
 const defaultConfig: UpdateCheckConfig = {
   stateFile: join(_home, 'update-check.json'),
   currentVersion: APP_VERSION,
   checkIntervalMs: CHECK_INTERVAL_MS,
-  refsUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/git/matching-refs/tags/@composio/cli@`,
+  releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
+  binaryAssetName: getCurrentBinaryAssetName(),
   accessToken: process.env.COMPOSIO_GITHUB_ACCESS_TOKEN,
   fetchFn: fetch,
 };
 
 // ── Pure helpers ────────────────────────────────────────────────────────
 
-/** Extract the highest stable semver from a GitHub matching-refs response. */
-export function parseLatestVersionFromRefs(refs: unknown): string | undefined {
-  if (!Array.isArray(refs)) return undefined;
+/** Extract the highest stable semver from GitHub releases that include the required binary. */
+export function parseLatestVersionFromReleases(
+  releases: unknown,
+  binaryAssetName: string | undefined
+): string | undefined {
+  if (!binaryAssetName || !Array.isArray(releases)) return undefined;
 
   let latest: string | undefined;
-  for (const ref of refs) {
-    if (typeof ref !== 'object' || ref === null || !('ref' in ref) || typeof ref.ref !== 'string')
-      continue;
+  for (const release of releases) {
+    if (typeof release !== 'object' || release === null) continue;
 
-    const match = CLI_REF_RE.exec(ref.ref);
+    const candidate = release as UpdateCheckRelease;
+    if (typeof candidate.tag_name !== 'string') continue;
+    if (candidate.prerelease === true || candidate.draft === true) continue;
+    if (!Array.isArray(candidate.assets)) continue;
+
+    const hasRequiredBinary = candidate.assets.some(
+      asset =>
+        typeof asset === 'object' &&
+        asset !== null &&
+        'name' in asset &&
+        asset.name === binaryAssetName
+    );
+    if (!hasRequiredBinary) continue;
+
+    const match = CLI_RELEASE_TAG_RE.exec(candidate.tag_name);
     if (!match) continue;
 
     const version = match[1];
@@ -105,8 +140,8 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
   }
 
   /**
-   * Fetch the latest @composio/cli tag from GitHub via the lightweight
-   * `git/matching-refs` endpoint, then write the result to the state file.
+   * Fetch the latest @composio/cli release from GitHub, requiring the current
+   * platform binary asset before writing the result to the state file.
    *
    * Returns the internal promise so tests can await completion.
    * The public wrapper discards it (fire-and-forget).
@@ -135,7 +170,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       }
 
       // Always persist lastChecked to prevent retry loops when the fetch
-      // fails or returns no matching tags.
+      // fails or returns no matching releases with a matching binary.
       const writeState = (latestVersion?: string): Promise<void> => {
         try {
           const stateDir = dirname(config.stateFile);
@@ -154,13 +189,13 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       };
 
       return config
-        .fetchFn(config.refsUrl, { headers, signal: AbortSignal.timeout(10_000) })
+        .fetchFn(config.releasesUrl, { headers, signal: AbortSignal.timeout(10_000) })
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
-        .then((refs: unknown) => {
-          const latestVersion = parseLatestVersionFromRefs(refs);
+        .then((releases: unknown) => {
+          const latestVersion = parseLatestVersionFromReleases(releases, config.binaryAssetName);
           return writeState(latestVersion);
         })
         .catch(() => {
