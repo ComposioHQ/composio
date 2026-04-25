@@ -23,8 +23,7 @@ no longer be used for API calls. It does **not** revoke OAuth tokens upstream wi
 third-party provider — any access or refresh tokens previously issued remain valid until
 they expire or are revoked by the user. To revoke upstream access, the end user must do
 so through the provider's account settings (for example,
-[https://myaccount.google.com/permissions](https://myaccount.google.com/permissions) for
-Google).
+[Google Account Permissions](https://myaccount.google.com/permissions) for Google).
 
 ```typescript
 async delete(nanoid: string): Promise<ConnectedAccountDeleteResponse>
