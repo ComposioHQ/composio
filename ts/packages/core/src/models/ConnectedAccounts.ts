@@ -344,8 +344,12 @@ export class ConnectedAccounts {
   /**
    * Deletes a connected account.
    *
-   * This method permanently removes a connected account from the Composio platform.
-   * This action cannot be undone and will revoke any access tokens associated with the account.
+   * This method soft-deletes the connected account record on the Composio platform so it
+   * can no longer be used for API calls. It does **not** revoke OAuth tokens upstream with
+   * the third-party provider — any access or refresh tokens previously issued remain valid
+   * until they expire or are revoked by the user. To revoke upstream access, the end user
+   * must do so through the provider's account settings (for example,
+   * https://myaccount.google.com/permissions for Google).
    *
    * @param {string} nanoid - The unique identifier of the connected account to delete
    * @returns {Promise<ConnectedAccountDeleteResponse>} The deletion response
