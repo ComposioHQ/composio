@@ -50,7 +50,7 @@ interface RawToolkitConnectionStatus {
   has_active_connection: boolean;
   status_message: string;
   connection_details?: Record<string, unknown>;
-  current_user_info?: Record<string, unknown>;
+  current_user_info?: Record<string, unknown> | unknown[];
 }
 
 interface RawSearchResponse {

@@ -94,6 +94,80 @@ describe('toolRouterResponseTransform', () => {
       });
     });
 
+    it('should transform schemaRef without message (issue #3103)', () => {
+      // Apollo's buildSchemaRef() never includes `message`. The SDK schema
+      // and transformer must accept the field being absent.
+      const raw = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {
+          SUPABASE_SELECT_FROM_TABLE: {
+            tool_slug: 'SUPABASE_SELECT_FROM_TABLE',
+            toolkit: 'supabase',
+            schemaRef: {
+              args: { tool_slugs: ['SUPABASE_SELECT_FROM_TABLE'] },
+              tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
+            },
+          },
+        },
+        toolkit_connection_statuses: [],
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_1',
+          generate_id: true,
+          instructions: 'Use session',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      const result = transformSearchResponse(raw);
+      expect(result.toolSchemas.SUPABASE_SELECT_FROM_TABLE.schemaRef).toEqual({
+        args: { toolSlugs: ['SUPABASE_SELECT_FROM_TABLE'] },
+        message: undefined,
+        tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
+      });
+    });
+
+    it('should pass through current_user_info when it is an array (issue #3103)', () => {
+      const raw = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {},
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'supabase',
+            description: 'Supabase toolkit',
+            has_active_connection: true,
+            status_message: 'Connected',
+            current_user_info: [{ project_ref: 'abc' }, { project_ref: 'xyz' }],
+          },
+        ],
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_2',
+          generate_id: false,
+          instructions: 'Reuse',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      const result = transformSearchResponse(raw);
+      expect(result.toolkitConnectionStatuses[0].currentUserInfo).toEqual([
+        { project_ref: 'abc' },
+        { project_ref: 'xyz' },
+      ]);
+    });
+
     it('should transform schemaRef with tool_slugs to toolSlugs', () => {
       const raw = {
         success: true,

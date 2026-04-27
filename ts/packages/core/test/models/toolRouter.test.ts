@@ -2011,6 +2011,65 @@ describe('ToolRouter', () => {
 
       await expect(session.search({ query: 'send emails' })).rejects.toThrow('Search failed');
     });
+
+    // Regression test for issue #3103: session.search() throws ZodError when the
+    // backend returns schemaRef without `message` (budget-trimmed tools) and
+    // current_user_info as an array (multi-account toolkits like Supabase).
+    it('should accept schemaRef without message and array-shaped current_user_info', async () => {
+      const supabaseResponse = {
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {
+          SUPABASE_SELECT_FROM_TABLE: {
+            tool_slug: 'SUPABASE_SELECT_FROM_TABLE',
+            toolkit: 'supabase',
+            // schemaRef without `message` — Apollo's buildSchemaRef() never sets it
+            schemaRef: {
+              args: { tool_slugs: ['SUPABASE_SELECT_FROM_TABLE'] },
+              tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
+            },
+          },
+        },
+        toolkit_connection_statuses: [
+          {
+            toolkit: 'supabase',
+            description: 'Supabase',
+            has_active_connection: true,
+            status_message: 'Connected',
+            // current_user_info as an array (multi-account shape)
+            current_user_info: [{ project_ref: 'abc' }, { project_ref: 'xyz' }],
+          },
+        ],
+        next_steps_guidance: [],
+        session: {
+          id: 'trs_123',
+          generate_id: false,
+          instructions: 'Reuse session',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      };
+
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.search.mockResolvedValueOnce(supabaseResponse);
+
+      const session = await toolRouter.create(userId);
+      const result = await session.search({ query: 'list supabase tables' });
+
+      expect(result.toolSchemas.SUPABASE_SELECT_FROM_TABLE.schemaRef).toEqual({
+        args: { toolSlugs: ['SUPABASE_SELECT_FROM_TABLE'] },
+        message: undefined,
+        tool: 'COMPOSIO_GET_TOOL_SCHEMAS',
+      });
+      expect(result.toolkitConnectionStatuses[0].currentUserInfo).toEqual([
+        { project_ref: 'abc' },
+        { project_ref: 'xyz' },
+      ]);
+    });
   });
 
   describe('execute function', () => {

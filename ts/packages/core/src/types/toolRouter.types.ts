@@ -420,7 +420,9 @@ const ToolRouterSessionSearchToolkitConnectionStatusSchema = z.object({
   hasActiveConnection: z.boolean(),
   statusMessage: z.string(),
   connectionDetails: z.record(z.string(), z.unknown()).optional(),
-  currentUserInfo: z.record(z.string(), z.unknown()).optional(),
+  currentUserInfo: z
+    .union([z.record(z.string(), z.unknown()), z.array(z.unknown())])
+    .optional(),
 });
 
 export const ToolRouterSessionSearchResponseSchema = z.object({
