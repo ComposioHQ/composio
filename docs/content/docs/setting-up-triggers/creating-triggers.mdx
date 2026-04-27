@@ -14,6 +14,84 @@ Before creating triggers, ensure you have:
 
 You can create triggers using the [SDK](#using-the-sdk) or the Composio [dashboard](#using-the-dashboard).
 
+## Provider webhook endpoints
+
+Most trigger types can be created after the user has a connected account. Some webhook trigger types also require a provider-facing Composio webhook endpoint before you create the trigger instance. This endpoint is the URL the provider calls when an event occurs; it is separate from the webhook subscription where Composio sends normalized events to your app.
+
+Slack trigger types that use this setup are:
+
+| Trigger type | Notes |
+|---|---|
+| `SLACK_CHANNEL_MESSAGE_RECEIVED` | Public channels work with the Slack signing secret. Private channels and multi-person DMs also require an app-level token. |
+| `SLACK_DIRECT_MESSAGE_RECEIVED` | Requires an app-level token. |
+| `SLACK_MESSAGE_REACTION_ADDED` | Requires an app-level token. |
+
+Legacy Slack trigger types such as `SLACK_RECEIVE_MESSAGE`, `SLACK_RECEIVE_DIRECT_MESSAGE`, and `SLACK_REACTION_ADDED` do not require this setup.
+
+<Callout type="warn">
+If a trigger type requires a provider webhook endpoint and no endpoint exists for the OAuth app in the current project, trigger creation fails with `400`.
+</Callout>
+
+### Set up a Slack webhook endpoint
+
+Use the Webhook Endpoints API with your project API key.
+
+<Steps>
+<Step>
+<StepTitle>Check the required setup fields</StepTitle>
+
+```bash
+curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/schema?toolkit_slug=slack" \
+  -H "x-api-key: YOUR_API_KEY"
+```
+</Step>
+
+<Step>
+<StepTitle>Create the endpoint for your Slack OAuth app</StepTitle>
+
+```bash
+curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "toolkit_slug": "slack", "client_id": "YOUR_SLACK_CLIENT_ID" }'
+```
+
+The response includes an endpoint `id` and a `webhook_url`. The request is idempotent for the same `toolkit_slug` and `client_id` in a project.
+</Step>
+
+<Step>
+<StepTitle>Store Slack setup data on the endpoint</StepTitle>
+
+Store the Slack signing secret before setting the Slack Request URL to this endpoint:
+
+```bash
+curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "webhook_signing_secret": "YOUR_SIGNING_SECRET" } }'
+```
+
+For private channels, direct messages, multi-person DMs, and reaction events, also store a Slack app-level token with the `authorizations:read` scope:
+
+```bash
+curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "app_token": "xapp-..." } }'
+```
+</Step>
+
+<Step>
+<StepTitle>Configure the provider callback URL</StepTitle>
+
+In your Slack app dashboard, set **Event Subscriptions > Request URL** to the `webhook_url` returned when you created the endpoint. Composio handles Slack URL verification automatically.
+</Step>
+</Steps>
+
+<Callout type="warn">
+A provider OAuth app should map to one Composio project for provider webhook endpoint triggers. If multiple Composio projects need these trigger types, create a separate provider OAuth app for each project so each app can use its own callback URL and signing secret.
+</Callout>
+
 ## Using the SDK
 
 Before creating a trigger, inspect the trigger type to see what configuration it requires. Then create the trigger with the required config.

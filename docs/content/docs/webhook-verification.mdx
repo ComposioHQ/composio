@@ -6,6 +6,8 @@ keywords: [webhook, verification, signature, HMAC, security]
 
 Composio signs every webhook request. Always verify signatures in production to ensure payloads are authentic.
 
+This page covers Composio-to-your-app webhook subscriptions. Provider-facing webhook endpoints are verified by Composio at ingress when the toolkit supports provider signatures, so your app only needs to verify the Composio webhook subscription request it receives.
+
 ## SDK verification
 
 The SDK handles signature verification, payload parsing, and version detection (V1, V2, V3).
@@ -200,4 +202,3 @@ Metadata fields are mixed into the `data` object alongside event data.
   <Card icon={<Zap />} title="Triggers overview" href="/docs/triggers" description="How Composio delivers event data from connected apps" />
   <Card icon={<Zap />} title="Connection expiry events" href="/docs/subscribing-to-connection-expiry-events" description="Detect when OAuth connections expire and prompt re-authentication" />
 </Cards>
-

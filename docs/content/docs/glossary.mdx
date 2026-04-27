@@ -2,7 +2,7 @@
 title: Glossary
 description: Definitions of key Composio terms and concepts.
 llmGuardrails: "none"
-keywords: [glossary, definitions, terminology]
+keywords: [glossary, definitions, terminology, webhook endpoint]
 ---
 
 <Glossary>
@@ -125,6 +125,10 @@ A specific, active trigger scoped to a user's connected account.
 
 <GlossaryTerm name="User ID">
 An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs. See [Users and sessions](/docs/users-and-sessions).
+</GlossaryTerm>
+
+<GlossaryTerm name="Webhook Endpoint">
+A provider-facing Composio URL that receives webhook events from an external app before Composio routes them to trigger instances. Some webhook trigger types require one before you create the trigger. See [Creating triggers](/docs/setting-up-triggers/creating-triggers#provider-webhook-endpoints).
 </GlossaryTerm>
 
 <GlossaryTerm name="White-Labeling">

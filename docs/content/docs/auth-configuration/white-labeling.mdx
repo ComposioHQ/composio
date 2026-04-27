@@ -49,6 +49,10 @@ OAuth toolkits like Google and GitHub show a consent screen that says which app 
 Only white-label toolkits where users see a consent screen (Google, GitHub, Slack, etc.). Toolkits that use API keys don't show consent screens, so there's nothing to white-label. You can mix and match freely.
 </Callout>
 
+<Callout type="warn" title="Webhook trigger endpoints and projects">
+If you use a custom OAuth app with provider webhook endpoint triggers, create a separate OAuth app for each Composio project that needs those triggers. The provider callback URL and signing secret are tied to one webhook endpoint in one project.
+</Callout>
+
 <Steps>
 <Step>
 <StepTitle>Create an OAuth app in the toolkit's developer portal</StepTitle>

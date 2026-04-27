@@ -7,10 +7,13 @@ description: Troubleshooting trigger issues
 
 Check the error message — the connected account might not have sufficient permissions or the required OAuth scopes. Ensure the user has authenticated with the necessary scopes for the trigger.
 
+For Slack trigger types such as `SLACK_CHANNEL_MESSAGE_RECEIVED`, `SLACK_DIRECT_MESSAGE_RECEIVED`, and `SLACK_MESSAGE_REACTION_ADDED`, create a Slack webhook endpoint before creating the trigger. If the endpoint is missing for the OAuth app in the current project, trigger creation fails with `400`. See [Creating triggers](/docs/setting-up-triggers/creating-triggers#provider-webhook-endpoints).
+
 ## Not receiving payloads
 
 - **Polling triggers** (e.g., Gmail): These check for new events on an interval you configure. For Composio managed auth, intervals below 15 minutes are not supported.
 - **Webhook URL**: Ensure your URL is publicly accessible and returns a `2xx` status code.
+- **Provider webhook endpoint**: For trigger types that require a provider-facing endpoint, ensure the provider dashboard is using the Composio `webhook_url`, the signing secret is stored on the endpoint, and the endpoint belongs to the same project as the trigger.
 - **Trigger status**: Verify the trigger is enabled, not disabled.
 - **Logs**: Check the [trigger logs](https://platform.composio.dev?next_page=/logs/triggers) in the dashboard for delivery attempts and errors.
 
