@@ -43,6 +43,10 @@ OAuth toolkits like Google and GitHub show a consent screen that says which app 
 Only white-label toolkits where users see a consent screen (Google, GitHub, Slack, etc.). Toolkits that use API keys don't show consent screens, so there's nothing to white-label. You can mix and match freely.
 </Callout>
 
+<Callout type="warn">
+If you use Slack V2 triggers with your own Slack OAuth app, configure one Composio project per Slack OAuth app. V2 webhook endpoints are keyed to a single project and client ID, and Slack accepts one event request URL per app. To use the same Slack integration across multiple Composio projects, create a separate Slack OAuth app for each project.
+</Callout>
+
 <Steps>
 <Step>
 <StepTitle>Create an OAuth app in the toolkit's developer portal</StepTitle>

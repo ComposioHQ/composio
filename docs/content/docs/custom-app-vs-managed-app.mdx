@@ -97,6 +97,10 @@ const session = await composio.create("user_123", {
 
 You don't have to pick one approach for all toolkits. Use your own credentials for toolkits where users see consent screens (GitHub, Google, Slack) and Composio managed auth for the rest. Each toolkit gets its own auth config independently.
 
+<Callout type="warn">
+If you use Slack V2 triggers with your own Slack OAuth app, configure one Composio project per Slack OAuth app. V2 webhook endpoints are keyed to a single project and client ID, and Slack accepts one event request URL per app. To use the same Slack integration across multiple Composio projects, create a separate Slack OAuth app for each project.
+</Callout>
+
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python

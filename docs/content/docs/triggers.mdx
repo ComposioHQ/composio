@@ -13,6 +13,10 @@ There are two delivery types:
 - **Webhook triggers**: Apps like GitHub and Slack push events to Composio in real time. When an event fires, Composio forwards the payload to your webhook endpoint.
 - **Polling triggers**: For apps that don't support outgoing webhooks (e.g., Gmail), Composio polls for new data on a schedule. For Composio managed auth, polling intervals have a minimum of 15 minutes. Expect delays between the source event and delivery.
 
+<Callout>
+Some webhook-based trigger types need a provider-facing webhook endpoint before they can be created. For example, Slack V2 triggers use a dedicated Slack request URL per OAuth app, with signature verification handled by Composio at ingress. See [Provider webhook endpoints](/docs/setting-up-triggers/creating-triggers#provider-webhook-endpoints).
+</Callout>
+
 ## Working with triggers
 
 1. **Configure** your webhook endpoint so Composio knows where to deliver events
