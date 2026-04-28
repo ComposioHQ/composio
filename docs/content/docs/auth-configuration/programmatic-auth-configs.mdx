@@ -217,6 +217,44 @@ console.log(authConfig);
   </Tab>
 </Tabs>
 
+### Bearer token auth configs
+
+Use `BEARER_TOKEN` when you already manage OAuth access tokens yourself and want to import those tokens into Composio. This auth scheme is available for OAuth2 toolkits such as Gmail, GitHub, Slack, and Google Docs. Creating bearer-token auth configs is currently available through the API and SDK.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+auth_config = composio.auth_configs.create(
+    toolkit="github",
+    options={
+        "name": "GitHub bearer token",
+        "type": "use_custom_auth",
+        "auth_scheme": "BEARER_TOKEN",
+        "credentials": {},
+    },
+)
+print(auth_config)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const authConfig = await composio.authConfigs.create('GITHUB', {
+  name: 'GitHub bearer token',
+  type: 'use_custom_auth',
+  credentials: {},
+  authScheme: 'BEARER_TOKEN',
+});
+
+console.log(authConfig);
+```
+  </Tab>
+</Tabs>
+
+After creating the auth config, create a connected account with the user's token. See [Importing existing connections](/docs/importing-existing-connections#bearer-tokens).
+
 ## Programmatically inspecting fields
 
 In cases where you need to dynamically discover the exact field names and handle different auth schemes programmatically, you can inspect the auth config details first.
