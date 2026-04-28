@@ -71,6 +71,81 @@ Composio(api_key="...", dangerously_allow_auto_upload_download_files=True)
 
 If you construct `ToolRouterSession` directly (unusual), the keyword argument is now `dangerously_allow_auto_upload_download_files` instead of `auto_upload_download_files`.
 
+### Local paths must live inside an allowlisted directory
+
+Even with `dangerouslyAllowAutoUploadDownloadFiles` enabled, the SDK will **only** auto-upload local file paths that resolve inside an allowlisted directory. Paths outside the allowlist are rejected with `ComposioFileUploadPathNotAllowed` (TypeScript) / `FileUploadPathNotAllowed` (Python) before any file is read or sent.
+
+This is a behavior change. Earlier SDK versions had no allowlist: any local path the legacy default-on flag saw was uploaded.
+
+**Default allowlist:**
+
+| `fileUploadDirs` value | Effective allowlist |
+| ---------------------- | ------------------- |
+| omitted / `undefined` | `[ <home>/.composio/temp ]` (default staging dir) |
+| `false` | `[]` — **all** local paths rejected (URLs and `File` objects still work) |
+| `[]` | `[]` — same as `false`; explicit "no local paths" |
+| `[<dir1>, <dir2>, …]` | exactly those directories (replaces the default; `~` is expanded, paths are `realpath`-resolved, comparison is on a path-component boundary) |
+
+URLs (`http://…` / `https://…`) and JavaScript `File` objects are **not** subject to the allowlist — only local string paths are.
+
+**TypeScript:**
+
+```typescript
+// @noErrors
+// Match the *broadest* legacy behavior: auto-upload on, allowlist widened to
+// the directories your code actually reads from. Set this scope as tightly
+// as you can — every path inside these dirs becomes uploadable to Composio.
+new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: ['/srv/uploads', '~/data/inbox'],
+});
+
+// Disallow local-path uploads entirely; the SDK will only stage URLs and
+// File objects, and reject string paths outright.
+new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: false,
+});
+```
+
+**Python:**
+
+```python
+# Equivalent of the TypeScript example above.
+Composio(
+    api_key="...",
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=["/srv/uploads", "~/data/inbox"],
+)
+
+# Reject all local paths.
+Composio(
+    api_key="...",
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=False,
+)
+```
+
+**Manual staging (no auto-upload, any path):**
+
+If you don't want to widen the allowlist, you can stage files yourself via `composio.files.upload(...)`. That call **bypasses the allowlist** by design (the caller is expected to control the path), and the returned `{ name, mimetype, s3key }` descriptor can be passed straight into `tools.execute`:
+
+```typescript
+// @noErrors
+const staged = await composio.files.upload({
+  file: '/anywhere/on/disk/report.pdf',
+  toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
+  toolkitSlug: 'googledrive',
+});
+
+await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+  userId: 'user-1',
+  arguments: { file_to_upload: staged },
+});
+```
+
 ### What else changed
 
 - TypeScript: `resolveAutoUploadDownloadFilesEnabled` only considers `dangerouslyAllowAutoUploadDownloadFiles`; the old deprecation warning for the legacy property is removed.
