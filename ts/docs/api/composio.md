@@ -114,6 +114,39 @@ const composio = new Composio({
 });
 ```
 
+#### What the LLM sees vs. what the SDK does
+
+The flag is a **contract between the SDK and the model**. The schema handed
+to the LLM always reflects what will actually happen at runtime:
+
+- **Flag `true`** — `composio.tools.get(...)` rewrites `file_uploadable`
+  inputs down to `{ type: 'string', format: 'path' }`. The model passes a
+  path or URL, the SDK stages it, the backend receives a proper
+  `{ name, mimetype, s3key }` object. Works end-to-end.
+- **Flag `false`** (or omitted) — the raw backend shape
+  (`{ name, mimetype, s3key }`) is preserved. You are expected to stage
+  files yourself via `composio.files.upload(...)` and inject the returned
+  descriptor into the tool arguments before calling `tools.execute`. Handing
+  this shape directly to an LLM is not recommended — the model cannot
+  produce a valid `s3key`. On first execution of a file-uploadable tool in
+  this mode, the SDK emits a single warning per tool slug nudging you
+  toward either enabling the flag or staging manually.
+
+Manual staging example (flag off):
+
+```typescript
+const staged = await composio.files.upload({
+  file: '/tmp/report.pdf',
+  toolSlug: 'SOME_FILE_TOOL',
+  toolkitSlug: 'some-toolkit',
+});
+
+await composio.tools.execute('SOME_FILE_TOOL', {
+  userId: 'u',
+  arguments: { file: staged }, // { name, mimetype, s3key }
+});
+```
+
 ### Per-execution `beforeFileUpload` modifier
 
 Use the **third argument** to `composio.tools.execute` to intercept each file read before upload (in addition to global `sensitiveFileUploadProtection` on the client):

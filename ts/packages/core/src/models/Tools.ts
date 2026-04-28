@@ -58,6 +58,7 @@ import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveAutoUploadDownloadFilesEnabled } from '../utils/autoUploadDownloadFiles';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
+import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -78,6 +79,12 @@ export class Tools<
     fileUploadAllowlist?: string[];
     fileDownloadDir?: string;
   };
+  /**
+   * Tracks tool slugs we've already warned about to avoid spamming the log when
+   * the same file-input tool is executed repeatedly while auto-upload is off.
+   * Scoped per-instance so a fresh `Composio` starts with a clean slate.
+   */
+  private readonly warnedAutoUploadDisabledForTool = new Set<string>();
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
@@ -159,21 +166,33 @@ export class Tools<
   }
 
   /**
-   * Applies the default schema modifiers to the tools
+   * Applies the default schema modifiers to the tools.
+   *
+   * The `file_uploadable` transform (collapsing the backend's internal
+   * `{ name, mimetype, s3key }` staging shape to `{ type: 'string',
+   * format: 'path' }`) is **gated on `dangerouslyAllowAutoUploadDownloadFiles`**
+   * — the collapsed shape is a promise that the SDK will stage local paths
+   * on your behalf at execute time, and that's only true when the flag is on.
+   *
+   * When the flag is off, the raw schema is returned unchanged; callers are
+   * expected to stage files themselves via `composio.files.upload()` and pass
+   * the resulting descriptor into `tools.execute`. If an LLM ends up calling
+   * a file-uploadable tool in this mode, the execute path emits a one-shot
+   * warning per tool slug (see `applyBeforeExecuteModifiers`).
+   *
    * @param tools - The tools to apply the default schema modifiers to
    * @returns The tools with the default schema modifiers applied
    */
   private async applyDefaultSchemaModifiers(tools: Tool[]): Promise<Tool[]> {
-    if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client, this.fileUploadPathOptions);
-      return await Promise.all(
-        tools.map(tool =>
-          fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
-        )
-      );
-    } else {
+    if (!this.autoUploadDownloadFiles) {
       return tools;
     }
+    const fileToolModifier = new FileToolModifier(this.client, this.fileUploadPathOptions);
+    return await Promise.all(
+      tools.map(tool =>
+        fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
+      )
+    );
   }
 
   /**
@@ -209,6 +228,26 @@ export class Tools<
         toolkitSlug,
         params: modifiedParams,
       });
+    } else if (
+      schemaHasFileUploadable(tool.inputParameters) &&
+      !this.warnedAutoUploadDisabledForTool.has(toolSlug)
+    ) {
+      // With auto-upload off, the raw `{ name, mimetype, s3key }` shape is
+      // what the LLM / caller sees on `tool.inputParameters`. LLMs can't
+      // produce a valid `s3key` and will hallucinate one, which then fails
+      // at the staging-lookup step on the backend. Nudge the caller toward
+      // manual staging or opting into auto-upload.
+      this.warnedAutoUploadDisabledForTool.add(toolSlug);
+      logger.warn(
+        `Tool "${toolSlug}" (toolkit "${toolkitSlug}") has a file-uploadable input, but ` +
+          `\`dangerouslyAllowAutoUploadDownloadFiles\` is disabled. The SDK will forward ` +
+          `the file argument as-is; if it isn't already a staged ` +
+          `{ name, mimetype, s3key } descriptor, the backend will reject the call. Either:\n` +
+          `  1) Stage the file yourself: \`const f = await composio.files.upload({ file, toolSlug, toolkitSlug }); ` +
+          `await composio.tools.execute('${toolSlug}', { userId, arguments: { <fileField>: f } })\`, or\n` +
+          `  2) Enable auto-upload with a scoped allowlist: ` +
+          `\`new Composio({ dangerouslyAllowAutoUploadDownloadFiles: true, fileUploadDirs: ['/safe/dir'] })\`.`
+      );
     }
     // apply the before execute modifiers
     if (modifiers?.beforeExecute) {

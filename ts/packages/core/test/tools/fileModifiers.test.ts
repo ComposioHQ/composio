@@ -1521,6 +1521,12 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
     });
 
     it('should not modify tool schema for file upload', async () => {
+      // The collapsed `{ type: 'string', format: 'path' }` shape is a promise
+      // that the SDK will stage local paths for the caller. That promise is
+      // only true when auto-upload is on, so we leave the raw shape
+      // untouched when the flag is off — callers are expected to pre-stage
+      // via `composio.files.upload()`. Runtime behavior is documented by
+      // the warning emitted from `applyBeforeExecuteModifiers`.
       const result = await context.tools.getRawComposioTools({ tools: ['COMPOSIO_TOOL'] });
       expect(result[0].inputParameters?.properties?.file).not.toHaveProperty('format');
       expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
@@ -1553,6 +1559,35 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
         user_id: 'test-user',
         version: 'latest',
       });
+    });
+
+    it('warns once per tool when auto-upload is off and the tool has a file-uploadable input', async () => {
+      const warnSpy = vi.spyOn((await import('../../src/utils/logger')).default, 'warn');
+      warnSpy.mockImplementation(() => {}); // silence the log in test output
+
+      vi.spyOn(context.tools, 'getRawComposioToolBySlug').mockResolvedValue(mockToolWithFileUpload);
+
+      // First call emits the warning.
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '/path/to/file.txt' },
+        userId: 'u',
+        dangerouslySkipVersionCheck: true,
+      });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const msg = String(warnSpy.mock.calls[0]?.[0] ?? '');
+      expect(msg).toContain('COMPOSIO_TOOL');
+      expect(msg).toContain('dangerouslyAllowAutoUploadDownloadFiles');
+      expect(msg).toContain('composio.files.upload');
+
+      // Repeated executions of the same tool do NOT re-warn.
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '/path/to/file.txt' },
+        userId: 'u',
+        dangerouslySkipVersionCheck: true,
+      });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+
+      warnSpy.mockRestore();
     });
 
     it('should not download files from execution results', async () => {
