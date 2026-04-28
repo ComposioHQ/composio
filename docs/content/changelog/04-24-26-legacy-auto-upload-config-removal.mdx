@@ -128,9 +128,9 @@ Composio(
 )
 ```
 
-**Manual staging (no auto-upload, any path):**
+**Manual staging (TypeScript only):**
 
-If you don't want to widen the allowlist, you can stage files yourself via `composio.files.upload(...)`. That call **bypasses the allowlist** by design (the caller is expected to control the path), and the returned `{ name, mimetype, s3key }` descriptor can be passed straight into `tools.execute`:
+If you don't want to widen the allowlist, the TypeScript SDK lets you stage files yourself via `composio.files.upload(...)`. That call **bypasses the allowlist** by design (the caller is expected to control the path), and the returned `{ name, mimetype, s3key }` descriptor can be passed straight into `tools.execute`:
 
 ```typescript
 // @noErrors
@@ -145,6 +145,8 @@ await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
   arguments: { file_to_upload: staged },
 });
 ```
+
+The Python SDK does not currently expose a top-level manual-staging API; opt in with `dangerously_allow_auto_upload_download_files=True` and configure `file_upload_dirs` to cover the directories your code reads from.
 
 ### What else changed
 

@@ -495,7 +495,38 @@ composio.tools.execute(
 
 ### Automatic file handling (off by default)
 
-The TypeScript SDK does **not** auto-upload or auto-download file fields unless you set `dangerouslyAllowAutoUploadDownloadFiles: true`. With the default, handle file uploads and downloads manually using `files.upload` and `files.download`:
+Both SDKs ship with automatic file handling **off**. Opt in with `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python). Even with the flag enabled, **local paths must resolve inside an allowlisted directory** — see the matrix in the [legacy auto-upload removal changelog](/docs/changelog/2026/04/24) for the full `fileUploadDirs` / `file_upload_dirs` semantics.
+
+When auto-handling is off, handle the staging yourself.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+The Python SDK does not expose a top-level manual-staging API. Either:
+
+1. Enable auto-handling and configure `file_upload_dirs` to cover the directories your code reads from:
+
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
+)
+```
+
+2. Or keep auto-handling off and pass an already-staged `{ "name", "mimetype", "s3key" }` dict directly into `tools.execute`. Pre-stage your files via your own pipeline (or an upstream tool) and inject the descriptor:
+
+```python
+result = composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    user_id="user-1",
+    arguments={"file_to_upload": prestaged_descriptor},
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+With `dangerouslyAllowAutoUploadDownloadFiles: false` (the default), call `composio.files.upload(...)` to stage paths/URLs explicitly. That call bypasses `fileUploadDirs` by design — the caller controls the path:
 
 ```typescript
 import { Composio } from '@composio/core';
@@ -506,13 +537,21 @@ const composio = new Composio({
   // Default: dangerouslyAllowAutoUploadDownloadFiles is false; set true only to opt in
 });
 
-// Now you need to handle files manually using composio.files API
+// Stage manually using composio.files API
 const fileData = await composio.files.upload({
   file: path.join(__dirname, 'document.pdf'),
   toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
   toolkitSlug: 'googledrive'
 });
+
+// Then pass the { name, mimetype, s3key } descriptor into tools.execute
+await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+  userId: 'user-1',
+  arguments: { file_to_upload: fileData },
+});
 ```
+  </Tab>
+</Tabs>
 
 ## What to read next
 
