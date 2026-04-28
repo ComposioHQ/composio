@@ -1,5 +1,21 @@
 # @composio/core
 
+## 0.8.0
+
+### Minor Changes
+
+- ebc9778: Make automatic file upload/download opt-in and add scoped allowlist controls.
+  - **Removed:** the legacy `autoUploadDownloadFiles` constructor option. Code that sets it must migrate to the new opt-in flag.
+  - **Added:** `dangerouslyAllowAutoUploadDownloadFiles` (default `false`). When `true`, the SDK collapses `file_uploadable` schemas to `{ type: 'string', format: 'path' }` for the model and stages local paths/URLs at execute time.
+  - **Added:** `fileUploadDirs?: string[] | false` — fail-closed allowlist for local upload paths. `undefined` defaults to `[<home>/.composio/temp]`; `false` rejects all local paths; an explicit `string[]` replaces the default.
+  - **Added:** `fileDownloadDir?: string` — directory used to stage S3 downloads on `file_downloadable` results.
+  - **Added:** `beforeFileUpload` modifier now receives `source: 'path' | 'url' | 'file'` so hooks can branch on the original input type.
+  - **Added:** when auto-upload is **off** but a tool with `file_uploadable` inputs is executed, the SDK emits a one-shot warning per tool slug pointing at `composio.files.upload()` for manual staging.
+
+  See the changelog entry at [`docs/content/changelog/04-24-26-legacy-auto-upload-config-removal.mdx`](https://github.com/ComposioHQ/composio/blob/master/docs/content/changelog/04-24-26-legacy-auto-upload-config-removal.mdx) for migration steps.
+
+  Provider packages that depend on `@composio/core` are bumped to `0.8.0` alongside core in this release train so the version line stays aligned across the monorepo, even though they have no public-API changes of their own.
+
 ## 0.6.11
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @composio/langchain
 
+## 0.8.0
+
+### Minor Changes
+
+- Bumped to align with `@composio/core@0.8.0` for the file-upload allowlist release train. No public-API change in this package.
+
+### Patch Changes
+
+- Updated dependencies [ebc9778]
+  - @composio/core@0.8.0
+
 ## 0.6.11
 
 ### Patch Changes
