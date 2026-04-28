@@ -9,7 +9,7 @@ const UNSUPPORTED_MESSAGE =
 export class FileToolModifier {
   constructor(_client: ComposioClient) {}
 
-  async modifyToolSchema(toolSlug: string, toolkitSlug: string, schema: Tool): Promise<Tool> {
+  async modifyToolSchema(schema: Tool): Promise<Tool> {
     if (!schema.inputParameters?.properties) {
       return schema;
     }

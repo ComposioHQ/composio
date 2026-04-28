@@ -334,13 +334,14 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         )
 
         # Always enhance schema descriptions (type hints and required notes)
-        # regardless of auto_upload_download_files setting
+        # regardless of dangerously_allow_auto_upload_download_files
         for tool in tools_list:
             tool.input_parameters = self._file_helper.enhance_schema_descriptions(
                 schema=tool.input_parameters,
             )
 
-        # Only process file_uploadable schemas when auto_upload_download_files is True
+        # Only process file_uploadable schemas when the caller opted in via
+        # `dangerously_allow_auto_upload_download_files=True`.
         if self._auto_upload_download_files:
             for tool in tools_list:
                 tool.input_parameters = (

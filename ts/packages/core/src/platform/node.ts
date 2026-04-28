@@ -22,6 +22,14 @@ export const platform = {
     return path.join(...paths);
   },
 
+  resolvePath(...paths: string[]): string {
+    return path.resolve(...paths);
+  },
+
+  isAbsolutePath(filePath: string): boolean {
+    return path.isAbsolute(filePath);
+  },
+
   basename(filePath: string): string {
     return path.basename(filePath);
   },

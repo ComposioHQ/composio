@@ -113,7 +113,11 @@ def get_md5(file: Path) -> str:
     Returns:
         Hexadecimal MD5 hash string
     """
-    obj = hashlib.md5()
+    # `usedforsecurity=False` lets this run on FIPS-mode systems, where
+    # `hashlib.md5()` without the flag raises `ValueError: [digital envelope
+    # routines] unsupported`. We're hashing for integrity / deduplication,
+    # not security — the API just needs the digest for upload verification.
+    obj = hashlib.md5(usedforsecurity=False)
     with file.open("rb") as fp:
         while True:
             line = fp.read(_DEFAULT_CHUNK_SIZE)
@@ -352,7 +356,7 @@ def _upload_bytes_to_s3(
     toolkit: str,
 ) -> str:
     """Upload bytes content to S3 and return the S3 key."""
-    md5_hash = hashlib.md5(content).hexdigest()
+    md5_hash = hashlib.md5(content, usedforsecurity=False).hexdigest()
 
     s3meta = client.post(
         path=_FILE_UPLOAD,
@@ -459,33 +463,16 @@ class FileUploadable(BaseModel):
         :return: FileUploadable instance with S3 key
         """
         file_str = str(file) if isinstance(file, Path) else file
-
-        # Check if it's a URL
-        if isinstance(file_str, str) and _is_url(file_str):
-            path_in = file_str
-            if before_file_upload is not None:
-                out = before_file_upload(
-                    {
-                        "path": path_in,
-                        "source": "url",
-                        "tool": tool,
-                        "toolkit": toolkit,
-                    }
-                )
-                if out is False:
-                    raise FileUploadAbortedError(
-                        "File upload was aborted because before_file_upload returned False."
-                    )
-                if isinstance(out, str):
-                    path_in = out
-            return cls.from_url(client=client, url=path_in, tool=tool, toolkit=toolkit)
-
         path_in = file_str
+        source: t.Literal["url", "path"] = (
+            "url" if isinstance(file_str, str) and _is_url(file_str) else "path"
+        )
+
         if before_file_upload is not None:
             out = before_file_upload(
                 {
                     "path": path_in,
-                    "source": "path",
+                    "source": source,
                     "tool": tool,
                     "toolkit": toolkit,
                 }
@@ -496,6 +483,14 @@ class FileUploadable(BaseModel):
                 )
             if isinstance(out, str):
                 path_in = out
+
+        # Re-decide routing on the post-hook value: a URL-source hook may return
+        # a local path (and vice versa). Re-checking with `_is_url` keeps the
+        # URL fetch path and the local-file path properly separated, so a hook
+        # cannot, for example, smuggle `/etc/passwd` past the URL branch's
+        # missing allowlist/denylist by rewriting the URL into a path.
+        if isinstance(path_in, str) and _is_url(path_in):
+            return cls.from_url(client=client, url=path_in, tool=tool, toolkit=toolkit)
 
         # Allowlist check runs BEFORE the denylist / existence checks when enabled,
         # so the "configure file_upload_dirs" hint fires first for the common case
@@ -725,7 +720,7 @@ class FileHelper(WithLogger):
         - Required notes ("This parameter is required.")
 
         This is separate from file processing and should always run
-        regardless of the auto_upload_download_files setting.
+        regardless of `dangerously_allow_auto_upload_download_files`.
         """
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
@@ -747,7 +742,8 @@ class FileHelper(WithLogger):
         """Process file_uploadable fields in schema.
 
         This method converts file_uploadable fields to path format.
-        Should only be called when auto_upload_download_files is True.
+        Should only be called when the caller opted in via
+        `dangerously_allow_auto_upload_download_files=True`.
         Recursively handles anyOf, oneOf, allOf, nested properties, and array items.
         """
         if "properties" not in schema:

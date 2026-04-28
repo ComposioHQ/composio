@@ -56,7 +56,6 @@ import { handleToolExecutionError } from '../errors/ToolErrors';
 import { ToolExecuteMetaParams } from '../types/tool.types';
 import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
-import { resolveAutoUploadDownloadFilesEnabled } from '../utils/autoUploadDownloadFiles';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
 /**
@@ -97,7 +96,7 @@ export class Tools<
     this.client = client;
     this.customTools = new CustomTools(client);
     this.provider = config.provider;
-    this.autoUploadDownloadFiles = resolveAutoUploadDownloadFilesEnabled(config);
+    this.autoUploadDownloadFiles = config?.dangerouslyAllowAutoUploadDownloadFiles === true;
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
     this.fileUploadPathOptions = {
       sensitiveFileUploadProtection: config?.sensitiveFileUploadProtection,
@@ -188,11 +187,7 @@ export class Tools<
       return tools;
     }
     const fileToolModifier = new FileToolModifier(this.client, this.fileUploadPathOptions);
-    return await Promise.all(
-      tools.map(tool =>
-        fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
-      )
-    );
+    return await Promise.all(tools.map(tool => fileToolModifier.modifyToolSchema(tool)));
   }
 
   /**

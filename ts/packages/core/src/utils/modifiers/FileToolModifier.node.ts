@@ -128,7 +128,14 @@ const hydrateFiles = async (
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 2. Handle anyOf/oneOf/allOf - try each variant that may contain file_uploadable
+  // 2. Handle anyOf/oneOf/allOf — pick the first variant that contains a
+  // file_uploadable property and hydrate against it.
+  //
+  // We deliberately do NOT loop over every uploadable variant. With `oneOf`,
+  // exactly one variant should apply at runtime, and applying multiple would
+  // upload the same file once per variant — two presigned-URL round-trips and
+  // two S3 PUTs for a two-variant `oneOf`. Matching the Python SDK
+  // (`_find_uploadable_schema_variant`), we short-circuit on the first match.
   // ──────────────────────────────────────────────────────────────────────────
   const schemaVariants = [
     ...(schema?.anyOf ?? []),
@@ -137,16 +144,9 @@ const hydrateFiles = async (
   ];
 
   if (schemaVariants.length > 0) {
-    // Find variants that have file_uploadable properties
-    const uploadableVariants = schemaVariants.filter(schemaHasFileUploadable);
-
-    if (uploadableVariants.length > 0) {
-      // Process with each uploadable variant - we try all since we can't know which one matches at runtime
-      let result = value;
-      for (const variant of uploadableVariants) {
-        result = await hydrateFiles(result, variant, ctx);
-      }
-      return result;
+    const firstUploadableVariant = schemaVariants.find(schemaHasFileUploadable);
+    if (firstUploadableVariant) {
+      return hydrateFiles(value, firstUploadableVariant, ctx);
     }
     // If no uploadable variants found, fall through to check base properties
   }
@@ -330,7 +330,7 @@ export class FileToolModifier {
     this.fileUploadPathOptions = fileUploadPathOptions;
   }
 
-  async modifyToolSchema(toolSlug: string, toolkitSlug: string, schema: Tool): Promise<Tool> {
+  async modifyToolSchema(schema: Tool): Promise<Tool> {
     if (!schema.inputParameters?.properties) {
       return schema;
     }

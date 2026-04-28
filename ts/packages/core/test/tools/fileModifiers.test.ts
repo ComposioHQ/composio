@@ -41,7 +41,7 @@ describe('FileToolModifier', () => {
         availableVersions: ['20251201_01'],
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result).toEqual(schema);
     });
 
@@ -67,7 +67,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.file).toHaveProperty('format', 'path');
       expect(result.inputParameters?.properties?.text).not.toHaveProperty('format');
     });
@@ -102,7 +102,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.fileInput?.anyOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -145,7 +145,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.fileInput?.oneOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -185,7 +185,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.fileInput?.allOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -230,7 +230,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(
         result.inputParameters?.properties?.content?.anyOf?.[0]?.properties?.attachment
       ).toHaveProperty('format', 'path');
@@ -268,7 +268,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.files?.items?.anyOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -740,6 +740,54 @@ describe('FileToolModifier', () => {
       expect((result.arguments?.content as Record<string, unknown>)?.attachment).toEqual(
         mockFileData
       );
+    });
+
+    it('uploads once when multiple oneOf variants are file_uploadable', async () => {
+      // Regression: previously hydrateFiles iterated over every uploadable
+      // variant in anyOf/oneOf/allOf and re-uploaded the same file once per
+      // variant. With `oneOf` semantics this is doubly wrong (only one
+      // variant matches at runtime). Match the Python SDK and short-circuit
+      // on the first uploadable variant.
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const toolWithTwoUploadableVariants: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            fileInput: {
+              oneOf: [
+                { type: 'string', file_uploadable: true },
+                { type: 'string', file_uploadable: true },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const params = {
+        arguments: { fileInput: '/path/to/file.txt' },
+        userId: 'test-user',
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithTwoUploadableVariants, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(1);
+      expect(result.arguments?.fileInput).toEqual(mockFileData);
     });
 
     it('should not upload when value is null for anyOf with null variant', async () => {

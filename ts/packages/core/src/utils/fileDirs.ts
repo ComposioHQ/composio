@@ -1,50 +1,31 @@
 /**
  * Runtime-neutral helpers for normalizing user-provided filesystem paths.
  *
- * In filesystem-less runtimes (Cloudflare Workers, etc.) these are no-ops.
+ * In filesystem-less runtimes (Cloudflare Workers, etc.) the platform
+ * abstraction reports `supportsFileSystem: false` and `homedir()` returns
+ * `null`. We use that as the signal to drop unresolvable entries from the
+ * allowlist (fail-closed) rather than silently passing `~/foo` through as
+ * a literal directory name.
  */
 
-function safeHomedir(): string | null {
-  try {
-    // Lazy require to keep this module importable from browser/Workers bundles.
-    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
-    const os = require('node:os');
-    return os.homedir?.() ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function safePathModule(): {
-  resolve: (...p: string[]) => string;
-  join: (...p: string[]) => string;
-  isAbsolute: (p: string) => boolean;
-} | null {
-  try {
-    /* eslint-disable-next-line @typescript-eslint/no-require-imports */
-    return require('node:path');
-  } catch {
-    return null;
-  }
-}
+import { platform } from '#platform';
 
 /**
  * Expands a leading `~` to the user's home directory and resolves to an
- * absolute path. Returns the input unchanged when node's `path`/`os` modules
- * are unavailable.
+ * absolute path. Returns `undefined` when expansion is required but no
+ * home directory is available — that signals "unusable, drop me" to
+ * {@link expandHomeAndResolveMany}, which is safer than letting the literal
+ * `~/foo` survive as a CWD-relative path.
  */
 export function expandHomeAndResolve(p: string | undefined): string | undefined {
   if (!p) return p;
-  const pathMod = safePathModule();
-  if (!pathMod) return p;
   let expanded = p;
   if (p === '~' || p.startsWith('~/') || p.startsWith('~\\')) {
-    const home = safeHomedir();
-    if (home) {
-      expanded = p === '~' ? home : pathMod.join(home, p.slice(2));
-    }
+    const home = platform.homedir();
+    if (!home) return undefined;
+    expanded = p === '~' ? home : platform.joinPath(home, p.slice(2));
   }
-  return pathMod.resolve(expanded);
+  return platform.resolvePath(expanded);
 }
 
 /**
@@ -53,21 +34,18 @@ export function expandHomeAndResolve(p: string | undefined): string | undefined 
  * "user did not configure" from "user explicitly disabled local uploads"
  * from "user configured []").
  */
-export function expandHomeAndResolveMany<T extends string[] | false | undefined>(
-  list: T
-): T extends false ? false : T extends undefined ? undefined : string[] {
-  if (list === undefined) return undefined as never;
-  if (list === false) return false as never;
-  // tsgo doesn't narrow `T` to `string[]` after the two guards above, so we
-  // widen locally before iterating.
-  const items = list as string[];
+export function expandHomeAndResolveMany(
+  list: string[] | false | undefined
+): string[] | false | undefined {
+  if (list === undefined) return undefined;
+  if (list === false) return false;
   const out: string[] = [];
-  for (const raw of items) {
+  for (const raw of list) {
     if (typeof raw !== 'string' || raw.trim() === '') continue;
     const resolved = expandHomeAndResolve(raw);
     if (resolved) out.push(resolved);
   }
-  return out as never;
+  return out;
 }
 
 /**
@@ -76,10 +54,9 @@ export function expandHomeAndResolveMany<T extends string[] | false | undefined>
  * (e.g. Cloudflare Workers).
  */
 export function getDefaultUploadDir(): string | null {
-  const home = safeHomedir();
-  const pathMod = safePathModule();
-  if (!home || !pathMod) return null;
-  return pathMod.resolve(pathMod.join(home, '.composio', 'temp'));
+  const home = platform.homedir();
+  if (!home) return null;
+  return platform.resolvePath(platform.joinPath(home, '.composio', 'temp'));
 }
 
 /**

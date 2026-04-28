@@ -242,6 +242,10 @@ Changed the `autoUploadDownloadFiles` default configuration for the Cloudflare W
 }
 ```
 
+<Callout type="warn">
+**Removed in a later release.** The `autoUploadDownloadFiles` flag described above was removed in the v0.7.0 / Python v0.12.0 release train. Automatic file handling is now off by default on every runtime, and you opt in with `dangerouslyAllowAutoUploadDownloadFiles` instead. See [SDKs remove legacy automatic file handling config](/docs/changelog/2026/04/24) for the full migration.
+</Callout>
+
 **Benefits:**
 
 - **Zero config** for common use cases

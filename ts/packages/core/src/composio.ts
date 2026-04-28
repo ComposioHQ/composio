@@ -374,11 +374,20 @@ export class Composio<
   }
 
   /**
-   * Get the configuration SDK is initialized with
-   * @returns {ComposioConfig<TProvider>} The configuration SDK is initialized with
+   * Get the configuration SDK is initialized with.
+   *
+   * Returns a frozen shallow clone — the SDK has already snapshotted
+   * configuration values such as `dangerouslyAllowAutoUploadDownloadFiles`,
+   * `fileUploadDirs`, and `fileDownloadDir` into its internal models, so
+   * mutating the live config object would silently no-op. Freezing makes
+   * that contract visible at the call site instead of letting the mutation
+   * appear successful.
+   *
+   * @returns {Readonly<ComposioConfig<TProvider>>} The frozen configuration
+   *   the SDK is initialized with.
    */
-  getConfig(): ComposioConfig<TProvider> {
-    return this.config;
+  getConfig(): Readonly<ComposioConfig<TProvider>> {
+    return Object.freeze({ ...this.config });
   }
 
   /**
