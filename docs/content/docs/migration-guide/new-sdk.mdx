@@ -1095,43 +1095,29 @@ For development, you can also [listen to triggers through the SDK](/docs/setting
 <Tabs items={['FastAPI', 'Next.js']}>
   <Tab value="FastAPI">
 ```python title="app/route.py"
-from fastapi import FastAPI, Request, HTTPException
-from typing import Dict, Any
-import uvicorn
-import json
-import hmac
-import hashlib
-import base64
 import os
+from fastapi import FastAPI, Request, HTTPException
+from composio import Composio
 
-def verify_webhook_signature(request: Request, body: bytes) -> bool:
-    """Verify Composio webhook signature"""
-    webhook_signature = request.headers.get("webhook-signature")
-    webhook_id = request.headers.get("webhook-id")
-    webhook_timestamp = request.headers.get("webhook-timestamp")
-    webhook_secret = os.getenv("COMPOSIO_WEBHOOK_SECRET")
-
-    if not all([webhook_signature, webhook_id, webhook_timestamp, webhook_secret]):
-        raise HTTPException(status_code=400, detail="Missing required webhook headers or secret")
-
-    if not webhook_signature.startswith("v1,"):
-        raise HTTPException(status_code=401, detail="Invalid signature format")
-
-    received = webhook_signature[3:]
-    signing_string = f"{webhook_id}.{webhook_timestamp}.{body.decode()}"
-    expected = base64.b64encode(
-        hmac.new(webhook_secret.encode(), signing_string.encode(), hashlib.sha256).digest()
-    ).decode()
-
-    if not hmac.compare_digest(received, expected):
-        raise HTTPException(status_code=401, detail="Invalid webhook signature")
-
-    return True
+app = FastAPI()
+composio = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
 
 @app.post("/webhook")
 async def webhook_handler(request: Request):
-    payload = await request.json()
+    body = await request.body()
 
+    try:
+        result = composio.triggers.verify_webhook(
+            id=request.headers.get("webhook-id", ""),
+            payload=body.decode(),
+            signature=request.headers.get("webhook-signature", ""),
+            timestamp=request.headers.get("webhook-timestamp", ""),
+            secret=os.getenv("COMPOSIO_WEBHOOK_SECRET", ""),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid webhook signature") from exc
+
+    payload = result.payload
     trigger_type = payload.get("type")
     event_data = payload.get("data", {})
 
@@ -1147,59 +1133,33 @@ async def webhook_handler(request: Request):
   <Tab value="Next.js">
 ```typescript title="app/api/webhook/route.ts"
 // @noErrors
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { TriggerEvent } from '@composio/core';
-import crypto from 'crypto';
+import { Composio } from '@composio/core';
 
-type GitHubStarEventData = {
-  repository_name: string;
-  repository_url: string;
-  starred_by: string;
-  starred_at: string;
-};
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
-function verifyWebhookSignature(
-  req: NextApiRequest,
-  body: string
-): boolean {
-  const signature = req.headers['webhook-signature'] as string | undefined;
-  const msgId = req.headers['webhook-id'] as string | undefined;
-  const timestamp = req.headers['webhook-timestamp'] as string | undefined;
-  const secret = process.env.COMPOSIO_WEBHOOK_SECRET;
+export async function POST(request: Request) {
+  const body = await request.text();
 
-  if (!signature || !msgId || !timestamp || !secret) {
-    throw new Error('Missing required webhook headers or secret');
+  let payload: any;
+  try {
+    const result = await composio.triggers.verifyWebhook({
+      id: request.headers.get('webhook-id') ?? '',
+      payload: body,
+      signature: request.headers.get('webhook-signature') ?? '',
+      timestamp: request.headers.get('webhook-timestamp') ?? '',
+      secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
+    });
+    payload = result.payload;
+  } catch (error) {
+    return Response.json({ error: 'Invalid webhook signature' }, { status: 401 });
   }
-
-  if (!signature.startsWith('v1,')) {
-    throw new Error('Invalid signature format');
-  }
-
-  const received = signature.slice(3);
-  const signingString = `${msgId}.${timestamp}.${body}`;
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(signingString)
-    .digest('base64');
-
-  return crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));
-}
-
-export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
-  const payload = req.body;
 
   if (payload.type === 'github_star_added_event') {
-    const event: TriggerEvent<GitHubStarEventData> = {
-      type: payload.type,
-      timestamp: payload.timestamp,
-      data: payload.data
-    };
-
-    console.log(`Repository ${event.data.repository_name} starred by ${event.data.starred_by}`);
+    console.log(`Repository ${payload.data.repository_name} starred by ${payload.data.starred_by}`);
     // Add your business logic here
   }
 
-  res.status(200).json({
+  return Response.json({
     status: 'success',
     message: 'Webhook processed'
   });

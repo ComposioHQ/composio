@@ -314,6 +314,8 @@ Need an API that isn't supported by any Composio toolkit, or want to extend an e
 
 Automatic file handling is **off by default**. Enable it with `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python). Once enabled, pass file paths to tools that accept files and get local paths back from tools that return files.
 
+Local path uploads are fail-closed: string paths must resolve inside `fileUploadDirs` (TypeScript) or `file_upload_dirs` (Python). If you omit the option, only files under `~/.composio/temp` are allowed. Set the option to the exact directories your application reads from, or use `false` / `[]` to reject all local string paths. HTTP/HTTPS URLs and JavaScript `File` objects are not checked against this allowlist.
+
 ### File Upload
 
 Pass local file paths, URLs, or File objects to tools that accept files:
@@ -321,9 +323,12 @@ Pass local file paths, URLs, or File objects to tools that accept files:
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
+import os
+
 composio = Composio(
     api_key="your_composio_key",
     dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=[os.getcwd()],
 )
 
 # Upload a local file to Google Drive
@@ -341,11 +346,13 @@ print(result)  # Print Google Drive file details
 // @noErrors
 import { Composio } from '@composio/core';
 import path from 'path';
+// ---cut---
 const composio = new Composio({
   apiKey: 'your_api_key',
   dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: [__dirname],
 });
-// ---cut---
+
 // Upload a local file to Google Drive
 const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
   userId: 'user-4235***',
@@ -407,13 +414,13 @@ console.log(result);
 
 ## Security for local file paths
 
-Automatic upload reads local paths (or uses them in `files.upload`) and sends file content to Composio storage. To reduce the chance of **accidentally uploading secrets** (SSH keys, cloud credentials, `.env` files, or assistant project folders), the SDK checks resolved paths against a **default denylist** of path segments and file-name patterns. **HTTP/HTTPS URLs and `File` objects are not matched like local path strings**; only local string paths go through this check.
+Automatic upload reads local paths and sends file content to Composio storage. Local string paths must first resolve inside the configured upload allowlist. To reduce the chance of **accidentally uploading secrets** (SSH keys, cloud credentials, `.env` files, or assistant project folders), allowed paths are also checked against a **default denylist** of path segments and file-name patterns. **HTTP/HTTPS URLs and `File` objects are not matched like local path strings**; only local string paths go through these checks.
 
 <Callout type="warn">
-Disabling protection or wiring a hook that always approves paths can allow **exfiltration of sensitive files** if an LLM or malicious input points at credential locations. Prefer keeping protection on, adding [`fileUploadPathDenySegments`](/reference/sdk-reference/typescript/composio#file-upload-security) (TypeScript) / `file_upload_path_deny_segments` (Python) for your own secret directories, and using a [`beforeFileUpload`](/reference/sdk-reference/typescript/composio#file-upload-security) / `before_file_upload` hook for auditing or strict allowlists. On Python, you can use the `@before_file_upload` decorator with `modifiers=[...]` the same way as `@before_execute` — see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) on the before-execution modifiers page.
+Widening `fileUploadDirs`, disabling sensitive-file protection, or wiring a hook that always approves paths can allow **exfiltration of sensitive files** if an LLM or malicious input points at credential locations. Prefer a narrow allowlist, keep protection on, add [`fileUploadPathDenySegments`](/reference/sdk-reference/typescript/composio#file-upload-security) (TypeScript) / `file_upload_path_deny_segments` (Python) for your own secret directories, and use a [`beforeFileUpload`](/reference/sdk-reference/typescript/composio#file-upload-security) / `before_file_upload` hook for auditing. On Python, you can use the `@before_file_upload` decorator with `modifiers=[...]` the same way as `@before_execute` — see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) on the before-execution modifiers page.
 </Callout>
 
-**Constructor options (defaults protect sensitive locations):**
+**Constructor options (defaults allow only the staging directory and protect sensitive locations):**
 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
   <Tab value="TypeScript">
@@ -423,6 +430,8 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY!,
+  // default: [~/.composio/temp]; user-provided directories replace the default
+  fileUploadDirs: ['/srv/agent/uploads', '~/.composio/temp'],
   // default true — block paths under built-in segments (e.g. .ssh, .aws) and risky basenames
   sensitiveFileUploadProtection: true,
   // optional: extra path *components* anywhere in the resolved path, merged with the built-in list
@@ -436,6 +445,7 @@ from composio import Composio
 
 composio = Composio(
     api_key="your_composio_key",
+    file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
     sensitive_file_upload_protection=True,
     file_upload_path_deny_segments=("internal-only-secrets",),
 )
@@ -497,11 +507,11 @@ composio.tools.execute(
   </Tab>
 </Tabs>
 
-**Errors:** `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked; `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` (or equivalent abort).
+**Errors:** `ComposioFileUploadPathNotAllowedError` / `FileUploadPathNotAllowedError` when a local path is outside `fileUploadDirs` / `file_upload_dirs`; `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked by sensitive-file protection; `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` (or equivalent abort).
 
 ### Automatic file handling (off by default)
 
-Both SDKs ship with automatic file handling **off**. Opt in with `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python). Even with the flag enabled, **local paths must resolve inside an allowlisted directory** — see the matrix in the [legacy auto-upload removal changelog](/docs/changelog/2026/04/24) for the full `fileUploadDirs` / `file_upload_dirs` semantics.
+Both SDKs ship with automatic file handling **off**. Opt in with `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python). Even with the flag enabled, **local paths must resolve inside an allowlisted directory**.
 
 When auto-handling is off, handle the staging yourself.
 
