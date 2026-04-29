@@ -715,7 +715,7 @@ class TestToolExecution:
         tools._custom_tools.get = Mock(side_effect=mock_get)
 
         # Mock the execute method of custom tool
-        def mock_execute(slug, request, user_id):
+        def mock_execute(slug, request, user_id, connected_account_id=None):
             return {"custom_result": "success"}
 
         tools._custom_tools.execute = Mock(side_effect=mock_execute)
@@ -736,6 +736,7 @@ class TestToolExecution:
             slug="CUSTOM_TOOL",
             request={"param": "value"},
             user_id="user-123",
+            connected_account_id=None,
         )
 
     def test_execute_with_modifiers_before_execute(self):

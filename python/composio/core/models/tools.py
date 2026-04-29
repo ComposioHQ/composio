@@ -549,6 +549,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         self,
         slug: str,
         arguments: t.Dict,
+        connected_account_id: t.Optional[str] = None,
         user_id: t.Optional[str] = None,
     ) -> ToolExecutionResponse:
         """Execute a custom tool"""
@@ -559,6 +560,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     slug=slug,
                     request=arguments,
                     user_id=user_id,
+                    connected_account_id=connected_account_id,
                 ),
                 "error": None,
                 "successful": True,
@@ -737,6 +739,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             self._execute_custom_tool(
                 slug=slug,
                 arguments=arguments,
+                connected_account_id=connected_account_id,
                 user_id=user_id,
             )
             if self._custom_tools.get(slug) is not None

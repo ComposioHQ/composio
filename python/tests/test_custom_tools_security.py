@@ -272,3 +272,216 @@ def test_tools_execute_e2e_strips_user_id_through_full_stack(
         toolkit_slugs=["github"],
         user_ids=["trusted-user"],
     )
+
+
+# ────────────────────────────────────────────────────────────────
+# PLEN-2345: explicit ``connected_account_id`` plumbing
+#
+# Before PLEN-2345 ``connected_account_id`` was silently dropped on the
+# custom-tool path: ``Tools._execute_custom_tool`` did not accept it, and
+# ``execute_request`` was a bare reference to ``client.tools.proxy`` with
+# no auth context bound — so every proxy call from a custom tool 400'd
+# with ``ExternalProxy_MissingAuthContext`` after the backend stopped
+# accepting empty-auth proxies. The pins below cover the new contract.
+# ────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def mock_http_client_with_retrieve(mock_http_client: MagicMock) -> MagicMock:
+    """``mock_http_client`` plus a pinned ``retrieve(nanoid=...)`` response.
+
+    The list-fallback account also gets a pinned ``id`` so tests can tell
+    which resolution path produced the partial-bound id.
+    """
+    state = MagicMock()
+    state.val.model_dump.return_value = {"access_token": "explicit-token"}
+
+    explicit_account = MagicMock()
+    explicit_account.id = "ca_explicit"
+    explicit_account.state = state
+
+    mock_http_client.connected_accounts.retrieve.return_value = explicit_account
+    mock_http_client.connected_accounts.list.return_value.items[0].id = "ca_fallback"
+    return mock_http_client
+
+
+def test_execute_with_connected_account_id_calls_retrieve_not_list(
+    mock_http_client_with_retrieve: MagicMock,
+    custom_tools: CustomTools,
+    github_tool: CustomTool,
+) -> None:
+    """An explicit ``connected_account_id`` MUST hit ``retrieve(nanoid=...)``.
+
+    Pins that the explicit id wins over the "most recently created
+    connection for (toolkit, user)" fallback heuristic — the user
+    asked for a specific account, not whatever happens to sort first.
+    """
+    result = custom_tools.execute(
+        slug=github_tool.slug,
+        request={"issue_number": 7},
+        user_id="trusted-user",
+        connected_account_id="ca_explicit",
+    )
+
+    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
+        nanoid="ca_explicit",
+    )
+    mock_http_client_with_retrieve.connected_accounts.list.assert_not_called()
+    assert result == {"issue_number": 7, "token": "explicit-token"}
+
+
+def test_execute_request_partial_binds_resolved_account_id(
+    mock_http_client_with_retrieve: MagicMock,
+) -> None:
+    """``execute_request`` MUST pre-bind the resolved account id.
+
+    This is the user-facing fix. Before PLEN-2345 ``execute_request``
+    was a bare reference to ``client.tools.proxy``; the proxy endpoint
+    now requires auth context and 400'd every custom-tool proxy call.
+    """
+    captured: dict = {}
+
+    def proxy_tool(request: _IssueInput, execute_request, auth_credentials):
+        """Make a proxy call from inside a custom tool."""
+        execute_request(endpoint="/api/x", method="GET")
+        captured["credentials"] = auth_credentials
+        return {"ok": True}
+
+    tool = CustomTool(
+        f=proxy_tool, client=mock_http_client_with_retrieve, toolkit="github"
+    )
+    tools = CustomTools(client=mock_http_client_with_retrieve)
+    tools.custom_tools_registry[tool.slug] = tool
+
+    tools.execute(
+        slug=tool.slug,
+        request={"issue_number": 1},
+        user_id="trusted-user",
+        connected_account_id="ca_explicit",
+    )
+
+    mock_http_client_with_retrieve.tools.proxy.assert_called_once_with(
+        endpoint="/api/x",
+        method="GET",
+        connected_account_id="ca_explicit",
+    )
+    assert captured["credentials"] == {"access_token": "explicit-token"}
+
+
+def test_execute_request_partial_binds_listed_account_on_fallback(
+    mock_http_client_with_retrieve: MagicMock,
+) -> None:
+    """On the list-fallback path, ``execute_request`` MUST still bind an id.
+
+    The auth-context fix has to apply when callers do not pass
+    ``connected_account_id`` — otherwise legacy code that relied on the
+    "default account" behaviour stays broken on the proxy path.
+    """
+
+    def proxy_tool(request: _IssueInput, execute_request, auth_credentials):
+        """Proxy from inside a custom tool with no explicit account id."""
+        execute_request(endpoint="/api/y", method="GET")
+        return {"ok": True}
+
+    tool = CustomTool(
+        f=proxy_tool, client=mock_http_client_with_retrieve, toolkit="github"
+    )
+    tools = CustomTools(client=mock_http_client_with_retrieve)
+    tools.custom_tools_registry[tool.slug] = tool
+
+    tools.execute(
+        slug=tool.slug,
+        request={"issue_number": 1},
+        user_id="trusted-user",
+    )
+
+    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_not_called()
+    mock_http_client_with_retrieve.tools.proxy.assert_called_once_with(
+        endpoint="/api/y",
+        method="GET",
+        connected_account_id="ca_fallback",
+    )
+
+
+def test_explicit_connected_account_id_wins_over_smuggled_one(
+    mock_http_client_with_retrieve: MagicMock,
+    custom_tools: CustomTools,
+    github_tool: CustomTool,
+) -> None:
+    """The trusted ``connected_account_id`` parameter MUST beat a smuggled one.
+
+    The allowlist drops ``connected_account_id`` from the LLM-supplied
+    ``request`` (existing SEC-365 contract); the explicit parameter on
+    ``CustomTools.execute`` is the only way to influence which account
+    is used. This pins both halves.
+    """
+    custom_tools.execute(
+        slug=github_tool.slug,
+        request={"issue_number": 1, "connected_account_id": "ca_evil"},
+        user_id="trusted-user",
+        connected_account_id="ca_explicit",
+    )
+
+    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
+        nanoid="ca_explicit",
+    )
+
+
+def test_tools_execute_e2e_forwards_connected_account_id(
+    mock_http_client_with_retrieve: MagicMock,
+    custom_tools: CustomTools,
+    github_tool: CustomTool,
+) -> None:
+    """``Tools.execute(connected_account_id=...)`` MUST reach the custom-tool branch.
+
+    End-to-end pin on the public SDK entry point: before PLEN-2345 the
+    custom-tool branch did not accept ``connected_account_id``, so the
+    parameter was silently dropped at the routing fork in ``Tools.execute``.
+    """
+    from composio.core.models.tools import Tools
+
+    provider = MagicMock()
+    provider.name = "test"
+
+    tools = Tools(client=mock_http_client_with_retrieve, provider=provider)
+    tools._custom_tools = custom_tools
+
+    response = tools.execute(
+        slug=github_tool.slug,
+        arguments={"issue_number": 1},
+        user_id="trusted-user",
+        connected_account_id="ca_explicit",
+    )
+
+    assert response["successful"] is True
+    assert response["data"]["token"] == "explicit-token"
+    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
+        nanoid="ca_explicit",
+    )
+
+
+def test_call_pops_connected_account_id_before_request_validation(
+    mock_http_client_with_retrieve: MagicMock,
+) -> None:
+    """``CustomTool.__call__`` MUST extract ``connected_account_id`` from kwargs.
+
+    Mirrors how ``__call__`` already refuses ``user_id``: auth-path keys
+    are structurally separate from request kwargs and never reach the
+    user's tool function as a request field.
+    """
+    captured: dict = {}
+
+    def echo_tool(request: _IssueInput, execute_request, auth_credentials):
+        """Echo the validated request."""
+        captured["fields"] = request.model_dump()
+        return {"ok": True}
+
+    tool = CustomTool(
+        f=echo_tool, client=mock_http_client_with_retrieve, toolkit="github"
+    )
+    tool(issue_number=1, connected_account_id="ca_explicit")
+
+    assert captured["fields"] == {"issue_number": 1}
+    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
+        nanoid="ca_explicit",
+    )

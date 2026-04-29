@@ -859,7 +859,7 @@ class TestProviderEdgeCases:
 
         tools._custom_tools.get = Mock(side_effect=mock_get)
 
-        def mock_execute(slug, request, user_id):
+        def mock_execute(slug, request, user_id, connected_account_id=None):
             return {"custom_result": "success", "slug": slug}
 
         tools._custom_tools.execute = Mock(side_effect=mock_execute)

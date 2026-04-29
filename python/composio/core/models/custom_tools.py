@@ -134,10 +134,27 @@ class CustomTool:
             tags=[],
         )
 
-    def __get_auth_credentials(self, user_id: str) -> dict:
-        """Get the auth config for the custom tool."""
+    def __resolve_connected_account(
+        self,
+        user_id: str,
+        connected_account_id: t.Optional[str] = None,
+    ) -> t.Tuple[str, dict]:
+        """Resolve the connected account for this tool call.
+
+        Returns ``(account_id, credentials)``. When ``connected_account_id``
+        is provided, fetches that exact account; otherwise falls back to the
+        most recently created account for ``(toolkit, user_id)``. The
+        returned ``account_id`` is bound onto ``execute_request`` so the
+        proxy call carries the same auth context as ``auth_credentials``.
+        """
         if self.toolkit is None:
             raise ValueError("Toolkit is required for custom tools")
+
+        if connected_account_id is not None:
+            retrieved = self.client.connected_accounts.retrieve(
+                nanoid=connected_account_id,
+            )
+            return retrieved.id, retrieved.state.val.model_dump()
 
         connected_accounts = self.client.connected_accounts.list(
             toolkit_slugs=[self.toolkit],
@@ -154,7 +171,7 @@ class CustomTool:
             key=lambda x: x.created_at,
             reverse=True,
         )
-        return account.state.val.model_dump()
+        return account.id, account.state.val.model_dump()
 
     def __call__(self, **kwargs: t.Any) -> t.Any:
         """Call the custom tool with the default ``user_id``.
@@ -163,34 +180,53 @@ class CustomTool:
         silently dropping it — see the module docstring for why. Use
         ``CustomTools.execute(slug, request, user_id=...)`` (the trusted
         entry point) when you need a non-default ``user_id``.
+
+        ``connected_account_id`` is popped from ``kwargs`` before request
+        validation so it never reaches the user's tool function as a
+        request field.
         """
         if "user_id" in kwargs:
             raise TypeError(
                 "CustomTool.__call__ does not accept user_id; "
                 "use CustomTools.execute(slug, request, user_id=...) instead."
             )
-        return self.invoke_trusted(user_id="default", request_kwargs=kwargs)
+        connected_account_id = kwargs.pop("connected_account_id", None)
+        return self.invoke_trusted(
+            user_id="default",
+            request_kwargs=kwargs,
+            connected_account_id=connected_account_id,
+        )
 
     def invoke_trusted(
         self,
         user_id: str,
         request_kwargs: t.Dict[str, t.Any],
+        connected_account_id: t.Optional[str] = None,
     ) -> t.Any:
         """Trusted entry point used by ``CustomTools.execute``.
 
-        ``user_id`` is taken as a structurally separate parameter, so an
-        LLM-controlled ``user_id`` key sitting inside ``request_kwargs``
-        cannot override it (the request model's default ``extra='ignore'``
-        means any such key is also dropped during validation).
+        ``user_id`` and ``connected_account_id`` are taken as structurally
+        separate parameters, so an LLM-controlled key sitting inside
+        ``request_kwargs`` cannot override either (the request model's
+        default ``extra='ignore'`` means any such key is also dropped
+        during validation).
         """
         request = self.request_model.model_validate(request_kwargs)
         if self.toolkit is None:
             return t.cast(CustomToolProtocol, self.f)(request=request)
 
+        account_id, credentials = self.__resolve_connected_account(
+            user_id=user_id,
+            connected_account_id=connected_account_id,
+        )
+        execute_request = functools.partial(
+            self.client.tools.proxy,
+            connected_account_id=account_id,
+        )
         return t.cast(CustomToolWithProxyProtocol, self.f)(
             request=request,
-            execute_request=t.cast(ExecuteRequestFn, self.client.tools.proxy),
-            auth_credentials=self.__get_auth_credentials(user_id),
+            execute_request=t.cast(ExecuteRequestFn, execute_request),
+            auth_credentials=credentials,
         )
 
 
@@ -262,6 +298,7 @@ class CustomTools:
         slug: str,
         request: t.Dict,
         user_id: t.Optional[str] = None,
+        connected_account_id: t.Optional[str] = None,
     ) -> t.Any:
         """Execute a custom tool — the trust boundary for LLM-supplied args.
 
@@ -269,9 +306,9 @@ class CustomTools:
         the tool's Pydantic ``request_model`` (canonical names + aliases).
         Anything else — including the historical ``user_id`` smuggling
         vector and any future identity-bearing keys — is dropped before
-        the call reaches credential lookup. ``user_id`` is forwarded as a
-        structurally separate parameter; see the module docstring for the
-        full security model.
+        the call reaches credential lookup. ``user_id`` and
+        ``connected_account_id`` are forwarded as structurally separate
+        parameters; see the module docstring for the full security model.
         """
         custom_tool = self.get(slug)
         if custom_tool is None:
@@ -281,4 +318,5 @@ class CustomTools:
         return custom_tool.invoke_trusted(
             user_id=user_id or "default",
             request_kwargs=sanitized_request,
+            connected_account_id=connected_account_id,
         )
