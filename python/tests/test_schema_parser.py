@@ -615,6 +615,35 @@ class TestJsonSchemaToPydanticType:
         assert result is str
         assert not hasattr(result, "__origin__")
 
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_null_only_preserves_nullability(self):
+        """
+        Regression test for #3171: anyOf containing only {"type": "null"}
+        must yield Optional[Any], matching the direct {"type": "null"} mapping.
+        Previously this was downgraded to str (or NoneType depending on the
+        underlying library version), erasing nullability.
+        """
+        json_schema = {"anyOf": [{"type": "null"}]}
+        result = json_schema_to_pydantic_type(json_schema)
+        assert result == t.Optional[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_oneof_null_only_preserves_nullability(self):
+        """oneOf containing only {"type": "null"} should also yield Optional[Any]."""
+        json_schema = {"oneOf": [{"type": "null"}]}
+        result = json_schema_to_pydantic_type(json_schema)
+        assert result == t.Optional[t.Any]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_repeated_null_branches(self):
+        """Multiple null branches still collapse to a single Optional[Any]."""
+        json_schema = {"anyOf": [{"type": "null"}, {"type": "null"}]}
+        result = json_schema_to_pydantic_type(json_schema)
+        assert result == t.Optional[t.Any]
+
     def test_allof_single_option(self):
         """Test allOf with single option."""
         json_schema = {

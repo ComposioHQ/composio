@@ -234,6 +234,11 @@ def _handle_toplevel_combiner(
             allow_undefined_array_items=True,
             allow_undefined_type=True,
         )
+        # A null-only anyOf/oneOf (e.g. {"anyOf": [{"type": "null"}]}) collapses to
+        # NoneType in the library, which loses the nullable-but-untyped intent.
+        # Mirror the direct {"type": "null"} mapping and return Optional[Any].
+        if result is type(None):
+            return PYDANTIC_TYPE_TO_PYTHON_TYPE["null"]
         # If result is a type (like a Union or Optional), return it directly
         # If result is a model class, return it
         return result
@@ -270,6 +275,10 @@ def _build_union_from_options(options: t.List[t.Dict[str, t.Any]]) -> t.Type:
         pydantic_types.append(ptype)
 
     if len(pydantic_types) == 0:
+        # Preserve nullability when every branch was a null branch
+        # (e.g. {"anyOf": [{"type": "null"}]}) instead of downgrading to str.
+        if has_null:
+            return t.cast(t.Type, PYDANTIC_TYPE_TO_PYTHON_TYPE["null"])
         return str  # Fallback
 
     if len(pydantic_types) == 1:
