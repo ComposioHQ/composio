@@ -142,19 +142,32 @@ class CustomTool:
         """Resolve the connected account for this tool call.
 
         Returns ``(account_id, credentials)``. When ``connected_account_id``
-        is provided, fetches that exact account; otherwise falls back to the
-        most recently created account for ``(toolkit, user_id)``. The
-        returned ``account_id`` is bound onto ``execute_request`` so the
-        proxy call carries the same auth context as ``auth_credentials``.
+        is provided, the resolver list-filters by the trusted
+        ``(toolkit, user_id, connected_account_id)`` envelope so the
+        explicit id is server-side bound to the trust principal — an
+        upstream caller forwarding another tenant's id cannot grant
+        cross-tenant credential access (CWE-639). Without an explicit
+        id, the resolver falls back to the most recently created account
+        for ``(toolkit, user_id)``. The returned ``account_id`` is bound
+        onto ``execute_request`` so the proxy call carries the same auth
+        context as ``auth_credentials``.
         """
         if self.toolkit is None:
             raise ValueError("Toolkit is required for custom tools")
 
         if connected_account_id is not None:
-            retrieved = self.client.connected_accounts.retrieve(
-                nanoid=connected_account_id,
+            response = self.client.connected_accounts.list(
+                toolkit_slugs=[self.toolkit],
+                user_ids=[user_id],
+                connected_account_ids=[connected_account_id],
             )
-            return retrieved.id, retrieved.state.val.model_dump()
+            if len(response.items) == 0:
+                raise ValueError(
+                    f"Connected account {connected_account_id} not found "
+                    f"for toolkit {self.toolkit} and user {user_id}"
+                )
+            account = response.items[0]
+            return account.id, account.state.val.model_dump()
 
         connected_accounts = self.client.connected_accounts.list(
             toolkit_slugs=[self.toolkit],

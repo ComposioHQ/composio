@@ -287,34 +287,69 @@ def test_tools_execute_e2e_strips_user_id_through_full_stack(
 
 
 @pytest.fixture
-def mock_http_client_with_retrieve(mock_http_client: MagicMock) -> MagicMock:
-    """``mock_http_client`` plus a pinned ``retrieve(nanoid=...)`` response.
+def mock_http_client_with_explicit_account(mock_http_client: MagicMock) -> MagicMock:
+    """``mock_http_client`` extended for the explicit-id resolver path.
 
-    The list-fallback account also gets a pinned ``id`` so tests can tell
-    which resolution path produced the partial-bound id.
+    The resolver list-filters by ``(toolkit, user, connected_account_ids)``
+    when an explicit id is provided — the side_effect routes:
+
+    * ``connected_account_ids=["ca_explicit"]`` → returns ``[ca_explicit]``
+      (server-side authorized: id belongs to this toolkit + user).
+    * ``connected_account_ids=["ca_attacker"]`` → returns ``[]``
+      (server-side unauthorized: id outside the trusted envelope).
+    * No ``connected_account_ids`` filter → falls back to the existing
+      "most recently created" account (``ca_fallback``).
+
+    Lets tests pin both the auth-context fix and the CWE-639 boundary.
     """
-    state = MagicMock()
-    state.val.model_dump.return_value = {"access_token": "explicit-token"}
+    explicit_state = MagicMock()
+    explicit_state.val.model_dump.return_value = {"access_token": "explicit-token"}
 
     explicit_account = MagicMock()
     explicit_account.id = "ca_explicit"
-    explicit_account.state = state
+    explicit_account.state = explicit_state
 
-    mock_http_client.connected_accounts.retrieve.return_value = explicit_account
-    mock_http_client.connected_accounts.list.return_value.items[0].id = "ca_fallback"
+    fallback_response = mock_http_client.connected_accounts.list.return_value
+    fallback_response.items[0].id = "ca_fallback"
+
+    explicit_response = MagicMock()
+    explicit_response.items = [explicit_account]
+
+    empty_response = MagicMock()
+    empty_response.items = []
+
+    def list_side_effect(
+        *,
+        toolkit_slugs=None,
+        user_ids=None,
+        connected_account_ids=None,
+        **_,
+    ):
+        if connected_account_ids is None:
+            return fallback_response
+        if (
+            connected_account_ids == ["ca_explicit"]
+            and toolkit_slugs == ["github"]
+            and user_ids == ["trusted-user"]
+        ):
+            return explicit_response
+        return empty_response
+
+    mock_http_client.connected_accounts.list.side_effect = list_side_effect
     return mock_http_client
 
 
-def test_execute_with_connected_account_id_calls_retrieve_not_list(
-    mock_http_client_with_retrieve: MagicMock,
+def test_execute_with_connected_account_id_filters_list_by_envelope(
+    mock_http_client_with_explicit_account: MagicMock,
     custom_tools: CustomTools,
     github_tool: CustomTool,
 ) -> None:
-    """An explicit ``connected_account_id`` MUST hit ``retrieve(nanoid=...)``.
+    """An explicit ``connected_account_id`` MUST be list-filtered by ``(toolkit, user, id)``.
 
-    Pins that the explicit id wins over the "most recently created
-    connection for (toolkit, user)" fallback heuristic — the user
-    asked for a specific account, not whatever happens to sort first.
+    Pins that the explicit id is server-side bound to the trusted envelope
+    so an upstream caller forwarding another tenant's id can't grant
+    cross-tenant credential access (CWE-639). Also pins that the explicit
+    path overrides the "most recently created" fallback.
     """
     result = custom_tools.execute(
         slug=github_tool.slug,
@@ -323,15 +358,45 @@ def test_execute_with_connected_account_id_calls_retrieve_not_list(
         connected_account_id="ca_explicit",
     )
 
-    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
-        nanoid="ca_explicit",
+    mock_http_client_with_explicit_account.connected_accounts.list.assert_called_once_with(
+        toolkit_slugs=["github"],
+        user_ids=["trusted-user"],
+        connected_account_ids=["ca_explicit"],
     )
-    mock_http_client_with_retrieve.connected_accounts.list.assert_not_called()
+    mock_http_client_with_explicit_account.connected_accounts.retrieve.assert_not_called()
     assert result == {"issue_number": 7, "token": "explicit-token"}
 
 
+def test_explicit_connected_account_id_outside_envelope_raises(
+    mock_http_client_with_explicit_account: MagicMock,
+    custom_tools: CustomTools,
+    github_tool: CustomTool,
+) -> None:
+    """An explicit id outside the trusted ``(toolkit, user)`` envelope MUST raise.
+
+    Pins the CWE-639 boundary: passing an id that does not belong to the
+    trusted user/toolkit cannot return credentials. The list call returns
+    no items because the server-side filter rejects the id, and the SDK
+    raises rather than running with the wrong credentials.
+
+    Without this guard, an upstream caller forwarding an attacker-influenced
+    id (e.g., from prompt injection tracked at a different layer) could
+    silently use another tenant's OAuth tokens.
+    """
+    with pytest.raises(ValueError, match="ca_attacker"):
+        custom_tools.execute(
+            slug=github_tool.slug,
+            request={"issue_number": 1},
+            user_id="trusted-user",
+            connected_account_id="ca_attacker",
+        )
+
+    # No proxy call attempted — bail out happens before f() is invoked.
+    mock_http_client_with_explicit_account.tools.proxy.assert_not_called()
+
+
 def test_execute_request_partial_binds_resolved_account_id(
-    mock_http_client_with_retrieve: MagicMock,
+    mock_http_client_with_explicit_account: MagicMock,
 ) -> None:
     """``execute_request`` MUST pre-bind the resolved account id.
 
@@ -348,9 +413,11 @@ def test_execute_request_partial_binds_resolved_account_id(
         return {"ok": True}
 
     tool = CustomTool(
-        f=proxy_tool, client=mock_http_client_with_retrieve, toolkit="github"
+        f=proxy_tool,
+        client=mock_http_client_with_explicit_account,
+        toolkit="github",
     )
-    tools = CustomTools(client=mock_http_client_with_retrieve)
+    tools = CustomTools(client=mock_http_client_with_explicit_account)
     tools.custom_tools_registry[tool.slug] = tool
 
     tools.execute(
@@ -360,7 +427,7 @@ def test_execute_request_partial_binds_resolved_account_id(
         connected_account_id="ca_explicit",
     )
 
-    mock_http_client_with_retrieve.tools.proxy.assert_called_once_with(
+    mock_http_client_with_explicit_account.tools.proxy.assert_called_once_with(
         endpoint="/api/x",
         method="GET",
         connected_account_id="ca_explicit",
@@ -369,7 +436,7 @@ def test_execute_request_partial_binds_resolved_account_id(
 
 
 def test_execute_request_partial_binds_listed_account_on_fallback(
-    mock_http_client_with_retrieve: MagicMock,
+    mock_http_client_with_explicit_account: MagicMock,
 ) -> None:
     """On the list-fallback path, ``execute_request`` MUST still bind an id.
 
@@ -384,9 +451,11 @@ def test_execute_request_partial_binds_listed_account_on_fallback(
         return {"ok": True}
 
     tool = CustomTool(
-        f=proxy_tool, client=mock_http_client_with_retrieve, toolkit="github"
+        f=proxy_tool,
+        client=mock_http_client_with_explicit_account,
+        toolkit="github",
     )
-    tools = CustomTools(client=mock_http_client_with_retrieve)
+    tools = CustomTools(client=mock_http_client_with_explicit_account)
     tools.custom_tools_registry[tool.slug] = tool
 
     tools.execute(
@@ -395,8 +464,12 @@ def test_execute_request_partial_binds_listed_account_on_fallback(
         user_id="trusted-user",
     )
 
-    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_not_called()
-    mock_http_client_with_retrieve.tools.proxy.assert_called_once_with(
+    # No connected_account_ids filter — fallback path
+    mock_http_client_with_explicit_account.connected_accounts.list.assert_called_once_with(
+        toolkit_slugs=["github"],
+        user_ids=["trusted-user"],
+    )
+    mock_http_client_with_explicit_account.tools.proxy.assert_called_once_with(
         endpoint="/api/y",
         method="GET",
         connected_account_id="ca_fallback",
@@ -404,7 +477,7 @@ def test_execute_request_partial_binds_listed_account_on_fallback(
 
 
 def test_explicit_connected_account_id_wins_over_smuggled_one(
-    mock_http_client_with_retrieve: MagicMock,
+    mock_http_client_with_explicit_account: MagicMock,
     custom_tools: CustomTools,
     github_tool: CustomTool,
 ) -> None:
@@ -413,7 +486,8 @@ def test_explicit_connected_account_id_wins_over_smuggled_one(
     The allowlist drops ``connected_account_id`` from the LLM-supplied
     ``request`` (existing SEC-365 contract); the explicit parameter on
     ``CustomTools.execute`` is the only way to influence which account
-    is used. This pins both halves.
+    is used. The list filter MUST receive the trusted id, never the
+    smuggled one.
     """
     custom_tools.execute(
         slug=github_tool.slug,
@@ -422,13 +496,15 @@ def test_explicit_connected_account_id_wins_over_smuggled_one(
         connected_account_id="ca_explicit",
     )
 
-    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
-        nanoid="ca_explicit",
+    mock_http_client_with_explicit_account.connected_accounts.list.assert_called_once_with(
+        toolkit_slugs=["github"],
+        user_ids=["trusted-user"],
+        connected_account_ids=["ca_explicit"],
     )
 
 
 def test_tools_execute_e2e_forwards_connected_account_id(
-    mock_http_client_with_retrieve: MagicMock,
+    mock_http_client_with_explicit_account: MagicMock,
     custom_tools: CustomTools,
     github_tool: CustomTool,
 ) -> None:
@@ -443,7 +519,7 @@ def test_tools_execute_e2e_forwards_connected_account_id(
     provider = MagicMock()
     provider.name = "test"
 
-    tools = Tools(client=mock_http_client_with_retrieve, provider=provider)
+    tools = Tools(client=mock_http_client_with_explicit_account, provider=provider)
     tools._custom_tools = custom_tools
 
     response = tools.execute(
@@ -455,19 +531,23 @@ def test_tools_execute_e2e_forwards_connected_account_id(
 
     assert response["successful"] is True
     assert response["data"]["token"] == "explicit-token"
-    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
-        nanoid="ca_explicit",
+    mock_http_client_with_explicit_account.connected_accounts.list.assert_called_once_with(
+        toolkit_slugs=["github"],
+        user_ids=["trusted-user"],
+        connected_account_ids=["ca_explicit"],
     )
 
 
 def test_call_pops_connected_account_id_before_request_validation(
-    mock_http_client_with_retrieve: MagicMock,
+    mock_http_client_with_explicit_account: MagicMock,
 ) -> None:
     """``CustomTool.__call__`` MUST extract ``connected_account_id`` from kwargs.
 
     Mirrors how ``__call__`` already refuses ``user_id``: auth-path keys
     are structurally separate from request kwargs and never reach the
-    user's tool function as a request field.
+    user's tool function as a request field. The ``__call__`` shortcut
+    uses ``user_id="default"``, so the resolver hits the "default" + id
+    envelope branch in the side_effect — pinned via the empty fallback.
     """
     captured: dict = {}
 
@@ -477,11 +557,23 @@ def test_call_pops_connected_account_id_before_request_validation(
         return {"ok": True}
 
     tool = CustomTool(
-        f=echo_tool, client=mock_http_client_with_retrieve, toolkit="github"
+        f=echo_tool,
+        client=mock_http_client_with_explicit_account,
+        toolkit="github",
     )
-    tool(issue_number=1, connected_account_id="ca_explicit")
 
-    assert captured["fields"] == {"issue_number": 1}
-    mock_http_client_with_retrieve.connected_accounts.retrieve.assert_called_once_with(
-        nanoid="ca_explicit",
+    # Default user_id "default" + ca_explicit is outside the trusted envelope
+    # in the fixture (which only authorizes ("github", "trusted-user")), so
+    # this raises — but ONLY because connected_account_id reached the resolver
+    # as a structurally separate parameter rather than landing in request_kwargs.
+    with pytest.raises(ValueError, match="ca_explicit"):
+        tool(issue_number=1, connected_account_id="ca_explicit")
+
+    # Resolver was called with the trusted parameter, not via request_kwargs.
+    mock_http_client_with_explicit_account.connected_accounts.list.assert_called_once_with(
+        toolkit_slugs=["github"],
+        user_ids=["default"],
+        connected_account_ids=["ca_explicit"],
     )
+    # The user's tool function was never invoked (resolver raised first).
+    assert captured == {}
