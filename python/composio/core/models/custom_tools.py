@@ -30,9 +30,10 @@ import functools
 import inspect
 import typing as t
 
+from composio_client import Omit, omit
 from pydantic import BaseModel
 
-from composio.client import HttpClient, NotGiven
+from composio.client import HttpClient
 from composio.client.types import (
     Tool,
     tool_list_response,
@@ -45,15 +46,22 @@ from composio.exceptions import (
 
 
 class ExecuteRequestFn(t.Protocol):
+    """Proxy callable handed to custom tools.
+
+    ``connected_account_id`` is intentionally absent. The SDK binds the
+    proxy call to the same connected account that supplied
+    ``auth_credentials``, so the proxy and credentials always address the
+    same trusted account; a caller-supplied ``connected_account_id`` would
+    introduce a credential/identity mismatch and is rejected with
+    ``TypeError`` at the call site.
+    """
+
     def __call__(
         self,
         endpoint: str,
         method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
-        body: t.Dict | NotGiven = HttpClient.not_given,
-        connected_account_id: str | NotGiven = HttpClient.not_given,
-        parameters: (
-            t.Iterable[tool_proxy_params.Parameter] | NotGiven
-        ) = HttpClient.not_given,
+        body: t.Dict | Omit = omit,
+        parameters: t.Iterable[tool_proxy_params.Parameter] | Omit = omit,
     ) -> tool_proxy_response.ToolProxyResponse: ...
 
 
@@ -232,10 +240,30 @@ class CustomTool:
             user_id=user_id,
             connected_account_id=connected_account_id,
         )
-        execute_request = functools.partial(
-            self.client.tools.proxy,
-            connected_account_id=account_id,
-        )
+
+        # Bind the proxy to the resolved account via a wrapper rather than
+        # ``functools.partial``: ``partial`` lets a caller-supplied keyword
+        # override the pre-bound value, so a tool that does
+        # ``execute_request(connected_account_id="ca_other")`` could run
+        # the proxy under one account while ``auth_credentials`` came
+        # from another (CWE-639). The wrapper omits ``connected_account_id``
+        # from its signature so any attempt to override it raises TypeError.
+        client = self.client
+
+        def execute_request(
+            endpoint: str,
+            method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+            body: t.Dict | Omit = omit,
+            parameters: t.Iterable[tool_proxy_params.Parameter] | Omit = omit,
+        ) -> tool_proxy_response.ToolProxyResponse:
+            return client.tools.proxy(
+                endpoint=endpoint,
+                method=method,
+                body=body,
+                parameters=parameters,
+                connected_account_id=account_id,
+            )
+
         return t.cast(CustomToolWithProxyProtocol, self.f)(
             request=request,
             execute_request=t.cast(ExecuteRequestFn, execute_request),

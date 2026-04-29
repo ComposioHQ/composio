@@ -367,6 +367,54 @@ def test_execute_with_connected_account_id_filters_list_by_envelope(
     assert result == {"issue_number": 7, "token": "explicit-token"}
 
 
+def test_execute_request_rejects_caller_supplied_connected_account_id(
+    mock_http_client_with_explicit_account: MagicMock,
+) -> None:
+    """``execute_request`` MUST refuse a caller-supplied ``connected_account_id``.
+
+    ``functools.partial`` would let a caller-supplied keyword override the
+    SDK-bound id while ``auth_credentials`` still came from the trusted
+    account — that would re-introduce a credential/identity mismatch
+    (CWE-639) right at the proxy call site. The wrapper omits
+    ``connected_account_id`` from its signature so any attempt to set it
+    raises ``TypeError`` rather than silently swapping the account.
+    """
+    captured: dict = {}
+
+    def proxy_tool(request: _IssueInput, execute_request, auth_credentials):
+        """Try to override the SDK-bound account id from inside the tool."""
+        try:
+            execute_request(
+                endpoint="/api/x",
+                method="GET",
+                connected_account_id="ca_other",  # type: ignore[call-arg]
+            )
+        except TypeError as exc:
+            captured["error"] = str(exc)
+            return {"rejected": True}
+        return {"rejected": False}
+
+    tool = CustomTool(
+        f=proxy_tool,
+        client=mock_http_client_with_explicit_account,
+        toolkit="github",
+    )
+    tools = CustomTools(client=mock_http_client_with_explicit_account)
+    tools.custom_tools_registry[tool.slug] = tool
+
+    result = tools.execute(
+        slug=tool.slug,
+        request={"issue_number": 1},
+        user_id="trusted-user",
+        connected_account_id="ca_explicit",
+    )
+
+    assert result == {"rejected": True}
+    assert "connected_account_id" in captured["error"]
+    # Proxy was NOT called — wrapper rejected the override before reaching it.
+    mock_http_client_with_explicit_account.tools.proxy.assert_not_called()
+
+
 def test_explicit_connected_account_id_outside_envelope_raises(
     mock_http_client_with_explicit_account: MagicMock,
     custom_tools: CustomTools,
@@ -427,11 +475,13 @@ def test_execute_request_partial_binds_resolved_account_id(
         connected_account_id="ca_explicit",
     )
 
-    mock_http_client_with_explicit_account.tools.proxy.assert_called_once_with(
-        endpoint="/api/x",
-        method="GET",
-        connected_account_id="ca_explicit",
-    )
+    # The wrapper forwards body/parameters as the Stainless ``NOT_GIVEN``
+    # sentinel when the user's tool omits them — same semantics as if the
+    # user passed the bare ``client.tools.proxy``, plus the SDK-bound id.
+    proxy_call = mock_http_client_with_explicit_account.tools.proxy.call_args
+    assert proxy_call.kwargs["endpoint"] == "/api/x"
+    assert proxy_call.kwargs["method"] == "GET"
+    assert proxy_call.kwargs["connected_account_id"] == "ca_explicit"
     assert captured["credentials"] == {"access_token": "explicit-token"}
 
 
@@ -469,11 +519,10 @@ def test_execute_request_partial_binds_listed_account_on_fallback(
         toolkit_slugs=["github"],
         user_ids=["trusted-user"],
     )
-    mock_http_client_with_explicit_account.tools.proxy.assert_called_once_with(
-        endpoint="/api/y",
-        method="GET",
-        connected_account_id="ca_fallback",
-    )
+    proxy_call = mock_http_client_with_explicit_account.tools.proxy.call_args
+    assert proxy_call.kwargs["endpoint"] == "/api/y"
+    assert proxy_call.kwargs["method"] == "GET"
+    assert proxy_call.kwargs["connected_account_id"] == "ca_fallback"
 
 
 def test_explicit_connected_account_id_wins_over_smuggled_one(
