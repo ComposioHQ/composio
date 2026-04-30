@@ -37,10 +37,6 @@ from composio.core.models.custom_tool_types import (
 )
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
-from composio.core.models.tool_router_session_api import (
-    DEFAULT_MANAGE_CONNECTIONS_ENABLED,
-    DEFAULT_WORKBENCH_ENABLED,
-)
 from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -98,8 +94,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
         preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
-        manage_connections_enabled: bool = DEFAULT_MANAGE_CONNECTIONS_ENABLED,
-        workbench_enabled: bool = DEFAULT_WORKBENCH_ENABLED,
+        manage_connections_enabled: t.Optional[bool] = None,
+        workbench_enabled: t.Optional[bool] = None,
     ) -> None:
         self._client = client
         self._provider = provider
@@ -126,11 +122,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 custom_tools_map=custom_tools_map,
             )
 
-    def manage_connections_enabled(self) -> bool:
+    def manage_connections_enabled(self) -> t.Optional[bool]:
         """Return whether connection-management helper tools are exposed."""
         return self._manage_connections_enabled
 
-    def workbench_enabled(self) -> bool:
+    def workbench_enabled(self) -> t.Optional[bool]:
         """Return whether workbench helper tools are exposed."""
         return self._workbench_enabled
 

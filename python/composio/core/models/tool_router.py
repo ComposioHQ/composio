@@ -32,8 +32,7 @@ from composio.core.models.tool_router_session import (
 )
 from composio.core.models.tool_router_session_api import (
     create_tool_router_session_v31,
-    resolve_manage_connections_enabled,
-    resolve_workbench_enabled,
+    _get_field,
 )
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
@@ -887,10 +886,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             preload=ToolRouterSessionPreloadConfig(
                 tools=list(session.config.preload.tools)
             ),
-            manage_connections_enabled=resolve_manage_connections_enabled(
-                session.config
+            manage_connections_enabled=_get_field(
+                _get_field(session.config, "manage_connections"), "enabled"
             ),
-            workbench_enabled=resolve_workbench_enabled(session.config),
+            workbench_enabled=_get_field(
+                _get_field(session.config, "workbench"), "enable"
+            ),
         )
 
     def use(self, session_id: str) -> ToolRouterSession[TTool, TToolCollection]:
@@ -948,10 +949,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             preload=ToolRouterSessionPreloadConfig(
                 tools=list(session.config.preload.tools)
             ),
-            manage_connections_enabled=resolve_manage_connections_enabled(
-                session.config
+            manage_connections_enabled=_get_field(
+                _get_field(session.config, "manage_connections"), "enabled"
             ),
-            workbench_enabled=resolve_workbench_enabled(session.config),
+            workbench_enabled=_get_field(
+                _get_field(session.config, "workbench"), "enable"
+            ),
         )
 
 

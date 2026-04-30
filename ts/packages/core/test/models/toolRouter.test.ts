@@ -348,6 +348,18 @@ describe('ToolRouter', () => {
         expect(session.mcp.type).toBe('http');
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       });
+
+      it('should not synthesize helper enabled defaults when response omits them', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce({
+          ...mockSessionCreateResponse,
+          config: { preload: { tools: [] } },
+        });
+
+        const session = await toolRouter.create(userId);
+
+        expect(session.manageConnectionsEnabled()).toBeUndefined();
+        expect(session.workbenchEnabled()).toBeUndefined();
+      });
     });
 
     describe('toolkits configuration', () => {

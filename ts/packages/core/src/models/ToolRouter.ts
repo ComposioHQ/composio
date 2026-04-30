@@ -38,11 +38,9 @@ import {
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import {
   createToolRouterSessionV31,
-  resolveManageConnectionsEnabled,
-  resolveSessionPreset,
-  resolveWorkbenchEnabled,
   SessionCreateParamsV31,
   SessionCreateResponseV31,
+  type SessionConfigWithPreset,
 } from '../lib/toolRouterSessionApi';
 import {
   transformToolRouterTagsParams,
@@ -63,13 +61,14 @@ import type { CustomToolsMap } from '../types/customTool.types';
 function getSessionMetadata(
   session: SessionCreateResponse | SessionRetrieveResponse | SessionCreateResponseV31
 ) {
+  const config = session.config as SessionConfigWithPreset;
   const metadata: ToolRouterSessionMetadata = {
-    preload: session.config.preload,
+    preload: config.preload,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
-    sessionPreset: resolveSessionPreset(session.config),
-    manageConnectionsEnabled: resolveManageConnectionsEnabled(session.config),
-    workbenchEnabled: resolveWorkbenchEnabled(session.config),
+    sessionPreset: config.session_preset ?? undefined,
+    manageConnectionsEnabled: config.manage_connections?.enabled,
+    workbenchEnabled: config.workbench?.enable,
   };
   return metadata;
 }

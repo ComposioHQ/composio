@@ -8,10 +8,11 @@ import type {
 import { SessionPreset } from '../types/toolRouter.types';
 
 export const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
-export const DEFAULT_MANAGE_CONNECTIONS_ENABLED = true;
-export const DEFAULT_WORKBENCH_ENABLED = true;
 
-type SessionConfigWithPreset = (SessionCreateResponse.Config | SessionRetrieveResponse.Config) & {
+export type SessionConfigWithPreset = (
+  | SessionCreateResponse.Config
+  | SessionRetrieveResponse.Config
+) & {
   session_preset?: SessionPreset | null;
 };
 
@@ -29,23 +30,6 @@ export type SessionToolsResponseV31 = SessionToolsResponse & {
 };
 
 const encodePathSegment = (value: string): string => encodeURIComponent(value);
-
-const getConfigPreset = (config?: SessionConfigWithPreset): SessionPreset | undefined => {
-  return config?.session_preset === SessionPreset.DirectTools
-    ? SessionPreset.DirectTools
-    : undefined;
-};
-
-export const resolveSessionPreset = (config?: SessionConfigWithPreset): SessionPreset | undefined =>
-  getConfigPreset(config);
-
-export const resolveManageConnectionsEnabled = (config?: SessionConfigWithPreset): boolean => {
-  return config?.manage_connections?.enabled ?? DEFAULT_MANAGE_CONNECTIONS_ENABLED;
-};
-
-export const resolveWorkbenchEnabled = (config?: SessionConfigWithPreset): boolean => {
-  return config?.workbench?.enable ?? DEFAULT_WORKBENCH_ENABLED;
-};
 
 export const createToolRouterSessionV31 = (
   client: ComposioClient,

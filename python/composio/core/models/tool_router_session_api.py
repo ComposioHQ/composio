@@ -15,8 +15,6 @@ from composio_client.types.tool_router.session_tools_response import (
 from composio.client import HttpClient
 
 DIRECT_TOOLS_PRESET = "direct_tools"
-DEFAULT_MANAGE_CONNECTIONS_ENABLED = True
-DEFAULT_WORKBENCH_ENABLED = True
 SESSION_TOOLS_PAGE_LIMIT = 500
 
 
@@ -39,24 +37,6 @@ def _get_field(value: t.Any, field: str) -> t.Any:
 def get_session_preset(config: t.Any) -> t.Optional[str]:
     preset = _get_field(config, "session_preset")
     return DIRECT_TOOLS_PRESET if preset == DIRECT_TOOLS_PRESET else None
-
-
-def resolve_manage_connections_enabled(config: t.Any) -> bool:
-    manage_connections = _get_field(config, "manage_connections")
-    explicit_value = _get_field(manage_connections, "enabled")
-
-    return (
-        DEFAULT_MANAGE_CONNECTIONS_ENABLED
-        if explicit_value is None
-        else bool(explicit_value)
-    )
-
-
-def resolve_workbench_enabled(config: t.Any) -> bool:
-    workbench = _get_field(config, "workbench")
-    explicit_value = _get_field(workbench, "enable")
-
-    return DEFAULT_WORKBENCH_ENABLED if explicit_value is None else bool(explicit_value)
 
 
 def create_tool_router_session_v31(

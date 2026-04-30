@@ -480,6 +480,17 @@ class TestToolRouter:
         )
         assert kwargs["manage_connections"]["enable_wait_for_connections"] is True
 
+    def test_create_does_not_synthesize_helper_defaults(self, tool_router, mock_client):
+        """Missing response helper fields remain unknown instead of defaulting in SDK."""
+        response = mock_client.tool_router.session.create.return_value
+        response.config.manage_connections = None
+        response.config.workbench = None
+
+        session = tool_router.create(user_id="user_123")
+
+        assert session.manage_connections_enabled() is None
+        assert session.workbench_enabled() is None
+
     def test_create_direct_tools_session_uses_v31_and_enum(
         self, tool_router, mock_client
     ):
