@@ -58,6 +58,7 @@ import type { SessionExecuteParams } from '@composio/client/resources/tool-route
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
+import { listAllToolRouterSessionToolsV31 } from '../lib/toolRouterSessionApi';
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -487,8 +488,8 @@ export class Tools<
     sessionId: string,
     options?: SchemaModifierOptions
   ): Promise<ToolList> {
-    const tools = await this.client.toolRouter.session.tools(sessionId);
-    let modifiedTools = tools.items.map(tool => this.transformToolCases(tool));
+    const tools = await listAllToolRouterSessionToolsV31(this.client, sessionId);
+    let modifiedTools = tools.map(tool => this.transformToolCases(tool));
     // apply local modifiers if they are provided
     if (options?.modifySchema) {
       const modifier = options.modifySchema;

@@ -69,23 +69,39 @@ async function createSession(): Promise<string> {
 async function fetchMetaTools(sessionId: string): Promise<any[]> {
   console.log('Fetching meta tools with schemas...');
 
-  const response = await fetch(`${API_BASE}/tool_router/session/${sessionId}/tools`, {
-    headers: {
-      'x-api-key': API_KEY!,
-    },
-  });
+  const tools: any[] = [];
+  let cursor: string | null = null;
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Failed to fetch meta tools: ${response.status} ${response.statusText}\n${body}`);
-  }
+  do {
+    const url = new URL(`${API_BASE}/tool_router/session/${sessionId}/tools`);
+    url.searchParams.set('limit', '500');
+    if (cursor) {
+      url.searchParams.set('cursor', cursor);
+    }
 
-  const data = await response.json();
-  const tools = data.items || data;
+    const response = await fetch(url, {
+      headers: {
+        'x-api-key': API_KEY!,
+      },
+    });
 
-  if (!Array.isArray(tools)) {
-    throw new Error('Expected array of tools in response');
-  }
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(
+        `Failed to fetch meta tools: ${response.status} ${response.statusText}\n${body}`
+      );
+    }
+
+    const data = await response.json();
+    const pageItems = data.items || data;
+
+    if (!Array.isArray(pageItems)) {
+      throw new Error('Expected array of tools in response');
+    }
+
+    tools.push(...pageItems);
+    cursor = data.next_cursor || null;
+  } while (cursor);
 
   console.log(`  Found ${tools.length} meta tools`);
   return tools;
@@ -97,7 +113,8 @@ function transformTool(raw: any) {
   return {
     slug,
     name: raw.name || '',
-    displayName: raw.name?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || slug,
+    displayName:
+      raw.name?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || slug,
     description: raw.description || '',
     tags: raw.tags || [],
     toolkit: raw.toolkit || null,
@@ -203,7 +220,9 @@ async function main() {
 
   // 1. Write JSON data
   await writeFile(join(DATA_DIR, 'meta-tools.json'), JSON.stringify(metaTools, null, 2));
-  console.log(`\nWrote public/data/meta-tools.json (~${Math.round(JSON.stringify(metaTools).length / 1024)}KB)`);
+  console.log(
+    `\nWrote public/data/meta-tools.json (~${Math.round(JSON.stringify(metaTools).length / 1024)}KB)`
+  );
 
   // 2. Clean old generated MDX files and regenerate
   await cleanGeneratedMdx();
@@ -227,7 +246,7 @@ async function main() {
   console.log(`Tools: ${metaTools.map(t => t.slug).join(', ')}`);
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

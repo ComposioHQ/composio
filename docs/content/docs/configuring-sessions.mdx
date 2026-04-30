@@ -27,6 +27,40 @@ By default, a session has access to **all toolkits** in the Composio catalog. Yo
 
 For TypeScript sessions, you can also attach local experimental custom tools and custom toolkits that run in-process with Composio tools. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
 
+## Direct tools preset
+
+Most sessions expose helper tools for search, connection management, and workbench use. If you already know the exact app surface you want, use the direct tools preset to expose the allowed app tools directly:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import SessionPreset
+
+session = composio.create(
+user_id="user_123",
+toolkits=["gmail"],
+session_preset=SessionPreset.DIRECT_TOOLS,
+)
+
+````
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, SessionPreset } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  sessionPreset: SessionPreset.DirectTools,
+});
+````
+
+</Tab>
+</Tabs>
+
+`SessionPreset.DirectTools` / `SessionPreset.DIRECT_TOOLS` requires an explicit allowlist such as `toolkits: ["gmail"]` or enabled tool slugs. It hides helper/meta tools by default. `manageConnections.enable` and `workbench.enable` still default to enabled for normal sessions; with the direct tools preset, set them to `true` explicitly when you want those helper groups included.
+
 ## Enabling toolkits
 
 Restrict the session to specific toolkits:
@@ -41,11 +75,13 @@ session = composio.create(
 )
 
 # Using object format with enable key
+
 session = composio.create(
-    user_id="user_123",
-    toolkits={"enable": ["github", "gmail", "slack"]}
+user_id="user_123",
+toolkits={"enable": ["github", "gmail", "slack"]}
 )
-```
+
+````
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -62,7 +98,8 @@ const session = await composio.create("user_123", {
 const session2 = await composio.create("user_123", {
   toolkits: { enable: ["github", "gmail", "slack"] },
 });
-```
+````
+
 </Tab>
 </Tabs>
 
@@ -201,6 +238,7 @@ const session = await composio.create("user_123", {
 </Tabs>
 
 When disabled:
+
 - `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` are excluded from the session
 - Workbench-related system prompt lines are stripped
 - Direct workbench calls are rejected with a 400 error
@@ -266,7 +304,8 @@ connection_request = session.authorize("github")
 print(connection_request.redirect_url)
 
 connected_account = connection_request.wait_for_connection()
-```
+
+````
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -282,7 +321,8 @@ const connectionRequest = await session.authorize("github", {
 console.log(connectionRequest.redirectUrl);
 
 const connectedAccount = await connectionRequest.waitForConnection();
-```
+````
+
 </Tab>
 </Tabs>
 
@@ -298,9 +338,10 @@ List available toolkits and their connection status. You can use this to build a
 toolkits = session.toolkits()
 
 for toolkit in toolkits.items:
-    status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
-    print(f"{toolkit.name}: {status}")
-```
+status = toolkit.connection.connected_account.id if toolkit.connection.is_active else "Not connected"
+print(f"{toolkit.name}: {status}")
+
+````
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -314,7 +355,8 @@ const toolkits = await session.toolkits();
 toolkits.items.forEach((toolkit) => {
   console.log(`${toolkit.name}: ${toolkit.connection?.connectedAccount?.id ?? "Not connected"}`);
 });
-```
+````
+
 </Tab>
 </Tabs>
 
@@ -323,8 +365,28 @@ Returns the first 20 toolkits by default.
 ## What to read next
 
 <Cards>
-  <Card icon={<MessageCircle />} title="In-chat authentication" href="/docs/authenticating-users/in-chat-authentication" description="Let the agent prompt users to connect accounts during conversation" />
-  <Card icon={<ShieldCheck />} title="Manual authentication" href="/docs/authenticating-users/manually-authenticating" description="Pre-authenticate users before chat using Connect Links and session.authorize()" />
-  <Card icon={<Wrench />} title="Enable & disable toolkits" href="/docs/toolkits/enable-and-disable-toolkits" description="Control which toolkits and individual tools are available in sessions" />
-  <Card icon={<Palette />} title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Use your own OAuth apps so users see your branding on consent screens" />
+  <Card
+    icon={<MessageCircle />}
+    title="In-chat authentication"
+    href="/docs/authenticating-users/in-chat-authentication"
+    description="Let the agent prompt users to connect accounts during conversation"
+  />
+  <Card
+    icon={<ShieldCheck />}
+    title="Manual authentication"
+    href="/docs/authenticating-users/manually-authenticating"
+    description="Pre-authenticate users before chat using Connect Links and session.authorize()"
+  />
+  <Card
+    icon={<Wrench />}
+    title="Enable & disable toolkits"
+    href="/docs/toolkits/enable-and-disable-toolkits"
+    description="Control which toolkits and individual tools are available in sessions"
+  />
+  <Card
+    icon={<Palette />}
+    title="White-labeling authentication"
+    href="/docs/white-labeling-authentication"
+    description="Use your own OAuth apps so users see your branding on consent screens"
+  />
 </Cards>

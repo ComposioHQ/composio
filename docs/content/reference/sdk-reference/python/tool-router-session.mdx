@@ -1,21 +1,49 @@
 ---
 title: ToolRouterSession
-description: "Tool router session containing session information and methods.  Generic Parameters: TTool: The individual tool type returned by the provider. TToo..."
+description: 'Tool router session containing session information and methods.  Generic Parameters: TTool: The individual tool type returned by the provider. TToo...'
 ---
 
 ## Properties
 
-| Name | Type |
-|------|------|
-| `session_id` | `str` |
-| `mcp` | `Any` |
+| Name           | Type                              |
+| -------------- | --------------------------------- |
+| `session_id`   | `str`                             |
+| `mcp`          | `Any`                             |
 | `experimental` | `'ToolRouterSessionExperimental'` |
 
 ## Methods
 
+### manage_connections_enabled()
+
+Return whether connection-management helper tools are exposed.
+
+```python
+def manage_connections_enabled() -> bool
+```
+
+**Returns**
+
+`bool`
+
+---
+
+### workbench_enabled()
+
+Return whether workbench helper tools are exposed.
+
+```python
+def workbench_enabled() -> bool
+```
+
+**Returns**
+
+`bool`
+
+---
+
 ### tools()
 
-Get provider-wrapped tools for execution with your AI framework.  Returns tools configured for this session, wrapped in the format expected by your AI provider (OpenAI, Anthropic, LangChain, etc.).  When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL is intercepted: local tools are executed in-process, remote tools are sent to the backend.
+Get provider-wrapped tools for execution with your AI framework. Returns tools configured for this session, wrapped in the format expected by your AI provider (OpenAI, Anthropic, LangChain, etc.). When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL is intercepted: local tools are executed in-process, remote tools are sent to the backend.
 
 ```python
 def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
@@ -23,8 +51,8 @@ def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
 
 **Parameters**
 
-| Name | Type |
-|------|------|
+| Name         | Type                  |
+| ------------ | --------------------- |
 | `modifiers?` | `'Modifiers' \| None` |
 
 **Returns**
@@ -35,7 +63,7 @@ def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
 
 ### authorize()
 
-Authorize a toolkit for the user and get a connection request.  Initiates the OAuth flow and returns a ConnectionRequest with redirect URL.
+Authorize a toolkit for the user and get a connection request. Initiates the OAuth flow and returns a ConnectionRequest with redirect URL.
 
 ```python
 def authorize(toolkit: str, callback_url: str | None = ..., alias: str | None = ...) -> ConnectionRequest
@@ -43,11 +71,11 @@ def authorize(toolkit: str, callback_url: str | None = ..., alias: str | None = 
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit` | `str` |
+| Name            | Type          |
+| --------------- | ------------- |
+| `toolkit`       | `str`         |
 | `callback_url?` | `str \| None` |
-| `alias?` | `str \| None` |
+| `alias?`        | `str \| None` |
 
 **Returns**
 
@@ -65,13 +93,13 @@ def toolkits(toolkits: List[str | None] = ..., next_cursor: str | None = ..., li
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkits?` | `List[str \| None]` |
-| `next_cursor?` | `str \| None` |
-| `limit?` | `int \| None` |
-| `is_connected?` | `bool \| None` |
-| `search?` | `str \| None` |
+| Name            | Type                |
+| --------------- | ------------------- |
+| `toolkits?`     | `List[str \| None]` |
+| `next_cursor?`  | `str \| None`       |
+| `limit?`        | `int \| None`       |
+| `is_connected?` | `bool \| None`      |
+| `search?`       | `str \| None`       |
 
 **Returns**
 
@@ -81,7 +109,7 @@ def toolkits(toolkits: List[str | None] = ..., next_cursor: str | None = ..., li
 
 ### search()
 
-Search for tools by semantic use case.  Returns relevant tools for the given query with schemas and guidance.
+Search for tools by semantic use case. Returns relevant tools for the given query with schemas and guidance.
 
 ```python
 def search(query: str, model: str | None = ...) -> SessionSearchResponse
@@ -89,9 +117,9 @@ def search(query: str, model: str | None = ...) -> SessionSearchResponse
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `query` | `str` |
+| Name     | Type          |
+| -------- | ------------- |
+| `query`  | `str`         |
 | `model?` | `str \| None` |
 
 **Returns**
@@ -102,7 +130,7 @@ def search(query: str, model: str | None = ...) -> SessionSearchResponse
 
 ### execute()
 
-Execute a tool within the session.  For custom tools, accepts the original slug (e.g. "GREP") or the full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process; remote tools are sent to the Composio backend.  Both paths return a ``SessionExecuteResponse`` with ``data``, ``error``, and ``log_id`` attributes.
+Execute a tool within the session. For custom tools, accepts the original slug (e.g. "GREP") or the full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process; remote tools are sent to the Composio backend. Both paths return a `SessionExecuteResponse` with `data`, `error`, and `log_id` attributes.
 
 ```python
 def execute(tool_slug: str, arguments: Dict[str, Any | None] = ...) -> SessionExecuteResponse
@@ -110,9 +138,9 @@ def execute(tool_slug: str, arguments: Dict[str, Any | None] = ...) -> SessionEx
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `tool_slug` | `str` |
+| Name         | Type                     |
+| ------------ | ------------------------ |
+| `tool_slug`  | `str`                    |
 | `arguments?` | `Dict[str, Any \| None]` |
 
 **Returns**
@@ -123,7 +151,7 @@ def execute(tool_slug: str, arguments: Dict[str, Any | None] = ...) -> SessionEx
 
 ### custom_tools()
 
-List all custom tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
+List all custom tools registered in this session. Returns tools with their final slugs, schemas, and resolved toolkit.
 
 ```python
 def custom_tools(toolkit: str | None = ...) -> List[RegisteredCustomTool]
@@ -131,8 +159,8 @@ def custom_tools(toolkit: str | None = ...) -> List[RegisteredCustomTool]
 
 **Parameters**
 
-| Name | Type |
-|------|------|
+| Name       | Type          |
+| ---------- | ------------- |
 | `toolkit?` | `str \| None` |
 
 **Returns**
@@ -143,7 +171,7 @@ def custom_tools(toolkit: str | None = ...) -> List[RegisteredCustomTool]
 
 ### custom_toolkits()
 
-List all custom toolkits registered in this session.  Returns toolkits with their tools showing final slugs.
+List all custom toolkits registered in this session. Returns toolkits with their tools showing final slugs.
 
 ```python
 def custom_toolkits() -> List[RegisteredCustomToolkit]
@@ -165,13 +193,13 @@ def proxy_execute(toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'P
 
 **Parameters**
 
-| Name | Type |
-|------|------|
-| `toolkit` | `str` |
-| `endpoint` | `str` |
-| `method` | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH']` |
-| `body?` | `Any` |
-| `parameters?` | `List[Dict[str, Any \| None]]` |
+| Name          | Type                                               |
+| ------------- | -------------------------------------------------- |
+| `toolkit`     | `str`                                              |
+| `endpoint`    | `str`                                              |
+| `method`      | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH']` |
+| `body?`       | `Any`                                              |
+| `parameters?` | `List[Dict[str, Any \| None]]`                     |
 
 **Returns**
 

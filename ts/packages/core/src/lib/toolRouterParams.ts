@@ -81,12 +81,9 @@ export const transformToolRouterTagsParams = (
 
 export const transformToolRouterManageConnectionsParams = (
   params?: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
-): SessionCreateParams.ManageConnections => {
+): SessionCreateParams.ManageConnections | undefined => {
   if (params === undefined) {
-    // Default case when params is undefined
-    return {
-      enable: true,
-    };
+    return undefined;
   }
 
   if (typeof params === 'boolean') {
@@ -105,7 +102,7 @@ export const transformToolRouterManageConnectionsParams = (
 
   const config = parsedResult.data;
   return {
-    enable: config.enable ?? true,
+    enable: config.enable,
     callback_url: config.callbackUrl,
     enable_wait_for_connections: config.waitForConnections,
   };
@@ -119,7 +116,7 @@ export const transformToolRouterWorkbenchParams = (
   }
 
   return {
-    enable: params.enable ?? true,
+    enable: params.enable,
     enable_proxy_execution: params.enableProxyExecution,
     auto_offload_threshold: params.autoOffloadThreshold,
     sandbox_size: params.sandboxSize,

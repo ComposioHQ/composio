@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from composio.core.models.tool_router import (
+    SessionPreset,
     ToolkitConnectionsDetails,
     ToolkitConnectionState,
     ToolRouter,
@@ -43,6 +44,8 @@ def mock_client():
 
     client.tool_router.session.create.return_value = mock_session_response
     client.tool_router.session.retrieve.return_value = mock_session_response
+    client.get.return_value = mock_session_response
+    client.post.return_value = mock_session_response
 
     # Mock link response
     mock_link_response = MagicMock()
@@ -119,6 +122,10 @@ class TestToolRouter:
 
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
+        assert (
+            "manage_connections"
+            not in mock_client.tool_router.session.create.call_args.kwargs
+        )
 
     def test_create_session_with_toolkits_list(self, tool_router, mock_client):
         """Test creating a session with toolkits as a list."""
@@ -473,6 +480,71 @@ class TestToolRouter:
         )
         assert kwargs["manage_connections"]["enable_wait_for_connections"] is True
 
+    def test_create_direct_tools_session_uses_v31_and_enum(
+        self, tool_router, mock_client
+    ):
+        """Direct-tools preset is serialized to v3.1 and inherits helper groups as disabled."""
+        response = mock_client.post.return_value
+        response.config.session_preset = "direct_tools"
+        response.config.manage_connections = {"enabled": False}
+        response.config.workbench = {"enable": False}
+
+        session = tool_router.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            session_preset=SessionPreset.DIRECT_TOOLS,
+        )
+
+        mock_client.tool_router.session.create.assert_not_called()
+        mock_client.post.assert_called_once()
+        assert (
+            mock_client.post.call_args.kwargs["cast_to"].__name__
+            == "SessionCreateResponse"
+        )
+        assert (
+            mock_client.post.call_args.kwargs["body"]["session_preset"]
+            == "direct_tools"
+        )
+        assert mock_client.post.call_args.kwargs["body"]["toolkits"] == {
+            "enable": ["gmail"]
+        }
+        assert "manage_connections" not in mock_client.post.call_args.kwargs["body"]
+        assert "workbench" not in mock_client.post.call_args.kwargs["body"]
+        assert session.manage_connections_enabled() is False
+        assert session.workbench_enabled() is False
+
+    def test_create_direct_tools_session_preserves_explicit_helper_opt_ins(
+        self, tool_router, mock_client
+    ):
+        """Explicit true opts helper groups back in for direct-tools sessions."""
+        response = mock_client.post.return_value
+        response.config.session_preset = "direct_tools"
+        response.config.manage_connections = {"enabled": True}
+        response.config.workbench = {"enable": True}
+
+        session = tool_router.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            session_preset=SessionPreset.DIRECT_TOOLS,
+            manage_connections=True,
+            workbench={"enable": True},
+        )
+
+        body = mock_client.post.call_args.kwargs["body"]
+        assert body["manage_connections"] == {"enable": True}
+        assert body["workbench"] == {"enable": True}
+        assert session.manage_connections_enabled() is True
+        assert session.workbench_enabled() is True
+
+    def test_create_rejects_raw_session_preset_string(self, tool_router):
+        """The public Python surface expects SessionPreset enum values."""
+        with pytest.raises(ValueError, match="SessionPreset enum value"):
+            tool_router.create(
+                user_id="user_123",
+                toolkits=["gmail"],
+                session_preset="direct_tools",  # type: ignore[arg-type]
+            )
+
     def test_create_session_with_auth_configs(self, tool_router, mock_client):
         """Test creating a session with auth configs."""
         session = tool_router.create(
@@ -510,7 +582,7 @@ class TestToolRouter:
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
         assert "workbench" in kwargs
-        assert kwargs["workbench"]["enable"] is True
+        assert "enable" not in kwargs["workbench"]
         assert kwargs["workbench"]["enable_proxy_execution"] is False
         assert kwargs["workbench"]["auto_offload_threshold"] == 300
 
@@ -565,6 +637,7 @@ class TestToolRouter:
         )
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
         assert "sandbox_size" not in kwargs["workbench"]
+        assert "enable" not in kwargs["workbench"]
 
     def test_create_session_with_multi_account(self, tool_router, mock_client):
         """multi_account is forwarded on the wire when set, omitted otherwise."""

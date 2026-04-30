@@ -82,6 +82,24 @@ print(f"Session ID: {session.session_id}")
 print(f"MCP URL: {session.mcp.url}")
 ```
 
+### Direct Tools Preset
+
+Use the `SessionPreset.DIRECT_TOOLS` enum when you want the allowed app tools exposed directly instead of the default helper/meta-tool flow:
+
+```python
+from composio import Composio, SessionPreset
+
+composio = Composio()
+
+session = composio.tool_router.create(
+    user_id='user_123',
+    toolkits=['gmail'],
+    session_preset=SessionPreset.DIRECT_TOOLS,
+)
+```
+
+Direct tools sessions require an explicit allowlist such as `toolkits=['gmail']` or enabled tool slugs. Normal sessions inherit `manage_connections` and `workbench.enable` as enabled by default; with this preset, those helper groups are hidden unless you set their `enable` fields to `True`.
+
 ### Using an Existing Session
 
 If you have an existing session ID, you can retrieve it using `composio.tool_router.use()`:
@@ -841,4 +859,3 @@ meta_tools = composio.tools.get_raw_tool_router_meta_tools(
 - Simplified internal tool execution paths
 
 All changes in v0.10.5 are fully backward compatible with existing code.
-

@@ -28,6 +28,7 @@ import {
   MCPServerType,
   ToolRouterMCPServerConfig,
   ToolRouterSessionMetadata,
+  SessionPreset,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import {
@@ -35,6 +36,14 @@ import {
   SessionCreateResponse,
   SessionRetrieveResponse,
 } from '@composio/client/resources/tool-router/session/session.mjs';
+import {
+  createToolRouterSessionV31,
+  resolveManageConnectionsEnabled,
+  resolveSessionPreset,
+  resolveWorkbenchEnabled,
+  SessionCreateParamsV31,
+  SessionCreateResponseV31,
+} from '../lib/toolRouterSessionApi';
 import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
@@ -51,11 +60,16 @@ import {
 } from './CustomTool';
 import type { CustomToolsMap } from '../types/customTool.types';
 
-function getSessionMetadata(session: SessionCreateResponse | SessionRetrieveResponse) {
+function getSessionMetadata(
+  session: SessionCreateResponse | SessionRetrieveResponse | SessionCreateResponseV31
+) {
   const metadata: ToolRouterSessionMetadata = {
     preload: session.config.preload,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
+    sessionPreset: resolveSessionPreset(session.config),
+    manageConnectionsEnabled: resolveManageConnectionsEnabled(session.config),
+    workbenchEnabled: resolveWorkbenchEnabled(session.config),
   };
   return metadata;
 }
@@ -139,8 +153,9 @@ export class ToolRouter<
 
     const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateParamsV31 = {
       user_id: userId,
+      session_preset: routerConfig.sessionPreset,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
@@ -155,7 +170,10 @@ export class ToolRouter<
       experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
     };
 
-    const session = await this.client.toolRouter.session.create(payload);
+    const session =
+      routerConfig.sessionPreset === SessionPreset.DirectTools
+        ? await createToolRouterSessionV31(this.client, payload)
+        : await this.client.toolRouter.session.create(payload);
 
     // Build custom tools map from the response's slug/original_slug mapping
     // instead of computing LOCAL_ prefix client-side

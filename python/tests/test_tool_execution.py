@@ -95,6 +95,39 @@ class TestToolExecution:
             # Should have called with version="20251201_01" (resolved from github toolkit)
             assert call_args.kwargs["version"] == "20251201_01"
 
+    def test_tool_router_session_tools_auto_paginate(self):
+        """Session tool retrieval follows v3.1 pagination internally."""
+        mock_client = Mock()
+        mock_provider = Mock()
+        mock_provider.name = "test_provider"
+        first_tool = self.create_mock_tool("GMAIL_FETCH_EMAILS", "gmail")
+        second_tool = self.create_mock_tool("GMAIL_SEND_EMAIL", "gmail")
+        first_page = Mock()
+        first_page.items = [first_tool]
+        first_page.next_cursor = "cursor_2"
+        second_page = Mock()
+        second_page.items = [second_tool]
+        second_page.next_cursor = None
+        mock_client.get.side_effect = [first_page, second_page]
+
+        tools = Tools(client=mock_client, provider=mock_provider)
+        result = tools.get_raw_tool_router_meta_tools("session_123")
+
+        assert [tool.slug for tool in result] == [
+            "GMAIL_FETCH_EMAILS",
+            "GMAIL_SEND_EMAIL",
+        ]
+        assert mock_client.get.call_args_list[0].args[0] == (
+            "/api/v3.1/tool_router/session/session_123/tools"
+        )
+        assert mock_client.get.call_args_list[0].kwargs["options"]["params"] == {
+            "limit": 500
+        }
+        assert mock_client.get.call_args_list[1].kwargs["options"]["params"] == {
+            "limit": 500,
+            "cursor": "cursor_2",
+        }
+
     def test_tool_execution_with_explicit_version(self):
         """Test that explicit version overrides toolkit version."""
         # Mock client and provider

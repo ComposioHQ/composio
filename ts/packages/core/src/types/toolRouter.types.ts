@@ -29,15 +29,20 @@ export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 export const SandboxSizeSchema = z.enum(['standard', 'medium', 'large', 'xlarge']);
 export type SandboxSize = z.infer<typeof SandboxSizeSchema>;
 
+export enum SessionPreset {
+  DirectTools = 'direct_tools',
+}
+
+export const SessionPresetSchema = z.nativeEnum(SessionPreset);
+
 // manage connections
 export const ToolRouterConfigManageConnectionsSchema = z
   .object({
     enable: z
       .boolean()
-      .default(true)
       .optional()
       .describe(
-        'Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually'
+        'Whether to use tools to manage connections in the tool router session. Defaults to true unless a session preset changes the inherited default.'
       ),
     callbackUrl: z
       .string()
@@ -77,9 +82,8 @@ export const ToolRouterManageConnectionsConfigSchema = z.object({
     .boolean()
     .optional()
     .describe(
-      'Whether to use tools to manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually'
-    )
-    .default(true),
+      'Whether to use tools to manage connections in the tool router session. Defaults to true unless a session preset changes the inherited default.'
+    ),
   callbackUrl: z.string().optional().describe('The callback url to use in the tool router session'),
 });
 
@@ -171,6 +175,10 @@ export type ToolRouterConfigTools = z.infer<typeof ToolRouterConfigToolsSchema>;
 
 export const ToolRouterCreateSessionConfigSchema = z
   .object({
+    sessionPreset: SessionPresetSchema.optional().describe(
+      'Opinionated session preset. Use SessionPreset.DirectTools to expose allowed app tools directly and hide helper/meta tools by default.'
+    ),
+
     tools: z
       .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
       .optional()
@@ -202,17 +210,16 @@ export const ToolRouterCreateSessionConfigSchema = z
     manageConnections: z
       .union([z.boolean(), ToolRouterConfigManageConnectionsSchema])
       .optional()
-      .default(true)
       .describe(
-        'The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.'
+        'The config for the manage connections in the tool router session. Defaults to true unless a session preset changes the inherited default. If set to an object, you can configure the manage connections settings.'
       ),
     workbench: z
       .object({
         enable: z
           .boolean()
-          .default(true)
+          .optional()
           .describe(
-            'Whether to enable the workbench entirely. Defaults to true. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session.'
+            'Whether to enable the workbench entirely. Defaults to true unless a session preset changes the inherited default. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session.'
           ),
         enableProxyExecution: z
           .boolean()
@@ -303,15 +310,16 @@ export const ToolRouterCreateSessionConfigSchema = z
  * The config for the tool router session.
  *
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
+ * @param {SessionPreset} [sessionPreset] - Optional session preset. Use SessionPreset.DirectTools to expose allowed app tools directly and hide helper/meta tools by default.
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
  * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
- * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
- * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
+ * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true unless a session preset changes the inherited default. If set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
+ * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session. Defaults to true unless a session preset changes the inherited default.
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
  * @param {object} workbench - Workbench configuration for tool execution
- * @param {boolean} [workbench.enable] - Whether to enable the workbench entirely. Defaults to true. When false, no code execution tools are available.
+ * @param {boolean} [workbench.enable] - Whether to enable the workbench entirely. Defaults to true unless a session preset changes the inherited default. When false, no code execution tools are available.
  * @param {boolean} [workbench.enableProxyExecution] - Whether to enable proxy execution
  * @param {number} [workbench.autoOffloadThreshold] - Auto offload threshold in characters for moving execution to workbench
  * @param {SandboxSize} [workbench.sandboxSize] - Sandbox compute tier: 'standard' (1 vCPU/1 GB, default), 'medium' (2 vCPU/2 GB), 'large' (4 vCPU/4 GB), or 'xlarge' (8 vCPU/8 GB)
@@ -544,6 +552,9 @@ export interface ToolRouterSessionMetadata {
   preload?: ToolRouterSessionPreloadConfig;
   configVersion?: number;
   warnings?: ToolRouterSessionWarning[];
+  sessionPreset?: SessionPreset;
+  manageConnectionsEnabled?: boolean;
+  workbenchEnabled?: boolean;
 }
 
 export const SessionProxyExecuteParamsSchema = z.object({

@@ -44,6 +44,10 @@ import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
 import { findCustomTool, executeCustomTool } from './customToolExecution';
 import { transformProxyParams } from './proxyParamsTransform';
+import {
+  DEFAULT_MANAGE_CONNECTIONS_ENABLED,
+  DEFAULT_WORKBENCH_ENABLED,
+} from '../lib/toolRouterSessionApi';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
 
@@ -58,6 +62,8 @@ export class ToolRouterSession<
   public readonly preload: ToolRouterSessionPreloadConfig;
   public readonly configVersion?: number;
   public readonly warnings: ToolRouterSessionWarning[];
+  private readonly isManageConnectionsEnabled: boolean;
+  private readonly isWorkbenchEnabled: boolean;
 
   /** Singleton session context — shared across all custom tool executions */
   private readonly sessionContext?: SessionContext;
@@ -84,6 +90,9 @@ export class ToolRouterSession<
     this.preload = metadata?.preload ?? { tools: [] };
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
+    this.isManageConnectionsEnabled =
+      metadata?.manageConnectionsEnabled ?? DEFAULT_MANAGE_CONNECTIONS_ENABLED;
+    this.isWorkbenchEnabled = metadata?.workbenchEnabled ?? DEFAULT_WORKBENCH_ENABLED;
 
     // Create singleton session context if custom tools are bound
     if (customToolsMap && userId) {
@@ -91,6 +100,14 @@ export class ToolRouterSession<
     }
 
     telemetry.instrument(this, 'ToolRouterSession');
+  }
+
+  manageConnectionsEnabled(): boolean {
+    return this.isManageConnectionsEnabled;
+  }
+
+  workbenchEnabled(): boolean {
+    return this.isWorkbenchEnabled;
   }
 
   /**

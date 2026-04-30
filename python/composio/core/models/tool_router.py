@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 import typing_extensions as te
-from composio_client import omit
 from composio_client.types.tool_router import session_create_params
 
 from composio.client import HttpClient
@@ -30,6 +29,11 @@ from composio.core.models.custom_tool_types import (
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
+)
+from composio.core.models.tool_router_session_api import (
+    create_tool_router_session_v31,
+    resolve_manage_connections_enabled,
+    resolve_workbench_enabled,
 )
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
@@ -51,6 +55,12 @@ ToolRouterTag = t.Literal[
 # +----------+------+------+
 # Defaults to "standard" server-side when omitted.
 SandboxSize = t.Literal["standard", "medium", "large", "xlarge"]
+
+
+class SessionPreset(str, Enum):
+    """Opinionated Tool Router session presets."""
+
+    DIRECT_TOOLS = "direct_tools"
 
 
 class ToolRouterToolkitsEnableConfig(te.TypedDict, total=False):
@@ -498,6 +508,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
         Create a new tool router session for a user.
@@ -589,6 +600,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               - 'user_timezone' (str): IANA timezone identifier
                                 (e.g., "America/New_York", "Europe/London").
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param session_preset: Optional session preset. Use SessionPreset.DIRECT_TOOLS
+                              to expose allowed app tools directly and hide helper/meta
+                              tools by default.
         :return: Tool router session object
 
         Example:
@@ -670,15 +684,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             ```
         """
 
-        # Parse manage_connections config
-        manage_connections = (
-            manage_connections if manage_connections is not None else True
-        )
-        auto_manage_connections = (
-            manage_connections
-            if isinstance(manage_connections, bool)
-            else manage_connections.get("enable", True)
-        )
+        if session_preset is not None and not isinstance(session_preset, SessionPreset):
+            raise ValueError("session_preset must be a SessionPreset enum value.")
 
         # Parse toolkits config
         toolkits_payload: t.Optional[t.Dict[str, t.List[str]]] = None
@@ -725,33 +732,34 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                             transformed_config["tags"] = transformed_tags
                     tools_payload[toolkit_slug] = transformed_config
 
-        # Parse callback_url and wait_for_connections from manage_connections config
-        callback_url = (
-            manage_connections.get("callback_url")
-            if isinstance(manage_connections, dict)
-            else omit
-        )
-        wait_for_connections = (
-            manage_connections.get("wait_for_connections")
-            if isinstance(manage_connections, dict)
-            else omit
-        )
-
         # Build the API payload
         create_params: t.Dict[str, t.Any] = {
             "user_id": user_id,
         }
+        if session_preset is not None:
+            create_params["session_preset"] = session_preset.value
 
         # Build connections config
-        connections_config: t.Dict[str, t.Any] = {
-            "enable": auto_manage_connections,
-        }
-        if callback_url is not None and callback_url is not omit:
-            connections_config["callback_url"] = callback_url
-        if wait_for_connections is not None and wait_for_connections is not omit:
-            connections_config["enable_wait_for_connections"] = wait_for_connections
+        if manage_connections is not None:
+            if isinstance(manage_connections, bool):
+                connections_config: t.Dict[str, t.Any] = {
+                    "enable": manage_connections,
+                }
+            else:
+                connections_config = {}
+                if "enable" in manage_connections:
+                    connections_config["enable"] = manage_connections["enable"]
+                if "callback_url" in manage_connections:
+                    connections_config["callback_url"] = manage_connections[
+                        "callback_url"
+                    ]
+                if "wait_for_connections" in manage_connections:
+                    connections_config["enable_wait_for_connections"] = (
+                        manage_connections["wait_for_connections"]
+                    )
 
-        create_params["manage_connections"] = connections_config
+            if connections_config:
+                create_params["manage_connections"] = connections_config
 
         # Add optional fields
         if auth_configs is not None:
@@ -772,9 +780,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             create_params["tags"] = tags_payload
 
         if workbench is not None:
-            execution_payload: t.Dict[str, t.Any] = {
-                "enable": workbench.get("enable", True),
-            }
+            execution_payload: t.Dict[str, t.Any] = {}
+            if "enable" in workbench:
+                execution_payload["enable"] = workbench["enable"]
             if "enable_proxy_execution" in workbench:
                 execution_payload["enable_proxy_execution"] = workbench[
                     "enable_proxy_execution"
@@ -835,7 +843,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             )
 
         # Make API call to create session
-        session = self._client.tool_router.session.create(**create_params)
+        if session_preset == SessionPreset.DIRECT_TOOLS:
+            session = create_tool_router_session_v31(self._client, create_params)
+        else:
+            session = self._client.tool_router.session.create(**create_params)
 
         # Build custom tools routing map from backend response
         custom_tools_map: t.Optional[CustomToolsMap] = None
@@ -876,6 +887,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             preload=ToolRouterSessionPreloadConfig(
                 tools=list(session.config.preload.tools)
             ),
+            manage_connections_enabled=resolve_manage_connections_enabled(
+                session.config
+            ),
+            workbench_enabled=resolve_workbench_enabled(session.config),
         )
 
     def use(self, session_id: str) -> ToolRouterSession[TTool, TToolCollection]:
@@ -933,6 +948,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             preload=ToolRouterSessionPreloadConfig(
                 tools=list(session.config.preload.tools)
             ),
+            manage_connections_enabled=resolve_manage_connections_enabled(
+                session.config
+            ),
+            workbench_enabled=resolve_workbench_enabled(session.config),
         )
 
 
@@ -961,4 +980,5 @@ __all__ = [
     "ToolkitConnectionsDetails",
     "ToolRouterMCPServerConfig",
     "ToolRouterMCPServerType",
+    "SessionPreset",
 ]

@@ -1,6 +1,8 @@
 import { vi } from 'vitest';
 
 export const mockClient = {
+  get: vi.fn(),
+  post: vi.fn(),
   tools: {
     list: vi.fn(),
     retrieve: vi.fn(),
