@@ -14,41 +14,13 @@ const result = await composio.toolRouterSession.list();
 
 ## Properties
 
-| Name           | Type                  |
-| -------------- | --------------------- |
+| Name | Type |
+|------|------|
 | `experimental` | `SessionExperimental` |
-| `mcp`          | `object`              |
-| `sessionId`    | `string`              |
+| `mcp` | `object` |
+| `sessionId` | `string` |
 
 ## Methods
-
-### manageConnectionsEnabled()
-
-Return whether connection-management helper tools are exposed in this session.
-
-```typescript
-manageConnectionsEnabled(): boolean
-```
-
-**Returns**
-
-`boolean`
-
----
-
-### workbenchEnabled()
-
-Return whether workbench helper tools are exposed in this session.
-
-```typescript
-workbenchEnabled(): boolean
-```
-
-**Returns**
-
-`boolean`
-
----
 
 ### authorize()
 
@@ -61,9 +33,9 @@ async authorize(toolkit: string, options?: { alias?: string; callbackUrl?: strin
 
 **Parameters**
 
-| Name       | Type     |
-| ---------- | -------- |
-| `toolkit`  | `string` |
+| Name | Type |
+|------|------|
+| `toolkit` | `string` |
 | `options?` | `object` |
 
 **Returns**
@@ -98,8 +70,8 @@ customTools(options?: { toolkit?: string }): RegisteredCustomTool[]
 
 **Parameters**
 
-| Name       | Type     |
-| ---------- | -------- |
+| Name | Type |
+|------|------|
 | `options?` | `object` |
 
 **Returns**
@@ -122,10 +94,10 @@ async execute(toolSlug: string, arguments_?: Record<string, unknown>): Promise<{
 
 **Parameters**
 
-| Name          | Type                      | Description              |
-| ------------- | ------------------------- | ------------------------ |
-| `toolSlug`    | `string`                  | The tool slug to execute |
-| `arguments_?` | `Record<string, unknown>` | Optional tool arguments  |
+| Name | Type | Description |
+|------|------|-------------|
+| `toolSlug` | `string` | The tool slug to execute |
+| `arguments_?` | `Record<string, unknown>` | Optional tool arguments |
 
 **Returns**
 
@@ -144,8 +116,8 @@ async proxyExecute(params: object): Promise<ToolRouterSessionProxyExecuteRespons
 
 **Parameters**
 
-| Name     | Type     | Description                                                                      |
-| -------- | -------- | -------------------------------------------------------------------------------- |
+| Name | Type | Description |
+|------|------|-------------|
 | `params` | `object` | Proxy request parameters (toolkit, endpoint, method, body, headers/query params) |
 
 **Returns**
@@ -165,8 +137,8 @@ async search(params: { query: string; toolkits?: string[] }): Promise<...>
 
 **Parameters**
 
-| Name     | Type     |
-| -------- | -------- |
+| Name | Type |
+|------|------|
 | `params` | `object` |
 
 **Returns**
@@ -186,8 +158,8 @@ async toolkits(options?: { cursor?: string; isConnected?: boolean; limit?: numbe
 
 **Parameters**
 
-| Name       | Type     |
-| ---------- | -------- |
+| Name | Type |
+|------|------|
 | `options?` | `object` |
 
 **Returns**
@@ -210,8 +182,8 @@ async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType>
 
 **Parameters**
 
-| Name         | Type                     |
-| ------------ | ------------------------ |
+| Name | Type |
+|------|------|
 | `modifiers?` | `SessionMetaToolOptions` |
 
 **Returns**
