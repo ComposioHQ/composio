@@ -443,7 +443,7 @@ def test_explicit_connected_account_id_outside_envelope_raises(
     mock_http_client_with_explicit_account.tools.proxy.assert_not_called()
 
 
-def test_execute_request_partial_binds_resolved_account_id(
+def test_execute_request_wrapper_binds_resolved_account_id(
     mock_http_client_with_explicit_account: MagicMock,
 ) -> None:
     """``execute_request`` MUST pre-bind the resolved account id.
@@ -451,6 +451,9 @@ def test_execute_request_partial_binds_resolved_account_id(
     This is the user-facing fix. Before PLEN-2345 ``execute_request``
     was a bare reference to ``client.tools.proxy``; the proxy endpoint
     now requires auth context and 400'd every custom-tool proxy call.
+    The binding is a wrapper closure (not ``functools.partial``) so a
+    caller-supplied ``connected_account_id`` cannot override the bound
+    value — see ``test_execute_request_rejects_caller_supplied_...``.
     """
     captured: dict = {}
 
@@ -485,10 +488,10 @@ def test_execute_request_partial_binds_resolved_account_id(
     assert captured["credentials"] == {"access_token": "explicit-token"}
 
 
-def test_execute_request_partial_binds_listed_account_on_fallback(
+def test_execute_request_wrapper_binds_listed_account_on_fallback(
     mock_http_client_with_explicit_account: MagicMock,
 ) -> None:
-    """On the list-fallback path, ``execute_request`` MUST still bind an id.
+    """On the list-fallback path, the wrapper MUST still bind an id.
 
     The auth-context fix has to apply when callers do not pass
     ``connected_account_id`` — otherwise legacy code that relied on the
