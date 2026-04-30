@@ -4,6 +4,7 @@ import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
+import { readStoredAgentIdentity } from 'src/services/agents';
 
 /**
  * CLI command to display your account information.
@@ -38,9 +39,17 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               const orgName = Option.map(sessionInfo, info => info.project.org.name).pipe(
                 Option.getOrUndefined
               );
+              const storedAgent = yield* readStoredAgentIdentity;
+              const isStoredAgentKey = Option.match(storedAgent, {
+                onNone: () => false,
+                onSome: agent => agent.composio?.user_api_key === apiKey,
+              });
+              const accountType =
+                isStoredAgentKey || email?.endsWith('@agent.composio.ai') ? 'agent' : 'human';
 
               yield* ui.note(
                 [
+                  `Type: ${accountType}`,
                   `Email: ${email ?? 'unknown'}`,
                   `Default Org: ${orgName ?? 'unknown'}`,
                   `Default Org ID: ${defaultOrgId ?? 'not set'}`,
@@ -56,6 +65,7 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               );
               yield* ui.output(
                 JSON.stringify({
+                  account_type: accountType,
                   email: email ?? null,
                   default_org_name: orgName ?? null,
                   default_org_id: defaultOrgId ?? null,
