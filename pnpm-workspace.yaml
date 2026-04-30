@@ -34,7 +34,7 @@ catalog:
   '@modelcontextprotocol/sdk': ^1.25.2
   '@typescript/native-preview': 7.0.0-dev.20260403.1
   ai: ^6.0.27
-  effect: ^3.19.15
+  effect: ^3.20.0
   hono: ^4.11.4
   openai: ^6.16.0
   pnpm: ^10.28.0
@@ -44,7 +44,7 @@ catalog:
   typescript: ^5.9.2
   uuid: ^13.0.0
   vitest: ^3.2.4
-  wrangler: ^4.78.0
+  wrangler: ^4.59.1
   zod: ^4.1.0
   zod-to-json-schema: ^3.25.1
 
