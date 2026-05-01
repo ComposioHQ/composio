@@ -121,6 +121,7 @@ if [[ -z "$version_arg" ]]; then
     version=$(git ls-remote --tags "$github_repo" "@composio/cli@*" \
         | awk '{print $2}' \
         | sed 's#^refs/tags/##; s#\^{}$##' \
+        | grep -E '^@composio/cli@[0-9]+\.[0-9]+\.[0-9]+$' \
         | sort -V \
         | tail -1)
 
@@ -337,7 +338,9 @@ rm -f "$install_err"
 if [[ $install_agent = true ]]; then
     echo
     info "Setting up Composio agent login..."
-    "$exe" login --agent --no-skill-install || error 'Failed to sign up/log in as a Composio agent'
+    if ! "$exe" login --agent --no-skill-install; then
+        error 'Failed to sign up/log in as a Composio agent. If this CLI is already signed in as a regular user, run `composio logout` and then `composio signup` or `composio agent login <composio_agent_key>`.'
+    fi
 fi
 
 echo
