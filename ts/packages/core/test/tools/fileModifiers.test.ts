@@ -41,7 +41,7 @@ describe('FileToolModifier', () => {
         availableVersions: ['20251201_01'],
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result).toEqual(schema);
     });
 
@@ -67,7 +67,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.file).toHaveProperty('format', 'path');
       expect(result.inputParameters?.properties?.text).not.toHaveProperty('format');
     });
@@ -102,7 +102,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.fileInput?.anyOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -145,7 +145,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.fileInput?.oneOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -185,7 +185,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.fileInput?.allOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -230,7 +230,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(
         result.inputParameters?.properties?.content?.anyOf?.[0]?.properties?.attachment
       ).toHaveProperty('format', 'path');
@@ -268,7 +268,7 @@ describe('FileToolModifier', () => {
         },
       };
 
-      const result = await fileToolModifier.modifyToolSchema('test-tool', 'test-toolkit', schema);
+      const result = await fileToolModifier.modifyToolSchema(schema);
       expect(result.inputParameters?.properties?.files?.items?.anyOf?.[0]).toHaveProperty(
         'format',
         'path'
@@ -369,6 +369,80 @@ describe('FileToolModifier', () => {
         }
       );
       expect(result.arguments?.file).toEqual(mockFileData);
+    });
+
+    it('should pass source="path" to beforeFileUpload for local filesystem paths', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const hook = vi.fn(async ({ path }) => path);
+      const withHook = new FileToolModifier(mockClient, { beforeFileUpload: hook });
+
+      await withHook.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: { arguments: { file: '/path/to/a.txt' }, userId: 'u' },
+      });
+
+      expect(hook).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/path/to/a.txt', source: 'path' })
+      );
+    });
+
+    it('should pass source="url" to beforeFileUpload for http(s) URLs', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const hook = vi.fn(async ({ path }) => path);
+      const withHook = new FileToolModifier(mockClient, { beforeFileUpload: hook });
+
+      await withHook.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: { file: 'https://example.com/report.pdf' },
+          userId: 'u',
+        },
+      });
+
+      expect(hook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: 'https://example.com/report.pdf',
+          source: 'url',
+        })
+      );
+    });
+
+    it('should pass source="file" to beforeFileUpload for File objects', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const hook = vi.fn(async () => undefined as unknown as string);
+      const withHook = new FileToolModifier(mockClient, { beforeFileUpload: hook });
+
+      const fileObject = new File(['x'], 'uploaded.txt', { type: 'text/plain' });
+      await withHook.fileUploadModifier(mockTool, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: { arguments: { file: fileObject }, userId: 'u' },
+      });
+
+      // `path` is the File's name, not a filesystem path.
+      expect(hook).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'uploaded.txt', source: 'file' })
+      );
     });
 
     it('should throw ComposioFileUploadAbortedError when beforeFileUpload returns false', async () => {
@@ -666,6 +740,54 @@ describe('FileToolModifier', () => {
       expect((result.arguments?.content as Record<string, unknown>)?.attachment).toEqual(
         mockFileData
       );
+    });
+
+    it('uploads once when multiple oneOf variants are file_uploadable', async () => {
+      // Regression: previously hydrateFiles iterated over every uploadable
+      // variant in anyOf/oneOf/allOf and re-uploaded the same file once per
+      // variant. With `oneOf` semantics this is doubly wrong (only one
+      // variant matches at runtime). Match the Python SDK and short-circuit
+      // on the first uploadable variant.
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const toolWithTwoUploadableVariants: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            fileInput: {
+              oneOf: [
+                { type: 'string', file_uploadable: true },
+                { type: 'string', file_uploadable: true },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const params = {
+        arguments: { fileInput: '/path/to/file.txt' },
+        userId: 'test-user',
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithTwoUploadableVariants, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params,
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(1);
+      expect(result.arguments?.fileInput).toEqual(mockFileData);
     });
 
     it('should not upload when value is null for anyOf with null variant', async () => {
@@ -1326,7 +1448,7 @@ describe('FileToolModifier', () => {
   });
 });
 
-describe('Tools with autoUploadDownloadFiles', () => {
+describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
   const context = createTestContext();
   setupTest(context);
 
@@ -1410,11 +1532,11 @@ describe('Tools with autoUploadDownloadFiles', () => {
     availableVersions: ['20251201_01'],
   };
 
-  describe('when autoUploadDownloadFiles is false', () => {
+  describe('when dangerouslyAllowAutoUploadDownloadFiles is false', () => {
     beforeEach(async () => {
       context.tools = new Tools(mockClient as unknown as ComposioClient, {
         provider: context.mockProvider,
-        autoUploadDownloadFiles: false,
+        dangerouslyAllowAutoUploadDownloadFiles: false,
       });
 
       // Mock the tool execution
@@ -1447,6 +1569,12 @@ describe('Tools with autoUploadDownloadFiles', () => {
     });
 
     it('should not modify tool schema for file upload', async () => {
+      // The collapsed `{ type: 'string', format: 'path' }` shape is a promise
+      // that the SDK will stage local paths for the caller. That promise is
+      // only true when auto-upload is on, so we leave the raw shape
+      // untouched when the flag is off — callers are expected to pre-stage
+      // via `composio.files.upload()`. Runtime behavior is documented by
+      // the warning emitted from `applyBeforeExecuteModifiers`.
       const result = await context.tools.getRawComposioTools({ tools: ['COMPOSIO_TOOL'] });
       expect(result[0].inputParameters?.properties?.file).not.toHaveProperty('format');
       expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
@@ -1479,6 +1607,35 @@ describe('Tools with autoUploadDownloadFiles', () => {
         user_id: 'test-user',
         version: 'latest',
       });
+    });
+
+    it('warns once per tool when auto-upload is off and the tool has a file-uploadable input', async () => {
+      const warnSpy = vi.spyOn((await import('../../src/utils/logger')).default, 'warn');
+      warnSpy.mockImplementation(() => {}); // silence the log in test output
+
+      vi.spyOn(context.tools, 'getRawComposioToolBySlug').mockResolvedValue(mockToolWithFileUpload);
+
+      // First call emits the warning.
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '/path/to/file.txt' },
+        userId: 'u',
+        dangerouslySkipVersionCheck: true,
+      });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const msg = String(warnSpy.mock.calls[0]?.[0] ?? '');
+      expect(msg).toContain('COMPOSIO_TOOL');
+      expect(msg).toContain('dangerouslyAllowAutoUploadDownloadFiles');
+      expect(msg).toContain('composio.files.upload');
+
+      // Repeated executions of the same tool do NOT re-warn.
+      await context.tools.execute('COMPOSIO_TOOL', {
+        arguments: { file: '/path/to/file.txt' },
+        userId: 'u',
+        dangerouslySkipVersionCheck: true,
+      });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+
+      warnSpy.mockRestore();
     });
 
     it('should not download files from execution results', async () => {

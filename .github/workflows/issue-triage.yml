@@ -114,14 +114,15 @@ jobs:
           Use semantic meaning, not only keywords.
           Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.
           Choose feature-request when the issue is asking for a product, SDK, docs, or CLI improvement that is not a tool request.
-          Choose support when the issue is primarily a product/support question or account/integration configuration problem rather than a code defect in this repository. This includes managed OAuth app configuration, provider app verification or consent-screen blocks, requested scopes for hosted/managed integrations, dashboard/back-office setup, billing/account questions, and usage questions where the SDK appears to be behaving as designed.
+          Choose support when the issue is primarily a product/support question, account/integration configuration problem, or a hosted Composio platform/tooling problem rather than a code defect in this repository. This includes managed OAuth app configuration, provider app verification or consent-screen blocks, requested scopes for hosted/managed integrations, dashboard/back-office setup, billing/account questions, usage questions where the SDK appears to be behaving as designed, and bugs in existing hosted integrations/tools/toolkits that require backend/tool-catalog/support follow-up rather than SDK code changes.
           For example, an issue about Google Drive managed OAuth scopes or Google blocking the managed app should be support, not ts and not a bug, unless the issue clearly identifies a defect in SDK code.
+          For example, an issue like GitHub #3291 where an existing hosted tool such as SPOTIFY_GET_PLAYLIST_ITEMS calls a deprecated third-party API endpoint, fails with 403, or needs a backend/tool definition update should be support and a bug, not ts, not py, not cli, and not tool-request.
           Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.
-          Choose py only when the issue is primarily about the Python SDK.
-          Choose ts only when the issue is primarily about the TypeScript SDK or TS packages other than the CLI.
+          Choose py only when the issue is primarily about Python SDK code in this repository.
+          Choose ts only when the issue is primarily about TypeScript SDK code or TS packages other than the CLI in this repository.
           Choose docs only when the issue is primarily about documentation.
-          Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug.
-          Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior.
+          Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug. If the broken existing integration/tool does not identify an SDK, CLI, docs, or Python code defect in this repository, choose support so it is forwarded to Plain.
+          Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior, including support-routed hosted integration/tool bugs.
           Set is_bug to false for feature requests, questions, maintenance, cleanup, and true new-tool requests.
           Set should_comment to true when the issue appears incorrect, non-actionable, missing the information needed to reproduce or investigate, or when category is support.
           Set should_comment to false otherwise.

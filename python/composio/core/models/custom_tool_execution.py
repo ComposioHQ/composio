@@ -1,6 +1,14 @@
 """Standalone functions for custom tool lookup and execution.
 
 Extracted for reuse in SessionContextImpl (sibling routing).
+
+Security invariant (CWE-639 / SEC-365): on this code path the trusted
+``user_id`` arrives via ``SessionContext`` — never via ``arguments``. The
+``arguments`` dict is LLM-supplied and is validated through the tool's
+Pydantic ``input_params`` model, which discards unknown fields, so an
+attempt to smuggle ``user_id`` (or any other identity-bearing key) inside
+``arguments`` cannot reach the tool's execute function or auth lookup.
+Keep this property when modifying ``execute_custom_tool``.
 """
 
 from __future__ import annotations

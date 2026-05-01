@@ -27,7 +27,10 @@ from composio.core.models.custom_tool_types import (
     CustomTool,
     CustomToolsMap,
 )
-from composio.core.models.tool_router_session import ToolRouterSession
+from composio.core.models.tool_router_session import (
+    ToolRouterSession,
+    ToolRouterSessionPreloadConfig,
+)
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -36,6 +39,18 @@ from composio.core.provider.base import BaseProvider
 ToolRouterTag = t.Literal[
     "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
 ]
+
+# Type alias for sandbox compute tier on the workbench
+# +----------+------+------+
+# | Tier     | vCPU | RAM  |
+# +----------+------+------+
+# | standard | 1    | 1 GB |
+# | medium   | 2    | 2 GB |
+# | large    | 4    | 4 GB |
+# | xlarge   | 8    | 8 GB |
+# +----------+------+------+
+# Defaults to "standard" server-side when omitted.
+SandboxSize = t.Literal["standard", "medium", "large", "xlarge"]
 
 
 class ToolRouterToolkitsEnableConfig(te.TypedDict, total=False):
@@ -145,11 +160,18 @@ class ToolRouterWorkbenchConfig(te.TypedDict, total=False):
         enable_proxy_execution: Whether to allow proxy execute calls in the workbench.
                                 If False, prevents arbitrary HTTP requests.
         auto_offload_threshold: Maximum execution payload size to offload to workbench.
+        sandbox_size: Sandbox compute tier. One of ``"standard"`` (1 vCPU / 1 GB),
+                      ``"medium"`` (2 vCPU / 2 GB), ``"large"`` (4 vCPU / 4 GB), or
+                      ``"xlarge"`` (8 vCPU / 8 GB). Defaults to ``"standard"``
+                      server-side when omitted. Changing this on an existing session
+                      recreates the sandbox on next access; the in-memory FS state
+                      is lost, but the ``/mnt/files/`` mount persists.
     """
 
     enable: bool
     enable_proxy_execution: bool
     auto_offload_threshold: int
+    sandbox_size: SandboxSize
 
 
 class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
@@ -185,6 +207,17 @@ class ToolRouterMultiAccountConfig(te.TypedDict, total=False):
     enable: bool
     max_accounts_per_toolkit: int
     require_explicit_selection: bool
+
+
+class ToolRouterPreloadConfig(te.TypedDict, total=False):
+    """Configuration for tools preloaded into a tool router session.
+
+    Attributes:
+        tools: Tool slugs to expose directly in ``session.tools()`` and MCP
+               tool lists without first calling search.
+    """
+
+    tools: t.List[str]
 
 
 class ToolRouterAssistivePromptConfig(te.TypedDict, total=False):
@@ -360,24 +393,29 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self,
         client: HttpClient,
         provider: t.Optional["BaseProvider[TTool, TToolCollection]"] = None,
-        auto_upload_download_files: bool = True,
+        dangerously_allow_auto_upload_download_files: bool = False,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_dirs: t.Union[t.Sequence[str], t.Literal[False], None] = None,
     ):
         """
         Initialize ToolRouter instance.
 
         :param client: HTTP client for API calls
         :param provider: Optional provider for tool wrapping
-        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
+        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
         :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
+        :param file_upload_dirs: Allowlist of directories for auto-upload. See ``Composio`` for details.
         """
         super().__init__(client)
         self._provider = provider
-        self._auto_upload_download_files = auto_upload_download_files
         self._sensitive_file_upload_protection = sensitive_file_upload_protection
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
+        self._file_upload_dirs = file_upload_dirs
+        self._auto_upload_download_files = bool(
+            dangerously_allow_auto_upload_download_files
+        )
 
     def _create_mcp_server_config(
         self,
@@ -458,6 +496,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         connected_accounts: t.Optional[t.Dict[str, str]] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
@@ -524,8 +563,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                            calls in the workbench. If False, prevents arbitrary HTTP requests.
                          - 'auto_offload_threshold' (int): Maximum execution payload size to
                            offload to workbench.
+                         - 'sandbox_size' (SandboxSize): Sandbox compute tier. One of
+                           'standard' (1 vCPU / 1 GB, default), 'medium' (2 vCPU / 2 GB),
+                           'large' (4 vCPU / 4 GB), or 'xlarge' (8 vCPU / 8 GB).
                          Example: {'enable': False}
                          Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
+                         Example: {'sandbox_size': 'large'}
         :param multi_account: Optional multi-account configuration (ToolRouterMultiAccountConfig).
                             Dict with:
                             - 'enable' (bool): When True, enables multi-account mode.
@@ -535,6 +578,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                             - 'require_explicit_selection' (bool): When True, require explicit
                               account selection when multiple accounts are connected.
                             Example: {'enable': True, 'max_accounts_per_toolkit': 3}
+        :param preload: Optional preload configuration. Dict with:
+                        - 'tools' (List[str]): Tool slugs to expose directly in
+                          session.tools() and MCP tool lists.
+                        Example: {'tools': ['GMAIL_FETCH_EMAILS']}
         :param experimental: Optional experimental configuration (ToolRouterExperimentalConfig).
                             Note: These features are experimental and may change.
                             Dict with:
@@ -736,12 +783,17 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 execution_payload["auto_offload_threshold"] = int(
                     workbench["auto_offload_threshold"]
                 )
+            if "sandbox_size" in workbench:
+                execution_payload["sandbox_size"] = workbench["sandbox_size"]
 
             if execution_payload:
                 create_params["workbench"] = execution_payload
 
         if multi_account is not None:
             create_params["multi_account"] = multi_account
+
+        if preload is not None:
+            create_params["preload"] = preload
 
         # Build experimental config
         # Map SDK's experimental.assistive_prompt.user_timezone to API's
@@ -809,9 +861,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         return ToolRouterSession(
             client=self._client,
             provider=self._provider,
-            auto_upload_download_files=self._auto_upload_download_files,
+            dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+            file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
@@ -820,6 +873,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             experimental=experimental_response,
             custom_tools_map=custom_tools_map,
             user_id=user_id,
+            preload=ToolRouterSessionPreloadConfig(
+                tools=list(session.config.preload.tools)
+            ),
         )
 
     def use(self, session_id: str) -> ToolRouterSession[TTool, TToolCollection]:
@@ -864,15 +920,19 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         return ToolRouterSession(
             client=self._client,
             provider=self._provider,
-            auto_upload_download_files=self._auto_upload_download_files,
+            dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
             sensitive_file_upload_protection=self._sensitive_file_upload_protection,
             file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+            file_upload_dirs=self._file_upload_dirs,
             session_id=session.session_id,
             mcp=self._create_mcp_server_config(
                 mcp_type=ToolRouterMCPServerType(session.mcp.type.lower()),
                 url=session.mcp.url,
             ),
             experimental=experimental_response,
+            preload=ToolRouterSessionPreloadConfig(
+                tools=list(session.config.preload.tools)
+            ),
         )
 
 
@@ -891,9 +951,12 @@ __all__ = [
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
     "ToolRouterWorkbenchConfig",
+    "SandboxSize",
     "ToolRouterMultiAccountConfig",
+    "ToolRouterPreloadConfig",
     "ToolRouterExperimentalConfig",
     "ToolRouterAssistivePromptConfig",
+    "ToolRouterSessionPreloadConfig",
     "ToolkitConnectionState",
     "ToolkitConnectionsDetails",
     "ToolRouterMCPServerConfig",

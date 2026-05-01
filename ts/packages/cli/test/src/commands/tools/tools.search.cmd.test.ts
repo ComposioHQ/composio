@@ -384,7 +384,8 @@ describe('CLI: composio search', () => {
                 createParams = params;
                 return {
                   session_id: 'trs_test_session',
-                  config: { user_id: params.user_id },
+                  config: { user_id: params.user_id, preload: { tools: [] } },
+                  config_version: 1,
                   mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
                   tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
                 };
@@ -614,7 +615,8 @@ describe('CLI: composio search', () => {
                 createParams = params;
                 return {
                   session_id: 'trs_test_session',
-                  config: { user_id: params.user_id },
+                  config: { user_id: params.user_id, preload: { tools: [] } },
+                  config_version: 1,
                   mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
                   tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
                 };

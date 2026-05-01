@@ -56,7 +56,8 @@ describe('CLI: composio proxy', () => {
                 createParams = params;
                 return {
                   session_id: 'trs_proxy_test',
-                  config: { user_id: params.user_id },
+                  config: { user_id: params.user_id, preload: { tools: [] } },
+                  config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
                   tool_router_tools: [],
                 };
@@ -141,7 +142,8 @@ describe('CLI: composio proxy', () => {
                 createCalled = true;
                 return {
                   session_id: 'trs_proxy_test',
-                  config: { user_id: 'global_test_user_id' },
+                  config: { user_id: 'global_test_user_id', preload: { tools: [] } },
+                  config_version: 1,
                   mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
                   tool_router_tools: [],
                 };

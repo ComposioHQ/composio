@@ -16,12 +16,12 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 // Mock Tools class
 vi.mock('../../src/models/Tools', () => ({
   Tools: vi.fn().mockImplementation(() => ({
-    getRawToolRouterMetaTools: vi.fn().mockResolvedValue([
+    getRawToolRouterSessionTools: vi.fn().mockResolvedValue([
       { slug: 'COMPOSIO_SEARCH_TOOLS', name: 'Search Tools' },
       { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL', name: 'Multi Execute' },
     ]),
     wrapToolsForToolRouter: vi.fn().mockReturnValue('wrapped-tools'),
-    executeMetaTool: vi.fn().mockResolvedValue({
+    executeSessionTool: vi.fn().mockResolvedValue({
       data: { remote: true },
       error: null,
       successful: true,
@@ -38,13 +38,17 @@ const createMockClient = () => ({
     session: {
       create: vi.fn().mockResolvedValue({
         session_id: 'sess_123',
+        config: {
+          preload: { tools: [] },
+          user_id: 'user_1',
+        },
+        config_version: 1,
         mcp: { type: 'http', url: 'https://mcp.example.com/sess_123' },
         tool_router_tools: [],
       }),
       retrieve: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
-      executeMeta: vi.fn(),
       search: vi.fn(),
       proxyExecute: vi.fn().mockResolvedValue({
         status: 200,
@@ -504,7 +508,7 @@ describe('ToolRouterSession execution routing', () => {
       expect(localExecute).not.toHaveBeenCalled();
     });
 
-    it('should route non-MULTI_EXECUTE meta tools to backend', async () => {
+    it('should route non-MULTI_EXECUTE session tools to backend', async () => {
       const provider = new MockProvider();
       captureExecuteFn(provider);
       const session = createSessionWithProvider(mockClient, provider, [customToolHandle]);
@@ -578,7 +582,7 @@ describe('ToolRouterSession execution routing', () => {
     it('should append local results to remote results array', async () => {
       const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
 
-      toolsInstance.executeMetaTool.mockResolvedValueOnce(
+      toolsInstance.executeSessionTool.mockResolvedValueOnce(
         backendResponse([{ tool_slug: 'GMAIL_SEND_EMAIL', data: { sent: true } }])
       );
 
@@ -635,7 +639,7 @@ describe('ToolRouterSession execution routing', () => {
         sessionToolHandle,
       ]);
 
-      toolsInstance.executeMetaTool.mockResolvedValueOnce(
+      toolsInstance.executeSessionTool.mockResolvedValueOnce(
         backendResponse([
           { tool_slug: 'GMAIL_SEND_EMAIL', data: { sent: true } },
           { tool_slug: 'SLACK_POST_MESSAGE', data: { ts: '999' } },
@@ -659,7 +663,7 @@ describe('ToolRouterSession execution routing', () => {
       expect(findResult(results, 'GMAIL_SEND_EMAIL')).toBeDefined();
       expect(findResult(results, 'SLACK_POST_MESSAGE')).toBeDefined();
 
-      const backendTools = toolsInstance.executeMetaTool.mock.calls[0][1].arguments.tools;
+      const backendTools = toolsInstance.executeSessionTool.mock.calls[0][1].arguments.tools;
       expect(backendTools).toHaveLength(2);
       expect(backendTools.map((t: any) => t.tool_slug)).toEqual([
         'GMAIL_SEND_EMAIL',
@@ -674,7 +678,7 @@ describe('ToolRouterSession execution routing', () => {
     it('should recompute remote counters when local results are merged', async () => {
       const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
 
-      toolsInstance.executeMetaTool.mockResolvedValueOnce(
+      toolsInstance.executeSessionTool.mockResolvedValueOnce(
         backendResponse([{ tool_slug: 'GMAIL_SEND_EMAIL', data: { sent: true } }])
       );
 
@@ -694,7 +698,7 @@ describe('ToolRouterSession execution routing', () => {
     it('should handle remote null data without crashing', async () => {
       const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
 
-      toolsInstance.executeMetaTool.mockResolvedValueOnce({
+      toolsInstance.executeSessionTool.mockResolvedValueOnce({
         data: null,
         error: null,
         successful: true,
@@ -728,7 +732,7 @@ describe('ToolRouterSession execution routing', () => {
         throwingHandle,
       ]);
 
-      toolsInstance.executeMetaTool.mockResolvedValueOnce(
+      toolsInstance.executeSessionTool.mockResolvedValueOnce(
         backendResponse([
           { tool_slug: 'GMAIL_SEND_EMAIL', data: { sent: true } },
           {
@@ -770,7 +774,7 @@ describe('ToolRouterSession execution routing', () => {
     it('should preserve batch-level remote errors when no per-tool remote results exist', async () => {
       const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
 
-      toolsInstance.executeMetaTool.mockResolvedValueOnce({
+      toolsInstance.executeSessionTool.mockResolvedValueOnce({
         data: null,
         error: 'Remote batch failed before per-tool results were produced',
         successful: false,
@@ -796,20 +800,21 @@ describe('ToolRouterSession execution routing', () => {
         sync_response_to_workbench: false,
       });
 
-      expect(toolsInstance.executeMetaTool).toHaveBeenCalledWith(
+      expect(toolsInstance.executeSessionTool).toHaveBeenCalledWith(
         'COMPOSIO_MULTI_EXECUTE_TOOL',
         expect.objectContaining({
           sessionId: 'sess_123',
           arguments: expect.objectContaining({ tools: [] }),
         }),
-        undefined
+        undefined,
+        expect.objectContaining({ slug: 'COMPOSIO_MULTI_EXECUTE_TOOL' })
       );
     });
 
     it('should handle non-object items in tools array gracefully', async () => {
       const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
 
-      toolsInstance.executeMetaTool.mockResolvedValueOnce(backendResponse([]));
+      toolsInstance.executeSessionTool.mockResolvedValueOnce(backendResponse([]));
 
       const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
         tools: [
@@ -851,7 +856,7 @@ describe('ToolRouterSession execution routing', () => {
       const toolsInstance = (Tools as any).mock.results[(Tools as any).mock.results.length - 1]
         .value;
 
-      toolsInstance.executeMetaTool.mockImplementation(async () => {
+      toolsInstance.executeSessionTool.mockImplementation(async () => {
         callOrder.push('remote-start');
         await new Promise(r => setTimeout(r, 50));
         callOrder.push('remote-end');
@@ -906,7 +911,7 @@ describe('ToolRouterSession execution routing', () => {
       const latestToolsInstance = (Tools as any).mock.results[
         (Tools as any).mock.results.length - 1
       ].value;
-      latestToolsInstance.executeMetaTool.mockResolvedValueOnce({
+      latestToolsInstance.executeSessionTool.mockResolvedValueOnce({
         data: {
           results: [
             {

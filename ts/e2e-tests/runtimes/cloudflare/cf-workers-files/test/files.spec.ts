@@ -75,7 +75,7 @@ describe('@composio/core Files - Cloudflare Workers compatibility', () => {
     expect(body.error).toContain('not available on edge runtimes');
   });
 
-  it('should successfully initialize Composio with autoUploadDownloadFiles disabled', async () => {
+  it('should successfully initialize Composio with automatic file handling disabled', async () => {
     const request = new IncomingRequest('http://localhost/test/auto-upload-disabled');
     const ctx = createExecutionContext();
     const response = await app.fetch(request, env, ctx);
@@ -93,7 +93,7 @@ describe('@composio/core Files - Cloudflare Workers compatibility', () => {
     };
 
     expect(body.success).toBe(true);
-    expect(body.message).toContain('autoUploadDownloadFiles: false');
+    expect(body.message).toContain('dangerouslyAllowAutoUploadDownloadFiles: false');
     expect(body.hasProvider).toBe(true);
     expect(body.hasTools).toBe(true);
     expect(body.hasFiles).toBe(true);
@@ -121,6 +121,6 @@ describe('@composio/core Files - Cloudflare Workers compatibility', () => {
     expect(body.hasProvider).toBe(true);
     expect(body.hasTools).toBe(true);
     expect(body.hasFiles).toBe(true);
-    expect(body.note).toContain('autoUploadDownloadFiles defaults to false');
+    expect(body.note).toContain('dangerouslyAllowAutoUploadDownloadFiles defaults to false');
   });
 });

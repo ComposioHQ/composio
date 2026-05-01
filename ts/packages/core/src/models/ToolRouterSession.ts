@@ -12,6 +12,10 @@ import {
   ToolRouterSessionExecuteResponse,
   ToolRouterSessionExecuteResponseSchema,
   ToolRouterSessionProxyExecuteResponse,
+  ToolRouterSessionExecuteOptions,
+  ToolRouterSessionMetadata,
+  ToolRouterSessionPreloadConfig,
+  ToolRouterSessionWarning,
 } from '../types/toolRouter.types';
 import {
   transformSearchResponse,
@@ -33,8 +37,9 @@ import type {
   RegisteredCustomTool,
   RegisteredCustomToolkit,
 } from '../types/customTool.types';
-import type { ToolExecuteResponse } from '../types/tool.types';
+import type { Tool, ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
 import { findCustomTool, executeCustomTool } from './customToolExecution';
@@ -50,6 +55,9 @@ export class ToolRouterSession<
   public readonly sessionId: string;
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
+  public readonly preload: ToolRouterSessionPreloadConfig;
+  public readonly configVersion?: number;
+  public readonly warnings: ToolRouterSessionWarning[];
 
   /** Singleton session context — shared across all custom tool executions */
   private readonly sessionContext?: SessionContext;
@@ -61,7 +69,8 @@ export class ToolRouterSession<
     mcp: ToolRouterMCPServerConfig,
     experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt'>,
     private readonly customToolsMap?: CustomToolsMap,
-    private readonly userId?: string
+    private readonly userId?: string,
+    metadata?: ToolRouterSessionMetadata
   ) {
     if (customToolsMap && !userId) {
       throw new Error('userId is required when custom tools are bound to a session.');
@@ -72,6 +81,9 @@ export class ToolRouterSession<
       assistivePrompt: experimentalOverrides?.assistivePrompt,
       files: new ToolRouterSessionFilesMount(client, sessionId),
     };
+    this.preload = metadata?.preload ?? { tools: [] };
+    this.configVersion = metadata?.configVersion;
+    this.warnings = metadata?.warnings ?? [];
 
     // Create singleton session context if custom tools are bound
     if (customToolsMap && userId) {
@@ -90,10 +102,11 @@ export class ToolRouterSession<
    */
   async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType<TProvider['wrapTools']>> {
     const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
-    const tools = await ToolsModel.getRawToolRouterMetaTools(
+    const tools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
       modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined
     );
+    const toolBySlug = new Map(tools.map(tool => [tool.slug.toUpperCase(), tool]));
 
     if (this.hasCustomTools()) {
       // Create an execute function that splits local/remote tools in COMPOSIO_MULTI_EXECUTE_TOOL
@@ -102,13 +115,13 @@ export class ToolRouterSession<
         input: Record<string, unknown>
       ): Promise<ToolExecuteResponse> => {
         if (toolSlug === COMPOSIO_MULTI_EXECUTE_TOOL) {
-          return this.routeMultiExecute(input, ToolsModel, modifiers);
+          return this.routeMultiExecute(input, ToolsModel, tools, modifiers);
         }
-        // Non-multi-execute meta tools always go to backend
-        return ToolsModel.executeMetaTool(
+        return ToolsModel.executeSessionTool(
           toolSlug,
           { sessionId: this.sessionId, arguments: input },
-          modifiers
+          modifiers,
+          toolBySlug.get(toolSlug.toUpperCase())
         );
       };
 
@@ -284,11 +297,14 @@ export class ToolRouterSession<
    *
    * @param toolSlug - The tool slug to execute
    * @param arguments_ - Optional tool arguments
+   * @param options - Optional execution options
+   * @param options.account - Account identifier for direct app tool execution in multi-account sessions. Helper/meta tools either ignore this top-level field or define their own account-selection fields.
    * @returns The tool execution result
    */
   async execute(
     toolSlug: string,
-    arguments_?: Record<string, unknown>
+    arguments_?: Record<string, unknown>,
+    options?: ToolRouterSessionExecuteOptions
   ): Promise<ToolRouterSessionExecuteResponse> {
     // Check if this is a local tool (by original or final slug)
     const entry = findCustomTool(this.customToolsMap, toolSlug);
@@ -302,10 +318,15 @@ export class ToolRouterSession<
     }
 
     // Remote execution
-    const response = await this.client.toolRouter.session.execute(this.sessionId, {
+    const executeParams: SessionExecuteParams = {
       tool_slug: toolSlug,
       arguments: arguments_ ?? {},
-    });
+    };
+    if (options?.account) {
+      executeParams.account = options.account;
+    }
+
+    const response = await this.client.toolRouter.session.execute(this.sessionId, executeParams);
     const transformed = transformExecuteResponse(response);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
@@ -375,15 +396,18 @@ export class ToolRouterSession<
   private async routeMultiExecute(
     input: Record<string, unknown>,
     ToolsModel: Tools<TToolCollection, TTool, TProvider>,
+    tools: Tool[],
     modifiers?: SessionMetaToolOptions
   ): Promise<ToolExecuteResponse> {
+    const multiExecuteTool = tools.find(tool => tool.slug === COMPOSIO_MULTI_EXECUTE_TOOL);
     const toolItems = input.tools as unknown[];
     if (!Array.isArray(toolItems) || toolItems.length === 0) {
       // Fallback: send to backend as-is
-      return ToolsModel.executeMetaTool(
+      return ToolsModel.executeSessionTool(
         COMPOSIO_MULTI_EXECUTE_TOOL,
         { sessionId: this.sessionId, arguments: input },
-        modifiers
+        modifiers,
+        multiExecuteTool
       );
     }
 
@@ -403,10 +427,11 @@ export class ToolRouterSession<
 
     // All remote — just forward entire payload
     if (localItems.length === 0) {
-      return ToolsModel.executeMetaTool(
+      return ToolsModel.executeSessionTool(
         COMPOSIO_MULTI_EXECUTE_TOOL,
         { sessionId: this.sessionId, arguments: input },
-        modifiers
+        modifiers,
+        multiExecuteTool
       );
     }
 
@@ -422,10 +447,11 @@ export class ToolRouterSession<
     if (remoteIndices.length > 0) {
       const remoteToolItems = remoteIndices.map(i => toolItems[i]);
       const remoteInput = { ...input, tools: remoteToolItems };
-      remotePromise = ToolsModel.executeMetaTool(
+      remotePromise = ToolsModel.executeSessionTool(
         COMPOSIO_MULTI_EXECUTE_TOOL,
         { sessionId: this.sessionId, arguments: remoteInput },
-        modifiers
+        modifiers,
+        multiExecuteTool
       );
     }
 

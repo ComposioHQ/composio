@@ -335,6 +335,58 @@ describe('fileUtils', () => {
         })
       ).rejects.toThrow('Failed to download file: Not Found');
     });
+
+    it('synthesizes the filename server-side and ignores the s3Url path', async () => {
+      // Regression: lock the invariant that the saved filename comes from
+      // (toolSlug, mimeType, timestamp, random id) — never from the s3Url.
+      // If a future change started reflecting the s3Url path or query into
+      // the local filename, an attacker-controlled CDN response could write
+      // outside the download dir or stomp on existing files.
+      mockFetch.mockResolvedValue({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+      });
+
+      const result = await downloadFileFromS3({
+        toolSlug: 'github',
+        // The URL path contains traversal-looking segments and a totally
+        // different "filename"; none of this should leak into result.name.
+        s3Url:
+          'https://s3.example.com/../../../etc/passwd?response-content-disposition=attachment%3Bfilename%3Devil.sh',
+        mimeType: 'text/plain',
+      });
+
+      expect(result.name).toBe('github_1640995200000abc12345.txt');
+      expect(result.name).not.toContain('..');
+      expect(result.name).not.toContain('/');
+      expect(result.name).not.toContain('passwd');
+      expect(result.name).not.toContain('evil');
+    });
+
+    it('strips path components from a path-laden toolSlug before saving', async () => {
+      // Regression: the prefix is `${toolSlug}_`, so a slug containing `/`
+      // could in theory smuggle path components into the saved filename.
+      // `saveFile` defends against that by running the assembled filename
+      // through `path.basename` before joining with the download dir.
+      mockFetch.mockResolvedValue({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+      });
+
+      const result = await downloadFileFromS3({
+        toolSlug: 'AAA/../etc/passwd',
+        s3Url: 'https://s3.example.com/file.bin',
+        mimeType: 'text/plain',
+      });
+
+      // `result.name` is the pre-basename string (raw composed name); the
+      // actual on-disk path goes through `path.basename`. We assert that
+      // the on-disk path stays under the download dir by checking the
+      // returned filePath.
+      expect(result.filePath).toBeDefined();
+      expect(path.dirname(result.filePath as string)).not.toContain('etc');
+      expect(path.basename(result.filePath as string)).toBe('passwd_1640995200000abc12345.txt');
+    });
   });
 
   describe('File object handling', () => {

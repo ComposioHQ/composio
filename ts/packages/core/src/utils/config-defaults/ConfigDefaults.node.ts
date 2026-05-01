@@ -1,7 +1,7 @@
 import type { ConfigDefaults } from './types';
 
 export const CONFIG_DEFAULTS: ConfigDefaults = {
-  autoUploadDownloadFiles: true,
+  dangerouslyAllowAutoUploadDownloadFiles: false,
   allowTracking: true,
   toolkitVersions: 'latest',
 };

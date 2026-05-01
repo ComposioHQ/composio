@@ -122,12 +122,13 @@ export const transformToolRouterWorkbenchParams = (
     enable: params.enable ?? true,
     enable_proxy_execution: params.enableProxyExecution,
     auto_offload_threshold: params.autoOffloadThreshold,
+    sandbox_size: params.sandboxSize,
   };
 };
 
 export const transformToolRouterMultiAccountParams = (
   params?: ToolRouterCreateSessionConfig['multiAccount']
-): Record<string, unknown> | undefined => {
+): SessionCreateParams.MultiAccount | undefined => {
   if (!params) {
     return undefined;
   }

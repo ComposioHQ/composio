@@ -188,7 +188,8 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_gmail_default_session',
-            config: { user_id: params.user_id },
+            config: { user_id: params.user_id, preload: { tools: [] } },
+            config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
@@ -270,7 +271,8 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_gmail_explicit_session',
-            config: { user_id: params.user_id },
+            config: { user_id: params.user_id, preload: { tools: [] } },
+            config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
@@ -333,7 +335,8 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_posthog_test_session',
-            config: { user_id: params.user_id },
+            config: { user_id: params.user_id, preload: { tools: [] } },
+            config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };
@@ -384,7 +387,8 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_posthog_cached_session',
-            config: { user_id: params.user_id },
+            config: { user_id: params.user_id, preload: { tools: [] } },
+            config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
           };

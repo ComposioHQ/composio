@@ -82,7 +82,8 @@ const RecordingTerminalUI = TerminalUI.of({
 describe('CLI: composio dev connected-accounts link', () => {
   const toolRouterCreateSpy = vi.fn(async () => ({
     session_id: 'trs_test_session',
-    config: { user_id: 'consumer-user-org_test' },
+    config: { user_id: 'consumer-user-org_test', preload: { tools: [] } },
+    config_version: 1,
     mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
     tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
   }));

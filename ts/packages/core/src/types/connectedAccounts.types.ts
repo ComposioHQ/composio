@@ -195,6 +195,14 @@ export const CreateConnectedAccountLinkOptionsSchema = z.object({
    * Human-readable alias for the connected account. Must be unique per userId and toolkit within the project.
    */
   alias: z.string().optional(),
+  /**
+   * Whether to allow multiple connected accounts for the same user and auth config.
+   * When `false` (default), `link()` throws `ComposioMultipleConnectedAccountsError`
+   * if the user already has an `ACTIVE` connection on this auth config — matching
+   * the guard on `initiate()`. Pair with `alias` and a session-level
+   * `multiAccount` config to disambiguate at execution time.
+   */
+  allowMultiple: z.boolean().optional(),
 });
 export type CreateConnectedAccountLinkOptions = z.infer<
   typeof CreateConnectedAccountLinkOptionsSchema

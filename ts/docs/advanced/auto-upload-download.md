@@ -6,10 +6,11 @@ Composio SDK includes an automatic file handling system that manages file upload
 
 The file handling system in Composio SDK is:
 
-- **Opt-out**: Enabled by default but can be disabled
-- **Automatic**: Handles file uploads and downloads transparently
-- **Configurable**: Can be disabled for manual file handling
-- **Sensitive path protection (Node)**: Local string paths used for upload are checked by default against a denylist of path segments and file names (see below)
+- **Opt-in**: Disabled by default. Set `dangerouslyAllowAutoUploadDownloadFiles: true` to enable.
+- **Automatic** (when enabled): Handles file uploads and downloads transparently.
+- **Allowlisted**: Even when enabled, local upload paths must resolve inside one of the directories listed in `fileUploadDirs` (default `[~/.composio/temp]`). See [Restricting upload paths with `fileUploadDirs`](#restricting-upload-paths-with-fileuploaddirs) below.
+- **Configurable**: Manual handling via `composio.files.upload()` / `composio.files.download()` is always available and is **not** subject to `fileUploadDirs`.
+- **Sensitive path protection (Node)**: Local string paths used for upload are checked by default against a denylist of path segments and file names (see below).
 
 ## Security: sensitive local paths
 
@@ -67,10 +68,10 @@ const toolSchema = {
 }
 ```
 
-When executing a tool with file upload:
+When executing a tool with file upload (auto-handling enabled):
 
 ```typescript
-// With auto upload enabled (default)
+// Requires `dangerouslyAllowAutoUploadDownloadFiles: true` AND a path inside `fileUploadDirs`
 const result = await composio.tools.execute('your-tool', {
   arguments: {
     file: '/path/to/local/file.txt'  // Local file path
@@ -124,22 +125,48 @@ Example tool response with file download:
 }
 ```
 
-## Disabling Auto File Handling
+## Default: auto file handling is off
 
-You can disable automatic file handling when initializing the SDK:
+Automatic file upload/download during tool execution is **disabled** unless you pass `dangerouslyAllowAutoUploadDownloadFiles: true` to the `Composio` constructor.
+
+## Restricting upload paths with `fileUploadDirs`
+
+When auto-handling is on, the SDK only reads local files from directories you have explicitly allowlisted via `fileUploadDirs`. Anything outside the list is rejected with `ComposioFileUploadPathNotAllowedError` before the file is read.
+
+| `fileUploadDirs` value | Effective allowlist |
+| ---------------------- | ------------------- |
+| omitted / `undefined`  | `[~/.composio/temp]` (default staging dir) |
+| `false`                | `[]` — **all** local paths rejected (URLs and `File`/`Blob` still work) |
+| `[]`                   | `[]` — same as `false`; explicit "no local paths" |
+| `[<dir1>, <dir2>, …]`  | exactly those directories. `~` is expanded; entries are `realpath`-resolved; comparison is on a path-component boundary (`/tmp/foo` allows `/tmp/foo/bar` but **not** `/tmp/foo-bar`) |
+
+URLs (`http://…` / `https://…`) and JavaScript `File` / `Blob` objects are not subject to the allowlist — only local string paths are. The denylist (`sensitiveFileUploadProtection`) still runs in addition to the allowlist; both must accept the path.
 
 ```typescript
 import { Composio } from '@composio/core';
 
+// Widen the allowlist to the directories your code actually reads from.
 const composio = new Composio({
-  apiKey: 'your-api-key',
-  autoUploadDownloadFiles: false
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  // Replaces the default `[~/.composio/temp]`. Include it explicitly if you
+  // still want the default staging dir to keep working.
+  fileUploadDirs: ['/srv/agent/uploads', '~/.composio/temp'],
+});
+
+// Reject every local path; only URLs and File/Blob objects work.
+const composioStrict = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: false,
 });
 ```
 
+If you want to upload from arbitrary paths without widening the allowlist, use the manual `composio.files.upload(...)` API below — it bypasses `fileUploadDirs` by design (the caller is expected to control the path).
+
 ## Manual File Handling
 
-When auto file handling is disabled, you'll need to handle the file operations yourself using the `composio.files` API:
+When auto file handling is not enabled, you'll need to handle the file operations yourself using the `composio.files` API:
 
 ### Manual Upload
 
@@ -193,12 +220,13 @@ if (result.data.file?.s3url) {
 
 ## File Storage Location
 
-Downloaded files are stored in a temporary directory:
+Downloaded files are stored in:
 
-- Location: `~/.composio/files/` (user's home directory)
-- Files are named using the pattern: `{toolSlug}_{timestamp}.{extension}`
-- The directory is created automatically when needed
-- File extensions are derived from the MIME type
+- **Default**: `~/.composio/files/` (user's home directory).
+- **Custom**: pass `fileDownloadDir: '/some/abs/path'` to the `Composio` constructor.
+- Files are named using the pattern: `{toolSlug}_{timestamp}.{extension}` (server-synthesized; the S3 URL never affects the local filename).
+- The directory is created automatically when needed.
+- File extensions are derived from the MIME type.
 
 ## Error Handling
 
@@ -209,6 +237,7 @@ import {
   ComposioFileUploadError,
   ComposioSensitiveFilePathBlockedError,
   ComposioFileUploadAbortedError,
+  ComposioFileUploadPathNotAllowedError,
 } from '@composio/core';
 
 try {
@@ -220,7 +249,9 @@ try {
     dangerouslySkipVersionCheck: true,
   });
 } catch (error) {
-  if (error instanceof ComposioSensitiveFilePathBlockedError) {
+  if (error instanceof ComposioFileUploadPathNotAllowedError) {
+    console.error('Path is outside fileUploadDirs:', error.message);
+  } else if (error instanceof ComposioSensitiveFilePathBlockedError) {
     console.error('Blocked sensitive path:', error.message);
   } else if (error instanceof ComposioFileUploadAbortedError) {
     console.error('Upload aborted by beforeFileUpload:', error.message);

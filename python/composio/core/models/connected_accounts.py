@@ -455,6 +455,7 @@ class ConnectedAccounts:
         *,
         callback_url: t.Optional[str] = None,
         alias: t.Optional[str] = None,
+        allow_multiple: bool = False,
     ) -> ConnectionRequest:
         """
         Create a Composio Connect Link for a user to connect their account to a given auth config.
@@ -464,6 +465,13 @@ class ConnectedAccounts:
         :param user_id: The external user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
         :param callback_url: The URL to redirect the user to post connecting their account.
+        :param alias: Optional human-readable alias for the connection. Must be unique
+            per userId and toolkit within the project.
+        :param allow_multiple: Whether to allow multiple connected accounts for the same
+            user and auth config. When False (default), raises
+            ``ComposioMultipleConnectedAccountsError`` if the user already has an
+            ``ACTIVE`` connection on this auth config. Pair with ``alias`` and a
+            session-level ``multi_account`` config to disambiguate at execution time.
         :return: Connection request object.
 
         Example:
@@ -488,6 +496,23 @@ class ConnectedAccounts:
             # Wait for the connection to be established
             connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
         """
+        # Mirror ``initiate()``: guard against silently creating extra
+        # connections on the same auth config.
+        connected_accounts = self.list(
+            user_ids=[user_id], auth_config_ids=[auth_config_id], statuses=["ACTIVE"]
+        )
+        if connected_accounts.items and not allow_multiple:
+            raise exceptions.ComposioMultipleConnectedAccountsError(
+                f"Multiple connected accounts found for user {user_id} in auth config {auth_config_id}. "
+                "Please use the allow_multiple option to allow multiple connected accounts."
+            )
+        elif connected_accounts.items:
+            logger.warning(
+                "[Warn:AllowMultiple] Multiple connected accounts found for user %s in auth config %s",
+                user_id,
+                auth_config_id,
+            )
+
         response = self._client.link.create(
             auth_config_id=auth_config_id,
             user_id=user_id,

@@ -27,11 +27,13 @@ import {
   SessionExperimental,
   MCPServerType,
   ToolRouterMCPServerConfig,
+  ToolRouterSessionMetadata,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import {
   SessionCreateParams,
   SessionCreateResponse,
+  SessionRetrieveResponse,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import {
   transformToolRouterTagsParams,
@@ -48,6 +50,15 @@ import {
   serializeCustomToolkits,
 } from './CustomTool';
 import type { CustomToolsMap } from '../types/customTool.types';
+
+function getSessionMetadata(session: SessionCreateResponse | SessionRetrieveResponse) {
+  const metadata: ToolRouterSessionMetadata = {
+    preload: session.config.preload,
+    configVersion: session.config_version,
+    warnings: 'warnings' in session ? (session.warnings ?? []) : [],
+  };
+  return metadata;
+}
 
 export class ToolRouter<
   TToolCollection,
@@ -128,7 +139,7 @@ export class ToolRouter<
 
     const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
 
-    const payload: SessionCreateParams & { multi_account?: Record<string, unknown> } = {
+    const payload: SessionCreateParams = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
@@ -140,6 +151,7 @@ export class ToolRouter<
       ),
       workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
       multi_account: multiAccountPayload,
+      preload: routerConfig.preload,
       experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
     };
 
@@ -165,7 +177,8 @@ export class ToolRouter<
       this.createMCPServerConfig(session.mcp),
       { assistivePrompt },
       customToolsMap,
-      userId
+      userId,
+      getSessionMetadata(session)
     );
   }
 
@@ -192,7 +205,11 @@ export class ToolRouter<
       this.client,
       this.config,
       session.session_id,
-      this.createMCPServerConfig(session.mcp)
+      this.createMCPServerConfig(session.mcp),
+      undefined,
+      undefined,
+      undefined,
+      getSessionMetadata(session)
     );
   }
 }

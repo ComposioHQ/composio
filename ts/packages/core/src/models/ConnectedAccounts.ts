@@ -263,6 +263,23 @@ export class ConnectedAccounts {
       });
     }
 
+    // Mirror initiate(): guard against silently creating extra connections on
+    // the same auth config unless the caller explicitly opts in.
+    const existing = await this.list({
+      userIds: [userId],
+      authConfigIds: [authConfigId],
+      statuses: [ConnectedAccountStatuses.ACTIVE],
+    });
+    if (existing.items.length > 0 && !requestOptions.data.allowMultiple) {
+      throw new ComposioMultipleConnectedAccountsError(
+        `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}. Please use the allowMultiple option to allow multiple connected accounts.`
+      );
+    } else if (existing.items.length > 0) {
+      logger.warn(
+        `[Warn:AllowMultiple] Multiple connected accounts found for user ${userId} in auth config ${authConfigId}`
+      );
+    }
+
     try {
       const response = await this.client.link.create({
         auth_config_id: authConfigId,

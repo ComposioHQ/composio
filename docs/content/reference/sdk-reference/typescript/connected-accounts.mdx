@@ -19,7 +19,7 @@ const result = await composio.connectedAccounts.list();
 Deletes a connected account.
 
 This method permanently removes a connected account from the Composio platform.
-This action cannot be undone and will revoke any access tokens associated with the account.
+This action cannot be undone.
 
 ```typescript
 async delete(nanoid: string): Promise<ConnectedAccountDeleteResponse>

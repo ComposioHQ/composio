@@ -40,9 +40,10 @@ class SDKConfig(te.TypedDict):
     allow_tracking: te.NotRequired[bool]
     file_download_dir: te.NotRequired[str]
     toolkit_versions: te.NotRequired[ToolkitVersionParam]
-    auto_upload_download_files: te.NotRequired[bool]
+    dangerously_allow_auto_upload_download_files: te.NotRequired[bool]
     sensitive_file_upload_protection: te.NotRequired[bool]
     file_upload_path_deny_segments: te.NotRequired[t.Sequence[str]]
+    file_upload_dirs: te.NotRequired[t.Union[t.Sequence[str], t.Literal[False]]]
 
 
 class Composio(t.Generic[TTool, TToolCollection], WithLogger):
@@ -105,9 +106,25 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
                                 - A dictionary mapping toolkit names to specific versions
                                 - A string (e.g., 'latest', '20250906_01') to use the same version for all toolkits
                                 - None or omitted to use 'latest' as default
-        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
+        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file
+            upload and download during tool execution. Defaults to False.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload. Defaults to True.
         :param file_upload_path_deny_segments: Extra path segment names merged with the built-in denylist.
+        :param file_upload_dirs: Allowlist of directories from which the SDK is allowed
+            to read local files during **automatic** file upload (the flow gated by
+            ``dangerously_allow_auto_upload_download_files=True``).
+
+            - ``None`` (default) -> ``[~/.composio/temp]``.
+            - ``False`` -> reject every local path during auto-upload. URLs and
+              in-memory bytes still work because they aren't path-checked.
+            - ``Sequence[str]`` (non-empty) -> use as the allowlist. A file is accepted
+              iff its symlink-resolved absolute path is inside one of these directories
+              on a path-component boundary (``/tmp/foo`` allows ``/tmp/foo/bar`` but
+              NOT ``/tmp/foo-bar``).
+            - ``[]`` -> behaves like ``False`` (kept as an alias; prefer ``False``).
+            - Providing a value REPLACES the default. Include ``~/.composio/temp`` in
+              your list if you want the default staging dir to keep working.
+            - On Windows, entries are compared case-insensitively.
         """
         WithLogger.__init__(self)
         api_key = kwargs.get("api_key", os.environ.get("COMPOSIO_API_KEY"))
@@ -140,14 +157,20 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = kwargs.get(
             "file_upload_path_deny_segments"
         )
+        file_upload_dirs: t.Union[t.Sequence[str], t.Literal[False], None] = kwargs.get(
+            "file_upload_dirs"
+        )
         self.tools = Tools(
             client=self._client,
             provider=actual_provider,
             file_download_dir=kwargs.get("file_download_dir"),
             toolkit_versions=toolkit_versions,
-            auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
+            dangerously_allow_auto_upload_download_files=kwargs.get(
+                "dangerously_allow_auto_upload_download_files", False
+            ),
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
+            file_upload_dirs=file_upload_dirs,
         )
 
         self.toolkits = Toolkits(client=self._client)
@@ -165,9 +188,12 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         self.tool_router = ToolRouter(
             client=self._client,
             provider=actual_provider,
-            auto_upload_download_files=kwargs.get("auto_upload_download_files", True),
+            dangerously_allow_auto_upload_download_files=kwargs.get(
+                "dangerously_allow_auto_upload_download_files", False
+            ),
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
+            file_upload_dirs=file_upload_dirs,
         )
         self.create = self.tool_router.create
         self.use = self.tool_router.use

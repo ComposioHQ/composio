@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import typing as t
+from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel as PydanticBaseModel
@@ -26,6 +27,7 @@ from composio.core.types import ToolkitVersionParam
 from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
+from composio.utils.upload_dir_allowlist import resolve_effective_upload_allowlist
 
 from ._modifiers import (
     Modifiers,
@@ -102,9 +104,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         provider: BaseProvider[TTool, TToolCollection],
         file_download_dir: t.Optional[str] = None,
         toolkit_versions: t.Optional[ToolkitVersionParam] = None,
-        auto_upload_download_files: bool = True,
+        dangerously_allow_auto_upload_download_files: bool = False,
         sensitive_file_upload_protection: bool = True,
         file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_dirs: t.Union[t.Sequence[str], t.Literal[False], None] = None,
     ):
         """
         Initialize the tools resource.
@@ -113,10 +116,27 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         :param provider: The provider to use for the tools resource.
         :param file_download_dir: Output directory for downloadable files
         :param toolkit_versions: The versions of the toolkits to use. Defaults to 'latest' if not provided.
-        :param auto_upload_download_files: Whether to automatically upload and download files. Defaults to True.
+        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
         :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
         :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
+        :param file_upload_dirs: Allowlist of directories from which local files may
+            be auto-uploaded. Only consulted when
+            ``dangerously_allow_auto_upload_download_files=True``. See Composio docs
+            for details.
         """
+        self._auto_upload_download_files = bool(
+            dangerously_allow_auto_upload_download_files
+        )
+        # Resolve allowlist once, but only if auto-upload is enabled. When it's
+        # disabled there's no auto-upload code path, so we pass ``None`` and
+        # FileHelper won't run the allowlist check either way. Manual APIs (if
+        # ever added in the future) should also pass ``None``.
+        resolved_allowlist: t.Optional[t.List[Path]] = (
+            resolve_effective_upload_allowlist(file_upload_dirs)
+            if self._auto_upload_download_files
+            else None
+        )
+
         self._client = client
         self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
@@ -125,9 +145,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             outdir=file_download_dir,
             sensitive_file_upload_protection=sensitive_file_upload_protection,
             file_upload_path_deny_segments=file_upload_path_deny_segments,
+            file_upload_allowlist=resolved_allowlist,
         )
         self._toolkit_versions = toolkit_versions
-        self._auto_upload_download_files = auto_upload_download_files
 
         self.custom_tool = self._custom_tools.register
         self.provider = provider
@@ -218,11 +238,11 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         modifiers: t.Optional["Modifiers"] = None,
     ) -> list[Tool]:
         """
-        Fetches the meta tools for a tool router session.
+        Fetches the tools exposed by a tool router session.
 
-        This method fetches the meta tools from the Composio API and transforms them to
-        the expected format. It provides access to the underlying meta tool data without
-        provider-specific wrapping.
+        This method fetches helper/meta tools and any preloaded app tools from the
+        Composio API and transforms them to the expected format. It provides access
+        to the underlying tool data without provider-specific wrapping.
 
         :param session_id: The session ID to get the meta tools for
         :param modifiers: Optional modifiers to apply to the tool schemas
@@ -254,7 +274,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
             ```
         """
-        # Fetch meta tools from the API
+        # Fetch session tools from the API
         tools_response = self._client.tool_router.session.tools(session_id=session_id)
         # Cast to Tool type - session.tools returns compatible Item type from different response schema
         tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
@@ -276,6 +296,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 )
                 for tool in tools_list
             ]
+
+        self._tool_schemas.update(
+            {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
+        )
 
         return tools_list
 
@@ -314,13 +338,14 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         )
 
         # Always enhance schema descriptions (type hints and required notes)
-        # regardless of auto_upload_download_files setting
+        # regardless of dangerously_allow_auto_upload_download_files
         for tool in tools_list:
             tool.input_parameters = self._file_helper.enhance_schema_descriptions(
                 schema=tool.input_parameters,
             )
 
-        # Only process file_uploadable schemas when auto_upload_download_files is True
+        # Only process file_uploadable schemas when the caller opted in via
+        # `dangerously_allow_auto_upload_download_files=True`.
         if self._auto_upload_download_files:
             for tool in tools_list:
                 tool.input_parameters = (
@@ -419,10 +444,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         modifiers: t.Optional[Modifiers] = None,
     ) -> AgenticProviderExecuteFn:
         """
-        Create an execute function for tool router that uses the session's execute_meta endpoint.
+        Create an execute function for tool router session tools.
 
         This method creates a function that executes tools within a tool router session context.
-        It uses the session's execute_meta endpoint which handles authentication and connection
+        It uses the session's execute endpoint which handles authentication and connection
         management automatically.
 
         :param session_id: The session ID
@@ -435,7 +460,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             Execute a tool in the tool router session.
 
             This function is used by agentic providers to execute tools within
-            a tool router session context. It uses the session's execute_meta
+            a tool router session context. It uses the session's execute
             endpoint which handles authentication and connection management
             automatically.
 
@@ -461,7 +486,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 self._tool_schemas[slug] = tool
 
             if self._auto_upload_download_files:
-                meta_tk = tool.toolkit.slug if tool.toolkit else "unknown"
+                meta_tk = tool.toolkit.slug if tool.toolkit else "composio"
                 bfu = merge_before_file_upload(
                     modifiers,
                     tool=slug,
@@ -473,8 +498,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     before_file_upload=bfu,
                 )
 
+            toolkit_slug = tool.toolkit.slug if tool.toolkit else "composio"
+
             # Apply before_execute modifiers
-            # Meta tools are always from the 'composio' toolkit
             processed_arguments = arguments
             if modifiers is not None:
                 params: ToolExecuteParams = {
@@ -483,7 +509,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 type_before: t.Literal["before_execute"] = "before_execute"
                 modified_params = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit="composio",
+                    toolkit=toolkit_slug,
                     tool=slug,
                     type=type_before,
                     request=params,
@@ -493,13 +519,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             # Serialize any Pydantic model instances before sending to the API
             processed_arguments = _serialize_arguments(processed_arguments)
 
-            # Execute the tool via the session's execute_meta endpoint
-            # Note: execute_meta accepts regular tool slugs at runtime, not just meta tool slugs
-            # The type signature expects Literal meta tool slugs, but runtime accepts any str
-            response = self._client.tool_router.session.execute_meta(
+            response = self._client.tool_router.session.execute(
                 session_id=session_id,
-                slug=slug,  # type: ignore[arg-type]
+                tool_slug=slug,
                 arguments=processed_arguments,
+                # Provider-wrapped session tools are agentic calls, so they opt into
+                # direct tool offload when the backend session workbench allows it.
+                enable_auto_workbench_offload=True,
             )
 
             # Convert response to standard format
@@ -514,7 +540,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 type_after: t.Literal["after_execute"] = "after_execute"
                 result = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit="composio",
+                    toolkit=toolkit_slug,
                     tool=slug,
                     type=type_after,
                     response=result,

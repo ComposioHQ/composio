@@ -1322,6 +1322,123 @@ class TestFileUploadableFromUrl:
 
         assert "Fetch failed" in str(exc_info.value)
 
+    def test_before_file_upload_hook_receives_source_url(self):
+        """from_path emits ``source="url"`` to the hook for http(s) inputs.
+
+        We abort from the hook to avoid the downstream network path; the
+        pre-abort capture is what we're asserting on.
+        """
+        from composio.exceptions import FileUploadAbortedError
+
+        mock_client = MagicMock()
+        seen = {}
+
+        def hook(ctx):
+            seen.update(ctx)
+            return False
+
+        with pytest.raises(FileUploadAbortedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file="https://example.com/photo.png",
+                tool="SEND_EMAIL",
+                toolkit="gmail",
+                before_file_upload=hook,
+            )
+
+        assert seen == {
+            "path": "https://example.com/photo.png",
+            "source": "url",
+            "tool": "SEND_EMAIL",
+            "toolkit": "gmail",
+        }
+
+    def test_before_file_upload_hook_receives_source_path(self, tmp_path):
+        """from_path emits ``source="path"`` to the hook for local inputs."""
+        from composio.exceptions import FileUploadAbortedError
+
+        f = tmp_path / "doc.txt"
+        f.write_text("hello")
+        mock_client = MagicMock()
+        seen = {}
+
+        def hook(ctx):
+            seen.update(ctx)
+            return False
+
+        with pytest.raises(FileUploadAbortedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file=str(f),
+                tool="MY_TOOL",
+                toolkit="my_toolkit",
+                before_file_upload=hook,
+            )
+
+        assert seen == {
+            "path": str(f),
+            "source": "path",
+            "tool": "MY_TOOL",
+            "toolkit": "my_toolkit",
+        }
+
+    def test_url_hook_returning_local_path_routes_through_path_branch(self, tmp_path):
+        """A hook that rewrites a URL into a local path must NOT be fed to
+        ``from_url``. It has to route back into the local-file branch so the
+        allowlist / denylist / existence checks all run."""
+        from composio.exceptions import SDKFileNotFoundError
+
+        # A path that's syntactically a path but does not exist — if routing
+        # is correct, we'll get SDKFileNotFoundError from the local branch.
+        # If the bug is still there, we'd hit `from_url` and the URL fetch
+        # would explode (or worse, succeed) instead.
+        rewritten = str(tmp_path / "does-not-exist.txt")
+
+        def hook(ctx):
+            assert ctx["source"] == "url"
+            return rewritten
+
+        mock_client = MagicMock()
+
+        with pytest.raises(SDKFileNotFoundError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file="https://example.com/photo.png",
+                tool="T",
+                toolkit="tk",
+                before_file_upload=hook,
+            )
+
+    @patch("composio.core.models._files._fetch_file_from_url")
+    @patch("composio.core.models._files._upload_bytes_to_s3")
+    def test_path_hook_returning_url_routes_through_url_branch(
+        self, mock_upload, mock_fetch, tmp_path
+    ):
+        """Inverse of the above: a hook on a local path that returns a URL
+        must route through ``from_url``, not stat the URL string as a file."""
+        f = tmp_path / "local.txt"
+        f.write_text("hi")
+
+        mock_fetch.return_value = ("photo.png", b"x", "image/png")
+        mock_upload.return_value = "s3-key"
+
+        def hook(ctx):
+            assert ctx["source"] == "path"
+            return "https://example.com/photo.png"
+
+        mock_client = MagicMock()
+        result = FileUploadable.from_path(
+            client=mock_client,
+            file=str(f),
+            tool="T",
+            toolkit="tk",
+            before_file_upload=hook,
+        )
+
+        # If routing worked, the URL fetch path was taken.
+        mock_fetch.assert_called_once_with("https://example.com/photo.png")
+        assert result.s3key == "s3-key"
+
 
 class TestFileHelperWithUrls:
     """Test cases for FileHelper handling URLs in file uploads."""

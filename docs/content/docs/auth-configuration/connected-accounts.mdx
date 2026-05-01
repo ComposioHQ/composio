@@ -192,7 +192,7 @@ INACTIVE accounts cannot execute tools. Tool execution will fail until the statu
 
 ## Delete accounts
 
-Permanently remove a connected account and revoke all credentials:
+Permanently remove a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -216,7 +216,7 @@ console.log('Account deleted successfully');
 </Tabs>
 
 <Callout type="warn">
-Deletion is permanent. Users must re-authenticate to reconnect.
+Deletion is permanent and cannot be undone.
 </Callout>
 
 ## Credential masking

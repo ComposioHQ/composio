@@ -7,8 +7,10 @@ import {
 import ComposioClient from '@composio/client';
 import logger from '../logger';
 import {
+  ComposioFileNotFoundError,
   ComposioFileUploadAbortedError,
   ComposioFileUploadError,
+  ComposioFileUploadPathNotAllowedError,
   ComposioSensitiveFilePathBlockedError,
 } from '../../errors/FileModifierErrors';
 import type { beforeFileUploadModifier } from '../../types/modifiers.types';
@@ -39,7 +41,7 @@ const hydrateFiles = async (
     client: ComposioClient;
   } & Pick<
     GetFileDataAfterUploadingToS3Options,
-    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments'
+    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments' | 'fileUploadAllowlist'
   > & {
       beforeFileUpload?: beforeFileUploadModifier;
     }
@@ -51,12 +53,16 @@ const hydrateFiles = async (
     // Upload only if the runtime value is a string (i.e., a local path) or blob
     if (typeof value !== 'string' && !(value instanceof File)) return value;
 
-    const runBeforeFileUpload = async (path: string): Promise<string> => {
+    const runBeforeFileUpload = async (
+      path: string,
+      source: 'path' | 'url' | 'file'
+    ): Promise<string> => {
       if (!ctx.beforeFileUpload) {
         return path;
       }
       const out = await ctx.beforeFileUpload({
         path,
+        source,
         toolSlug: ctx.toolSlug,
         toolkitSlug: ctx.toolkitSlug,
       });
@@ -69,7 +75,10 @@ const hydrateFiles = async (
     };
 
     if (typeof value === 'string') {
-      const pathOrUrl = await runBeforeFileUpload(value);
+      // Match the URL/local-path split used downstream in
+      // getFileDataAfterUploadingToS3 so the hook sees the same categorisation.
+      const source = value.startsWith('http') ? 'url' : 'path';
+      const pathOrUrl = await runBeforeFileUpload(value, source);
       logger.debug(`Uploading file "${pathOrUrl}"`);
       return getFileDataAfterUploadingToS3(pathOrUrl, {
         toolSlug: ctx.toolSlug,
@@ -77,13 +86,16 @@ const hydrateFiles = async (
         client: ctx.client,
         sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
         fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+        fileUploadAllowlist: ctx.fileUploadAllowlist,
       });
     }
 
-    // File
+    // File — `path` is the filename only; a string return replaces it with a
+    // local-path upload.
     if (ctx.beforeFileUpload) {
       const out = await ctx.beforeFileUpload({
         path: value.name,
+        source: 'file',
         toolSlug: ctx.toolSlug,
         toolkitSlug: ctx.toolkitSlug,
       });
@@ -100,10 +112,12 @@ const hydrateFiles = async (
           client: ctx.client,
           sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
           fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+          fileUploadAllowlist: ctx.fileUploadAllowlist,
         });
       }
     }
     logger.debug(`Uploading file "${value.name}"`);
+    // File/Blob values are not subject to the upload-dir allowlist.
     return getFileDataAfterUploadingToS3(value, {
       toolSlug: ctx.toolSlug,
       toolkitSlug: ctx.toolkitSlug,
@@ -114,7 +128,14 @@ const hydrateFiles = async (
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 2. Handle anyOf/oneOf/allOf - try each variant that may contain file_uploadable
+  // 2. Handle anyOf/oneOf/allOf — pick the first variant that contains a
+  // file_uploadable property and hydrate against it.
+  //
+  // We deliberately do NOT loop over every uploadable variant. With `oneOf`,
+  // exactly one variant should apply at runtime, and applying multiple would
+  // upload the same file once per variant — two presigned-URL round-trips and
+  // two S3 PUTs for a two-variant `oneOf`. Matching the Python SDK
+  // (`_find_uploadable_schema_variant`), we short-circuit on the first match.
   // ──────────────────────────────────────────────────────────────────────────
   const schemaVariants = [
     ...(schema?.anyOf ?? []),
@@ -123,16 +144,9 @@ const hydrateFiles = async (
   ];
 
   if (schemaVariants.length > 0) {
-    // Find variants that have file_uploadable properties
-    const uploadableVariants = schemaVariants.filter(schemaHasFileUploadable);
-
-    if (uploadableVariants.length > 0) {
-      // Process with each uploadable variant - we try all since we can't know which one matches at runtime
-      let result = value;
-      for (const variant of uploadableVariants) {
-        result = await hydrateFiles(result, variant, ctx);
-      }
-      return result;
+    const firstUploadableVariant = schemaVariants.find(schemaHasFileUploadable);
+    if (firstUploadableVariant) {
+      return hydrateFiles(value, firstUploadableVariant, ctx);
     }
     // If no uploadable variants found, fall through to check base properties
   }
@@ -172,7 +186,7 @@ const hydrateFiles = async (
  */
 const downloadS3File = async (
   value: Record<string, unknown>,
-  ctx: { toolSlug: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string }
 ): Promise<unknown> => {
   const { s3url, mimetype } = value as {
     s3url: string;
@@ -186,6 +200,7 @@ const downloadS3File = async (
       toolSlug: ctx.toolSlug,
       s3Url: s3url,
       mimeType: mimetype ?? 'application/octet-stream',
+      fileDownloadDir: ctx.fileDownloadDir,
     });
 
     logger.debug(`Downloaded → ${dl.filePath}`);
@@ -223,7 +238,7 @@ const downloadS3File = async (
 const hydrateDownloads = async (
   value: unknown,
   schema: JSONSchemaProperty | undefined,
-  ctx: { toolSlug: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string }
 ): Promise<unknown> => {
   // ──────────────────────────────────────────────────────────────────────────
   // 1. Direct S3 reference (data-driven detection)
@@ -304,8 +319,8 @@ export class FileToolModifier {
   private client: ComposioClient;
   private fileUploadPathOptions: Pick<
     GetFileDataAfterUploadingToS3Options,
-    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments'
-  > & { beforeFileUpload?: beforeFileUploadModifier };
+    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments' | 'fileUploadAllowlist'
+  > & { beforeFileUpload?: beforeFileUploadModifier; fileDownloadDir?: string };
 
   constructor(
     client: ComposioClient,
@@ -315,7 +330,7 @@ export class FileToolModifier {
     this.fileUploadPathOptions = fileUploadPathOptions;
   }
 
-  async modifyToolSchema(toolSlug: string, toolkitSlug: string, schema: Tool): Promise<Tool> {
+  async modifyToolSchema(schema: Tool): Promise<Tool> {
     if (!schema.inputParameters?.properties) {
       return schema;
     }
@@ -356,7 +371,9 @@ export class FileToolModifier {
     } catch (error) {
       if (
         error instanceof ComposioSensitiveFilePathBlockedError ||
-        error instanceof ComposioFileUploadAbortedError
+        error instanceof ComposioFileUploadAbortedError ||
+        error instanceof ComposioFileUploadPathNotAllowedError ||
+        error instanceof ComposioFileNotFoundError
       ) {
         throw error;
       }
@@ -379,6 +396,7 @@ export class FileToolModifier {
     // Walk result.data without mutating the original, using output schema for guidance
     const dataWithDownloads = await hydrateDownloads(result.data, tool.outputParameters, {
       toolSlug,
+      fileDownloadDir: this.fileUploadPathOptions.fileDownloadDir,
     });
 
     return { ...result, data: dataWithDownloads as typeof result.data };

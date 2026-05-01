@@ -172,6 +172,17 @@ class SensitiveFilePathBlockedError(FileError):
     """Raised when a local file path is refused before upload (sensitive directory or credential-like name)."""
 
 
+class FileUploadPathNotAllowedError(FileError):
+    """
+    Raised when automatic file upload during tool execution is attempted from a
+    path outside the configured ``file_upload_dirs`` allowlist.
+
+    Only fires for auto-upload (enabled via
+    ``dangerously_allow_auto_upload_download_files=True``). Manual upload APIs
+    are not subject to this check.
+    """
+
+
 class FileUploadAbortedError(FileError):
     """Raised when a ``before_file_upload`` hook returns ``False``."""
 

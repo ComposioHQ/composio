@@ -310,6 +310,12 @@ class TestConnectedAccounts:
     def test_link_builds_payload_and_returns_connection_request(
         self, connected_accounts, mock_client
     ):
+        # link() now mirrors initiate() and pre-flights list() to enforce the
+        # allow_multiple guard; default to no existing connections here.
+        no_accounts = Mock()
+        no_accounts.items = []
+        mock_client.connected_accounts.list.return_value = no_accounts
+
         mock_response = Mock()
         mock_response.connected_account_id = "conn-999"
         mock_response.redirect_url = "https://redirect"
@@ -334,6 +340,10 @@ class TestConnectedAccounts:
     def test_link_omits_callback_url_when_not_provided(
         self, connected_accounts, mock_client
     ):
+        no_accounts = Mock()
+        no_accounts.items = []
+        mock_client.connected_accounts.list.return_value = no_accounts
+
         mock_response = Mock()
         mock_response.connected_account_id = "conn-000"
         mock_response.redirect_url = None
@@ -345,6 +355,46 @@ class TestConnectedAccounts:
         assert call_kwargs["auth_config_id"] == "auth-1"
         assert call_kwargs["user_id"] == "user-1"
         assert call_kwargs["callback_url"] is omit
+
+    def test_link_raises_when_active_connection_exists_and_not_allow_multiple(
+        self, connected_accounts, mock_client
+    ):
+        """link() guards against duplicate connections, mirroring initiate()."""
+        existing = Mock()
+        existing.items = [Mock()]
+        mock_client.connected_accounts.list.return_value = existing
+
+        with pytest.raises(exceptions.ComposioMultipleConnectedAccountsError):
+            connected_accounts.link(user_id="user-1", auth_config_id="auth-1")
+
+        mock_client.connected_accounts.list.assert_called_once_with(
+            user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
+        )
+        mock_client.link.create.assert_not_called()
+
+    def test_link_skips_guard_when_allow_multiple_is_true(
+        self, connected_accounts, mock_client
+    ):
+        """allow_multiple=True bypasses the guard and proceeds with link.create."""
+        existing = Mock()
+        existing.items = [Mock()]
+        mock_client.connected_accounts.list.return_value = existing
+
+        mock_response = Mock()
+        mock_response.connected_account_id = "conn-new"
+        mock_response.redirect_url = "https://redirect"
+        mock_client.link.create.return_value = mock_response
+
+        result = connected_accounts.link(
+            user_id="user-1",
+            auth_config_id="auth-1",
+            alias="work",
+            allow_multiple=True,
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["alias"] == "work"
+        assert result.id == "conn-new"
 
     def test_initiate_with_oauth2_tokens_returns_active_connection_request(
         self, connected_accounts, mock_client

@@ -18,7 +18,7 @@ vi.mock('../../src/models/Tools', () => {
   return {
     Tools: vi.fn().mockImplementation(() => ({
       getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-      getRawToolRouterMetaTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+      getRawToolRouterSessionTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
       wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
     })),
   };
@@ -34,7 +34,6 @@ const createMockClient = () => ({
       retrieve: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
-      executeMeta: vi.fn(),
       search: vi.fn(),
       execute: vi.fn(),
     },
@@ -54,6 +53,10 @@ const mockSessionCreateResponse = {
     url: 'https://mcp.example.com/session_123',
   },
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
+  config: {
+    preload: { tools: [] },
+  },
+  config_version: 1,
 };
 
 const mockLinkResponse = {
@@ -76,7 +79,9 @@ const mockSessionRetrieveResponse = {
     manage_connections: {
       enable: true,
     },
+    preload: { tools: ['GMAIL_FETCH_EMAILS'] },
   },
+  config_version: 7,
 };
 
 const mockToolkitsResponse = {
@@ -221,6 +226,40 @@ describe('ToolRouter', () => {
         });
 
         expect(session.sessionId).toBe('session_123');
+        expect(session.preload.tools).toEqual([]);
+        expect(session.configVersion).toBe(1);
+      });
+
+      it('should create a session with preloaded tools', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce({
+          ...mockSessionCreateResponse,
+          config: {
+            preload: { tools: ['GMAIL_FETCH_EMAILS'] },
+          },
+          config_version: 2,
+        });
+
+        const session = await toolRouter.create(userId, {
+          toolkits: ['gmail'],
+          preload: { tools: ['GMAIL_FETCH_EMAILS'] },
+        });
+
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
+          user_id: userId,
+          toolkits: {
+            enable: ['gmail'],
+          },
+          auth_configs: undefined,
+          connected_accounts: undefined,
+          tools: undefined,
+          tags: undefined,
+          manage_connections: createExpectedManageConnections(),
+          workbench: undefined,
+          preload: { tools: ['GMAIL_FETCH_EMAILS'] },
+        });
+
+        expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
+        expect(session.configVersion).toBe(2);
       });
 
       it('should create a session with user ID only and verify MCP type transformation', async () => {
@@ -1059,6 +1098,25 @@ describe('ToolRouter', () => {
             auto_offload_threshold: 20000,
           },
         });
+      });
+
+      it('forwards sandboxSize as snake_case sandbox_size on the wire', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          workbench: { sandboxSize: 'large' },
+        });
+
+        const payload = mockClient.toolRouter.session.create.mock.calls[0]?.[0];
+        expect(payload?.workbench?.sandbox_size).toBe('large');
+      });
+
+      it('rejects an invalid sandboxSize value via the zod schema', async () => {
+        await expect(
+          toolRouter.create(userId, {
+            workbench: { sandboxSize: 'huge' },
+          } as unknown as ToolRouterCreateSessionConfig)
+        ).rejects.toThrow();
       });
     });
 
@@ -2064,6 +2122,20 @@ describe('ToolRouter', () => {
         arguments: {},
       });
     });
+
+    it('should pass account option to session execute', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockResolvedValueOnce(mockExecuteResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.execute('GMAIL_SEND_EMAIL', { to: 'user@example.com' }, { account: 'work' });
+
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
+        tool_slug: 'GMAIL_SEND_EMAIL',
+        arguments: { to: 'user@example.com' },
+        account: 'work',
+      });
+    });
   });
 
   describe('tools function', () => {
@@ -2075,7 +2147,9 @@ describe('ToolRouter', () => {
       vi.clearAllMocks();
       (Tools as any).mockImplementation(() => ({
         getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-        getRawToolRouterMetaTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+        getRawToolRouterSessionTools: vi
+          .fn()
+          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
         wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
       }));
     });
@@ -2092,7 +2166,7 @@ describe('ToolRouter', () => {
       });
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, undefined);
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2117,7 +2191,7 @@ describe('ToolRouter', () => {
       const tools = await session.tools(modifiers);
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
         modifySchema: modifiers.modifySchema,
       });
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
@@ -2129,12 +2203,49 @@ describe('ToolRouter', () => {
       expect(tools).toBe('mocked-wrapped-tools');
     });
 
+    it('should include preloaded tools returned by the session tools endpoint', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce({
+        ...mockSessionCreateResponse,
+        config: {
+          preload: { tools: ['GMAIL_FETCH_EMAILS'] },
+        },
+      });
+
+      (Tools as any).mockImplementation(() => ({
+        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+        getRawToolRouterSessionTools: vi
+          .fn()
+          .mockResolvedValue([
+            { slug: 'COMPOSIO_SEARCH_TOOLS' },
+            { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
+          ]),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+      }));
+
+      const session = await toolRouter.create(userId, {
+        toolkits: ['gmail'],
+        preload: { tools: ['GMAIL_FETCH_EMAILS'] },
+      });
+      const tools = await session.tools();
+
+      const toolsInstance = (Tools as any).mock.results[0].value;
+      expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
+        sessionId,
+        [
+          { slug: 'COMPOSIO_SEARCH_TOOLS' },
+          { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
+        ],
+        undefined
+      );
+      expect(tools).toBe('mocked-wrapped-tools');
+    });
+
     it('should handle tools fetching errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
       (Tools as any).mockImplementation(() => ({
         getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        getRawToolRouterMetaTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
+        getRawToolRouterSessionTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
         wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
       }));
 
@@ -2159,7 +2270,7 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalledTimes(2);
 
       const firstToolsInstance = (Tools as any).mock.results[0].value;
-      expect(firstToolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
+      expect(firstToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
         modifySchema: modifier1.modifySchema,
       });
       expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
@@ -2169,7 +2280,7 @@ describe('ToolRouter', () => {
       );
 
       const secondToolsInstance = (Tools as any).mock.results[1].value;
-      expect(secondToolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, {
+      expect(secondToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
         modifySchema: modifier2.modifySchema,
       });
       expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
@@ -2196,7 +2307,7 @@ describe('ToolRouter', () => {
         apiKey: 'test-api-key',
       });
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'custom_session_123',
         undefined
       );
@@ -2224,7 +2335,7 @@ describe('ToolRouter', () => {
         apiKey: 'test-api-key',
       });
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'empty_session_123',
         undefined
       );
@@ -2352,6 +2463,8 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('tools');
       expect(session).toHaveProperty('authorize');
       expect(session).toHaveProperty('toolkits');
+      expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
+      expect(session.configVersion).toBe(7);
     });
 
     it('should return a session with correct session ID', async () => {
@@ -2383,7 +2496,7 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalled();
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterMetaTools).toHaveBeenCalledWith(sessionId, undefined);
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, undefined);
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],

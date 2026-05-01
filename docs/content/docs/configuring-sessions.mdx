@@ -199,6 +199,56 @@ When disabled:
 - Workbench-related system prompt lines are stripped
 - Direct workbench calls are rejected with a 400 error
 
+## Sandbox compute tier
+
+The workbench runs in a per-session sandbox. You can pick a compute tier to match the workload — heavier code execution or larger in-memory data benefits from a bigger sandbox. The tier is passed via `workbench.sandbox_size` (snake_case on the wire; `sandboxSize` in the TypeScript SDK).
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (Python). Older SDKs reject `sandboxSize` (TypeScript) or silently drop `sandbox_size` (Python). See the [release notes](/docs/changelog/2026/04/28).
+</Callout>
+
+
+| Tier       | vCPU | RAM   |
+| ---------- | ---- | ----- |
+| `standard` | 1    | 1 GB  |
+| `medium`   | 2    | 2 GB  |
+| `large`    | 4    | 4 GB  |
+| `xlarge`   | 8    | 8 GB  |
+
+Defaults to `standard` when omitted.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    workbench={
+        "sandbox_size": "large",
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  workbench: {
+    enable: true,
+    sandboxSize: "large",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+**Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime). Pick a tier that matches your workload — but expect future pricing to track actual usage.
+</Callout>
+
+Changing `sandbox_size` on an existing session recreates the sandbox on next access. The sandbox's in-memory filesystem state is lost, but the persistent `/mnt/files/` mount survives the restart.
+
 ## Session methods
 
 ### mcp

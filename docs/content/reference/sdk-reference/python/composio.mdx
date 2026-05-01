@@ -15,3 +15,95 @@ description: "Composio SDK for Python.  Generic parameters: TTool: The individua
 | [`mcp`](/reference/sdk-reference/python/mcp) | `MCP` |
 
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/sdk.py#L46)
+
+---
+
+## Constructor
+
+```python
+Composio(
+    provider: BaseProvider | None = None,
+    *,
+    api_key: str | None = None,
+    base_url: str | None = None,
+    timeout: int | None = None,
+    max_retries: int | None = None,
+    toolkit_versions: dict[str, str] | str | None = None,
+    dangerously_allow_auto_upload_download_files: bool = False,
+    sensitive_file_upload_protection: bool = True,
+    file_upload_path_deny_segments: Sequence[str] | None = None,
+    file_upload_dirs: Sequence[str] | Literal[False] | None = None,
+    file_download_dir: str | None = None,
+    allow_tracking: bool = True,
+    environment: str = "production",
+)
+```
+
+`api_key` falls back to `os.environ["COMPOSIO_API_KEY"]` when not passed.
+
+### Common options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `provider` | `BaseProvider` | `OpenAIProvider()` | Provider used to wrap tools (Anthropic, LangChain, Gemini, etc.). |
+| `api_key` | `str` | `$COMPOSIO_API_KEY` | API key. Required. |
+| `base_url` | `str` | Composio default | Override the API base URL. |
+| `timeout` | `int` | client default | Per-request timeout in seconds. |
+| `max_retries` | `int` | `3` | HTTP client retry count. |
+| `toolkit_versions` | `dict \| str \| None` | `'latest'` | Pin toolkit versions globally (string) or per-toolkit (dict). |
+
+---
+
+## File upload security
+
+Automatic file handling for `file_uploadable` tool fields is **off by default**. Set `dangerously_allow_auto_upload_download_files=True` to opt in. Once on, the SDK can read local paths and stage them to S3 on your behalf, but only from an allowlisted set of directories.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `dangerously_allow_auto_upload_download_files` | `bool` | `False` | Master opt-in. When `False`, paths and URLs in `file_uploadable` arguments are forwarded as-is — the backend will reject anything that isn't already a staged `{name, mimetype, s3key}` descriptor. Set to `True` to let the SDK stage local paths and URLs on your behalf at execute time. |
+| `sensitive_file_upload_protection` | `bool` | `True` | Block local paths matching a built-in denylist of segments (`.ssh`, `.aws`, etc.) and credential-like file names. Disable only if you accept the tradeoff. |
+| `file_upload_path_deny_segments` | `Sequence[str] \| None` | `None` | Extra single path components merged with the built-in denylist. |
+| `file_upload_dirs` | `Sequence[str] \| Literal[False] \| None` | `[~/.composio/temp]` | Allowlist of directories the SDK may read during **automatic** upload. Pass `False` (or `[]`) to reject every local path — URLs still work. Providing a list **replaces** the default; include `~/.composio/temp` explicitly if you want the default staging dir to keep working. Comparison is on a path-component boundary after `os.path.realpath`. On Windows, entries are compared case-insensitively. |
+| `file_download_dir` | `str \| None` | `~/.composio/files` | Directory where files from tool responses marked `file_downloadable` are streamed. |
+
+Per-execution hooks live on the `modifiers=[...]` argument to `composio.tools.execute`, not on the constructor. Use the `@before_file_upload` decorator from `composio.core.models._modifiers` to inspect or rewrite each path before it is read. The hook context includes a `source` field (`'path' | 'url'`) so you can branch on local paths vs URLs.
+
+**Related errors:** `FileUploadPathNotAllowed`, `SensitiveFilePathBlocked`, `FileUploadAbortedError`, `SDKFileNotFoundError` (all from `composio.exceptions`).
+
+### Restricting automatic uploads to specific directories
+
+When `dangerously_allow_auto_upload_download_files=True`, the SDK only reads local files from directories listed in `file_upload_dirs`. This stacks with (it does NOT replace) the sensitive-path denylist.
+
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    dangerously_allow_auto_upload_download_files=True,
+    # Replaces the default `[~/.composio/temp]`. List every directory you want
+    # the SDK to read from during tool execution.
+    file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
+)
+```
+
+Pass `file_upload_dirs=False` (or `[]`) to reject every filesystem path; URLs and in-memory bytes still upload normally:
+
+```python
+Composio(
+    api_key="your_composio_key",
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=False,
+)
+```
+
+### Tool-Router session files
+
+The Tool-Router session API exposes a separate files surface (`session.files.upload(...)` / `session.files.download(...)`) for streaming files into and out of a long-running router session. Those calls are unrelated to the `file_uploadable` schema flow on individual tool execution and are not gated by `dangerously_allow_auto_upload_download_files` or `file_upload_dirs`. See [`tool-router-session`](/reference/sdk-reference/python/tool-router-session) for usage.
+
+---
+
+## See also
+
+- [Executing tools](/docs/tools-direct/executing-tools) — automatic vs. manual file handling, before-execute modifiers.
+- [Before-execution modifiers](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) — `@before_file_upload` decorator and the context-form hook signature.
+- [Legacy auto-upload config removal changelog](/docs/changelog/2026/04/24) — migration from the removed `auto_upload_download_files` flag and the allowlist semantics matrix.

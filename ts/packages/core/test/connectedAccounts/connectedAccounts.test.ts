@@ -972,6 +972,17 @@ describe('ConnectedAccounts', () => {
   });
 
   describe('link', () => {
+    beforeEach(() => {
+      // link() now mirrors initiate() and pre-flights connectedAccounts.list to
+      // enforce the allowMultiple guard. Default to no existing connections so
+      // existing tests don't need to mock the list call themselves.
+      extendedMockClient.connectedAccounts.list.mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+    });
+
     it('should create a connected account link without options and return a ConnectionRequest', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
@@ -1303,6 +1314,66 @@ describe('ConnectedAccounts', () => {
         user_id: userId,
         callback_url: 'https://example.com/callback',
       });
+    });
+
+    it('throws ComposioMultipleConnectedAccountsError when an active connection exists and allowMultiple is false', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockReset();
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'conn_existing',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: { id: authConfigId, auth_scheme: 'OAUTH2', is_composio_managed: true },
+            toolkit: { slug: 'gmail' },
+          },
+        ],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      await expect(connectedAccounts.link(userId, authConfigId)).rejects.toThrow(
+        ComposioMultipleConnectedAccountsError
+      );
+
+      expect(extendedMockClient.link.create).not.toHaveBeenCalled();
+    });
+
+    it('skips the guard when allowMultiple is true and proceeds with link.create', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockReset();
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'conn_existing',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: { id: authConfigId, auth_scheme: 'OAUTH2', is_composio_managed: true },
+            toolkit: { slug: 'gmail' },
+          },
+        ],
+        next_cursor: null,
+        total_pages: 1,
+      });
+      extendedMockClient.link.create.mockResolvedValueOnce({
+        connected_account_id: 'conn_new',
+        redirect_url: 'https://connect.composio.dev/auth?token=xyz',
+      });
+
+      const connectionRequest = await connectedAccounts.link(userId, authConfigId, {
+        allowMultiple: true,
+        alias: 'work-gmail',
+      });
+
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
+        auth_config_id: authConfigId,
+        user_id: userId,
+        alias: 'work-gmail',
+      });
+      expect(connectionRequest).toHaveProperty('id', 'conn_new');
     });
   });
 });

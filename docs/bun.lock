@@ -32,7 +32,7 @@
         "@anthropic-ai/sdk": "^0.71.2",
         "@composio/anthropic": "^0.5.5",
         "@composio/claude-agent-sdk": "^0.6.3",
-        "@composio/core": "^0.6.10",
+        "@composio/core": "^0.8.1",
         "@composio/google": "^0.5.5",
         "@composio/langchain": "^0.5.5",
         "@composio/llamaindex": "^0.5.5",
@@ -164,9 +164,9 @@
 
     "@composio/claude-agent-sdk": ["@composio/claude-agent-sdk@0.6.3", "", { "dependencies": { "zod": "^3.25.76" }, "peerDependencies": { "@anthropic-ai/claude-agent-sdk": ">=0.1.0", "@composio/core": "0.6.3" } }, "sha512-724KwTShuore9zQrxRvbOzVrqZ8w9Z5ZkzElKYJX6mbUq33GaVs5bFbgSomNDaRe9kkLAI7fPP8WteZJB32akA=="],
 
-    "@composio/client": ["@composio/client@0.1.0-alpha.66", "", {}, "sha512-SDHcTWzz2dgdYAew/gQsRpjHpEzHKm6sW7KM4wCoJWNJuuMuey9Ahje91ZucNjfaqpI8CFW+pXY4nWkZf5LD7Q=="],
+    "@composio/client": ["@composio/client@0.1.0-alpha.68", "", {}, "sha512-hym21PsIELzlF0Fc9RASr3PfGR1alpGE8IlbRJU3ED6UllMZz7VzREsKUZfojG4yHjZMBlVXG5QGMBzuPEue3Q=="],
 
-    "@composio/core": ["@composio/core@0.6.10", "", { "dependencies": { "@composio/client": "0.1.0-alpha.66", "@composio/json-schema-to-zod": "0.1.20", "@types/json-schema": "^7.0.15", "chalk": "^4.1.2", "openai": "^6.16.0", "pusher-js": "^8.4.0", "semver": "^7.7.2", "zod-to-json-schema": "^3.25.1" }, "peerDependencies": { "zod": "^3.25 || ^4" } }, "sha512-T/9MfYcmPs2EcSXhrJWvm0UFTfa79FcTo1L8vO13d5C5kX8/I4hLYLu+1wc4n7WGBSE9hq7o1g9L3FXJrOrlSQ=="],
+    "@composio/core": ["@composio/core@0.8.1", "", { "dependencies": { "@composio/client": "0.1.0-alpha.68", "@composio/json-schema-to-zod": "0.1.20", "@types/json-schema": "^7.0.15", "chalk": "^4.1.2", "openai": "^6.16.0", "pusher-js": "^8.4.0", "semver": "^7.7.2", "zod-to-json-schema": "^3.25.1" }, "peerDependencies": { "zod": "^3.25 || ^4" } }, "sha512-jgnpri5gVp8EbkbaoZxCWCHK4U2nPqq4LYK+JDHljme1Ruhtr0jFc/nV2hZwoquaIfvnLoNKMyADNBcDLf84Hw=="],
 
     "@composio/google": ["@composio/google@0.5.5", "", { "peerDependencies": { "@composio/core": "0.5.5", "@google/genai": "^1.1.0" } }, "sha512-0W+WZANsVSVAkhaRxbUUpuHJ52O3BbknAEV/C38/1yZq3mmvzx/DlRjGf/tiDRaS7Pxr8WhYwGUKgeyzYR4qAw=="],
 
