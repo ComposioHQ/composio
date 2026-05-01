@@ -33,6 +33,7 @@ describe('CLI: composio agent', () => {
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain('signup');
+        expect(output).toContain('login');
         expect(output).toContain('whoami');
         expect(output).toContain('claim');
       })
@@ -90,6 +91,56 @@ describe('CLI: composio agent', () => {
     );
   });
 
+  layer(TestLive())(it => {
+    it.scoped('agent login restores an existing agent from composio_agent_key', () =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
+          const url =
+            typeof requestInput === 'string'
+              ? requestInput
+              : requestInput instanceof URL
+                ? requestInput.toString()
+                : requestInput.url;
+
+          if (url.includes('/api/whoami')) {
+            expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cak_existing');
+            return new Response(
+              JSON.stringify({
+                ...agentSignupResponse,
+                composio_agent_key: 'cak_existing',
+                agent_key: 'cak_existing',
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            );
+          }
+
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        });
+
+        yield* cli(['agent', 'login', 'cak_existing']);
+
+        const ctx = yield* ComposioUserContext;
+        expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_agent');
+        expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_agent');
+
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        const agentConfigRaw = yield* fs.readFileString(path.join(cacheDir, 'agent.json'), 'utf8');
+        expect(JSON.parse(agentConfigRaw)).toMatchObject({
+          composio_agent_key: 'cak_existing',
+          agent_key: 'cak_existing',
+          composio: { user_api_key: 'uak_agent' },
+        });
+      })
+    );
+  });
+
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
     it.scoped('agent commands fail when signed in as a human user', () =>
       Effect.gen(function* () {
@@ -101,6 +152,13 @@ describe('CLI: composio agent', () => {
     it.scoped('agent signup fails when signed in as a human user', () =>
       Effect.gen(function* () {
         const error = yield* Effect.flip(cli(['agent', 'signup']));
+        expect(String(error)).toContain('logged in as a human Composio user');
+      })
+    );
+
+    it.scoped('agent login fails when signed in as a human user', () =>
+      Effect.gen(function* () {
+        const error = yield* Effect.flip(cli(['agent', 'login', 'cak_existing']));
         expect(String(error)).toContain('logged in as a human Composio user');
       })
     );

@@ -145,6 +145,12 @@ export const writeStoredAgentIdentity = (identity: AgentIdentity) =>
     return normalized;
   });
 
+export const removeStoredAgentIdentity = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const configPath = yield* agentConfigPath;
+  yield* fs.remove(configPath).pipe(Effect.catchAll(() => Effect.void));
+});
+
 const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
   Effect.tryPromise({
     try: async () => {
@@ -217,6 +223,19 @@ export const ensureAgentSignupAllowed = Effect.gen(function* () {
   if (Option.isSome(stored) && isAgentIdentityForApiKey(stored.value, apiKey.value)) return;
 
   return yield* Effect.fail(humanLoginError);
+});
+
+export const getCurrentLoggedInAgent = Effect.gen(function* () {
+  const ctx = yield* ComposioUserContext;
+  const currentApiKey = ctx.data.apiKey;
+  if (Option.isNone(currentApiKey)) return Option.none<AgentIdentity>();
+
+  const stored = yield* readStoredAgentIdentity;
+  if (Option.isNone(stored)) return Option.none<AgentIdentity>();
+
+  return isAgentIdentityForApiKey(stored.value, currentApiKey.value)
+    ? stored
+    : Option.none<AgentIdentity>();
 });
 
 export const resolveStoredAgentKey = Effect.gen(function* () {
