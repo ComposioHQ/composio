@@ -28,13 +28,22 @@ const force = Options.boolean('force').pipe(
   )
 );
 
-export const runAgentSignup = (params: { noWait: boolean; noLogin: boolean; force: boolean }) =>
+export const runAgentSignup = (params: {
+  noWait: boolean;
+  noLogin: boolean;
+  force: boolean;
+  commandLabel?: string;
+}) =>
   handleAgentAuthError(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
+      const commandLabel = params.commandLabel ?? 'composio signup';
 
       yield* ensureAgentSignupAllowed;
-      yield* ui.intro('composio signup');
+      yield* ui.intro(commandLabel);
+      yield* ui.log.info(
+        `${commandLabel} signs you up as a Composio agent. This flow is fully non-interactive and does not open a browser.`
+      );
 
       const identity = yield* params.noWait
         ? signupAgent({ wait: false })

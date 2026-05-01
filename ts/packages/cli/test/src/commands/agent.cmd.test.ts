@@ -5,6 +5,7 @@ import path from 'node:path';
 import { afterEach, vi } from 'vitest';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
+import { writeStoredAgentIdentity } from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -67,6 +68,10 @@ describe('CLI: composio agent', () => {
 
         yield* cli(['agent', 'signup']);
 
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('composio agent signup signs you up as a Composio agent');
+        expect(output).toContain('fully non-interactive');
+
         const ctx = yield* ComposioUserContext;
         expect(Option.getOrUndefined(ctx.data.apiKey)).toBe('uak_agent');
         expect(Option.getOrUndefined(ctx.data.orgId)).toBe('org_agent');
@@ -88,6 +93,97 @@ describe('CLI: composio agent', () => {
           agent_key: 'cak_test_agent',
           composio: { user_api_key: 'uak_agent' },
         });
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('top-level signup makes clear it signs up an agent', () =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async requestInput => {
+          const url =
+            typeof requestInput === 'string'
+              ? requestInput
+              : requestInput instanceof URL
+                ? requestInput.toString()
+                : requestInput.url;
+
+          if (url.includes('/api/signup')) {
+            return new Response(JSON.stringify(agentSignupResponse), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        });
+
+        yield* cli(['signup']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('composio signup signs you up as a Composio agent');
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('agent inbox prints only JSON', () =>
+      Effect.gen(function* () {
+        yield* writeStoredAgentIdentity(agentSignupResponse);
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
+          const url =
+            typeof requestInput === 'string'
+              ? requestInput
+              : requestInput instanceof URL
+                ? requestInput.toString()
+                : requestInput.url;
+
+          if (url.includes('/api/mail')) {
+            expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cak_test_agent');
+            return new Response(
+              JSON.stringify({
+                count: 1,
+                messages: [
+                  {
+                    id: 'msg_123',
+                    from: 'person@example.com',
+                    subject: 'Hello',
+                    preview: 'Hi agent',
+                  },
+                ],
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            );
+          }
+
+          return new Response(JSON.stringify({}), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        });
+
+        yield* cli(['agent', 'inbox']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+        expect(lines).toEqual([
+          JSON.stringify({
+            count: 1,
+            messages: [
+              {
+                id: 'msg_123',
+                from: 'person@example.com',
+                subject: 'Hello',
+                preview: 'Hi agent',
+              },
+            ],
+          }),
+        ]);
       })
     );
   });

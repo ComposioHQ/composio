@@ -17,27 +17,8 @@ export const agentCmd$Inbox = Command.make('inbox', { limit }).pipe(
         const ui = yield* TerminalUI;
         const agentKey = yield* resolveStoredAgentKey;
         const inbox = yield* fetchAgentInbox({ agentKey, limit });
-        const messages = inbox.messages ?? [];
 
-        if (messages.length === 0) {
-          yield* ui.log.info('Agent inbox is empty.');
-        } else {
-          yield* ui.note(
-            messages
-              .map(message =>
-                [
-                  `From: ${message.from ?? 'unknown'}`,
-                  `Subject: ${message.subject ?? '(no subject)'}`,
-                  `Received: ${message.received_at ?? 'unknown'}`,
-                  `Preview: ${message.preview ?? ''}`,
-                ].join('\n')
-              )
-              .join('\n\n'),
-            `Agent Inbox (${messages.length})`
-          );
-        }
-
-        yield* ui.output(JSON.stringify(inbox));
+        yield* ui.output(JSON.stringify(inbox), { force: true });
       })
     )
   )

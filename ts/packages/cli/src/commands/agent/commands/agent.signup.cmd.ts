@@ -22,5 +22,6 @@ const force = Options.boolean('force').pipe(
 export const agentCmd$Signup = Command.make(
   'signup',
   { noWait, noLogin, force },
-  ({ noWait, noLogin, force }) => runAgentSignup({ noWait, noLogin, force })
+  ({ noWait, noLogin, force }) =>
+    runAgentSignup({ noWait, noLogin, force, commandLabel: 'composio agent signup' })
 ).pipe(Command.withDescription('Sign up and optionally log in as a Composio agent.'));
