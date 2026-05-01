@@ -1,5 +1,5 @@
 import { FileSystem } from '@effect/platform';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -55,6 +55,11 @@ export interface AgentClaimResponse {
   readonly invite_code?: string;
   readonly [key: string]: unknown;
 }
+
+export class AgentAuthError extends Data.TaggedError('services/AgentAuthError')<{
+  readonly message: string;
+  readonly nextSteps: ReadonlyArray<string>;
+}> {}
 
 const agentsBaseURL = (): string =>
   (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
@@ -210,9 +215,14 @@ export const claimAgent = (params: { agentKey: string; email: string }) =>
     body: JSON.stringify({ email: params.email }),
   }).pipe(Effect.map(payload => payload as AgentClaimResponse));
 
-const humanLoginError = new Error(
-  'You are logged in as a human Composio user, not as an agent. Run `composio logout`, then `composio signup` or `composio login --agent`.'
-);
+const humanLoginError = () =>
+  new AgentAuthError({
+    message: 'This CLI is currently signed in to Composio as a regular user, not an agent.',
+    nextSteps: [
+      'To switch to an existing agent: run `composio logout`, then `composio agent login <composio_agent_key>`.',
+      'To create a new agent: run `composio logout`, then `composio signup`.',
+    ],
+  });
 
 export const ensureAgentSignupAllowed = Effect.gen(function* () {
   const ctx = yield* ComposioUserContext;
@@ -222,7 +232,7 @@ export const ensureAgentSignupAllowed = Effect.gen(function* () {
   const stored = yield* readStoredAgentIdentity;
   if (Option.isSome(stored) && isAgentIdentityForApiKey(stored.value, apiKey.value)) return;
 
-  return yield* Effect.fail(humanLoginError);
+  return yield* Effect.fail(humanLoginError());
 });
 
 export const getCurrentLoggedInAgent = Effect.gen(function* () {
@@ -248,21 +258,31 @@ export const resolveStoredAgentKey = Effect.gen(function* () {
       return getAgentKey(stored.value) as string;
     }
 
-    return yield* Effect.fail(humanLoginError);
+    return yield* Effect.fail(humanLoginError());
   }
 
   if (Option.isNone(stored)) {
     return yield* Effect.fail(
-      new Error(
-        'No Composio agent identity found. Run `composio signup` or `composio agent signup`.'
-      )
+      new AgentAuthError({
+        message: 'No Composio agent identity is saved on this machine.',
+        nextSteps: [
+          'To create a new agent: run `composio signup` or `composio agent signup`.',
+          'To restore an existing agent: run `composio agent login <composio_agent_key>`.',
+        ],
+      })
     );
   }
 
   const agentKey = getAgentKey(stored.value);
   if (!agentKey) {
     return yield* Effect.fail(
-      new Error('Missing composio_agent_key in ~/.composio/agent.json. Run `composio signup`.')
+      new AgentAuthError({
+        message: 'The saved Composio agent identity is missing its composio_agent_key.',
+        nextSteps: [
+          'If you saved the key, run `composio agent login <composio_agent_key>`.',
+          'Otherwise create a new agent with `composio signup`.',
+        ],
+      })
     );
   }
 

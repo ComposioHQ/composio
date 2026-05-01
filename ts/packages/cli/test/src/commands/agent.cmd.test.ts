@@ -24,6 +24,7 @@ const agentSignupResponse = {
 describe('CLI: composio agent', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    process.exitCode = undefined;
   });
 
   layer(TestLive())(it => {
@@ -142,24 +143,36 @@ describe('CLI: composio agent', () => {
   });
 
   layer(TestLive({ fixture: 'user-config-example' }))(it => {
-    it.scoped('agent commands fail when signed in as a human user', () =>
+    it.scoped('agent commands show a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
-        const error = yield* Effect.flip(cli(['agent', 'whoami']));
-        expect(String(error)).toContain('logged in as a human Composio user');
+        yield* cli(['agent', 'whoami']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('currently signed in to Composio as a regular user');
+        expect(output).toContain('composio agent login <composio_agent_key>');
+        expect(process.exitCode).toBe(1);
       })
     );
 
-    it.scoped('agent signup fails when signed in as a human user', () =>
+    it.scoped('agent signup shows a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
-        const error = yield* Effect.flip(cli(['agent', 'signup']));
-        expect(String(error)).toContain('logged in as a human Composio user');
+        yield* cli(['agent', 'signup']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('currently signed in to Composio as a regular user');
+        expect(output).toContain('composio signup');
+        expect(process.exitCode).toBe(1);
       })
     );
 
-    it.scoped('agent login fails when signed in as a human user', () =>
+    it.scoped('agent login shows a soft auth warning when signed in as a human user', () =>
       Effect.gen(function* () {
-        const error = yield* Effect.flip(cli(['agent', 'login', 'cak_existing']));
-        expect(String(error)).toContain('logged in as a human Composio user');
+        yield* cli(['agent', 'login', 'cak_existing']);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        expect(output).toContain('currently signed in to Composio as a regular user');
+        expect(output).toContain('composio logout');
+        expect(process.exitCode).toBe(1);
       })
     );
   });

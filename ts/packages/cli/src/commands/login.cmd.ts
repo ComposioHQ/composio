@@ -14,6 +14,7 @@ import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
+import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
 import {
   ensureAgentSignupAllowed,
@@ -592,16 +593,21 @@ export const loginCmd = Command.make(
       }
 
       if (agent) {
-        yield* ensureAgentSignupAllowed;
-        const identity = yield* getOrSignupReadyAgent();
-        yield* loginWithAgentIdentity(identity);
-        const summary = safeAgentSummary(identity);
-        yield* ui.log.success(`Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`);
-        yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
-        if (!noSkillInstall) {
-          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
-        }
-        return;
+        return yield* handleAgentAuthError(
+          Effect.gen(function* () {
+            yield* ensureAgentSignupAllowed;
+            const identity = yield* getOrSignupReadyAgent();
+            yield* loginWithAgentIdentity(identity);
+            const summary = safeAgentSummary(identity);
+            yield* ui.log.success(
+              `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`
+            );
+            yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
+            if (!noSkillInstall) {
+              yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
+            }
+          })
+        );
       }
 
       if (Option.isSome(key)) {
