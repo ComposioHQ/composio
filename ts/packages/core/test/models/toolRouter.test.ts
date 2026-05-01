@@ -302,8 +302,7 @@ describe('ToolRouter', () => {
             workbench: undefined,
           }),
         });
-        expect(session.manageConnectionsEnabled()).toBe(false);
-        expect(session.workbenchEnabled()).toBe(false);
+        expect(session.sessionId).toBe(mockSessionCreateResponse.session_id);
       });
 
       it('should preserve explicit helper opt-ins for direct-tools sessions', async () => {
@@ -336,8 +335,7 @@ describe('ToolRouter', () => {
             },
           }),
         });
-        expect(session.manageConnectionsEnabled()).toBe(true);
-        expect(session.workbenchEnabled()).toBe(true);
+        expect(session.sessionId).toBe(mockSessionCreateResponse.session_id);
       });
 
       it('should create a session with user ID only and verify MCP type transformation', async () => {
@@ -349,7 +347,7 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       });
 
-      it('should not synthesize helper enabled defaults when response omits them', async () => {
+      it('should create session when response omits helper config fields', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce({
           ...mockSessionCreateResponse,
           config: { preload: { tools: [] } },
@@ -357,8 +355,7 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(session.manageConnectionsEnabled()).toBeUndefined();
-        expect(session.workbenchEnabled()).toBeUndefined();
+        expect(session.sessionId).toBe(mockSessionCreateResponse.session_id);
       });
     });
 

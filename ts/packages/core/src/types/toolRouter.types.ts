@@ -552,9 +552,6 @@ export interface ToolRouterSessionMetadata {
   preload?: ToolRouterSessionPreloadConfig;
   configVersion?: number;
   warnings?: ToolRouterSessionWarning[];
-  sessionPreset?: SessionPreset;
-  manageConnectionsEnabled?: boolean;
-  workbenchEnabled?: boolean;
 }
 
 export const SessionProxyExecuteParamsSchema = z.object({

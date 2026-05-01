@@ -66,9 +66,6 @@ function getSessionMetadata(
     preload: config.preload,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
-    sessionPreset: config.session_preset ?? undefined,
-    manageConnectionsEnabled: config.manage_connections?.enabled,
-    workbenchEnabled: config.workbench?.enable,
   };
   return metadata;
 }

@@ -94,8 +94,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
         preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
-        manage_connections_enabled: t.Optional[bool] = None,
-        workbench_enabled: t.Optional[bool] = None,
     ) -> None:
         self._client = client
         self._provider = provider
@@ -107,8 +105,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self.mcp = mcp
         self.experimental = experimental
         self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
-        self._manage_connections_enabled = manage_connections_enabled
-        self._workbench_enabled = workbench_enabled
         self._custom_tools_map = custom_tools_map
         self._user_id = user_id
 
@@ -121,14 +117,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 session_id=session_id,
                 custom_tools_map=custom_tools_map,
             )
-
-    def manage_connections_enabled(self) -> t.Optional[bool]:
-        """Return whether connection-management helper tools are exposed."""
-        return self._manage_connections_enabled
-
-    def workbench_enabled(self) -> t.Optional[bool]:
-        """Return whether workbench helper tools are exposed."""
-        return self._workbench_enabled
 
     def _has_custom_tools(self) -> bool:
         """Check if this session has any custom tools bound."""

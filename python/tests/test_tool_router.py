@@ -480,16 +480,15 @@ class TestToolRouter:
         )
         assert kwargs["manage_connections"]["enable_wait_for_connections"] is True
 
-    def test_create_does_not_synthesize_helper_defaults(self, tool_router, mock_client):
-        """Missing response helper fields remain unknown instead of defaulting in SDK."""
+    def test_create_handles_missing_helper_config_fields(self, tool_router, mock_client):
+        """Missing response helper fields do not affect session construction."""
         response = mock_client.tool_router.session.create.return_value
         response.config.manage_connections = None
         response.config.workbench = None
 
         session = tool_router.create(user_id="user_123")
 
-        assert session.manage_connections_enabled() is None
-        assert session.workbench_enabled() is None
+        assert session.session_id == response.session_id
 
     def test_create_direct_tools_session_uses_v31_and_enum(
         self, tool_router, mock_client
@@ -521,8 +520,7 @@ class TestToolRouter:
         }
         assert "manage_connections" not in mock_client.post.call_args.kwargs["body"]
         assert "workbench" not in mock_client.post.call_args.kwargs["body"]
-        assert session.manage_connections_enabled() is False
-        assert session.workbench_enabled() is False
+        assert session.session_id == response.session_id
 
     def test_create_direct_tools_session_preserves_explicit_helper_opt_ins(
         self, tool_router, mock_client
@@ -544,8 +542,7 @@ class TestToolRouter:
         body = mock_client.post.call_args.kwargs["body"]
         assert body["manage_connections"] == {"enable": True}
         assert body["workbench"] == {"enable": True}
-        assert session.manage_connections_enabled() is True
-        assert session.workbench_enabled() is True
+        assert session.session_id == response.session_id
 
     def test_create_rejects_raw_session_preset_string(self, tool_router):
         """The public Python surface expects SessionPreset enum values."""

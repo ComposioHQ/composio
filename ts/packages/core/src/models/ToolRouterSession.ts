@@ -58,8 +58,6 @@ export class ToolRouterSession<
   public readonly preload: ToolRouterSessionPreloadConfig;
   public readonly configVersion?: number;
   public readonly warnings: ToolRouterSessionWarning[];
-  private readonly isManageConnectionsEnabled?: boolean;
-  private readonly isWorkbenchEnabled?: boolean;
 
   /** Singleton session context — shared across all custom tool executions */
   private readonly sessionContext?: SessionContext;
@@ -86,8 +84,6 @@ export class ToolRouterSession<
     this.preload = metadata?.preload ?? { tools: [] };
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
-    this.isManageConnectionsEnabled = metadata?.manageConnectionsEnabled;
-    this.isWorkbenchEnabled = metadata?.workbenchEnabled;
 
     // Create singleton session context if custom tools are bound
     if (customToolsMap && userId) {
@@ -95,14 +91,6 @@ export class ToolRouterSession<
     }
 
     telemetry.instrument(this, 'ToolRouterSession');
-  }
-
-  manageConnectionsEnabled(): boolean | undefined {
-    return this.isManageConnectionsEnabled;
-  }
-
-  workbenchEnabled(): boolean | undefined {
-    return this.isWorkbenchEnabled;
   }
 
   /**
