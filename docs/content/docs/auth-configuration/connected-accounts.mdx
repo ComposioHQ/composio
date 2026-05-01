@@ -260,7 +260,7 @@ Disabling masking exposes full credentials in API responses. Only disable this i
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
 
 <Callout type="info">
-Use `link()` for creating accounts, as it provides hosted authentication and allows multiple accounts by default. See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link).
+Use `link()` for hosted authentication. To create another active account for the same user and auth config, pass `allow_multiple=True` (Python) or `allowMultiple: true` (TypeScript). See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link).
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -268,7 +268,7 @@ Use `link()` for creating accounts, as it provides hosted authentication and all
 ```python
 # First account
 try:
-    first_account = composio.connected_accounts.initiate(
+    first_account = composio.connected_accounts.link(
         user_id=user_id,
         auth_config_id=auth_config_id
     )
@@ -276,11 +276,11 @@ try:
     connected_first_account = first_account.wait_for_connection()
     print(f"First account status: {connected_first_account.status}")
 except Exception as e:
-    print(f"Error initiating first account: {e}")
+    print(f"Error linking first account: {e}")
 
 # Second account - must explicitly allow multiple
 try:
-    second_account = composio.connected_accounts.initiate(
+    second_account = composio.connected_accounts.link(
         user_id=user_id,
         auth_config_id=auth_config_id,
         allow_multiple=True  # Required for additional accounts
@@ -289,7 +289,7 @@ try:
     connected_second_account = second_account.wait_for_connection()
     print(f"Second account status: {connected_second_account.status}")
 except Exception as e:
-    print(f"Error initiating second account: {e}")
+    print(f"Error linking second account: {e}")
 ```
   </Tab>
   <Tab value="TypeScript">
@@ -301,7 +301,7 @@ const authConfigId = 'ac_123';
 // ---cut---
 // First account
 try {
-  const firstAccount = await composio.connectedAccounts.initiate(
+  const firstAccount = await composio.connectedAccounts.link(
     userId,
     authConfigId
   );
@@ -309,12 +309,12 @@ try {
   const connectedFirstAccount = await firstAccount.waitForConnection();
   console.log('First account status:', connectedFirstAccount.status);
 } catch (error) {
-  console.error('Error initiating first account:', error);
+  console.error('Error linking first account:', error);
 }
 
 // Second account - must explicitly allow multiple
 try {
-  const secondAccount = await composio.connectedAccounts.initiate(
+  const secondAccount = await composio.connectedAccounts.link(
     userId,
     authConfigId,
     {
@@ -325,7 +325,7 @@ try {
   const connectedSecondAccount = await secondAccount.waitForConnection();
   console.log('Second account status:', connectedSecondAccount.status);
 } catch (error) {
-  console.error('Error initiating second account:', error);
+  console.error('Error linking second account:', error);
 }
 ```
   </Tab>

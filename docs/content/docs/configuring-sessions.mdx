@@ -203,11 +203,6 @@ When disabled:
 
 The workbench runs in a per-session sandbox. You can pick a compute tier to match the workload — heavier code execution or larger in-memory data benefits from a bigger sandbox. The tier is passed via `workbench.sandbox_size` (snake_case on the wire; `sandboxSize` in the TypeScript SDK).
 
-<Callout type="info">
-Requires `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (Python). Older SDKs reject `sandboxSize` (TypeScript) or silently drop `sandbox_size` (Python). See the [release notes](/docs/changelog/2026/04/28).
-</Callout>
-
-
 | Tier       | vCPU | RAM   |
 | ---------- | ---- | ----- |
 | `standard` | 1    | 1 GB  |

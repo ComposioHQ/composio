@@ -154,6 +154,8 @@ console.log(`Visit: ${redirectUrl} to authenticate your account`);
   </Tab>
 </Tabs>
 
+By default, `link()` creates one active connection per user and auth config. If you intentionally allow a user to connect multiple accounts for the same auth config, pass `allow_multiple=True` in Python or `allowMultiple: true` in TypeScript.
+
 #### Customizing Connect Link
 
 You can customize the Connect Link with your logo and app title, or fully white-label OAuth consent screens with your own developer apps.
