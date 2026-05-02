@@ -303,6 +303,40 @@ class TestJsonSchemaToModel:
         instance = model_class(tags=["tag1", "tag2"])
         assert instance.tags == ["tag1", "tag2"]
 
+    def test_no_title_fallback(self):
+        """Issue #2435: anonymous schemas (no 'title') must not crash with TypeError.
+
+        LangGraph/LangChain/CrewAI providers call json_schema_to_model for
+        array-item schemas that have no 'title' key.  Without a fallback,
+        create_model(None, ...) raises TypeError: type.__new__() argument 1
+        must be str, not None.
+        """
+        json_schema = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "value": {"type": "integer"},
+            },
+            "required": ["name"],
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        instance = model_class(name="test", value=42)
+        assert instance.name == "test"
+        assert instance.value == 42
+
+    def test_no_title_required_field_still_required(self):
+        """Issue #2435: required fields in title-less schemas must stay required."""
+        json_schema = {
+            "type": "object",
+            "properties": {"required_field": {"type": "string"}},
+            "required": ["required_field"],
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        with pytest.raises(Exception):
+            model_class()  # Should fail — required_field missing
+
 
 class TestPydanticModelFromParamSchema:
     """Test cases for pydantic_model_from_param_schema function."""
