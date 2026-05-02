@@ -57,7 +57,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicMcpServerGetResponse
 > {
   readonly name = 'anthropic';
-  private chacheTools: boolean = false;
+  private cacheTools: boolean = false;
 
   /**
    * Creates a new instance of the AnthropicProvider.
@@ -86,8 +86,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    */
   constructor(options?: { cacheTools?: boolean }) {
     super();
-    this.chacheTools = options?.cacheTools ?? false;
-    logger.debug(`AnthropicProvider initialized [cacheTools: ${this.chacheTools}]`);
+    this.cacheTools = options?.cacheTools ?? false;
+    logger.debug(`AnthropicProvider initialized [cacheTools: ${this.cacheTools}]`);
   }
 
   /**
@@ -135,7 +135,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       name: tool.slug,
       description: tool.description || '',
       input_schema: inputSchema,
-      cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
+      cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
 
@@ -307,7 +307,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
+        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
       });
     }
 
