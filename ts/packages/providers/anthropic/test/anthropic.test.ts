@@ -105,6 +105,33 @@ describe('AnthropicProvider', () => {
         },
       });
     });
+
+    it('should deduplicate required array to comply with JSON Schema 2020-12 (#2933)', () => {
+      // Anthropic rejects schemas where required has duplicate entries
+      const toolWithDuplicateRequired: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            owner: { type: 'string' },
+            name: { type: 'string' },
+          },
+          required: ['owner', 'name', 'owner'] as string[], // duplicate 'owner'
+        },
+      };
+
+      const wrapped = provider.wrapTool(toolWithDuplicateRequired) as AnthropicTool;
+
+      expect((wrapped.input_schema as { required: string[] }).required).toEqual(['owner', 'name']);
+    });
+
+    it('should leave required array unchanged when no duplicates', () => {
+      const wrapped = provider.wrapTool(mockTool) as AnthropicTool;
+
+      expect((wrapped.input_schema as { required: string[] }).required).toEqual(
+        mockTool.inputParameters!.required,
+      );
+    });
   });
 
   describe('wrapTools', () => {

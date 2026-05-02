@@ -118,14 +118,23 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: ComposioTool): AnthropicTool {
+    const rawSchema = tool.inputParameters || {
+      type: 'object',
+      properties: {},
+      required: [],
+    };
+
+    const inputSchema: InputSchema = Array.isArray(rawSchema.required)
+      ? {
+          ...(rawSchema as InputSchema),
+          required: [...new Set(rawSchema.required as string[])],
+        }
+      : (rawSchema as InputSchema);
+
     return {
       name: tool.slug,
       description: tool.description || '',
-      input_schema: (tool.inputParameters || {
-        type: 'object',
-        properties: {},
-        required: [],
-      }) as InputSchema,
+      input_schema: inputSchema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
