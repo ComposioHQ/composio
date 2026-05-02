@@ -272,7 +272,7 @@ def json_schema_to_model(
     :param skip_default: Skip the default values when building field object
     :return: Pydantic `BaseModel` type
     """
-    model_name = json_schema.get("title") or "GeneratedModel"
+    model_name = json_schema["title"] if "title" in json_schema else "GeneratedModel"
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(

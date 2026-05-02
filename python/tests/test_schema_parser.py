@@ -321,6 +321,7 @@ class TestJsonSchemaToModel:
         }
 
         model_class = json_schema_to_model(json_schema)
+        assert model_class.__name__ == "GeneratedModel"
         instance = model_class(name="test", value=42)
         assert instance.name == "test"
         assert instance.value == 42
