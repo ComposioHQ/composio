@@ -300,6 +300,43 @@ def _apply_direct_tools_workbench_preset(
     )
 
 
+class _SessionPresetApplication(te.TypedDict, total=False):
+    session_preset: t.Optional[SessionPreset]
+    manage_connections: t.Optional[t.Union[bool, ToolRouterManageConnectionsConfig]]
+    workbench: t.Optional[ToolRouterWorkbenchConfig]
+    preload: t.Optional[ToolRouterPreloadConfig]
+    search: t.Optional[t.Dict[str, bool]]
+    execution: t.Optional[t.Dict[str, bool]]
+
+
+def _apply_session_preset(
+    *,
+    session_preset: t.Optional[SessionPreset],
+    manage_connections: t.Optional[t.Union[bool, ToolRouterManageConnectionsConfig]],
+    workbench: t.Optional[ToolRouterWorkbenchConfig],
+    preload: t.Optional[ToolRouterPreloadConfig],
+) -> _SessionPresetApplication:
+    normalized_session_preset = _normalize_session_preset(session_preset)
+    if normalized_session_preset is not SessionPreset.DIRECT_TOOLS:
+        return {
+            "session_preset": normalized_session_preset,
+            "manage_connections": manage_connections,
+            "workbench": workbench,
+            "preload": preload,
+        }
+
+    return {
+        "session_preset": normalized_session_preset,
+        "manage_connections": _apply_direct_tools_manage_connections_preset(
+            manage_connections
+        ),
+        "workbench": _apply_direct_tools_workbench_preset(workbench),
+        "preload": preload or {"tools": ["all"]},
+        "search": {"enable": False},
+        "execution": {"enable_multi_execute": False},
+    }
+
+
 def _is_preload_all(preload: t.Optional[ToolRouterPreloadConfig]) -> bool:
     if preload is None:
         return False
@@ -747,14 +784,16 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             toolkit_states = session.toolkits()
             ```
         """
-        normalized_session_preset = _normalize_session_preset(session_preset)
-
-        if normalized_session_preset is SessionPreset.DIRECT_TOOLS:
-            manage_connections = _apply_direct_tools_manage_connections_preset(
-                manage_connections
-            )
-            workbench = _apply_direct_tools_workbench_preset(workbench)
-            preload = preload or {"tools": ["all"]}
+        preset_application = _apply_session_preset(
+            session_preset=session_preset,
+            manage_connections=manage_connections,
+            workbench=workbench,
+            preload=preload,
+        )
+        normalized_session_preset = preset_application["session_preset"]
+        manage_connections = preset_application["manage_connections"]
+        workbench = preset_application["workbench"]
+        preload = preset_application["preload"]
 
         # Parse manage_connections config
         manage_connections = (
@@ -881,9 +920,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         if preload is not None:
             create_params["preload"] = _normalize_preload_config(preload)
 
-        if normalized_session_preset is SessionPreset.DIRECT_TOOLS:
-            create_params["search"] = {"enable": False}
-            create_params["execution"] = {"enable_multi_execute": False}
+        if preset_application.get("search") is not None:
+            create_params["search"] = preset_application["search"]
+        if preset_application.get("execution") is not None:
+            create_params["execution"] = preset_application["execution"]
 
         # Build experimental config
         # Map SDK's experimental.assistive_prompt.user_timezone to API's
@@ -978,6 +1018,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             preload=ToolRouterSessionPreloadConfig(
                 tools=list(session.config.preload.tools)
             ),
+            config=session.config,
         )
 
     def use(self, session_id: str) -> ToolRouterSession[TTool, TToolCollection]:
@@ -1035,6 +1076,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             preload=ToolRouterSessionPreloadConfig(
                 tools=list(session.config.preload.tools)
             ),
+            config=session.config,
         )
 
 

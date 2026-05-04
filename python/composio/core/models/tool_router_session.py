@@ -76,6 +76,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     session_id: str
     #: MCP server configuration for this session.
     mcp: t.Any
+    #: Server-returned session config, including resolved helper defaults.
+    config: t.Any
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
 
@@ -94,6 +96,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
         preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
+        config: t.Any = None,
     ) -> None:
         self._client = client
         self._provider = provider
@@ -103,6 +106,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._file_upload_dirs = file_upload_dirs
         self.session_id = session_id
         self.mcp = mcp
+        self.config = config
         self.experimental = experimental
         self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
         self._custom_tools_map = custom_tools_map

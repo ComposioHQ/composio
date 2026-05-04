@@ -67,6 +67,13 @@ const mockSessionCreateResponse = {
   },
   tool_router_tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE', 'GITHUB_CREATE_ISSUE'],
   config: {
+    user_id: 'user_123',
+    manage_connections: {
+      enable: true,
+    },
+    workbench: {
+      enable: true,
+    },
     preload: { tools: [] },
   },
   config_version: 1,
@@ -220,6 +227,7 @@ describe('ToolRouter', () => {
         expect(session).toHaveProperty('tools');
         expect(session).toHaveProperty('authorize');
         expect(session).toHaveProperty('toolkits');
+        expect(session.config).toEqual(mockSessionCreateResponse.config);
       });
 
       it('should create a session with empty config object', async () => {
@@ -325,6 +333,40 @@ describe('ToolRouter', () => {
         });
       });
 
+      it('should apply direct tools defaults inside partial helper objects', async () => {
+        mockClient.post.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: ['gmail'],
+          sessionPreset: SessionPreset.DirectTools,
+          manageConnections: {
+            callbackUrl: 'https://example.com/callback',
+            waitForConnections: true,
+          },
+          workbench: {
+            enableProxyExecution: false,
+            sandboxSize: 'medium',
+          },
+        });
+
+        expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/tool_router/session', {
+          body: expect.objectContaining({
+            manage_connections: {
+              enable: false,
+              callback_url: 'https://example.com/callback',
+              enable_wait_for_connections: true,
+            },
+            workbench: {
+              enable: false,
+              enable_proxy_execution: false,
+              sandbox_size: 'medium',
+            },
+            search: { enable: false },
+            execution: { enable_multi_execute: false },
+          }),
+        });
+      });
+
       it('should accept preload all variants', async () => {
         mockClient.post.mockResolvedValueOnce(mockSessionCreateResponse);
 
@@ -338,6 +380,8 @@ describe('ToolRouter', () => {
             preload: { tools: ['all'] },
           }),
         });
+        expect(mockClient.post.mock.calls[0][1].body).not.toHaveProperty('search');
+        expect(mockClient.post.mock.calls[0][1].body).not.toHaveProperty('execution');
       });
 
       it('should create a session with user ID only and verify MCP type transformation', async () => {

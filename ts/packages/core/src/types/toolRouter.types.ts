@@ -330,6 +330,20 @@ export type ToolRouterCreateSessionConfigInput = z.input<
   typeof ToolRouterCreateSessionConfigSchema
 >;
 
+export type ToolRouterCreateSessionV31Overrides = {
+  search?: {
+    enable?: boolean;
+  };
+  execution?: {
+    enable_multi_execute?: boolean;
+  };
+};
+
+export interface ToolRouterSessionPresetApplication {
+  config: ToolRouterCreateSessionConfigInput;
+  v31Overrides?: ToolRouterCreateSessionV31Overrides;
+}
+
 const applyDirectToolsManageConnectionsPreset = (
   manageConnections: ToolRouterCreateSessionConfigInput['manageConnections']
 ): ToolRouterCreateSessionConfigInput['manageConnections'] => {
@@ -362,16 +376,22 @@ const applyDirectToolsWorkbenchPreset = (
 
 export const applyToolRouterSessionPreset = (
   config: ToolRouterCreateSessionConfigInput
-): ToolRouterCreateSessionConfigInput => {
+): ToolRouterSessionPresetApplication => {
   if (config.sessionPreset !== SessionPreset.DirectTools) {
-    return config;
+    return { config };
   }
 
   return {
-    ...config,
-    manageConnections: applyDirectToolsManageConnectionsPreset(config.manageConnections),
-    workbench: applyDirectToolsWorkbenchPreset(config.workbench),
-    preload: config.preload ?? { tools: ['all'] },
+    config: {
+      ...config,
+      manageConnections: applyDirectToolsManageConnectionsPreset(config.manageConnections),
+      workbench: applyDirectToolsWorkbenchPreset(config.workbench),
+      preload: config.preload ?? { tools: ['all'] },
+    },
+    v31Overrides: {
+      search: { enable: false },
+      execution: { enable_multi_execute: false },
+    },
   };
 };
 
@@ -615,9 +635,19 @@ export interface ToolRouterSessionExecuteOptions {
 
 export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
 
+export type ToolRouterSessionConfig = SessionCreateResponse.Config & {
+  search?: {
+    enable?: boolean;
+  };
+  execution?: {
+    enable_multi_execute?: boolean;
+  };
+};
+
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 
 export interface ToolRouterSessionMetadata {
+  config?: ToolRouterSessionConfig;
   preload?: ToolRouterSessionPreloadConfig;
   configVersion?: number;
   warnings?: ToolRouterSessionWarning[];
@@ -657,6 +687,8 @@ export interface Session<
 > {
   sessionId: string;
   mcp: ToolRouterMCPServerConfig;
+  /** Server-returned session config, including resolved helper defaults. */
+  config: ToolRouterSessionConfig;
   /** Stored preload configuration for this session. */
   preload: ToolRouterSessionPreloadConfig;
   /** Server-side config version when returned by the API. */

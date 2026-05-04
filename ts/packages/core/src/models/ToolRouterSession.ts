@@ -16,6 +16,7 @@ import {
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
   ToolRouterSessionWarning,
+  ToolRouterSessionConfig,
 } from '../types/toolRouter.types';
 import {
   transformSearchResponse,
@@ -55,6 +56,7 @@ export class ToolRouterSession<
   public readonly sessionId: string;
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
+  public readonly config: ToolRouterSessionConfig;
   public readonly preload: ToolRouterSessionPreloadConfig;
   public readonly configVersion?: number;
   public readonly warnings: ToolRouterSessionWarning[];
@@ -64,7 +66,7 @@ export class ToolRouterSession<
 
   constructor(
     private readonly client: ComposioClient,
-    private readonly config: ComposioConfig<TProvider> | undefined,
+    private readonly sdkConfig: ComposioConfig<TProvider> | undefined,
     sessionId: string,
     mcp: ToolRouterMCPServerConfig,
     experimentalOverrides?: Pick<SessionExperimental, 'assistivePrompt'>,
@@ -82,6 +84,7 @@ export class ToolRouterSession<
       files: new ToolRouterSessionFilesMount(client, sessionId),
     };
     this.preload = metadata?.preload ?? { tools: [] };
+    this.config = metadata?.config ?? ({ preload: this.preload } as ToolRouterSessionConfig);
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
 
@@ -101,7 +104,7 @@ export class ToolRouterSession<
    * is intercepted: local tools are executed in-process, remote tools are sent to the backend.
    */
   async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType<TProvider['wrapTools']>> {
-    const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
+    const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.sdkConfig);
     const tools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
       modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined
@@ -125,13 +128,13 @@ export class ToolRouterSession<
         );
       };
 
-      if (!this.config?.provider) {
+      if (!this.sdkConfig?.provider) {
         throw new Error(
           'A provider is required when using custom tools with session.tools(). ' +
             'Pass a provider in the Composio constructor.'
         );
       }
-      return this.config.provider.wrapTools(tools, routingExecuteFn) as ReturnType<
+      return this.sdkConfig.provider.wrapTools(tools, routingExecuteFn) as ReturnType<
         TProvider['wrapTools']
       >;
     }

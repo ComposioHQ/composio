@@ -29,7 +29,6 @@ import {
   MCPServerType,
   ToolRouterMCPServerConfig,
   ToolRouterSessionMetadata,
-  SessionPreset,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import {
@@ -56,6 +55,7 @@ import type { CustomToolsMap } from '../types/customTool.types';
 
 function getSessionMetadata(session: SessionCreateResponse | SessionRetrieveResponse) {
   const metadata: ToolRouterSessionMetadata = {
+    config: session.config,
     preload: session.config.preload,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
@@ -118,9 +118,8 @@ export class ToolRouter<
     userId: string,
     config?: ToolRouterCreateSessionConfigInput
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(
-      applyToolRouterSessionPreset(config ?? {})
-    );
+    const presetApplication = applyToolRouterSessionPreset(config ?? {});
+    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(presetApplication.config);
 
     // Extract custom tools/toolkits from experimental config
     const customTools = routerConfig.experimental?.customTools;
@@ -158,20 +157,15 @@ export class ToolRouter<
       multi_account: multiAccountPayload,
       preload: routerConfig.preload,
       experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
+      ...presetApplication.v31Overrides,
     };
 
-    const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DirectTools;
     const isPreloadAll =
       routerConfig.preload?.tools?.length === 1 &&
       routerConfig.preload.tools[0].toLowerCase() === 'all';
 
-    if (isDirectToolsPreset) {
-      payload.search = { enable: false };
-      payload.execution = { enable_multi_execute: false };
-    }
-
     const session =
-      isDirectToolsPreset || isPreloadAll
+      presetApplication.v31Overrides || isPreloadAll
         ? await createToolRouterSessionV31(this.client, payload)
         : await this.client.toolRouter.session.create(payload);
 

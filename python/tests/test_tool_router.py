@@ -38,6 +38,10 @@ def mock_client():
     ]
     mock_session_response.config = MagicMock()
     mock_session_response.config.user_id = "user_123"
+    mock_session_response.config.manage_connections = MagicMock()
+    mock_session_response.config.manage_connections.enable = True
+    mock_session_response.config.workbench = MagicMock()
+    mock_session_response.config.workbench.enable = True
     mock_session_response.config.preload = MagicMock()
     mock_session_response.config.preload.tools = []
     mock_session_response.experimental = None  # Default to None
@@ -118,6 +122,9 @@ class TestToolRouter:
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
+        assert (
+            session.config is mock_client.tool_router.session.create.return_value.config
+        )
 
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
@@ -649,6 +656,38 @@ class TestToolRouter:
         assert body["execution"] == {"enable_multi_execute": False}
         assert body["preload"] == {"tools": ["all"]}
 
+    def test_create_session_with_direct_tools_preset_partial_helper_objects(
+        self, tool_router, mock_client
+    ):
+        """Direct tools defaults helper parent enables inside partial objects."""
+        tool_router.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            session_preset=SessionPreset.DIRECT_TOOLS,
+            manage_connections={
+                "callback_url": "https://example.com/callback",
+                "wait_for_connections": True,
+            },
+            workbench={
+                "enable_proxy_execution": False,
+                "sandbox_size": "medium",
+            },
+        )
+
+        body = mock_client.post.call_args.kwargs["body"]
+        assert body["manage_connections"] == {
+            "enable": False,
+            "callback_url": "https://example.com/callback",
+            "enable_wait_for_connections": True,
+        }
+        assert body["workbench"] == {
+            "enable": False,
+            "enable_proxy_execution": False,
+            "sandbox_size": "medium",
+        }
+        assert body["search"] == {"enable": False}
+        assert body["execution"] == {"enable_multi_execute": False}
+
     def test_create_session_with_preload_all_uses_v31(self, tool_router, mock_client):
         """preload.tools='ALL' is normalized and sent through v3.1."""
         tool_router.create(
@@ -660,6 +699,8 @@ class TestToolRouter:
         mock_client.post.assert_called_once()
         body = mock_client.post.call_args.kwargs["body"]
         assert body["preload"] == {"tools": ["all"]}
+        assert "search" not in body
+        assert "execution" not in body
 
     def test_create_session_rejects_raw_session_preset_string(self, tool_router):
         """The public Python surface expects SessionPreset enum values."""
