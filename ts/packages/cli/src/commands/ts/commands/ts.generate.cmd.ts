@@ -1,5 +1,5 @@
 /**
- * The `composio ts generate` command can be configured as follows:
+ * The `composio generate ts` command can be configured as follows:
  * - `--compact`: Emit a single module file
  * - `--transpiled`: Emit not just the TypeScript files, but also the transpiled JavaScript files
  * - `--output-dir`: Output directory for the generated TypeScript type stubs.
@@ -332,20 +332,21 @@ function validateOutputDir(outputDir: string): Effect.Effect<string, Error, File
   });
 }
 
-export const tsCmd$Generate = _tsCmd$Generate.pipe(
-  Command.withHandler(params => {
-    // Determine if we should compile based on the rules:
-    // - If --output-dir is specified, default transpiled to false unless overridden
-    // - If no --output-dir, default transpiled to true unless overridden
-    const shouldCompile = params.transpiled || !Option.isSome(params.outputOpt);
+/**
+ * Shared handler for TypeScript generation commands.
+ * Resolves the `transpiled` default based on whether `--output-dir` was provided.
+ */
+export const handleTsGenerate = (params: GetCmdParams<typeof _tsCmd$Generate>) => {
+  // Determine if we should compile based on the rules:
+  // - If --output-dir is specified, default transpiled to false unless overridden
+  // - If no --output-dir, default transpiled to true unless overridden
+  const shouldCompile = params.transpiled || !Option.isSome(params.outputOpt);
 
-    return generateTypescriptTypeStubs({
-      ...params,
-      compact: params.compact,
-      transpiled: shouldCompile,
-    });
-  })
-);
+  return generateTypescriptTypeStubs({
+    ...params,
+    transpiled: shouldCompile,
+  });
+};
 
 export function generateTypescriptTypeStubs({
   outputOpt,
@@ -361,7 +362,7 @@ export function generateTypescriptTypeStubs({
     const cwd = process.cwd;
     const client = yield* ComposioToolkitsRepository;
 
-    yield* ui.intro('composio ts generate');
+    yield* ui.intro('composio generate ts');
 
     // Determine the actual output directory
     const outputDir = yield* outputOpt.pipe(

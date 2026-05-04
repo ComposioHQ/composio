@@ -1,5 +1,6 @@
 import { z } from 'zod/v3';
 import { ConnectionDataSchema } from './connectedAccountAuthStates.types';
+import { AuthSchemeEnum } from './authConfigs.types';
 
 /**
  * Connected Account create parameters
@@ -41,6 +42,7 @@ export const DefaultCreateConnectedAccountParamsSchema: z.ZodType<{
     data?: Record<string, unknown>;
     callback_url?: string;
     user_id?: string;
+    alias?: string;
   };
 }> = z.object({
   auth_config: z.object({
@@ -51,6 +53,7 @@ export const DefaultCreateConnectedAccountParamsSchema: z.ZodType<{
     data: z.record(z.string(), z.unknown()).optional(),
     callback_url: z.string().optional(),
     user_id: z.string().optional(),
+    alias: z.string().optional(),
   }),
 });
 
@@ -58,10 +61,12 @@ export const CreateConnectedAccountOptionsSchema: z.ZodType<{
   allowMultiple?: boolean;
   callbackUrl?: string;
   config?: z.infer<typeof ConnectionDataSchema>;
+  alias?: string;
 }> = z.object({
   allowMultiple: z.boolean().optional(),
   callbackUrl: z.string().optional(),
   config: ConnectionDataSchema.optional(),
+  alias: z.string().optional(),
 });
 export type CreateConnectedAccountOptions = z.infer<typeof CreateConnectedAccountOptionsSchema>;
 export type CreateConnectedAccountParams = z.infer<typeof CreateConnectedAccountParamsSchema>;
@@ -77,6 +82,8 @@ export type CreateConnectedAccountResponse = z.infer<typeof CreateConnectedAccou
 
 export const ConnectedAccountAuthConfigSchema = z.object({
   id: z.string(),
+  /** @deprecated use connectedAccount.state.authScheme instead */
+  authScheme: AuthSchemeEnum.optional(),
   isComposioManaged: z.boolean(),
   isDisabled: z.boolean(),
 });
@@ -85,6 +92,8 @@ export type ConnectedAccountAuthConfig = z.infer<typeof ConnectedAccountAuthConf
 export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   id: string;
   authConfig: z.infer<typeof ConnectedAccountAuthConfigSchema>;
+  wordId?: string | null;
+  alias?: string | null;
   /** @deprecated use connectedAccount.state instead */
   data?: Record<string, unknown>;
   /** @deprecated use connectedAccount.state instead */
@@ -100,6 +109,8 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
 }> = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
+  wordId: z.string().nullable().optional(),
+  alias: z.string().nullable().optional(),
   /**
    * @deprecated use connectedAccount.state instead
    */
@@ -180,6 +191,18 @@ export const CreateConnectedAccountLinkOptionsSchema = z.object({
    *
    */
   callbackUrl: z.string().optional(),
+  /**
+   * Human-readable alias for the connected account. Must be unique per userId and toolkit within the project.
+   */
+  alias: z.string().optional(),
+  /**
+   * Whether to allow multiple connected accounts for the same user and auth config.
+   * When `false` (default), `link()` throws `ComposioMultipleConnectedAccountsError`
+   * if the user already has an `ACTIVE` connection on this auth config — matching
+   * the guard on `initiate()`. Pair with `alias` and a session-level
+   * `multiAccount` config to disambiguate at execution time.
+   */
+  allowMultiple: z.boolean().optional(),
 });
 export type CreateConnectedAccountLinkOptions = z.infer<
   typeof CreateConnectedAccountLinkOptionsSchema
@@ -197,3 +220,10 @@ export const ConnectedAccountRefreshOptionsSchema = z.object({
   validateCredentials: z.boolean().optional(),
 });
 export type ConnectedAccountRefreshOptions = z.infer<typeof ConnectedAccountRefreshOptionsSchema>;
+
+// Use the Stainless-generated type as the source of truth for update params.
+export type { ConnectedAccountUpdateStatusParams as UpdateConnectedAccountParams } from '@composio/client/resources/connected-accounts';
+
+export const UpdateConnectedAccountParamsSchema = z.object({
+  enabled: z.boolean(),
+});

@@ -64,6 +64,7 @@ interface Toolkit {
   description: string;
   category: string | null;
   authSchemes: string[];
+  composioManagedAuthSchemes?: string[];
   toolCount: number;
   triggerCount: number;
   version: string | null;
@@ -222,13 +223,17 @@ async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]>
 }
 
 function transformToolkit(raw: any): Toolkit {
+  const authSchemes = raw.auth_schemes || raw.authSchemes || [];
+  const composioManaged = raw.composio_managed_auth_schemes || raw.composioManagedAuthSchemes || [];
+
   return {
     slug: raw.slug?.toLowerCase() || '',
     name: raw.name || raw.slug || '',
     logo: raw.meta?.logo || raw.logo || null,
     description: raw.meta?.description || raw.description || '',
     category: raw.meta?.categories?.[0]?.name || raw.meta?.categories?.[0] || null,
-    authSchemes: raw.auth_schemes || raw.authSchemes || [],
+    authSchemes,
+    ...(composioManaged.length > 0 ? { composioManagedAuthSchemes: composioManaged } : {}),
     toolCount: raw.tool_count || raw.toolCount || 0,
     triggerCount: raw.trigger_count || raw.triggerCount || 0,
     version: null,

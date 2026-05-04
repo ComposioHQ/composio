@@ -1,0 +1,102 @@
+---
+title: "Proxy execute now enforces same-domain endpoints"
+description: "The /api/v3/tools/execute/proxy endpoint rejects requests whose endpoint URL is on a different registrable domain than the connected account's base URL."
+date: "2026-04-24"
+---
+
+To prevent a connection's `Authorization` header from being forwarded to an unintended host, the proxy execute endpoint (`POST /api/v3/tools/execute/proxy`) now requires that the outbound `endpoint` URL share the same scheme and registrable domain (eTLD+1) as the connection's resolved `base_url`.
+
+Cross-subdomain requests on the same registrable domain continue to work — for example, a Gmail connection with base `https://gmail.googleapis.com` can still call `https://www.googleapis.com/...`. Relative endpoints (`/users/me/messages`) are resolved against the connection's `base_url` as before and are unaffected.
+
+<Callout type="warn">
+**Breaking Change**
+
+Existing proxy calls that pass an absolute `endpoint` URL whose registrable domain does not match the connection's `base_url` will now fail with `400 OriginMismatch` instead of being forwarded. Calls that omit both `connected_account_id` and `custom_connection_data` will fail with `400 MissingAuthContext` instead of being forwarded without auth.
+</Callout>
+
+### Migration
+
+If you currently pass an absolute URL that points at a different domain than your connection's `base_url`, switch to a relative endpoint (resolved against `base_url`) or an absolute URL under the same registrable domain.
+
+**Before** — absolute URL on a different domain (will be rejected):
+
+```json
+{
+  "endpoint": "https://api.someservice.com/v1/items",
+  "method": "GET",
+  "connected_account_id": "ca_..."
+}
+```
+
+**After** — relative endpoint (recommended):
+
+```json
+{
+  "endpoint": "/v1/items",
+  "method": "GET",
+  "connected_account_id": "ca_..."
+}
+```
+
+**Or** — absolute URL on the same registrable domain as the connection's `base_url`:
+
+```json
+{
+  "endpoint": "https://uploads.someservice.com/v1/items",
+  "method": "GET",
+  "connected_account_id": "ca_..."
+}
+```
+
+If your integration legitimately needs to call a different registrable domain for the same connection, reach out so we can add the additional host to the toolkit allowlist.
+
+### What changed
+
+- Absolute `endpoint` URLs on a different registrable domain than the connection's `base_url` are rejected with HTTP `400 OriginMismatch`. The upstream request is never made.
+- Proxy calls that provide neither `connected_account_id` nor `custom_connection_data` now return HTTP `400 MissingAuthContext` instead of being forwarded without auth.
+
+### Examples
+
+Assume a connected account whose toolkit `base_url` is `https://api.linear.app`.
+
+**Allowed — relative endpoint:**
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3/tools/execute/proxy \
+  -H 'x-api-key: <YOUR_API_KEY>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "endpoint": "/graphql",
+    "method": "POST",
+    "connected_account_id": "ca_..."
+  }'
+```
+
+**Allowed — same registrable domain (different subdomain):**
+
+```json
+{ "endpoint": "https://uploads.linear.app/...", "connected_account_id": "ca_..." }
+```
+
+**Rejected — different registrable domain:**
+
+```json
+{ "endpoint": "https://attacker.example/leak", "connected_account_id": "ca_..." }
+```
+
+Response:
+
+```json
+{
+  "error": {
+    "code": "OriginMismatch",
+    "message": "Endpoint host does not match the connection's base_url host."
+  }
+}
+```
+
+### What to do
+
+- If you call proxy execute with absolute URLs, make sure the host matches (or is a subdomain of) the connection's `base_url`.
+- Prefer relative endpoints (`/path`) — they are resolved against `base_url` and are not affected by this change.
+- If your integration legitimately needs to span multiple registrable domains for the same connection, reach out to us so we can add the additional host to the toolkit allowlist.

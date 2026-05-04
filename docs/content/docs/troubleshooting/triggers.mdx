@@ -9,7 +9,7 @@ Check the error message — the connected account might not have sufficient perm
 
 ## Not receiving payloads
 
-- **Polling triggers** (e.g., Gmail): These check for new events at intervals (~1 min for Gmail). Expect small delays.
+- **Polling triggers** (e.g., Gmail): These check for new events on an interval you configure. For Composio managed auth, intervals below 15 minutes are not supported.
 - **Webhook URL**: Ensure your URL is publicly accessible and returns a `2xx` status code.
 - **Trigger status**: Verify the trigger is enabled, not disabled.
 - **Logs**: Check the [trigger logs](https://platform.composio.dev?next_page=/logs/triggers) in the dashboard for delivery attempts and errors.

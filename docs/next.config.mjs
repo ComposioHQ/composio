@@ -37,6 +37,11 @@ const config = {
         destination: '/cookbooks',
         permanent: true,
       },
+      {
+        source: '/cookbooks/vercel-chat',
+        destination: '/cookbooks/chat-app',
+        permanent: true,
+      },
       // Specific /examples/ subroutes before the catch-all
       {
         source: '/examples/combined/:path*',
@@ -767,6 +772,12 @@ const config = {
       {
         source: '/reference/v-1/:path*',
         destination: '/reference/api-reference',
+        permanent: true,
+      },
+      // Legacy /docs/white-labeling → sessions white-labeling page
+      {
+        source: '/docs/white-labeling',
+        destination: '/docs/white-labeling-authentication',
         permanent: true,
       },
     ];

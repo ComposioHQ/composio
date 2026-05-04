@@ -4,8 +4,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { bold, gray } from 'src/ui/colors';
-import { redact } from 'src/ui/redact';
+import { formatConnectedAccountWhoami } from '../format';
 
 const id = Args.text({ name: 'id' }).pipe(
   Args.withDescription('Connected account ID (nanoid)'),
@@ -21,7 +20,7 @@ const id = Args.text({ name: 'id' }).pipe(
  *
  * @example
  * ```bash
- * composio connected-accounts whoami "con_1a2b3c4d5e6f"
+ * composio dev connected-accounts whoami "con_1a2b3c4d5e6f"
  * ```
  */
 export const connectedAccountsCmd$Whoami = Command.make('whoami', { id }, ({ id }) =>
@@ -35,7 +34,7 @@ export const connectedAccountsCmd$Whoami = Command.make('whoami', { id }, ({ id 
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
-        'Try specifying a connected account ID, e.g.:\n> composio connected-accounts whoami "con_1a2b3c4d5e6f"\n\nTo find connected account IDs:\n> composio connected-accounts list'
+        'Try specifying a connected account ID, e.g.:\n> composio dev connected-accounts whoami "con_1a2b3c4d5e6f"\n\nTo find connected account IDs:\n> composio dev connected-accounts list'
       );
       return;
     }
@@ -50,7 +49,7 @@ export const connectedAccountsCmd$Whoami = Command.make('whoami', { id }, ({ id 
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Failed to fetch connected account "${idValue}".`,
-            hint: 'Browse available connected accounts:\n> composio connected-accounts list',
+            hint: 'Browse available connected accounts:\n> composio dev connected-accounts list',
             fallbackValue: Option.none(),
           })
         )
@@ -67,23 +66,14 @@ export const connectedAccountsCmd$Whoami = Command.make('whoami', { id }, ({ id 
       yield* ui.log.warn(`This connected account has status ${item.status}.`);
     }
 
-    const redactedId = redact({ value: item.id, prefix: 'con_' });
-    const redactedAuthConfigId = redact({ value: item.auth_config.id, prefix: 'ac_' });
-
-    const lines: string[] = [];
-    lines.push(`${bold('Id:')} ${redactedId}`);
-    lines.push(`${bold('Toolkit:')} ${item.toolkit.slug}`);
-    lines.push(`${bold('User Id:')} ${item.user_id}`);
-    lines.push(`${bold('Status:')} ${item.status === 'ACTIVE' ? item.status : gray(item.status)}`);
-    lines.push(`${bold('Auth Config:')} ${redactedAuthConfigId}`);
-    lines.push(`${bold('Auth Scheme:')} ${item.auth_config.auth_scheme}`);
-
-    yield* ui.note(lines.join('\n'), `whoami: ${item.toolkit.slug}`);
+    yield* ui.note(formatConnectedAccountWhoami(item), `whoami: ${item.toolkit.slug}`);
 
     yield* ui.output(
       JSON.stringify(
         {
           id: item.id,
+          alias: item.alias,
+          word_id: item.word_id,
           toolkit: item.toolkit.slug,
           user_id: item.user_id,
           status: item.status,

@@ -12,6 +12,8 @@ export interface ParameterSchema {
   requiredFields?: string[];
   // Array item schema
   items?: ParameterSchema;
+  // Additional properties schema (for map/dictionary types)
+  additionalProperties?: ParameterSchema | boolean;
 }
 
 export interface Tool {
@@ -77,6 +79,7 @@ export interface ToolkitSummary {
 export interface Toolkit extends ToolkitSummary {
   description: string;
   authSchemes: string[];
+  composioManagedAuthSchemes?: string[];
   version: string | null;
   tools: Tool[];
   triggers: Trigger[];

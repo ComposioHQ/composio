@@ -129,6 +129,10 @@ console.log("MCP Server URL:", instance.url);
   <Step>
     ### Use with AI providers
 
+    <Callout type="info">
+    Pass an `x-api-key` header when connecting to Composio MCP. This is required when `require_mcp_api_key` is enabled (default for newly created organizations).
+    </Callout>
+
     <Tabs items={['OpenAI (Python)', 'Anthropic (Python)', 'Mastra (TypeScript)']}>
       <Tab value="OpenAI (Python)">
 ```python
@@ -137,6 +141,7 @@ from openai import OpenAI
 client = OpenAI(api_key="your-openai-api-key")
 
 mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?user_id=YOUR_USER_ID"
+mcp_headers = {"x-api-key": "YOUR_COMPOSIO_API_KEY"}
 
 response = client.responses.create(
     model="gpt-5",
@@ -144,6 +149,7 @@ response = client.responses.create(
         "type": "mcp",
         "server_label": "composio-server",
         "server_url": mcp_server_url,
+        "headers": mcp_headers,
         "require_approval": "never",
     }],
     input="What are my latest emails?",
@@ -159,15 +165,17 @@ from anthropic import Anthropic
 client = Anthropic(api_key="your-anthropic-api-key")
 
 mcp_server_url = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?user_id=YOUR_USER_ID"
+mcp_headers = {"x-api-key": "YOUR_COMPOSIO_API_KEY"}
 
 response = client.beta.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1000,
     messages=[{"role": "user", "content": "What are my latest emails?"}],
     mcp_servers=[{
         "type": "url",
         "url": mcp_server_url,
-        "name": "composio-mcp-server"
+        "name": "composio-mcp-server",
+        "headers": mcp_headers,
     }],
     betas=["mcp-client-2025-04-04"]
 )
@@ -177,16 +185,18 @@ print(response.content)
       </Tab>
       <Tab value="Mastra (TypeScript)">
 ```typescript
+// @noErrors
 import { MCPClient } from "@mastra/mcp";
 import { openai } from "@ai-sdk/openai";
 import { Agent } from "@mastra/core/agent";
 
 const MCP_URL = "https://backend.composio.dev/v3/mcp/YOUR_SERVER_ID?user_id=YOUR_USER_ID";
+const MCP_HEADERS = { "x-api-key": "YOUR_COMPOSIO_API_KEY" };
 
 const client = new MCPClient({
   id: "mcp-client",
   servers: {
-    composio: { url: new URL(MCP_URL) },
+    composio: { url: new URL(MCP_URL), headers: MCP_HEADERS },
   }
 });
 
@@ -194,7 +204,7 @@ const agent = new Agent({
   id: "assistant",
   name: "Assistant",
   instructions: "You are a helpful assistant that can read and manage emails.",
-  model: openai("gpt-4-turbo"),
+  model: openai("gpt-5.4"),
   tools: await client.getTools()
 });
 

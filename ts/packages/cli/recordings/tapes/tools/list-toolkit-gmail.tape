@@ -1,4 +1,4 @@
-Set Height 1500
+Set Height 750
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/tools/list-toolkit-gmail.svg"
 Output "recordings/ascii/tools/list-toolkit-gmail.ascii"

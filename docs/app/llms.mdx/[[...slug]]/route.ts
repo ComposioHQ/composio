@@ -14,6 +14,8 @@ import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
+import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
+import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema, toolFromApi } from '@/lib/toolkit-schema';
 
@@ -135,6 +137,7 @@ interface OpenAPISchema {
   maximum?: number;
   minLength?: number;
   maxLength?: number;
+  additionalProperties?: OpenAPISchema | boolean;
 }
 
 interface OpenAPIParameter {
@@ -219,7 +222,13 @@ function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
         for (const [key, prop] of Object.entries(schema.properties)) {
           obj[key] = generateSampleValue(prop, depth + 1);
         }
+        if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+          obj['key'] = generateSampleValue(schema.additionalProperties, depth + 1);
+        }
         return obj;
+      }
+      if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+        return { key: generateSampleValue(schema.additionalProperties, depth + 1) };
       }
       return {};
     default:
@@ -235,21 +244,37 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
   const prefix = '  '.repeat(indent);
   const required = schema.required || [];
 
-  if (schema.type === 'object' && schema.properties) {
-    for (const [name, prop] of Object.entries(schema.properties)) {
-      const isRequired = required.includes(name);
-      const reqMark = isRequired ? ' *(required)*' : '';
-      const typeStr = getTypeString(prop);
-      const desc = prop.description ? `: ${prop.description}` : '';
+  if (schema.type === 'object' && (schema.properties || (schema.additionalProperties && typeof schema.additionalProperties === 'object'))) {
+    if (schema.properties) {
+      for (const [name, prop] of Object.entries(schema.properties)) {
+        const isRequired = required.includes(name);
+        const reqMark = isRequired ? ' *(required)*' : '';
+        const typeStr = getTypeString(prop);
+        const desc = prop.description ? `: ${prop.description}` : '';
 
-      lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}`);
+        lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}`);
 
-      // Recurse for nested objects/arrays
-      if (prop.type === 'object' && prop.properties) {
-        lines.push(...renderSchema(prop, indent + 1, maxDepth));
-      } else if (prop.type === 'array' && prop.items?.type === 'object' && prop.items.properties) {
+        // Recurse for nested objects/arrays
+        if (prop.type === 'object' && (prop.properties || (prop.additionalProperties && typeof prop.additionalProperties === 'object'))) {
+          lines.push(...renderSchema(prop, indent + 1, maxDepth));
+        } else if (prop.type === 'array' && prop.items?.type === 'object' && (prop.items.properties || (prop.items.additionalProperties && typeof prop.items.additionalProperties === 'object'))) {
+          lines.push(`${prefix}  - Array items:`);
+          lines.push(...renderSchema(prop.items, indent + 2, maxDepth));
+        }
+      }
+    }
+
+    // Render additionalProperties as [key: string]
+    if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+      const ap = schema.additionalProperties;
+      const typeStr = getTypeString(ap);
+      const desc = ap.description ? `: ${ap.description}` : '';
+      lines.push(`${prefix}- \`[key: string]\` (${typeStr})${desc}`);
+      if (ap.type === 'object' && (ap.properties || (ap.additionalProperties && typeof ap.additionalProperties === 'object'))) {
+        lines.push(...renderSchema(ap, indent + 1, maxDepth));
+      } else if (ap.type === 'array' && ap.items?.type === 'object' && (ap.items.properties || (ap.items.additionalProperties && typeof ap.items.additionalProperties === 'object'))) {
         lines.push(`${prefix}  - Array items:`);
-        lines.push(...renderSchema(prop.items, indent + 2, maxDepth));
+        lines.push(...renderSchema(ap.items, indent + 2, maxDepth));
       }
     }
   } else if (schema.oneOf || schema.anyOf) {
@@ -627,6 +652,13 @@ function toolkitToMarkdown(toolkit: Toolkit, detailedTools?: Tool[], detailedTri
     '',
     `- **Category:** ${toolkit.category || 'Uncategorized'}`,
     `- **Auth:** ${toolkit.authSchemes.join(', ') || 'None'}`,
+    `- **Composio Managed App Available?** ${
+      toolkit.authSchemes?.some((s) => s.toUpperCase().includes('OAUTH'))
+        ? (toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0
+            ? 'Yes'
+            : 'No')
+        : 'N/A'
+    }`,
     `- **Tools:** ${toolkit.toolCount}`,
     `- **Triggers:** ${toolkit.triggerCount}`,
     `- **Slug:** \`${toolkit.slug.toUpperCase()}\``,
@@ -697,6 +729,60 @@ function toolkitToMarkdown(toolkit: Toolkit, detailedTools?: Tool[], detailedTri
   return lines.join('\n');
 }
 
+// Generate markdown for /toolkits/managed-auth.md
+async function generateManagedAuthIndex(): Promise<string> {
+  const toolkits = await getAllToolkits();
+
+  // Only include OAuth toolkits
+  const oauthToolkits = toolkits.filter((t) =>
+    t.authSchemes?.some((s) => s.toUpperCase().includes('OAUTH'))
+  );
+
+  const managed = oauthToolkits
+    .filter((t) => t.composioManagedAuthSchemes && t.composioManagedAuthSchemes.length > 0)
+    .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
+
+  const unmanaged = oauthToolkits
+    .filter((t) => !t.composioManagedAuthSchemes || t.composioManagedAuthSchemes.length === 0)
+    .sort((a, b) => (a.name?.trim() || '').localeCompare(b.name?.trim() || ''));
+
+  const lines: string[] = [
+    '# Composio Managed Auth',
+    '',
+    'Toolkits with managed auth work out of the box with no OAuth setup. For toolkits without managed auth, you need to provide your own credentials.',
+    '',
+    'You can also check programmatically whether a toolkit has managed auth:',
+    '',
+    '```bash',
+    "curl 'https://backend.composio.dev/api/v3/toolkits/posthog' \\",
+    "  -H 'x-api-key: YOUR_API_KEY'",
+    '```',
+    '',
+    'See [When to use your own developer credentials](/docs/custom-app-vs-managed-app.md) for help deciding which approach fits your use case.',
+    '',
+    `## Composio Managed App Available (${managed.length})`,
+    '',
+    '| Toolkit | Slug |',
+    '|---------|------|',
+  ];
+
+  for (const t of managed) {
+    lines.push(`| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`);
+  }
+
+  lines.push('');
+  lines.push(`## Requires Your Own Credentials (${unmanaged.length})`);
+  lines.push('');
+  lines.push('| Toolkit | Slug |');
+  lines.push('|---------|------|');
+
+  for (const t of unmanaged) {
+    lines.push(`| [${t.name?.trim() || t.slug}](/toolkits/${t.slug}.md) | \`${t.slug.toUpperCase()}\` |`);
+  }
+
+  return lines.join('\n');
+}
+
 // Generate a comprehensive toolkits index for /toolkits.md
 async function generateToolkitsIndex(): Promise<string> {
   const toolkits = await getAllToolkits();
@@ -711,17 +797,24 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
+    '- [Premium Tools](/toolkits/premium-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
+    '',
     '## All Toolkits',
     '',
-    '| Toolkit | Slug | Tools | Triggers | Auth |',
-    '|---------|------|-------|----------|------|',
+    '| Toolkit | Slug | Tools | Triggers | Auth | Managed App |',
+    '|---------|------|-------|----------|------|-------------|',
   ];
 
   for (const toolkit of sorted) {
     const name = toolkit.name?.trim() || toolkit.slug;
     const auth = toolkit.authSchemes?.join(', ') || 'None';
+    const hasOAuth = toolkit.authSchemes?.some((s) => s.toUpperCase().includes('OAUTH'));
+    const managedApp = hasOAuth
+      ? (toolkit.composioManagedAuthSchemes && toolkit.composioManagedAuthSchemes.length > 0 ? 'Yes' : 'No')
+      : '—';
     lines.push(
-      `| [${name}](/toolkits/${toolkit.slug}.md) | \`${toolkit.slug.toUpperCase()}\` | ${toolkit.toolCount} | ${toolkit.triggerCount} | ${auth} |`
+      `| [${name}](/toolkits/${toolkit.slug}.md) | \`${toolkit.slug.toUpperCase()}\` | ${toolkit.toolCount} | ${toolkit.triggerCount} | ${auth} | ${managedApp} |`
     );
   }
 
@@ -729,6 +822,96 @@ async function generateToolkitsIndex(): Promise<string> {
   lines.push('For detailed information about each toolkit including all tools and triggers, visit the individual toolkit pages listed above.');
 
   return lines.join('\n');
+}
+
+const LLM_FOOTER = '\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/docs/glossary) | [Cookbooks](https://docs.composio.dev/llms.mdx/cookbooks) | [API Reference](https://docs.composio.dev/llms.mdx/reference)';
+
+// Render meta tool parameters as markdown
+function renderMetaToolParams(properties: Record<string, MetaToolParameter>, requiredFields: string[] = [], indent = 0): string[] {
+  const lines: string[] = [];
+  const prefix = '  '.repeat(indent);
+
+  for (const [name, param] of Object.entries(properties)) {
+    const typeStr = param.type === 'array' && param.items && typeof param.items === 'object' && (param.items as Record<string, unknown>).type
+      ? `array<${(param.items as Record<string, unknown>).type}>`
+      : param.type;
+    const reqMark = requiredFields.includes(name) ? ' *(required)*' : '';
+    const desc = param.description
+      ? `: ${param.description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim()}`
+      : '';
+    const defaultStr = param.default !== undefined && param.default !== null && param.default !== ''
+      ? ` (default: \`${String(param.default)}\`)`
+      : '';
+    const enumStr = param.enum && param.enum.length > 0
+      ? ` — values: ${param.enum.map(v => `\`${v}\``).join(', ')}`
+      : '';
+
+    lines.push(`${prefix}- \`${name}\` (${typeStr})${reqMark}${desc}${defaultStr}${enumStr}`);
+
+    if (param.properties && Object.keys(param.properties).length > 0) {
+      const nestedRequired = Array.isArray(param.required) ? param.required : [];
+      lines.push(...renderMetaToolParams(param.properties, nestedRequired, indent + 1));
+    }
+
+    const items = param.items && typeof param.items === 'object' ? param.items as Record<string, unknown> : null;
+    if (items?.properties && typeof items.properties === 'object' && Object.keys(items.properties as object).length > 0) {
+      const itemsRequired = Array.isArray(items.required) ? items.required as string[] : [];
+      lines.push(`${prefix}  - Array items:`);
+      lines.push(...renderMetaToolParams(items.properties as Record<string, MetaToolParameter>, itemsRequired, indent + 2));
+    }
+  }
+
+  return lines;
+}
+
+// Generate markdown for a single meta tool
+function metaToolToMarkdown(tool: MetaTool): string {
+  const lines: string[] = [
+    `# ${tool.displayName}`,
+    '',
+    `**Slug:** \`${tool.slug}\``,
+  ];
+
+  if (tool.tags.length > 0) {
+    lines.push(`**Tags:** ${tool.tags.join(', ')}`);
+  }
+
+  lines.push('');
+
+  const inputProps = tool.inputParameters?.properties || {};
+  if (Object.keys(inputProps).length > 0) {
+    lines.push('## Input Parameters', '');
+    lines.push(...renderMetaToolParams(inputProps, tool.inputParameters?.required || []));
+    lines.push('');
+  }
+
+  const responseProps = tool.responseSchema?.properties || {};
+  if (Object.keys(responseProps).length > 0) {
+    lines.push('## Response', '');
+    lines.push(...renderMetaToolParams(responseProps, tool.responseSchema?.required || []));
+    lines.push('');
+  }
+
+  return lines.join('\n') + LLM_FOOTER;
+}
+
+// Generate markdown index for all meta tools
+function metaToolsIndexToMarkdown(tools: MetaTool[]): string {
+  const lines: string[] = [
+    '# Meta Tools',
+    '',
+    'Meta tools are system-level tools available in sessions. They handle tool discovery, execution, authentication, and sandboxing.',
+    '',
+    '| Tool | Tags |',
+    '|------|------|',
+  ];
+
+  for (const tool of tools) {
+    const tags = tool.tags.length > 0 ? tool.tags.join(', ') : '—';
+    lines.push(`| [\`${tool.slug}\`](/reference/meta-tools/${tool.slug.toLowerCase().replace('composio_', '')}.md) | ${tags} |`);
+  }
+
+  return lines.join('\n') + LLM_FOOTER;
 }
 
 export async function GET(
@@ -743,6 +926,16 @@ export async function GET(
     if (prefix === 'toolkits' && rest.length === 0) {
       const toolkitsIndex = await generateToolkitsIndex();
       return new Response(toolkitsIndex, {
+        headers: {
+          'Content-Type': 'text/markdown; charset=utf-8',
+        },
+      });
+    }
+
+    // Special handling for managed auth page - generate server-side list
+    if (prefix === 'toolkits' && rest.length === 1 && rest[0] === 'managed-auth') {
+      const managedAuthIndex = await generateManagedAuthIndex();
+      return new Response(managedAuthIndex, {
         headers: {
           'Content-Type': 'text/markdown; charset=utf-8',
         },
@@ -777,6 +970,28 @@ export async function GET(
       }
       // If no entries found, fall through to notFound
       notFound();
+    }
+
+    // Special handling for meta tools - /reference/meta-tools and /reference/meta-tools/{slug}
+    if (prefix === 'reference' && rest[0] === 'meta-tools') {
+      if (rest.length === 1) {
+        // Index page
+        const tools = await getAllMetaTools();
+        return new Response(metaToolsIndexToMarkdown(tools), {
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+        });
+      }
+      if (rest.length === 2) {
+        // Individual tool page — match by page slug (e.g., "search_tools" or "search_tools.md")
+        const pageSlug = rest[1].replace(/\.md$/, '');
+        const tools = await getAllMetaTools();
+        const tool = tools.find(t => t.slug.toLowerCase().replace('composio_', '') === pageSlug);
+        if (tool) {
+          return new Response(metaToolToMarkdown(tool), {
+            headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+          });
+        }
+      }
     }
 
     // Handle 'reference' specially - uses async getReferenceSource() for OpenAPI pages

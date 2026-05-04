@@ -1,6 +1,6 @@
-# CLI `composio toolkits list` Test
+# CLI `composio dev toolkits list` Test
 
-Verifies that `composio toolkits list` returns toolkits as JSON in piped mode with correct `--query` filtering behavior.
+Verifies that `composio dev toolkits list` returns toolkits as JSON in piped mode with correct `--query` filtering behavior.
 
 ## What It Tests
 
@@ -12,7 +12,7 @@ Verifies that `composio toolkits list` returns toolkits as JSON in piped mode wi
 
 ## Requirements
 
-- `COMPOSIO_API_KEY` (**required**) — Composio API key passed to the container
+- `COMPOSIO_USER_API_KEY` (**required**) — Composio user API key passed to the container
 
 ## Running
 

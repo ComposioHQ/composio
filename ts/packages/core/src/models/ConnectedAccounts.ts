@@ -26,6 +26,8 @@ import {
   ConnectedAccountStatuses,
   ConnectedAccountRefreshOptions,
   ConnectedAccountRefreshOptionsSchema,
+  UpdateConnectedAccountParams,
+  UpdateConnectedAccountParamsSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
@@ -189,17 +191,17 @@ export class ConnectedAccounts {
     //   state = connectionDataParsed.data;
     // }
 
-    const response = await this.client.connectedAccounts.create({
-      auth_config: {
-        id: authConfigId,
-      },
+    const createParams: ConnectedAccountCreateParamsRaw = {
+      auth_config: { id: authConfigId },
       connection: {
         callback_url: options?.callbackUrl,
         user_id: userId,
-        state,
+        state: state as ConnectedAccountCreateParamsRaw.Connection['state'],
+        ...(options?.alias != null && { alias: options.alias }),
       },
-      // @TODO: This is a temporary fix to allow api_key to be optional, in future ideally we should fix this from API side
-    } as ConnectedAccountCreateParamsRaw);
+    };
+
+    const response = await this.client.connectedAccounts.create(createParams);
 
     const redirectUrl =
       typeof response.connectionData?.val?.redirectUrl === 'string'
@@ -261,11 +263,29 @@ export class ConnectedAccounts {
       });
     }
 
+    // Mirror initiate(): guard against silently creating extra connections on
+    // the same auth config unless the caller explicitly opts in.
+    const existing = await this.list({
+      userIds: [userId],
+      authConfigIds: [authConfigId],
+      statuses: [ConnectedAccountStatuses.ACTIVE],
+    });
+    if (existing.items.length > 0 && !requestOptions.data.allowMultiple) {
+      throw new ComposioMultipleConnectedAccountsError(
+        `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}. Please use the allowMultiple option to allow multiple connected accounts.`
+      );
+    } else if (existing.items.length > 0) {
+      logger.warn(
+        `[Warn:AllowMultiple] Multiple connected accounts found for user ${userId} in auth config ${authConfigId}`
+      );
+    }
+
     try {
       const response = await this.client.link.create({
         auth_config_id: authConfigId,
         user_id: userId,
         ...(requestOptions?.data.callbackUrl && { callback_url: requestOptions.data.callbackUrl }),
+        ...(requestOptions?.data.alias != null && { alias: requestOptions.data.alias }),
       });
 
       const connectionRequest = createConnectionRequest(
@@ -460,5 +480,32 @@ export class ConnectedAccounts {
    */
   async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
     return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
+  }
+
+  /**
+   * Update a connected account's alias and/or credentials.
+   *
+   * @param {string} nanoid - The unique identifier of the connected account
+   * @param {UpdateConnectedAccountParams} params - The update parameters
+   * @returns {Promise<ConnectedAccountUpdateStatusResponse>} The update response
+   *
+   * @example
+   * ```typescript
+   * // Disable an account
+   * await composio.connectedAccounts.update('ca_abc123', { enabled: false });
+   * ```
+   */
+  async update(
+    nanoid: string,
+    params: UpdateConnectedAccountParams
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
+    const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse connected account update params', {
+        cause: parsedParams.error,
+      });
+    }
+
+    return this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data);
   }
 }

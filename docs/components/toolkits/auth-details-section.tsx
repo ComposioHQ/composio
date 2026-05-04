@@ -7,6 +7,8 @@ import type { AuthConfigDetail, AuthConfigField } from '@/types/toolkit';
 
 interface AuthDetailsSectionProps {
   authConfigDetails: AuthConfigDetail[];
+  authSchemes?: string[];
+  composioManagedAuthSchemes?: string[];
 }
 
 function formatTypeName(mode: string): string {
@@ -56,7 +58,7 @@ function getAllFields(detail: AuthConfigDetail): AuthConfigField[] {
   ];
 }
 
-export function AuthDetailsSection({ authConfigDetails }: AuthDetailsSectionProps) {
+export function AuthDetailsSection({ authConfigDetails, authSchemes, composioManagedAuthSchemes }: AuthDetailsSectionProps) {
   if (!authConfigDetails || authConfigDetails.length === 0) {
     return null;
   }
@@ -70,11 +72,24 @@ export function AuthDetailsSection({ authConfigDetails }: AuthDetailsSectionProp
     return null;
   }
 
+  const hasOAuth = authSchemes?.some((s) => s.toUpperCase().includes('OAUTH')) ?? false;
+
   return (
     <div className="space-y-3">
       <h2 className="flex items-center gap-2 text-base font-semibold text-fd-foreground">
         <Key className="h-4 w-4" />
         Authentication Details
+        {hasOAuth && (
+          composioManagedAuthSchemes && composioManagedAuthSchemes.length > 0 ? (
+            <span className="rounded bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">
+              Composio Managed App available
+            </span>
+          ) : (
+            <span className="rounded bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+              Composio Managed App not available
+            </span>
+          )
+        )}
       </h2>
       <Accordions type="single">
         {validDetails.map((detail) => {

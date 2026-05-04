@@ -1,4 +1,4 @@
-Set Height 765
+Set Height 750
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/auth-configs/list.svg"
 Output "recordings/ascii/auth-configs/list.ascii"

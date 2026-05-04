@@ -14,7 +14,7 @@ import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 import { TOOLS_TYPES_GMAIL } from 'test/__mocks__/tools-types-gmail';
 
-describe('CLI: composio ts generate', () => {
+describe('CLI: composio generate ts', () => {
   const appClientData = {
     toolkits: makeTestToolkits([
       {
@@ -30,6 +30,59 @@ describe('CLI: composio ts generate', () => {
     triggerTypes: [...TRIGGER_TYPES_GMAIL.slice(0, 3)],
     triggerTypesAsEnums: [...TRIGGER_TYPES_GMAIL.slice(0, 3).map(triggerType => triggerType.slug)],
   } satisfies TestLiveInput['toolkitsData'];
+
+  const setupMockComposioCorePackage = ({
+    cwd,
+    fs,
+    withGenerated = false,
+  }: {
+    cwd: string;
+    fs: FileSystem.FileSystem;
+    withGenerated?: boolean;
+  }) =>
+    Effect.gen(function* () {
+      const nodeModulesRoot = path.join(cwd, 'node_modules');
+      const nodeModulesDir = path.join(nodeModulesRoot, '@composio', 'core');
+
+      // Some fixtures may carry broken node_modules links after copying; reset to a real directory.
+      yield* fs
+        .remove(nodeModulesRoot, { recursive: true })
+        .pipe(Effect.catchAll(() => Effect.void));
+      yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
+
+      if (withGenerated) {
+        yield* fs.makeDirectory(path.join(nodeModulesDir, 'generated'), { recursive: true });
+      }
+
+      // Create a mock package.json to resolve @composio/core imports in transpilation paths.
+      yield* fs.writeFileString(
+        path.join(nodeModulesDir, 'package.json'),
+        JSON.stringify(
+          {
+            name: '@composio/core',
+            type: 'module',
+            exports: {
+              '.': {
+                types: './index.d.ts',
+                default: './index.js',
+              },
+              './generated': {
+                types: './generated/index.d.ts',
+                default: './generated/index.js',
+              },
+            },
+          },
+          null,
+          2
+        )
+      );
+
+      yield* fs.writeFileString(
+        path.join(nodeModulesDir, 'index.d.ts'),
+        'export type TriggerEvent<T> = { payload: T };'
+      );
+      yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
+    });
 
   describe('[Given] valid fetched app data', () => {
     layer(
@@ -47,46 +100,10 @@ describe('CLI: composio ts generate', () => {
               const cwd = process.cwd;
               const fs = yield* FileSystem.FileSystem;
 
-              // Create the @composio/core/generated directory structure as if installed
-              const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
-              const generatedDir = path.join(nodeModulesDir, 'generated');
-              yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
-              yield* fs.makeDirectory(generatedDir, { recursive: true });
-
-              // Create a mock package.json to override the symlink resolution for ESM imports.
-              // This is necessary because we're using symlinks in test-layer.ts to isolate the test environment.
-              const corePackageJson = path.join(nodeModulesDir, 'package.json');
-              yield* fs.writeFileString(
-                corePackageJson,
-                JSON.stringify(
-                  {
-                    name: '@composio/core',
-                    type: 'module',
-                    exports: {
-                      '.': {
-                        types: './index.d.ts',
-                        default: './index.js',
-                      },
-                      './generated': {
-                        types: './generated/index.d.ts',
-                        default: './generated/index.js',
-                      },
-                    },
-                  },
-                  null,
-                  2
-                )
-              );
-
-              // Create minimal type stubs for @composio/core root exports (needed for transpilation)
-              yield* fs.writeFileString(
-                path.join(nodeModulesDir, 'index.d.ts'),
-                'export type TriggerEvent<T> = { payload: T };'
-              );
-              yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
+              yield* setupMockComposioCorePackage({ cwd, fs, withGenerated: true });
 
               const outputDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
-              const args = ['ts', 'generate'];
+              const args = ['generate', 'ts'];
               yield* cli(args);
 
               const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
@@ -288,45 +305,10 @@ describe('CLI: composio ts generate', () => {
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
 
-            // Create the @composio/core/generated directory structure as if installed
-            const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
-            const generatedDir = path.join(nodeModulesDir, 'generated');
-            yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
-            yield* fs.makeDirectory(generatedDir, { recursive: true });
-
-            // Create a mock package.json to override the symlink resolution for ESM imports
-            const corePackageJson = path.join(nodeModulesDir, 'package.json');
-            yield* fs.writeFileString(
-              corePackageJson,
-              JSON.stringify(
-                {
-                  name: '@composio/core',
-                  type: 'module',
-                  exports: {
-                    '.': {
-                      types: './index.d.ts',
-                      default: './index.js',
-                    },
-                    './generated': {
-                      types: './generated/index.d.ts',
-                      default: './generated/index.js',
-                    },
-                  },
-                },
-                null,
-                2
-              )
-            );
-
-            // Create minimal type stubs for @composio/core root exports (needed for transpilation)
-            yield* fs.writeFileString(
-              path.join(nodeModulesDir, 'index.d.ts'),
-              'export type TriggerEvent<T> = { payload: T };'
-            );
-            yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
+            yield* setupMockComposioCorePackage({ cwd, fs, withGenerated: true });
 
             const outputDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
-            const args = ['ts', 'generate', '--type-tools'];
+            const args = ['generate', 'ts', '--type-tools'];
             yield* cli(args);
 
             const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
@@ -564,7 +546,7 @@ describe('CLI: composio ts generate', () => {
 
               const outputDir = path.join(cwd, '.generated', 'composio-ts');
 
-              const args = ['ts', 'generate', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--output-dir', outputDir];
               yield* cli(args);
 
               const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
@@ -750,7 +732,7 @@ describe('CLI: composio ts generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, 'generated-single');
 
-            const args = ['ts', 'generate', '--compact', '--output-dir', outputDir];
+            const args = ['generate', 'ts', '--compact', '--output-dir', outputDir];
             yield* cli(args);
 
             // Check if the output directory contains the expected files
@@ -777,24 +759,9 @@ describe('CLI: composio ts generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, 'generated-compiled');
 
-            // Create mock @composio/core for transpilation to resolve imports
-            const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
-            yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
-            yield* fs.writeFileString(
-              path.join(nodeModulesDir, 'package.json'),
-              JSON.stringify({
-                name: '@composio/core',
-                type: 'module',
-                exports: { '.': { types: './index.d.ts', default: './index.js' } },
-              })
-            );
-            yield* fs.writeFileString(
-              path.join(nodeModulesDir, 'index.d.ts'),
-              'export type TriggerEvent<T> = { payload: T };'
-            );
-            yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
+            yield* setupMockComposioCorePackage({ cwd, fs });
 
-            const args = ['ts', 'generate', '--transpiled', '--output-dir', outputDir];
+            const args = ['generate', 'ts', '--transpiled', '--output-dir', outputDir];
             yield* cli(args);
 
             // Check if the output directory contains both .ts and .js files
@@ -825,35 +792,11 @@ describe('CLI: composio ts generate', () => {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
+            const generatedDir = path.join(cwd, 'node_modules', '@composio', 'core', 'generated');
 
-            // Set up @composio/core/generated directory
-            const nodeModulesDir = path.join(cwd, 'node_modules', '@composio', 'core');
-            const generatedDir = path.join(nodeModulesDir, 'generated');
-            yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
-            yield* fs.makeDirectory(generatedDir, { recursive: true });
+            yield* setupMockComposioCorePackage({ cwd, fs, withGenerated: true });
 
-            // Create mock package.json and type stubs for transpilation
-            yield* fs.writeFileString(
-              path.join(nodeModulesDir, 'package.json'),
-              JSON.stringify({
-                name: '@composio/core',
-                type: 'module',
-                exports: {
-                  '.': { types: './index.d.ts', default: './index.js' },
-                  './generated': {
-                    types: './generated/index.d.ts',
-                    default: './generated/index.js',
-                  },
-                },
-              })
-            );
-            yield* fs.writeFileString(
-              path.join(nodeModulesDir, 'index.d.ts'),
-              'export type TriggerEvent<T> = { payload: T };'
-            );
-            yield* fs.writeFileString(path.join(nodeModulesDir, 'index.js'), 'export {};');
-
-            const args = ['ts', 'generate'];
+            const args = ['generate', 'ts'];
             yield* cli(args);
 
             // Check if the output directory contains both .ts and .js files
@@ -882,7 +825,7 @@ describe('CLI: composio ts generate', () => {
               const fs = yield* FileSystem.FileSystem;
               const outputDir = path.join(cwd, 'generated-no-compile');
 
-              const args = ['ts', 'generate', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--output-dir', outputDir];
               yield* cli(args);
 
               // Check if the output directory contains only .ts files
@@ -903,9 +846,10 @@ describe('CLI: composio ts generate', () => {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
+            yield* setupMockComposioCorePackage({ cwd, fs });
 
             // Run the command
-            const args = ['ts', 'generate', '--compact'];
+            const args = ['generate', 'ts', '--compact'];
             yield* cli(args);
 
             // Verify the output
@@ -962,7 +906,7 @@ describe('CLI: composio ts generate', () => {
               const fs = yield* FileSystem.FileSystem;
               const outputDir = path.join(cwd, 'generated-filtered');
 
-              const args = ['ts', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--toolkits', 'gmail', '--output-dir', outputDir];
               yield* cli(args);
 
               // Check generated files - only gmail.ts and index.ts should exist
@@ -992,8 +936,8 @@ describe('CLI: composio ts generate', () => {
               const outputDir = path.join(cwd, 'generated-multi-filtered');
 
               const args = [
-                'ts',
                 'generate',
+                'ts',
                 '--toolkits',
                 'gmail',
                 '--toolkits',
@@ -1026,7 +970,7 @@ describe('CLI: composio ts generate', () => {
             const cwd = process.cwd;
             const outputDir = path.join(cwd, 'generated-invalid');
 
-            const args = ['ts', 'generate', '--toolkits', 'nonexistent', '--output-dir', outputDir];
+            const args = ['generate', 'ts', '--toolkits', 'nonexistent', '--output-dir', outputDir];
             const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
 
             expect(result).toBeInstanceOf(Error);
@@ -1043,7 +987,7 @@ describe('CLI: composio ts generate', () => {
               const fs = yield* FileSystem.FileSystem;
               const outputDir = path.join(cwd, 'generated-uppercase');
 
-              const args = ['ts', 'generate', '--toolkits', 'GMAIL', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--toolkits', 'GMAIL', '--output-dir', outputDir];
               yield* cli(args);
 
               // Check generated files - only gmail.ts should exist
@@ -1076,7 +1020,7 @@ describe('CLI: composio ts generate', () => {
               const fs = yield* FileSystem.FileSystem;
               const outputDir = path.join(cwd, 'generated-version-override');
 
-              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--type-tools', '--output-dir', outputDir];
               yield* cli(args);
 
               // Check that gmail.ts contains the version comment
@@ -1104,7 +1048,7 @@ describe('CLI: composio ts generate', () => {
               const fs = yield* FileSystem.FileSystem;
               const outputDir = path.join(cwd, 'generated-multi-version-override');
 
-              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--type-tools', '--output-dir', outputDir];
               yield* cli(args);
 
               // Check that gmail.ts contains the version comment
@@ -1131,7 +1075,7 @@ describe('CLI: composio ts generate', () => {
               const fs = yield* FileSystem.FileSystem;
               const outputDir = path.join(cwd, 'generated-latest-version');
 
-              const args = ['ts', 'generate', '--type-tools', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--type-tools', '--output-dir', outputDir];
               yield* cli(args);
 
               // Check that gmail.ts does NOT contain a version comment
@@ -1156,8 +1100,8 @@ describe('CLI: composio ts generate', () => {
               const outputDir = path.join(cwd, 'generated-filtered-env-ignored');
 
               const args = [
-                'ts',
                 'generate',
+                'ts',
                 '--type-tools',
                 '--toolkits',
                 'gmail',
@@ -1194,8 +1138,8 @@ describe('CLI: composio ts generate', () => {
               const outputDir = path.join(cwd, 'generated-filtered-with-version');
 
               const args = [
-                'ts',
                 'generate',
+                'ts',
                 '--type-tools',
                 '--toolkits',
                 'gmail',
@@ -1231,7 +1175,7 @@ describe('CLI: composio ts generate', () => {
               const outputDir = path.join(cwd, 'generated-no-type-tools');
 
               // Note: no --type-tools flag
-              const args = ['ts', 'generate', '--output-dir', outputDir];
+              const args = ['generate', 'ts', '--output-dir', outputDir];
               yield* cli(args);
 
               // Version comment is still added for documentation purposes,
@@ -1254,7 +1198,7 @@ describe('CLI: composio ts generate', () => {
       )(it => {
         it.scoped('[Given] no custom output dir [Then] [Then] it raises an error', () =>
           Effect.gen(function* () {
-            const args = ['ts', 'generate'];
+            const args = ['generate', 'ts'];
 
             const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
 

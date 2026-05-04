@@ -17,6 +17,18 @@ export interface Platform {
   joinPath(...paths: string[]): string;
 
   /**
+   * Resolves a sequence of paths into an absolute path. On Node this is
+   * `path.resolve`; on edge runtimes without a working directory it
+   * normalizes/joins the segments and returns the result verbatim.
+   */
+  resolvePath(...paths: string[]): string;
+
+  /**
+   * Returns true if the given path is absolute.
+   */
+  isAbsolutePath(filePath: string): boolean;
+
+  /**
    * Returns the last portion of a path (the filename).
    * @param filePath - The path to extract the basename from.
    * @returns The basename of the path.

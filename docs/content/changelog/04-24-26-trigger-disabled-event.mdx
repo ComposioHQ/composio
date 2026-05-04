@@ -1,0 +1,62 @@
+---
+title: "Webhook Event for Auto-Disabled Triggers"
+description: "New composio.trigger.disabled event fires when Composio disables a trigger on your behalf — expired connection, webhook refresh failure, or unhealthy polling. Opt-in, V3-only."
+date: "2026-04-23"
+---
+
+`composio.trigger.disabled` is a new V3 webhook event that fires when Composio disables one of your triggers without a request from you — expired credentials, a failed webhook-subscription refresh, or unhealthy polling. It's opt-in: add it to a webhook subscription's `enabled_events` to receive it. Existing subscriptions for `composio.trigger.message` and `composio.connected_account.expired` are unaffected.
+
+## When it fires
+
+The event is emitted only for platform-initiated disables. `data.disabled_reason` names the cause:
+
+| `disabled_reason` | What it means |
+|---|---|
+| `connection_expired` | The connected account entered `EXPIRED` and the trigger was paused. Auto-re-enabled when the account returns to `ACTIVE`. |
+| `subscription_auth_failure` | The provider rejected the credentials when Composio tried to refresh the webhook subscription. Re-auth the connection to resolve. |
+| `subscription_refresh_failure` | Composio could not reach the provider to refresh the webhook subscription (provider error, timeout, or network issue). Re-enable the trigger once the provider is healthy. |
+| `polling_failure_in_composio_infra` | Composio's polling service failed to fetch events for this trigger after repeated retries. Rare in practice. |
+
+The event does not fire when you disable a trigger yourself — neither through `PATCH /api/v3/trigger_instances/manage/{id}` nor by deactivating the connected account via `PATCH /api/v3/connected_accounts/{id}/status`.
+
+## Subscribe
+
+Add `composio.trigger.disabled` to your subscription's `enabled_events` — via the [dashboard webhook settings](https://platform.composio.dev?next_page=/settings/webhook) or the Webhook Subscriptions API:
+
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3/webhook_subscriptions/ws_your-subscription-id \
+  -H "X-API-KEY: <your-composio-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "enabled_events": [
+      "composio.trigger.message",
+      "composio.trigger.disabled"
+    ]
+  }'
+```
+
+The event is V3-only. Subscriptions on V1 or V2 payloads cannot enable it.
+
+## Payload
+
+```json
+{
+  "id": "msg_847cdfcd-d219-4f18-a6dd-91acd42ca94a",
+  "type": "composio.trigger.disabled",
+  "metadata": {
+    "project_id": "pr_your-project-id"
+  },
+  "data": {
+    "id": "ti_your-trigger-id",
+    "connected_account_id": "ca_your-connected-account-id",
+    "trigger_name": "GITHUB_COMMIT_EVENT",
+    "user_id": "your-user-id",
+    "trigger_config": { "owner": "composio", "repo": "hermes" },
+    "disabled_at": "2026-04-23T11:59:59.000Z",
+    "disabled_reason": "connection_expired"
+  },
+  "timestamp": "2026-04-23T12:00:00.000Z"
+}
+```
+
+See [subscribing to triggers](/docs/setting-up-triggers/subscribing-to-events) for handler setup and [subscribing to connection expiry events](/docs/subscribing-to-connection-expiry-events) for re-auth flows on `connection_expired`.

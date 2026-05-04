@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Required for git show HEAD^ when comparing published package versions
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -43,17 +45,47 @@ jobs:
 
       - name: Set Version Info
         if: steps.changesets.outputs.published == 'true'
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
         run: |
-          VERSIONS=$(pnpm changeset status --json | jq -r '.releases[] | "⚡️ \(.name) -> \(.version)"' || echo "No version info available")
-          echo "SLACK_VERSIONS=$VERSIONS" >> $GITHUB_ENV
+          SLACK_VERSIONS=""
+          while read -r pkg; do
+            NAME=$(jq -r '.name // empty' <<<"$pkg" 2>/dev/null || echo "")
+            NEW_VERSION=$(jq -r '.version // empty' <<<"$pkg" 2>/dev/null || echo "")
+            if [ -z "$NAME" ] || [ -z "$NEW_VERSION" ]; then
+              continue
+            fi
+
+            VERSION_LINE="⚡️ $NAME: \`$NEW_VERSION\`"
+            PKG_PATH=$(pnpm list --filter "$NAME" --json 2>/dev/null | jq -r '.[0].path // empty' 2>/dev/null || echo "")
+            if [ -n "$PKG_PATH" ]; then
+              REL_PKG_JSON_PATH="${PKG_PATH#$GITHUB_WORKSPACE/}/package.json"
+              OLD_VERSION=$(git show "HEAD^:$REL_PKG_JSON_PATH" 2>/dev/null | jq -r '.version // empty' 2>/dev/null || echo "")
+              if [ -n "$OLD_VERSION" ] && [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
+                VERSION_LINE="⚡️ $NAME: \`$OLD_VERSION\` -> \`$NEW_VERSION\`"
+              fi
+            fi
+            if [ -n "$SLACK_VERSIONS" ]; then
+              SLACK_VERSIONS="${SLACK_VERSIONS}"$'\n'"${VERSION_LINE}"
+            else
+              SLACK_VERSIONS="$VERSION_LINE"
+            fi
+          done < <(jq -c 'if type == "array" then .[] else empty end' <<<"$PUBLISHED_PACKAGES" 2>/dev/null || true)
+          if [ -z "$SLACK_VERSIONS" ]; then
+            SLACK_VERSIONS="No version info available"
+          fi
+          # Build a single-line JSON payload so multiline version info is safely escaped.
+          SLACK_PAYLOAD=$(jq -nc \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg versions "$SLACK_VERSIONS" \
+            --arg sha "$GITHUB_SHA" \
+            '{text: "🚀 New SDK version published!\n*Repository:* \($repository)\n*Versions:*\n\($versions)\n*Commit:* \($sha)"}')
+          echo "SLACK_PAYLOAD=$SLACK_PAYLOAD" >> "$GITHUB_ENV"
 
       - name: Send Slack Notification
         if: steps.changesets.outputs.published == 'true'
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
-          payload: |
-            {
-              "text": "🚀 New SDK version published!\n*Repository:* ${{ github.repository }}\n*Versions:*\n${{ env.SLACK_VERSIONS }}\n*Commit:* ${{ github.sha }}"
-            }
+          payload: ${{ env.SLACK_PAYLOAD }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE_WEBHOOK_URL }}

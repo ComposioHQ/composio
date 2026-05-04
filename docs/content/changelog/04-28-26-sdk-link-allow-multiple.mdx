@@ -1,0 +1,61 @@
+---
+title: 'SDKs: `link()` matches `initiate()` for the multi-connection guard'
+description: 'TypeScript and Python `connectedAccounts.link()` now refuse to create a second active connection on the same auth config unless `allowMultiple` / `allow_multiple` is set, mirroring `initiate()`. Patch releases.'
+date: '2026-04-28'
+---
+
+`composio.connectedAccounts.link()` (TypeScript) and `composio.connected_accounts.link()` (Python) now match the multi-connection guard that `initiate()` already had. With Composio-managed redirectable-OAuth callers being [migrated off `POST /api/v3/connected_accounts` onto `POST /api/v3/connected_accounts/link`](/docs/changelog/2026/04/24), the guard moves with them — so the migration doesn't quietly drop the duplicate-connection check.
+
+<Callout type="warn">
+**Behavior change**
+
+Before: `link()` would happily create a second `ACTIVE` connection for the same `(user_id, auth_config_id)` pair without checking for an existing `ACTIVE` connection first.
+
+After: `link()` first calls `connectedAccounts.list({ userIds, authConfigIds, statuses: ['ACTIVE'] })`. If any active connection exists, `link()` throws `ComposioMultipleConnectedAccountsError` unless the caller passes `allowMultiple: true` (TypeScript) / `allow_multiple=True` (Python).
+</Callout>
+
+### SDK versions (patch releases)
+
+| Package | Previous | This release |
+| ------- | -------- | ------------ |
+| TypeScript `@composio/core` | v0.8.0 | **v0.8.1** |
+| Python `composio` | v0.12.0 | **v0.12.1** |
+
+### Migration
+
+Most callers don't need to do anything — `link()` raised an unrelated error or succeeded by accident in the duplicate-connection case before, and now raises a typed error you can handle. Two scenarios that need attention:
+
+**1. You intentionally create multiple connections per `(user, auth_config)`** — for example, two Gmail accounts for the same user. Opt in:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+connection_request = composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_xxx",
+    alias="work-gmail",
+    allow_multiple=True,
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+// ---cut---
+const connectionRequest = await composio.connectedAccounts.link(
+  'user_123',
+  'ac_xxx',
+  { alias: 'work-gmail', allowMultiple: true },
+);
+```
+</Tab>
+</Tabs>
+
+Pair with a session-level `multiAccount` / `multi_account` config so the agent can disambiguate at execution time. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts) for the session shape.
+
+**2. You're migrating from `initiate()` to `link()`** as part of the [Composio-managed OAuth migration](/docs/changelog/2026/04/24). Pass `allow_multiple` / `allowMultiple` through unchanged — same flag name, same default (`False`), same exception (`ComposioMultipleConnectedAccountsError`).
+
+### Why
+
+The migration changelog moves callers off `connected_accounts/create` onto `/link`. `initiate()` had `allow_multiple` and the duplicate-connection check; `link()` didn't. Without this fix, every customer who migrates would silently lose the guard and start creating duplicate `ACTIVE` connections on auth configs that were never meant to hold more than one. This release closes that gap.

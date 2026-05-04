@@ -248,7 +248,7 @@ a:focus-visible {
 #nd-sidebar {
   position: sticky;
   top: 3.5rem;
-  height: calc(100vh - 3.5rem);
+  height: calc(100dvh - 3.5rem);
   background-color: var(--composio-sidebar);
 }
 
@@ -278,6 +278,11 @@ a:focus-visible {
 
 #nd-sidebar [data-radix-scroll-area-viewport] a[data-active="true"] {
   color: var(--composio-orange);
+}
+
+/* CLI commands table — prevent command column from wrapping */
+.cli-commands td:first-child code {
+  white-space: nowrap;
 }
 
 /* Section headers (separators) - more spacing for visual group separation */
@@ -534,6 +539,30 @@ p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
 [data-accordion-value] button[aria-label="Copy Link"]:has(.lucide-check) {
   opacity: 1;
   color: var(--color-green-500);
+}
+
+/* ==========================================================================
+   Search Dialog – Mobile Scroll Fix
+   On mobile, when the keyboard opens the viewport shrinks. Constrain the
+   search result list to the remaining space so it stays scrollable.
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  /* Override the fixed max-h-[460px] on the inner scrollable div inside SearchDialogList */
+  .search-scroll-container > div > div {
+    max-height: 100%;
+  }
+}
+
+/* ==========================================================================
+   Decimal AI Widget – Push-Sidebar Transition
+   The widget sets body.style.maxWidth inline when opening. Smooth it out
+   and prevent horizontal overflow while the sidebar animates.
+   ========================================================================== */
+
+body {
+  overflow-x: clip;
+  transition: max-width 0.3s ease;
 }
 
 @layer base {

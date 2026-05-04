@@ -50,6 +50,7 @@ jobs:
           uv venv --python ${{ matrix.python-version }}
           source .venv/bin/activate
           uv pip install -e .
+          uv pip install -e providers/langchain
           uv pip install pytest pytest-mock
 
       - name: Run Import Tests

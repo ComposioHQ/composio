@@ -2,6 +2,50 @@
 
 This document outlines the release processes for the Composio SDK. We support both automated releases through GitHub Actions and manual releases when needed.
 
+## CLI Binary Release Process
+
+The CLI binary release process is separate from npm publishing.
+
+- `@composio/cli` is marked private and is not published to npm via Changesets.
+- CLI binaries are built and published as GitHub Release assets by `.github/workflows/build-cli-binaries.yml`.
+- Install and upgrade flows (`install.sh` and `composio upgrade`) download binaries from GitHub Releases.
+- `composio upgrade --beta` resolves the newest CLI prerelease from GitHub Releases.
+
+### Triggers
+
+The CLI binary workflow supports two entry points:
+
+- Beta release: the auto-generated Changesets release PR titled `Release: update version`
+- Stable release: manual `workflow_dispatch`, but only from an existing beta release tag
+
+### Beta CLI Release
+
+When the Changesets release PR is opened or updated, the workflow:
+
+1. Reads the bumped CLI version from `ts/packages/cli/package.json`
+2. Publishes a prerelease tag in the form `@composio/cli@<version>-beta.<pr-number>`
+3. Attaches the built binaries to that prerelease
+
+### Stable CLI Release
+
+When running **Build CLI Binaries** manually:
+
+1. Enter an existing beta tag (for example `@composio/cli@1.2.3-beta.456`)
+2. The workflow verifies that the beta release already exists and is marked as a prerelease
+3. The workflow checks out the exact commit associated with that beta release
+4. The workflow rebuilds the binaries and publishes the stable release under `@composio/cli@<version>`
+
+### What the workflow does
+
+1. Builds CLI binaries for Linux/macOS (x64 + arm64)
+2. Creates platform zip archives (`composio-<platform>.zip`)
+3. Publishes assets to the beta or stable GitHub Release
+4. Runs `.github/workflows/cli.test-installation.yml` to validate installation paths and shell integration
+
+### Notes
+
+- Stable promotion is intentionally gated on an existing beta release so the shipped stable binaries always correspond to a tested beta artifact.
+
 ## Automated Release Process
 
 The automated release process is triggered when code is merged into the `main` branch or manually through GitHub Actions.

@@ -31,6 +31,8 @@ Don't comment on these - automated checks handle them:
 | Outdated pattern | Uses deprecated `getTools()` instead of `tools.get()` |
 | Incorrect output | "Returns an array" but actually returns an object |
 | Logical error | Steps are out of order, or prerequisite is mentioned after it's needed |
+| CI/non-interactive gap | Code works locally (interactive auth prompt) but would fail in CI/GitHub Actions with no explanation |
+| Missing index entry | New cookbook or page added but not listed in the parent index page or `meta.json` |
 
 **Don't flag:**
 - Style preferences ("I'd phrase this differently")

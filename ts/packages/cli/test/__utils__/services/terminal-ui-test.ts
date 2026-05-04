@@ -26,6 +26,8 @@ export const TerminalUITest = Layer.succeed(
 
     note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
 
+    select: (_message, options) => Effect.succeed(options[0].value),
+
     confirm: (_message, options) => Effect.succeed(options?.defaultValue ?? true),
 
     withSpinner: (message, effect, options) =>

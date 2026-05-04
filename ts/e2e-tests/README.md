@@ -27,12 +27,15 @@ ts/e2e-tests/
 ├── runtimes/
     ├── node/                                # Node.js runtime tests
     │   ├── cjs-basic/                       # CommonJS compatibility tests
+    │   ├── custom-tools/                    # Custom local tools execution (session.execute, proxyExecute, Zod validation)
     │   ├── esm-basic/                       # ESM compatibility tests
     │   ├── json-schema-to-zod-v3/           # @composio/json-schema-to-zod + Zod v3 tests
     │   ├── json-schema-to-zod-v4/           # @composio/json-schema-to-zod + Zod v4 tests
     │   ├── mastra-tool-router-zod-v3/       # @composio/mastra Tool Router + Zod v3 tests
     │   ├── mastra-tool-router-zod-v4/       # @composio/mastra Tool Router + Zod v4 tests
     │   ├── openai-zod4-compat/              # OpenAI + Zod v4 compatibility tests
+    │   ├── tool-router-files/              # Tool Router session files (list, upload, download, delete)
+    │   ├── tool-router-pagination/          # Tool Router session.toolkits() cursor pagination
     │   └── typescript-mjs-import-nodenext/  # TypeScript moduleResolution: nodenext tests
     ├── deno/                                # Deno runtime tests
     │   └── esm-basic/                       # ESM compatibility tests via npm: specifier

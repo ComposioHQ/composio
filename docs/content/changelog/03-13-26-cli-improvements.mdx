@@ -1,0 +1,89 @@
+---
+title: "CLI Improvements: Login, Link, and Whoami"
+description: "Interactive org/project picker, --no-wait for link, and whoami no longer exposes API keys"
+date: "2026-03-13"
+---
+
+This release improves the Composio CLI with a better login flow, a non-blocking link option, and improved security for the whoami command.
+
+### CLI Version
+
+| Package | Version |
+|---------|---------|
+| @composio/cli | v0.2.2 |
+
+---
+
+## What's New
+
+### Interactive Org/Project Picker After Login
+
+`composio login` now prompts you to select your default organization and project after the browser OAuth flow completes.
+
+- **Default behavior**: After login, you see an interactive picker to choose your org and project. If you have only one org and one project, they are auto-selected.
+- **With `-y`**: Skip the picker and use the session defaults (e.g. for CI or scripts).
+
+```bash
+composio login           # Login, then pick org/project
+composio login -y        # Login, use session defaults (no picker)
+composio login --no-browser  # Print URL, don't open browser
+```
+
+### Non-Interactive Link with `--no-wait`
+
+`composio link` now supports a `--no-wait` flag for non-blocking authorization flows.
+
+- **Default**: Opens the browser and waits until the connected account is ACTIVE.
+- **With `--no-wait`**: Prints link info and JSON to stdout (JQ-parseable) and exits immediately. Useful for scripts and CI.
+
+```bash
+composio link github              # Opens browser, waits for completion
+composio link github --no-wait    # Prints redirect URL and JSON, exits
+```
+
+### Whoami No Longer Exposes API Keys
+
+The `composio whoami` command no longer displays API keys in the output. This improves security and reduces the risk of accidental exposure in logs or screenshots.
+
+- API key is removed from both display and JSON output.
+- Hints for `composio manage orgs switch` and `composio init` are shown instead.
+
+---
+
+## Breaking Changes
+
+### Removed Flags from Login and Init
+
+The following flags have been removed from `composio login` and `composio init`:
+
+- `--api-key`
+- `--org-id`
+- `--project-id`
+
+<Callout type="warn">
+**Breaking Change**
+
+If you previously used `composio login --api-key uak_xxx --org-id X --project-id Y` for non-interactive login (e.g. in CI), you must use the browser-based flow instead. Use `composio login -y` to skip the org/project picker and accept session defaults.
+
+For `composio init`, the `--org-id` and `--project-id` flags are removed. Use `composio init` interactively, or run `composio login` first and then `composio init`.
+</Callout>
+
+**Before:**
+```bash
+composio login --api-key uak_xxx --org-id org_123 --project-id proj_456
+composio init --org-id org_123 --project-id proj_456
+```
+
+**After:**
+```bash
+composio login -y        # Login with session defaults (no picker)
+composio init            # Interactive project selection
+```
+
+---
+
+## Improvements
+
+- **Login JSON output**: When using the org/project picker, the JSON output now reflects the final selection (not the initial session state).
+- **Picker error handling**: If the org/project picker fails (e.g. API error), the CLI shows a warning, emits JSON with session data, and displays hints so you are not left without guidance.
+- **Modularized org/project selection**: The selection logic is shared between `composio login` and `composio manage orgs switch`.

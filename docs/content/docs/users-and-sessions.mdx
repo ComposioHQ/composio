@@ -6,6 +6,10 @@ keywords: [session, user id, concepts]
 
 When building AI agents for multiple users, each user needs their own connections and context. This is represented through **users** and **sessions**.
 
+<Callout>
+For a hands-on walkthrough, see the [quickstart](/docs/quickstart).
+</Callout>
+
 ## Users
 
 A user is an identifier from your app. When someone connects their Gmail or GitHub, that connection is stored under their user ID, so tools always run with the right authentication. Every tool execution and authorization uses the user ID to identify the context. Connections are fully isolated between user IDs.
@@ -24,7 +28,7 @@ Let's say you want to allow users to connect both their work and personal email.
 account ID.
 
 Here is a detailed guide on how to manage such connections:
-<Card icon={<BookOpen />} title="Managing Multiple Connections" href="/docs/managing-multiple-connected-accounts" description="Handle multiple accounts per toolkit for a single user" />
+<Card icon={<Plug />} title="Managing Multiple Connections" href="/docs/managing-multiple-connected-accounts" description="Handle multiple accounts per toolkit for a single user" />
 
 Triggers are scoped to a connected account. When you create a trigger, it's tied to a specific user's connection:
 <Card icon={<Zap />} title="Triggers" href="/docs/triggers" description="Event-driven payloads from connected apps" />
@@ -119,7 +123,10 @@ Create a new session when the config changes: different toolkits, different auth
 </Accordion>
 </Accordions>
 
+## What to read next
+
 <Cards>
-  <Card icon={<BookOpen />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Enable toolkits, set auth configs, and select connected accounts" />
-  <Card icon={<BookOpen />} title="Workbench" href="/docs/workbench" description="Write and run code in a persistent sandbox" />
+  <Card icon={<Key />} title="Authentication" href="/docs/authentication" description="Connect Links, OAuth, API keys, and auth configs" />
+  <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Enable toolkits, set auth configs, and select connected accounts" />
+  <Card icon={<Monitor />} title="Workbench" href="/docs/workbench" description="Write and run code in a persistent sandbox" />
 </Cards>

@@ -91,6 +91,7 @@ The complete API reference documentation is available here:
 - [Custom Tools](./api/custom-tools.md)
 - [MCP](./api/mcp.md)
 - [ToolRouter](./api/tool-router.md)
+- [Tool Router Session Files](./api/tool-router-files.md)
 
 ## Providers
 

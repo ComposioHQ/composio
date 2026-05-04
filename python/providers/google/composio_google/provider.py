@@ -66,7 +66,7 @@ class GoogleProvider(
         Execute a function call.
 
         :param function_call: Function call metadata from Gemini model response.
-        :param entity_id: Entity ID to use for executing the function call.
+        :param user_id: User ID to use for executing the function call.
         :return: Object containing output data from the function call.
         """
         return self.execute_tool(
@@ -91,7 +91,7 @@ class GoogleProvider(
         Handle response from Google AI Python Gemini model.
 
         :param response: Generation response from the Gemini model.
-        :param entity_id: Entity ID to use for executing the function call.
+        :param user_id: User ID to use for executing the function call.
         :return: A list of output objects from the function calls.
         """
         outputs = []

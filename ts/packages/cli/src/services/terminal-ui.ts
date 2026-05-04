@@ -30,7 +30,10 @@ export interface TerminalUI {
    *
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
-  readonly output: (data: string) => Effect.Effect<void>;
+  readonly output: (
+    data: string,
+    options?: { readonly force?: boolean }
+  ) => Effect.Effect<void>;
 
   /** Display a session start marker (e.g., `┌  title`). Writes to stderr. */
   readonly intro: (title: string) => Effect.Effect<void>;
@@ -77,6 +80,19 @@ export interface TerminalUI {
     message: string,
     options?: { readonly defaultValue?: boolean }
   ) => Effect.Effect<boolean>;
+
+  /**
+   * Present a single-select list to the user.
+   * In non-interactive mode (piped), returns the first option's value.
+   */
+  readonly select: <Value>(
+    message: string,
+    options: ReadonlyArray<{
+      readonly value: Value;
+      readonly label: string;
+      readonly hint?: string;
+    }>
+  ) => Effect.Effect<Value>;
 
   /**
    * Create a controllable spinner that is automatically stopped on error or interruption.
@@ -140,9 +156,9 @@ const silentSpinnerHandle: SpinnerHandle = {
 };
 
 const makeLive: TerminalUI = {
-  output: data =>
+  output: (data, options) =>
     Effect.sync(() => {
-      if (!isInteractive) {
+      if (options?.force || !isInteractive) {
         process.stdout.write(`${data}\n`);
       }
     }),
@@ -169,6 +185,24 @@ const makeLive: TerminalUI = {
     Effect.sync(() =>
       decorate(() => p.note(message, title ?? '', { format: line => line, output: process.stderr }))
     ),
+
+  select: ((
+    message: string,
+    options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
+  ) =>
+    isInteractive
+      ? Effect.promise(async () => {
+          const result = await p.select({
+            message,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            options: [...options] as any,
+            output: process.stderr,
+          });
+          // p.select returns Value | symbol (symbol on cancel)
+          if (typeof result === 'symbol') return options[0].value;
+          return result;
+        })
+      : Effect.succeed(options[0].value)) as TerminalUI['select'],
 
   confirm: (message, options) =>
     isInteractive

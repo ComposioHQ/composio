@@ -1,4 +1,4 @@
-import { SessionCreateParams } from '@composio/client/resources/tool-router.mjs';
+import { SessionCreateParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import {
   ToolRouterConfigTags,
   ToolRouterConfigTools,
@@ -119,9 +119,35 @@ export const transformToolRouterWorkbenchParams = (
   }
 
   return {
+    enable: params.enable ?? true,
     enable_proxy_execution: params.enableProxyExecution,
     auto_offload_threshold: params.autoOffloadThreshold,
+    sandbox_size: params.sandboxSize,
   };
+};
+
+export const transformToolRouterMultiAccountParams = (
+  params?: ToolRouterCreateSessionConfig['multiAccount']
+): SessionCreateParams.MultiAccount | undefined => {
+  if (!params) {
+    return undefined;
+  }
+
+  const transformedParams = {
+    enable: params.enable,
+    max_accounts_per_toolkit: params.maxAccountsPerToolkit,
+    require_explicit_selection: params.requireExplicitSelection,
+  };
+
+  if (
+    transformedParams.enable === undefined &&
+    transformedParams.max_accounts_per_toolkit === undefined &&
+    transformedParams.require_explicit_selection === undefined
+  ) {
+    return undefined;
+  }
+
+  return transformedParams;
 };
 
 export const transformToolRouterToolkitsParams = (

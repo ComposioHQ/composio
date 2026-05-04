@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { Command, Options } from '@effect/cli';
 import { pipe, Effect, Option, Array } from 'effect';
 import { FileSystem } from '@effect/platform';
@@ -54,7 +55,7 @@ export function generatePythonTypeStubs({
     const fs = yield* FileSystem.FileSystem;
     const client = yield* ComposioToolkitsRepository;
 
-    yield* ui.intro('composio py generate');
+    yield* ui.intro('composio generate py');
 
     // Determine the actual output directory
     const outputDir = yield* outputOpt.pipe(
@@ -63,7 +64,17 @@ export function generatePythonTypeStubs({
         onNone: () => pyFindComposioCoreGenerated(cwd),
 
         // If an output directory is specified, validate and create it
-        onSome: Effect.succeed,
+        onSome: outputDir => {
+          const normalizedPath = path.normalize(outputDir);
+          if (normalizedPath.includes('node_modules')) {
+            return Effect.fail(
+              new Error(
+                'Output directory cannot be inside node_modules. Please specify a different directory.'
+              )
+            );
+          }
+          return Effect.succeed(outputDir);
+        },
       })
     );
 

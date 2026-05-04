@@ -1,3 +1,11 @@
+## What does the Composio + Slack integration do?
+
+Composio turns Slack's API into ready-to-use tools that AI agents and automations can call. With the integration you can send and read messages, manage channels, upload files, react to events, search conversations, and more — all through a unified platform. Composio supports two toolkits: **Slack** (authenticate as a user for workspace-level actions) and **Slackbot** (authenticate as a bot for in-channel messaging, app mentions, and slash commands). Developers connect their Slack workspace once and then orchestrate any combination of these actions from their agents or workflows.
+
+## How does Composio handle my Slack data?
+
+Composio executes API calls on behalf of your connected account. All data is encrypted and subject to a 30-day retention policy. Authentication tokens are encrypted at rest and scoped to the permissions you grant during the OAuth flow. For full details on data handling, retention, and third-party data practices, see our [Privacy Policy](https://composio.dev/privacy).
+
 ## How do I set up custom OAuth credentials for Slack?
 
 For a step-by-step guide on creating and configuring your own Slack OAuth credentials with Composio, see [How to create OAuth credentials for Slack](https://composio.dev/auth/slack).
@@ -16,7 +24,7 @@ Update the redirect URL in your Slack App under OAuth & Permissions → Redirect
 
 ## How do I set up Slack event webhooks?
 
-Enable Event Subscriptions in your Slack app. Set the Request URL to `https://backend.composio.dev/api/v3/trigger_instances/slack/default/handle`. Add events (e.g., `reaction_added`) to Subscribe to Bot Events and save. If using the Slackbot integration, add the bot to the channels you want to monitor.
+Enable Event Subscriptions in your Slack app. Set the Request URL to `https://backend.composio.dev/api/v3.1/trigger_instances/slack/default/handle`. Add events (e.g., `reaction_added`) to Subscribe to Bot Events and save. If using the Slackbot integration, add the bot to the channels you want to monitor.
 
 ## Why am I getting scope errors on Slack?
 

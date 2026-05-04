@@ -1,24 +1,77 @@
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
-import { sanitize } from 'test/__utils__/sanitize';
+import { afterEach, vi } from 'vitest';
+
+type CommandMismatchResult = {
+  _tag: string;
+  error: {
+    _tag: string;
+    value: {
+      _tag: string;
+      value: string;
+    };
+  };
+};
 
 describe('CLI: composio', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   layer(TestLive())(it => {
     it.scoped('[Given] unknown argument [Then] print error message', () =>
       Effect.gen(function* () {
         const args = ['--bar'];
 
         const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+        const commandMismatch = result as CommandMismatchResult;
 
-        expect(result).toEqual(
-          ValidationError.commandMismatch(
-            HelpDoc.p(
-              "Invalid subcommand for composio - use one of 'version', 'upgrade', 'whoami', 'login', 'logout', 'generate', 'py', 'ts', 'toolkits', 'tools', 'auth-configs', 'connected-accounts'"
-            )
-          )
+        expect(result).toEqual(expect.any(Object));
+        expect(commandMismatch._tag).toBe(ValidationError.commandMismatch(HelpDoc.p(''))._tag);
+        expect(commandMismatch.error._tag).toBe('Paragraph');
+        expect(commandMismatch.error.value._tag).toBe('Text');
+        expect(commandMismatch.error.value.value).toContain('Invalid subcommand for composio');
+        expect(commandMismatch.error.value.value).toContain("'generate'");
+        expect(commandMismatch.error.value.value).toContain("'orgs'");
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] invalid tools subcommand [Then] report tools-scoped mismatch', () =>
+      Effect.gen(function* () {
+        const args = ['tools', 'search', 'metabase', 'put'];
+
+        const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+        const commandMismatch = result as CommandMismatchResult;
+
+        expect(result).toEqual(expect.any(Object));
+        expect(commandMismatch._tag).toBe(ValidationError.commandMismatch(HelpDoc.p(''))._tag);
+        expect(commandMismatch.error._tag).toBe('Paragraph');
+        expect(commandMismatch.error.value._tag).toBe('Text');
+        expect(commandMismatch.error.value.value).toContain(
+          'Invalid subcommand for composio tools'
         );
+        expect(commandMismatch.error.value.value).toContain("'info'");
+        expect(commandMismatch.error.value.value).toContain("'list'");
+        expect(commandMismatch.error.value.value).not.toContain("'version'");
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] no args [Then] prints help message', () =>
+      Effect.gen(function* () {
+        yield* cli([]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        expect(output).toContain('Usage:');
+        expect(output).toContain('composio');
+        expect(output).not.toContain('composio connections list');
       })
     );
   });
@@ -28,101 +81,42 @@ describe('CLI: composio', () => {
       Effect.gen(function* () {
         const args = ['--help'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        expect(output.trim().length).toBeGreaterThan(0);
+        expect(output).toContain('config.json');
+        expect(output).not.toContain('connections list');
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] --help simple [Then] prints the compact root help mode', () =>
+      Effect.gen(function* () {
+        yield* cli(['--help', 'simple']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
-        expect(yield* sanitize(output)).toMatchInlineSnapshot(`
-          "[0;1m[0;37;1mcomposio[0;1m[0m
+        expect(output).toContain('simple help');
+        expect(output).toContain('composio --help [simple|default|full]');
+        expect(output).not.toContain('composio run');
+        expect(output).not.toContain('MORE COMMANDS');
+      })
+    );
+  });
 
-          composio <VERSION>
+  layer(TestLive())(it => {
+    it.scoped('[Given] --help full [Then] prints the expanded root help mode', () =>
+      Effect.gen(function* () {
+        yield* cli(['--help', 'full']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
 
-          [0;1mUSAGE[0m
-
-          $ composio [--log-level all | trace | debug | info | warning | error | fatal | none]
-
-          [0;1mDESCRIPTION[0m
-
-          Composio CLI - A tool for managing Python and TypeScript composio.dev projects.
-
-          [0;1mOPTIONS[0m
-
-          [0;1m--log-level all | trace | debug | info | warning | error | fatal | none[0m
-
-            One of the following: all, trace, debug, info, warning, error, fatal, none
-
-            Define log level
-
-            This setting is optional.
-
-          [0;1mCOMMANDS[0m
-
-            - version                                                                                                                                                  Display the current Composio CLI version.
-
-            - upgrade                                                                                                                                                  Upgrade your Composio CLI to the latest available version.
-
-            - whoami                                                                                                                                                   Display your account information.
-
-            - login [--no-browser]                                                                                                                                     Log in to the Composio SDK.
-
-            - logout                                                                                                                                                   Log out from the Composio SDK.
-
-            - generate [(-o, --output-dir directory)] [--type-tools] --toolkits text...                                                                                Generate type stubs for toolkits, tools, and triggers, auto-detecting project language (TypeScript | Python)
-
-            - py                                                                                                                                                       Handle Python projects.
-
-            - py generate [(-o, --output-dir directory)] --toolkits text...                                                                                            Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
-
-          Environment Variables:
-            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
-                                                Use "latest" or unset to use the latest version.
-
-            - ts                                                                                                                                                       Handle TypeScript projects.
-
-            - ts generate [(-o, --output-dir directory)] [--compact] [--transpiled] [--type-tools] --toolkits text...                                                  Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
-
-          Environment Variables:
-            COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>  Override toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00)
-                                                Use "latest" or unset to use the latest version.
-
-            - toolkits                                                                                                                                                 Discover and inspect Composio toolkits.
-
-            - toolkits list [--query text] [--limit integer]                                                                                                           List available toolkits.
-
-            - toolkits info [<slug>]                                                                                                                                   View details of a specific toolkit.
-
-            - toolkits search [--limit integer] <query>                                                                                                                Search toolkits by use case.
-
-            - tools                                                                                                                                                    Discover and inspect Composio tools.
-
-            - tools list [--query text] [--toolkits text] [--tags text] [--limit integer]                                                                              List available tools.
-
-            - tools info [<slug>]                                                                                                                                      View details of a specific tool.
-
-            - tools search [--toolkits text] [--limit integer] <query>                                                                                                 Search tools by use case.
-
-            - auth-configs                                                                                                                                             View and manage Composio auth configs.
-
-            - auth-configs list [--toolkits text] [--query text] [--limit integer]                                                                                     List auth configs.
-
-            - auth-configs info [<id>]                                                                                                                                 View details of a specific auth config.
-
-            - auth-configs create --toolkit text [--auth-scheme text] [--scopes text] [--custom-credentials text] [<name>]                                             Create a new auth config.
-
-            - auth-configs delete [(-y, --yes)] [<id>]                                                                                                                 Delete an auth config.
-
-            - connected-accounts                                                                                                                                       View and manage Composio connected accounts.
-
-            - connected-accounts list [--toolkits text] [--user-id text] [--status INITIALIZING | INITIATED | ACTIVE | FAILED | EXPIRED | INACTIVE] [--limit integer]  List connected accounts.
-
-            - connected-accounts info [<id>]                                                                                                                           View details of a specific connected account.
-
-            - connected-accounts whoami [<id>]                                                                                                                         Show the external account profile for a connected account.
-
-            - connected-accounts delete [(-y, --yes)] [<id>]                                                                                                           Delete a connected account.
-
-            - connected-accounts link --auth-config text [--user-id text] [--no-browser]                                                                               Link an external account via OAuth redirect.
-          "
-        `);
+        expect(output).toContain('full help');
+        expect(output).toContain('MORE COMMANDS');
+        expect(output).toContain('dev playground-execute');
+        expect(output).toContain('generate ts');
+        expect(output).toContain('connections list');
       })
     );
   });
@@ -139,19 +133,50 @@ describe('CLI: composio', () => {
     );
   });
 
-  // layer(TestLive())(it => {
-  //   it.scoped('[Pressing] CTRL+C [Then] quit wizard mode', () =>
-  //     Effect.gen(function* () {
-  //       const args = ['--wizard'];
+  layer(TestLive())(it => {
+    it.scoped("[Given] -v flag [Then] prints composio's version from package.json", () =>
+      Effect.gen(function* () {
+        const args = ['-v'];
+        yield* cli(args);
+        const lines = yield* MockConsole.getLines();
+        const output = lines.join('\n');
+        expect(output).toContain(pkg.version);
+      })
+    );
+  });
 
-  //       const fiber = yield* Effect.fork(cli(args));
-  //       yield* MockTerminal.inputKey('c', { ctrl: true });
-  //       yield* Fiber.join(fiber);
+  layer(TestLive())(it => {
+    it.scoped('[Given] debug who-is-my-master [Then] it prints the detected master as json', () =>
+      Effect.gen(function* () {
+        vi.stubEnv('CODEX_THREAD_ID', 'thread_123');
+        vi.stubEnv('CLAUDE_CODE_ENTRYPOINT', 'sdk-ts');
+        const write = vi
+          .spyOn(process.stdout, 'write')
+          .mockImplementation((() => true) as typeof process.stdout.write);
 
-  //       const lines = yield* MockConsole.getLines();
-  //       const output = lines.join('\n');
-  //       expect(output).toContain('Quitting wizard mode...');
-  //     })
-  //   );
-  // });
+        yield* cli(['debug', 'who-is-my-master']);
+        const output = write.mock.calls.map(call => String(call[0])).join('\n');
+
+        expect(output).toContain('"master": "codex"');
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] artifacts cwd [Then] it prints the current session artifact directory', () =>
+      Effect.gen(function* () {
+        const write = vi
+          .spyOn(process.stdout, 'write')
+          .mockImplementation((() => true) as typeof process.stdout.write);
+
+        yield* cli(['artifacts', 'cwd']);
+        const output = write.mock.calls
+          .map(call => String(call[0]))
+          .join('\n')
+          .trim();
+
+        expect(output).toContain(path.join(os.tmpdir(), 'composio'));
+      })
+    );
+  });
 });

@@ -10,7 +10,7 @@ import { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { assertPythonIsValid } from 'test/__utils__/python-compiler';
 import { TOOLS_TYPES_GMAIL } from 'test/__mocks__/tools-types-gmail';
 
-describe('CLI: composio py generate', () => {
+describe('CLI: composio generate py', () => {
   const appClientData = {
     toolkits: makeTestToolkits([
       {
@@ -42,7 +42,7 @@ describe('CLI: composio py generate', () => {
             const cwd = process.cwd;
             const fs = yield* FileSystem.FileSystem;
 
-            const args = ['py', 'generate'];
+            const args = ['generate', 'py'];
             yield* cli(args);
 
             const outputDir = path.join(
@@ -112,7 +112,7 @@ describe('CLI: composio py generate', () => {
 
           const outputDir = path.join(cwd, '.generated', 'composio-py');
 
-          const args = ['py', 'generate', '--output-dir', outputDir];
+          const args = ['generate', 'py', '--output-dir', outputDir];
           yield* cli(args);
 
           const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
@@ -304,7 +304,7 @@ describe('CLI: composio py generate', () => {
           const fs = yield* FileSystem.FileSystem;
           const outputDir = path.join(cwd, '.generated', 'composio-py-filtered');
 
-          const args = ['py', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+          const args = ['generate', 'py', '--toolkits', 'gmail', '--output-dir', outputDir];
           yield* cli(args);
 
           // Check generated files - only gmail.py should exist (no slack.py)
@@ -329,8 +329,8 @@ describe('CLI: composio py generate', () => {
           const outputDir = path.join(cwd, '.generated', 'composio-py-multi');
 
           const args = [
-            'py',
             'generate',
+            'py',
             '--toolkits',
             'gmail',
             '--toolkits',
@@ -362,7 +362,7 @@ describe('CLI: composio py generate', () => {
           const cwd = process.cwd;
           const outputDir = path.join(cwd, '.generated', 'composio-py-invalid');
 
-          const args = ['py', 'generate', '--toolkits', 'nonexistent', '--output-dir', outputDir];
+          const args = ['generate', 'py', '--toolkits', 'nonexistent', '--output-dir', outputDir];
           const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
 
           expect(result).toBeInstanceOf(Error);
@@ -378,7 +378,7 @@ describe('CLI: composio py generate', () => {
           const fs = yield* FileSystem.FileSystem;
           const outputDir = path.join(cwd, '.generated', 'composio-py-uppercase');
 
-          const args = ['py', 'generate', '--toolkits', 'GMAIL', '--output-dir', outputDir];
+          const args = ['generate', 'py', '--toolkits', 'GMAIL', '--output-dir', outputDir];
           yield* cli(args);
 
           // Check generated files - only gmail.py should exist
@@ -404,7 +404,7 @@ describe('CLI: composio py generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, '.generated', 'composio-py-version');
 
-            const args = ['py', 'generate', '--output-dir', outputDir];
+            const args = ['generate', 'py', '--output-dir', outputDir];
             yield* cli(args);
 
             // Check that gmail.py contains the version comment
@@ -432,7 +432,7 @@ describe('CLI: composio py generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, '.generated', 'composio-py-multi-version');
 
-            const args = ['py', 'generate', '--output-dir', outputDir];
+            const args = ['generate', 'py', '--output-dir', outputDir];
             yield* cli(args);
 
             const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
@@ -457,7 +457,7 @@ describe('CLI: composio py generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, '.generated', 'composio-py-latest');
 
-            const args = ['py', 'generate', '--output-dir', outputDir];
+            const args = ['generate', 'py', '--output-dir', outputDir];
             yield* cli(args);
 
             const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));
@@ -479,7 +479,7 @@ describe('CLI: composio py generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, '.generated', 'composio-py-filtered-env');
 
-            const args = ['py', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+            const args = ['generate', 'py', '--toolkits', 'gmail', '--output-dir', outputDir];
             yield* cli(args);
 
             // Only gmail.py should exist
@@ -508,7 +508,7 @@ describe('CLI: composio py generate', () => {
             const fs = yield* FileSystem.FileSystem;
             const outputDir = path.join(cwd, '.generated', 'composio-py-filtered-version');
 
-            const args = ['py', 'generate', '--toolkits', 'gmail', '--output-dir', outputDir];
+            const args = ['generate', 'py', '--toolkits', 'gmail', '--output-dir', outputDir];
             yield* cli(args);
 
             const gmailSourceCode = yield* fs.readFileString(path.join(outputDir, 'gmail.py'));

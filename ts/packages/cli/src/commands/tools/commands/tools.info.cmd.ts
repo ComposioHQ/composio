@@ -1,9 +1,13 @@
 import { Args, Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { ComposioToolkitsRepository, HttpServerError } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
-import { formatToolInfo } from '../format';
+import { handleHttpServerError } from 'src/effects/handle-http-error';
+import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
+import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
+import { bold } from 'src/ui/colors';
+import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GMAIL_SEND_EMAIL")'),
@@ -40,34 +44,24 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
       .withSpinner(`Fetching tool "${slugValue}"...`, repo.getToolDetailed(slugValue))
       .pipe(
         Effect.asSome,
-        Effect.catchTag('services/HttpServerError', (e: HttpServerError) =>
-          Effect.gen(function* () {
-            // Show structured error message and suggested fix from the API
-            if (e.details) {
-              yield* ui.log.error(e.details.message);
-              yield* ui.log.step(e.details.suggestedFix);
-            } else {
-              yield* ui.log.error(`Tool "${slugValue}" not found.`);
-            }
-
-            // Try to suggest similar tools
-            const suggestions = yield* repo.searchTools({ search: slugValue, limit: 3 }).pipe(
-              Effect.map(r => r.items),
-              Effect.catchAll(() => Effect.succeed([]))
-            );
-
-            if (suggestions.length > 0) {
-              const suggestionLines = suggestions
-                .map(s => `  ${s.slug} — ${s.description}`)
-                .join('\n');
-              yield* ui.log.step(
-                `Did you mean?\n${suggestionLines}\n\n> composio tools info "${suggestions[0]!.slug}"`
-              );
-            } else {
-              yield* ui.log.step('Browse available tools:\n> composio tools list');
-            }
-
-            return Option.none();
+        Effect.catchTag(
+          'services/HttpServerError',
+          handleHttpServerError(ui, {
+            fallbackMessage: `Tool "${slugValue}" not found.`,
+            hint: [
+              commandHintStep('Browse available toolkits', 'dev.toolkits.list'),
+              commandHintStep('Then list tools', 'root.tools.list'),
+            ].join('\n'),
+            fallbackValue: Option.none(),
+            searchForSuggestions: () =>
+              repo.searchTools({ search: slugValue, limit: 3 }).pipe(
+                Effect.map(r =>
+                  r.items.map(s => ({
+                    label: `${s.slug} — ${s.description}`,
+                    command: `> composio tools info "${s.slug}"`,
+                  }))
+                )
+              ),
           })
         )
       );
@@ -77,17 +71,45 @@ export const toolsCmd$Info = Command.make('info', { slug }, ({ slug }) =>
     }
 
     const tool = toolOpt.value;
+    const definition = yield* getOrFetchToolInputDefinition(slugValue);
+    const displaySchema = normalizeFileUploadSchema(definition.schema);
 
-    yield* ui.note(formatToolInfo(tool), `Tool: ${tool.name}`);
+    const summary = [
+      `${bold('Slug:')} ${tool.slug}`,
+      `${bold('Name:')} ${tool.name}`,
+      `${bold('Toolkit:')} ${tool.toolkit.slug}`,
+      `${bold('Version:')} ${definition.version ?? '-'}`,
+      `${bold('Description:')} ${tool.description}`,
+      `${bold('Schema Cache:')} ${definition.schemaPath}`,
+    ].join('\n');
 
-    // Next step hint
-    const toolkitSlug = tool.toolkit.slug;
-    if (toolkitSlug) {
-      yield* ui.log.step(
-        `To list more tools in this toolkit:\n> composio tools list --toolkits "${toolkitSlug}"`
-      );
-    }
-
-    yield* ui.output(JSON.stringify(tool, null, 2));
+    yield* ui.note(summary, `Tool: ${tool.name}`);
+    yield* ui.log.step(
+      `Inspect schema with jq:\n> jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' "${definition.schemaPath}"`
+    );
+    yield* ui.log.step(
+      `Then execute it:\n> ${commandHintExample('root.execute', {
+        slug: tool.slug,
+      })} --dry-run`
+    );
+    yield* ui.output(
+      JSON.stringify(
+        {
+          slug: tool.slug,
+          name: tool.name,
+          description: tool.description,
+          toolkit: tool.toolkit.slug,
+          version: definition.version,
+          schemaPath: definition.schemaPath,
+          inputSchema: displaySchema,
+        },
+        null,
+        2
+      )
+    );
   })
-).pipe(Command.withDescription('View details of a specific tool.'));
+).pipe(
+  Command.withDescription(
+    'View a brief summary of a tool and show the CLI-facing input schema used by `composio execute`.'
+  )
+);

@@ -15,10 +15,10 @@ import { APP_CONFIG } from 'src/effects/app-config';
  * @example
  * ```sh
  * # Environment variable
- * COMPOSIO_API_KEY=your_api_key
+ * COMPOSIO_USER_API_KEY=your_user_api_key
  * ```
  *
- * Read via `yield* Config.string('API_KEY')`.
+ * Read via `yield* Config.string('USER_API_KEY')`.
  */
 
 export const BaseConfigProviderLive = ConfigProvider.fromEnv();

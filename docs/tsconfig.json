@@ -34,5 +34,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts/preload.ts", "tests"]
+  "exclude": ["node_modules", "scripts/preload.ts", "tests", "examples"]
 }

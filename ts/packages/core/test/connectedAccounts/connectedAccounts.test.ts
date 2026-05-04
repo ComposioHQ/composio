@@ -180,6 +180,70 @@ describe('ConnectedAccounts', () => {
       expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
 
+    it('should pass alias to the create API when provided', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_123',
+        connectionData: {
+          val: {
+            authScheme: AuthSchemeTypes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      await connectedAccounts.initiate(userId, authConfigId, {
+        alias: 'work-gmail',
+      });
+
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          auth_config: { id: authConfigId },
+          connection: expect.objectContaining({ user_id: userId, alias: 'work-gmail' }),
+        })
+      );
+    });
+
+    it('should not include alias in create params when not provided', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_123',
+        connectionData: {
+          val: {
+            authScheme: AuthSchemeTypes.OAUTH2,
+            status: 'INITIALIZING',
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      await connectedAccounts.initiate(userId, authConfigId);
+
+      const callArgs = extendedMockClient.connectedAccounts.create.mock.calls[0]![0];
+      expect(callArgs.connection).not.toHaveProperty('alias');
+    });
+
     it('should throw ComposioMultipleConnectedAccountsError when multiple accounts exist and allowMultiple is false', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
@@ -355,13 +419,12 @@ describe('ConnectedAccounts', () => {
       expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
 
-    it('should create a new connected account with config and return a ConnectionRequest', async () => {
+    it('should create a connected account with OAuth2 token import and return ACTIVE ConnectionRequest', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
       const options = {
         callbackUrl: 'https://example.com/callback',
         config: AuthScheme.OAuth2({
-          status: ConnectionStatuses.ACTIVE,
           access_token: 'test_token',
           token_type: 'Bearer',
         }),
@@ -374,12 +437,12 @@ describe('ConnectedAccounts', () => {
         total_pages: 1,
       });
 
+      // When tokens are imported, the API should return ACTIVE with no redirectUrl
       const mockResponse = {
         id: 'conn_123',
         connectionData: {
           val: {
-            status: ConnectionStatuses.INITIALIZING,
-            redirectUrl: 'https://auth.example.com/connect',
+            status: ConnectionStatuses.ACTIVE,
           },
         },
       };
@@ -400,8 +463,38 @@ describe('ConnectedAccounts', () => {
       });
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
-      expect(connectionRequest).toHaveProperty('waitForConnection');
+      expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.ACTIVE);
+      expect(connectionRequest).toHaveProperty('redirectUrl', null);
       expect(typeof connectionRequest.waitForConnection).toBe('function');
+    });
+
+    it('should return INITIATED status with redirectUrl when no tokens are provided', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      const mockResponse = {
+        id: 'conn_456',
+        connectionData: {
+          val: {
+            status: ConnectionStatuses.INITIATED,
+            redirectUrl: 'https://auth.example.com/connect',
+          },
+        },
+      };
+
+      extendedMockClient.connectedAccounts.create.mockResolvedValueOnce(mockResponse);
+
+      const connectionRequest = await connectedAccounts.initiate(userId, authConfigId);
+
+      expect(connectionRequest).toHaveProperty('id', 'conn_456');
+      expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.INITIATED);
+      expect(connectionRequest).toHaveProperty('redirectUrl', 'https://auth.example.com/connect');
     });
   });
 
@@ -450,6 +543,8 @@ describe('ConnectedAccounts', () => {
           isComposioManaged: true,
           isDisabled: false,
         },
+        wordId: null,
+        alias: null,
         state: {
           authScheme: AuthSchemeTypes.OAUTH2,
           val: {
@@ -469,6 +564,35 @@ describe('ConnectedAccounts', () => {
         },
         testRequestEndpoint: undefined,
       });
+    });
+
+    it('should preserve alias and wordId when the API returns them', async () => {
+      const nanoid = 'conn_456';
+      const mockResponse = {
+        id: nanoid,
+        status: 'ACTIVE',
+        word_id: 'castle',
+        alias: 'Work Gmail',
+        auth_config: {
+          id: 'test-auth-config',
+          is_composio_managed: true,
+          is_disabled: false,
+        },
+        is_disabled: false,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T00:00:00Z',
+        status_reason: null,
+        toolkit: {
+          slug: 'gmail',
+        },
+      };
+
+      extendedMockClient.connectedAccounts.retrieve.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.get(nanoid);
+
+      expect(result.wordId).toBe('castle');
+      expect(result.alias).toBe('Work Gmail');
     });
   });
 
@@ -684,8 +808,10 @@ describe('ConnectedAccounts', () => {
       expect(result).toEqual({
         id: nanoid,
         status: ConnectedAccountStatuses.ACTIVE,
+        alias: null,
         authConfig: {
           id: 'auth_config_123',
+          authScheme: AuthSchemeTypes.OAUTH2,
           isComposioManaged: true,
           isDisabled: false,
         },
@@ -707,6 +833,7 @@ describe('ConnectedAccounts', () => {
           slug: 'test-toolkit',
         },
         testRequestEndpoint: undefined,
+        wordId: null,
       });
     });
 
@@ -778,8 +905,10 @@ describe('ConnectedAccounts', () => {
       expect(result).toEqual({
         id: nanoid,
         status: ConnectedAccountStatuses.ACTIVE,
+        alias: null,
         authConfig: {
           id: 'auth_config_123',
+          authScheme: undefined,
           isComposioManaged: true,
           isDisabled: false,
         },
@@ -801,11 +930,59 @@ describe('ConnectedAccounts', () => {
           slug: 'test-toolkit',
         },
         testRequestEndpoint: undefined,
+        wordId: null,
       });
     });
   });
 
+  describe('update', () => {
+    it('should enable a connected account', async () => {
+      const nanoid = 'conn_abc123';
+      const mockResponse = { success: true, id: nanoid, status: 'ACTIVE' };
+
+      extendedMockClient.connectedAccounts.updateStatus.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.update(nanoid, { enabled: true });
+
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
+        enabled: true,
+      });
+      expect(result).toEqual({ success: true, id: nanoid, status: 'ACTIVE' });
+    });
+
+    it('should disable a connected account', async () => {
+      const nanoid = 'conn_abc123';
+      const mockResponse = { success: true };
+
+      extendedMockClient.connectedAccounts.updateStatus.mockResolvedValueOnce(mockResponse);
+
+      const result = await connectedAccounts.update(nanoid, { enabled: false });
+
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
+        enabled: false,
+      });
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw ValidationError for invalid params', async () => {
+      await expect(
+        connectedAccounts.update('conn_abc123', { enabled: 'yes' } as any)
+      ).rejects.toThrow('Failed to parse connected account update params');
+    });
+  });
+
   describe('link', () => {
+    beforeEach(() => {
+      // link() now mirrors initiate() and pre-flights connectedAccounts.list to
+      // enforce the allowMultiple guard. Default to no existing connections so
+      // existing tests don't need to mock the list call themselves.
+      extendedMockClient.connectedAccounts.list.mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+    });
+
     it('should create a connected account link without options and return a ConnectionRequest', async () => {
       const userId = 'user_123';
       const authConfigId = 'auth_config_123';
@@ -1137,6 +1314,66 @@ describe('ConnectedAccounts', () => {
         user_id: userId,
         callback_url: 'https://example.com/callback',
       });
+    });
+
+    it('throws ComposioMultipleConnectedAccountsError when an active connection exists and allowMultiple is false', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockReset();
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'conn_existing',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: { id: authConfigId, auth_scheme: 'OAUTH2', is_composio_managed: true },
+            toolkit: { slug: 'gmail' },
+          },
+        ],
+        next_cursor: null,
+        total_pages: 1,
+      });
+
+      await expect(connectedAccounts.link(userId, authConfigId)).rejects.toThrow(
+        ComposioMultipleConnectedAccountsError
+      );
+
+      expect(extendedMockClient.link.create).not.toHaveBeenCalled();
+    });
+
+    it('skips the guard when allowMultiple is true and proceeds with link.create', async () => {
+      const userId = 'user_123';
+      const authConfigId = 'auth_config_123';
+
+      extendedMockClient.connectedAccounts.list.mockReset();
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'conn_existing',
+            status: ConnectedAccountStatuses.ACTIVE,
+            auth_config: { id: authConfigId, auth_scheme: 'OAUTH2', is_composio_managed: true },
+            toolkit: { slug: 'gmail' },
+          },
+        ],
+        next_cursor: null,
+        total_pages: 1,
+      });
+      extendedMockClient.link.create.mockResolvedValueOnce({
+        connected_account_id: 'conn_new',
+        redirect_url: 'https://connect.composio.dev/auth?token=xyz',
+      });
+
+      const connectionRequest = await connectedAccounts.link(userId, authConfigId, {
+        allowMultiple: true,
+        alias: 'work-gmail',
+      });
+
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
+        auth_config_id: authConfigId,
+        user_id: userId,
+        alias: 'work-gmail',
+      });
+      expect(connectionRequest).toHaveProperty('id', 'conn_new');
     });
   });
 });

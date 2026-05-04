@@ -1,0 +1,127 @@
+---
+title: Build a Chat App
+description: Build an AI chat app with tool access to 1000+ apps in about 30 lines of code
+---
+
+Give your AI agent access to Gmail, GitHub, Slack, Notion, and 1000+ other apps. This tutorial builds a Next.js chat app that handles tool discovery, user authentication, and action execution in about **30 lines of code**.
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/chat-app)
+
+## What you'll build
+
+- A chat app where your agent can find and use tools across 1000+ apps
+- In-chat OAuth authentication so users can connect apps directly in the conversation
+- A tool call display that shows what the agent is doing in real time
+
+## Prerequisites
+
+- [Bun](https://bun.sh) (or Node.js 18+)
+- [Composio API key](https://platform.composio.dev/settings)
+- [OpenAI API key](https://platform.openai.com/api-keys)
+
+**Stack:** Next.js, Vercel AI SDK, OpenAI, Composio
+
+## Create the project
+
+Create a new Next.js app and install the dependencies:
+
+```bash
+bunx create-next-app composio-chat --yes
+cd composio-chat
+bun add @composio/core @composio/vercel @ai-sdk/openai ai @ai-sdk/react
+```
+
+<Callout type="info">
+Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
+</Callout>
+
+Add your API keys to a `.env.local` file in the project root:
+
+```bash title=".env.local"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+Start the dev server:
+
+```bash
+bun dev
+```
+
+## Build the backend
+
+A **session** scopes tools and credentials to a specific user. Create `app/api/chat/route.ts`:
+
+<include meta='title="app/api/chat/route.ts"'>../../examples/chat-app/route.ts</include>
+
+That's the entire backend. `composio.create("user_123")` creates a session that lets the agent search for tools, authenticate users, and execute actions. This ID scopes all connections and credentials to this user. In production, use the user ID from your auth system.
+
+## Build the chat UI
+
+Replace `app/page.tsx`:
+
+<include meta='title="app/page.tsx"'>../../examples/chat-app/page.tsx</include>
+
+Go to [localhost:3000](http://localhost:3000). You should see the chat interface.
+
+## Try a tool call
+
+Send this message:
+
+```
+Star the composio repo on GitHub
+```
+
+Here's what happens:
+
+1. The agent searches for relevant tools, finds `GITHUB_STAR_REPO`, and checks your connection status.
+2. You haven't connected GitHub yet, so the agent generates an auth link and shows it to you.
+3. Click the link, authorize with GitHub, and tell the agent you're done.
+4. The agent executes `GITHUB_STAR_REPO` with your credentials.
+
+Discovery, authentication, and execution all happened automatically. You didn't write any tool-specific code.
+
+<Callout>
+This in-chat authentication flow works out of the box. For production apps, you can [authenticate users ahead of time](/docs/authenticating-users/manually-authenticating) during onboarding.
+</Callout>
+
+## Show tool calls in the UI
+
+Tool calls happen invisibly by default. Add a component that shows the tool name and status so you can see what the agent is doing.
+
+Create `components/ToolCallDisplay.tsx`:
+
+<include meta='title="components/ToolCallDisplay.tsx"'>../../examples/chat-app/ToolCallDisplay.tsx</include>
+
+Update `app/page.tsx` to render tool calls:
+
+<include meta='title="app/page.tsx"'>../../examples/chat-app/page-with-tools.tsx</include>
+
+Tool calls now show inline with a spinner while running and a checkmark when complete. Click to expand and see the raw output.
+
+## How it works
+
+The session handles tool discovery and execution at runtime. Instead of loading thousands of tool definitions into your agent's context, the agent searches for what it needs, authenticates the user if necessary, and executes the action. Token refresh and credential management are handled automatically.
+
+Try a few more requests:
+
+- "Summarize my emails from today"
+- "What's on my calendar this week?"
+- "Create a GitHub issue in my repo"
+
+## Take it further
+
+<Cards>
+  <Card title="Build an App Connections Dashboard" href="/cookbooks/app-connections-dashboard">
+    A dedicated page where users manage their app connections
+  </Card>
+  <Card title="Managing multiple connected accounts" href="/docs/managing-multiple-connected-accounts">
+    Let users connect multiple accounts for the same toolkit
+  </Card>
+  <Card title="Configuring sessions" href="/docs/configuring-sessions">
+    Lock down which toolkits your agent can access
+  </Card>
+  <Card title="How Composio works" href="/docs/how-composio-works">
+    Understand sessions, tool discovery, and execution under the hood
+  </Card>
+</Cards>

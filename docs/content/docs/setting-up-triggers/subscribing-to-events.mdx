@@ -6,17 +6,18 @@ keywords: [webhooks, subscribe, events, webhook payload, V3]
 
 ## Webhooks
 
-Webhooks are the recommended way to receive trigger events in production. To start receiving events, create a webhook subscription with your endpoint URL and select which event types you want to receive. You can subscribe to one or both:
+Webhooks are the recommended way to receive trigger events in production. To start receiving events, create a webhook subscription with your endpoint URL and select which event types you want to receive. You can subscribe to any combination:
 
 | Event type | Description |
 |------------|-------------|
-| `composio.trigger.message` | Fired when a trigger receives data from an external service |
+| `composio.trigger.message` | Fired when a trigger receives data from an external service. |
 | `composio.connected_account.expired` | Fired when a connected account expires and needs re-authentication. See [Subscribing to connection expiry events](/docs/subscribing-to-connection-expiry-events). |
+| `composio.trigger.disabled` | **Fired when** Composio automatically disables a trigger — expired connection, webhook refresh failure, or unhealthy polling. **Not fired when** you disable a trigger through the manage API or deactivate its connected account via `PATCH /api/v3/connected_accounts/{id}/status`. |
 
 Set your webhook URL in the [dashboard settings](https://platform.composio.dev?next_page=/settings/webhook) or via the [Webhook Subscriptions API](/reference/api-reference/webhooks):
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "X-API-KEY: <your-composio-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -197,7 +198,7 @@ ngrok http 8000
 Then use the ngrok URL as your webhook endpoint:
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "X-API-KEY: <your-composio-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -222,6 +223,10 @@ Every webhook event includes a `metadata` object that tells you exactly where it
 
 Use `trigger_id` to match events to a specific trigger instance, or `trigger_slug` to handle all events of a certain type. These fields can also be passed as filters when using [SDK subscriptions](#sdk-subscriptions).
 
+## What to read next
+
 <Cards>
-  <Card title="Troubleshooting triggers" href="/docs/troubleshooting/triggers" description="Not receiving events? Check common trigger issues and how to fix them" />
+  <Card icon={<ShieldCheck />} title="Verifying webhooks" href="/docs/webhook-verification" description="Validate webhook signatures to ensure payloads are authentic" />
+  <Card icon={<Zap />} title="Managing triggers" href="/docs/setting-up-triggers/managing-triggers" description="List, enable, disable, and delete trigger instances" />
+  <Card icon={<Zap />} title="Troubleshooting triggers" href="/docs/troubleshooting/triggers" description="Not receiving events? Check common trigger issues and how to fix them" />
 </Cards>

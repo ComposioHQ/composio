@@ -18,7 +18,7 @@ const testToolkits: Toolkits = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20250101', '20250909'],
       tools_count: 36,
       triggers_count: 2,
     },
@@ -52,7 +52,7 @@ const testToolkits: Toolkits = [
       categories: [],
       created_at: new Date('2024-05-03T11:44:32.061Z') as any,
       updated_at: new Date('2024-05-03T11:44:32.061Z') as any,
-      available_versions: [],
+      available_versions: ['20260101'],
       tools_count: 50,
       triggers_count: 10,
     },
@@ -64,16 +64,16 @@ const toolkitsData = {
 } satisfies TestLiveInput['toolkitsData'];
 
 const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_API_KEY', 'test_api_key']])
+  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
 ).pipe(extendConfigProvider);
 
-describe('CLI: composio toolkits list', () => {
+describe('CLI: composio dev toolkits list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] no flags [Then] lists all toolkits',
+    '[Given] no flags [Then] lists all toolkits with unified table',
     it => {
-      it.scoped('lists all toolkits', () =>
+      it.scoped('lists all toolkits with catalog and connection columns', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'list']);
+          yield* cli(['dev', 'toolkits', 'list']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -81,6 +81,46 @@ describe('CLI: composio toolkits list', () => {
           expect(output).toContain('gmail');
           expect(output).toContain('Slack');
           expect(output).toContain('GitHub');
+          expect(output).toContain('Connected');
+          expect(output).toContain('Version');
+          expect(output).toContain('Listing 3 of 3 toolkits');
+        })
+      );
+    }
+  );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      fixture: 'global-test-user-id',
+    })
+  )(
+    '[Given] no --user-id and no project test_user_id [Then] falls back to global test_user_id',
+    it => {
+      it.scoped('shows connected column with global test user id', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'list']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Connected');
+          expect(output).toContain('Using global test user id "global-default"');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
+    '[Given] explicit --user-id [Then] shows connected status column',
+    it => {
+      it.scoped('shows connected column with explicit user id', () =>
+        Effect.gen(function* () {
+          yield* cli(['dev', 'toolkits', 'list', '--user-id', 'default']);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          const output = lines.join('\n');
+
+          expect(output).toContain('Connected');
           expect(output).toContain('Listing 3 of 3 toolkits');
         })
       );
@@ -92,7 +132,7 @@ describe('CLI: composio toolkits list', () => {
     it => {
       it.scoped('shows filtered results', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'list', '--query', 'email']);
+          yield* cli(['dev', 'toolkits', 'list', '--query', 'email']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -109,7 +149,7 @@ describe('CLI: composio toolkits list', () => {
     it => {
       it.scoped('respects limit', () =>
         Effect.gen(function* () {
-          yield* cli(['toolkits', 'list', '--limit', '2']);
+          yield* cli(['dev', 'toolkits', 'list', '--limit', '2']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -122,7 +162,7 @@ describe('CLI: composio toolkits list', () => {
   layer(TestLive())('[Given] no API key', it => {
     it.scoped('warns user to login', () =>
       Effect.gen(function* () {
-        yield* cli(['toolkits', 'list']);
+        yield* cli(['dev', 'toolkits', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 
@@ -134,7 +174,7 @@ describe('CLI: composio toolkits list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider }))('[Given] empty results', it => {
     it.scoped('shows no toolkits found', () =>
       Effect.gen(function* () {
-        yield* cli(['toolkits', 'list']);
+        yield* cli(['dev', 'toolkits', 'list']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
 

@@ -1,4 +1,4 @@
-Set Height 1500
+Set Height 750
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/tools/info-gmail-send-email.svg"
 Output "recordings/ascii/tools/info-gmail-send-email.ascii"

@@ -4,10 +4,10 @@ on:
   push:
     branches: [master, next]
     paths:
-      - "ts/**"
+      - 'ts/**'
   pull_request:
     paths:
-      - "ts/**"
+      - 'ts/**'
   workflow_dispatch:
 
 jobs:
@@ -25,12 +25,18 @@ jobs:
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -68,12 +74,18 @@ jobs:
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_DENO_VERSION: ${{ matrix.deno-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -99,12 +111,18 @@ jobs:
     permissions: read-all
     env:
       CI: 1
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -137,11 +155,17 @@ jobs:
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+
+      - name: Normalize Composio API keys
+        run: |
+          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -170,4 +194,6 @@ jobs:
       - name: Run Cloudflare Workers E2E Tests
         run: pnpm run test:e2e:cloudflare
         env:
+          COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

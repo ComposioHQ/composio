@@ -238,6 +238,14 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
   </Tab>
 </Tabs>
 
-<Callout type="info">
-Use specific toolkit versions in production to prevent breaking changes. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
+<Callout type="warn">
+When no toolkit version is specified, the API returns tools from the base version (`00000000_00`), which may be fewer than what's available. Pass `toolkit_versions="latest"` or a specific version to get all tools. Never use `latest` in production. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Callout>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Blocks />} title="Toolkit versioning" href="/docs/tools-direct/toolkit-versioning" description="Pin specific tool versions for consistent behavior in production" />
+</Cards>

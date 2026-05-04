@@ -54,7 +54,7 @@ Depending on your authentication method, you may need to configure scopes:
 You must provide your own credentials regardless of environment.
 
 <Callout type="info">
-Want to remove Composio branding from OAuth screens? See [Custom Auth Configs](/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen) for white-labeling options.
+Want to remove Composio branding from OAuth screens? See [White-labeling](/docs/auth-configuration/white-labeling) for details.
 </Callout>
 </Step>
 
@@ -82,7 +82,7 @@ You should create multiple auth configs for the same toolkit when you need:
   <Card title="Programmatic creation" href="/docs/auth-configuration/programmatic-auth-configs">
     For managing auth configs across multiple projects, you can create them programmatically via the API
   </Card>
-  <Card title="Production white-labeling" href="/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen">
+  <Card title="Production white-labeling" href="/docs/auth-configuration/white-labeling">
     Remove Composio branding from OAuth screens for a fully white-labeled authentication experience
   </Card>
 </Cards>
@@ -156,16 +156,11 @@ console.log(`Visit: ${redirectUrl} to authenticate your account`);
 
 #### Customizing Connect Link
 
-By default, users will see a Composio-branded authentication experience when connecting their accounts. To customize this interface with your application's branding:
+You can customize the Connect Link with your logo and app title, or fully white-label OAuth consent screens with your own developer apps.
 
-1. Navigate to your Project Settings and select [Auth Screen](https://platform.composio.dev?next_page=/settings/auth-screen)
-2. Configure your **Logo** and **App Title**
-
-These settings will apply to all authentication flows using Connect Link, providing a white-labeled experience that maintains your brand identity throughout the authentication process.
-
-<Callout>
-For complete white-labeling including OAuth consent screens (removing Composio's domain), see [Custom Auth Configs - White-labeling](/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen).
-</Callout>
+<Cards>
+  <Card icon={<Palette />} title="White-labeling" href="/docs/auth-configuration/white-labeling" description="Remove Composio branding from OAuth screens and auth flows" />
+</Cards>
 
 #### Redirecting users after authentication
 
@@ -522,6 +517,10 @@ filteredConnections.items.forEach(connection => {
 Only connections with **ACTIVE** status can be used to execute tools. If a connection is in any other state, you'll need to take appropriate action (re-authenticate, wait for processing, etc.) before using it.
 </Callout>
 
-## Next Step
+## What to read next
 
-With authentication set up, you can now fetch and execute tools. See [Executing Tools](/docs/tools-direct/executing-tools) to get started.
+<Cards>
+  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
+  <Card icon={<Palette />} title="White-labeling" href="/docs/auth-configuration/white-labeling" description="Remove Composio branding from OAuth screens and auth flows" />
+</Cards>

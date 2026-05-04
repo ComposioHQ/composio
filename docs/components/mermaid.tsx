@@ -1,7 +1,23 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import mermaid from 'mermaid';
+import Zoom from 'react-medium-image-zoom';
+import 'react-medium-image-zoom/dist/styles.css';
+
+const MOBILE_BREAKPOINT = 768;
+
+function useIsMobile() {
+  return useSyncExternalStore(
+    (cb) => {
+      const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+      mql.addEventListener('change', cb);
+      return () => mql.removeEventListener('change', cb);
+    },
+    () => window.innerWidth < MOBILE_BREAKPOINT,
+    () => false,
+  );
+}
 
 function getCssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -60,11 +76,19 @@ export function Mermaid({ chart }: { chart: string }) {
     return () => observer.disconnect();
   }, [chart]);
 
-  return (
+  const isMobile = useIsMobile();
+
+  if (!svg) return null;
+
+  const diagram = (
     <div
       ref={containerRef}
-      className="my-4 flex justify-center max-w-lg mx-auto"
+      className="my-4 overflow-x-auto max-w-full mx-auto [&>svg]:mx-auto"
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
+
+  if (isMobile) return diagram;
+
+  return <Zoom wrapElement="div">{diagram}</Zoom>;
 }

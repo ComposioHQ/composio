@@ -9,8 +9,11 @@ import typing_extensions as te
 
 from composio import exceptions
 from composio.client import HttpClient
+from composio_client import omit
 from composio.client.types import (
     connected_account_create_params,
+    connected_account_patch_params,
+    connected_account_patch_response,
     connected_account_retrieve_response,
     connected_account_update_status_response,
 )
@@ -93,14 +96,25 @@ class AuthScheme:
     ) -> connected_account_create_params.ConnectionState:
         """
         Create a new connected account using OAuth 1.0.
+
+        When both ``oauth_token`` and ``oauth_token_secret`` are provided,
+        status defaults to ACTIVE (token import). When either is omitted,
+        status defaults to INITIALIZING (redirect-based OAuth flow).
+        Pass an explicit ``status`` in options to override.
         """
+        has_tokens = bool(
+            options.get("oauth_token")  # type: ignore[union-attr]
+        ) and bool(
+            options.get("oauth_token_secret")  # type: ignore[union-attr]
+        )
+        status = "ACTIVE" if has_tokens else "INITIALIZING"
         return {
             "auth_scheme": "OAUTH1",
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember0Val,
                 {
+                    "status": status,
                     **options,
-                    "status": "INITIALIZING",
                 },
             ),
         }
@@ -109,15 +123,22 @@ class AuthScheme:
         self, options: connected_account_create_params.ConnectionStateUnionMember1Val
     ) -> connected_account_create_params.ConnectionState:
         """
-        Create a new connected account using OAuth 1.0.
+        Create a new connected account using OAuth 2.0.
+
+        When ``access_token`` is provided, status defaults to ACTIVE
+        (token import). When omitted, status defaults to INITIALIZING
+        (redirect-based OAuth flow). Pass an explicit ``status`` in
+        options to override.
         """
+        has_token = bool(options.get("access_token"))  # type: ignore[union-attr]
+        status = "ACTIVE" if has_token else "INITIALIZING"
         return {
             "auth_scheme": "OAUTH2",
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember1Val,
                 {
+                    "status": status,
                     **options,
-                    "status": "INITIALIZING",
                 },
             ),
         }
@@ -135,8 +156,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember2Val,
                     {
-                        **options,
                         "status": "INITIALIZING",
+                        **options,
                     },
                 ),
             },
@@ -155,8 +176,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember3Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -175,8 +196,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember4Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -195,8 +216,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember5Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -215,8 +236,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember6Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -233,8 +254,8 @@ class AuthScheme:
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember7Val,
                 {
-                    **options,
                     "status": "ACTIVE",
+                    **options,
                 },
             ),
         }
@@ -250,8 +271,8 @@ class AuthScheme:
             "val": t.cast(
                 connected_account_create_params.ConnectionStateUnionMember8Val,
                 {
-                    **options,
                     "status": "ACTIVE",
+                    **options,
                 },
             ),
         }
@@ -269,8 +290,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember9Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -289,8 +310,8 @@ class AuthScheme:
                 "val": t.cast(
                     connected_account_create_params.ConnectionStateUnionMember10Val,
                     {
-                        **options,
                         "status": "ACTIVE",
+                        **options,
                     },
                 ),
             },
@@ -338,6 +359,35 @@ class ConnectedAccounts:
             enabled=False,
         )
 
+    def update(
+        self,
+        nanoid: str,
+        *,
+        alias: t.Optional[str] = None,
+        connection: t.Optional[connected_account_patch_params.Connection] = None,
+    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
+        """
+        Update a connected account's alias and/or credentials.
+
+        :param nanoid: The connected account ID (ca_xxx).
+        :param alias: Human-readable alias. Pass an empty string to clear.
+                      Must be unique per entity and toolkit within the project.
+        :param connection: Credential update with authScheme and val fields.
+        :return: Response with ``id``, ``status``, and ``success``.
+
+        Example:
+            # Set an alias
+            composio.connected_accounts.update('ca_abc123', alias='work-gmail')
+
+            # Clear an alias
+            composio.connected_accounts.update('ca_abc123', alias='')
+        """
+        return self._client.connected_accounts.patch(
+            nanoid,
+            alias=alias if alias is not None else omit,
+            connection=connection if connection is not None else omit,
+        )
+
     def initiate(
         self,
         user_id: str,
@@ -346,6 +396,7 @@ class ConnectedAccounts:
         callback_url: t.Optional[str] = None,
         allow_multiple: bool = False,
         config: t.Optional[connected_account_create_params.ConnectionState] = None,
+        alias: t.Optional[str] = None,
     ) -> ConnectionRequest:
         """
         Compound function to create a new connected account. This function creates
@@ -359,6 +410,7 @@ class ConnectedAccounts:
         :param callback_url: Callback URL to use for OAuth apps.
         :param config: The configuration to create the connected account with.
         :param allow_multiple: Whether to allow multiple connected accounts for the same user and auth config.
+        :param alias: Optional human-readable alias for the account. Must be unique per userId and toolkit within the project.
         :return: The connection request.
         """
         # Check if there are multiple connected accounts for the authConfig of the user
@@ -380,9 +432,10 @@ class ConnectedAccounts:
         connection: dict[str, t.Any] = {"user_id": user_id}
         if callback_url is not None:
             connection["callback_url"] = callback_url
-
         if config is not None:
             connection["state"] = config
+        if alias is not None:
+            connection["alias"] = alias
 
         response = self._client.connected_accounts.create(
             auth_config={"id": auth_config_id},
@@ -401,6 +454,8 @@ class ConnectedAccounts:
         auth_config_id: str,
         *,
         callback_url: t.Optional[str] = None,
+        alias: t.Optional[str] = None,
+        allow_multiple: bool = False,
     ) -> ConnectionRequest:
         """
         Create a Composio Connect Link for a user to connect their account to a given auth config.
@@ -410,6 +465,13 @@ class ConnectedAccounts:
         :param user_id: The external user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
         :param callback_url: The URL to redirect the user to post connecting their account.
+        :param alias: Optional human-readable alias for the connection. Must be unique
+            per userId and toolkit within the project.
+        :param allow_multiple: Whether to allow multiple connected accounts for the same
+            user and auth config. When False (default), raises
+            ``ComposioMultipleConnectedAccountsError`` if the user already has an
+            ``ACTIVE`` connection on this auth config. Pair with ``alias`` and a
+            session-level ``multi_account`` config to disambiguate at execution time.
         :return: Connection request object.
 
         Example:
@@ -434,18 +496,29 @@ class ConnectedAccounts:
             # Wait for the connection to be established
             connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
         """
-        # Prepare the request payload
-        payload: dict[str, t.Any] = {
-            "auth_config_id": auth_config_id,
-            "user_id": user_id,
-        }
+        # Mirror ``initiate()``: guard against silently creating extra
+        # connections on the same auth config.
+        connected_accounts = self.list(
+            user_ids=[user_id], auth_config_ids=[auth_config_id], statuses=["ACTIVE"]
+        )
+        if connected_accounts.items and not allow_multiple:
+            raise exceptions.ComposioMultipleConnectedAccountsError(
+                f"Multiple connected accounts found for user {user_id} in auth config {auth_config_id}. "
+                "Please use the allow_multiple option to allow multiple connected accounts."
+            )
+        elif connected_accounts.items:
+            logger.warning(
+                "[Warn:AllowMultiple] Multiple connected accounts found for user %s in auth config %s",
+                user_id,
+                auth_config_id,
+            )
 
-        # Add callback_url only if provided
-        if callback_url is not None:
-            payload["callback_url"] = callback_url
-
-        # Call the link creation endpoint
-        response = self._client.link.create(**payload)
+        response = self._client.link.create(
+            auth_config_id=auth_config_id,
+            user_id=user_id,
+            callback_url=callback_url if callback_url is not None else omit,
+            alias=alias if alias is not None else omit,
+        )
 
         return ConnectionRequest(
             id=response.connected_account_id,

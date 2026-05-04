@@ -18,7 +18,7 @@ The requested scopes are invalid or incorrectly formatted in the authorization U
 
 ## Why does the OAuth consent screen show "Composio" instead of my app?
 
-By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling the OAuth consent screen](/docs/auth-configuration/custom-auth-configs#white-labeling-the-oauth-consent-screen).
+By default, the consent screen uses Composio's OAuth app. To show your own app name and logo, create your own OAuth app and set a custom redirect URL. See [White-labeling authentication](/docs/white-labeling-authentication#using-your-own-oauth-apps).
 
 ## Why am I getting 401 errors on tool calls?
 

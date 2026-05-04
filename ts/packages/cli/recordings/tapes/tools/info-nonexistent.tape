@@ -1,4 +1,4 @@
-Set Height 1500
+Set Height 750
 Source "recordings/tapes/shared-config.tape"
 Output "recordings/svgs/tools/info-nonexistent.svg"
 Output "recordings/ascii/tools/info-nonexistent.ascii"

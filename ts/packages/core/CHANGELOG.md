@@ -1,5 +1,97 @@
 # @composio/core
 
+## 0.8.1
+
+### Patch Changes
+
+- 6b986cd: Bring `connectedAccounts.link()` to parity with `connectedAccounts.initiate()` by adding the `allowMultiple` option and the matching active-connection guard. With customers being migrated off `connected_accounts/create` (initiate) onto `connected_accounts/link` ([SEC-339](https://github.com/ComposioHQ/composio/pull/3274)), the guard moves with them.
+  - **Added:** `link(userId, authConfigId, { allowMultiple })`. When `allowMultiple` is `false` (default) and the user already has an `ACTIVE` connection on the auth config, `link()` throws `ComposioMultipleConnectedAccountsError` — same behavior as `initiate()`. Pair with `alias` and a session-level `multiAccount` config to disambiguate at execution time.
+  - **Behavior change:** `link()` now performs a `connectedAccounts.list({ userIds, authConfigIds, statuses: ['ACTIVE'] })` pre-flight before calling `client.link.create`. Callers that intentionally create multiple connections per auth config must pass `allowMultiple: true`.
+
+  Python parity: same option (`allow_multiple: bool = False`) and same guard added to `composio.connected_accounts.link()`.
+
+- 1c3276b: Add `workbench.sandboxSize` to the Tool Router session config so callers can pick the workbench sandbox compute tier.
+  - **Added:** `workbench.sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge'` on `ToolRouterCreateSessionConfig`. Forwarded to the API as snake_case `workbench.sandbox_size`. Optional; the server defaults it to `'standard'` (1 vCPU / 1 GB) when omitted, so existing callers keep current behavior.
+  - **Added:** `SandboxSize` literal union and `SandboxSizeSchema` zod enum, exported from `@composio/core` so callers can pass tier values without stringly-typing them.
+  - **Bumped:** `@composio/client` peer to `0.1.0-alpha.67` to pick up the matching `sandbox_size` field on the Tool Router session params.
+
+  Tiers: `standard` (1 vCPU / 1 GB), `medium` (2 / 2), `large` (4 / 4), `xlarge` (8 / 8). Sandboxes are not billed today; usage-based pricing is planned. See the changelog entry at [`docs/content/changelog/04-28-26-sdk-sandbox-size.mdx`](https://github.com/ComposioHQ/composio/blob/master/docs/content/changelog/04-28-26-sdk-sandbox-size.mdx) for usage and the full tier table.
+
+  Provider packages that depend on `@composio/core` receive automatic patch bumps in the same release train via the changesets `updateInternalDependencies: "patch"` setting — no public-API change in those packages.
+
+## 0.8.0
+
+### Minor Changes
+
+- ebc9778: Make automatic file upload/download opt-in and add scoped allowlist controls.
+  - **Removed:** the legacy `autoUploadDownloadFiles` constructor option. Code that sets it must migrate to the new opt-in flag.
+  - **Added:** `dangerouslyAllowAutoUploadDownloadFiles` (default `false`). When `true`, the SDK collapses `file_uploadable` schemas to `{ type: 'string', format: 'path' }` for the model and stages local paths/URLs at execute time.
+  - **Added:** `fileUploadDirs?: string[] | false` — fail-closed allowlist for local upload paths. `undefined` defaults to `[<home>/.composio/temp]`; `false` rejects all local paths; an explicit `string[]` replaces the default.
+  - **Added:** `fileDownloadDir?: string` — directory used to stage S3 downloads on `file_downloadable` results.
+  - **Added:** `beforeFileUpload` modifier now receives `source: 'path' | 'url' | 'file'` so hooks can branch on the original input type.
+  - **Added:** when auto-upload is **off** but a tool with `file_uploadable` inputs is executed, the SDK emits a one-shot warning per tool slug pointing at `composio.files.upload()` for manual staging.
+
+  See the changelog entry at [`docs/content/changelog/04-24-26-legacy-auto-upload-config-removal.mdx`](https://github.com/ComposioHQ/composio/blob/master/docs/content/changelog/04-24-26-legacy-auto-upload-config-removal.mdx) for migration steps.
+
+  Provider packages that depend on `@composio/core` are bumped to `0.8.0` alongside core in this release train so the version line stays aligned across the monorepo, even though they have no public-API changes of their own.
+
+## 0.6.11
+
+### Patch Changes
+
+- 27ed0c9: **Security:** Harden automatic file uploads by default-blocking local paths under common credential locations (e.g. `.ssh`, `.aws`) and credential-like filenames (e.g. `.env`, default SSH private key names). URLs and `File` objects are unchanged. Opt out with `sensitiveFileUploadProtection: false` only if needed; extend the denylist with `fileUploadPathDenySegments`.
+
+  Adds an optional `beforeFileUpload` hook (e.g. on `composio.tools.get`) to rewrite paths, return `false` to abort, or throw. New errors: `ComposioSensitiveFilePathBlockedError`, `ComposioFileUploadAbortedError`.
+
+## 0.6.10
+
+### Patch Changes
+
+- 670ecc9: Add missing `alias` option to `ToolRouterAuthorizeFn` type. The `ToolRouterSession.authorize()` implementation already accepted `alias`, but the exported type didn't include it, causing type errors when passing `{ alias: 'work-gmail' }` to `session.authorize()`.
+
+## 0.6.9
+
+### Patch Changes
+
+- 5b5723a: release
+
+## 0.6.8
+
+### Patch Changes
+
+- 2b19ae9: Fix `customAuthParams.baseURL` not being sent to the API during tool execution. The SDK property `baseURL` is now correctly mapped to the API's expected `base_url` field.
+
+## 0.6.7
+
+### Patch Changes
+
+- 8dc5568: Add `workbench.enable` option to session config for disabling the workbench entirely. When set to `false`, code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are excluded from the session. Defaults to `true`.
+
+## 0.6.6
+
+### Patch Changes
+
+- e1f6516: Add custom tool support in Toolrouter
+
+## 0.6.5
+
+### Patch Changes
+
+- 476d451: Add support for files
+- Add session file support
+
+## 0.6.5-alpha.0
+
+### Patch Changes
+
+- Add support for files
+
+## 0.6.4
+
+### Patch Changes
+
+- e3f1f6c: Remove telemetry payload
+
 ## 0.6.3
 
 ### Patch Changes

@@ -9,19 +9,7 @@ Authentication and permission errors typically occur due to:
 
 ### Missing scopes
 
-Check if your connection has the required scopes using this API:
-
-```bash
-curl --location 'https://backend.composio.dev/api/v3/tools/get_scopes_required' \
---header 'x-api-key: YOUR_COMPOSIO_API_KEY' \
---header 'Content-Type: application/json' \
---data '{
-    "tools": [
-        "SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL",
-        "SLACK_CREATE_A_REMINDER"
-    ]
-}'
-```
+The tool you're calling may require OAuth scopes that weren't granted when the user authenticated. Re-authenticate the user with the required scopes, or check the toolkit's documentation for which scopes each tool needs.
 
 ### Insufficient permissions
 
@@ -30,6 +18,21 @@ Verify the connected account has necessary permissions:
 - **Admin requirements**: Some tools require admin-level access
 - **Paid accounts**: Certain toolkits need paid subscriptions
   - Example: MS Teams requires Microsoft 365 account + Azure AD tenant
+
+## API returning fewer tools than expected
+
+If the Get Tools API (`GET /api/v3.1/tools`) returns fewer tools than what's shown on the [platform UI](https://platform.composio.dev), you likely need to specify a toolkit version.
+
+When `toolkit_versions` is not provided, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. Tools added in later versions won't appear.
+
+To get all available tools, pass `toolkit_versions=latest`:
+
+```bash
+curl 'https://backend.composio.dev/api/v3.1/tools?toolkit_slug=googledrive&toolkit_versions=latest' \
+  -H 'x-api-key: YOUR_API_KEY'
+```
+
+See [Toolkit versioning](/docs/tools-direct/toolkit-versioning) for more details.
 
 ## Tool not working
 

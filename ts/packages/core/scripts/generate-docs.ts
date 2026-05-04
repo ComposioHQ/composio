@@ -16,10 +16,7 @@ import { fileURLToPath } from 'url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_DIR = join(SCRIPT_DIR, '..');
 const MODELS_DIR = join(PACKAGE_DIR, 'src/models');
-const OUTPUT_DIR = join(
-  PACKAGE_DIR,
-  '../../../docs/content/reference/sdk-reference/typescript'
-);
+const OUTPUT_DIR = join(PACKAGE_DIR, '../../../docs/content/reference/sdk-reference/typescript');
 const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
 
 // Internal classes that should NOT be documented (accessed via other APIs)
@@ -456,9 +453,9 @@ function generateMethodMdx(method: MethodDoc): string {
         lines.push('|------|------|-------------|');
         for (const param of sig.parameters) {
           const opt = param.required ? '' : '?';
-          const desc = escapeForMdx(param.description || '');
-          const safeType = escapeForMdx(simplifyTypeForTable(param.type));
-          lines.push(`| \`${param.name}${opt}\` | \`${safeType}\` | ${desc} |`);
+          const desc = escapeTextForMdx(param.description || '');
+          const typeCell = escapeTypeForMdx(simplifyTypeForTable(param.type));
+          lines.push(`| \`${param.name}${opt}\` | \`${typeCell}\` | ${desc} |`);
         }
       } else {
         // No descriptions - use simpler table
@@ -466,8 +463,8 @@ function generateMethodMdx(method: MethodDoc): string {
         lines.push('|------|------|');
         for (const param of sig.parameters) {
           const opt = param.required ? '' : '?';
-          const safeType = escapeForMdx(simplifyTypeForTable(param.type));
-          lines.push(`| \`${param.name}${opt}\` | \`${safeType}\` |`);
+          const typeCell = escapeTypeForMdx(simplifyTypeForTable(param.type));
+          lines.push(`| \`${param.name}${opt}\` | \`${typeCell}\` |`);
         }
       }
       lines.push('');
@@ -477,10 +474,10 @@ function generateMethodMdx(method: MethodDoc): string {
     if (sig.returnType !== 'void') {
       lines.push('**Returns**');
       lines.push('');
-      const safeReturnType = escapeForMdx(simplifyTypeForTable(sig.returnType));
-      let returnLine = `\`${safeReturnType}\``;
+      const returnTypeDisplay = escapeTypeForMdx(simplifyTypeForTable(sig.returnType));
+      let returnLine = `\`${returnTypeDisplay}\``;
       if (sig.returnDescription) {
-        returnLine += ` — ${sig.returnDescription}`;
+        returnLine += ` — ${escapeTextForMdx(sig.returnDescription)}`;
       }
       lines.push(returnLine);
       lines.push('');
@@ -541,14 +538,14 @@ function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('');
     lines.push(generateMethodMdx(classDoc.constructor));
   } else if (!USER_INSTANTIATED_CLASSES.has(classDoc.name)) {
-    // Show usage hint for non-instantiated classes
+    lines.push('## Usage');
+    lines.push('');
+
     // Handle acronyms (e.g., "MCP" -> "mcp") vs PascalCase (e.g., "AuthConfigs" -> "authConfigs")
     const accessorName =
       classDoc.name === classDoc.name.toUpperCase()
         ? classDoc.name.toLowerCase()
         : classDoc.name.charAt(0).toLowerCase() + classDoc.name.slice(1);
-    lines.push('## Usage');
-    lines.push('');
     lines.push(`Access this class through the \`composio.${accessorName}\` property:`);
     lines.push('');
     lines.push('```typescript');
@@ -571,16 +568,16 @@ function generateClassMdx(classDoc: ClassDoc): string {
       lines.push('| Name | Type | Description |');
       lines.push('|------|------|-------------|');
       for (const prop of publicProps) {
-        const safeType = escapeForMdx(simplifyTypeForTable(prop.type));
-        const safeDesc = escapeForMdx(prop.description || '');
-        lines.push(`| \`${prop.name}\` | \`${safeType}\` | ${safeDesc} |`);
+        const typeCell = escapeTypeForMdx(simplifyTypeForTable(prop.type));
+        const safeDesc = escapeTextForMdx(prop.description || '');
+        lines.push(`| \`${prop.name}\` | \`${typeCell}\` | ${safeDesc} |`);
       }
     } else {
       lines.push('| Name | Type |');
       lines.push('|------|------|');
       for (const prop of publicProps) {
-        const safeType = escapeForMdx(simplifyTypeForTable(prop.type));
-        lines.push(`| \`${prop.name}\` | \`${safeType}\` |`);
+        const typeCell = escapeTypeForMdx(simplifyTypeForTable(prop.type));
+        lines.push(`| \`${prop.name}\` | \`${typeCell}\` |`);
       }
     }
     lines.push('');
@@ -605,9 +602,14 @@ function toKebabCase(str: string): string {
     .toLowerCase();
 }
 
-// Escape curly braces for MDX (they're interpreted as JSX expressions)
-function escapeForMdx(str: string): string {
-  return str.replace(/\{/g, '\\{').replace(/\}/g, '\\}');
+// Escape text content for MDX (descriptions, etc. that appear outside backticks)
+// Handles both curly braces and angle brackets (which MDX interprets as JSX tags)
+function escapeTextForMdx(str: string): string {
+  return str
+    .replace(/\{/g, '\\{')
+    .replace(/\}/g, '\\}')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // Clean up internal generic type parameters that don't add value for users
@@ -615,6 +617,7 @@ function cleanupGenericTypes(type: string): string {
   // Remove generic parameters that are just implementation details
   // e.g., "Tools<unknown, unknown, TProvider>" -> "Tools"
   // e.g., "Composio<TProvider>" -> "Composio"
+  // e.g., "Uint8Array<ArrayBufferLike>" -> "Uint8Array"
   let cleaned = type;
 
   // Remove type parameters that are just unknowns or TProvider
@@ -622,10 +625,20 @@ function cleanupGenericTypes(type: string): string {
   cleaned = cleaned.replace(/<TProvider>/g, '');
   cleaned = cleaned.replace(/<unknown>/g, '');
 
+  // Remove TypeScript internal generic parameters (e.g., <ArrayBufferLike>)
+  // that add no value for users and break MDX parsing
+  cleaned = cleaned.replace(/<ArrayBufferLike>/g, '');
+
   // Clean up double spaces and trailing commas
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
 
   return cleaned;
+}
+
+// Escape type strings for safe use in MDX backtick code spans.
+// Escapes curly braces which MDX interprets as JSX expressions.
+function escapeTypeForMdx(type: string): string {
+  return type.replace(/\{/g, '\\{').replace(/\}/g, '\\}');
 }
 
 // Simplify complex types for table display (aggressive)
@@ -790,7 +803,7 @@ async function main() {
   const classesTable = documented
     .map(
       ({ name, description }) =>
-        `| [\`${name}\`](/reference/sdk-reference/typescript/${toKebabCase(name)}) | ${escapeForMdx(description)} |`
+        `| [\`${name}\`](/reference/sdk-reference/typescript/${toKebabCase(name)}) | ${escapeTextForMdx(description)} |`
     )
     .join('\n');
 

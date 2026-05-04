@@ -1,5 +1,88 @@
 # @composio/cloudflare
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [6b986cd]
+- Updated dependencies [1c3276b]
+  - @composio/core@0.8.1
+
+## 0.8.0
+
+### Minor Changes
+
+- Bumped to align with `@composio/core@0.8.0` for the file-upload allowlist release train. No public-API change in this package.
+
+### Patch Changes
+
+- Updated dependencies [ebc9778]
+  - @composio/core@0.8.0
+
+## 0.6.11
+
+### Patch Changes
+
+- Updated dependencies [27ed0c9]
+  - @composio/core@0.6.11
+
+## 0.6.10
+
+### Patch Changes
+
+- Updated dependencies [670ecc9]
+  - @composio/core@0.6.10
+
+## 0.6.9
+
+### Patch Changes
+
+- Updated dependencies [5b5723a]
+  - @composio/core@0.6.9
+
+## 0.6.8
+
+### Patch Changes
+
+- Updated dependencies [2b19ae9]
+  - @composio/core@0.6.8
+
+## 0.6.7
+
+### Patch Changes
+
+- Updated dependencies [8dc5568]
+  - @composio/core@0.6.7
+
+## 0.6.6
+
+### Patch Changes
+
+- Updated dependencies [e1f6516]
+  - @composio/core@0.6.6
+
+## 0.6.5
+
+### Patch Changes
+
+- Updated dependencies [476d451]
+- Updated dependencies
+  - @composio/core@0.6.5
+
+## 0.6.5-alpha.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @composio/core@0.6.5-alpha.0
+
+## 0.6.4
+
+### Patch Changes
+
+- Updated dependencies [e3f1f6c]
+  - @composio/core@0.6.4
+
 ## 0.6.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
-# CLI `composio toolkits search` Test
+# CLI `composio dev toolkits search` Test
 
-Verifies that `composio toolkits search <query>` returns matching toolkits as JSON in piped mode, respects `--limit`, supports stdout redirection, and handles queries with no results.
+Verifies that `composio dev toolkits search <query>` returns matching toolkits as JSON in piped mode, respects `--limit`, supports stdout redirection, and handles queries with no results.
 
 ## What It Tests
 
@@ -13,7 +13,7 @@ Verifies that `composio toolkits search <query>` returns matching toolkits as JS
 
 ## Requirements
 
-- `COMPOSIO_API_KEY` (**required**) — Composio API key passed to the container
+- `COMPOSIO_USER_API_KEY` (**required**) — Composio user API key passed to the container
 
 ## Running
 

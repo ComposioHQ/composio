@@ -71,7 +71,6 @@ def create_mock_tool(
         available_versions=[version],
         version=version,
         scopes=[],
-        status="active",
         toolkit=tool_list_response.ItemToolkit(
             name=toolkit_slug.title(), slug=toolkit_slug, logo=""
         ),

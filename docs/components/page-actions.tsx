@@ -78,7 +78,7 @@ export function PageActions({ path }: PageActionsProps) {
 
   return (
     <div
-      className="flex flex-wrap items-center gap-1.5 sm:gap-1 mt-2 mb-6"
+      className="not-prose flex flex-wrap items-center gap-1.5 sm:gap-1 mt-2 mb-6"
       role="group"
       aria-label="Page actions"
     >
@@ -123,7 +123,7 @@ export function PageActions({ path }: PageActionsProps) {
         aria-label="View page as markdown (opens in new tab)"
       >
         <ExternalLink className="size-3.5" aria-hidden="true" />
-        <span className="hidden xs:inline">View </span>
+        <span className="hidden sm:inline">View </span>
         <span>Markdown</span>
       </a>
 

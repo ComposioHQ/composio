@@ -4,19 +4,22 @@ description: Understand how tools and toolkits work in Composio
 keywords: [tools, toolkits, meta tools, context management]
 ---
 
-Composio offers 1000+ toolkits, but loading all the tools into context would overwhelm your agent. Instead, your agent has access to 5 meta tools that discover, authenticate, and execute the right tools at runtime.
+Composio offers 1000+ toolkits, but loading all the tools into context would overwhelm your agent. Instead, your agent has access to meta tools that discover, authenticate, and execute the right tools at runtime.
 
 ## Meta tools
 
-When you create a session, your agent gets these 5 meta tools:
+When you create a session, your agent gets these meta tools:
 
 | Meta tool | What it does |
 |-----------|--------------|
-| `COMPOSIO_SEARCH_TOOLS` | Discover relevant tools across 1000+ apps |
-| `COMPOSIO_MANAGE_CONNECTIONS` | Handle OAuth and API key authentication |
-| `COMPOSIO_MULTI_EXECUTE_TOOL` | Execute up to 20 tools in parallel |
-| `COMPOSIO_REMOTE_WORKBENCH` | Run Python code in a [persistent sandbox](/docs/workbench) |
-| `COMPOSIO_REMOTE_BASH_TOOL` | Execute bash commands for file and data processing |
+| [`COMPOSIO_SEARCH_TOOLS`](/reference/meta-tools/search_tools) | Discover relevant tools across 500+ apps with execution plans |
+| [`COMPOSIO_GET_TOOL_SCHEMAS`](/reference/meta-tools/get_tool_schemas) | Retrieve complete input schemas for specific tools |
+| [`COMPOSIO_MULTI_EXECUTE_TOOL`](/reference/meta-tools/multi_execute_tool) | Execute up to 50 tools in parallel |
+| [`COMPOSIO_MANAGE_CONNECTIONS`](/reference/meta-tools/manage_connections) | Handle OAuth, API key, and other authentication methods |
+| [`COMPOSIO_REMOTE_WORKBENCH`](/reference/meta-tools/remote_workbench) | Run Python code in a [persistent sandbox](/docs/workbench) |
+| [`COMPOSIO_REMOTE_BASH_TOOL`](/reference/meta-tools/remote_bash_tool) | Execute bash commands for file and data processing |
+
+See the [Meta Tools Reference](/reference/meta-tools) for complete input/output schemas and details.
 
 Meta tool calls in a session are correlated using a `session_id`, allowing them to share context. The tools can also store useful information (like IDs and relationships discovered during execution) in memory for subsequent calls.
 
@@ -68,6 +71,18 @@ A **tool** is an individual action your agent can execute. Each tool has an inpu
 If you know exactly which tools you need, you can [execute them directly](/docs/tools-direct/executing-tools) without meta tools.
 </Callout>
 
+You can also add local in-process tools to a session using the experimental custom tools and custom toolkits API. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
+
+## Default toolkit access
+
+<Accordions>
+<Accordion title="What toolkits can my agent access by default?">
+All of them. When you create a session without specifying a `toolkits` parameter, every toolkit in the Composio catalog is discoverable through `COMPOSIO_SEARCH_TOOLS`. The agent searches for relevant tools at runtime — it doesn't load them all into context at once.
+
+To restrict which toolkits are available, pass `toolkits` when creating the session. See [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
+</Accordion>
+</Accordions>
+
 ## Authentication
 
 Tools execute with the user's authenticated credentials. When a user connects their GitHub account, all GitHub tools run with their permissions.
@@ -78,13 +93,11 @@ If a tool requires authentication and the user hasn't connected yet, the agent c
   Learn how Composio handles user authentication
 </Card>
 
-## Useful links
+## What to read next
 
 <Cards>
-  <Card icon={<Blocks />} title="Browse toolkits" href="/toolkits">
-    Explore all available toolkits
-  </Card>
-  <Card icon={<BookOpen />} title="Fetching tools" href="/docs/toolkits/fetching-tools-and-toolkits">
-    Browse the catalog and fetch tools for sessions
-  </Card>
+  <Card icon={<Monitor />} title="Workbench" href="/docs/workbench" description="Persistent Python sandbox for bulk operations and data processing" />
+  <Card icon={<Blocks />} title="Browse toolkits" href="/toolkits" description="Explore all available toolkits" />
+  <Card icon={<Wrench />} title="Fetching tools" href="/docs/toolkits/fetching-tools-and-toolkits" description="Browse the catalog and fetch tools for sessions" />
+  <Card icon={<Zap />} title="Direct tool execution" href="/docs/tools-direct/executing-tools" description="Execute tools without meta tools for deterministic workflows" />
 </Cards>

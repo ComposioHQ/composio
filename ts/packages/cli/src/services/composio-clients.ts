@@ -17,6 +17,7 @@ import type { AuthConfigCreateParams } from '@composio/client/resources/auth-con
 import { Toolkit, Toolkits, ToolkitDetailed, type ToolkitSearchResult } from 'src/models/toolkits';
 import { AuthConfigItem, AuthConfigItems } from 'src/models/auth-configs';
 import { ConnectedAccountItem, ConnectedAccountItems } from 'src/models/connected-accounts';
+import { TriggerInstanceItems } from 'src/models/triggers';
 import { ToolsAsEnums, Tools, Tool } from 'src/models/tools';
 import {
   groupByVersion,
@@ -25,7 +26,9 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
+import * as constants from 'src/constants';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
+import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
 import { renderPrettyError } from './utils/pretty-error';
 
@@ -221,6 +224,21 @@ export type CliCreateSessionResponse = Schema.Schema.Type<typeof CliCreateSessio
 export const CliGetSessionResponse = RetrievedSession;
 export type CliRetrieveSessionResponse = Schema.Schema.Type<typeof CliGetSessionResponse>;
 
+export const CliRealtimeCredentialsResponse = Schema.Struct({
+  project_id: Schema.String,
+  pusher_key: Schema.String,
+  pusher_cluster: Schema.String,
+}).annotations({ identifier: 'CliRealtimeCredentialsResponse' });
+export type CliRealtimeCredentialsResponse = Schema.Schema.Type<
+  typeof CliRealtimeCredentialsResponse
+>;
+
+export const CliRealtimeAuthResponse = Schema.Struct({
+  auth: Schema.String,
+  channel_data: Schema.optional(Schema.String),
+}).annotations({ identifier: 'CliRealtimeAuthResponse' });
+export type CliRealtimeAuthResponse = Schema.Schema.Type<typeof CliRealtimeAuthResponse>;
+
 export const ToolkitsResponse = Schema.Struct({
   items: Toolkits,
   total_pages: Schema.Int,
@@ -286,6 +304,167 @@ export const TriggerTypesResponse = Schema.Struct({
   total_pages: Schema.Int,
   next_cursor: Schema.NullOr(Schema.String),
 }).annotations({ identifier: 'TriggerTypesResponse' });
+export type TriggerTypesResponse = Schema.Schema.Type<typeof TriggerTypesResponse>;
+
+export const TriggerInstancesListActiveResponse = Schema.Struct({
+  items: TriggerInstanceItems,
+  total_items: Schema.optionalWith(Schema.Int, { default: () => 0 }),
+  total_pages: Schema.optionalWith(Schema.Int, { default: () => 1 }),
+  current_page: Schema.optionalWith(Schema.Int, { default: () => 1 }),
+  next_cursor: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
+}).annotations({ identifier: 'TriggerInstancesListActiveResponse' });
+export type TriggerInstancesListActiveResponse = Schema.Schema.Type<
+  typeof TriggerInstancesListActiveResponse
+>;
+
+export const TriggerInstanceUpsertResponse = Schema.Struct({
+  trigger_id: Schema.String,
+}).annotations({ identifier: 'TriggerInstanceUpsertResponse' });
+export type TriggerInstanceUpsertResponse = Schema.Schema.Type<
+  typeof TriggerInstanceUpsertResponse
+>;
+
+export const TriggerInstanceManageUpdateResponse = Schema.Struct({
+  status: Schema.Literal('success'),
+}).annotations({ identifier: 'TriggerInstanceManageUpdateResponse' });
+export type TriggerInstanceManageUpdateResponse = Schema.Schema.Type<
+  typeof TriggerInstanceManageUpdateResponse
+>;
+
+export const TriggerInstanceManageDeleteResponse = Schema.Struct({
+  trigger_id: Schema.String,
+}).annotations({ identifier: 'TriggerInstanceManageDeleteResponse' });
+export type TriggerInstanceManageDeleteResponse = Schema.Schema.Type<
+  typeof TriggerInstanceManageDeleteResponse
+>;
+
+/**
+ * Response from GET /api/v3/auth/session/info.
+ * Contains project, org member, and API key details for the authenticated session.
+ * Fields like webhook_url, webhook_secret, auto_id, deleted are intentionally omitted.
+ */
+export const SessionInfoResponse = Schema.Struct({
+  project: Schema.Struct({
+    name: Schema.String,
+    id: Schema.String,
+    org_id: Schema.String,
+    nano_id: Schema.String,
+    email: Schema.String,
+    created_at: Schema.String,
+    updated_at: Schema.String,
+    org: Schema.Struct({
+      name: Schema.String,
+      id: Schema.String,
+      plan: Schema.String,
+    }),
+  }),
+  org_member: Schema.Struct({
+    id: Schema.String,
+    user_id: Schema.optional(Schema.String),
+    email: Schema.String,
+    name: Schema.String,
+    role: Schema.String,
+  }),
+  api_key: Schema.NullOr(
+    Schema.Struct({
+      name: Schema.String,
+      project_id: Schema.String,
+      id: Schema.String,
+      org_member_id: Schema.String,
+      api_key: Schema.optional(Schema.String),
+      key: Schema.optional(Schema.String),
+    })
+  ),
+}).annotations({ identifier: 'SessionInfoResponse' });
+export type SessionInfoResponse = Schema.Schema.Type<typeof SessionInfoResponse>;
+
+const authHeaderForApiKey = (apiKey: string): Record<string, string> => ({
+  'x-user-api-key': apiKey,
+});
+
+export interface TriggerInstancesListActiveParams {
+  user_ids?: string[];
+  connected_account_ids?: string[];
+  auth_config_ids?: string[];
+  trigger_ids?: string[];
+  trigger_names?: string[];
+  show_disabled?: boolean;
+  limit?: number;
+}
+
+export interface TriggerInstanceUpsertParams {
+  connected_account_id?: string;
+  trigger_config?: Record<string, unknown>;
+}
+
+function buildTriggerInstancesNamespace(
+  clientSingleton: ComposioClientSingleton,
+  withMetrics: <A, E, R>(
+    effect: Effect.Effect<{ data: A; metrics: Metrics }, E, R>
+  ) => Effect.Effect<A, E, R>
+) {
+  return {
+    /**
+     * Lists active trigger instances with optional filters.
+     * Returns a single page of results.
+     */
+    listActive: (params: TriggerInstancesListActiveParams) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client =>
+            client.triggerInstances.listActive({
+              user_ids: params.user_ids,
+              connected_account_ids: params.connected_account_ids,
+              auth_config_ids: params.auth_config_ids,
+              trigger_ids: params.trigger_ids,
+              trigger_names: params.trigger_names,
+              show_disabled: params.show_disabled,
+              limit: params.limit,
+            }),
+          TriggerInstancesListActiveResponse
+        )
+      ),
+    upsert: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.triggerInstances.upsert(triggerSlug, params),
+          TriggerInstanceUpsertResponse
+        )
+      ),
+    manageUpdate: (triggerId: string, params: { status: 'enable' | 'disable' }) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.triggerInstances.manage.update(triggerId, params),
+          TriggerInstanceManageUpdateResponse
+        )
+      ),
+    manageDelete: (triggerId: string) =>
+      withMetrics(
+        callClient(
+          clientSingleton,
+          client => client.triggerInstances.manage.delete(triggerId),
+          TriggerInstanceManageDeleteResponse
+        )
+      ),
+  };
+}
+
+function buildTriggerInstanceRepositoryOperations(client: ComposioClientLive) {
+  return {
+    listActiveTriggers: (params: TriggerInstancesListActiveParams) =>
+      client.triggerInstances.listActive(params),
+    createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
+      client.triggerInstances.upsert(triggerSlug, params),
+    enableTrigger: (triggerId: string) =>
+      client.triggerInstances.manageUpdate(triggerId, { status: 'enable' }),
+    disableTrigger: (triggerId: string) =>
+      client.triggerInstances.manageUpdate(triggerId, { status: 'disable' }),
+    deleteTrigger: (triggerId: string) => client.triggerInstances.manageDelete(triggerId),
+  };
+}
 
 // Single-page search response (includes total_items for "Listing X of Y" display)
 export const ToolkitSearchResponse = Schema.Struct({
@@ -508,6 +687,662 @@ const streamResponseWithByteCount = (
     return { json, byteSize };
   });
 
+/**
+ * A single project entry returned by GET /api/v3/org/project/list.
+ */
+export const OrgProject = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  email: Schema.String,
+  deleted: Schema.Boolean,
+  org_id: Schema.String,
+  created_at: Schema.String,
+  updated_at: Schema.String,
+}).annotations({ identifier: 'OrgProject' });
+export type OrgProject = Schema.Schema.Type<typeof OrgProject>;
+
+/**
+ * Response from GET /api/v3/org/project/list.
+ */
+export const OrgProjectListResponse = Schema.Struct({
+  data: Schema.Array(OrgProject),
+  next_cursor: Schema.NullOr(Schema.String),
+  total_pages: Schema.Int,
+  current_page: Schema.Int,
+  total_items: Schema.Int,
+}).annotations({ identifier: 'OrgProjectListResponse' });
+export type OrgProjectListResponse = Schema.Schema.Type<typeof OrgProjectListResponse>;
+
+export interface OrganizationSummary {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface OrganizationListResponse {
+  readonly data: ReadonlyArray<OrganizationSummary>;
+  readonly total_items: number;
+}
+
+export interface OrganizationProjectSummary {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface OrganizationProjectListResponse {
+  readonly data: ReadonlyArray<OrganizationProjectSummary>;
+  readonly total_items: number;
+}
+
+export const ConsumerProjectResolveResponse = Schema.Struct({
+  project_id: Schema.String,
+  project_nano_id: Schema.String,
+  project_name: Schema.String,
+  org_id: Schema.String,
+  project_type: Schema.Literal('CONSUMER'),
+  consumer_user_id: Schema.String,
+}).annotations({ identifier: 'ConsumerProjectResolveResponse' });
+export type ConsumerProjectResolveResponse = Schema.Schema.Type<
+  typeof ConsumerProjectResolveResponse
+>;
+
+export const LatestToolVersionResponse = Schema.Struct({
+  tool_slug: Schema.String,
+  version: Schema.String,
+}).annotations({ identifier: 'LatestToolVersionResponse' });
+export type LatestToolVersionResponse = Schema.Schema.Type<typeof LatestToolVersionResponse>;
+
+export const ConsumerConnectedToolkitsResponse = Schema.Struct({
+  toolkits: Schema.Array(Schema.String),
+}).annotations({ identifier: 'ConsumerConnectedToolkitsResponse' });
+export type ConsumerConnectedToolkitsResponse = Schema.Schema.Type<
+  typeof ConsumerConnectedToolkitsResponse
+>;
+
+const extractArrayPayload = (json: unknown): ReadonlyArray<unknown> => {
+  if (Array.isArray(json)) return json;
+  if (json && typeof json === 'object') {
+    const record = json as Record<string, unknown>;
+    if (Array.isArray(record.organizations)) return record.organizations;
+    if (Array.isArray(record.projects)) return record.projects;
+    if (Array.isArray(record.data)) return record.data;
+    if (Array.isArray(record.items)) return record.items;
+    if (record.data && typeof record.data === 'object') {
+      const nested = record.data as Record<string, unknown>;
+      if (Array.isArray(nested.organizations)) return nested.organizations;
+      if (Array.isArray(nested.projects)) return nested.projects;
+      if (Array.isArray(nested.items)) return nested.items;
+      if (Array.isArray(nested.data)) return nested.data;
+    }
+  }
+  return [];
+};
+
+const readIdFromItem = (item: unknown): string | undefined => {
+  if (!item || typeof item !== 'object') return undefined;
+  const record = item as Record<string, unknown>;
+  if (typeof record.id === 'string') return record.id;
+  if (typeof record.nano_id === 'string') return record.nano_id;
+  if (typeof record.org_id === 'string') return record.org_id;
+  if (typeof record.project_id === 'string') return record.project_id;
+  return undefined;
+};
+
+const readNameFromItem = (item: unknown): string | undefined => {
+  if (!item || typeof item !== 'object') return undefined;
+  const record = item as Record<string, unknown>;
+  if (typeof record.name === 'string' && record.name.trim().length > 0) return record.name;
+  if (typeof record.slug === 'string' && record.slug.trim().length > 0) return record.slug;
+  return undefined;
+};
+
+/**
+ * Lists organizations available to the current user API key.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ */
+export const listOrganizations = (params: {
+  baseURL: string;
+  apiKey: string;
+  limit?: number;
+}): Effect.Effect<OrganizationListResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const limit = params.limit ?? 50;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/list?limit=${limit}`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.apiKey,
+            'User-Agent': '@composio/cli',
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+    const items = extractArrayPayload(json);
+    const organizations = items
+      .map(item => {
+        const id = readIdFromItem(item);
+        const name = readNameFromItem(item);
+        if (!id || !name) return undefined;
+        return { id, name } satisfies OrganizationSummary;
+      })
+      .filter((value): value is OrganizationSummary => value !== undefined);
+
+    return {
+      data: organizations,
+      total_items: organizations.length,
+    };
+  });
+
+/**
+ * Lists projects for a specific organization.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ */
+export const listOrganizationProjects = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  limit?: number;
+}): Effect.Effect<OrganizationProjectListResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const limit = params.limit ?? 50;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/project/list?limit=${limit}`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.apiKey,
+            'x-org-id': params.orgId,
+            'User-Agent': '@composio/cli',
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+    const items = extractArrayPayload(json);
+    const projects = items
+      .map(item => {
+        const id = readIdFromItem(item);
+        const name = readNameFromItem(item);
+        if (!id || !name) return undefined;
+        return { id, name } satisfies OrganizationProjectSummary;
+      })
+      .filter((value): value is OrganizationProjectSummary => value !== undefined);
+
+    return {
+      data: projects,
+      total_items: projects.length,
+    };
+  });
+
+/**
+ * Lists all projects for the logged-in user's organization.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ *
+ * @param params.baseURL    - API base URL
+ * @param params.apiKey     - UAK (sent as `x-user-api-key`)
+ * @param params.orgId      - Organization ID (sent as `x-org-id`)
+ * @param params.limit      - Max projects to return (default 50)
+ */
+export const listOrgProjects = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  limit?: number;
+}): Effect.Effect<OrgProjectListResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const limit = params.limit ?? 50;
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(
+          `${params.baseURL}/api/v3/org/project/list?list_all_org_projects=true&limit=${limit}`,
+          {
+            method: 'GET',
+            redirect: 'error',
+            headers: {
+              'x-user-api-key': params.apiKey,
+              'x-org-id': params.orgId,
+              'User-Agent': '@composio/cli',
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(OrgProjectListResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+/**
+ * Calls GET /api/v3/auth/session/info with the full layered auth headers.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ * This is a standalone function, NOT on ComposioSessionRepository, to keep
+ * the repository as a pure facade over @composio/client.
+ */
+export const getSessionInfo = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  projectId: string;
+}): Effect.Effect<SessionInfoResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/auth/session/info`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            ...authHeaderForApiKey(params.apiKey),
+            'x-org-id': params.orgId,
+            'x-project-id': params.projectId,
+            'User-Agent': '@composio/cli',
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(SessionInfoResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+/**
+ * Calls GET /api/v3/auth/session/info using only the x-user-api-key header.
+ * Unlike getSessionInfo which requires org/project IDs, this variant resolves
+ * session metadata from the UAK alone — useful during login before org/project
+ * context is known.
+ * Uses plain fetch since this endpoint is not available in @composio/client.
+ */
+export const getSessionInfoByUserApiKey = (params: {
+  baseURL: string;
+  userApiKey: string;
+}): Effect.Effect<SessionInfoResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/auth/session/info`, {
+          method: 'GET',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.userApiKey,
+            'User-Agent': '@composio/cli',
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(SessionInfoResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+const getApiKeyFromPayload = (payload: unknown): string | undefined => {
+  const candidates = new Set<string>(['api_key', 'apiKey', 'key', 'token']);
+  const keyPrefixes = ['uak_', 'ak_'];
+  const queue: unknown[] = [payload];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== 'object') continue;
+
+    if (Array.isArray(current)) {
+      queue.push(...current);
+      continue;
+    }
+
+    const entries = Object.entries(current as Record<string, unknown>);
+    for (const [key, value] of entries) {
+      if (
+        typeof value === 'string' &&
+        candidates.has(key) &&
+        keyPrefixes.some(prefix => value.startsWith(prefix))
+      ) {
+        return value;
+      }
+      if (value && typeof value === 'object') {
+        queue.push(value);
+      }
+    }
+  }
+
+  return undefined;
+};
+
+export const createProjectApiKey = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  projectId: string;
+  name: string;
+}): Effect.Effect<string, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/project/${params.projectId}/api_keys/create`, {
+          method: 'POST',
+          redirect: 'error',
+          headers: {
+            ...authHeaderForApiKey(params.apiKey),
+            'x-org-id': params.orgId,
+            'x-project-id': params.projectId,
+            'User-Agent': '@composio/cli',
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: params.name }),
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+    const createdApiKey = getApiKeyFromPayload(json);
+
+    if (!createdApiKey) {
+      return yield* Effect.fail(
+        new HttpDecodingError({
+          cause: 'Create API key response did not contain an API key',
+        })
+      );
+    }
+
+    return createdApiKey;
+  });
+
+export const resolveConsumerProject = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+}): Effect.Effect<ConsumerProjectResolveResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(`${params.baseURL}/api/v3/org/consumer/project/resolve`, {
+          method: 'POST',
+          redirect: 'error',
+          headers: {
+            'x-user-api-key': params.apiKey,
+            'x-org-id': params.orgId,
+            'User-Agent': '@composio/cli',
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(ConsumerProjectResolveResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+export const getLatestToolVersion = (params: {
+  baseURL: string;
+  apiKey: string;
+  toolSlug: string;
+  orgId?: string;
+  projectId?: string;
+  projectApiKey?: string;
+}): Effect.Effect<LatestToolVersionResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(
+          `${params.baseURL}/api/v3/tools/${encodeURIComponent(params.toolSlug)}/get_latest_version`,
+          {
+            method: 'GET',
+            redirect: 'error',
+            headers: {
+              ...(params.projectApiKey
+                ? ({ 'x-api-key': params.projectApiKey } satisfies Record<string, string>)
+                : ({ 'x-user-api-key': params.apiKey } satisfies Record<string, string>)),
+              ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
+              ...(params.projectId ? { 'x-project-id': params.projectId } : {}),
+              'User-Agent': '@composio/cli',
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(LatestToolVersionResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+export const getConsumerConnectedToolkits = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  consumerUserId: string;
+}): Effect.Effect<ConsumerConnectedToolkitsResponse, HttpServerError | HttpDecodingError> =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(
+          `${params.baseURL}/api/v3/org/consumer/connected_toolkits?user_id=${encodeURIComponent(params.consumerUserId)}`,
+          {
+            method: 'GET',
+            redirect: 'error',
+            headers: {
+              'x-user-api-key': params.apiKey,
+              'x-org-id': params.orgId,
+              'User-Agent': '@composio/cli',
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+          }
+        ),
+      catch: error => new HttpServerError({ cause: error }),
+    });
+
+    if (!response.ok) {
+      return yield* handleHttpErrorResponse(response);
+    }
+
+    const { json } = yield* streamResponseWithByteCount(response);
+
+    return yield* pipe(
+      Schema.decodeUnknown(ConsumerConnectedToolkitsResponse)(json),
+      Effect.catchTag('ParseError', e => {
+        const message = ParseResult.TreeFormatter.formatErrorSync(e);
+        return new HttpDecodingError({
+          cause: `ParseError\n   ${message}`,
+        });
+      })
+    );
+  });
+
+export class DeveloperProjectNotFoundError extends Data.TaggedError(
+  'services/DeveloperProjectNotFoundError'
+)<{
+  readonly orgId: string;
+  readonly projectName: string;
+}> {}
+
+export class AmbiguousDeveloperProjectNameError extends Data.TaggedError(
+  'services/AmbiguousDeveloperProjectNameError'
+)<{
+  readonly orgId: string;
+  readonly projectName: string;
+  readonly matches: ReadonlyArray<OrganizationProjectSummary>;
+}> {}
+
+export const findDeveloperProjectByName = (params: {
+  baseURL: string;
+  apiKey: string;
+  orgId: string;
+  name: string;
+  limit?: number;
+}): Effect.Effect<
+  OrganizationProjectSummary,
+  | DeveloperProjectNotFoundError
+  | AmbiguousDeveloperProjectNameError
+  | HttpServerError
+  | HttpDecodingError
+> =>
+  Effect.gen(function* () {
+    const projects = yield* listOrgProjects({
+      baseURL: params.baseURL,
+      apiKey: params.apiKey,
+      orgId: params.orgId,
+      limit: params.limit,
+    });
+
+    const normalizedName = String.toLowerCase(params.name.trim());
+    const matches = projects.data.filter(
+      project => String.toLowerCase(project.name) === normalizedName
+    );
+
+    if (matches.length === 0) {
+      return yield* Effect.fail(
+        new DeveloperProjectNotFoundError({
+          orgId: params.orgId,
+          projectName: params.name,
+        })
+      );
+    }
+
+    if (matches.length > 1) {
+      return yield* Effect.fail(
+        new AmbiguousDeveloperProjectNameError({
+          orgId: params.orgId,
+          projectName: params.name,
+          matches,
+        })
+      );
+    }
+
+    return matches[0];
+  });
+
+const normalizeApiKey = (rawApiKey?: string): string | undefined =>
+  typeof rawApiKey === 'string' && rawApiKey.trim().length > 0 ? rawApiKey : undefined;
+
+const detectCliRuntime = (): string => {
+  if (typeof Bun !== 'undefined') {
+    return 'BUN';
+  }
+
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    return 'NODEJS';
+  }
+
+  return 'UNKNOWN';
+};
+
+const buildDefaultHeaders = (params: {
+  userApiKey?: string;
+  orgId?: string;
+  projectId?: string;
+}): Record<string, string> | undefined => {
+  const defaultHeaders = {
+    'x-framework': 'cli',
+    'x-source': 'CLI',
+    'x-runtime': detectCliRuntime(),
+    'x-sdk-version': constants.APP_VERSION,
+    ...(params.userApiKey
+      ? ({ 'x-user-api-key': params.userApiKey } satisfies Record<string, string>)
+      : {}),
+    ...(params.orgId && params.projectId
+      ? ({
+          'x-org-id': params.orgId,
+          'x-project-id': params.projectId,
+        } satisfies Record<string, string>)
+      : {}),
+  };
+
+  return Object.keys(defaultHeaders).length > 0 ? defaultHeaders : undefined;
+};
+
 // Utility function for calling the Composio API and decoding its response.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const callClient = <T, S extends Schema.Schema<any, any>>(
@@ -659,30 +1494,71 @@ const callClientWithPagination = <T, S extends PaginatedSchema>(
  * Singleton service that lazily accesses `Config` only when needed, which is used to build and provide
  * a raw (uneffectful, Promise-based) Composio client instance.
  */
-class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
+export class ComposioClientSingleton extends Effect.Service<ComposioClientSingleton>()(
   'services/ComposioClientSingleton',
   {
     accessors: true,
     effect: Effect.gen(function* () {
       const ctx = yield* ComposioUserContext;
-      let ref = Option.none<_RawComposioClient>();
+      const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
+      const cache = new Map<string, _RawComposioClient>();
+
+      const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
+        Effect.gen(function* () {
+          const apiKey = normalizeApiKey(
+            params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey)
+          );
+          const cacheKey = JSON.stringify({
+            apiKey: apiKey ?? null,
+            orgId: params?.orgId ?? null,
+            projectId: params?.projectId ?? null,
+          });
+          const cached = cache.get(cacheKey);
+          if (cached) {
+            return cached;
+          }
+
+          const client = new _RawComposioClient({
+            apiKey: null,
+            baseURL: ctx.data.baseURL,
+            defaultHeaders: buildDefaultHeaders({
+              userApiKey: apiKey,
+              orgId: params?.orgId,
+              projectId: params?.projectId,
+            }),
+          });
+
+          cache.set(cacheKey, client);
+          return client;
+        });
 
       return {
         get: Effect.fn(function* () {
-          if (Option.isSome(ref)) {
-            return ref.value;
-          }
-
-          // Note: `api_key` is not required in every API request.
-          const apiKey = ctx.data.apiKey.pipe(Option.getOrUndefined);
-          const baseURL = ctx.data.baseURL;
-
-          yield* Effect.logDebug('Creating raw Composio client...');
-          const client = new _RawComposioClient({ apiKey, baseURL });
-
-          ref = Option.some(client);
-          return client;
+          const resolvedProjectContext = yield* Option.match(projectContextOpt, {
+            onNone: () => Effect.succeed(Option.none()),
+            onSome: projectContext =>
+              projectContext.resolve.pipe(Effect.catchAll(() => Effect.succeed(Option.none()))),
+          });
+          return yield* Option.match(resolvedProjectContext, {
+            onNone: () => getFor(),
+            onSome: keys =>
+              getFor({
+                orgId: keys.orgId,
+                projectId: keys.projectId,
+              }),
+          });
         }) satisfies () => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
+        getFor: Effect.fn(function* (params: {
+          userApiKey?: string;
+          orgId?: string;
+          projectId?: string;
+        }) {
+          return yield* getFor(params);
+        }) satisfies (params: {
+          userApiKey?: string;
+          orgId?: string;
+          projectId?: string;
+        }) => Effect.Effect<_RawComposioClient, NoSuchElementException, never>,
       };
     }),
     dependencies: [ComposioUserContextLive],
@@ -1069,6 +1945,18 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               )
             ),
           /**
+           * Retrieves detailed info about a single trigger type by slug.
+           * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
+           */
+          retrieve: (slug: string) =>
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.triggersTypes.retrieve(slug),
+                TriggerType
+              )
+            ),
+          /**
            * Retrieve a list of trigger types, automatically handling pagination.
            * @param toolkitSlugs - Optional array of toolkit slugs to filter by
            */
@@ -1086,15 +1974,23 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
               )
             ),
         },
+        triggerInstances: buildTriggerInstancesNamespace(clientSingleton, withMetrics),
         cli: {
           /**
            * Generates a new CLI session with a random 6-character code.
+           * @param params.scope - 'user' for login, 'project' for init (future)
+           *
+           * TODO: don't use `@composio/client`, wrap `fetch` directly.
            */
-          createSession: () =>
+          createSession: (params?: { scope?: 'user' | 'project' }) =>
             withMetrics(
               callClient(
                 clientSingleton,
-                client => client.cli.createSession(),
+                client =>
+                  client.cli.createSession(
+                    { scope: params?.scope ?? 'user' },
+                    { headers: { 'Content-Type': 'application/json' } }
+                  ),
                 CliCreateSessionResponse
               )
             ),
@@ -1108,6 +2004,22 @@ export class ComposioClientLive extends Effect.Service<ComposioClientLive>()(
                 clientSingleton,
                 client => client.cli.getSession(session),
                 CliGetSessionResponse
+              )
+            ),
+          getRealtimeCredentials: () =>
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.cli.realtime.credentials(),
+                CliRealtimeCredentialsResponse
+              )
+            ),
+          authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
+            withMetrics(
+              callClient(
+                clientSingleton,
+                client => client.cli.realtime.auth(params),
+                CliRealtimeAuthResponse
               )
             ),
         },
@@ -1215,6 +2127,11 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
             )
           ),
         getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
+        /**
+         * Retrieves detailed info about a single trigger type by slug.
+         * @param slug - Trigger type slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")
+         */
+        getTriggerTypeDetailed: (slug: string) => client.triggersTypes.retrieve(slug),
         /**
          * Fetches trigger types with optional toolkit filtering.
          * When toolkitSlugs is provided, fetches all matching trigger types.
@@ -1360,6 +2277,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         deleteConnectedAccount: (nanoid: string) => client.connectedAccounts.delete(nanoid),
         createConnectedAccountLink: (params: { auth_config_id: string; user_id: string }) =>
           client.connectedAccounts.createLink(params),
+        ...buildTriggerInstanceRepositoryOperations(client),
       };
     }),
     dependencies: [ComposioClientLive.Default],
@@ -1373,8 +2291,12 @@ export class ComposioSessionRepository extends Effect.Service<ComposioSessionRep
       const client = yield* ComposioClientLive;
 
       return {
-        createSession: () => client.cli.createSession(),
+        createSession: (params?: { scope?: 'user' | 'project' }) =>
+          client.cli.createSession(params),
         getSession: (session: { id: string }) => client.cli.getSession({ id: session.id }),
+        getRealtimeCredentials: () => client.cli.getRealtimeCredentials(),
+        authRealtimeChannel: (params: { channel_name: string; socket_id: string }) =>
+          client.cli.authRealtimeChannel(params),
       };
     }),
     dependencies: [ComposioClientLive.Default],

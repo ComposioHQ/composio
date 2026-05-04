@@ -1,3 +1,5 @@
+import { TERMINOLOGY_MIGRATION } from './terminology';
+
 /**
  * Default guardrails appended to most pages.
  * Steers LLMs toward the session-based pattern (composio.create + session.tools).
@@ -64,5 +66,5 @@ Use \`session.mcp.url\` and \`session.mcp.headers\` with any MCP-compatible clie
 ### 2.3 — DISCOURAGED (do not use unless user explicitly asks)
 
 Do **not** generate \`composio.tools.get()\`, \`composio.tools.execute()\`, or \`composio.provider.handle_tool_calls()\` unless the user explicitly requests direct tool execution. These are a supported but **not recommended** low-level interface.
-
+${TERMINOLOGY_MIGRATION}
 `;

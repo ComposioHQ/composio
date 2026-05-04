@@ -5,7 +5,6 @@ Calling (AFC). The SDK can introspect the callable's signature to derive
 FunctionDeclaration schemas and auto-execute tool calls in the chat loop.
 """
 
-import copy
 import types as pytypes
 import typing as t
 from inspect import Parameter, Signature
@@ -13,7 +12,11 @@ from inspect import Parameter, Signature
 from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
-from composio.utils.shared import get_pydantic_signature_format_from_schema_params
+from composio.utils.shared import (
+    get_pydantic_signature_format_from_schema_params,
+    reinstate_reserved_python_keywords,
+    substitute_reserved_python_keywords,
+)
 
 # google-genai is only needed for handle_response (backward compat)
 try:
@@ -23,45 +26,6 @@ try:
 except ImportError:
     genai_types = None  # type: ignore
     HAS_GENAI = False
-
-_python_reserved = {"for", "async"}
-
-
-def _clean_reserved_keyword(keyword: str) -> str:
-    return f"{keyword}_rs"
-
-
-def _substitute_reserved_python_keywords(schema: t.Dict) -> t.Tuple[dict, dict]:
-    if "properties" not in schema:
-        return schema, {}
-
-    schema = copy.deepcopy(schema)
-
-    keywords: t.Dict[str, str] = {}
-    for p_name in list(schema["properties"]):
-        if p_name not in _python_reserved:
-            continue
-
-        p_val = schema["properties"].pop(p_name)
-        p_name_clean = _clean_reserved_keyword(keyword=p_name)
-        schema["properties"][p_name_clean] = p_val
-        keywords[p_name_clean] = p_name
-
-    if keywords and "required" in schema:
-        reverse_map = {v: k for k, v in keywords.items()}
-        schema["required"] = [
-            reverse_map.get(name, name) for name in schema["required"]
-        ]
-
-    return schema, keywords
-
-
-def _reinstate_reserved_python_keywords(request: dict, keywords: dict) -> dict:
-    for clean_key, original_key in keywords.items():
-        if clean_key not in request:
-            continue
-        request[original_key] = request.pop(clean_key)
-    return request
 
 
 def _to_serializable(value: t.Any) -> t.Any:
@@ -135,14 +99,14 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         self._executors[tool.slug] = execute_tool
 
         # Handle reserved Python keywords in parameter names
-        schema_params, keywords = _substitute_reserved_python_keywords(
+        schema_params, keywords = substitute_reserved_python_keywords(
             schema=tool.input_parameters
         )
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
             kwargs = _to_serializable(kwargs)
-            kwargs = _reinstate_reserved_python_keywords(
+            kwargs = reinstate_reserved_python_keywords(
                 request=kwargs, keywords=keywords
             )
             result = execute_tool(tool.slug, kwargs)

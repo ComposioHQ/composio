@@ -20,6 +20,7 @@ export const AuthSchemeTypes = {
   SERVICE_ACCOUNT: 'SERVICE_ACCOUNT',
   SAML: 'SAML',
   DCR_OAUTH: 'DCR_OAUTH',
+  S2S_OAUTH2: 'S2S_OAUTH2',
 } as const;
 export type AuthSchemeType = (typeof AuthSchemeTypes)[keyof typeof AuthSchemeTypes];
 
@@ -46,6 +47,7 @@ export const AuthSchemeEnum = z.enum([
   'SERVICE_ACCOUNT',
   'SAML',
   'DCR_OAUTH',
+  'S2S_OAUTH2',
 ]);
 export const CreateCustomAuthConfigParamsSchema = z.object({
   type: z.literal('use_custom_auth'),

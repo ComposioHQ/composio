@@ -2,6 +2,8 @@
 Shared utils.
 """
 
+import copy
+import keyword
 import typing as t
 import uuid
 from inspect import Parameter
@@ -32,9 +34,85 @@ __all__ = [
     "get_signature_format_from_schema_params",
     "get_pydantic_signature_format_from_schema_params",
     "generate_request_id",
+    "substitute_reserved_python_keywords",
+    "reinstate_reserved_python_keywords",
 ]
 
 reserved_names = ["validate"]
+
+_OBJ_MARKER = "-_object_-"
+
+
+def _make_safe_name(name: str) -> str:
+    """Append ``_rs`` to a Python keyword so it can be used as a parameter name."""
+    return f"{name}_rs"
+
+
+def substitute_reserved_python_keywords(
+    schema: t.Dict,
+) -> t.Tuple[dict, dict]:
+    """Replace Python reserved keywords in a JSON schema's property names.
+
+    Returns a ``(schema, keywords)`` tuple where *schema* has safe property
+    names and *keywords* maps each safe name back to the original.  Nested
+    object schemas are processed recursively.
+
+    The schema is deep-copied before any mutation so the caller's original
+    is never modified.
+    """
+    if "properties" not in schema:
+        return schema, {}
+
+    schema = copy.deepcopy(schema)
+
+    keywords: t.Dict[str, t.Any] = {}
+    for p_name in list(schema["properties"]):
+        if not keyword.iskeyword(p_name):
+            continue
+
+        _nested_kw: t.Dict[str, t.Any] = {}
+        p_val = schema["properties"].pop(p_name)
+        if p_val.get("type") == "object":
+            p_val, _nested_kw = substitute_reserved_python_keywords(schema=p_val)
+
+        safe = _make_safe_name(p_name)
+        schema["properties"][safe] = p_val
+        keywords[safe] = p_name
+        keywords[f"{safe}{_OBJ_MARKER}"] = _nested_kw
+
+    # Also rename entries in the ``required`` list.
+    if keywords and "required" in schema:
+        reverse = {v: k for k, v in keywords.items() if not k.endswith(_OBJ_MARKER)}
+        schema["required"] = [reverse.get(r, r) for r in schema["required"]]
+
+    return schema, keywords
+
+
+def reinstate_reserved_python_keywords(
+    request: dict,
+    keywords: dict,
+) -> dict:
+    """Reverse the substitution performed by :func:`substitute_reserved_python_keywords`.
+
+    Modifies *request* **in-place** and returns it.
+    """
+    for clean_key in sorted(list(keywords), reverse=True):
+        subkeys = None
+        if clean_key.endswith(_OBJ_MARKER):
+            subkeys = keywords[clean_key]
+            clean_key, _ = clean_key.split(_OBJ_MARKER, maxsplit=1)
+
+        if clean_key not in request:
+            continue
+
+        original_value = request.pop(clean_key)
+        if subkeys:
+            original_value = reinstate_reserved_python_keywords(
+                request=original_value,
+                keywords=subkeys,
+            )
+        request[keywords[clean_key]] = original_value
+    return request
 
 
 def _coerce_default_value(
@@ -214,7 +292,6 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
     :param param_schema: Schema with 'title', 'properties', and optionally 'required' keys.
     :return: A Pydantic model class for the defined schema.
 
-    :raises KeyError: Missing 'type' in property definitions.
     :raised ValueError: Invalid 'type' for property or recursive model creation.
 
     Note: Requires global `schema_type_python_type_dict` for type mapping and
@@ -242,14 +319,22 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         return t.List
 
     for prop_name, prop_info in param_schema.get("properties", {}).items():
-        prop_type = prop_info["type"]
-        prop_title = prop_info["title"].replace(" ", "")
-        prop_default = prop_info.get("default", FALLBACK_VALUES[prop_type])
+        prop_type = prop_info.get("type")
+        prop_title = prop_info.get("title", prop_name).replace(" ", "")
+        prop_default = prop_info.get("default", FALLBACK_VALUES.get(prop_type))
         if (
-            prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
+            prop_type is not None
+            and prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
             and prop_type not in CONTAINER_TYPE
         ):
             signature_prop_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[prop_type]
+        elif prop_type is None:
+            # Schema uses anyOf/allOf/oneOf/$ref instead of a top-level "type" key.
+            # Delegate to json_schema_to_pydantic_type which handles all combiners.
+            signature_prop_type = t.cast(
+                t.Type,
+                json_schema_to_pydantic_type(json_schema=prop_info),
+            )
         else:
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
 

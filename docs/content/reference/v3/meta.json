@@ -1,0 +1,10 @@
+{
+  "title": "V3",
+  "pages": [
+    "index",
+    "authentication",
+    "rate-limits",
+    "errors",
+    "api-reference"
+  ]
+}

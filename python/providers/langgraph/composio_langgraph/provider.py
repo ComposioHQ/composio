@@ -13,6 +13,8 @@ from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
+    reinstate_reserved_python_keywords,
+    substitute_reserved_python_keywords,
 )
 
 
@@ -37,10 +39,14 @@ class LanggraphProvider(
         tool: str,
         description: str,
         schema_params: t.Dict,
+        keywords: t.Dict,
         execute_tool: AgenticProviderExecuteFn,
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
+            kwargs = reinstate_reserved_python_keywords(
+                request=kwargs, keywords=keywords
+            )
             return execute_tool(tool, kwargs)
 
         action_func = types.FunctionType(
@@ -61,20 +67,24 @@ class LanggraphProvider(
         self, tool: Tool, execute_tool: AgenticProviderExecuteFn
     ) -> StructuredTool:
         """Wraps composio tool as Langchain StructuredTool object."""
+        schema_params, keywords = substitute_reserved_python_keywords(
+            schema=tool.input_parameters
+        )
         return t.cast(
             StructuredTool,
             StructuredTool.from_function(
                 name=tool.slug,
                 description=tool.description,
                 args_schema=json_schema_to_model(
-                    json_schema=tool.input_parameters,
+                    json_schema=schema_params,
                     skip_default=self.skip_default,
                 ),
                 return_schema=True,
                 func=self._wrap_action(
                     tool=tool.slug,
                     description=tool.description,
-                    schema_params=tool.input_parameters,
+                    schema_params=schema_params,
+                    keywords=keywords,
                     execute_tool=execute_tool,
                 ),
                 handle_tool_error=True,

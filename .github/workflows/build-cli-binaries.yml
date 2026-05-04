@@ -2,41 +2,220 @@ name: Build CLI Binaries
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [next]
+    paths:
+      - 'ts/packages/cli/**'
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to build (e.g., v1.0.0)'
+      action:
+        description: 'What to do'
+        type: choice
+        options:
+          - build-beta
+          - promote-stable
+        default: build-beta
+      beta_tag:
+        description: 'Existing beta release tag to promote (only for promote-stable, e.g. @composio/cli@0.2.20-beta.42)'
         required: false
-        default: 'dev'
 
 permissions:
   contents: write
 
 jobs:
-  build-binaries:
-    name: Build CLI Binaries
-    runs-on: ${{ matrix.runner }}
+  prepare:
+    name: Resolve Release Metadata
+    runs-on: ubuntu-latest
+    outputs:
+      checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
+      release_name: ${{ steps.resolve.outputs.release_name }}
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+      release_version: ${{ steps.resolve.outputs.release_version }}
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
+      make_latest: ${{ steps.resolve.outputs.make_latest }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Resolve release target
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION_INPUT: ${{ inputs.action }}
+          BETA_TAG_INPUT: ${{ inputs.beta_tag }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_NUMBER: ${{ github.run_number }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # ── Push to next ──
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            # Check if ts/packages/cli/package.json version changed → stable release
+            current_version=$(node -p "require('./ts/packages/cli/package.json').version")
+            previous_version=$(git show HEAD^:ts/packages/cli/package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null || echo "")
+
+            if [[ -n "$previous_version" && "$current_version" != "$previous_version" ]]; then
+              release_tag="@composio/cli@${current_version}"
+              release_name="CLI ${release_tag}"
+              {
+                echo "checkout_ref=${COMMIT_SHA}"
+                echo "release_name=${release_name}"
+                echo "release_tag=${release_tag}"
+                echo "release_version=${current_version}"
+                echo "prerelease=false"
+                echo "make_latest=true"
+              } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            # Otherwise → beta release
+            # Find the latest stable CLI release to determine next version
+            latest_stable_tag=$(gh release list \
+              --repo "$REPOSITORY" \
+              --json tagName,isPrerelease \
+              --jq '[.[] | select(.tagName | startswith("@composio/cli@")) | select(.isPrerelease == false)] | sort_by(.tagName) | last | .tagName // empty')
+
+            if [[ -z "$latest_stable_tag" ]]; then
+              echo "No stable @composio/cli release found, falling back to package.json"
+              current_version=$(node -p "require('./ts/packages/cli/package.json').version")
+            else
+              current_version=$(echo "$latest_stable_tag" | sed 's/@composio\/cli@//')
+            fi
+
+            # Bump patch version for the beta
+            IFS='.' read -r major minor patch <<< "$current_version"
+            next_version="${major}.${minor}.$((patch + 1))"
+
+            release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
+            release_name="CLI Beta ${release_tag}"
+            {
+              echo "checkout_ref=${COMMIT_SHA}"
+              echo "release_name=${release_name}"
+              echo "release_tag=${release_tag}"
+              echo "release_version=${next_version}"
+              echo "prerelease=true"
+              echo "make_latest=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # ── workflow_dispatch: build-beta ──
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]] && [[ "$ACTION_INPUT" == "build-beta" ]]; then
+            latest_stable_tag=$(gh release list \
+              --repo "$REPOSITORY" \
+              --json tagName,isPrerelease \
+              --jq '[.[] | select(.tagName | startswith("@composio/cli@")) | select(.isPrerelease == false)] | sort_by(.tagName) | last | .tagName // empty')
+
+            if [[ -z "$latest_stable_tag" ]]; then
+              current_version=$(node -p "require('./ts/packages/cli/package.json').version")
+            else
+              current_version=$(echo "$latest_stable_tag" | sed 's/@composio\/cli@//')
+            fi
+
+            IFS='.' read -r major minor patch <<< "$current_version"
+            next_version="${major}.${minor}.$((patch + 1))"
+
+            release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
+            release_name="CLI Beta ${release_tag}"
+            {
+              echo "checkout_ref=${COMMIT_SHA}"
+              echo "release_name=${release_name}"
+              echo "release_tag=${release_tag}"
+              echo "release_version=${next_version}"
+              echo "prerelease=true"
+              echo "make_latest=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # ── Promote stable (workflow_dispatch with promote-stable) ──
+          if [[ "$ACTION_INPUT" != "promote-stable" ]]; then
+            echo "Unknown action: $ACTION_INPUT"
+            exit 1
+          fi
+
+          if [[ -z "$BETA_TAG_INPUT" ]]; then
+            echo "beta_tag input is required for promote-stable"
+            exit 1
+          fi
+
+          encoded_beta_tag=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["BETA_TAG_INPUT"], safe=""))')
+
+          release_json=$(curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPOSITORY}/releases/tags/${encoded_beta_tag}")
+
+          is_prerelease=$(jq -r '.prerelease' <<<"$release_json")
+          if [[ "$is_prerelease" != "true" ]]; then
+            echo "Release ${BETA_TAG_INPUT} is not a beta prerelease"
+            exit 1
+          fi
+
+          if [[ ! "$BETA_TAG_INPUT" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
+            echo "Beta tag must match @composio/cli@<version>-beta.<number>"
+            exit 1
+          fi
+
+          stable_version="${BASH_REMATCH[1]}"
+          stable_tag="@composio/cli@${stable_version}"
+          export stable_tag
+
+          stable_status=$(curl -sS -o /tmp/stable-release.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPOSITORY}/releases/tags/$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["stable_tag"], safe=""))')")
+          if [[ "$stable_status" == "200" ]]; then
+            echo "Stable release ${stable_tag} already exists"
+            exit 1
+          fi
+          if [[ "$stable_status" != "404" ]]; then
+            echo "Unexpected response while checking stable release ${stable_tag}: HTTP ${stable_status}"
+            cat /tmp/stable-release.json
+            exit 1
+          fi
+
+          target_commitish=$(jq -r '.target_commitish' <<<"$release_json")
+          if [[ -z "$target_commitish" || "$target_commitish" == "null" ]]; then
+            echo "Beta release ${BETA_TAG_INPUT} does not expose target_commitish"
+            exit 1
+          fi
+
+          {
+            echo "checkout_ref=${target_commitish}"
+            echo "release_name=CLI ${stable_tag}"
+            echo "release_tag=${stable_tag}"
+            echo "release_version=${stable_version}"
+            echo "prerelease=false"
+            echo "make_latest=true"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.artifact }}
+    needs: prepare
+    if: needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - runner: ubuntu-latest
-            platform: linux-x64
+          - target: bun-linux-x64
             artifact: composio-linux-x64
-          - runner: depot-ubuntu-24.04-arm
-            platform: linux-aarch64
+          - target: bun-linux-arm64
             artifact: composio-linux-aarch64
-          - runner: macos-13 # Intel Mac
-            platform: darwin-x64
+          - target: bun-darwin-x64
             artifact: composio-darwin-x64
-          - runner: macos-latest # Apple Silicon Mac
-            platform: darwin-aarch64
+          - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -47,15 +226,9 @@ jobs:
       - name: Build packages
         run: pnpm build:packages
 
-      - name: Build CLI binary
+      - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
-        run: |
-          # Use the existing build:bin script which builds for current platform
-          pnpm build:bin
-
-          # Create binaries directory and copy/rename the binary
-          mkdir -p dist/binaries
-          cp dist/composio dist/binaries/${{ matrix.artifact }}
+        run: pnpm build:binary:cross --target ${{ matrix.target }}
 
       - name: Verify binary
         working-directory: ts/packages/cli
@@ -64,63 +237,111 @@ jobs:
           file dist/binaries/${{ matrix.artifact }}
 
       - name: Test binary
+        if: matrix.target == 'bun-linux-x64'
         working-directory: ts/packages/cli
         env:
-          COMPOSIO_API_KEY: test-dummy-api-key-for-ci
+          COMPOSIO_USER_API_KEY: test-dummy-api-key-for-ci
         run: |
           ./dist/binaries/${{ matrix.artifact }} --version
           ./dist/binaries/${{ matrix.artifact }} --help | head -5
 
       - name: Create archive
-        working-directory: ts/packages/cli/dist/binaries
-        run: |
-          # Create subdirectory structure expected by install script
-          # Use a temp directory name to avoid name collision with the binary file
-          temp_dir="archive-${{ matrix.artifact }}"
-          rm -rf "$temp_dir"
-          mkdir -p "$temp_dir/${{ matrix.artifact }}"
-          cp "${{ matrix.artifact }}" "$temp_dir/${{ matrix.artifact }}/composio"
-          cd "$temp_dir" && zip -r "../${{ matrix.artifact }}.zip" "${{ matrix.artifact }}"
-          cd .. && rm -r "$temp_dir"
-          ls -la
+        working-directory: ts/packages/cli
+        run: pnpm build:binary:package
 
-      - name: Upload binary artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
-          path: |
-            ts/packages/cli/dist/binaries/${{ matrix.artifact }}
-            ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
+          path: ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
           retention-days: 7
 
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v2
+  release:
+    name: Create Release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    if: needs.build.result == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && format('CLI {0} (Manual Build)', inputs.version) || github.ref_name }}
-          files: |
-            ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
-          draft: false
-          prerelease: ${{ github.event_name == 'workflow_dispatch' || contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
-          generate_release_notes: true
-          make_latest: ${{ github.event_name != 'workflow_dispatch' }}
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: ts/packages/cli/dist/binaries
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: ts/packages/cli
+        run: bun run ./scripts/generate-checksums.ts
+
+      - name: Display checksums
+        run: cat ts/packages/cli/dist/binaries/checksums.txt
+
+      - name: Package skill files
+        working-directory: ts/packages/cli
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          pnpm run validate:skills
+          if [[ "$PRERELEASE" == "true" ]]; then
+            channel=beta
+          else
+            channel=stable
+          fi
+          pnpm run build:skills -- --channel "$channel" --output-dir ./dist/skills
+          cd dist/skills && zip -r ../binaries/composio-skill.zip composio-cli/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          RELEASE_NAME: ${{ needs.prepare.outputs.release_name }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
+          CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
+        run: |
+          set -euo pipefail
+
+          flags=(
+            --title "$RELEASE_NAME"
+            --target "$CHECKOUT_REF"
+            --generate-notes
+          )
+
+          if [[ "$PRERELEASE" == "true" ]]; then
+            flags+=(--prerelease)
+            flags+=(--latest=false)
+          else
+            flags+=(--latest)
+          fi
+
+          gh release create "$RELEASE_TAG" "${flags[@]}" \
+            ts/packages/cli/dist/binaries/*.zip \
+            ts/packages/cli/dist/binaries/checksums.txt
 
   test-installation:
     name: Test Installation
-    needs: build-binaries
-    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    needs: [prepare, release]
+    if: always() && !cancelled() && needs.release.result == 'success'
     uses: ./.github/workflows/cli.test-installation.yml
     with:
-      version: ${{ inputs.version || github.ref_name }}
+      version: ${{ needs.prepare.outputs.release_tag }}
 
   create-install-instructions:
     name: Create Install Instructions
-    needs: build-binaries
+    needs: [prepare, release]
     runs-on: ubuntu-latest
-    if: always() && !cancelled() && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+    if: always() && !cancelled() && needs.release.result == 'success'
 
     steps:
       - name: Checkout
@@ -128,6 +349,7 @@ jobs:
 
       - name: Create installation README
         run: |
+          RELEASE_TAG="${{ needs.prepare.outputs.release_tag }}"
           cat > INSTALL.md << 'EOF'
           # Composio CLI Installation
 
@@ -140,7 +362,7 @@ jobs:
 
           ### Install specific version
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- ${{ github.ref_name }}
+          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- RELEASE_TAG_PLACEHOLDER
           ```
 
           ## Manual Installation
@@ -169,12 +391,13 @@ jobs:
           ## Supported Platforms
 
           - Linux x64
-          - Linux ARM64  
+          - Linux ARM64
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
           Windows support coming soon!
           EOF
+          sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 
       - name: Upload install instructions
         uses: actions/upload-artifact@v6

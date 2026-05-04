@@ -13,4 +13,4 @@ export type {
   SkipInCI,
 } from './types';
 export { e2e } from './e2e';
-export { sanitizeOutput } from './sanitize';
+export { sanitizeOutput, parseJsonStdout } from './sanitize';

@@ -17,7 +17,7 @@ This event is only available with [V3 webhook payloads](/docs/webhook-verificati
 Add `composio.connected_account.expired` to your webhook subscription's `enabled_events`:
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3/webhook_subscriptions \
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "X-API-KEY: <your-composio-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -162,3 +162,11 @@ console.log(`Re-connected: ${connectedAccount.id}`);
 <Callout>
 Always [verify webhook signatures](/docs/webhook-verification) before processing events in production.
 </Callout>
+
+## What to read next
+
+<Cards>
+  <Card icon={<ShieldCheck />} title="Verifying webhooks" href="/docs/webhook-verification" description="Validate webhook signatures to ensure payloads are authentic" />
+  <Card icon={<Zap />} title="Subscribing to events" href="/docs/setting-up-triggers/subscribing-to-events" description="Set up webhooks and SDK subscriptions to receive trigger events" />
+  <Card icon={<Key />} title="Authentication overview" href="/docs/authentication" description="How Composio manages OAuth, token refresh, and connected accounts" />
+</Cards>

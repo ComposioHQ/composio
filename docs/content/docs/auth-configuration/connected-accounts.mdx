@@ -192,7 +192,7 @@ INACTIVE accounts cannot execute tools. Tool execution will fail until the statu
 
 ## Delete accounts
 
-Permanently remove a connected account and revoke all credentials:
+Permanently remove a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -216,7 +216,7 @@ console.log('Account deleted successfully');
 </Tabs>
 
 <Callout type="warn">
-Deletion is permanent. Users must re-authenticate to reconnect.
+Deletion is permanent and cannot be undone.
 </Callout>
 
 ## Credential masking
@@ -245,7 +245,7 @@ If you need full credential values (e.g., to use tokens in your own API calls), 
 2. **API**:
 
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3/org/project/config \
+curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
   -H "x-api-key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"mask_secret_keys_in_connected_account": false}'
@@ -331,6 +331,10 @@ try {
   </Tab>
 </Tabs>
 
+<Callout type="info">
+For session-based apps, see [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts) for how to pass a specific account to a session.
+</Callout>
+
 ### Execute with a specific account
 
 When you have multiple accounts, specify which one to use with `connected_account_id`:
@@ -367,3 +371,11 @@ console.log('Tool executed:', result);
 ```
   </Tab>
 </Tabs>
+
+## What to read next
+
+<Cards>
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Palette />} title="Custom auth configs" href="/docs/auth-configuration/custom-auth-configs" description="Use your own OAuth apps for white-labeled authentication" />
+  <Card icon={<Wrench />} title="Programmatic auth configs" href="/docs/auth-configuration/programmatic-auth-configs" description="Create auth configs programmatically via the SDK" />
+</Cards>

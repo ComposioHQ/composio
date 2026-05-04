@@ -6,6 +6,8 @@ export default [
   {
     ignores: [
       'ts/packages/**/dist/**',
+      'ts/packages/**/.generated/**',
+      'ts/packages/**/acp-adapters/**',
       'ts/packages/**/node_modules/**',
       'node_modules/**',
       'examples/',

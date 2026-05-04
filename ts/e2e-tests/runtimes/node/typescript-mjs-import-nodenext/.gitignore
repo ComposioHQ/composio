@@ -1,3 +1,5 @@
 generated/
+!fixtures/generated/
+!fixtures/generated/*.ts
 dist/
 node_modules/

@@ -1,5 +1,5 @@
 /**
- * CLI `composio toolkits search` e2e test
+ * CLI `composio dev toolkits search` e2e test
  *
  * Verifies that the search subcommand returns matching toolkits as JSON in piped mode,
  * respects --limit, supports stdout redirection, and handles no-result queries.
@@ -8,42 +8,53 @@
 import {
   e2e,
   sanitizeOutput,
+  parseJsonStdout,
   type E2ETestResult,
   type E2ETestResultWithFiles,
 } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
-import { describe, it, expect, beforeAll } from 'bun:test';
-
-declare module 'bun' {
-  interface Env {
-    COMPOSIO_API_KEY: string;
-  }
-}
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import {
+  startMockToolkitsListServer,
+  type MockToolkitsServer,
+} from '../../../../packages/cli/scripts/mock-toolkits-server';
 
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
   },
-  env: {
-    COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
-  },
   defineTests: ({ runCmd }) => {
+    let server: MockToolkitsServer;
     let validResult: E2ETestResult;
     let limitResult: E2ETestResult;
     let redirectResult: E2ETestResultWithFiles<'out.json'>;
     let noResultsResult: E2ETestResult;
 
     beforeAll(async () => {
-      validResult = await runCmd('composio toolkits search gmail');
-      limitResult = await runCmd('composio toolkits search gmail --limit 1');
+      server = await startMockToolkitsListServer();
+
+      const envPrefix = [
+        `COMPOSIO_BASE_URL=${server.dockerBaseUrl}`,
+        'COMPOSIO_CACHE_DIR=/tmp/composio-toolkits-search',
+        'COMPOSIO_USER_API_KEY=uak_mock_toolkits_search',
+      ].join(' ');
+
+      validResult = await runCmd(`${envPrefix} composio dev toolkits search gmail`);
+      limitResult = await runCmd(`${envPrefix} composio dev toolkits search gmail --limit 1`);
       redirectResult = await runCmd({
-        command: 'composio toolkits search gmail --limit 1 > out.json',
+        command: `${envPrefix} composio dev toolkits search gmail --limit 1 > out.json`,
         files: ['out.json'],
       });
-      noResultsResult = await runCmd('composio toolkits search xyznonexistent_abc_12345');
+      noResultsResult = await runCmd(
+        `${envPrefix} composio dev toolkits search xyznonexistent_abc_12345`
+      );
     }, TIMEOUTS.FIXTURE);
 
-    describe('composio toolkits search gmail (known query)', () => {
+    afterAll(async () => {
+      await server.close();
+    });
+
+    describe('composio dev toolkits search gmail (known query)', () => {
       it('exits successfully', () => {
         expect(validResult.exitCode).toBe(0);
       });
@@ -53,18 +64,18 @@ e2e(import.meta.url, {
       });
 
       it('stdout is a JSON array with at least 1 element', () => {
-        const items = JSON.parse(sanitizeOutput(validResult.stdout));
+        const items = parseJsonStdout(validResult);
         expect(Array.isArray(items)).toBe(true);
-        expect(items.length).toBeGreaterThanOrEqual(1);
+        expect((items as Array<unknown>).length).toBeGreaterThanOrEqual(1);
       });
 
       it('first element has slug "gmail"', () => {
-        const items = JSON.parse(sanitizeOutput(validResult.stdout));
+        const items = parseJsonStdout(validResult) as Array<{ slug: string }>;
         expect(items[0].slug).toBe('gmail');
       });
 
       it('each element has the expected shape', () => {
-        const items = JSON.parse(sanitizeOutput(validResult.stdout));
+        const items = parseJsonStdout(validResult) as Array<Record<string, unknown>>;
         for (const item of items) {
           expect(item).toHaveProperty('name');
           expect(item).toHaveProperty('slug');
@@ -75,7 +86,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio toolkits search gmail --limit 1 (with limit)', () => {
+    describe('composio dev toolkits search gmail --limit 1 (with limit)', () => {
       it('exits successfully', () => {
         expect(limitResult.exitCode).toBe(0);
       });
@@ -85,18 +96,18 @@ e2e(import.meta.url, {
       });
 
       it('stdout is a JSON array with exactly 1 element', () => {
-        const items = JSON.parse(sanitizeOutput(limitResult.stdout));
+        const items = parseJsonStdout(limitResult);
         expect(Array.isArray(items)).toBe(true);
-        expect(items).toHaveLength(1);
+        expect(items as Array<unknown>).toHaveLength(1);
       });
 
       it('the element has slug "gmail"', () => {
-        const items = JSON.parse(sanitizeOutput(limitResult.stdout));
+        const items = parseJsonStdout(limitResult) as Array<{ slug: string }>;
         expect(items[0].slug).toBe('gmail');
       });
     });
 
-    describe('composio toolkits search gmail --limit 1 > out.json (stdout redirection)', () => {
+    describe('composio dev toolkits search gmail --limit 1 > out.json (stdout redirection)', () => {
       it('exits successfully', () => {
         expect(redirectResult.exitCode).toBe(0);
       });
@@ -117,7 +128,7 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('composio toolkits search xyznonexistent_abc_12345 (no results)', () => {
+    describe('composio dev toolkits search xyznonexistent_abc_12345 (no results)', () => {
       it('exits successfully', () => {
         expect(noResultsResult.exitCode).toBe(0);
       });
@@ -126,8 +137,18 @@ e2e(import.meta.url, {
         expect(noResultsResult.stderr).toBe('');
       });
 
-      it('stdout is empty (no results)', () => {
-        expect(sanitizeOutput(noResultsResult.stdout)).toBe('');
+      it('stdout is an empty JSON array (no results)', () => {
+        expect(sanitizeOutput(noResultsResult.stdout)).toBe('[]');
+      });
+    });
+
+    describe('mock API usage', () => {
+      it('requests the toolkit catalog for each search scenario', () => {
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=10');
+        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=1');
+        expect(server.requests).toContain(
+          'GET /api/v3/toolkits?search=xyznonexistent_abc_12345&limit=10'
+        );
       });
     });
   },

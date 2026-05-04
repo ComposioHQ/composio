@@ -1,0 +1,470 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to triage retrospectively"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Load issue context for dispatch runs
+        if: github.event_name == 'workflow_dispatch'
+        id: issue-context
+        uses: actions/github-script@v8
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        with:
+          script: |
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+            if (!Number.isInteger(issue_number) || issue_number <= 0) {
+              core.setFailed(`Invalid issue_number: ${process.env.ISSUE_NUMBER}`);
+              return;
+            }
+
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+            });
+
+            if (issue.pull_request) {
+              core.setFailed(`Issue #${issue_number} is a pull request, not an issue.`);
+              return;
+            }
+
+            core.setOutput("issue_number", String(issue.number));
+            core.setOutput("issue_title", issue.title || "");
+            core.setOutput("issue_body", issue.body || "");
+            core.setOutput("issue_state", issue.state || "open");
+
+      - name: Write triage schema
+        run: |
+          cat > /tmp/issue-triage-schema.json <<'EOF'
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": ["docs", "py", "ts", "cli", "tool-request", "feature-request", "support", "other"]
+              },
+              "is_bug": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "should_comment": {
+                "type": "boolean"
+              },
+              "comment_body": {
+                "type": "string"
+              }
+            },
+            "required": ["category", "is_bug", "reason", "should_comment", "comment_body"]
+          }
+          EOF
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Classify issue with Claude Sonnet
+        id: classify
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ISSUE_TITLE: ${{ github.event_name == 'workflow_dispatch' && steps.issue-context.outputs.issue_title || github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event_name == 'workflow_dispatch' && steps.issue-context.outputs.issue_body || github.event.issue.body }}
+        run: |
+          set -uo pipefail
+
+          which claude
+          claude --version || true
+
+          PROMPT=$(cat <<'EOF'
+          Read the issue title and body from the ISSUE_TITLE and ISSUE_BODY environment variables.
+
+          Classify the issue for routing and determine whether it is a bug report.
+
+          Allowed categories:
+          - docs
+          - py
+          - ts
+          - cli
+          - tool-request
+          - feature-request
+          - support
+          - other
+
+          Use semantic meaning, not only keywords.
+          Choose tool-request when the issue is primarily asking for a new integration, toolkit, app, or tool.
+          Choose feature-request when the issue is asking for a product, SDK, docs, or CLI improvement that is not a tool request.
+          Choose support when the issue is primarily a product/support question, account/integration configuration problem, or a hosted Composio platform/tooling problem rather than a code defect in this repository. This includes managed OAuth app configuration, provider app verification or consent-screen blocks, requested scopes for hosted/managed integrations, dashboard/back-office setup, billing/account questions, usage questions where the SDK appears to be behaving as designed, and bugs in existing hosted integrations/tools/toolkits that require backend/tool-catalog/support follow-up rather than SDK code changes.
+          For example, an issue about Google Drive managed OAuth scopes or Google blocking the managed app should be support, not ts and not a bug, unless the issue clearly identifies a defect in SDK code.
+          For example, an issue like GitHub #3291 where an existing hosted tool such as SPOTIFY_GET_PLAYLIST_ITEMS calls a deprecated third-party API endpoint, fails with 403, or needs a backend/tool definition update should be support and a bug, not ts, not py, not cli, and not tool-request.
+          Choose cli only when the issue is specifically about the CLI experience or ts/packages/cli.
+          Choose py only when the issue is primarily about Python SDK code in this repository.
+          Choose ts only when the issue is primarily about TypeScript SDK code or TS packages other than the CLI in this repository.
+          Choose docs only when the issue is primarily about documentation.
+          Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug. If the broken existing integration/tool does not identify an SDK, CLI, docs, or Python code defect in this repository, choose support so it is forwarded to Plain.
+          Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior, including support-routed hosted integration/tool bugs.
+          Set is_bug to false for feature requests, questions, maintenance, cleanup, and true new-tool requests.
+          Set should_comment to true when the issue appears incorrect, non-actionable, missing the information needed to reproduce or investigate, or when category is support.
+          Set should_comment to false otherwise.
+
+          If should_comment is true, provide comment_body as a short issue comment addressed to the reporter.
+          The comment must:
+          - clearly say it is an automated Claude triage note
+          - clearly say Claude cannot reply back in a conversation
+          - ask for the specific missing details needed to investigate, especially repro steps, expected behavior, actual behavior, environment, logs, or screenshots when relevant
+          - for support issues, say this does not look like an SDK bug and that it is being routed to support
+          - stay concise and professional
+
+          If should_comment is false, set comment_body to an empty string.
+          EOF
+          )
+
+          set +e
+          claude -p "$PROMPT" \
+            --model claude-sonnet-4-6 \
+            --max-turns 10 \
+            --output-format json \
+            --dangerously-skip-permissions \
+            --append-system-prompt "Respond with ONLY a raw JSON object (no markdown fences, no prose) that matches the schema in /tmp/issue-triage-schema.json." \
+            > /tmp/claude-response.json 2> /tmp/claude-stderr.log
+          CLAUDE_EXIT=$?
+          set -e
+
+          echo "--- claude exit code: $CLAUDE_EXIT ---"
+          echo "--- claude stderr ---"
+          cat /tmp/claude-stderr.log || true
+          echo "--- end stderr ---"
+          echo "--- raw claude response ---"
+          cat /tmp/claude-response.json || true
+          echo
+          echo "--- end raw ---"
+
+          if [ "$CLAUDE_EXIT" -ne 0 ]; then
+            echo "Claude CLI failed with exit code $CLAUDE_EXIT"
+            exit 1
+          fi
+
+          STRUCTURED=$(jq -r '.result' /tmp/claude-response.json)
+
+          # Strip optional ```json fences just in case
+          STRUCTURED=$(echo "$STRUCTURED" | sed -E 's/^```(json)?//; s/```$//' | jq -c .)
+
+          echo "--- parsed structured output ---"
+          echo "$STRUCTURED"
+          echo "--- end parsed ---"
+
+          {
+            echo "structured_output<<CLAUDE_EOF"
+            echo "$STRUCTURED"
+            echo "CLAUDE_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Apply labels, assignees, and tool-request handling
+        uses: actions/github-script@v8
+        env:
+          STRUCTURED_OUTPUT: ${{ steps.classify.outputs.structured_output }}
+          PLAIN_API_KEY: ${{ secrets.PLAIN_API_KEY }}
+        with:
+          script: |
+            const text = process.env.STRUCTURED_OUTPUT || "";
+            let parsed;
+
+            try {
+              parsed = JSON.parse(text);
+            } catch (error) {
+              core.setFailed(`Could not parse structured_output as JSON: ${text}`);
+              return;
+            }
+
+            const allowed = new Set(["docs", "py", "ts", "cli", "tool-request", "feature-request", "support", "other"]);
+            if (!allowed.has(parsed.category)) {
+              core.setFailed(`Unexpected category: ${parsed.category}`);
+              return;
+            }
+
+            const category = parsed.category;
+            const isBug = Boolean(parsed.is_bug);
+            const reason = parsed.reason || "";
+            const shouldComment = Boolean(parsed.should_comment);
+            const commentBody = parsed.comment_body || "";
+            const issue_number = context.eventName === "workflow_dispatch"
+              ? Number("${{ steps.issue-context.outputs.issue_number }}")
+              : context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueState = context.eventName === "workflow_dispatch"
+              ? "${{ steps.issue-context.outputs.issue_state }}"
+              : context.payload.issue.state;
+
+            const { data: issue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number,
+            });
+
+            const labels = [];
+            const assignees = [];
+            const suppressToolRequestHandling = isBug && category === "tool-request";
+            const isSupport = category === "support";
+
+            if (suppressToolRequestHandling) {
+              core.info(
+                `Suppressing tool-request handling for issue #${issue_number} because it is classified as a bug. Original reason: ${reason}`
+              );
+            }
+
+            if (isBug && !isSupport) {
+              labels.push("bug");
+            }
+
+            if (category === "docs") {
+              labels.push("docs");
+              assignees.push("shawnesquivel", "Sushmithamallesh");
+            } else if (category === "py") {
+              labels.push("py");
+              assignees.push("jkomyno");
+            } else if (category === "ts") {
+              labels.push("ts");
+              assignees.push("jkomyno");
+            } else if (category === "cli") {
+              labels.push("cli");
+              assignees.push("CryogenicPlanet");
+            } else if (category === "feature-request") {
+              labels.push("feature-request");
+            } else if (isSupport) {
+              labels.push("support");
+            } else if (category === "tool-request" && !suppressToolRequestHandling) {
+              labels.push("tool-request");
+            }
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({ owner, repo, name, color, description });
+              }
+            }
+
+            if (isSupport) {
+              await ensureLabel("support", "0e8a16", "Needs support team follow-up");
+              for (const staleLabel of ["bug", "ts"]) {
+                try {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number, name: staleLabel });
+                } catch (error) {
+                  if (error.status !== 404) throw error;
+                }
+              }
+              try {
+                await github.rest.issues.removeAssignees({
+                  owner,
+                  repo,
+                  issue_number,
+                  assignees: ["jkomyno"],
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+              }
+            }
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels,
+              });
+            }
+
+            if (assignees.length > 0) {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number,
+                assignees,
+              });
+            }
+
+            if (
+              !isSupport &&
+              (category !== "tool-request" || suppressToolRequestHandling) &&
+              shouldComment &&
+              commentBody.trim().length > 0
+            ) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: commentBody.trim(),
+              });
+            }
+
+            async function plainGraphql(query, variables) {
+              const apiKey = process.env.PLAIN_API_KEY;
+              if (!apiKey) {
+                core.warning("PLAIN_API_KEY is not configured; skipping Plain support forwarding.");
+                return null;
+              }
+
+              const response = await fetch("https://core-api.uk.plain.com/graphql/v1", {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${apiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ query, variables }),
+              });
+              const json = await response.json().catch(() => ({}));
+              if (!response.ok || json.errors) {
+                core.warning(`Plain API request failed: ${JSON.stringify(json)}`);
+                return null;
+              }
+              return json.data;
+            }
+
+            async function getIssueAuthorPlainCustomer() {
+              const login = issue.user?.login || "unknown";
+              let publicEmail = issue.user?.email || null;
+              let displayName = issue.user?.name || login;
+
+              if (login !== "unknown") {
+                try {
+                  const { data: user } = await github.rest.users.getByUsername({ username: login });
+                  publicEmail = user.email || publicEmail;
+                  displayName = user.name || displayName;
+                } catch (error) {
+                  core.warning(`Could not fetch GitHub user profile for ${login}: ${error.message}`);
+                }
+              }
+
+              return {
+                email: publicEmail || (issue.user?.id ? `${issue.user.id}+${login}@users.noreply.github.com` : `${login}@users.noreply.github.com`),
+                fullName: displayName,
+                shortName: login,
+                externalId: `github:user:${login}`,
+              };
+            }
+
+            async function forwardSupportIssueToPlain() {
+              const plainCustomer = await getIssueAuthorPlainCustomer();
+              const customerData = await plainGraphql(
+                `mutation upsertCustomer($input: UpsertCustomerInput!) {
+                  upsertCustomer(input: $input) {
+                    result
+                    customer { id }
+                    error { message type code fields { field message type } }
+                  }
+                }`,
+                {
+                  input: {
+                    identifier: { emailAddress: plainCustomer.email },
+                    onCreate: {
+                      fullName: plainCustomer.fullName,
+                      shortName: plainCustomer.shortName,
+                      email: { email: plainCustomer.email, isVerified: Boolean(issue.user?.email) },
+                      externalId: plainCustomer.externalId,
+                    },
+                    onUpdate: {
+                      fullName: { value: plainCustomer.fullName },
+                      shortName: { value: plainCustomer.shortName },
+                      externalId: { value: plainCustomer.externalId },
+                    },
+                  },
+                }
+              );
+              const customer = customerData?.upsertCustomer?.customer;
+              const customerError = customerData?.upsertCustomer?.error;
+              if (!customer?.id) {
+                core.warning(`Could not upsert Plain support customer: ${JSON.stringify(customerError)}`);
+                return null;
+              }
+
+              const body = issue.body || "_No issue body provided._";
+              const plainText = [
+                `GitHub issue routed as support: ${issue.html_url}`,
+                `Reporter: @${issue.user?.login || "unknown"}`,
+                `Classification reason: ${reason || "No reason provided."}`,
+                "",
+                "Issue body:",
+                body.length > 8000 ? `${body.slice(0, 8000)}\n\n[truncated]` : body,
+              ].join("\n");
+
+              const threadData = await plainGraphql(
+                `mutation createThread($input: CreateThreadInput!) {
+                  createThread(input: $input) {
+                    thread { id ref }
+                    error { message type code fields { field message type } }
+                  }
+                }`,
+                {
+                  input: {
+                    title: `[GitHub #${issue.number}] ${issue.title}`,
+                    customerIdentifier: { customerId: customer.id },
+                    externalId: `github:${owner}/${repo}:issues/${issue.number}`,
+                    components: [{ componentText: { text: plainText } }],
+                  },
+                }
+              );
+              const thread = threadData?.createThread?.thread;
+              const threadError = threadData?.createThread?.error;
+              if (!thread?.id) {
+                core.warning(`Could not create Plain support thread: ${JSON.stringify(threadError)}`);
+                return null;
+              }
+              core.info(`Forwarded support issue #${issue.number} to Plain thread ${thread.ref || thread.id}`);
+              return thread;
+            }
+
+            if (isSupport) {
+              const thread = await forwardSupportIssueToPlain();
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: thread
+                  ? `🤖 Automated Claude triage note: this does not look like an SDK bug, so I've labeled it as \`support\` and forwarded it to Plain for the support team. Claude cannot reply back in a conversation.`
+                  : `🤖 Automated Claude triage note: this does not look like an SDK bug, so I've labeled it as \`support\` for support team follow-up. Claude cannot reply back in a conversation.`,
+              });
+            }
+
+            if (category === "tool-request" && !suppressToolRequestHandling && issueState === "open") {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: [
+                  "🤖 beep boop — hey, I think this is a tool request! Please file it at https://request.composio.dev/boards/tool-requests so the team can track and prioritize it.",
+                  "",
+                  "I've tagged this as `tool-request` and closed it here.",
+                  "",
+                  "If you think I got this wrong, feel free to reopen the issue.",
+                ].join("\n"),
+              });
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: "closed",
+              });
+            }

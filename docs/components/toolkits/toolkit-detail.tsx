@@ -64,25 +64,41 @@ function formatType(param: ParameterSchema): string {
   return typeStr;
 }
 
-// Get children from a param (object properties or array item properties)
+// Get children from a param (object properties, array item properties, or additionalProperties)
 function getChildren(param: ParameterSchema): Record<string, ParameterSchema> | null {
   const props = param.properties || param.items?.properties;
-  if (!props || typeof props !== 'object') return null;
+  const additionalProps = param.additionalProperties || param.items?.additionalProperties;
+
+  if ((!props || typeof props !== 'object') && (!additionalProps || typeof additionalProps !== 'object')) return null;
 
   const requiredList: string[] = param.requiredFields || param.items?.requiredFields || [];
   const result: Record<string, ParameterSchema> = {};
-  for (const [key, value] of Object.entries(props)) {
-    if (typeof value === 'object' && value !== null) {
-      const raw = value as ParameterSchema & { required?: string[] | boolean };
-      result[key] = {
-        ...raw,
-        required: Array.isArray(requiredList) ? requiredList.includes(key) : false,
-        // Map the child's own JSON Schema required array to requiredFields
-        // so that deeper nesting levels preserve required info
-        ...(Array.isArray(raw.required) ? { requiredFields: raw.required } : {}),
-      };
+
+  if (props && typeof props === 'object') {
+    for (const [key, value] of Object.entries(props)) {
+      if (typeof value === 'object' && value !== null) {
+        const raw = value as ParameterSchema & { required?: string[] | boolean };
+        result[key] = {
+          ...raw,
+          required: Array.isArray(requiredList) ? requiredList.includes(key) : false,
+          // Map the child's own JSON Schema required array to requiredFields
+          // so that deeper nesting levels preserve required info
+          ...(Array.isArray(raw.required) ? { requiredFields: raw.required } : {}),
+        };
+      }
     }
   }
+
+  // Include additionalProperties as a synthetic [key: string] entry
+  if (additionalProps && typeof additionalProps === 'object') {
+    const raw = additionalProps as ParameterSchema & { required?: string[] | boolean };
+    result['[key: string]'] = {
+      ...raw,
+      required: false,
+      ...(Array.isArray(raw.required) ? { requiredFields: raw.required } : {}),
+    };
+  }
+
   return Object.keys(result).length > 0 ? result : null;
 }
 
@@ -203,25 +219,25 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
             onClick={copySlug}
             className="inline-flex w-fit shrink-0 items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
           >
-            <span className="max-w-[200px] truncate sm:max-w-[300px]">{item.slug}</span>
+            <span className="max-w-[140px] truncate sm:max-w-[300px]">{item.slug}</span>
             {copied ? <Check className="h-3 w-3 shrink-0 text-green-500" /> : <Copy className="h-3 w-3 shrink-0" />}
           </span>
         </span>
       </button>
       {expanded && (
-        <div className="space-y-4 bg-fd-muted/20 px-4 py-3 pl-10">
+        <div className="space-y-4 bg-fd-muted/20 px-3 py-3 sm:px-4 sm:pl-10">
           <p className="text-sm text-fd-muted-foreground">{item.description}</p>
 
           {/* Tool parameters */}
           {hasInputParams && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Input Parameters</h4>
               <TypeTable type={paramsToTypeTable(inputParams!)} />
             </div>
           )}
 
           {hasOutputParams && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Output</h4>
               <TypeTable type={paramsToTypeTable(outputParams!)} />
             </div>
@@ -229,14 +245,14 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
 
           {/* Trigger config/payload */}
           {hasConfig && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Configuration</h4>
               <TypeTable type={paramsToTypeTable(trigger.config!)} />
             </div>
           )}
 
           {hasPayload && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-fd-muted-foreground">Payload</h4>
               <TypeTable type={paramsToTypeTable(trigger.payload!)} />
             </div>
@@ -337,7 +353,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Link
-                  href={`https://platform.composio.dev/auth?next_page=${encodeURIComponent(`/tool-router?toolkits=${toolkit.slug}`)}`}
+                  href={`https://platform.composio.dev/marketplace/${toolkit.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
@@ -353,13 +369,13 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
           </div>
       </div>
 
-      {/* FAQ */}
-      {faq && faq.length > 0 && <FaqSection faq={faq} />}
-
       {/* Authentication Details */}
       {toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0 && (
-        <AuthDetailsSection authConfigDetails={toolkit.authConfigDetails} />
+        <AuthDetailsSection authConfigDetails={toolkit.authConfigDetails} authSchemes={toolkit.authSchemes} composioManagedAuthSchemes={toolkit.composioManagedAuthSchemes} />
       )}
+
+      {/* FAQ */}
+      {faq && faq.length > 0 && <FaqSection faq={faq} />}
 
       {/* Tools & Triggers */}
       {(tools.length > 0 || triggers.length > 0) && (

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   createContext,
   useContext,
@@ -157,9 +158,10 @@ export function QuickstartFlow({ children }: QuickstartFlowProps) {
 
   return (
     <QuickstartContext.Provider value={contextValue}>
-      {/* Framework selector */}
+      {/* Framework + integration type selector */}
       {frameworks.length > 0 && (
-        <div className="not-prose mb-6">
+        <div className="not-prose mb-6 rounded-lg border border-fd-border bg-fd-card/50 p-4">
+          <p className="mb-3 text-sm font-medium text-fd-muted-foreground">Choose your framework</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {frameworks.map((framework) => (
               <FrameworkCard
@@ -172,7 +174,16 @@ export function QuickstartFlow({ children }: QuickstartFlowProps) {
                 onSelect={() => setSelectedId(framework.id)}
               />
             ))}
+            <Link
+              href="/docs/providers"
+              className="flex items-center gap-3 rounded-lg border border-dashed border-fd-border px-3 py-2.5 transition-all hover:bg-fd-accent/50 hover:border-fd-muted-foreground"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center text-fd-muted-foreground">→</span>
+              <span className="text-sm font-medium text-fd-muted-foreground">Other providers</span>
+            </Link>
           </div>
+          {/* Portal target for integration tabs header */}
+          <div id="integration-tabs-portal" />
         </div>
       )}
 

@@ -19,33 +19,41 @@
     },
     "test:e2e": {
       "dependsOn": ["^build"],
-      "env": ["COMPOSIO_API_KEY", "OPENAI_API_KEY"],
+      "env": ["COMPOSIO_API_KEY", "COMPOSIO_USER_API_KEY", "OPENAI_API_KEY"],
       "cache": false
     },
     "test:e2e:node": {
       "dependsOn": ["^build"],
-      "env": ["COMPOSIO_API_KEY", "COMPOSIO_E2E_NODE_VERSION", "OPENAI_API_KEY"],
+      "env": ["COMPOSIO_API_KEY", "COMPOSIO_USER_API_KEY", "COMPOSIO_E2E_NODE_VERSION", "OPENAI_API_KEY"],
       "cache": false
     },
     "test:e2e:deno": {
       "dependsOn": ["^build"],
-      "env": ["COMPOSIO_API_KEY", "COMPOSIO_E2E_DENO_VERSION", "OPENAI_API_KEY"],
+      "env": ["COMPOSIO_API_KEY", "COMPOSIO_USER_API_KEY", "COMPOSIO_E2E_DENO_VERSION", "OPENAI_API_KEY"],
       "cache": false
     },
     "test:e2e:cli": {
       "dependsOn": ["^build"],
-      "env": ["COMPOSIO_API_KEY", "COMPOSIO_E2E_CLI_VERSION", "OPENAI_API_KEY"],
+      "env": ["COMPOSIO_API_KEY", "COMPOSIO_USER_API_KEY", "COMPOSIO_E2E_CLI_VERSION", "OPENAI_API_KEY"],
       "cache": false
     },
     "test:e2e:cloudflare": {
       "dependsOn": ["^build"],
-      "env": ["COMPOSIO_API_KEY", "OPENAI_API_KEY"],
+      "env": ["COMPOSIO_API_KEY", "COMPOSIO_USER_API_KEY", "OPENAI_API_KEY"],
+      "cache": false
+    },
+    "install:binary": {
+      "dependsOn": ["build:binary"],
       "cache": false
     },
     "clean": {
       "cache": false
     },
     "typecheck": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "typecheck:tsc": {
       "dependsOn": ["^build"],
       "cache": false
     },

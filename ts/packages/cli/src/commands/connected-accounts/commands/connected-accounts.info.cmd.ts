@@ -4,7 +4,6 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { redact } from 'src/ui/redact';
 import { formatConnectedAccountInfo } from '../format';
 
 const id = Args.text({ name: 'id' }).pipe(
@@ -17,7 +16,7 @@ const id = Args.text({ name: 'id' }).pipe(
  *
  * @example
  * ```bash
- * composio connected-accounts info "con_1a2b3c4d5e6f"
+ * composio dev connected-accounts info "con_1a2b3c4d5e6f"
  * ```
  */
 export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =>
@@ -31,7 +30,7 @@ export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =
     if (Option.isNone(id)) {
       yield* ui.log.warn('Missing required argument: <id>');
       yield* ui.log.step(
-        'Try specifying a connected account ID, e.g.:\n> composio connected-accounts info "con_1a2b3c4d5e6f"\n\nTo find connected account IDs:\n> composio connected-accounts list'
+        'Try specifying a connected account ID, e.g.:\n> composio dev connected-accounts info "con_1a2b3c4d5e6f"\n\nTo find connected account IDs:\n> composio dev connected-accounts list'
       );
       return;
     }
@@ -46,7 +45,7 @@ export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =
           'services/HttpServerError',
           handleHttpServerError(ui, {
             fallbackMessage: `Failed to fetch connected account "${idValue}".`,
-            hint: 'Browse available connected accounts:\n> composio connected-accounts list',
+            hint: 'Browse available connected accounts:\n> composio dev connected-accounts list',
             fallbackValue: Option.none(),
           })
         )
@@ -59,13 +58,6 @@ export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =
     const item = itemOpt.value;
 
     yield* ui.note(formatConnectedAccountInfo(item), `Connected Account: ${item.toolkit.slug}`);
-
-    const redactedId = redact({ value: item.id, prefix: 'con_' });
-
-    // Next step hint
-    yield* ui.log.step(
-      `To delete this connected account:\n> composio connected-accounts delete "${redactedId}"`
-    );
 
     yield* ui.output(JSON.stringify(item, null, 2));
   })

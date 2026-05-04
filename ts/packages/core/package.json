@@ -1,7 +1,7 @@
 {
   "name": "@composio/core",
   "type": "module",
-  "version": "0.6.3",
+  "version": "0.8.1",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -74,6 +74,20 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./experimental": {
+      "import": {
+        "types": "./dist/experimental/index.d.mts",
+        "default": "./dist/experimental/index.mjs"
+      },
+      "require": {
+        "types": "./dist/experimental/index.d.cts",
+        "default": "./dist/experimental/index.cjs"
+      },
+      "default": {
+        "types": "./dist/experimental/index.d.cts",
+        "default": "./dist/experimental/index.cjs"
+      }
+    },
     "./platform": {
       "workerd": {
         "types": "./dist/platform/workerd.d.mts",
@@ -117,9 +131,10 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "bun run --bun tsdown",
+    "build": "pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck && pnpm exec tsgo --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "typecheck:tsc": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],

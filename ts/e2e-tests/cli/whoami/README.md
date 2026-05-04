@@ -7,7 +7,7 @@ Verifies that `composio whoami` prints the authenticated API key and respects st
 The CLI separates decoration (stderr) from data (stdout). This suite ensures:
 
 - `composio whoami` exits with code 0
-- stdout contains the API key passed via `COMPOSIO_API_KEY`
+- stdout contains the API key passed via `COMPOSIO_USER_API_KEY`
 - stderr is empty (no decoration leaks into piped output)
 - Redirecting stdout to a file captures the clean API key
 
@@ -16,15 +16,15 @@ The CLI separates decoration (stderr) from data (stdout). This suite ensures:
 | Test | Description |
 | --- | --- |
 | Exit code | `composio whoami` returns 0 |
-| stdout | Output matches `COMPOSIO_API_KEY` |
+| stdout | Output matches `COMPOSIO_USER_API_KEY` |
 | stderr | Empty when piped |
 | File redirect | `composio whoami > out.txt` captures the API key in the file |
 
 ## Requirements
 
-- `COMPOSIO_API_KEY` (**required**) — Composio API key passed to the container
+- `COMPOSIO_USER_API_KEY` (**required**) — Composio user API key consumed by CLI
 
-If `COMPOSIO_API_KEY` is not set, the suite fails fast at startup.
+If `COMPOSIO_USER_API_KEY` is not set, the suite fails fast at startup.
 
 ## Isolation Tool
 

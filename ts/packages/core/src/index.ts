@@ -5,9 +5,12 @@ export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseNonAgenticProvider, BaseAgenticProvider } from './provider/BaseProvider';
 export type { BaseComposioProvider } from './provider/BaseProvider';
 export { jsonSchemaToZodSchema, removeNonRequiredProperties } from './utils/jsonSchema';
+export { getExtensionFromMimeType } from './utils/mime';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
+export { RemoteFile } from './models/RemoteFile';
 export { createConnectionRequest } from './models/ConnectionRequest';
+export { ToolRouterSession } from './models/ToolRouterSession';
 export * from './types/provider.types';
 export * from './types/customTool.types';
 export * from './types/tool.types';
@@ -22,8 +25,14 @@ export * from './types/mcp.types';
 export * from './types/files.types';
 export * from './types/connectionRequest.types';
 export * from './types/toolRouter.types';
+export * from './types/ToolRouterSessionFilesMount.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
+
+// Experimental custom tools — exported with experimental_ prefix for top-level import
+export { createCustomTool as experimental_createTool } from './models/CustomTool';
+export { createCustomToolkit as experimental_createToolkit } from './models/CustomTool';
+
 // Error handling exports
 export * from './errors';

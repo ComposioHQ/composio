@@ -5,7 +5,7 @@ llmGuardrails: "direct-execution"
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle tool fetching, authentication, and execution automatically.
+If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Tools and toolkits](/docs/tools-and-toolkits#meta-tools) for how sessions handle tool discovery and execution automatically.
 </Callout>
 
 Before execution modifiers are part of Composio SDK's powerful middleware capabilities that allow you to customize and extend the behavior of tools.
@@ -51,7 +51,7 @@ tools = composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-5.4",
     tools=tools,
     messages=[{"role": "user", "content": "Fetch latest posts from hackernews"}],
 )
@@ -72,7 +72,7 @@ print(result)
 ```typescript
 // @noErrors
 const response = await openai.chat.completions.create({
-  model: "gpt-4o-mini",
+  model: "gpt-5.4",
   messages,
   tools,
   tool_choice: "auto",
@@ -177,3 +177,45 @@ const agenticTools = await composio.tools.get(
 ```
   </Tab>
 </Tabs>
+
+## Before file upload (Python)
+
+For tools with `file_uploadable` parameters, the SDK can read a local path and upload the file before calling the Composio API. To audit, rewrite, or block those paths, use the [`@before_file_upload`](/reference/sdk-reference/python/index#before_file_upload) decorator and pass the decorated callables in `modifiers` to `tools.get`, `tools.execute`, or a tool router session’s `tools(modifiers=...)`.
+
+See [Executing tools: security for local file paths](/docs/tools-direct/executing-tools#security-for-local-file-paths) for constructor options, errors, and a full tabbed example.
+
+The hook takes either a single `context` argument (preferred) or the legacy
+3-arg `(path, tool, toolkit)` form. The context object exposes
+`context["source"]` — `"path"` for local filesystem inputs and `"url"` for
+`http(s)://...` inputs — so you can scope audits to just local paths:
+
+```python
+from composio import Composio, before_file_upload
+
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit_path(ctx) -> str | bool:
+    # ctx = {"path": ..., "source": "path" | "url", "tool": ..., "toolkit": ...}
+    if ctx["source"] != "path":
+        return ctx["path"]  # let URLs through untouched
+    # return a new path string, or False to abort the upload
+    return ctx["path"]
+
+composio = Composio()
+composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": "/path/to/document.pdf"},
+    user_id="user_123",
+    modifiers=[audit_path],
+)
+```
+
+- **Composition:** `before_file_upload`-type modifiers in the `modifiers` list are applied in **list order** (after filtering by each modifier’s `tools` / `toolkits` scope). Chaining works like a pipeline: each hook receives the path produced by the previous one.
+- **Relative to `before_execute`:** automatic file substitution runs **before** `before_execute` modifiers, matching TypeScript behavior (including tool router `execute_meta`).
+
+## What to read next
+
+<Cards>
+  <Card icon={<Wrench />} title="After execution modifiers" href="/docs/tools-direct/modify-tool-behavior/after-execution-modifiers" description="Transform tool results after execution" />
+  <Card icon={<Wrench />} title="Schema modifiers" href="/docs/tools-direct/modify-tool-behavior/schema-modifiers" description="Customize how tools appear to agents" />
+  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+</Cards>
