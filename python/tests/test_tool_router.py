@@ -632,7 +632,7 @@ class TestToolRouter:
         assert body["manage_connections"] == {"enable": False}
         assert body["workbench"] == {"enable": False}
         assert body["search"] == {"enable": False}
-        assert body["execution"] == {"enable_multi_execute": False}
+        assert body["execute"] == {"enable_multi_execute": False}
         assert body["preload"] == {"tools": ["all"]}
         mock_client.tool_router.session.create.assert_not_called()
         assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
@@ -653,7 +653,7 @@ class TestToolRouter:
         assert body["manage_connections"] == {"enable": True}
         assert body["workbench"] == {"enable": True}
         assert body["search"] == {"enable": False}
-        assert body["execution"] == {"enable_multi_execute": False}
+        assert body["execute"] == {"enable_multi_execute": False}
         assert body["preload"] == {"tools": ["all"]}
 
     def test_create_session_with_direct_tools_preset_partial_helper_objects(
@@ -686,7 +686,7 @@ class TestToolRouter:
             "sandbox_size": "medium",
         }
         assert body["search"] == {"enable": False}
-        assert body["execution"] == {"enable_multi_execute": False}
+        assert body["execute"] == {"enable_multi_execute": False}
 
     def test_create_session_with_preload_all_uses_v31(self, tool_router, mock_client):
         """preload.tools='ALL' is normalized and sent through v3.1."""
@@ -700,7 +700,7 @@ class TestToolRouter:
         body = mock_client.post.call_args.kwargs["body"]
         assert body["preload"] == {"tools": ["all"]}
         assert "search" not in body
-        assert "execution" not in body
+        assert "execute" not in body
 
     def test_create_session_rejects_raw_session_preset_string(self, tool_router):
         """The public Python surface expects SessionPreset enum values."""

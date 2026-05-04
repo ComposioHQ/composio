@@ -304,7 +304,7 @@ describe('ToolRouter', () => {
             manage_connections: { enable: false },
             workbench: { enable: false },
             search: { enable: false },
-            execution: { enable_multi_execute: false },
+            execute: { enable_multi_execute: false },
             preload: { tools: ['all'] },
           }),
         });
@@ -327,7 +327,7 @@ describe('ToolRouter', () => {
             manage_connections: { enable: true },
             workbench: { enable: true },
             search: { enable: false },
-            execution: { enable_multi_execute: false },
+            execute: { enable_multi_execute: false },
             preload: { tools: ['all'] },
           }),
         });
@@ -362,7 +362,7 @@ describe('ToolRouter', () => {
               sandbox_size: 'medium',
             },
             search: { enable: false },
-            execution: { enable_multi_execute: false },
+            execute: { enable_multi_execute: false },
           }),
         });
       });
@@ -381,7 +381,7 @@ describe('ToolRouter', () => {
           }),
         });
         expect(mockClient.post.mock.calls[0][1].body).not.toHaveProperty('search');
-        expect(mockClient.post.mock.calls[0][1].body).not.toHaveProperty('execution');
+        expect(mockClient.post.mock.calls[0][1].body).not.toHaveProperty('execute');
       });
 
       it('should create a session with user ID only and verify MCP type transformation', async () => {
@@ -1264,7 +1264,7 @@ describe('ToolRouter', () => {
     //         enable: true,
     //         callbackUri: 'https://myapp.com/callback',
     //       },
-    //       execution: {
+    //       workbench: {
     //         enableProxyExecution: true,
     //         autoOffloadThreshould: 30,
     //       },
@@ -1295,7 +1295,7 @@ describe('ToolRouter', () => {
     //         manageConnections: true,
     //         callbackUri: 'https://myapp.com/callback',
     //       }),
-    //       execution: {
+    //       workbench: {
     //         enable_proxy_execution: true,
     //         auto_offload_threshould: 30,
     //       },

@@ -306,7 +306,7 @@ class _SessionPresetApplication(te.TypedDict, total=False):
     workbench: t.Optional[ToolRouterWorkbenchConfig]
     preload: t.Optional[ToolRouterPreloadConfig]
     search: t.Optional[t.Dict[str, bool]]
-    execution: t.Optional[t.Dict[str, bool]]
+    execute: t.Optional[t.Dict[str, bool]]
 
 
 def _apply_session_preset(
@@ -333,7 +333,7 @@ def _apply_session_preset(
         "workbench": _apply_direct_tools_workbench_preset(workbench),
         "preload": preload or {"tools": ["all"]},
         "search": {"enable": False},
-        "execution": {"enable_multi_execute": False},
+        "execute": {"enable_multi_execute": False},
     }
 
 
@@ -897,22 +897,22 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             create_params["tags"] = tags_payload
 
         if workbench is not None:
-            execution_payload: t.Dict[str, t.Any] = {
+            workbench_payload: t.Dict[str, t.Any] = {
                 "enable": workbench.get("enable", True),
             }
             if "enable_proxy_execution" in workbench:
-                execution_payload["enable_proxy_execution"] = workbench[
+                workbench_payload["enable_proxy_execution"] = workbench[
                     "enable_proxy_execution"
                 ]
             if "auto_offload_threshold" in workbench:
-                execution_payload["auto_offload_threshold"] = int(
+                workbench_payload["auto_offload_threshold"] = int(
                     workbench["auto_offload_threshold"]
                 )
             if "sandbox_size" in workbench:
-                execution_payload["sandbox_size"] = workbench["sandbox_size"]
+                workbench_payload["sandbox_size"] = workbench["sandbox_size"]
 
-            if execution_payload:
-                create_params["workbench"] = execution_payload
+            if workbench_payload:
+                create_params["workbench"] = workbench_payload
 
         if multi_account is not None:
             create_params["multi_account"] = multi_account
@@ -922,8 +922,8 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 
         if preset_application.get("search") is not None:
             create_params["search"] = preset_application["search"]
-        if preset_application.get("execution") is not None:
-            create_params["execution"] = preset_application["execution"]
+        if preset_application.get("execute") is not None:
+            create_params["execute"] = preset_application["execute"]
 
         # Build experimental config
         # Map SDK's experimental.assistive_prompt.user_timezone to API's

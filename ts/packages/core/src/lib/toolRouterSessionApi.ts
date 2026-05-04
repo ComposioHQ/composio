@@ -12,7 +12,7 @@ export type SessionCreateParamsV31 = SessionCreateParams & {
   search?: {
     enable?: boolean;
   };
-  execution?: {
+  execute?: {
     enable_multi_execute?: boolean;
   };
 };

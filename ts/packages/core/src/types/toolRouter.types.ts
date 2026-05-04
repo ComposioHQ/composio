@@ -334,7 +334,7 @@ export type ToolRouterCreateSessionV31Overrides = {
   search?: {
     enable?: boolean;
   };
-  execution?: {
+  execute?: {
     enable_multi_execute?: boolean;
   };
 };
@@ -390,7 +390,7 @@ export const applyToolRouterSessionPreset = (
     },
     v31Overrides: {
       search: { enable: false },
-      execution: { enable_multi_execute: false },
+      execute: { enable_multi_execute: false },
     },
   };
 };
@@ -639,7 +639,7 @@ export type ToolRouterSessionConfig = SessionCreateResponse.Config & {
   search?: {
     enable?: boolean;
   };
-  execution?: {
+  execute?: {
     enable_multi_execute?: boolean;
   };
 };
