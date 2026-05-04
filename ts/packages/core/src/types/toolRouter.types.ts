@@ -29,6 +29,12 @@ export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 export const SandboxSizeSchema = z.enum(['standard', 'medium', 'large', 'xlarge']);
 export type SandboxSize = z.infer<typeof SandboxSizeSchema>;
 
+export enum SessionPreset {
+  DirectTools = 'direct_tools',
+}
+
+export const SessionPresetSchema = z.nativeEnum(SessionPreset);
+
 // manage connections
 export const ToolRouterConfigManageConnectionsSchema = z
   .object({
@@ -169,8 +175,31 @@ export const ToolRouterConfigToolsSchema = z
   });
 export type ToolRouterConfigTools = z.infer<typeof ToolRouterConfigToolsSchema>;
 
+const ToolRouterPreloadToolsSchema = z
+  .union([z.literal('all'), z.literal('ALL'), z.array(z.string())])
+  .optional()
+  .transform(tools => {
+    if (tools === undefined) {
+      return undefined;
+    }
+
+    if (typeof tools === 'string') {
+      return ['all'];
+    }
+
+    if (tools.length === 1 && tools[0].toLowerCase() === 'all') {
+      return ['all'];
+    }
+
+    return tools;
+  });
+
 export const ToolRouterCreateSessionConfigSchema = z
   .object({
+    sessionPreset: SessionPresetSchema.optional().describe(
+      'Opinionated SDK preset for session creation. DirectTools exposes app tools directly by using preload.tools="all" and disables helper/meta tool groups unless explicitly enabled.'
+    ),
+
     tools: z
       .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
       .optional()
@@ -257,12 +286,9 @@ export const ToolRouterCreateSessionConfigSchema = z
 
     preload: z
       .object({
-        tools: z
-          .array(z.string())
-          .optional()
-          .describe(
-            'Tool slugs to preload into session.tools() and the MCP tool list. The backend validates slugs against the session filters.'
-          ),
+        tools: ToolRouterPreloadToolsSchema.describe(
+          'Tool slugs to preload into session.tools() and the MCP tool list. Use "all" to expose all tools allowed by the session filters.'
+        ),
       })
       .strict()
       .optional()
@@ -299,9 +325,60 @@ export const ToolRouterCreateSessionConfigSchema = z
   })
   .partial()
   .describe('The config for the tool router session');
+
+export type ToolRouterCreateSessionConfigInput = z.input<
+  typeof ToolRouterCreateSessionConfigSchema
+>;
+
+const applyDirectToolsManageConnectionsPreset = (
+  manageConnections: ToolRouterCreateSessionConfigInput['manageConnections']
+): ToolRouterCreateSessionConfigInput['manageConnections'] => {
+  if (manageConnections === undefined) {
+    return false;
+  }
+
+  if (typeof manageConnections === 'boolean') {
+    return manageConnections;
+  }
+
+  return {
+    ...manageConnections,
+    enable: manageConnections.enable ?? false,
+  };
+};
+
+const applyDirectToolsWorkbenchPreset = (
+  workbench: ToolRouterCreateSessionConfigInput['workbench']
+): ToolRouterCreateSessionConfigInput['workbench'] => {
+  if (workbench === undefined) {
+    return { enable: false };
+  }
+
+  return {
+    ...workbench,
+    enable: workbench.enable ?? false,
+  };
+};
+
+export const applyToolRouterSessionPreset = (
+  config: ToolRouterCreateSessionConfigInput
+): ToolRouterCreateSessionConfigInput => {
+  if (config.sessionPreset !== SessionPreset.DirectTools) {
+    return config;
+  }
+
+  return {
+    ...config,
+    manageConnections: applyDirectToolsManageConnectionsPreset(config.manageConnections),
+    workbench: applyDirectToolsWorkbenchPreset(config.workbench),
+    preload: config.preload ?? { tools: ['all'] },
+  };
+};
+
 /**
  * The config for the tool router session.
  *
+ * @param {SessionPreset} [sessionPreset] - Optional SDK preset. Use SessionPreset.DirectTools to expose app tools directly and disable helper/meta groups unless explicitly enabled.
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
@@ -320,7 +397,7 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {number} [multiAccount.maxAccountsPerToolkit] - Max connected accounts per toolkit (2-10, default 5)
  * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
- * @param {string[]} [preload.tools] - Tool slugs to preload. Server-side validation ensures they exist and are allowed by the session filters.
+ * @param {string[] | 'all' | 'ALL'} [preload.tools] - Tool slugs to preload. Use "all" to expose all tools allowed by the session filters.
  */
 export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
 

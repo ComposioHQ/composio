@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from composio.core.models.tool_router import (
+    SessionPreset,
     ToolkitConnectionsDetails,
     ToolkitConnectionState,
     ToolRouter,
@@ -43,6 +44,7 @@ def mock_client():
 
     client.tool_router.session.create.return_value = mock_session_response
     client.tool_router.session.retrieve.return_value = mock_session_response
+    client.post.return_value = mock_session_response
 
     # Mock link response
     mock_link_response = MagicMock()
@@ -603,6 +605,70 @@ class TestToolRouter:
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
         assert kwargs["preload"] == {"tools": ["GMAIL_FETCH_EMAILS"]}
         assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
+
+    def test_create_session_with_direct_tools_preset(self, tool_router, mock_client):
+        """Direct tools preset expands into backend flags."""
+        mock_client.tool_router.session.create.return_value.config.preload.tools = [
+            "GMAIL_FETCH_EMAILS"
+        ]
+
+        session = tool_router.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            session_preset=SessionPreset.DIRECT_TOOLS,
+        )
+
+        mock_client.post.assert_called_once()
+        assert mock_client.post.call_args.args[0] == "/api/v3.1/tool_router/session"
+        body = mock_client.post.call_args.kwargs["body"]
+        assert body["toolkits"] == {"enable": ["gmail"]}
+        assert body["manage_connections"] == {"enable": False}
+        assert body["workbench"] == {"enable": False}
+        assert body["search"] == {"enable": False}
+        assert body["execution"] == {"enable_multi_execute": False}
+        assert body["preload"] == {"tools": ["all"]}
+        mock_client.tool_router.session.create.assert_not_called()
+        assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
+
+    def test_create_session_with_direct_tools_preset_helper_opt_ins(
+        self, tool_router, mock_client
+    ):
+        """Explicit helper values are preserved with the direct tools preset."""
+        tool_router.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            session_preset=SessionPreset.DIRECT_TOOLS,
+            manage_connections=True,
+            workbench={"enable": True},
+        )
+
+        body = mock_client.post.call_args.kwargs["body"]
+        assert body["manage_connections"] == {"enable": True}
+        assert body["workbench"] == {"enable": True}
+        assert body["search"] == {"enable": False}
+        assert body["execution"] == {"enable_multi_execute": False}
+        assert body["preload"] == {"tools": ["all"]}
+
+    def test_create_session_with_preload_all_uses_v31(self, tool_router, mock_client):
+        """preload.tools='ALL' is normalized and sent through v3.1."""
+        tool_router.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            preload={"tools": "ALL"},
+        )
+
+        mock_client.post.assert_called_once()
+        body = mock_client.post.call_args.kwargs["body"]
+        assert body["preload"] == {"tools": ["all"]}
+
+    def test_create_session_rejects_raw_session_preset_string(self, tool_router):
+        """The public Python surface expects SessionPreset enum values."""
+        with pytest.raises(ValueError, match="SessionPreset enum value"):
+            tool_router.create(
+                user_id="user_123",
+                toolkits=["gmail"],
+                session_preset="direct_tools",  # type: ignore[arg-type]
+            )
 
     def test_create_session_complex_config(self, tool_router, mock_client):
         """Test creating a session with complex configuration."""

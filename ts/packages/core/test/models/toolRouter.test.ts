@@ -5,7 +5,11 @@ import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
-import { ToolRouterCreateSessionConfig, Session } from '../../src/types/toolRouter.types';
+import {
+  ToolRouterCreateSessionConfig,
+  Session,
+  SessionPreset,
+} from '../../src/types/toolRouter.types';
 
 // Mock dependencies
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -25,25 +29,34 @@ vi.mock('../../src/models/Tools', () => {
 });
 
 // Create mock client with ToolRouter-related methods
-const createMockClient = () => ({
-  baseURL: 'https://api.composio.dev',
-  apiKey: 'test-api-key',
-  toolRouter: {
-    session: {
-      create: vi.fn(),
+const createMockClient = () => {
+  const client = {
+    baseURL: 'https://api.composio.dev',
+    apiKey: 'test-api-key',
+    toolRouter: {
+      session: {
+        create: vi.fn(),
+        retrieve: vi.fn(),
+        link: vi.fn(),
+        toolkits: vi.fn(),
+        search: vi.fn(),
+        execute: vi.fn(),
+      },
+    },
+    post: vi.fn(),
+    tools: {
+      list: vi.fn(),
       retrieve: vi.fn(),
-      link: vi.fn(),
-      toolkits: vi.fn(),
-      search: vi.fn(),
       execute: vi.fn(),
     },
-  },
-  tools: {
-    list: vi.fn(),
-    retrieve: vi.fn(),
-    execute: vi.fn(),
-  },
-});
+  };
+
+  client.post.mockImplementation((_path: string, options?: { body?: unknown }) =>
+    client.toolRouter.session.create(options?.body)
+  );
+
+  return client;
+};
 
 // Mock response data
 const mockSessionCreateResponse = {
@@ -260,6 +273,71 @@ describe('ToolRouter', () => {
 
         expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
         expect(session.configVersion).toBe(2);
+      });
+
+      it('should expand the direct tools preset into backend flags', async () => {
+        mockClient.post.mockResolvedValueOnce({
+          ...mockSessionCreateResponse,
+          tool_router_tools: ['GMAIL_FETCH_EMAILS'],
+          config: {
+            preload: { tools: ['GMAIL_FETCH_EMAILS'] },
+          },
+        });
+
+        const session = await toolRouter.create(userId, {
+          toolkits: ['gmail'],
+          sessionPreset: SessionPreset.DirectTools,
+        });
+
+        expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/tool_router/session', {
+          body: expect.objectContaining({
+            user_id: userId,
+            toolkits: { enable: ['gmail'] },
+            manage_connections: { enable: false },
+            workbench: { enable: false },
+            search: { enable: false },
+            execution: { enable_multi_execute: false },
+            preload: { tools: ['all'] },
+          }),
+        });
+        expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+        expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
+      });
+
+      it('should preserve explicit helper opt-ins with the direct tools preset', async () => {
+        mockClient.post.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: ['gmail'],
+          sessionPreset: SessionPreset.DirectTools,
+          manageConnections: true,
+          workbench: { enable: true },
+        });
+
+        expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/tool_router/session', {
+          body: expect.objectContaining({
+            manage_connections: { enable: true },
+            workbench: { enable: true },
+            search: { enable: false },
+            execution: { enable_multi_execute: false },
+            preload: { tools: ['all'] },
+          }),
+        });
+      });
+
+      it('should accept preload all variants', async () => {
+        mockClient.post.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          toolkits: ['gmail'],
+          preload: { tools: 'ALL' },
+        });
+
+        expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/tool_router/session', {
+          body: expect.objectContaining({
+            preload: { tools: ['all'] },
+          }),
+        });
       });
 
       it('should create a session with user ID only and verify MCP type transformation', async () => {

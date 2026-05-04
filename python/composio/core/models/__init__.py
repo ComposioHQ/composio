@@ -8,7 +8,7 @@ from .custom_tool_types import (
     SessionContext,
 )
 from .mcp import MCP
-from .tool_router import ToolRouter
+from .tool_router import SessionPreset, ToolRouter
 from .tool_router_session import ToolRouterSession
 from .tool_router_session_files import RemoteFile, ToolRouterSessionFilesMount
 from .toolkits import Toolkits
@@ -38,6 +38,7 @@ __all__ = [
     "RegisteredCustomTool",
     "RegisteredCustomToolkit",
     "RemoteFile",
+    "SessionPreset",
     "SessionContext",
     "SingleConnectedAccountDetailedResponse",
     "ToolRouter",

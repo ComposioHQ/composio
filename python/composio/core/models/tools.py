@@ -18,6 +18,9 @@ from composio.client.types import (
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
 from composio.core.models.custom_tools import CustomTools
+from composio.core.models.tool_router_session_api import (
+    list_all_tool_router_session_tools_v31,
+)
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
 from composio.core.provider.base import ExecuteToolFn
@@ -274,10 +277,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
             ```
         """
-        # Fetch session tools from the API
-        tools_response = self._client.tool_router.session.tools(session_id=session_id)
+        # Fetch session tools from the v3.1 API and auto-page so callers get all tools.
+        tools_response_items = list_all_tool_router_session_tools_v31(
+            client=self._client,
+            session_id=session_id,
+        )
         # Cast to Tool type - session.tools returns compatible Item type from different response schema
-        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
+        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response_items]
 
         # Apply schema modifiers if provided
         if modifiers is not None:

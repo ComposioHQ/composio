@@ -18,7 +18,7 @@ import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
-import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
+import { ToolRouterCreateSessionConfigInput, Session } from './types/toolRouter.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
 import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
 export type ComposioConfig<
@@ -225,7 +225,7 @@ export class Composio<
    */
   create: (
     userId: string,
-    routerConfig?: ToolRouterCreateSessionConfig
+    routerConfig?: ToolRouterCreateSessionConfigInput
   ) => Promise<Session<unknown, unknown, TProvider>>;
 
   /**

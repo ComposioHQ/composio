@@ -22,12 +22,14 @@ import { telemetry } from '../telemetry/Telemetry';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import { ComposioConfig } from '../composio';
 import {
-  ToolRouterCreateSessionConfig,
+  applyToolRouterSessionPreset,
+  ToolRouterCreateSessionConfigInput,
   Session,
   SessionExperimental,
   MCPServerType,
   ToolRouterMCPServerConfig,
   ToolRouterSessionMetadata,
+  SessionPreset,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import {
@@ -43,6 +45,7 @@ import {
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
 } from '../lib/toolRouterParams';
+import { createToolRouterSessionV31, SessionCreateParamsV31 } from '../lib/toolRouterSessionApi';
 import { ToolRouterSession } from './ToolRouterSession';
 import {
   buildCustomToolsMapFromResponse,
@@ -113,9 +116,11 @@ export class ToolRouter<
    */
   async create(
     userId: string,
-    config?: ToolRouterCreateSessionConfig
+    config?: ToolRouterCreateSessionConfigInput
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
+    const routerConfig = ToolRouterCreateSessionConfigSchema.parse(
+      applyToolRouterSessionPreset(config ?? {})
+    );
 
     // Extract custom tools/toolkits from experimental config
     const customTools = routerConfig.experimental?.customTools;
@@ -139,7 +144,7 @@ export class ToolRouter<
 
     const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateParamsV31 = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: routerConfig.connectedAccounts,
@@ -155,7 +160,20 @@ export class ToolRouter<
       experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
     };
 
-    const session = await this.client.toolRouter.session.create(payload);
+    const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DirectTools;
+    const isPreloadAll =
+      routerConfig.preload?.tools?.length === 1 &&
+      routerConfig.preload.tools[0].toLowerCase() === 'all';
+
+    if (isDirectToolsPreset) {
+      payload.search = { enable: false };
+      payload.execution = { enable_multi_execute: false };
+    }
+
+    const session =
+      isDirectToolsPreset || isPreloadAll
+        ? await createToolRouterSessionV31(this.client, payload)
+        : await this.client.toolRouter.session.create(payload);
 
     // Build custom tools map from the response's slug/original_slug mapping
     // instead of computing LOCAL_ prefix client-side
