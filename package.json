@@ -7,6 +7,8 @@
     "ts/packages/core",
     "ts/packages/json-schema-to-zod",
     "ts/packages/cli",
+    "ts/packages/cli-keyring",
+    "ts/packages/cli-local-tools",
     "ts/packages/providers/*"
   ],
   "scripts": {
@@ -53,6 +55,7 @@
     "@arethetypeswrong/cli": "catalog:",
     "@changesets/cli": "^2.29.8",
     "@composio/anthropic": "workspace:*",
+    "@composio/cli-local-tools": "workspace:*",
     "@composio/core": "workspace:*",
     "@composio/openai": "workspace:*",
     "@types/bun": "^1.3.6",

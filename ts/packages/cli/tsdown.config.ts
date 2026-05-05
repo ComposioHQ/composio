@@ -15,6 +15,7 @@ export default defineConfig({
   external: undefined,
   noExternal: [
     '@composio/core',
+    '@composio/cli-local-tools',
     /^zod(?:\/.*)?$/,
     /^@agentclientprotocol\/sdk(?:\/.*)?$/,
     /^@modelcontextprotocol\/sdk(?:\/.*)?$/,

@@ -115,6 +115,9 @@ importers:
       '@composio/anthropic':
         specifier: workspace:*
         version: link:ts/packages/providers/anthropic
+      '@composio/cli-local-tools':
+        specifier: workspace:*
+        version: link:ts/packages/cli-local-tools
       '@composio/core':
         specifier: workspace:*
         version: link:ts/packages/core
@@ -1071,6 +1074,9 @@ importers:
       '@composio/cli-keyring':
         specifier: workspace:*
         version: link:../cli-keyring
+      '@composio/cli-local-tools':
+        specifier: workspace:*
+        version: link:../cli-local-tools
       '@composio/client':
         specifier: 'catalog:'
         version: 0.1.0-alpha.68
@@ -1195,6 +1201,31 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 3.19.18
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260403.1)(publint@0.3.17)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.10.13)(@vitest/ui@3.2.4)(tsx@4.21.0)(yaml@2.8.2)
+
+  ts/packages/cli-local-tools:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+      zod-to-json-schema:
+        specifier: 'catalog:'
+        version: 3.25.1(zod@4.3.6)
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.1
+        version: 24.10.13
       tsdown:
         specifier: 'catalog:'
         version: 0.18.4(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260403.1)(publint@0.3.17)(typescript@5.9.3)
@@ -8236,7 +8267,7 @@ snapshots:
       zod: 3.25.76
       zod-from-json-schema: 0.5.2
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.25.1(zod@3.25.76)
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
 
   '@mastra/schema-compat@1.1.0(zod@4.3.6)':
     dependencies:
@@ -8244,7 +8275,7 @@ snapshots:
       zod: 4.3.6
       zod-from-json-schema: 0.5.2
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.25.1(zod@4.3.6)
+      zod-to-json-schema: 3.25.2(zod@4.3.6)
 
   '@modelcontextprotocol/sdk@1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)':
     dependencies:
