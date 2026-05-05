@@ -43,7 +43,7 @@ const findToolkit = (
 describe('@composio/cli-local-tools registry', () => {
   it('registers concrete local toolkits in the integration layer', () => {
     expect(localToolkitDeclarations.map(toolkit => toolkit.slug)).toEqual(
-      expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS'])
+      expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS', 'PEEKABOO'])
     );
     expect(
       localToolkitDeclarations
@@ -55,6 +55,11 @@ describe('@composio/cli-local-tools registry', () => {
         .find(toolkit => toolkit.slug === 'CHROME_DEVTOOLS')
         ?.tools.map(tool => tool.slug)
     ).toEqual(expect.arrayContaining(['LIST_PAGES', 'NEW_PAGE', 'EVALUATE_SCRIPT']));
+    expect(
+      localToolkitDeclarations
+        .find(toolkit => toolkit.slug === 'PEEKABOO')
+        ?.tools.map(tool => tool.slug)
+    ).toEqual(expect.arrayContaining(['PERMISSIONS_STATUS', 'SEE', 'CLICK']));
   });
 
   it('normalizes local tool slugs to the Tool Router LOCAL_<TOOLKIT>_<TOOL> shape', () => {
