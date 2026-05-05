@@ -1,5 +1,12 @@
 # @composio/anthropic
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [9f14971]
+  - @composio/core@0.9.0
+
 ## 0.8.1
 
 ### Patch Changes
