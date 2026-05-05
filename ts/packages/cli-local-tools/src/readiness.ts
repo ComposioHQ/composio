@@ -341,6 +341,31 @@ const checkToolReadiness = async (params: {
     };
   }
 
+  if (tool.execution.kind === 'native' && toolkit.bundledBinaries?.length) {
+    const bundledChecks = await Promise.all(
+      toolkit.bundledBinaries.map(async binary => ({
+        binary,
+        resolved: await resolveBundledBinary(
+          toolkit,
+          { bundledBinary: binary.id },
+          { currentPlatform }
+        ),
+      }))
+    );
+    const missing = bundledChecks.filter(check => check.resolved?.exists !== true);
+    return {
+      ...base,
+      status: missing.length === 0 ? 'ready' : 'missing',
+      messages:
+        missing.length === 0
+          ? bundledChecks.map(
+              check => `Bundled local binary found: ${check.resolved?.path ?? check.binary.id}.`
+            )
+          : missing.map(check => `Bundled local binary not found: ${check.binary.id}.`),
+      hints: missing.length === 0 ? [] : setupHintsForToolkit(toolkit),
+    };
+  }
+
   return {
     ...base,
     status: 'unknown',

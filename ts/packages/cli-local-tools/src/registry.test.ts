@@ -41,8 +41,13 @@ const findToolkit = (
 ) => payload?.custom_toolkits?.find(toolkit => toolkit.slug === slug);
 
 describe('@composio/cli-local-tools registry', () => {
-  it('starts with no bundled concrete toolkits in the foundation package', () => {
-    expect(localToolkitDeclarations).toEqual([]);
+  it('registers the Beeper iMessage local toolkit in the concrete integration layer', () => {
+    expect(localToolkitDeclarations.map(toolkit => toolkit.slug)).toContain('BEEPER_IMESSAGE');
+    expect(
+      localToolkitDeclarations
+        .find(toolkit => toolkit.slug === 'BEEPER_IMESSAGE')
+        ?.tools.map(tool => tool.slug)
+    ).toEqual(expect.arrayContaining(['LIST_THREADS', 'SEND_MESSAGE', 'AUTHORIZE']));
   });
 
   it('normalizes local tool slugs to the Tool Router LOCAL_<TOOLKIT>_<TOOL> shape', () => {

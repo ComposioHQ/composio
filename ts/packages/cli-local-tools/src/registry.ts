@@ -1,4 +1,5 @@
 import zodToJsonSchema from 'zod-to-json-schema';
+import { beeperImessageToolkit } from './toolkits/beeper-imessage';
 import type { z } from 'zod/v3';
 import { formatSupportedPlatforms, detectCliPlatform, supportsCliPlatform } from './platform';
 import { executeLocalTool } from './runtime';
@@ -34,7 +35,9 @@ interface LocalCustomToolkit {
  * added in separate stack PRs so each app can be reviewed and validated on its
  * own.
  */
-export const localToolkitDeclarations: ReadonlyArray<LocalToolkitDeclaration> = [];
+export const localToolkitDeclarations: ReadonlyArray<LocalToolkitDeclaration> = [
+  beeperImessageToolkit,
+];
 
 const normalizeSegment = (value: string): string =>
   value

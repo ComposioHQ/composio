@@ -28,7 +28,7 @@ const withLocalToolsPath = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 
 describe('CLI: composio local-tools', () => {
   layer(TestLive())(it => {
-    it.scoped('[Given] --json [Then] lists no bundled concrete toolkits in foundation', () =>
+    it.scoped('[Given] --json [Then] lists bundled Beeper iMessage toolkit', () =>
       Effect.gen(function* () {
         yield* cli(['local-tools', 'list', '--json', '--all-platforms']);
 
@@ -41,12 +41,12 @@ describe('CLI: composio local-tools', () => {
 
         expect(payload.currentPlatform).toBeTruthy();
         expect(payload.metadataPath).toContain('local_tools.json');
-        expect(payload.toolkits).toEqual([]);
+        expect(payload.toolkits.map(toolkit => toolkit.slug)).toContain('BEEPER_IMESSAGE');
       })
     );
 
     it.scoped(
-      '[Given] doctor --json [Then] reports no bundled concrete toolkits in foundation',
+      '[Given] doctor --json [Then] reports bundled Beeper iMessage toolkit readiness',
       () =>
         Effect.gen(function* () {
           yield* cli(['local-tools', 'doctor', '--json', '--all-platforms']);
@@ -58,7 +58,7 @@ describe('CLI: composio local-tools', () => {
           };
 
           expect(payload.metadataPath).toContain('local_tools.json');
-          expect(payload.toolkits).toEqual([]);
+          expect(payload.toolkits.map(toolkit => toolkit.slug)).toContain('BEEPER_IMESSAGE');
         })
     );
 
