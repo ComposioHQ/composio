@@ -182,6 +182,8 @@ const FULL_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   full({ name: 'triggers info', description: 'Inspect a trigger type and schema summary' }),
   full({ name: 'connections list', description: 'Print toolkit connection statuses as JSON' }),
   full({ name: 'connections remove', description: 'Interactively remove a toolkit connection' }),
+  full({ name: 'local-tools list', description: 'List bundled local CLI toolkits and tools' }),
+  full({ name: 'local-tools meta', description: 'Inspect or initialize local tools metadata' }),
   full({ name: 'generate ts', description: 'Generate TypeScript stubs for selected toolkits' }),
   full({ name: 'generate py', description: 'Generate Python stubs for selected toolkits' }),
   full({
@@ -570,6 +572,52 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     seeAlso: [
       'composio connections list                Find connection selectors',
       'composio link <toolkit>                  Reconnect a toolkit account',
+    ],
+  },
+  'local-tools': {
+    usage: 'composio local-tools <list|meta>',
+    description:
+      'Inspect local CLI tools that the Tool Router can search and execute alongside hosted Composio tools.',
+    examples: [
+      'composio local-tools list',
+      'composio local-tools list --json',
+      'composio local-tools meta --init',
+    ],
+    seeAlso: [
+      'composio search "chrome page" --toolkits chrome_devtools    Search local Chrome DevTools tools',
+      'composio execute LOCAL_PEEKABOO_HELP                        Execute a local tool',
+    ],
+  },
+  'local-tools list': {
+    usage: 'composio local-tools list [--json] [--all-platforms] [--toolkits <text>]',
+    description:
+      'List bundled local toolkits and the exact LOCAL_* tool slugs exposed to Tool Router.',
+    options: [
+      { name: '--json', description: 'Print structured declarations' },
+      {
+        name: '--all-platforms',
+        description: 'Include unsupported toolkits for the current platform',
+      },
+      { name: '--toolkits <text>', description: 'Comma-separated local toolkit slug filter' },
+    ],
+    examples: [
+      'composio local-tools list',
+      'composio local-tools list --json',
+      'composio local-tools list --toolkits chrome_devtools --all-platforms',
+    ],
+    seeAlso: ['composio local-tools meta              Inspect local metadata state'],
+  },
+  'local-tools meta': {
+    usage: 'composio local-tools meta [--json] [--init]',
+    description: 'Inspect or initialize ~/composio/local_tools.json for local auth/install state.',
+    options: [
+      { name: '--json', description: 'Print metadata state as JSON' },
+      { name: '--init', description: 'Create the metadata file if needed' },
+    ],
+    examples: [
+      'composio local-tools meta',
+      'composio local-tools meta --init',
+      'composio local-tools meta --json',
     ],
   },
   run: {

@@ -1,0 +1,8 @@
+import { Command } from '@effect/cli';
+import { localToolsCmd$List } from './commands/local-tools.list.cmd';
+import { localToolsCmd$Meta } from './commands/local-tools.meta.cmd';
+
+export const localToolsCmd = Command.make('local-tools').pipe(
+  Command.withDescription('Inspect and configure bundled local CLI tools.'),
+  Command.withSubcommands([localToolsCmd$List, localToolsCmd$Meta])
+);
