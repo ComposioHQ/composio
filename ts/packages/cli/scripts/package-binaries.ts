@@ -19,13 +19,14 @@ import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from
 import { BunContext, BunRuntime } from '@effect/platform-bun';
 import { LOCAL_TOOLS_BINARY_ASSET_DIRNAME, teardown } from './_shared';
 import { $ } from 'bun';
-import { readdir, stat } from 'node:fs/promises';
+import { readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/run-companion-modules';
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
 const LOCAL_TOOLS_BINARY_ASSETS_DIR = path.join(BINARIES_DIR, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
+const RELEASE_TAG = process.env.RELEASE_TAG?.trim();
 
 /**
  * Known binary artifact names (without extension).
@@ -81,8 +82,14 @@ export function packageBinaries() {
           await $`mkdir -p ${targetDirectory}`.quiet();
           await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${path.join(nestedDir, relativePath)}`.quiet();
         }
-        if (await Bun.file(LOCAL_TOOLS_BINARY_ASSETS_DIR).exists()) {
+        const hasLocalToolsBinaryAssets = await stat(LOCAL_TOOLS_BINARY_ASSETS_DIR)
+          .then(stats => stats.isDirectory())
+          .catch(() => false);
+        if (hasLocalToolsBinaryAssets) {
           await $`cp -R ${LOCAL_TOOLS_BINARY_ASSETS_DIR} ${path.join(nestedDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME)}`.quiet();
+        }
+        if (RELEASE_TAG) {
+          await writeFile(path.join(nestedDir, 'release-tag.txt'), `${RELEASE_TAG}\n`, 'utf8');
         }
         const previousCwd = process.cwd();
         process.chdir(tempDir);

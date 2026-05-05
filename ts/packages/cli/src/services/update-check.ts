@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
+import { resolveInstalledCliVersion } from './run-companion-modules';
 
 /**
  * Background update check for @composio/cli.
@@ -66,7 +67,7 @@ function getCurrentBinaryAssetName(): string | undefined {
 
 const defaultConfig: UpdateCheckConfig = {
   stateFile: join(_home, 'update-check.json'),
-  currentVersion: APP_VERSION,
+  currentVersion: resolveInstalledCliVersion(process.execPath, APP_VERSION),
   checkIntervalMs: CHECK_INTERVAL_MS,
   releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
   binaryAssetName: getCurrentBinaryAssetName(),

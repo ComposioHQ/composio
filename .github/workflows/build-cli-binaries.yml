@@ -275,7 +275,20 @@ jobs:
 
       - name: Create archive
         working-directory: ts/packages/cli
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: pnpm build:binary:package
+
+      - name: Verify release metadata in archive
+        working-directory: ts/packages/cli
+        run: unzip -p dist/binaries/${{ matrix.artifact }}.zip ${{ matrix.artifact }}/release-tag.txt | grep -Fx '${{ needs.prepare.outputs.release_tag }}'
+
+      - name: Verify local-tool sidecars in archive
+        if: matrix.local_tools_target != ''
+        working-directory: ts/packages/cli
+        run: |
+          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/beeper-imessage/${{ matrix.local_tools_target }}/imessage-cli"
+          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/peekaboo/${{ matrix.local_tools_target }}/peekaboo"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
