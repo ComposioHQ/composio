@@ -39,7 +39,9 @@ export interface LocalToolsMetaOptions {
 }
 
 export const getLocalToolsMetaPath = (options: LocalToolsMetaOptions = {}): string =>
-  options.path ?? path.join(options.homeDir ?? os.homedir(), 'composio', 'local_tools.json');
+  options.path ??
+  process.env.COMPOSIO_LOCAL_TOOLS_PATH ??
+  path.join(options.homeDir ?? os.homedir(), 'composio', 'local_tools.json');
 
 export const createEmptyLocalToolsMeta = (): LocalToolsMetaFile => ({
   version: LOCAL_TOOLS_META_VERSION,
@@ -58,9 +60,7 @@ const parseLocalToolsMeta = (raw: string): LocalToolsMetaFile => {
   return {
     version: typeof parsed.version === 'number' ? parsed.version : LOCAL_TOOLS_META_VERSION,
     updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : undefined,
-    tools: isRecord(parsed.tools)
-      ? (parsed.tools as Record<string, LocalToolMetaEntry>)
-      : {},
+    tools: isRecord(parsed.tools) ? (parsed.tools as Record<string, LocalToolMetaEntry>) : {},
     toolkits: isRecord(parsed.toolkits)
       ? (parsed.toolkits as Record<string, LocalToolkitMetaEntry>)
       : {},

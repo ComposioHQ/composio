@@ -187,6 +187,10 @@ const FULL_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
     name: 'local-tools doctor',
     description: 'Check local toolkit readiness and setup hints',
   }),
+  full({
+    name: 'local-tools configure',
+    description: 'Set local toolkit/tool metadata overrides',
+  }),
   full({ name: 'local-tools meta', description: 'Inspect or initialize local tools metadata' }),
   full({ name: 'generate ts', description: 'Generate TypeScript stubs for selected toolkits' }),
   full({ name: 'generate py', description: 'Generate Python stubs for selected toolkits' }),
@@ -579,13 +583,13 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
   },
   'local-tools': {
-    usage: 'composio local-tools <list|meta>',
+    usage: 'composio local-tools <list|doctor|configure|meta>',
     description:
       'Inspect local CLI tools that the Tool Router can search and execute alongside hosted Composio tools.',
     examples: [
       'composio local-tools list',
       'composio local-tools doctor',
-      'composio local-tools meta --init',
+      'composio local-tools configure peekaboo --command /opt/homebrew/bin/peekaboo',
     ],
     seeAlso: [
       'composio search "chrome page" --toolkits chrome_devtools    Search local Chrome DevTools tools',
@@ -630,6 +634,34 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio local-tools doctor --toolkits chrome_devtools --strict',
     ],
     seeAlso: ['composio local-tools meta              Inspect local metadata state'],
+  },
+  'local-tools configure': {
+    usage:
+      'composio local-tools configure <selector> [--command <text>] [--enable|--disable] [--authenticated|--unauthenticated] [--json]',
+    description:
+      'Configure ~/composio/local_tools.json for a local toolkit slug or LOCAL_* tool slug without hand-editing JSON.',
+    args: [
+      {
+        name: '<selector>',
+        description: 'Local toolkit slug (peekaboo) or LOCAL_* tool slug',
+      },
+    ],
+    options: [
+      { name: '--command <text>', description: 'Override the local binary/launcher command' },
+      { name: '--json', description: 'Print the updated metadata entry as JSON' },
+    ],
+    flags: [
+      { name: '--enable', description: 'Clear disabled state' },
+      { name: '--disable', description: 'Disable this local toolkit/tool' },
+      { name: '--authenticated', description: 'Mark this local toolkit/tool authenticated' },
+      { name: '--unauthenticated', description: 'Mark this local toolkit/tool unauthenticated' },
+    ],
+    examples: [
+      'composio local-tools configure peekaboo --command /opt/homebrew/bin/peekaboo',
+      'composio local-tools configure LOCAL_PEEKABOO_RUN_CLI --disable',
+      'composio local-tools configure chrome_devtools --authenticated --json',
+    ],
+    seeAlso: ['composio local-tools doctor            Validate the configured command'],
   },
   'local-tools meta': {
     usage: 'composio local-tools meta [--json] [--init]',
