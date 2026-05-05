@@ -231,6 +231,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Swift 6.2 for local-tool sidecars
+        if: matrix.local_tools_target != ''
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.2'
+
+      - name: Verify Swift toolchain
+        if: matrix.local_tools_target != ''
+        run: swift --version
+
       - name: Build packages
         run: pnpm build:packages
 
