@@ -38,46 +38,33 @@ const exists = async (filePath: string): Promise<boolean> =>
 const readJson = async <T>(filePath: string): Promise<T> =>
   JSON.parse(await fs.readFile(filePath, 'utf8')) as T;
 
-// BetterSwiftAX 0.1.0 references AXWebConstants added in newer macOS SDKs.
-// The constants are plain CFString subrole names, so patch the resolved package
-// checkout to string literals before building on GitHub macos-15 runners.
-const betterSwiftAxSubroleFallbacks = [
-  ['kAXLandmarkComplementarySubrole', 'AXLandmarkComplementary'],
-  ['kAXLandmarkContentInfoSubrole', 'AXLandmarkContentInfo'],
-  ['kAXLandmarkMainSubrole', 'AXLandmarkMain'],
-  ['kAXLandmarkNavigationSubrole', 'AXLandmarkNavigation'],
-  ['kAXLandmarkRegionSubrole', 'AXLandmarkRegion'],
-  ['kAXLandmarkSearchSubrole', 'AXLandmarkSearch'],
-  ['kAXMathFenceOperatorSubrole', 'AXMathFenceOperator'],
-  ['kAXMathFencedSubrole', 'AXMathFenced'],
-  ['kAXMathFractionSubrole', 'AXMathFraction'],
-  ['kAXMathIdentifierSubrole', 'AXMathIdentifier'],
-  ['kAXMathMultiscriptSubrole', 'AXMathMultiscript'],
-  ['kAXMathNumberSubrole', 'AXMathNumber'],
-  ['kAXMathOperatorSubrole', 'AXMathOperator'],
-  ['kAXMathRootSubrole', 'AXMathRoot'],
-  ['kAXMathRowSubrole', 'AXMathRow'],
-  ['kAXMathSeparatorOperatorSubrole', 'AXMathSeparatorOperator'],
-  ['kAXMathSquareRootSubrole', 'AXMathSquareRoot'],
-  ['kAXMathSubscriptSuperscriptSubrole', 'AXMathSubscriptSuperscript'],
-  ['kAXMathTableCellSubrole', 'AXMathTableCell'],
-  ['kAXMathTableRowSubrole', 'AXMathTableRow'],
-  ['kAXMathTableSubrole', 'AXMathTable'],
-  ['kAXMathTextSubrole', 'AXMathText'],
-  ['kAXMathUnderOverSubrole', 'AXMathUnderOver'],
-  ['kAXMeterSubrole', 'AXMeter'],
-  ['kAXRubyInlineSubrole', 'AXRubyInline'],
-  ['kAXRubyTextSubrole', 'AXRubyText'],
-  ['kAXSubscriptStyleGroupSubrole', 'AXSubscriptStyleGroup'],
-  ['kAXSummarySubrole', 'AXSummary'],
-  ['kAXSuperscriptStyleGroupSubrole', 'AXSuperscriptStyleGroup'],
-  ['kAXTabPanelSubrole', 'AXTabPanel'],
-  ['kAXTermSubrole', 'AXTerm'],
-  ['kAXTimeGroupSubrole', 'AXTimeGroup'],
-  ['kAXUserInterfaceTooltipSubrole', 'AXUserInterfaceTooltip'],
-  ['kAXVideoSubrole', 'AXVideo'],
-  ['kAXWebApplicationSubrole', 'AXWebApplication'],
+// BetterSwiftAX 0.1.0 references Accessibility constants that are not
+// consistently exported by the macOS SDK on GitHub runners. Swift exposes AX
+// constants as Strings whose values are the constant name without the `k` prefix
+// and category suffix, so patch the resolved package checkout to literals before
+// compiling sidecar binaries.
+const betterSwiftAxFallbackFiles = [
+  'Accessibility+Action.swift',
+  'Accessibility+AttributeKey.swift',
+  'Accessibility+Notification.swift',
+  'Accessibility+ParameterizedAttributeKey.swift',
+  'Accessibility+Role.swift',
+  'Accessibility+Subrole.swift',
+  'Accessibility+Value.swift',
 ] as const;
+
+const betterSwiftAxConstantReferencePattern =
+  /\bkAX[A-Za-z0-9]+(?:Action|ParameterizedAttribute|Attribute|Notification|Subrole|Role|Value)\b/g;
+const betterSwiftAxConstantPattern =
+  /^kAX(.+?)(Action|ParameterizedAttribute|Attribute|Notification|Subrole|Role|Value)$/;
+
+const betterSwiftAxConstantLiteral = (constantName: string): string => {
+  const match = betterSwiftAxConstantPattern.exec(constantName);
+  if (!match) {
+    throw new Error(`Unsupported BetterSwiftAX constant fallback: ${constantName}`);
+  }
+  return `"AX${match[1]}"`;
+};
 
 const ensurePlatform = () => {
   if (process.platform !== 'darwin') {
@@ -125,26 +112,43 @@ const copyLicense = async () => {
 const patchBetterSwiftAxForCurrentSdk = async () => {
   await $`swift package resolve`.cwd(submodulePath);
 
-  const sourcePath = path.join(
+  const checkoutRoot = path.join(
     submodulePath,
-    '.build/checkouts/BetterSwiftAX/Sources/AccessibilityControl/Accessibility+Subrole.swift'
+    '.build/checkouts/BetterSwiftAX/Sources/AccessibilityControl'
   );
-  if (!(await exists(sourcePath))) {
+  if (!(await exists(checkoutRoot))) {
     throw new Error(
-      'Swift package resolution completed but BetterSwiftAX Accessibility+Subrole.swift was not found.'
+      'Swift package resolution completed but the BetterSwiftAX AccessibilityControl checkout was not found.'
     );
   }
 
-  const source = await fs.readFile(sourcePath, 'utf8');
-  let patched = source;
-  for (const [constantName, stringValue] of betterSwiftAxSubroleFallbacks) {
-    patched = patched.replaceAll(`= ${constantName}`, `= ("${stringValue}" as CFString)`);
+  let replacementCount = 0;
+  for (const fileName of betterSwiftAxFallbackFiles) {
+    const sourcePath = path.join(checkoutRoot, fileName);
+    if (!(await exists(sourcePath))) {
+      throw new Error(
+        `Swift package resolution completed but BetterSwiftAX ${fileName} was not found.`
+      );
+    }
+
+    const source = await fs.readFile(sourcePath, 'utf8');
+    let fileReplacementCount = 0;
+    const patched = source.replace(betterSwiftAxConstantReferencePattern, constantName => {
+      fileReplacementCount += 1;
+      return betterSwiftAxConstantLiteral(constantName);
+    });
+
+    if (patched !== source) {
+      await fs.chmod(sourcePath, 0o644).catch(() => undefined);
+      await fs.writeFile(sourcePath, patched, 'utf8');
+      replacementCount += fileReplacementCount;
+    }
   }
 
-  if (patched !== source) {
-    await fs.chmod(sourcePath, 0o644).catch(() => undefined);
-    await fs.writeFile(sourcePath, patched, 'utf8');
-    console.log('Patched BetterSwiftAX subrole constants for older macOS SDKs.');
+  if (replacementCount > 0) {
+    console.log(
+      `Patched ${replacementCount} BetterSwiftAX Accessibility constants for the current macOS SDK.`
+    );
   }
 };
 
