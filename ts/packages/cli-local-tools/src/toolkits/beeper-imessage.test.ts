@@ -6,12 +6,20 @@ import { beeperImessageToolkit } from './beeper-imessage';
 describe('@composio/cli-local-tools Beeper iMessage toolkit', () => {
   it('exposes first-class schemas for Beeper iMessage tools', () => {
     expect(beeperImessageToolkit.tools.map(tool => tool.slug)).toEqual(
-      expect.arrayContaining(['LIST_THREADS', 'SEND_MESSAGE', 'AUTHORIZE'])
+      expect.arrayContaining(['LIST_THREADS', 'FIND_THREAD', 'SEND_MESSAGE', 'AUTHORIZE'])
     );
 
     const sendSchema = getLocalToolInputDefinition('LOCAL_BEEPER_IMESSAGE_SEND_MESSAGE');
     expect(sendSchema?.schema.properties).toHaveProperty('threadId');
     expect(sendSchema?.schema.properties).toHaveProperty('text');
+    expect(sendSchema?.schema.properties).toHaveProperty('verifySent');
+
+    const listSchema = getLocalToolInputDefinition('LOCAL_BEEPER_IMESSAGE_LIST_THREADS');
+    expect(listSchema?.schema.properties).toHaveProperty('compact');
+    expect(listSchema?.schema.properties).toHaveProperty('resolveContactNames');
+
+    const reactSchema = getLocalToolInputDefinition('LOCAL_BEEPER_IMESSAGE_REACT_TO_MESSAGE');
+    expect(reactSchema?.schema.properties).toHaveProperty('prepareTranscript');
   });
 
   it.runIf(process.platform === 'darwin')(
