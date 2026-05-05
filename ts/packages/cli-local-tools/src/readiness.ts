@@ -341,6 +341,24 @@ const checkToolReadiness = async (params: {
     };
   }
 
+  if (tool.execution.kind === 'native' && tool.execution.readiness) {
+    const command = await checkCommand(
+      commandOverride ?? tool.execution.readiness.command,
+      tool.execution.readiness.args
+    );
+    return {
+      ...base,
+      status: command.found ? 'ready' : 'missing',
+      command,
+      messages: command.found
+        ? [
+            `Native wrapper prerequisite found: ${command.path ?? command.command}; app-specific runtime checks still happen at execution time.`,
+          ]
+        : [`Native wrapper prerequisite not found on PATH: ${command.command}.`],
+      hints: command.found ? [] : setupHintsForToolkit(toolkit),
+    };
+  }
+
   if (tool.execution.kind === 'native' && toolkit.bundledBinaries?.length) {
     const bundledChecks = await Promise.all(
       toolkit.bundledBinaries.map(async binary => ({
