@@ -42,7 +42,7 @@ describe('CLI: composio local-tools', () => {
         expect(payload.currentPlatform).toBeTruthy();
         expect(payload.metadataPath).toContain('local_tools.json');
         expect(payload.toolkits.map(toolkit => toolkit.slug)).toEqual(
-          expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS'])
+          expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS', 'PEEKABOO'])
         );
       })
     );
@@ -59,7 +59,7 @@ describe('CLI: composio local-tools', () => {
 
         expect(payload.metadataPath).toContain('local_tools.json');
         expect(payload.toolkits.map(toolkit => toolkit.slug)).toEqual(
-          expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS'])
+          expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS', 'PEEKABOO'])
         );
       })
     );

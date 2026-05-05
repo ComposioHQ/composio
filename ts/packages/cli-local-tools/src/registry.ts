@@ -1,6 +1,7 @@
 import zodToJsonSchema from 'zod-to-json-schema';
 import { beeperImessageToolkit } from './toolkits/beeper-imessage';
 import { chromeDevtoolsToolkit } from './toolkits/chrome-devtools';
+import { peekabooToolkit } from './toolkits/peekaboo';
 import type { z } from 'zod/v3';
 import { formatSupportedPlatforms, detectCliPlatform, supportsCliPlatform } from './platform';
 import { executeLocalTool } from './runtime';
@@ -39,6 +40,7 @@ interface LocalCustomToolkit {
 export const localToolkitDeclarations: ReadonlyArray<LocalToolkitDeclaration> = [
   beeperImessageToolkit,
   chromeDevtoolsToolkit,
+  peekabooToolkit,
 ];
 
 const normalizeSegment = (value: string): string =>
