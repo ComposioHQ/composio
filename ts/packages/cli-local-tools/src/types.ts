@@ -107,6 +107,11 @@ export interface LocalToolkitDeclaration {
     readonly repository?: string;
     readonly command?: string;
   };
+  readonly setup?: {
+    readonly install?: string;
+    readonly commandOverrides?: ReadonlyArray<string>;
+    readonly notes?: ReadonlyArray<string>;
+  };
 }
 
 export interface LocalToolResolution {

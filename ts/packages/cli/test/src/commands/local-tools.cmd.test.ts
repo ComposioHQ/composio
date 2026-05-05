@@ -50,5 +50,32 @@ describe('CLI: composio local-tools', () => {
           expect(payload.toolkits.map(toolkit => toolkit.slug)).toEqual(['CHROME_DEVTOOLS']);
         })
     );
+
+    it.scoped('[Given] doctor --json [Then] reports local readiness statuses', () =>
+      Effect.gen(function* () {
+        yield* cli(['local-tools', 'doctor', '--json', '--all-platforms']);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const payload = JSON.parse(lines.at(-1) ?? '') as {
+          metadataPath: string;
+          toolkits: Array<{
+            slug: string;
+            status: string;
+            tools: Array<{ finalSlug: string; status: string; command?: { command: string } }>;
+          }>;
+        };
+
+        expect(payload.metadataPath).toContain('local_tools.json');
+        expect(payload.toolkits.map(toolkit => toolkit.slug)).toEqual(
+          expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS', 'PEEKABOO'])
+        );
+        expect(payload.toolkits.flatMap(toolkit => toolkit.tools.map(tool => tool.status))).toEqual(
+          expect.arrayContaining([expect.any(String)])
+        );
+        expect(
+          payload.toolkits.flatMap(toolkit => toolkit.tools.map(tool => tool.finalSlug))
+        ).toContain('LOCAL_CHROME_DEVTOOLS_CALL_TOOL');
+      })
+    );
   });
 });

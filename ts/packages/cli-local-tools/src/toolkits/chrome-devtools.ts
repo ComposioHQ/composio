@@ -21,6 +21,14 @@ export const chromeDevtoolsToolkit: LocalToolkitDeclaration = {
     package: 'chrome-devtools-mcp@latest',
     command: 'npx -y chrome-devtools-mcp@latest --autoConnect',
   },
+  setup: {
+    install:
+      'Install Node.js/npm. The default launcher runs `npx -y chrome-devtools-mcp@latest --autoConnect`.',
+    commandOverrides: [
+      'Set COMPOSIO_CHROME_DEVTOOLS_MCP_COMMAND=/path/to/launcher to replace the default npx launcher.',
+    ],
+    notes: ['Start Chrome before executing CALL_TOOL if autoConnect cannot find a browser target.'],
+  },
   tools: [
     {
       slug: 'LIST_TOOLS',
@@ -41,8 +49,13 @@ export const chromeDevtoolsToolkit: LocalToolkitDeclaration = {
         'Call any tool exposed by chrome-devtools-mcp. Use LIST_TOOLS first when you need exact MCP tool names and input shapes.',
       platforms: all,
       inputParams: z.object({
-        toolName: z.string().describe('MCP tool name to call, for example navigate_page or evaluate_script.'),
-        arguments: z.record(z.unknown()).default({}).describe('Arguments for the selected MCP tool.'),
+        toolName: z
+          .string()
+          .describe('MCP tool name to call, for example navigate_page or evaluate_script.'),
+        arguments: z
+          .record(z.unknown())
+          .default({})
+          .describe('Arguments for the selected MCP tool.'),
       }),
       execution: {
         kind: 'mcp',

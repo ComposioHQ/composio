@@ -16,6 +16,14 @@ export const beeperImessageToolkit: LocalToolkitDeclaration = {
     repository: 'https://github.com/beeper/platform-imessage',
     command: 'imessage',
   },
+  setup: {
+    install:
+      'Build/install Beeper platform-imessage from https://github.com/beeper/platform-imessage and expose its CLI binary on PATH.',
+    commandOverrides: [
+      'Set COMPOSIO_BEEPER_IMESSAGE_CLI=/path/to/imessage or toolkits.beeper_imessage.installation.command in ~/composio/local_tools.json.',
+    ],
+    notes: ['Requires macOS Messages/iMessage local account state.'],
+  },
   tools: [
     {
       slug: 'SEND_MESSAGE',
@@ -24,7 +32,9 @@ export const beeperImessageToolkit: LocalToolkitDeclaration = {
         'Draft mapping for sending an iMessage through the local Beeper/platform-imessage CLI. Override the binary or use RUN_CLI if your local build exposes different subcommands.',
       platforms: darwin,
       inputParams: z.object({
-        recipient: z.string().describe('Phone number, email, handle, or chat identifier to send to.'),
+        recipient: z
+          .string()
+          .describe('Phone number, email, handle, or chat identifier to send to.'),
         text: z.string().describe('Message body.'),
       }),
       execution: {

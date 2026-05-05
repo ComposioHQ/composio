@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   createLocalToolRouterExperimentalPayload,
@@ -5,9 +7,12 @@ import {
   getLocalToolInputDefinition,
   normalizeLocalToolSlug,
 } from './registry';
+import { checkLocalToolkitsReadiness } from './readiness';
 
-const findToolkit = (payload: ReturnType<typeof createLocalToolRouterExperimentalPayload>, slug: string) =>
-  payload?.custom_toolkits?.find(toolkit => toolkit.slug === slug);
+const findToolkit = (
+  payload: ReturnType<typeof createLocalToolRouterExperimentalPayload>,
+  slug: string
+) => payload?.custom_toolkits?.find(toolkit => toolkit.slug === slug);
 
 describe('@composio/cli-local-tools registry', () => {
   it('normalizes local tool slugs to the Tool Router LOCAL_<TOOLKIT>_<TOOL> shape', () => {
@@ -42,5 +47,24 @@ describe('@composio/cli-local-tools registry', () => {
     const definition = getLocalToolInputDefinition('LOCAL_BEEPER_IMESSAGE_RUN_CLI');
     expect(definition?.version).toBe('local');
     expect(definition?.schema.properties).toHaveProperty('args');
+  });
+
+  it('reports platform readiness for bundled local toolkits', async () => {
+    const report = await checkLocalToolkitsReadiness({
+      currentPlatform: 'linux-x64',
+      includeUnsupported: true,
+      metaOptions: {
+        path: path.join(os.tmpdir(), `composio-local-tools-test-${Date.now()}.json`),
+      },
+    });
+
+    expect(report.toolkits.find(toolkit => toolkit.slug === 'BEEPER_IMESSAGE')?.status).toBe(
+      'unsupported'
+    );
+    expect(report.toolkits.find(toolkit => toolkit.slug === 'CHROME_DEVTOOLS')?.tools).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ finalSlug: 'LOCAL_CHROME_DEVTOOLS_LIST_TOOLS' }),
+      ])
+    );
   });
 });

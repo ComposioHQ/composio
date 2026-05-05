@@ -183,6 +183,10 @@ const FULL_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   full({ name: 'connections list', description: 'Print toolkit connection statuses as JSON' }),
   full({ name: 'connections remove', description: 'Interactively remove a toolkit connection' }),
   full({ name: 'local-tools list', description: 'List bundled local CLI toolkits and tools' }),
+  full({
+    name: 'local-tools doctor',
+    description: 'Check local toolkit readiness and setup hints',
+  }),
   full({ name: 'local-tools meta', description: 'Inspect or initialize local tools metadata' }),
   full({ name: 'generate ts', description: 'Generate TypeScript stubs for selected toolkits' }),
   full({ name: 'generate py', description: 'Generate Python stubs for selected toolkits' }),
@@ -580,7 +584,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'Inspect local CLI tools that the Tool Router can search and execute alongside hosted Composio tools.',
     examples: [
       'composio local-tools list',
-      'composio local-tools list --json',
+      'composio local-tools doctor',
       'composio local-tools meta --init',
     ],
     seeAlso: [
@@ -604,6 +608,26 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio local-tools list',
       'composio local-tools list --json',
       'composio local-tools list --toolkits chrome_devtools --all-platforms',
+    ],
+    seeAlso: ['composio local-tools meta              Inspect local metadata state'],
+  },
+  'local-tools doctor': {
+    usage: 'composio local-tools doctor [--json] [--all-platforms] [--toolkits <text>] [--strict]',
+    description:
+      'Check command availability, platform support, and setup hints for bundled local toolkits.',
+    options: [
+      { name: '--json', description: 'Print structured readiness report' },
+      {
+        name: '--all-platforms',
+        description: 'Include unsupported toolkits for the current platform',
+      },
+      { name: '--toolkits <text>', description: 'Comma-separated local toolkit slug filter' },
+      { name: '--strict', description: 'Exit non-zero if any visible local tool is not ready' },
+    ],
+    examples: [
+      'composio local-tools doctor',
+      'composio local-tools doctor --json',
+      'composio local-tools doctor --toolkits chrome_devtools --strict',
     ],
     seeAlso: ['composio local-tools meta              Inspect local metadata state'],
   },

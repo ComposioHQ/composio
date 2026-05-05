@@ -16,6 +16,16 @@ export const peekabooToolkit: LocalToolkitDeclaration = {
     repository: 'https://github.com/steipete/Peekaboo',
     command: 'peekaboo',
   },
+  setup: {
+    install:
+      'Install Peekaboo from https://github.com/steipete/Peekaboo and expose the `peekaboo` CLI on PATH.',
+    commandOverrides: [
+      'Set COMPOSIO_PEEKABOO_CLI=/path/to/peekaboo or toolkits.peekaboo.installation.command in ~/composio/local_tools.json.',
+    ],
+    notes: [
+      'Requires macOS Screen Recording and Accessibility permissions for many UI automation actions.',
+    ],
+  },
   tools: [
     {
       slug: 'RUN_CLI',
