@@ -1013,6 +1013,16 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       projectId: resolvedProject.projectId,
     });
     const cliConfig = yield* ComposioCliUserConfig;
+    if (
+      isLocalToolSlug(params.slug) &&
+      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
+    ) {
+      return yield* Effect.fail(
+        new Error(
+          `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`
+        )
+      );
+    }
     const accountSelector = cliConfig.isExperimentalFeatureEnabled(
       CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
     )
@@ -1455,6 +1465,18 @@ const runExecuteWithSpinner = (params: {
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
+
+    const cliConfig = yield* ComposioCliUserConfig;
+    if (
+      isLocalToolSlug(params.slug) &&
+      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
+    ) {
+      return yield* Effect.fail(
+        new Error(
+          `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`
+        )
+      );
+    }
 
     if (params.getSchema) {
       const context = yield* resolveSchemaContext(params);

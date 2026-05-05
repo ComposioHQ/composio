@@ -10,6 +10,8 @@ import {
   writeConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { resolveToolRouterSessionConnections } from 'src/services/tool-router-session-connections';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
 export interface CreateToolRouterSessionOptions {
   /** Enable auto connection management. Default: false. */
@@ -56,6 +58,10 @@ export const createToolRouterSession = (
       return Object.keys(merged).length > 0 ? merged : undefined;
     };
     const requestedToolkits = options?.toolkits ?? [];
+    const cliConfig = yield* ComposioCliUserConfig;
+    const localToolsEnabled =
+      options?.localTools?.enable ??
+      cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS);
     const localToolkitSlugs = new Set(getAllLocalToolkitSlugs());
     const requestedLocalToolkits = requestedToolkits.filter(toolkit =>
       localToolkitSlugs.has(toolkit.toLowerCase())
@@ -65,8 +71,15 @@ export const createToolRouterSession = (
     );
     const shouldIncludeLocalToolkits =
       requestedToolkits.length === 0 || requestedLocalToolkits.length > 0;
+    if (!localToolsEnabled && requestedLocalToolkits.length > 0) {
+      return yield* Effect.fail(
+        new Error(
+          `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before using toolkit filter(s): ${requestedLocalToolkits.join(', ')}.`
+        )
+      );
+    }
     const localExperimentalPayload =
-      options?.localTools?.enable === false || !shouldIncludeLocalToolkits
+      !localToolsEnabled || !shouldIncludeLocalToolkits
         ? undefined
         : createLocalToolRouterExperimentalPayload({
             toolkits: requestedToolkits.length > 0 ? requestedLocalToolkits : undefined,

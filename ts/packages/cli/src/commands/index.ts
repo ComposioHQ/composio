@@ -70,7 +70,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(proxyCmd),
   tagged(artifactsCmd),
   tagged(installCmd),
-  tagged(localToolsCmd),
+  experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, localToolsCmd),
   tagged(rootToolsCmd),
   tagged(rootTriggersCmd),
   tagged(rootToolsCmd$Search),

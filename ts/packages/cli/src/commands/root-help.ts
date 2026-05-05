@@ -182,16 +182,26 @@ const FULL_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   full({ name: 'triggers info', description: 'Inspect a trigger type and schema summary' }),
   full({ name: 'connections list', description: 'Print toolkit connection statuses as JSON' }),
   full({ name: 'connections remove', description: 'Interactively remove a toolkit connection' }),
-  full({ name: 'local-tools list', description: 'List registered local CLI toolkits and tools' }),
-  full({
-    name: 'local-tools doctor',
-    description: 'Check local toolkit readiness and setup hints',
-  }),
-  full({
-    name: 'local-tools configure',
-    description: 'Set local toolkit/tool metadata overrides',
-  }),
-  full({ name: 'local-tools meta', description: 'Inspect or initialize local tools metadata' }),
+  full({ name: 'local-tools list', description: 'List registered local CLI toolkits and tools' }, [
+    CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
+  ]),
+  full(
+    {
+      name: 'local-tools doctor',
+      description: 'Check local toolkit readiness and setup hints',
+    },
+    [CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS]
+  ),
+  full(
+    {
+      name: 'local-tools configure',
+      description: 'Set local toolkit/tool metadata overrides',
+    },
+    [CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS]
+  ),
+  full({ name: 'local-tools meta', description: 'Inspect or initialize local tools metadata' }, [
+    CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS,
+  ]),
   full({ name: 'generate ts', description: 'Generate TypeScript stubs for selected toolkits' }),
   full({ name: 'generate py', description: 'Generate Python stubs for selected toolkits' }),
   full({
@@ -582,7 +592,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio link <toolkit>                  Reconnect a toolkit account',
     ],
   },
-  'local-tools': {
+  'local-tools': experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, {
     usage: 'composio local-tools <list|doctor|configure|meta>',
     description:
       'Inspect local CLI tools that the Tool Router can search and execute alongside hosted Composio tools.',
@@ -595,8 +605,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio local-tools doctor            Check installed local tool readiness',
       'composio local-tools meta --init       Initialize local tools metadata',
     ],
-  },
-  'local-tools list': {
+  }),
+  'local-tools list': experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, {
     usage: 'composio local-tools list [--json] [--all-platforms] [--toolkits <text>]',
     description:
       'List registered local toolkits and the exact LOCAL_* tool slugs exposed to Tool Router.',
@@ -614,8 +624,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio local-tools list --toolkits <toolkit> --all-platforms',
     ],
     seeAlso: ['composio local-tools meta              Inspect local metadata state'],
-  },
-  'local-tools doctor': {
+  }),
+  'local-tools doctor': experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, {
     usage: 'composio local-tools doctor [--json] [--all-platforms] [--toolkits <text>] [--strict]',
     description:
       'Check command availability, platform support, and setup hints for registered local toolkits.',
@@ -634,8 +644,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio local-tools doctor --toolkits <toolkit> --strict',
     ],
     seeAlso: ['composio local-tools meta              Inspect local metadata state'],
-  },
-  'local-tools configure': {
+  }),
+  'local-tools configure': experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, {
     usage:
       'composio local-tools configure <selector> [--command <text>] [--enable|--disable] [--authenticated|--unauthenticated] [--json]',
     description:
@@ -662,8 +672,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio local-tools configure <toolkit> --authenticated --json',
     ],
     seeAlso: ['composio local-tools doctor            Validate the configured command'],
-  },
-  'local-tools meta': {
+  }),
+  'local-tools meta': experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, {
     usage: 'composio local-tools meta [--json] [--init]',
     description: 'Inspect or initialize ~/composio/local_tools.json for local auth/install state.',
     options: [
@@ -675,7 +685,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio local-tools meta --init',
       'composio local-tools meta --json',
     ],
-  },
+  }),
   run: {
     usage: 'composio run <code> [-- ...args] | run -f <file> [-- ...args]',
     description:
@@ -1217,12 +1227,13 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     usage: 'composio config experimental [<feature>] [on|off]',
     description: 'View or toggle experimental feature flags.',
     args: [
-      { name: '<feature>', description: 'Feature name (e.g., listen, multi_account)' },
+      { name: '<feature>', description: 'Feature name (e.g., listen, local_tools, multi_account)' },
       { name: 'on|off', description: 'Enable or disable the feature' },
     ],
     examples: [
       'composio config experimental                     # List all features',
       'composio config experimental listen              # Show current state',
+      'composio config experimental local_tools on      # Enable local toolkits',
       'composio config experimental multi_account on    # Enable multi_account',
     ],
   },
