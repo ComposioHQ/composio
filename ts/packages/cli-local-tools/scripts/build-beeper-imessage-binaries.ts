@@ -38,6 +38,47 @@ const exists = async (filePath: string): Promise<boolean> =>
 const readJson = async <T>(filePath: string): Promise<T> =>
   JSON.parse(await fs.readFile(filePath, 'utf8')) as T;
 
+// BetterSwiftAX 0.1.0 references AXWebConstants added in newer macOS SDKs.
+// The constants are plain CFString subrole names, so patch the resolved package
+// checkout to string literals before building on GitHub macos-15 runners.
+const betterSwiftAxSubroleFallbacks = [
+  ['kAXLandmarkComplementarySubrole', 'AXLandmarkComplementary'],
+  ['kAXLandmarkContentInfoSubrole', 'AXLandmarkContentInfo'],
+  ['kAXLandmarkMainSubrole', 'AXLandmarkMain'],
+  ['kAXLandmarkNavigationSubrole', 'AXLandmarkNavigation'],
+  ['kAXLandmarkRegionSubrole', 'AXLandmarkRegion'],
+  ['kAXLandmarkSearchSubrole', 'AXLandmarkSearch'],
+  ['kAXMathFenceOperatorSubrole', 'AXMathFenceOperator'],
+  ['kAXMathFencedSubrole', 'AXMathFenced'],
+  ['kAXMathFractionSubrole', 'AXMathFraction'],
+  ['kAXMathIdentifierSubrole', 'AXMathIdentifier'],
+  ['kAXMathMultiscriptSubrole', 'AXMathMultiscript'],
+  ['kAXMathNumberSubrole', 'AXMathNumber'],
+  ['kAXMathOperatorSubrole', 'AXMathOperator'],
+  ['kAXMathRootSubrole', 'AXMathRoot'],
+  ['kAXMathRowSubrole', 'AXMathRow'],
+  ['kAXMathSeparatorOperatorSubrole', 'AXMathSeparatorOperator'],
+  ['kAXMathSquareRootSubrole', 'AXMathSquareRoot'],
+  ['kAXMathSubscriptSuperscriptSubrole', 'AXMathSubscriptSuperscript'],
+  ['kAXMathTableCellSubrole', 'AXMathTableCell'],
+  ['kAXMathTableRowSubrole', 'AXMathTableRow'],
+  ['kAXMathTableSubrole', 'AXMathTable'],
+  ['kAXMathTextSubrole', 'AXMathText'],
+  ['kAXMathUnderOverSubrole', 'AXMathUnderOver'],
+  ['kAXMeterSubrole', 'AXMeter'],
+  ['kAXRubyInlineSubrole', 'AXRubyInline'],
+  ['kAXRubyTextSubrole', 'AXRubyText'],
+  ['kAXSubscriptStyleGroupSubrole', 'AXSubscriptStyleGroup'],
+  ['kAXSummarySubrole', 'AXSummary'],
+  ['kAXSuperscriptStyleGroupSubrole', 'AXSuperscriptStyleGroup'],
+  ['kAXTabPanelSubrole', 'AXTabPanel'],
+  ['kAXTermSubrole', 'AXTerm'],
+  ['kAXTimeGroupSubrole', 'AXTimeGroup'],
+  ['kAXUserInterfaceTooltipSubrole', 'AXUserInterfaceTooltip'],
+  ['kAXVideoSubrole', 'AXVideo'],
+  ['kAXWebApplicationSubrole', 'AXWebApplication'],
+] as const;
+
 const ensurePlatform = () => {
   if (process.platform !== 'darwin') {
     throw new Error(
@@ -81,8 +122,35 @@ const copyLicense = async () => {
   throw new Error('No upstream license file found in platform-imessage submodule.');
 };
 
+const patchBetterSwiftAxForCurrentSdk = async () => {
+  await $`swift package resolve`.cwd(submodulePath);
+
+  const sourcePath = path.join(
+    submodulePath,
+    '.build/checkouts/BetterSwiftAX/Sources/AccessibilityControl/Accessibility+Subrole.swift'
+  );
+  if (!(await exists(sourcePath))) {
+    throw new Error(
+      'Swift package resolution completed but BetterSwiftAX Accessibility+Subrole.swift was not found.'
+    );
+  }
+
+  const source = await fs.readFile(sourcePath, 'utf8');
+  let patched = source;
+  for (const [constantName, stringValue] of betterSwiftAxSubroleFallbacks) {
+    patched = patched.replaceAll(`= ${constantName}`, `= ("${stringValue}" as CFString)`);
+  }
+
+  if (patched !== source) {
+    await fs.chmod(sourcePath, 0o644).catch(() => undefined);
+    await fs.writeFile(sourcePath, patched, 'utf8');
+    console.log('Patched BetterSwiftAX subrole constants for older macOS SDKs.');
+  }
+};
+
 const buildTarget = async (target: Target) => {
   console.log(`Building imessage-cli for ${target.platform} (${target.swiftArch})...`);
+  await patchBetterSwiftAxForCurrentSdk();
   await $`swift build -c release --product imessage-cli --arch ${target.swiftArch}`.cwd(
     submodulePath
   );
