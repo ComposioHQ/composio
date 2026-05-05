@@ -1,6 +1,7 @@
 import { FileSystem } from '@effect/platform';
 import { Context, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
+import { executeLocalToolBySlug } from '@composio/cli-local-tools';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
@@ -133,6 +134,18 @@ export const ToolsExecutorLive = Layer.effect(
     return ToolsExecutor.of({
       execute: (slug, params) =>
         Effect.gen(function* () {
+          const localResult = yield* Effect.tryPromise(() =>
+            executeLocalToolBySlug(slug, params.arguments)
+          );
+          if (localResult) {
+            return {
+              successful: true,
+              data: localResult as Record<string, unknown>,
+              error: null,
+              logId: '',
+            } satisfies ToolExecuteResponse;
+          }
+
           const client = yield* clientSingleton.get();
           const resolvedClient = params.client ?? client;
           // One session per invocation — CLI runs one tool per process.

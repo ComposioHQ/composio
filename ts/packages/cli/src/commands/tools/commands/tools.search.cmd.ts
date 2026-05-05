@@ -1,4 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
+import { isLocalToolkitSlug } from '@composio/cli-local-tools';
 import { Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
@@ -153,7 +154,7 @@ const buildSearchNextSteps = (params: {
   rootOnly: boolean;
 }) => {
   const steps: Array<{ action: string; command: string }> = [];
-  if (params.firstToolkit) {
+  if (params.firstToolkit && !isLocalToolkitSlug(params.firstToolkit)) {
     steps.push({
       action: 'Link a user account',
       command: params.rootOnly
@@ -282,7 +283,8 @@ const emitHumanSearchOutput = (params: {
             userId: '<user-id>',
             data: params.firstDataArg,
           });
-      yield* params.ui.log.step([linkHint, executeHint].join('\n'));
+      const steps = params.firstSlug.startsWith('LOCAL_') ? [executeHint] : [linkHint, executeHint];
+      yield* params.ui.log.step(steps.join('\n'));
     }
 
     if (params.error) {
