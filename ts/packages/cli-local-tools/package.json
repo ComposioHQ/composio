@@ -36,6 +36,8 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "build": "pnpm exec tsdown",
+    "build:beeper-imessage": "bun run ./scripts/build-beeper-imessage-binaries.ts",
+    "build:local-tool-binaries": "pnpm run build:beeper-imessage",
     "test": "vitest run",
     "typecheck": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
     "typecheck:tsc": "tsc --noEmit -p ./tsconfig.src.json"

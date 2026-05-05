@@ -5,3 +5,7 @@
 [submodule "ts/vendor/clack"]
 	path = ts/vendor/clack
 	url = https://github.com/bombshell-dev/clack.git
+[submodule "ts/packages/cli-local-tools/vendor/platform-imessage"]
+	path = ts/packages/cli-local-tools/vendor/platform-imessage
+	url = https://github.com/ComposioHQ/platform-imessage
+	branch = main

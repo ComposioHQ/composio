@@ -176,7 +176,7 @@ export const beeperImessageToolkit: LocalToolkitDeclaration = {
   platforms: ['darwin-arm64', 'darwin-x64'],
   source: {
     type: 'cli',
-    repository: 'https://github.com/beeper/platform-imessage',
+    repository: 'https://github.com/ComposioHQ/platform-imessage',
     command: 'imessage-cli',
   },
   bundledBinaries: [
@@ -197,7 +197,7 @@ export const beeperImessageToolkit: LocalToolkitDeclaration = {
   ],
   setup: {
     install:
-      'The CLI ships a bundled imessage-cli binary. Alternatively install/build imessage-cli and set a command override in ~/composio/local_tools.json.',
+      'The CLI ships a bundled imessage-cli binary built from the ts/packages/cli-local-tools/vendor/platform-imessage submodule. Alternatively install/build imessage-cli and set a command override in ~/composio/local_tools.json.',
     commandOverrides: [
       'composio local-tools configure BEEPER_IMESSAGE --command /path/to/imessage-cli',
     ],
