@@ -1216,6 +1216,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.26.0
         version: 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
+      decompress:
+        specifier: ^4.2.1
+        version: 4.2.1
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -1223,6 +1226,9 @@ importers:
         specifier: 'catalog:'
         version: 3.25.1(zod@4.3.6)
     devDependencies:
+      '@types/decompress':
+        specifier: ^4.2.7
+        version: 4.2.7
       '@types/node':
         specifier: ^24.0.1
         version: 24.10.13

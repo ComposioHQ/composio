@@ -45,10 +45,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "decompress": "^4.2.1",
     "zod": "catalog:",
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
+    "@types/decompress": "^4.2.7",
     "@types/node": "^24.0.1",
     "chrome-devtools-mcp": "0.24.0",
     "tsdown": "catalog:",
