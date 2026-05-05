@@ -28,7 +28,7 @@ const withLocalToolsPath = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 
 describe('CLI: composio local-tools', () => {
   layer(TestLive())(it => {
-    it.scoped('[Given] --json [Then] lists bundled Beeper iMessage toolkit', () =>
+    it.scoped('[Given] --json [Then] lists bundled local toolkits', () =>
       Effect.gen(function* () {
         yield* cli(['local-tools', 'list', '--json', '--all-platforms']);
 
@@ -41,25 +41,27 @@ describe('CLI: composio local-tools', () => {
 
         expect(payload.currentPlatform).toBeTruthy();
         expect(payload.metadataPath).toContain('local_tools.json');
-        expect(payload.toolkits.map(toolkit => toolkit.slug)).toContain('BEEPER_IMESSAGE');
+        expect(payload.toolkits.map(toolkit => toolkit.slug)).toEqual(
+          expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS', 'PEEKABOO'])
+        );
       })
     );
 
-    it.scoped(
-      '[Given] doctor --json [Then] reports bundled Beeper iMessage toolkit readiness',
-      () =>
-        Effect.gen(function* () {
-          yield* cli(['local-tools', 'doctor', '--json', '--all-platforms']);
+    it.scoped('[Given] doctor --json [Then] reports local toolkit readiness', () =>
+      Effect.gen(function* () {
+        yield* cli(['local-tools', 'doctor', '--json', '--all-platforms']);
 
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const payload = JSON.parse(lines.at(-1) ?? '') as {
-            metadataPath: string;
-            toolkits: Array<{ slug: string }>;
-          };
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const payload = JSON.parse(lines.at(-1) ?? '') as {
+          metadataPath: string;
+          toolkits: Array<{ slug: string }>;
+        };
 
-          expect(payload.metadataPath).toContain('local_tools.json');
-          expect(payload.toolkits.map(toolkit => toolkit.slug)).toContain('BEEPER_IMESSAGE');
-        })
+        expect(payload.metadataPath).toContain('local_tools.json');
+        expect(payload.toolkits.map(toolkit => toolkit.slug)).toEqual(
+          expect.arrayContaining(['BEEPER_IMESSAGE', 'CHROME_DEVTOOLS', 'PEEKABOO'])
+        );
+      })
     );
 
     it.scoped('[Given] meta --init --json [Then] writes local metadata file', () =>

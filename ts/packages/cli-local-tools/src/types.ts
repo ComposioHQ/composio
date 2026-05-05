@@ -76,6 +76,8 @@ export interface LocalCommandExecution {
 
 export interface LocalNativeExecution {
   readonly kind: 'native';
+  /** Optional prerequisite command used by `composio local-tools doctor` for native wrappers. */
+  readonly readiness?: LocalCommandInvocation;
   readonly execute: (
     input: Record<string, unknown>,
     context: LocalExecutionContext
