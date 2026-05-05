@@ -17,7 +17,7 @@
 import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Logger, Layer, LogLevel } from 'effect';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { teardown } from './_shared';
+import { LOCAL_TOOLS_BINARY_ASSET_DIRNAME, teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -25,6 +25,7 @@ import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/r
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
+const LOCAL_TOOLS_BINARY_ASSETS_DIR = path.join(BINARIES_DIR, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
 
 /**
  * Known binary artifact names (without extension).
@@ -79,6 +80,9 @@ export function packageBinaries() {
           const targetDirectory = path.dirname(path.join(nestedDir, relativePath));
           await $`mkdir -p ${targetDirectory}`.quiet();
           await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${path.join(nestedDir, relativePath)}`.quiet();
+        }
+        if (await Bun.file(LOCAL_TOOLS_BINARY_ASSETS_DIR).exists()) {
+          await $`cp -R ${LOCAL_TOOLS_BINARY_ASSETS_DIR} ${path.join(nestedDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME)}`.quiet();
         }
         const previousCwd = process.cwd();
         process.chdir(tempDir);

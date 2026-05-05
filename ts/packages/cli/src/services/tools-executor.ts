@@ -1,6 +1,7 @@
 import { FileSystem } from '@effect/platform';
 import { Context, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
+import { executeLocalToolBySlug, isLocalToolSlug } from '@composio/cli-local-tools';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
@@ -18,6 +19,8 @@ import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
 import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
 /**
  * Parameters accepted by the Tool Router-based executor.
@@ -50,7 +53,12 @@ export interface ToolsExecutor {
   ) => Effect.Effect<
     ToolExecuteResponse,
     unknown,
-    FileSystem.FileSystem | NodeOs | NodeProcess | ComposioUserContext | ComposioToolkitsRepository
+    | FileSystem.FileSystem
+    | NodeOs
+    | NodeProcess
+    | ComposioUserContext
+    | ComposioToolkitsRepository
+    | ComposioCliUserConfig
   >;
 }
 
@@ -133,6 +141,30 @@ export const ToolsExecutorLive = Layer.effect(
     return ToolsExecutor.of({
       execute: (slug, params) =>
         Effect.gen(function* () {
+          const cliConfig = yield* ComposioCliUserConfig;
+          if (
+            isLocalToolSlug(slug) &&
+            !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
+          ) {
+            return yield* Effect.fail(
+              new Error(
+                `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${slug}.`
+              )
+            );
+          }
+
+          const localResult = yield* Effect.tryPromise(() =>
+            executeLocalToolBySlug(slug, params.arguments)
+          );
+          if (localResult) {
+            return {
+              successful: true,
+              data: localResult as Record<string, unknown>,
+              error: null,
+              logId: '',
+            } satisfies ToolExecuteResponse;
+          }
+
           const client = yield* clientSingleton.get();
           const resolvedClient = params.client ?? client;
           // One session per invocation — CLI runs one tool per process.

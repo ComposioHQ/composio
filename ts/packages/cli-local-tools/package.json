@@ -1,0 +1,58 @@
+{
+  "name": "@composio/cli-local-tools",
+  "version": "0.0.1",
+  "description": "Local tool and toolkit declarations for the Composio CLI.",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "default": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/cli-local-tools"
+  },
+  "license": "ISC",
+  "files": [
+    "dist",
+    "local-tools-binaries"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build": "pnpm exec tsdown",
+    "build:beeper-imessage": "bun run ./scripts/build-beeper-imessage-binaries.ts",
+    "build:peekaboo": "bun run ./scripts/build-peekaboo-binaries.ts",
+    "build:local-tool-binaries": "bun run ./scripts/build-local-tool-binaries.ts",
+    "test": "vitest run",
+    "typecheck": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
+    "typecheck:tsc": "tsc --noEmit -p ./tsconfig.src.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "catalog:",
+    "zod-to-json-schema": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.1",
+    "chrome-devtools-mcp": "0.24.0",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

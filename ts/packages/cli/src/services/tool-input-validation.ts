@@ -2,6 +2,7 @@ import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { jsonSchemaToZodSchema } from '@composio/core';
+import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import { z } from 'zod/v3';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
@@ -170,8 +171,24 @@ const fetchAndCacheToolInputDefinition = (
     const fs = yield* FileSystem.FileSystem;
     const repo = yield* ComposioToolkitsRepository;
     const cacheDir = yield* setupCacheDir;
-    const schemaPath = toolDefinitionPath(cacheDir, slug);
+    const localDefinition = getLocalToolInputDefinition(slug);
+    const schemaPath = toolDefinitionPath(cacheDir, localDefinition?.finalSlug ?? slug);
     yield* ensureToolDefinitionsDir(fs, cacheDir);
+
+    if (localDefinition) {
+      yield* fs.writeFileString(
+        schemaPath,
+        serializeCachedToolDefinition({
+          version: localDefinition.version,
+          inputSchema: localDefinition.schema,
+        })
+      );
+      return {
+        schemaPath,
+        schema: localDefinition.schema,
+        version: localDefinition.version,
+      };
+    }
 
     const tool = yield* repo.getToolDetailed(slug);
     toolDebugLog('tool_detail', {

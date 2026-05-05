@@ -1,5 +1,6 @@
 import { Args, Command, Options } from '@effect/cli';
 import type { Composio } from '@composio/client';
+import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
@@ -1012,12 +1013,22 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       projectId: resolvedProject.projectId,
     });
     const cliConfig = yield* ComposioCliUserConfig;
+    if (
+      isLocalToolSlug(params.slug) &&
+      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
+    ) {
+      return yield* Effect.fail(
+        new Error(
+          `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`
+        )
+      );
+    }
     const accountSelector = cliConfig.isExperimentalFeatureEnabled(
       CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
     )
       ? params.account
       : Option.none<string>();
-    const toolkitSlug = toolkitFromToolSlug(params.slug);
+    const toolkitSlug = isLocalToolSlug(params.slug) ? undefined : toolkitFromToolSlug(params.slug);
     const selectedConnectedAccountId = yield* resolveExplicitConnectedAccount({
       client,
       toolkitSlug,
@@ -1111,6 +1122,7 @@ const runConnectedToolkitFailFast = (params: {
       return;
     }
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
+    if (isLocalToolSlug(params.slug)) return;
 
     perfDebugLog('execute.connected_toolkits.refresh_start', {
       slug: params.slug,
@@ -1454,6 +1466,18 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
+    const cliConfig = yield* ComposioCliUserConfig;
+    if (
+      isLocalToolSlug(params.slug) &&
+      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
+    ) {
+      return yield* Effect.fail(
+        new Error(
+          `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`
+        )
+      );
+    }
+
     if (params.getSchema) {
       const context = yield* resolveSchemaContext(params);
       const definition = yield* getOrFetchToolInputDefinition(params.slug, {
@@ -1697,6 +1721,7 @@ const checkConnectedToolkitOrFail = (params: {
   Effect.gen(function* () {
     if (params.skipConnectionCheck || params.skipChecks) return;
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
+    if (isLocalToolSlug(params.slug)) return;
 
     yield* refreshConsumerConnectedToolkitsCache({
       orgId: params.resolvedProject.orgId,

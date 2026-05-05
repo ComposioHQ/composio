@@ -14,6 +14,7 @@ import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
+import { localToolsCmd } from './local-tools/local-tools.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { buildDevCommand } from './dev.cmd';
 import {
@@ -69,6 +70,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(proxyCmd),
   tagged(artifactsCmd),
   tagged(installCmd),
+  experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, localToolsCmd),
   tagged(rootToolsCmd),
   tagged(rootTriggersCmd),
   tagged(rootToolsCmd$Search),

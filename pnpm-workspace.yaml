@@ -8,6 +8,7 @@ packages:
   - ts/examples/*
   - ts/packages/cli
   - ts/packages/cli-keyring
+  - ts/packages/cli-local-tools
   - ts/packages/core
   - ts/packages/json-schema-to-zod
   - ts/packages/providers/*
@@ -52,6 +53,7 @@ minimumReleaseAge: 4320
 
 minimumReleaseAgeExclude:
   - '@composio/client'
+  - chrome-devtools-mcp
 
 overrides:
   qs@<6.14.1: '>=6.14.1'

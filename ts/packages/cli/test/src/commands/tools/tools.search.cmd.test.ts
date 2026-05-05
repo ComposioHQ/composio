@@ -441,7 +441,44 @@ describe('CLI: composio search', () => {
           yield* cli(['search', 'send', '--toolkits', 'gmail,outlook']).pipe(Effect.provide(live));
 
           expect(createParams?.toolkits).toEqual({ enable: ['gmail', 'outlook'] });
+          expect(createParams?.experimental).toBeUndefined();
           expect(searchParams?.queries[0]?.use_case).toBe('send');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(testLiveOptions))(
+    '[Given] unknown local-style toolkit filter [Then] it is still sent as a remote toolkit',
+    it => {
+      it.scoped('does not inject experimental custom toolkits in the foundation package', () =>
+        Effect.gen(function* () {
+          let createParams: SessionCreateParams | undefined;
+
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            toolkitsData,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              create: async params => {
+                createParams = params;
+                return {
+                  session_id: 'trs_test_session',
+                  config: { user_id: params.user_id, preload: { tools: [] } },
+                  config_version: 1,
+                  mcp: { type: 'http', url: 'https://mcp.test.composio.dev' },
+                  tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
+                };
+              },
+            },
+          });
+
+          yield* cli(['search', 'inspect local app', '--toolkits', 'local_app']).pipe(
+            Effect.provide(live)
+          );
+
+          expect(createParams?.toolkits).toEqual({ enable: ['local_app'] });
+          expect(createParams?.experimental).toBeUndefined();
         })
       );
     }
