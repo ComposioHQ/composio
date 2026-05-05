@@ -39,6 +39,54 @@ const exists = async (filePath: string): Promise<boolean> =>
 const readJson = async <T>(filePath: string): Promise<T> =>
   JSON.parse(await fs.readFile(filePath, 'utf8')) as T;
 
+const swiftConfigurationPatchReplacements = [
+  {
+    filePath: 'Sources/Configuration/Providers/Files/FileProvider.swift',
+    oldText: `self._snapshot = try snapshotType.init(
+                data: fileContents!.bytes,
+                providerName: providerName,
+                parsingOptions: parsingOptions
+            )`,
+    newText: `self._snapshot = try fileContents!.withUnsafeBytes { bytes in
+                try snapshotType.init(
+                    data: RawSpan(_unsafeBytes: bytes),
+                    providerName: providerName,
+                    parsingOptions: parsingOptions
+                )
+            }`,
+  },
+  {
+    filePath: 'Sources/Configuration/Providers/Files/ReloadingFileProvider.swift',
+    oldText: `initialSnapshot = try snapshotType.init(
+                data: data.bytes,
+                providerName: providerName,
+                parsingOptions: parsingOptions
+            )`,
+    newText: `initialSnapshot = try data.withUnsafeBytes { bytes in
+                try snapshotType.init(
+                    data: RawSpan(_unsafeBytes: bytes),
+                    providerName: providerName,
+                    parsingOptions: parsingOptions
+                )
+            }`,
+  },
+  {
+    filePath: 'Sources/Configuration/Providers/Files/ReloadingFileProvider.swift',
+    oldText: `newSnapshot = try Snapshot.init(
+                data: data.bytes,
+                providerName: providerName,
+                parsingOptions: parsingOptions
+            )`,
+    newText: `newSnapshot = try data.withUnsafeBytes { bytes in
+                try Snapshot.init(
+                    data: RawSpan(_unsafeBytes: bytes),
+                    providerName: providerName,
+                    parsingOptions: parsingOptions
+                )
+            }`,
+  },
+] as const;
+
 const ensurePlatform = () => {
   if (process.platform !== 'darwin') {
     throw new Error(
@@ -91,8 +139,47 @@ const copyLicense = async () => {
   throw new Error('No upstream license file found in Peekaboo submodule.');
 };
 
+const patchSwiftConfigurationForCurrentToolchain = async () => {
+  await $`swift package resolve`.cwd(cliPackagePath);
+
+  const checkoutRoot = path.join(cliPackagePath, '.build/checkouts/swift-configuration');
+  if (!(await exists(checkoutRoot))) {
+    throw new Error(
+      'Swift package resolution completed but the swift-configuration checkout was not found.'
+    );
+  }
+
+  let replacementCount = 0;
+  for (const replacement of swiftConfigurationPatchReplacements) {
+    const sourcePath = path.join(checkoutRoot, replacement.filePath);
+    if (!(await exists(sourcePath))) {
+      throw new Error(
+        `Swift package resolution completed but ${replacement.filePath} was not found.`
+      );
+    }
+
+    const source = await fs.readFile(sourcePath, 'utf8');
+    if (!source.includes(replacement.oldText)) {
+      if (source.includes(replacement.newText)) continue;
+      throw new Error(`Unable to patch swift-configuration file: ${replacement.filePath}`);
+    }
+
+    const patched = source.replaceAll(replacement.oldText, replacement.newText);
+    await fs.chmod(sourcePath, 0o644).catch(() => undefined);
+    await fs.writeFile(sourcePath, patched, 'utf8');
+    replacementCount += 1;
+  }
+
+  if (replacementCount > 0) {
+    console.log(
+      `Patched ${replacementCount} swift-configuration Data.bytes usages for the current Swift toolchain.`
+    );
+  }
+};
+
 const buildTarget = async (target: Target) => {
   console.log(`Building peekaboo for ${target.platform} (${target.swiftArch})...`);
+  await patchSwiftConfigurationForCurrentToolchain();
   await $`swift build --arch ${target.swiftArch} -c release -Xswiftc -Osize -Xswiftc -wmo -Xlinker -dead_strip`.cwd(
     cliPackagePath
   );
