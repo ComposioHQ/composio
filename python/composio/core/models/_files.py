@@ -776,25 +776,46 @@ class FileHelper(WithLogger):
         self.enhance_schema_descriptions(schema)
         return schema
 
-    def _find_uploadable_schema_variant(self, schema: t.Dict) -> t.Optional[t.Dict]:
-        """Find a schema variant that contains file_uploadable properties."""
-        # Check anyOf variants
-        if "anyOf" in schema:
-            for variant in schema["anyOf"]:
-                if self._has_file_property(variant, "file_uploadable"):
-                    return variant
+    def _find_uploadable_schema_variant(
+        self, schema: t.Dict, value: t.Any = None
+    ) -> t.Optional[t.Dict]:
+        """Find a schema variant that contains file_uploadable properties.
 
-        # Check oneOf variants
-        if "oneOf" in schema:
-            for variant in schema["oneOf"]:
-                if self._has_file_property(variant, "file_uploadable"):
-                    return variant
+        When ``value`` is provided, prefer a variant whose JSON-Schema ``type``
+        matches the runtime type of the value. This makes
+        ``anyOf(string<file>, array<file>)`` work for both single paths and
+        lists of paths instead of always returning the first match (which
+        previously caused ``os.fspath(list)`` errors when the model sent an
+        array of paths to a tool whose schema accepted both shapes).
+        """
+        for key in ("anyOf", "oneOf", "allOf"):
+            if key not in schema:
+                continue
 
-        # Check allOf - merge all variants
-        if "allOf" in schema:
-            for variant in schema["allOf"]:
-                if self._has_file_property(variant, "file_uploadable"):
-                    return variant
+            candidates = [
+                v
+                for v in schema[key]
+                if self._has_file_property(v, "file_uploadable")
+            ]
+            if not candidates:
+                continue
+
+            if value is not None:
+                value_type = (
+                    "array"
+                    if isinstance(value, list)
+                    else "object"
+                    if isinstance(value, dict)
+                    else "string"
+                    if isinstance(value, str)
+                    else None
+                )
+                if value_type is not None:
+                    for c in candidates:
+                        if c.get("type") == value_type:
+                            return c
+
+            return candidates[0]
 
         return None
 
@@ -835,8 +856,15 @@ class FileHelper(WithLogger):
                 ).model_dump()
                 continue
 
-            # Check anyOf/oneOf/allOf for file_uploadable
-            uploadable_variant = self._find_uploadable_schema_variant(param_schema)
+            # Check anyOf/oneOf/allOf for file_uploadable. Pass the runtime
+            # value so the picker can match an array-of-files variant when the
+            # model sends a list, instead of always returning the first
+            # (string) variant — which previously caused ``os.fspath(list)``
+            # errors for tools like ``GMAIL_SEND_EMAIL`` whose ``attachment``
+            # field accepts ``anyOf(string<file>, array<file>)``.
+            uploadable_variant = self._find_uploadable_schema_variant(
+                param_schema, value=request[_param]
+            )
             if uploadable_variant is not None:
                 # If the variant itself is file_uploadable
                 if uploadable_variant.get("file_uploadable", False):
@@ -854,6 +882,48 @@ class FileHelper(WithLogger):
                         file_upload_allowlist=self._file_upload_allowlist,
                         before_file_upload=before_file_upload,
                     ).model_dump()
+                    continue
+
+                # Array-of-file_uploadable variant: model sent a list of paths
+                # and the schema permits an array branch with uploadable items.
+                if (
+                    uploadable_variant.get("type") == "array"
+                    and isinstance(request[_param], list)
+                    and isinstance(uploadable_variant.get("items"), dict)
+                    and self._has_file_property(
+                        uploadable_variant["items"], "file_uploadable"
+                    )
+                ):
+                    items_schema = uploadable_variant["items"]
+                    processed: t.List[t.Any] = []
+                    for item in request[_param]:
+                        if item is None or item == "":
+                            continue
+                        if items_schema.get("file_uploadable", False):
+                            processed.append(
+                                FileUploadable.from_path(
+                                    client=self._client,
+                                    file=item,
+                                    tool=tool.slug,
+                                    toolkit=tool.toolkit.slug,
+                                    sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+                                    file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                                    file_upload_allowlist=self._file_upload_allowlist,
+                                    before_file_upload=before_file_upload,
+                                ).model_dump()
+                            )
+                        elif isinstance(item, dict):
+                            processed.append(
+                                self._substitute_file_uploads_recursively(
+                                    schema=items_schema,
+                                    request=item,
+                                    tool=tool,
+                                    before_file_upload=before_file_upload,
+                                )
+                            )
+                        else:
+                            processed.append(item)
+                    request[_param] = processed
                     continue
 
                 # If the variant has nested properties with file_uploadable
