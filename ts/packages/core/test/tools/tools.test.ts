@@ -36,24 +36,6 @@ describe('Tools', () => {
     });
   });
 
-  describe('ToolListParamsSchema', () => {
-    it('accepts toolkitVersions as the literal "latest"', () => {
-      const result = ToolListParamsSchema.safeParse({
-        toolkits: ['github'],
-        toolkitVersions: 'latest',
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it('accepts toolkitVersions as a record of slug -> version', () => {
-      const result = ToolListParamsSchema.safeParse({
-        toolkits: ['github'],
-        toolkitVersions: { github: '20251201_03' },
-      });
-      expect(result.success).toBe(true);
-    });
-  });
-
   describe('getRawComposioTools', () => {
     it('should fetch tools from the API', async () => {
       mockClient.tools.list.mockResolvedValueOnce({
@@ -618,6 +600,48 @@ describe('Tools', () => {
       expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
         modifySchema: schemaModifier,
       });
+    });
+
+    it('should auto-apply important: true for toolkits-only tools.get queries', async () => {
+      const userId = 'test-user';
+      const filters = { toolkits: ['github'] };
+
+      const getRawComposioToolsSpy = vi.spyOn(context.tools, 'getRawComposioTools');
+      getRawComposioToolsSpy.mockResolvedValueOnce([toolMocks.transformedTool as unknown as Tool]);
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools-collection');
+
+      await context.tools.get(userId, filters);
+
+      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(
+        { toolkits: ['github'], important: true },
+        { modifySchema: undefined }
+      );
+    });
+
+    it('should respect explicit important: false on tools.get', async () => {
+      const userId = 'test-user';
+      const filters: ToolListParams = { toolkits: ['github'], important: false };
+
+      const getRawComposioToolsSpy = vi.spyOn(context.tools, 'getRawComposioTools');
+      getRawComposioToolsSpy.mockResolvedValueOnce([toolMocks.transformedTool as unknown as Tool]);
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools-collection');
+
+      await context.tools.get(userId, filters);
+
+      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(filters, { modifySchema: undefined });
+    });
+
+    it('should not auto-apply important when limit is provided', async () => {
+      const userId = 'test-user';
+      const filters: ToolListParams = { toolkits: ['github'], limit: 10 };
+
+      const getRawComposioToolsSpy = vi.spyOn(context.tools, 'getRawComposioTools');
+      getRawComposioToolsSpy.mockResolvedValueOnce([toolMocks.transformedTool as unknown as Tool]);
+      context.mockProvider.wrapTools.mockReturnValueOnce('wrapped-tools-collection');
+
+      await context.tools.get(userId, filters);
+
+      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(filters, { modifySchema: undefined });
     });
   });
 
@@ -2190,5 +2214,23 @@ describe('Tools', () => {
         });
       });
     });
+  });
+});
+
+describe('ToolListParamsSchema', () => {
+  it('should accept toolkitVersions as the literal "latest"', () => {
+    const result = ToolListParamsSchema.safeParse({
+      toolkits: ['github'],
+      toolkitVersions: 'latest',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept toolkitVersions as a record of slug -> version', () => {
+    const result = ToolListParamsSchema.safeParse({
+      toolkits: ['github'],
+      toolkitVersions: { github: '20251201_03' },
+    });
+    expect(result.success).toBe(true);
   });
 });

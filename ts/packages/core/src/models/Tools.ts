@@ -364,6 +364,18 @@ export class Tools<
    *   search: 'user management'
    * });
    *
+   * // Recover the curated subset (no auto-filtering in `getRawComposioTools`)
+   * const curated = await composio.tools.getRawComposioTools({
+   *   toolkits: ['github'],
+   *   important: true
+   * });
+   *
+   * // Pin a specific toolkit version for one call
+   * const pinned = await composio.tools.getRawComposioTools({
+   *   toolkits: ['github'],
+   *   toolkitVersions: { github: '20251201_03' }
+   * });
+   *
    * // Get tools by authentication config
    * const authSpecificTools = await composio.tools.getRawComposioTools({
    *   authConfigIds: ['auth_config_123']
@@ -386,9 +398,6 @@ export class Tools<
         cause: queryParams.error,
       });
     }
-
-    const effectiveImportant =
-      'important' in queryParams.data ? queryParams.data.important : undefined;
 
     const effectiveToolkitVersions = queryParams.data.toolkitVersions ?? this.toolkitVersions;
 
@@ -424,10 +433,8 @@ export class Tools<
       ...('authConfigIds' in queryParams.data
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
-      ...(effectiveImportant ? { important: 'true' } : {}),
-      ...(effectiveToolkitVersions !== undefined
-        ? { toolkit_versions: effectiveToolkitVersions }
-        : {}),
+      ...(queryParams.data.important ? { important: 'true' } : {}),
+      toolkit_versions: effectiveToolkitVersions,
     };
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
@@ -713,7 +720,7 @@ export class Tools<
       ) as TToolCollection;
     } else {
       // if the second argument is an object, get a list of tools
-      const tools = await this.getRawComposioTools(arg2, {
+      const tools = await this.getRawComposioTools(this.applyImportantHeuristic(arg2), {
         modifySchema: options?.modifySchema as TransformToolSchemaModifier,
       });
       return this.wrapToolsForProvider(
@@ -722,6 +729,27 @@ export class Tools<
         options as ExecuteToolModifiers
       ) as TToolCollection;
     }
+  }
+
+  /**
+   * For provider-bound `tools.get` calls only: when the caller asks for a whole
+   * toolkit without narrowing (no `tools`, `tags`, `search`, `limit`, or explicit
+   * `important`), default to `important: true` so LLM context windows aren't
+   * flooded with non-important tools. `getRawComposioTools` stays raw and
+   * returns the full toolkit. Callers can opt out with `important: false`.
+   */
+  private applyImportantHeuristic(query: ToolListParams): ToolListParams {
+    if (
+      'toolkits' in query &&
+      !('tools' in query) &&
+      !('tags' in query) &&
+      !('search' in query) &&
+      !('limit' in query) &&
+      !('important' in query)
+    ) {
+      return { ...query, important: true } as ToolListParams;
+    }
+    return query;
   }
   /**
    * @internal

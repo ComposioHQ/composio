@@ -185,7 +185,18 @@ export const ToolListParamsSchema = z.object({
   limit: z.number().optional(),
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
+  /**
+   * Server-side filter for "important" (curated) tools only.
+   * When omitted, `tools.get` (provider-bound path) defaults this to `true`
+   * for toolkits-only queries to keep LLM context windows reasonable.
+   * `getRawComposioTools` never auto-applies this — set `true` explicitly to opt in.
+   */
   important: z.boolean().optional(),
+  /**
+   * Per-call override for toolkit versions.
+   * Either the literal `'latest'` or a `Record<toolkitSlug, version>`.
+   * Falls back to the SDK-init `toolkitVersions` when omitted.
+   */
   toolkitVersions: z.union([ToolkitVersionsSchema, ToolkitLatestVersionSchema]).optional(),
 });
 
@@ -194,6 +205,11 @@ type BaseParams = {
   search?: string;
   scopes?: string[];
   tags?: string[];
+  /**
+   * Per-call override for toolkit versions, taking precedence over the value
+   * passed to `new Composio({ toolkitVersions })`. Set to `'latest'` for the
+   * newest toolkit revision, or `{ slug: version }` to pin specific toolkits.
+   */
   toolkitVersions?: ToolkitVersionParam;
 };
 
