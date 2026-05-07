@@ -18,7 +18,11 @@ import {
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { transformProxyParams } from './proxyParamsTransform';
-import { findCustomTool, executeCustomTool } from './customToolExecution';
+import {
+  assertUnambiguousCustomToolSlug,
+  findCustomTool,
+  executeCustomTool,
+} from './customToolExecution';
 import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
@@ -66,6 +70,7 @@ export class SessionContextImpl implements SessionContext {
         logId: '',
       });
     }
+    assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
 
     // Fall back to remote execution
     const executeParams: SessionExecuteParams = {
