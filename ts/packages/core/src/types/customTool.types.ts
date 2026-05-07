@@ -262,8 +262,12 @@ export type CustomToolsMapEntry = {
 export type CustomToolsMap = {
   /** Lookup by final slug (e.g. LOCAL_GET_USER_CONTEXT) — used for agent execution path */
   byFinalSlug: Map<string, CustomToolsMapEntry>;
-  /** Lookup by original slug (e.g. GET_USER_CONTEXT) — used for programmatic session.execute() */
+  /** Lookup by unique original slug (e.g. GET_USER_CONTEXT) — used for programmatic session.execute() */
   byOriginalSlug: Map<string, CustomToolsMapEntry>;
+  /** Lookup by resolved toolkit + original slug — used when multiple custom toolkits reuse tool names */
+  byToolkitAndOriginalSlug?: Map<string, CustomToolsMapEntry>;
+  /** Original slugs that appear in multiple toolkits and cannot be resolved safely without the final slug */
+  ambiguousOriginalSlugs?: Set<string>;
   /** The original custom toolkits passed at session creation — used for session.customToolkits() */
   toolkits?: CustomToolkit[];
   /** The original standalone custom tools passed at session creation — kept for inline re-injection on subsequent v3.1 requests. */

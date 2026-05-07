@@ -2,7 +2,11 @@
  * @fileoverview Standalone functions for custom tool lookup and execution.
  * Extracted from ToolRouterSession for reuse in SessionContextImpl (sibling routing).
  */
-import type { CustomToolsMap, CustomToolsMapEntry, SessionContext } from '../types/customTool.types';
+import type {
+  CustomToolsMap,
+  CustomToolsMapEntry,
+  SessionContext,
+} from '../types/customTool.types';
 import type { ToolExecuteResponse } from '../types/tool.types';
 
 /**
@@ -15,7 +19,10 @@ export function findCustomTool(
 ): CustomToolsMapEntry | undefined {
   if (!map) return undefined;
   const upper = slug.toUpperCase();
-  return map.byFinalSlug.get(upper) ?? map.byOriginalSlug.get(upper);
+  const finalSlugMatch = map.byFinalSlug.get(upper);
+  if (finalSlugMatch) return finalSlugMatch;
+  if (map.ambiguousOriginalSlugs?.has(upper)) return undefined;
+  return map.byOriginalSlug.get(upper);
 }
 
 /**

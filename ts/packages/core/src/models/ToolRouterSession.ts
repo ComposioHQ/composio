@@ -46,7 +46,10 @@ import type {
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
 import { findCustomTool, executeCustomTool } from './customToolExecution';
-import { findCustomToolMapEntryByFinalSlug } from './CustomTool';
+import {
+  findCustomToolMapEntryByFinalSlug,
+  findCustomToolMapEntryByToolkitAndOriginalSlug,
+} from './CustomTool';
 import { transformProxyParams } from './proxyParamsTransform';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 
@@ -144,7 +147,7 @@ export class ToolRouterSession<
           toolSlug,
           input,
           modifiers,
-          toolBySlug.get(toolSlug.toUpperCase()),
+          toolBySlug.get(toolSlug.toUpperCase())
         );
       };
 
@@ -272,8 +275,11 @@ export class ToolRouterSession<
       name: tk.name,
       description: tk.description,
       tools: tk.tools.map(tool => {
-        // Look up the entry to get the final slug
-        const entry = this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
+        // Look up by toolkit + original slug so toolkits can safely reuse common names
+        // like VERSION, CLICK, or SEARCH without losing the backend-assigned final slug.
+        const entry =
+          findCustomToolMapEntryByToolkitAndOriginalSlug(this.customToolsMap, tk.slug, tool.slug) ??
+          this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
         return {
           slug: entry?.finalSlug ?? tool.slug,
           name: tool.name,
