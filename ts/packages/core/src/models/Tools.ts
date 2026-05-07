@@ -387,17 +387,10 @@ export class Tools<
       });
     }
 
-    const shouldAutoApplyImportant =
-      'toolkits' in queryParams.data &&
-      !('tools' in queryParams.data) &&
-      !('tags' in queryParams.data) &&
-      !('search' in queryParams.data) &&
-      // if the user provides a limit, do not apply the important flag
-      !('limit' in queryParams.data) &&
-      queryParams.data.important !== false;
-
     const effectiveImportant =
-      'important' in queryParams.data ? queryParams.data.important : shouldAutoApplyImportant;
+      'important' in queryParams.data ? queryParams.data.important : undefined;
+
+    const effectiveToolkitVersions = queryParams.data.toolkitVersions ?? this.toolkitVersions;
 
     // check if the query params contains atleast one of the following: tools, toolkits, search, authConfigIds
     if (
@@ -432,7 +425,9 @@ export class Tools<
         ? { auth_config_ids: queryParams.data.authConfigIds }
         : {}),
       ...(effectiveImportant ? { important: 'true' } : {}),
-      ...{ toolkit_versions: this.toolkitVersions },
+      ...(effectiveToolkitVersions !== undefined
+        ? { toolkit_versions: effectiveToolkitVersions }
+        : {}),
     };
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);

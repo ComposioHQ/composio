@@ -186,6 +186,7 @@ export const ToolListParamsSchema = z.object({
   search: z.string().optional(),
   authConfigIds: z.array(z.string()).optional(),
   important: z.boolean().optional(),
+  toolkitVersions: z.union([ToolkitVersionsSchema, ToolkitLatestVersionSchema]).optional(),
 });
 
 type BaseParams = {
@@ -193,6 +194,7 @@ type BaseParams = {
   search?: string;
   scopes?: string[];
   tags?: string[];
+  toolkitVersions?: ToolkitVersionParam;
 };
 
 // tools only
@@ -202,14 +204,14 @@ type ToolsOnlyParams = {
   scopes?: never;
   search?: never;
   tags?: never;
-};
+} & Pick<BaseParams, 'toolkitVersions'>;
 // toolkits only
 type ToolkitsOnlyParams = {
   toolkits: string[];
   tools?: never;
   scopes?: never;
   important?: boolean;
-} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
 
 // toolkit + scopes (single toolkit only)
 type ToolkitScopeOnlyParams = {
@@ -217,7 +219,7 @@ type ToolkitScopeOnlyParams = {
   tools?: never;
   scopes: string[];
   important?: boolean;
-} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
 
 // tags only
 type TagsOnlyParams = {
@@ -225,7 +227,7 @@ type TagsOnlyParams = {
   tags: string[];
   tools?: never;
   search?: never;
-} & Pick<BaseParams, 'limit'>;
+} & Pick<BaseParams, 'limit' | 'toolkitVersions'>;
 
 // search only
 type SearchOnlyParams = {
@@ -235,14 +237,14 @@ type SearchOnlyParams = {
   scopes?: never;
   limit?: never;
   tags?: never;
-};
+} & Pick<BaseParams, 'toolkitVersions'>;
 
 // tools by auth config ids only
 type AuthConfigIdsOnlyParams = {
   authConfigIds: string[];
   tools?: never;
   toolkits?: never;
-} & Pick<BaseParams, 'limit' | 'search' | 'tags'>;
+} & Pick<BaseParams, 'limit' | 'search' | 'tags' | 'toolkitVersions'>;
 /**
  * ToolListParams is the parameters for the list of tools.
  * You must provide either tools or toolkits, but not both.
