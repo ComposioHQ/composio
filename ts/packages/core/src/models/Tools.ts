@@ -739,17 +739,9 @@ export class Tools<
    * returns the full toolkit. Callers can opt out with `important: false`.
    */
   private applyImportantHeuristic(query: ToolListParams): ToolListParams {
-    if (
-      'toolkits' in query &&
-      !('tools' in query) &&
-      !('tags' in query) &&
-      !('search' in query) &&
-      !('limit' in query) &&
-      !('important' in query)
-    ) {
-      return { ...query, important: true } as ToolListParams;
-    }
-    return query;
+    const NARROWING_KEYS = ['tools', 'tags', 'search', 'limit', 'important'] as const;
+    const isToolkitsOnly = 'toolkits' in query && !NARROWING_KEYS.some(key => key in query);
+    return isToolkitsOnly ? ({ ...query, important: true } as ToolListParams) : query;
   }
   /**
    * @internal
