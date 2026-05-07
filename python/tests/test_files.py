@@ -612,6 +612,137 @@ class TestFileUploadSubstitutionWithUnionTypes:
                 request={"content": {"attachment": "/path/to/file.pdf"}},
             )
 
+    @patch("composio.core.models._files.FileUploadable.from_path")
+    def test_substitute_upload_anyof_single_or_array_prefers_array_for_list_value(
+        self, mock_from_path, file_helper, mock_tool
+    ):
+        """List runtime values should use the array branch and upload each item."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "anyOf": [
+                        {"type": "string", "file_uploadable": True},
+                        {
+                            "type": "array",
+                            "items": {"type": "string", "file_uploadable": True},
+                        },
+                    ]
+                }
+            },
+        }
+
+        upload_1 = MagicMock()
+        upload_1.model_dump.return_value = {
+            "name": "a.txt",
+            "mimetype": "text/plain",
+            "s3key": "key-a",
+        }
+        upload_2 = MagicMock()
+        upload_2.model_dump.return_value = {
+            "name": "b.txt",
+            "mimetype": "text/plain",
+            "s3key": "key-b",
+        }
+        mock_from_path.side_effect = [upload_1, upload_2]
+
+        request = {"attachment": ["/tmp/a.txt", "/tmp/b.txt"]}
+        result = file_helper._substitute_file_uploads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.input_parameters,
+            request=request,
+        )
+
+        assert result is request
+        assert result["attachment"] == [
+            {"name": "a.txt", "mimetype": "text/plain", "s3key": "key-a"},
+            {"name": "b.txt", "mimetype": "text/plain", "s3key": "key-b"},
+        ]
+        assert [call.kwargs["file"] for call in mock_from_path.call_args_list] == [
+            "/tmp/a.txt",
+            "/tmp/b.txt",
+        ]
+
+    @patch("composio.core.models._files.FileUploadable.from_path")
+    def test_substitute_upload_anyof_single_or_array_keeps_string_behavior(
+        self, mock_from_path, file_helper, mock_tool
+    ):
+        """String runtime values should still use the single-file branch."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "anyOf": [
+                        {"type": "string", "file_uploadable": True},
+                        {
+                            "type": "array",
+                            "items": {"type": "string", "file_uploadable": True},
+                        },
+                    ]
+                }
+            },
+        }
+
+        upload = MagicMock()
+        upload.model_dump.return_value = {
+            "name": "a.txt",
+            "mimetype": "text/plain",
+            "s3key": "key-a",
+        }
+        mock_from_path.return_value = upload
+
+        result = file_helper._substitute_file_uploads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.input_parameters,
+            request={"attachment": "/tmp/a.txt"},
+        )
+
+        assert result["attachment"] == {
+            "name": "a.txt",
+            "mimetype": "text/plain",
+            "s3key": "key-a",
+        }
+        mock_from_path.assert_called_once()
+        assert mock_from_path.call_args.kwargs["file"] == "/tmp/a.txt"
+
+    @patch("composio.core.models._files.FileUploadable.from_path")
+    def test_substitute_upload_array_items_with_anyof_file_branch(
+        self, mock_from_path, file_helper, mock_tool
+    ):
+        """Array item schemas can contain file-uploadable union branches."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {"type": "string", "file_uploadable": True},
+                            {"type": "null"},
+                        ]
+                    },
+                }
+            },
+        }
+
+        upload_1 = MagicMock()
+        upload_1.model_dump.return_value = {"s3key": "key-a"}
+        upload_2 = MagicMock()
+        upload_2.model_dump.return_value = {"s3key": "key-b"}
+        mock_from_path.side_effect = [upload_1, upload_2]
+
+        result = file_helper._substitute_file_uploads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.input_parameters,
+            request={"attachments": ["/tmp/a.txt", None, "", "/tmp/b.txt"]},
+        )
+
+        assert result["attachments"] == [{"s3key": "key-a"}, {"s3key": "key-b"}]
+        assert [call.kwargs["file"] for call in mock_from_path.call_args_list] == [
+            "/tmp/a.txt",
+            "/tmp/b.txt",
+        ]
+
 
 class TestFileDownloadSubstitutionWithUnionTypes:
     """Test cases for file download substitution with anyOf, oneOf, and allOf schemas."""
@@ -792,6 +923,95 @@ class TestFileDownloadSubstitutionWithUnionTypes:
                 },
             )
 
+    @patch("composio.core.models._files.FileDownloadable.download")
+    def test_substitute_download_anyof_single_or_array_prefers_array_for_list_value(
+        self, mock_download, file_helper, mock_tool
+    ):
+        """List runtime values should use the array branch and download each item."""
+        mock_tool.output_parameters = {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "anyOf": [
+                        {"type": "object", "file_downloadable": True},
+                        {
+                            "type": "array",
+                            "items": {"type": "object", "file_downloadable": True},
+                        },
+                    ]
+                }
+            },
+        }
+        mock_download.side_effect = ["/tmp/a.txt", "/tmp/b.txt"]
+
+        request = {
+            "attachment": [
+                {
+                    "s3url": "https://s3.example.com/a.txt",
+                    "mimetype": "text/plain",
+                    "name": "a.txt",
+                },
+                {
+                    "s3url": "https://s3.example.com/b.txt",
+                    "mimetype": "text/plain",
+                    "name": "b.txt",
+                },
+            ]
+        }
+        result = file_helper._substitute_file_downloads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.output_parameters,
+            request=request,
+        )
+
+        assert result is request
+        assert result["attachment"] == ["/tmp/a.txt", "/tmp/b.txt"]
+        assert mock_download.call_count == 2
+
+    @patch("composio.core.models._files.FileDownloadable.download")
+    def test_substitute_download_array_items_with_anyof_file_branch(
+        self, mock_download, file_helper, mock_tool
+    ):
+        """Array item schemas can contain file-downloadable union branches."""
+        mock_tool.output_parameters = {
+            "type": "object",
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {"type": "object", "file_downloadable": True},
+                            {"type": "null"},
+                        ]
+                    },
+                }
+            },
+        }
+        mock_download.side_effect = ["/tmp/a.txt", "/tmp/b.txt"]
+
+        result = file_helper._substitute_file_downloads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.output_parameters,
+            request={
+                "attachments": [
+                    {
+                        "s3url": "https://s3.example.com/a.txt",
+                        "mimetype": "text/plain",
+                        "name": "a.txt",
+                    },
+                    None,
+                    {
+                        "s3url": "https://s3.example.com/b.txt",
+                        "mimetype": "text/plain",
+                        "name": "b.txt",
+                    },
+                ]
+            },
+        )
+
+        assert result["attachments"] == ["/tmp/a.txt", None, "/tmp/b.txt"]
+        assert mock_download.call_count == 2
+
 
 class TestFileHelperFindVariantMethods:
     """Test cases for _find_uploadable_schema_variant and _find_downloadable_schema_variant."""
@@ -842,6 +1062,45 @@ class TestFileHelperFindVariantMethods:
         }
         result = file_helper._find_uploadable_schema_variant(schema)
         assert result is None
+
+    def test_find_uploadable_variant_prefers_runtime_value_shape(self, file_helper):
+        """Runtime values should select the matching file-bearing schema shape."""
+        schema = {
+            "anyOf": [
+                {"type": "string", "file_uploadable": True},
+                {
+                    "type": "array",
+                    "items": {"type": "string", "file_uploadable": True},
+                },
+            ]
+        }
+
+        result = file_helper._find_uploadable_schema_variant(
+            schema,
+            value=["/tmp/a.txt", "/tmp/b.txt"],
+        )
+
+        assert result is not None
+        assert result["type"] == "array"
+
+    def test_find_uploadable_variant_falls_back_to_first_file_bearing_variant(
+        self, file_helper
+    ):
+        """No runtime shape match should preserve historical first-match behavior."""
+        schema = {
+            "anyOf": [
+                {"type": "string", "file_uploadable": True},
+                {
+                    "type": "array",
+                    "items": {"type": "string", "file_uploadable": True},
+                },
+            ]
+        }
+
+        result = file_helper._find_uploadable_schema_variant(schema, value=123)
+
+        assert result is not None
+        assert result["type"] == "string"
 
     def test_find_downloadable_variant_in_anyof(self, file_helper):
         """Test finding downloadable variant in anyOf."""
