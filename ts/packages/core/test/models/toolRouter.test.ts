@@ -7,7 +7,7 @@ import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 import { ToolRouterCreateSessionConfig, Session } from '../../src/types/toolRouter.types';
-import { createCustomTool } from '../../src/models/CustomTool';
+import { createCustomTool, createCustomToolkit } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
 
 // Mock dependencies
@@ -2255,6 +2255,64 @@ describe('ToolRouter', () => {
           ],
         },
       });
+    });
+
+    it('should keep duplicate nested custom toolkit tool names addressable by final slug', async () => {
+      const versionA = createCustomTool('VERSION', {
+        name: 'Version A',
+        description: 'Get version for dummy app A',
+        inputParams: z.object({}),
+        execute: vi.fn(async () => ({ version: 'a' })),
+      });
+      const versionB = createCustomTool('VERSION', {
+        name: 'Version B',
+        description: 'Get version for dummy app B',
+        inputParams: z.object({}),
+        execute: vi.fn(async () => ({ version: 'b' })),
+      });
+      const toolkitA = createCustomToolkit('APP_A', {
+        name: 'App A',
+        description: 'Dummy toolkit A',
+        tools: [versionA],
+      });
+      const toolkitB = createCustomToolkit('APP_B', {
+        name: 'App B',
+        description: 'Dummy toolkit B',
+        tools: [versionB],
+      });
+
+      mockClient.toolRouter.session.create.mockResolvedValueOnce({
+        ...mockSessionCreateResponse,
+        experimental: {
+          custom_toolkits: [
+            {
+              slug: 'APP_A',
+              name: 'App A',
+              description: 'Dummy toolkit A',
+              tools: [{ slug: 'LOCAL_APP_A_VERSION', original_slug: 'VERSION' }],
+            },
+            {
+              slug: 'APP_B',
+              name: 'App B',
+              description: 'Dummy toolkit B',
+              tools: [{ slug: 'LOCAL_APP_B_VERSION', original_slug: 'VERSION' }],
+            },
+          ],
+        },
+      });
+
+      const session = await toolRouter.create(userId, {
+        experimental: { customToolkits: [toolkitA, toolkitB] },
+      });
+
+      expect(session.customToolkits().map(toolkit => toolkit.slug)).toEqual(['APP_A', 'APP_B']);
+      expect(
+        session.customToolkits().flatMap(toolkit => toolkit.tools.map(tool => tool.slug))
+      ).toEqual(['LOCAL_APP_A_VERSION', 'LOCAL_APP_B_VERSION']);
+      expect(session.customTools().map(tool => tool.slug)).toEqual([
+        'LOCAL_APP_A_VERSION',
+        'LOCAL_APP_B_VERSION',
+      ]);
     });
 
     it('should propagate search API errors', async () => {

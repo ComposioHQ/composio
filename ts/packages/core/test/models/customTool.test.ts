@@ -4,6 +4,7 @@ import {
   createCustomTool,
   createCustomToolkit,
   buildCustomToolsMap,
+  buildCustomToolsMapFromResponse,
   serializeCustomTools,
   serializeCustomToolkits,
   LOCAL_TOOL_PREFIX,
@@ -330,6 +331,65 @@ describe('buildCustomToolsMap', () => {
 
       expect(map.byFinalSlug.has('LOCAL_DEV_TOOLS_SED')).toBe(true);
       expect(map.byOriginalSlug.has('SED')).toBe(true);
+    });
+
+    it('should allow different custom toolkits to reuse the same child tool slug', () => {
+      const versionA = makeTool('VERSION');
+      const versionB = makeTool('VERSION');
+      const toolkitA: CustomToolkit = {
+        slug: 'APP_A',
+        name: 'App A',
+        description: 'Dummy toolkit A',
+        tools: [versionA],
+      };
+      const toolkitB: CustomToolkit = {
+        slug: 'APP_B',
+        name: 'App B',
+        description: 'Dummy toolkit B',
+        tools: [versionB],
+      };
+
+      const map = buildCustomToolsMap([], [toolkitA, toolkitB]);
+
+      expect(map.byFinalSlug.get('LOCAL_APP_A_VERSION')?.handle).toBe(versionA);
+      expect(map.byFinalSlug.get('LOCAL_APP_B_VERSION')?.handle).toBe(versionB);
+    });
+
+    it('should match duplicate custom toolkit child slugs using the parent toolkit from the response', () => {
+      const versionA = makeTool('VERSION');
+      const versionB = makeTool('VERSION');
+      const toolkitA: CustomToolkit = {
+        slug: 'APP_A',
+        name: 'App A',
+        description: 'Dummy toolkit A',
+        tools: [versionA],
+      };
+      const toolkitB: CustomToolkit = {
+        slug: 'APP_B',
+        name: 'App B',
+        description: 'Dummy toolkit B',
+        tools: [versionB],
+      };
+
+      const map = buildCustomToolsMapFromResponse([], [toolkitA, toolkitB], {
+        custom_toolkits: [
+          {
+            slug: 'APP_A',
+            name: 'App A',
+            description: 'Dummy toolkit A',
+            tools: [{ slug: 'LOCAL_APP_A_VERSION', original_slug: 'VERSION' }],
+          },
+          {
+            slug: 'APP_B',
+            name: 'App B',
+            description: 'Dummy toolkit B',
+            tools: [{ slug: 'LOCAL_APP_B_VERSION', original_slug: 'VERSION' }],
+          },
+        ],
+      });
+
+      expect(map.byFinalSlug.get('LOCAL_APP_A_VERSION')?.handle).toBe(versionA);
+      expect(map.byFinalSlug.get('LOCAL_APP_B_VERSION')?.handle).toBe(versionB);
     });
   });
 
