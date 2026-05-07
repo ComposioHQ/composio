@@ -354,20 +354,26 @@ const runToolsSearch = (params: {
           consumerUserId: resolvedUserId.value,
         });
       }
-      const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value, {
-        toolkits: toolkitList,
-        cacheScope:
-          resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
-            ? {
-                orgId: resolvedProject.orgId,
-                consumerUserId: resolvedProject.consumerUserId,
-              }
-            : undefined,
-      });
+      const { sessionId, localExperimentalPayload } = yield* resolveToolRouterSession(
+        client,
+        resolvedUserId.value,
+        {
+          toolkits: toolkitList,
+          cacheScope:
+            resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
+              ? {
+                  orgId: resolvedProject.orgId,
+                  consumerUserId: resolvedProject.consumerUserId,
+                }
+              : undefined,
+        }
+      );
+      const searchPayload = {
+        queries: queries.map(query => ({ use_case: query })),
+        ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
+      };
       const searchResponse = yield* Effect.tryPromise(() =>
-        client.toolRouter.session.search(sessionId, {
-          queries: queries.map(query => ({ use_case: query })),
-        })
+        client.toolRouter.session.search(sessionId, searchPayload)
       );
       return {
         searchResponse,

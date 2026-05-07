@@ -1,8 +1,11 @@
-import zodToJsonSchema from 'zod-to-json-schema';
+import {
+  experimental_createTool as createCustomTool,
+  experimental_createToolkit as createCustomToolkit,
+  type CustomToolkit,
+} from '@composio/core/experimental';
 import { beeperImessageToolkit } from './toolkits/beeper-imessage';
 import { chromeDevtoolsToolkit } from './toolkits/chrome-devtools';
 import { peekabooToolkit } from './toolkits/peekaboo';
-import type { z } from 'zod/v3';
 import { formatSupportedPlatforms, detectCliPlatform, supportsCliPlatform } from './platform';
 import { executeLocalTool } from './runtime';
 import type {
@@ -15,28 +18,7 @@ import type {
 
 export const LOCAL_TOOL_PREFIX = 'LOCAL_';
 
-interface LocalCustomTool {
-  readonly slug: string;
-  readonly name: string;
-  readonly description: string;
-  readonly inputSchema: Record<string, unknown>;
-  readonly outputSchema?: Record<string, unknown>;
-}
-
-interface LocalCustomToolkit {
-  readonly slug: string;
-  readonly name: string;
-  readonly description: string;
-  readonly tools: ReadonlyArray<LocalCustomTool>;
-}
-
-/**
- * Built-in local toolkits shipped with @composio/cli-local-tools.
- *
- * The foundation package intentionally starts empty. Concrete integrations are
- * added in separate stack PRs so each app can be reviewed and validated on its
- * own.
- */
+/** Built-in local toolkits shipped with @composio/cli-local-tools. */
 export const localToolkitDeclarations: ReadonlyArray<LocalToolkitDeclaration> = [
   beeperImessageToolkit,
   chromeDevtoolsToolkit,
@@ -59,48 +41,34 @@ const descriptionWithPlatform = (
   platforms: ReadonlyArray<LocalCliPlatform>
 ): string => `${description}\n\nLocal CLI platforms: ${formatSupportedPlatforms(platforms)}.`;
 
-const zodObjectToJsonSchema = (schema: z.ZodTypeAny): Record<string, unknown> => {
-  const converted = zodToJsonSchema(schema, { name: 'input' }) as {
-    definitions?: { input?: Record<string, unknown> };
-  } & Record<string, unknown>;
-  const inputDefinition = converted.definitions?.input ?? converted;
-  return {
-    type: 'object',
-    properties:
-      inputDefinition.properties && typeof inputDefinition.properties === 'object'
-        ? (inputDefinition.properties as Record<string, unknown>)
-        : {},
-    ...(Array.isArray(inputDefinition.required) ? { required: inputDefinition.required } : {}),
-  };
-};
-
-const zodToOutputJsonSchema = (schema: z.ZodTypeAny): Record<string, unknown> => {
-  const converted = zodToJsonSchema(schema, { name: 'output' }) as {
-    definitions?: { output?: Record<string, unknown> };
-  } & Record<string, unknown>;
-  return converted.definitions?.output ?? converted;
-};
-
 const toCustomTool = (
   toolkit: LocalToolkitDeclaration,
-  tool: LocalToolDeclaration
-): LocalCustomTool => ({
-  slug: tool.slug,
-  name: tool.name,
-  description: descriptionWithPlatform(tool.description, tool.platforms),
-  inputSchema: zodObjectToJsonSchema(tool.inputParams as z.ZodTypeAny),
-  ...(tool.outputParams ? { outputSchema: zodToOutputJsonSchema(tool.outputParams) } : {}),
-});
+  tool: LocalToolDeclaration,
+  currentPlatform: LocalCliPlatform
+) =>
+  createCustomTool(tool.slug, {
+    name: tool.name,
+    description: descriptionWithPlatform(tool.description, tool.platforms),
+    inputParams: tool.inputParams,
+    ...(tool.outputParams ? { outputParams: tool.outputParams } : {}),
+    execute: async input =>
+      executeLocalTool(tool.execution, input as Record<string, unknown>, {
+        toolkit,
+        tool,
+        finalSlug: normalizeLocalToolSlug(tool.slug, toolkit.slug),
+        platform: currentPlatform,
+      }),
+  });
 
 const toCustomToolkit = (
   toolkit: LocalToolkitDeclaration,
-  tools: ReadonlyArray<LocalCustomTool>
-): LocalCustomToolkit => ({
-  slug: toolkit.slug,
-  name: toolkit.name,
-  description: descriptionWithPlatform(toolkit.description, toolkit.platforms),
-  tools,
-});
+  currentPlatform: LocalCliPlatform
+): CustomToolkit =>
+  createCustomToolkit(toolkit.slug, {
+    name: toolkit.name,
+    description: descriptionWithPlatform(toolkit.description, toolkit.platforms),
+    tools: toolkit.tools.map(tool => toCustomTool(toolkit, tool, currentPlatform)),
+  });
 
 const toolkitMatchesFilter = (
   toolkit: LocalToolkitDeclaration,
@@ -167,16 +135,15 @@ export const getLocalCustomToolkits = (
     readonly toolkits?: ReadonlyArray<string>;
     readonly declarations?: ReadonlyArray<LocalToolkitDeclaration>;
   } = {}
-): ReadonlyArray<LocalCustomToolkit> =>
-  getLocalToolkitDeclarations(options).map(toolkit =>
-    toCustomToolkit(
-      toolkit,
-      toolkit.tools.map(tool => toCustomTool(toolkit, tool))
-    )
+): ReadonlyArray<CustomToolkit> => {
+  const currentPlatform = options.currentPlatform ?? detectCliPlatform();
+  return getLocalToolkitDeclarations({ ...options, currentPlatform }).map(toolkit =>
+    toCustomToolkit(toolkit, currentPlatform)
   );
+};
 
 const customToolkitToPayload = (
-  toolkit: LocalCustomToolkit
+  toolkit: CustomToolkit
 ): NonNullable<LocalToolRouterExperimentalPayload['custom_toolkits']>[number] => ({
   slug: toolkit.slug,
   name: toolkit.name,
@@ -250,7 +217,8 @@ export const getLocalToolInputDefinition = (
   return {
     finalSlug: resolution.finalSlug,
     toolkit: resolution.toolkit.slug,
-    schema: toCustomTool(resolution.toolkit, resolution.tool).inputSchema,
+    schema: toCustomTool(resolution.toolkit, resolution.tool, resolution.currentPlatform)
+      .inputSchema,
     version: 'local',
   };
 };

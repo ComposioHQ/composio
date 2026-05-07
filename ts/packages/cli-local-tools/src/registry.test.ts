@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod/v3';
 import {
   createLocalToolRouterExperimentalPayload,
+  getLocalCustomToolkits,
   getLocalToolkitDeclarations,
   getLocalToolInputDefinition,
   localToolkitDeclarations,
@@ -79,6 +80,19 @@ describe('@composio/cli-local-tools registry', () => {
         declarations: [fixtureToolkit],
       }).map(toolkit => toolkit.slug)
     ).toEqual([]);
+  });
+
+  it('builds core custom toolkit handles for supported local toolkits', () => {
+    const [toolkit] = getLocalCustomToolkits({
+      currentPlatform: 'linux-x64',
+      toolkits: ['fixture_app'],
+      declarations: [fixtureToolkit],
+    });
+
+    expect(toolkit?.slug).toBe('FIXTURE_APP');
+    expect(toolkit?.tools[0]?.slug).toBe('RUN_COMMAND');
+    expect(toolkit?.tools[0]?.inputSchema.properties).toHaveProperty('args');
+    expect(typeof toolkit?.tools[0]?.execute).toBe('function');
   });
 
   it('builds Tool Router custom toolkit payloads for supported local toolkits', () => {

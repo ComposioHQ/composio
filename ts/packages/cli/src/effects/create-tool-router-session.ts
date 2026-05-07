@@ -39,15 +39,21 @@ export interface CreateToolRouterSessionOptions {
   };
 }
 
+export interface CreatedToolRouterSession {
+  readonly sessionId: string;
+  /** Inline local-tool custom definitions that should be forwarded to v3.1 search/execute calls. */
+  readonly localExperimentalPayload?: ReturnType<typeof createLocalToolRouterExperimentalPayload>;
+}
+
 /**
  * Create an ephemeral Tool Router session for the given user ID.
- * Returns the session ID string.
+ * Returns the session id plus any local-tool custom payload bound to the session.
  *
  * Accepts a pre-resolved client instance (from ComposioClientSingleton)
  * so callers can resolve the dependency at layer construction time.
  * Used by `ToolsExecutorLive` which already holds the client reference.
  */
-export const createToolRouterSession = (
+export const createToolRouterSessionContext = (
   client: Composio,
   userId: string,
   options?: CreateToolRouterSessionOptions
@@ -169,8 +175,25 @@ export const createToolRouterSession = (
         toolkits: remoteToolkits.length > 0 ? { enable: [...remoteToolkits] } : undefined,
         experimental: localExperimentalPayload,
       })
-    ).pipe(Effect.map(session => session.session_id));
+    ).pipe(
+      Effect.map(
+        (session): CreatedToolRouterSession => ({
+          sessionId: session.session_id,
+          localExperimentalPayload,
+        })
+      )
+    );
   });
+
+/** Backward-compatible helper for callers that only need the session id. */
+export const createToolRouterSession = (
+  client: Composio,
+  userId: string,
+  options?: CreateToolRouterSessionOptions
+) =>
+  createToolRouterSessionContext(client, userId, options).pipe(
+    Effect.map(session => session.sessionId)
+  );
 
 /**
  * Resolve the Composio client and create a Tool Router session in one step.
@@ -182,6 +205,6 @@ export const resolveToolRouterSession = (
   userId: string,
   options?: CreateToolRouterSessionOptions
 ) =>
-  createToolRouterSession(client, userId, options).pipe(
-    Effect.map(sessionId => ({ client, sessionId }))
+  createToolRouterSessionContext(client, userId, options).pipe(
+    Effect.map(session => ({ client, ...session }))
   );
