@@ -165,7 +165,7 @@ Proxy execute rejects cross-domain requests. The `endpoint` must resolve to the 
 |---|---|---|---|
 | `endpoint` | Yes | `string` | Absolute URL or path relative to the toolkit's base URL. |
 | `method` | Yes | `"GET" \| "POST" \| "PUT" \| "PATCH" \| "DELETE" \| "HEAD"` | HTTP verb. |
-| `connected_account_id` / `connectedAccountId` | No | `string` | Which connected account to use for auth. Defaults to the most recent active account for the project. |
+| `connected_account_id` / `connectedAccountId` | Yes | `string` | Which connected account to use for auth. |
 | `body` | No | `object` | JSON request body. Used with `POST`, `PUT`, and `PATCH`. |
 | `parameters` | No | `Array<{ name, value, type }>` | Extra headers or query parameters. `type` is `"header"` or `"query"` (Python) / `in` is `"header"` or `"query"` (TypeScript). |
 | `binary_body` | No | `{ url } \| { base64, content_type? }` | Binary upload payload. Either a URL to fetch or base64-encoded bytes (up to 4 MB). |
