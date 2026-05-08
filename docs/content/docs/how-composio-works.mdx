@@ -38,7 +38,7 @@ A session ties together:
 - **Available toolkits**: all by default, or a specific set you configure
 - **Auth configuration**: which authentication method and connected accounts to use
 
-Sessions are immutable. Their configuration is fixed at creation. If the context changes (different toolkits, different connected account), create a new session. You don't need to cache or manage session IDs.
+Every call to `composio.create()` creates a new session ID. For multi-turn conversations, store that ID and reuse the existing session with `composio.use()` so tool access, auth configs, and connected accounts carry over. If the session's configuration needs to change, use `session.update()` to patch fields such as toolkits, auth configs, or connected accounts without creating a new session.
 
 <Card icon={<Database />} title="Users & Sessions" href="/docs/users-and-sessions" description="How users and sessions scope tools and connections" />
 
