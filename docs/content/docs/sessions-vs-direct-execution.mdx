@@ -4,7 +4,7 @@ description: When to use session-based meta tools vs direct tool fetching and ex
 keywords: [session, direct execution, tool router, meta tools, architecture, decision]
 ---
 
-**Sessions** give your agent [meta tools](/docs/tools-and-toolkits#meta-tools). The agent discovers which app tools to use, authenticates users, and executes tools at runtime through these meta tools.
+**Sessions** give your agent [meta tools](/docs/tools-and-toolkits#meta-tools) by default. The agent discovers which app tools to use, authenticates users, and executes tools at runtime through these meta tools.
 
 **Direct execution** gives your code specific tool schemas. You decide which tools to fetch, manage auth yourself, and call `tools.execute()` directly.
 
@@ -13,7 +13,7 @@ Use sessions unless you need full control over which tools are available and whe
 | | Sessions | Direct execution |
 |---|---|---|
 | **Discovery** | Agent finds tools at runtime and resolves dependencies automatically (e.g., if a tool needs an ID from another API, the agent finds that tool, runs it, and continues) | You select all tools upfront and need to account for any dependencies between them |
-| **Context cost** | Only meta tools in context, app tools loaded on demand | Every tool schema you select is loaded upfront |
+| **Context cost** | Meta tools in context by default, with selected app or custom tools available upfront when preloaded | Every tool schema you select is loaded upfront |
 | **Guidance** | Search returns recommended steps and common pitfalls alongside schemas | You get tool schemas only |
 | **Memory** | Meta tools share context across calls, storing discovered IDs and relationships | You manage state between calls |
 | **Auth** | [In-chat](/docs/authenticating-users/in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authenticating-users/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
@@ -21,11 +21,11 @@ Use sessions unless you need full control over which tools are available and whe
 | **Human approval** | You configure approval rules on the session. Harder to intercept individual calls since tools are discovered dynamically | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
-Sessions are configurable. You can [enable or disable specific toolkits](/docs/toolkits/enable-and-disable-toolkits), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin specific [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
+Sessions are configurable. You can [enable or disable specific toolkits](/docs/toolkits/enable-and-disable-toolkits), [preload frequently used tools](/docs/configuring-sessions#preloading-tools), use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin specific [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
 
 ## Sessions
 
-`composio.create()` returns [meta tools](/docs/tools-and-toolkits#meta-tools):
+`composio.create()` returns [meta tools](/docs/tools-and-toolkits#meta-tools) by default:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -75,7 +75,7 @@ Agent: "Created issue #42 on your-org/your-repo"
 ```
 
 <Callout>
-`session.tools()` returns **meta tools** (COMPOSIO_SEARCH_TOOLS, etc.), not app tools (GMAIL_SEND_EMAIL, etc.). The agent discovers app tools at runtime through search. For app tools directly, use direct execution.
+`session.tools()` returns **meta tools** (COMPOSIO_SEARCH_TOOLS, etc.) by default. Use [preloading](/docs/configuring-sessions#preloading-tools) to expose a small set of app or custom tools directly, or the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) for narrow agents that should receive every allowed tool upfront. For app tools outside a session, use direct execution.
 </Callout>
 
 ### Configuration

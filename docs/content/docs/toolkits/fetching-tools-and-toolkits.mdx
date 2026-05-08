@@ -91,14 +91,14 @@ do {
 </Tab>
 </Tabs>
 
-### Get meta tools
+### Get session tools
 
-`session.tools()` returns the [meta tools](/reference/meta-tools) formatted for your configured provider (OpenAI, Anthropic, etc.):
+`session.tools()` returns the [meta tools](/reference/meta-tools) formatted for your configured provider (OpenAI, Anthropic, etc.) by default. It also includes app or custom tools that you [preload](/docs/configuring-sessions#preloading-tools), or every allowed tool when you use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset).
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-# Get all meta tools
+# Get session tools
 tools = session.tools()
 ```
 </Tab>
@@ -108,13 +108,13 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 // ---cut---
-// Get all meta tools
+// Get session tools
 const tools = await session.tools();
 ```
 </Tab>
 </Tabs>
 
-To restrict which toolkits or tools are discoverable by the meta tools, configure them when [creating the session](/docs/toolkits/enable-and-disable-toolkits).
+To restrict which toolkits or tools are discoverable or preloadable, configure them when [creating the session](/docs/toolkits/enable-and-disable-toolkits).
 
 ## Browsing the catalog
 
