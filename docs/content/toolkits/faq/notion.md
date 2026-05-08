@@ -12,6 +12,10 @@ No. Notion controls access by granting integrations access to specific pages and
 
 ## How does Notion's access model work?
 
-It depends on the integration type. OAuth apps (public) let users select which pages to share during authorization. Internal integrations (API key) have page access managed in the integration settings.
+Notion grants page and database access per integration (identified by the OAuth `client_id`), not per individual token or per Composio auth config. OAuth apps (public) let users select which pages to share during authorization, and internal integrations (API key) have page access managed in the integration settings.
+
+If you create multiple auth configs that share the same Notion integration credentials, page access is cumulative and shared across all of them. Notion tracks granted pages at the integration level in the workspace's **Settings > Connections**, so any page granted to one connection is accessible by all connections using that same `client_id`.
+
+To achieve isolated page access between separate connections, create distinct Notion integrations at https://www.notion.so/profile/integrations, each with its own `client_id` and secret, and use those separate credentials in separate Composio auth configs.
 
 ---
