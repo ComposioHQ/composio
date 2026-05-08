@@ -179,10 +179,10 @@ Tools can be filtered by their behavior tags. Available tags are:
 
 | Tag | Description |
 |-----|-------------|
-| `readOnlyHint` | Tools that only read data |
-| `destructiveHint` | Tools that modify or delete data |
-| `idempotentHint` | Tools that can be safely retried |
-| `openWorldHint` | Tools that operate in an open world context |
+| `readOnlyHint` | Tools that only read data without modifying anything |
+| `destructiveHint` | Tools that may perform destructive updates to their environment |
+| `idempotentHint` | Tools where repeated calls with the same input have no additional effect, making them safe to retry |
+| `openWorldHint` | Tools that may interact with entities outside a known, bounded environment — for example, calling third-party APIs, sending emails, or posting to external services. A tool with `openWorldHint: false` only operates within a closed, predefined set of resources. |
 
 ### Global tag filtering
 
