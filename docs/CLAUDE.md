@@ -1,107 +1,69 @@
 # Composio Documentation
 
-Documentation site for Composio, built with [Fumadocs](https://fumadocs.dev/).
+Fumadocs site for Composio. Branch off **`next`** and target PRs at **`next`** (not `master`).
 
-## Quick Reference
+## Commands
 
 ```bash
-bun install          # Install dependencies
-bun run dev          # Dev server (http://localhost:3000)
-bun run build        # Production build (validates TS code blocks)
-bun run types:check  # Type check
+bun install                     # Install
+bun run dev                     # Dev server (http://localhost:3000)
+bun run build                   # Production build — validates twoslash TS blocks
+bun run types:check             # Type check
+bun run lint:links              # Internal link validator (scripts/validate-links.ts)
+bun run generate:toolkits       # Refresh public/data/toolkits.json
+bun run generate:meta-tools     # Refresh public/data/meta-tools.json + content/reference/meta-tools/
+bun run generate:api-index      # Refresh API reference index pages
+bun test tests/static/          # Static checks
+bun test tests/integration/     # Integration tests (30s timeout)
 ```
 
-## Project Structure
+`bun dev` does NOT type-check MDX twoslash blocks — only `bun run build` does. Always build before pushing.
+
+## Layout
 
 ```
 docs/
-├── app/                  # Next.js app router
-├── content/              # MDX content
-│   ├── docs/             # Main documentation
-│   ├── cookbooks/        # Cookbooks & guides
-│   ├── changelog/        # Release notes
-│   ├── reference/        # SDK & API reference
-│   └── toolkits/         # Toolkit docs + faq/ snippets
-├── components/           # React components
-├── lib/                  # Utilities
-├── public/               # Static assets
-├── scripts/              # Build scripts (link checker, etc.)
-└── .claude/              # Claude context (see below)
+├── content/                 # MDX content
+│   ├── docs/                # Main documentation + glossary.mdx
+│   ├── cookbooks/, examples/
+│   ├── changelog/           # Release notes (YYYY-MM-DD format)
+│   ├── reference/           # SDK & API reference (v3.0 lives under reference/v3/)
+│   └── toolkits/            # Toolkit docs; faq/ snippets are plain .md (no frontmatter)
+├── scripts/                 # generate-{toolkits,meta-tools,api-index}.ts, validate-links.ts, fetch-openapi.mjs
+├── tests/{static,integration}/
+├── components/, lib/, app/, public/, examples/
+└── .claude/                 # Detailed agent context (see below)
 ```
 
-## Claude Context
+## Deeper context (`.claude/`)
 
-Detailed documentation for Claude is organized in `.claude/`:
+- `context/` — `fumadocs.md` (framework + design tokens), `twoslash.md` (TS code-block validation), `sdk-reference.md`, `api-reference.md` (schema rendering, CSS, upgrade notes), `pipelines.md` (CI/cron workflows)
+- `guides/changelog.md` — writing changelog entries
+- `decisions/{toolkits,examples,feedback,llm-guardrails}.md` — ADRs
+- `agents/{changelog-docs-updater,connect-clients-sync,docs-reviewer}.md` — agent prompts invoked by GH Actions
 
-### Context (Domain Knowledge)
-- [fumadocs.md](.claude/context/fumadocs.md) - Framework patterns, design tokens, MDX components
-- [twoslash.md](.claude/context/twoslash.md) - TypeScript code block type checking
-- [sdk-reference.md](.claude/context/sdk-reference.md) - SDK doc generation
-- [api-reference.md](.claude/context/api-reference.md) - API reference customizations (schema rendering, CSS overrides, upgrade notes)
-- [pipelines.md](.claude/context/pipelines.md) - CI/CD workflows reference (cron jobs, auto-PR, AI agents)
+## Rules that cause real bugs
 
-### Guides (How-To)
-- [changelog.md](.claude/guides/changelog.md) - Writing changelog entries
-
-### Decisions (ADRs)
-- [toolkits.md](.claude/decisions/toolkits.md) - Toolkits page implementation
-- [examples.md](.claude/decisions/examples.md) - Examples/cookbooks page plan
-- [feedback.md](.claude/decisions/feedback.md) - Feedback system
-- [llm-guardrails.md](.claude/decisions/llm-guardrails.md) - LLM guardrails system (frontmatter-scoped, pipeline-injected)
-
-## Git Workflow
-
-**Docs branches are always based off `next` and PRs target `next`** (not `master`). When creating a new branch for docs work, branch from `next`. When opening a PR, set the base to `next`.
-
-## Key Rules
-
-1. **TypeScript code blocks are type-checked** - All TS code in MDX is validated at build time. See [twoslash.md](.claude/context/twoslash.md).
-
-2. **Run build before pushing** - `bun run build` catches type errors that `bun dev` misses. Also run `bun run scripts/validate-links.ts` to catch broken internal links.
-
-3. **CSS variables** - Use `var(--composio-orange)` not `var(--orange)`. Check `app/global.css`.
-
-4. **Date format** - Changelog dates must be YYYY-MM-DD format.
-
-5. **Toolkits data** - `public/data/toolkits.json` must exist; errors are thrown, not ignored.
-
-6. **Meta tools data** - `public/data/meta-tools.json` and `content/reference/meta-tools/` are auto-generated by `bun run generate:meta-tools` (fetches from Tool Router API). Updated by CI alongside toolkits data. The `MetaToolDetailServer` component reads from the JSON at build time — do NOT register it in `mdx-components.tsx` (causes `fs` to leak into client bundle).
-
-7. **Test on mobile** - Fumadocs nav differs on mobile. Avoid assumptions about horizontal layout.
-
-8. **Toolkit FAQ files** - FAQ snippets live in `content/toolkits/faq/{slug}.md`. They're plain markdown (no frontmatter) embedded in toolkit pages at build time, not standalone Fumadocs pages. They're excluded from the toolkits Fumadocs source via `files: ['**/*', '!faq/**']` in `source.config.ts` but still scanned by the link checker.
-
-9. **Link checker** - `scripts/validate-links.ts` validates all internal links. It needs `bunfig.toml` (Bun preload for fumadocs-mdx) to run. Key details:
-   - Populate keys use `(home)/` prefix to match the `app/(home)/` route group
-   - Fragment validation falls back to parsing raw markdown headings (since `data.toc` is unavailable outside Next.js)
-   - Dynamic toolkit pages are validated against slugs from `public/data/toolkits.json`
-   - Non-Fumadocs `.md` files (like FAQ snippets) are picked up via `content/**/*.md` glob
-
-10. **Internal links use relative paths, never absolute** - Write `/docs/<section>/<page>`, `/reference/api-reference/<resource>/<operationId>`, `/reference/sdk-reference/<lang>/<page>`, `/docs/changelog/YYYY/MM/DD`, `/assets/images/<file>`. Never `https://docs.composio.dev/...`. The link checker (rule 9) only validates relative links; absolute URLs silently bypass it and rot over time. API-reference operation IDs are **camelCase** (`getConnectedAccountsByNanoid`, `postAuthConfigs`) — do not guess them; copy the exact `href` from `<ApiEndpointsTable>` in `content/reference/api-reference/<resource>/index.mdx`. Previous changelog entries use zero-padded month/day (`/docs/changelog/2026/04/21`, not `2026/4/21`).
+1. **TS blocks are twoslash-validated at build** — `bun run dev` doesn't catch this. Run `bun run build` before pushing.
+2. **CSS vars are namespaced** — use `var(--composio-orange)`, not `var(--orange)`. See `app/global.css`.
+3. **Changelog dates are zero-padded YYYY-MM-DD** — `/docs/changelog/2026/04/21` not `/2026/4/21`.
+4. **Internal links are relative, never absolute** — `/docs/...`, `/reference/...`, `/assets/...`. Absolute `https://docs.composio.dev/...` silently bypasses the link checker and rots. API-reference operationIds are **camelCase** (`getConnectedAccountsByNanoid`, `postAuthConfigs`) — copy from `<ApiEndpointsTable>` in `content/reference/api-reference/<resource>/index.mdx`; do not guess.
+5. **Generated data is required, not optional** — `public/data/toolkits.json` and `public/data/meta-tools.json` are loaded synchronously; missing → build throws (not warns).
+6. **`MetaToolDetailServer` is server-only** — do NOT register it in `mdx-components.tsx` or `fs` leaks into the client bundle.
+7. **FAQ snippets** live at `content/toolkits/faq/{slug}.md` as plain markdown (no frontmatter). Excluded from the Fumadocs toolkits source via `files: ['**/*', '!faq/**']` in `source.config.ts`, but the link checker still scans them via `content/**/*.md`.
+8. **Link checker (`scripts/validate-links.ts`) needs `bunfig.toml` preload** for fumadocs-mdx. Populate keys use the `(home)/` prefix; fragment validation falls back to parsing raw markdown headings outside Next.js; dynamic toolkit pages validate against `public/data/toolkits.json`.
+9. **`docs/examples/` is tutorial code** — review for correctness/clarity, not production hardening. Skip a11y, error boundaries, i18n unless they teach the integration.
+10. **Mobile rendering differs** — Fumadocs nav swaps layout. Don't assume horizontal space.
 
 ## Glossary
 
-`content/docs/glossary.mdx` defines key Composio terms (auth config, session, toolkit, etc.) using `<Glossary>` and `<GlossaryTerm name="...">` components (`components/glossary.tsx`). The component renders a filterable two-column table. The markdown converter in `lib/source.ts` converts `<GlossaryTerm>` tags to `### Term` headings for LLM-friendly output. When adding new Composio concepts, add a `<GlossaryTerm>` entry and update the `keywords` frontmatter array.
+`content/docs/glossary.mdx` uses `<Glossary>` + `<GlossaryTerm name="…">` (`components/glossary.tsx`) to render a filterable table. `lib/source.ts`'s markdown converter rewrites `<GlossaryTerm>` to `### Term` headings for LLM consumption. When adding a new Composio concept, add a `<GlossaryTerm>` and update the page's `keywords` frontmatter.
 
-## API Versioning
+## API versioning
 
-The API reference supports v3.1 (latest, default) and v3.0 side-by-side:
-- **v3.1:** `/reference/api-reference/...` (default, all existing URLs unchanged)
-- **v3.0:** `/reference/v3/api-reference/...`
+v3.1 (default) and v3.0 (`/reference/v3/...`) live side-by-side; switcher is in the top nav. Non-API v3 pages (overview, authentication, errors, rate-limits) are manual copies — update both when content changes. API index pages and OpenAPI specs are auto-generated by CI (`docs-update-data.yml`); meta tools + SDK reference are shared, not duplicated.
 
-Version selector in the top nav switches between them. See [api-reference.md](.claude/context/api-reference.md) for full architecture.
+## AI-native conventions
 
-Key maintenance notes:
-- Non-API pages under `content/reference/v3/` (overview, authentication, errors, rate-limits) are manual copies — update both when content changes
-- API index pages and OpenAPI specs are auto-generated by CI (`docs-update-data.yml`)
-- SDK Reference and Meta Tools are shared across both versions (not duplicated)
-
-## Code Review Guidelines
-
-**`docs/examples/` is tutorial code.** Review for correctness and clarity, not production-readiness. Skip accessibility (aria attributes, focus management), error boundaries, i18n, comprehensive error handling, and similar concerns that add noise to a teaching example. The goal is to teach Composio integration with minimal code.
-
-## AI-Native Documentation
-
-**Prefer cURL over "click"** - Most docs traffic comes from AI crawlers. When documenting API interactions, prefer showing cURL commands over UI instructions like "click this button" or "navigate to settings". cURL is machine-readable and can be directly executed by AI agents.
-
-**LLM guardrails** - Every `.md` endpoint appends invisible guardrails steering AI code generators toward the session-based pattern. Controlled via `llmGuardrails` frontmatter field. See [llm-guardrails.md](.claude/decisions/llm-guardrails.md).
+- **Prefer cURL over "click X"** — most traffic comes from AI crawlers; cURL is directly executable.
+- **LLM guardrails** — every `.md` endpoint appends invisible guardrails steering AI code generators toward the session-based pattern. Controlled via the `llmGuardrails` frontmatter field. See `.claude/decisions/llm-guardrails.md`.
