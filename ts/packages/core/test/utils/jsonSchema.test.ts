@@ -281,7 +281,14 @@ describe('dereferenceJsonSchema', () => {
   });
 
   describe("with onUnresolved: 'sentinel' lenient mode", () => {
-    const PERMISSIVE = { type: 'object', additionalProperties: true };
+    // Sentinel injected for an unresolvable $ref carries an LLM-visible hint
+    // describing the degradation. The hint is overwritten by a caller-provided
+    // `description` sibling when present (Draft 2020-12 sibling-keyword merge).
+    const PERMISSIVE = {
+      type: 'object',
+      additionalProperties: true,
+      description: expect.stringContaining('Output shape unresolved at the schema source'),
+    };
 
     it('replaces a dangling internal $ref (no $defs block at all) with the cycle-break sentinel', () => {
       // Mirrors GMAIL_FETCH_EMAILS.outputParameters: a $ref into #/$defs/...
@@ -421,6 +428,40 @@ describe('dereferenceJsonSchema', () => {
         )
       ).toThrow(JsonSchemaRefResolutionError);
       expect(onReplace).not.toHaveBeenCalled();
+    });
+
+    it("injects a default LLM-visible 'description' on the sentinel when the source $ref node has none", () => {
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: { v: { $ref: '#/$defs/Missing' } },
+        },
+        { onUnresolved: 'sentinel' }
+      ) as { properties: { v: { description: string } } };
+
+      expect(out.properties.v.description).toMatch(/unresolved at the schema source/);
+      expect(out.properties.v.description).toContain(
+        'https://github.com/ComposioHQ/composio/issues/3307'
+      );
+    });
+
+    it("preserves a caller-provided 'description' sibling instead of overwriting with the default", () => {
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: {
+            v: {
+              $ref: '#/$defs/Missing',
+              description: 'caller-supplied prose context',
+            },
+          },
+        },
+        { onUnresolved: 'sentinel' }
+      ) as { properties: { v: { description: string; type: string } } };
+
+      // Sibling-merge wins over the default — caller context survives.
+      expect(out.properties.v.description).toBe('caller-supplied prose context');
+      expect(out.properties.v.type).toBe('object');
     });
 
     it('preserves resolvable $defs while replacing only the dangling branch (mixed schema)', () => {

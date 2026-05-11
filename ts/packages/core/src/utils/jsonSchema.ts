@@ -9,6 +9,18 @@ const MAX_NODE_DEPTH = 512;
 const CYCLE_BREAK_SENTINEL = { type: 'object', additionalProperties: true } as const;
 
 /**
+ * In-band hint attached to the cycle-break sentinel when lenient mode
+ * substitutes it for a dangling `$ref`. Makes the degradation visible to
+ * LLMs that read the wrapped tool's schema — without it the LLM sees a
+ * useless permissive object and no prose context. Overridden when the
+ * caller's `$ref` node carries its own `description` sibling
+ * (Draft 2020-12 sibling-keyword semantics).
+ */
+const UNRESOLVED_REF_DESCRIPTION =
+  'Output shape unresolved at the schema source — validate loosely. ' +
+  'See https://github.com/ComposioHQ/composio/issues/3307.';
+
+/**
  * Strategy for `dereferenceJsonSchema` when an internal `$ref` cannot be
  * resolved (target missing under `$defs`/`definitions`, or a malformed
  * pointer beneath the internal `#/` prefix).
@@ -215,8 +227,11 @@ export function dereferenceJsonSchema<T = unknown>(
         // Lenient mode: replace the unresolved branch with the same
         // permissive sentinel used for cycles, and notify the caller so
         // they can emit a one-shot warn at the offending tool surface.
+        // The injected `description` gives the LLM an in-band signal that
+        // the branch is opaque; sibling-merge below will overwrite it with
+        // a caller-provided description if the original node has one.
         onReplace?.(ref, result.reason);
-        target = { ...CYCLE_BREAK_SENTINEL };
+        target = { ...CYCLE_BREAK_SENTINEL, description: UNRESOLVED_REF_DESCRIPTION };
       } else {
         throwResolutionError(ref, result);
       }

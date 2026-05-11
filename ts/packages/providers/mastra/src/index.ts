@@ -14,6 +14,7 @@ import {
   dereferenceJsonSchema,
   logger,
   removeNonRequiredProperties,
+  telemetry,
   type UnresolvedRefReason,
 } from '@composio/core';
 import { applyCompatLayer } from '@mastra/schema-compat';
@@ -160,12 +161,28 @@ export class MastraProvider extends BaseAgenticProvider<
     if (this.warnedDanglingRefs.has(key)) return;
     this.warnedDanglingRefs.add(key);
     const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
+    // `tool.slug`, `toolkitSlug`, and `ref` originate from the upstream API
+    // schema. Quoting via `JSON.stringify` neutralizes embedded newlines /
+    // ANSI escape sequences / control bytes that would otherwise forge log
+    // lines or corrupt terminals (CWE-117).
     logger.warn(
-      `[composio/mastra] Tool ${tool.slug} (toolkit ${toolkitSlug}) declares ` +
-        `$ref ${ref} but no matching $defs/definitions entry (${reason}). ` +
-        `Falling back to a permissive object schema for this branch — the ` +
-        `wrapped Mastra tool will validate this property loosely. Tracked in ` +
-        `https://github.com/ComposioHQ/composio/issues/3307.`
+      `[composio/mastra] Tool ${JSON.stringify(tool.slug)} ` +
+        `(toolkit ${JSON.stringify(toolkitSlug)}) declares ` +
+        `$ref ${JSON.stringify(ref)} but no matching $defs/definitions entry ` +
+        `(${reason}). Falling back to a permissive object schema for this ` +
+        `branch — the wrapped Mastra tool will validate this property loosely. ` +
+        `Tracked in https://github.com/ComposioHQ/composio/issues/3307.`
     );
+    // Fire-and-forget aggregate signal so the Composio team can prioritize the
+    // upstream API fix from real data. `telemetry.sendMetric` short-circuits
+    // when `COMPOSIO_DISABLE_TELEMETRY=true` and swallows network errors.
+    void telemetry.sendMetric([
+      {
+        functionName: 'composio.mastra.wrapTool.danglingRef',
+        timestamp: Date.now() / 1000,
+        props: { toolSlug: tool.slug, toolkitSlug, ref, reason },
+        metadata: { provider: 'mastra' },
+      },
+    ]);
   }
 }

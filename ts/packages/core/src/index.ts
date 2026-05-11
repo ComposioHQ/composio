@@ -38,6 +38,7 @@ export * from './types/ToolRouterSessionFilesMount.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
+export { telemetry } from './telemetry/Telemetry';
 
 // Experimental custom tools — exported with experimental_ prefix for top-level import
 export { createCustomTool as experimental_createTool } from './models/CustomTool';
