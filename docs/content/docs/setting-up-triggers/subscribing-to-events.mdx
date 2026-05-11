@@ -22,7 +22,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "Content-Type: application/json" \
   -d '{
     "webhook_url": "https://example.com/webhook",
-    "enabled_events": ["composio.trigger.message"]
+    "enabled_events": ["composio.trigger.message"],
+    "version": "V3"
   }'
 ```
 
@@ -30,9 +31,20 @@ curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
 Your webhook endpoint must be publicly accessible — Composio's outbound IPs are dynamic, so IP allowlisting and private/VPN-only endpoints will not work. Use [signature verification](/docs/webhook-verification) to authenticate payloads instead.
 </Callout>
 
-<Callout type="warn">
-The response includes a `secret` for [verifying webhook signatures](/docs/webhook-verification). Store it securely.
+<Callout>
+Each project has one webhook subscription. To change the destination URL, event filters, or payload version, update the existing subscription.
 </Callout>
+
+<Callout type="warn">
+The response includes a `secret` for [verifying webhook signatures](/docs/webhook-verification). Store it securely: Composio only returns the secret when the subscription is created or rotated.
+</Callout>
+
+To inspect the event types your project can subscribe to, query the event types endpoint:
+
+```bash
+curl https://backend.composio.dev/api/v3.1/webhook_subscriptions/event_types \
+  -H "X-API-KEY: <your-composio-api-key>"
+```
 
 ### Handling events
 
@@ -207,7 +219,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
   -H "Content-Type: application/json" \
   -d '{
     "webhook_url": "https://your-ngrok-url.ngrok-free.app/webhook",
-    "enabled_events": ["composio.trigger.message"]
+    "enabled_events": ["composio.trigger.message"],
+    "version": "V3"
   }'
 ```
 

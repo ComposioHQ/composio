@@ -4,7 +4,7 @@ description: Isolate resources across environments or clients using projects for
 keywords: [projects, organizations, teams, api keys, environments, multi-tenancy, multitenancy, tenant isolation]
 ---
 
-Projects are Composio's multi-tenancy primitive. Every Composio account belongs to an **organization**. Inside an organization, **projects** are isolated environments that scope your API keys, connected accounts, auth configs, and webhook configurations. Resources in one project are not accessible from another.
+Projects are Composio's multi-tenancy primitive. Every Composio account belongs to an **organization**. Inside an organization, **projects** are isolated environments that scope your API keys, connected accounts, auth configs, and webhook subscriptions. Resources in one project are not accessible from another.
 
 ```mermaid
 graph LR
@@ -14,7 +14,7 @@ graph LR
     P1 --- A1["API Keys"]
     P1 --- A2["Connected Accounts"]
     P1 --- A3["Auth Configs"]
-    P1 --- A4["Webhook Config"]
+    P1 --- A4["Webhook Subscription"]
     P2 --- B1["..."]
 ```
 
@@ -97,5 +97,5 @@ You can also view and update these from **Settings > Project Settings** in the [
 <Cards>
   <Card icon={<Key />} title="Authentication" href="/docs/authentication" description="Auth configs are scoped to projects — learn how Composio manages auth" />
   <Card icon={<Database />} title="Users & Sessions" href="/docs/users-and-sessions" description="Connected accounts and sessions live within a project" />
-  <Card icon={<Zap />} title="Triggers" href="/docs/triggers" description="Webhook configurations are project-scoped" />
+  <Card icon={<Zap />} title="Triggers" href="/docs/triggers" description="Webhook subscriptions are project-scoped" />
 </Cards>

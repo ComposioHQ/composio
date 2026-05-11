@@ -9,7 +9,7 @@ Composio automatically refreshes OAuth tokens before they expire. But when a ref
 You can detect this proactively using the `composio.connected_account.expired` webhook event instead of waiting for a tool execution to fail.
 
 <Callout>
-This event is only available with [V3 webhook payloads](/docs/webhook-verification#webhook-payload-versions). New organizations use V3 by default.
+This event is only available with [V3 webhook payloads](/docs/webhook-verification#webhook-payload-versions). Set the subscription `version` to `V3` when subscribing to connection expiry events.
 </Callout>
 
 ## Subscribe to expiry events
@@ -25,7 +25,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
     "enabled_events": [
       "composio.trigger.message",
       "composio.connected_account.expired"
-    ]
+    ],
+    "version": "V3"
   }'
 ```
 
