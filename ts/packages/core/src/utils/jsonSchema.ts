@@ -107,14 +107,10 @@ const tryResolvePointer = (root: Record<string, unknown>, pointer: string): Reso
   return { kind: 'ok', value: cursor };
 };
 
-const throwResolutionError = (pointer: string, result: ResolutionResult): never => {
-  if (result.kind === 'ok') {
-    // Unreachable; defensive so the type-narrow holds.
-    throw new JsonSchemaRefResolutionError(`Cannot resolve $ref ${pointer}`, {
-      meta: { ref: pointer },
-      possibleFixes: REF_RESOLUTION_FIXES,
-    });
-  }
+const throwResolutionError = (
+  pointer: string,
+  result: Extract<ResolutionResult, { kind: 'unresolved' }>
+): never => {
   if (result.reason === 'malformed-pointer') {
     throw new JsonSchemaRefResolutionError(`Unsupported $ref pointer: ${pointer}`, {
       meta: { ref: pointer },
