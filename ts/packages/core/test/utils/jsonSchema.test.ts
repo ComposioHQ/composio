@@ -287,7 +287,7 @@ describe('dereferenceJsonSchema', () => {
     const PERMISSIVE = {
       type: 'object',
       additionalProperties: true,
-      description: expect.stringContaining('Output shape unresolved at the schema source'),
+      description: expect.stringContaining('Schema shape unresolved at the source'),
     };
 
     it('replaces a dangling internal $ref (no $defs block at all) with the cycle-break sentinel', () => {
@@ -439,7 +439,7 @@ describe('dereferenceJsonSchema', () => {
         { onUnresolved: 'sentinel' }
       ) as { properties: { v: { description: string } } };
 
-      expect(out.properties.v.description).toMatch(/unresolved at the schema source/);
+      expect(out.properties.v.description).toMatch(/Schema shape unresolved at the source/);
       expect(out.properties.v.description).toContain(
         'https://github.com/ComposioHQ/composio/issues/3307'
       );

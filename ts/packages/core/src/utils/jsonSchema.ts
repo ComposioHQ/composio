@@ -12,12 +12,14 @@ const CYCLE_BREAK_SENTINEL = { type: 'object', additionalProperties: true } as c
  * In-band hint attached to the cycle-break sentinel when lenient mode
  * substitutes it for a dangling `$ref`. Makes the degradation visible to
  * LLMs that read the wrapped tool's schema — without it the LLM sees a
- * useless permissive object and no prose context. Overridden when the
- * caller's `$ref` node carries its own `description` sibling
+ * useless permissive object and no prose context. Wording is intentionally
+ * context-neutral ("Schema shape", not "Output shape") because the helper
+ * is used for both `inputParameters` and `outputParameters`. Overridden
+ * when the caller's `$ref` node carries its own `description` sibling
  * (Draft 2020-12 sibling-keyword semantics).
  */
 const UNRESOLVED_REF_DESCRIPTION =
-  'Output shape unresolved at the schema source — validate loosely. ' +
+  'Schema shape unresolved at the source — validate loosely. ' +
   'See https://github.com/ComposioHQ/composio/issues/3307.';
 
 /**
