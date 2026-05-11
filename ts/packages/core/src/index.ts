@@ -9,6 +9,11 @@ export {
   jsonSchemaToZodSchema,
   removeNonRequiredProperties,
 } from './utils/jsonSchema';
+export type {
+  DereferenceJsonSchemaOptions,
+  UnresolvedRefReason,
+  UnresolvedRefStrategy,
+} from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';

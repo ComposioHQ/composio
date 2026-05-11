@@ -12,7 +12,9 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   dereferenceJsonSchema,
+  logger,
   removeNonRequiredProperties,
+  type UnresolvedRefReason,
 } from '@composio/core';
 import { applyCompatLayer } from '@mastra/schema-compat';
 import { createTool } from '@mastra/core/tools';
@@ -34,6 +36,10 @@ export class MastraProvider extends BaseAgenticProvider<
 > {
   readonly name = 'mastra';
   private strict: boolean | null;
+  // Tracks the (toolSlug, ref) pairs we've already warned about, so wrapping
+  // the same tool many times during a single SDK session does not flood the
+  // logs. Reset is only via constructing a new provider.
+  private warnedDanglingRefs = new Set<string>();
 
   /**
    * Creates a new instance of the MastraProvider.
@@ -95,16 +101,33 @@ export class MastraProvider extends BaseAgenticProvider<
     // @mastra/schema-compat. AJV (bundled inside schema-compat) refuses to
     // compile a schema with unresolved $ref, and the upstream JSON-Schema →
     // Zod converter silently degrades $ref-typed properties to a permissive
-    // anyOf — losing the type info from $defs. See [PLEN-2244] and
-    // mastra-ai/mastra#15341.
+    // anyOf — losing the type info from $defs. See
+    // https://github.com/mastra-ai/mastra/issues/15341.
+    //
+    // Some Composio-API-supplied tools emit a `$ref` into `#/$defs/...`
+    // without ever declaring `$defs` (e.g. `GMAIL_FETCH_EMAILS`). Strict
+    // dereferencing throws on this, which crashes `tools.get` upfront. Opt
+    // into `'sentinel'` so the dangling branch becomes a permissive object
+    // schema instead, and emit a single warn per (toolSlug, ref) pair so the
+    // degraded shape is observable. See
+    // https://github.com/ComposioHQ/composio/issues/3307.
+    const onReplace = (ref: string, reason: UnresolvedRefReason) =>
+      this.warnDanglingRefOnce(tool, ref, reason);
+
     const inputSchema = applyCompatLayer({
-      schema: dereferenceJsonSchema(parameters ?? {}),
+      schema: dereferenceJsonSchema(parameters ?? {}, {
+        onUnresolved: 'sentinel',
+        onReplace,
+      }),
       compatLayers: [],
       mode: 'jsonSchema',
     });
 
     const outputSchema = applyCompatLayer({
-      schema: dereferenceJsonSchema(tool.outputParameters ?? {}),
+      schema: dereferenceJsonSchema(tool.outputParameters ?? {}, {
+        onUnresolved: 'sentinel',
+        onReplace,
+      }),
       compatLayers: [],
       mode: 'jsonSchema',
     });
@@ -130,5 +153,19 @@ export class MastraProvider extends BaseAgenticProvider<
       acc[tool.slug] = this.wrapTool(tool, executeTool);
       return acc;
     }, {} as MastraToolCollection);
+  }
+
+  private warnDanglingRefOnce(tool: Tool, ref: string, reason: UnresolvedRefReason): void {
+    const key = `${tool.slug}::${ref}`;
+    if (this.warnedDanglingRefs.has(key)) return;
+    this.warnedDanglingRefs.add(key);
+    const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
+    logger.warn(
+      `[composio/mastra] Tool ${tool.slug} (toolkit ${toolkitSlug}) declares ` +
+        `$ref ${ref} but no matching $defs/definitions entry (${reason}). ` +
+        `Falling back to a permissive object schema for this branch — the ` +
+        `wrapped Mastra tool will validate this property loosely. Tracked in ` +
+        `https://github.com/ComposioHQ/composio/issues/3307.`
+    );
   }
 }
