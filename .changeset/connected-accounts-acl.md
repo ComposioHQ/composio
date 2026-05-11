@@ -1,5 +1,5 @@
 ---
-'@composio/core': minor
+'@composio/core': patch
 ---
 
 Add `accountType` and per-user ACL support for SHARED connected accounts.
