@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli-local-tools",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Local tool and toolkit declarations for the Composio CLI.",
   "type": "module",
   "main": "dist/index.mjs",

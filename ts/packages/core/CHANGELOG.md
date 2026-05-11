@@ -1,5 +1,44 @@
 # @composio/core
 
+## 0.9.1
+
+### Patch Changes
+
+- 84a3a07: Add `accountType` and per-user ACL support for SHARED connected accounts.
+  - **`accountType` on create**: `composio.connectedAccounts.link(userId, authConfigId, { accountType: 'SHARED' })` creates a SHARED connection. Default remains `PRIVATE`. A SHARED connection can be used by other `userId`s, but only when the connection is explicitly pinned in a tool-router session's config and only when the requesting `userId` passes the connection's ACL.
+  - **`accountType` on retrieve**: `get()` and `list()` responses now include `accountType` (`'PRIVATE' | 'SHARED'`).
+  - **`aclConfigForShared` on create + retrieve**: per-user ACL block — `{ allowAllUsers, allowedUserIds, notAllowedUserIds }`. On responses the field is `undefined` when the caller isn't authorised to see the ACL, so callers can distinguish _"I can't see the ACL"_ from _"ACL is the default deny-by-default state"_.
+  - **`updateAcl()` method** (new): `composio.connectedAccounts.updateAcl(nanoid, { allowAllUsers, allowedUserIds, notAllowedUserIds })` writes the ACL via `PATCH`. PATCH semantics — omit a field to leave it unchanged; pass an empty array to clear an allow/deny list. At least one field required. Calling on a PRIVATE connection raises `ComposioAclOnlyForSharedError` (400).
+  - **`ToolRouterSession.authorize()` options gain `accountType` + `aclConfigForShared`**, so a SHARED connection with an ACL can be created in one call from inside a tool-router session.
+
+  ACL resolution rule (deny wins):
+  1. requesting `userId` ∈ `notAllowedUserIds` → DENY
+  2. `allowAllUsers === true` → ALLOW
+  3. requesting `userId` ∈ `allowedUserIds` → ALLOW
+  4. otherwise → DENY (deny-by-default)
+
+  Limits: each ACL list accepts up to 1000 entries; each `userId` is 1..256 characters. The SDK enforces these caps at the input boundary.
+
+  New error classes:
+  - `ComposioSharedAccessDeniedError` (403) — surfaces from direct `connectedAccountId` execution paths when the requesting user fails the ACL.
+  - `ComposioAclOnlyForSharedError` (400) — ACL fields sent on a PRIVATE connection.
+  - `ComposioSharedConnectionNotAccessibleError` (400) — tool-router session create / PATCH with a pinned SHARED connection the session user cannot use.
+
+  No breaking changes. Existing `link()` callers without the new options get a `PRIVATE` connection exactly as today; existing `get()` / `list()` callers see new optional fields.
+
+  The Python SDK mirror ships in a separate PR.
+
+- c358ffa: Fix false-positive `initiate()` deprecation warning for custom auth configs (SEC-339 follow-up).
+
+  `composio.connectedAccounts.initiate()` previously emitted a one-time `console.warn` on every redirectable-OAuth response, regardless of whether the auth config was Composio-managed (subject to the 2026-07-03 cutover) or custom (unaffected). The wording was conditional ("If this auth config is Composio-managed…") so callers using their own OAuth apps could ignore it, but the warning still printed and caused noise in logs.
+
+  Apollo already emits the SEC-339 `Deprecation` / `Sunset` / `Link rel="deprecation"` headers (RFC 9745 / RFC 8594) **only** on the retiring branch — managed + redirectable OAuth. The SDK now reads the `Deprecation` header from the response (via `APIPromise.withResponse()`) and gates the warning on its presence. Custom auth configs and non-OAuth schemes get a clean response from the server and now stay silent in the SDK as well.
+  - **Behavior change:** No warning is emitted for `initiate()` calls against custom OAuth auth configs or non-OAuth schemes (API key, bearer, basic). Managed-OAuth callers continue to get exactly one warning per process, now with revised wording that points at the response's `Sunset` header for the precise cutover date.
+  - **No public API change:** `initiate()` returns the same `ConnectionRequest` shape and respects the same `allowMultiple` guard. `ComposioLegacyConnectedAccountsEndpointRetiredError` continues to surface from the 400 retired-path response.
+  - **Test scaffolding:** new mock helper `mockApiPromiseWithHeaders()` in `connectedAccounts.test.ts` wraps a value as an `APIPromise`-shaped thenable so the new tests can simulate apollo's header behavior. Pre-existing initiate tests using `mockResolvedValueOnce` continue to pass via the SDK's defensive fallback when `withResponse` is absent on the mock.
+
+  Python SDK gets the matching change in the same release train.
+
 ## 0.9.0
 
 ### Minor Changes
