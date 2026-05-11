@@ -65,6 +65,29 @@ type ToolRouterSessionExecuteOptions = {
   experimental?: SessionExecuteParams.Experimental;
 };
 
+type RawToolParameters =
+  | ToolRetrieveResponse['input_parameters']
+  | ComposioToolListResponse['items'][0]['input_parameters'];
+
+/**
+ * Normalize a raw `input_parameters` / `output_parameters` payload returned by
+ * the Composio API. Maps `null`, `undefined`, and empty `{}` — all of which
+ * mean "no declared schema" — to `undefined` so the strict `ParametersSchema`
+ * validator never sees them. Non-empty objects pass through unchanged and
+ * remain subject to strict Zod validation.
+ *
+ * MCP-backed toolkits (granola_mcp, apify_mcp, tavily_mcp, …) have no
+ * declared output schema and the API serializes that as `{}`, which would
+ * otherwise trip `ParametersSchema`. See
+ * https://github.com/ComposioHQ/composio/issues/3354.
+ */
+function normalizeRawToolParameters(
+  params: RawToolParameters | null | undefined
+): RawToolParameters | undefined {
+  if (params == null || Object.keys(params).length === 0) return undefined;
+  return params;
+}
+
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -142,8 +165,8 @@ export class Tools<
   ): Tool {
     return ToolSchema.parse({
       ...tool,
-      inputParameters: tool.input_parameters,
-      outputParameters: tool.output_parameters,
+      inputParameters: normalizeRawToolParameters(tool.input_parameters),
+      outputParameters: normalizeRawToolParameters(tool.output_parameters),
       availableVersions: tool.available_versions,
       isDeprecated: tool.deprecated?.is_deprecated ?? false,
       isNoAuth: tool.no_auth,

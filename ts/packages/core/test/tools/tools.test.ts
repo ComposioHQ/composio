@@ -544,6 +544,65 @@ describe('Tools', () => {
     });
   });
 
+  // MCP-backed toolkits (granola_mcp, apify_mcp, tavily_mcp, …) have no
+  // declared output schema, so the Composio API returns
+  // output_parameters: {}. Before the fix, transformToolCases ran that
+  // through ParametersSchema (which requires { type: 'object', properties:
+  // {...} }) and threw a ZodError, breaking every tools.execute /
+  // tools.list call for these toolkits. See
+  // https://github.com/ComposioHQ/composio/issues/3354.
+  describe('MCP-shaped tool metadata', () => {
+    it('should normalize output_parameters: {} to undefined on the transformed Tool', async () => {
+      const slug = 'GRANOLA_MCP_LIST_MEETINGS';
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.mcpRawTool);
+
+      const tool = await context.tools.getRawComposioToolBySlug(slug);
+
+      expect(tool.outputParameters).toBeUndefined();
+      expect(tool.inputParameters).toEqual(toolMocks.mcpRawTool.input_parameters);
+    });
+
+    it('should normalize both empty input and output parameters to undefined', async () => {
+      const slug = 'SOME_MCP_PING';
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.mcpRawToolBothEmpty);
+
+      const tool = await context.tools.getRawComposioToolBySlug(slug);
+
+      expect(tool.inputParameters).toBeUndefined();
+      expect(tool.outputParameters).toBeUndefined();
+    });
+
+    it('should also tolerate empty output_parameters in tools.list responses', async () => {
+      mockClient.tools.list.mockResolvedValueOnce({
+        items: [toolMocks.mcpRawTool],
+        totalPages: 1,
+      });
+
+      const result = await context.tools.getRawComposioTools({ toolkits: ['granola_mcp'] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].slug).toEqual('GRANOLA_MCP_LIST_MEETINGS');
+      expect(result[0].outputParameters).toBeUndefined();
+      expect(result[0].inputParameters).toEqual(toolMocks.mcpRawTool.input_parameters);
+    });
+
+    it('should execute an MCP tool whose metadata has empty output_parameters', async () => {
+      // End-to-end: tools.execute → getRawComposioToolBySlug →
+      // transformToolCases → executeComposioTool → client.tools.execute.
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.mcpRawTool);
+      mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
+
+      const result = await context.tools.execute('GRANOLA_MCP_LIST_MEETINGS', {
+        userId: 'pg-test-9f4d0df7-a59d-4341-ad00-887b2c58004b',
+        arguments: { time_range: 'last_30_days' },
+        version: '20260206_00',
+      });
+
+      expect(mockClient.tools.execute).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(toolMocks.toolExecuteResponse);
+    });
+  });
+
   describe('get', () => {
     it('should get a single tool by slug and wrap it with provider as a collection', async () => {
       const userId = 'test-user';
