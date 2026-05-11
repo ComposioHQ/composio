@@ -2123,3 +2123,69 @@ class TestFileDownloadablePathTraversal:
         # but no file was written inside it.
         assert outdir.is_dir()
         assert list(outdir.iterdir()) == []
+
+
+class TestEnhanceSchemaDescriptionsEmptySchema:
+    """Regression tests for the empty-input-parameters crash.
+
+    MCP-backed toolkits can return `input_parameters: {}` for tools with no
+    required arguments (the same convention the API uses for missing output
+    schemas). Before the fix, `FileHelper.enhance_schema_descriptions` —
+    called unconditionally on every fetched tool's input_parameters from
+    `Tools._get()` — raised `KeyError: 'properties'` on that shape,
+    crashing the public `Composio.tools.get(...)` call.
+
+    The sibling `FileHelper.process_file_uploadable_schema` already guarded
+    this with `if "properties" not in schema: return schema`. This adds the
+    same guard to `enhance_schema_descriptions`.
+
+    See https://github.com/ComposioHQ/composio/issues/3354 for the related
+    TS-side issue.
+    """
+
+    def test_empty_schema_does_not_raise(self, file_helper):
+        """schema={} must not raise — it means 'no declared schema'."""
+        # Pre-fix: KeyError: 'properties'
+        result = file_helper.enhance_schema_descriptions(schema={})
+        assert result == {}
+
+    def test_schema_without_properties_returns_unchanged(self, file_helper):
+        """A schema with metadata but no `properties` key is returned as-is.
+
+        Mirrors how `process_file_uploadable_schema` treats the same input.
+        """
+        schema = {"type": "object", "additionalProperties": False}
+        result = file_helper.enhance_schema_descriptions(schema=schema)
+        assert result == {"type": "object", "additionalProperties": False}
+
+    def test_schema_with_empty_properties_dict_is_handled(self, file_helper):
+        """`properties: {}` is valid JSON Schema (declares no fields).
+
+        The loop iterates zero times and the schema is returned unchanged.
+        """
+        schema = {"type": "object", "properties": {}}
+        result = file_helper.enhance_schema_descriptions(schema=schema)
+        assert result == {"type": "object", "properties": {}}
+
+    def test_populated_schema_still_enhanced(self, file_helper):
+        """Non-empty schemas continue to receive type-hint enhancements.
+
+        Guard against regressing the enhancement behavior while fixing
+        the empty-schema crash.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Search term"},
+            },
+            "required": ["query"],
+        }
+        result = file_helper.enhance_schema_descriptions(schema=schema)
+        description = result["properties"]["query"]["description"]
+        # The description must have been mutated from the input and must
+        # mention the type and the required-marker. Assertions are token-
+        # based to avoid coupling to the exact phrasing in
+        # enhance_schema_descriptions.
+        assert description != "Search term"
+        assert "string" in description
+        assert "required" in description

@@ -732,7 +732,13 @@ class FileHelper(WithLogger):
 
         This is separate from file processing and should always run
         regardless of `dangerously_allow_auto_upload_download_files`.
+
+        Schemas with no `properties` key (e.g. `{}` for tools that declare
+        no input parameters — common with MCP-backed toolkits) are returned
+        unchanged, matching the sibling `process_file_uploadable_schema`.
         """
+        if "properties" not in schema:
+            return schema
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
             if _schema.get("type") in ["string", "integer", "number", "boolean"]:
