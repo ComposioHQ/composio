@@ -185,7 +185,7 @@ Also triggerable from any branch via `workflow_dispatch` → `build-beta`. Users
 2. Merge into `next`
 3. Changeset bot opens "Release: update version" PR bumping `package.json`
 4. Merge that PR → push to `next` detects version change → builds **stable** release (`@composio/cli@X.Y.Z`, marked `latest`)
-5. `ts.release.yml` also publishes to npm
+5. `ts.release.yml` publishes via the repository-controlled `changeset:release` script, which filters `@composio/cli` tag output so only `build-cli-binaries.yml` can create CLI GitHub Releases
 
 Promote an existing beta to stable via `workflow_dispatch` → `promote-stable` with the beta tag (e.g. `@composio/cli@0.2.20-beta.42`).
 
