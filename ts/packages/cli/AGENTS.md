@@ -1,18 +1,18 @@
 # AGENTS.md
 
-Instructions for AI agents working on `@composio/cli`.
-
-## Architecture Overview
-
-The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. It follows a service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling.
+Instructions for AI agents working on `@composio/cli`. The sibling `CLAUDE.md` is a symlink to this file.
 
 ## Required Checks
 
-When you touch CLI commands (anything under `ts/packages/cli/src/commands/`), you must run `pnpm typecheck` from the repo root. If it fails, fix the issues before proceeding.
+When you touch CLI code (anything under `ts/packages/cli/src/`), run `pnpm typecheck` from the repo root before pushing. Fix all type errors. Build/lint failures block CI.
 
-### Entry Point
+## Architecture
 
-`src/bin.ts` bootstraps the CLI by composing Effect layers and running the root command via `BunRuntime.runMain()`:
+The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling.
+
+### Entry Point — `src/bin.ts`
+
+Bootstraps the CLI by composing Effect layers and running the root command via `BunRuntime.runMain()`:
 
 - `CliConfigLive` — @effect/cli behavior (case-sensitive, no auto-correct, no built-ins)
 - `ComposioUserContextLive` — User authentication state from `~/.composio/`
@@ -21,27 +21,44 @@ When you touch CLI commands (anything under `ts/packages/cli/src/commands/`), yo
 - `UpgradeBinaryLive` — Self-update from GitHub releases
 - `BunFileSystem.layer`, `BunContext.layer` — Bun runtime integration
 
-Errors are captured via the custom `effect-errors/` module, which provides source-mapped stack traces, Effect span timelines, and formatted output.
+Errors are captured via the custom `effect-errors/` module (source-mapped stack traces, Effect span timelines, formatted output).
 
-### Commands (`src/commands/`)
+### Commands — `src/commands/`
 
-Each command is declared with `@effect/cli`'s `Command.make()` pattern:
+Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
 
-| Command                                                  | Description                                                                           |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `composio version`                                       | Display CLI version                                                                   |
-| `composio whoami`                                        | Show logged-in user's API key                                                         |
-| `composio login [--no-browser] [--no-wait] [--key text] [--user-api-key text] [--org text]` | Login with browser redirect or direct user API key                                    |
-| `composio logout`                                        | Clear stored API key                                                                  |
-| `composio upgrade`                                       | Self-update binary from GitHub releases                                               |
-| `composio generate`                                      | Auto-detect project language, delegate to `ts` or `py`                                |
-| `composio generate ts`                                   | Generate TypeScript type stubs for toolkits/tools/triggers                            |
-| `composio generate py`                                   | Generate Python type stubs                                                            |
-| `composio manage <command>`                              | Manage Composio resources (toolkits, tools, accounts, triggers, logs, orgs, projects) |
+| Group / Command           | Purpose                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `version`                 | Display CLI version                                                                                    |
+| `whoami`                  | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions)            |
+| `login`                   | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
+| `logout`                  | Clear stored API key                                                                                   |
+| `signup`                  | Create a Composio account                                                                              |
+| `upgrade`                 | Self-update binary from GitHub releases                                                                |
+| `init`                    | Bootstrap a Composio project in the current directory                                                  |
+| `install`                 | Install local-tool integrations                                                                        |
+| `generate {ts|py}`        | Generate type stubs (auto-detects project language if no subcommand)                                   |
+| `agent`                   | Manage AI agent presets                                                                                |
+| `toolkits`                | List / inspect / version toolkits                                                                      |
+| `tools`                   | List / inspect / `execute` tools                                                                       |
+| `triggers`                | List / manage trigger types                                                                            |
+| `auth-configs`            | Manage auth-config resources (`ac_*`)                                                                  |
+| `connected-accounts`      | Manage connected accounts (`ca_*`)                                                                     |
+| `connections`             | Alias / helper for connected-account flows                                                             |
+| `orgs`                    | Manage organizations                                                                                   |
+| `projects`                | Manage projects                                                                                        |
+| `local-tools`             | Manage local toolkits (via `@composio/cli-local-tools`)                                                |
+| `logs`                    | View tool-execution logs (`logs-cmd/`)                                                                 |
+| `config`                  | Read/write CLI config                                                                                  |
+| `listen`                  | Listen for events                                                                                      |
+| `proxy`                   | Proxy authenticated API requests                                                                       |
+| `run`                     | Run a saved script / preset                                                                            |
+| `dev`                     | Developer-only utilities                                                                               |
+| `artifacts`               | Manage generated artifacts                                                                             |
 
-Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation.
+Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
-### Services (`src/services/`)
+### Services — `src/services/`
 
 | Service                            | Purpose                                                                      |
 | ---------------------------------- | ---------------------------------------------------------------------------- |
@@ -50,330 +67,131 @@ Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.
 | `ComposioToolkitsRepository`       | API client — fetches toolkits, tools, trigger types; validates versions      |
 | `ComposioToolkitsRepositoryCached` | Decorator over base repository with file-based caching and graceful fallback |
 | `NodeOs`                           | OS abstraction (`homedir`, `platform`, `arch`)                               |
-| `EnvLangDetector`                  | Detects project language (TS/Python) from config files and lock files        |
-| `JsPackageManagerDetector`         | Detects npm/pnpm/yarn/bun for helpful install instructions                   |
+| `EnvLangDetector`                  | Detects project language (TS/Python) from config / lock files                |
+| `JsPackageManagerDetector`         | Detects npm/pnpm/yarn/bun for install instructions                           |
 | `UpgradeBinary`                    | Fetches latest release from GitHub, downloads and replaces binary            |
 
-### Effects (`src/effects/`)
+OS credential storage uses the sibling package `@composio/cli-keyring` (macOS Keychain / Linux Secret Service).
 
-Reusable Effect computations for cross-cutting concerns:
+### Effects — `src/effects/`
 
-| Effect                         | Purpose                                                               |
-| ------------------------------ | --------------------------------------------------------------------- |
-| `app-config`                   | Reads `COMPOSIO_*` env vars (API_KEY, BASE_URL, CACHE_DIR, etc.)      |
-| `debug-config`                 | Debug overrides (DEBUG_OVERRIDE_VERSION, etc.)                        |
-| `force-config`                 | Force flags (FORCE_USE_CACHE)                                         |
-| `setup-cache-dir`              | Ensures `~/.composio/` directory exists                               |
-| `toolkit-version-overrides`    | Parses `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>` env vars               |
-| `validate-toolkit-versions`    | Validates overrides against available API versions                    |
-| `with-log-level`               | Configures logger from CLI flag or env var                            |
-| `find-composio-core-generated` | Locates `@composio/core` in node_modules (handles pnpm virtual store) |
-| `version`                      | Resolves CLI version from package.json                                |
-| `compare-semver`               | Semantic version comparison for upgrade checks                        |
-| `log-metrics`                  | Formats and logs API request count and bytes transferred              |
+Reusable Effect computations: `app-config` (reads `COMPOSIO_*` env), `debug-config`, `force-config`, `setup-cache-dir`, `toolkit-version-overrides` (parses `COMPOSIO_TOOLKIT_VERSION_<NAME>=<ver>`), `validate-toolkit-versions`, `with-log-level`, `find-composio-core-generated`, `version`, `compare-semver`, `log-metrics`.
 
-### Models (`src/models/`)
+### Models — `src/models/`
 
-Effect Schema definitions for type-safe serialization:
+Effect Schema definitions with `fromJSON` / `toJSON` helpers via `JSONTransformSchema()`: `Toolkit`, `Tool`, `TriggerType`, `UserData`, `Session`.
 
-- `Toolkit` — name, slug, auth_schemes, is_local_toolkit, meta
-- `Tool` — name, slug, available_versions, input/output_parameters, description, tags
-- `TriggerType` — slug, name, description, input/output parameters
-- `UserData` — apiKey, baseURL, webURL (with defaults)
-- `Session` — id, status (pending|linked), retrieved session with api_key
+### Code Generation — `src/generation/`
 
-Each model has `fromJSON`/`toJSON` helpers using `JSONTransformSchema()`.
+Pipeline for `composio generate {ts,py}`:
 
-### Code Generation (`src/generation/`)
+1. **Fetch** — Toolkits, tools, trigger types (filterable via `--toolkits`)
+2. **Index** — Groups by toolkit prefix into `ToolkitIndex`
+3. **Generate** — Builds TS/Python source using `@composio/ts-builders` AST builders
+4. **Transpile** — Optionally converts TS → ESM JS for `@composio/core/generated`
 
-Multi-stage pipeline for `composio generate ts` and `composio generate py`:
+`--type-tools` includes full type definitions.
 
-1. **Fetch** — Toolkits, tools, trigger types from API (optionally filtered by `--toolkits`)
-2. **Index** — Groups tools/triggers by toolkit prefix into a `ToolkitIndex` map
-3. **Generate** — Builds TypeScript/Python source using `@composio/ts-builders` AST builders
-4. **Transpile** — Optionally converts TS → ESM JS (when writing to @composio/core/generated)
+### Configuration
 
-Generated output includes toolkit objects, tool/trigger enums, and optionally full type definitions (with `--type-tools`).
-
-### Error Handling (`src/effect-errors/`)
-
-Custom error capture and formatting system:
-
-- **Capture** — Extracts error chain from Effect's `Cause`, handles interrupts separately
-- **Source maps** — Maps compiled `.mjs` stack traces back to TypeScript source
-- **Spans** — Extracts timing from Effect spans for execution timeline display
-- **Pretty print** — Colored, boxed error output with source context and suggestions
-
-### UI & Output (`src/ui/`)
-
-- `picocolors` and `ansis` for colored terminal output
-- Respects `NO_COLOR` env var
-- `@clack/prompts` symbols (`S_BAR`, `S_BAR_H`, `unicodeOr`) for box-drawing in formatted output
-- Effect's `Console.log()` / `Console.error()` for output
-
-### Configuration (`src/cli-config.ts`, `src/constants.ts`)
-
-- CLI behavior: `showBuiltIns: false`, `autoCorrectLimit: 0`, `isCaseSensitive: true`
-- Prefixes: `COMPOSIO_` for app config, `DEBUG_OVERRIDE_` for debug
-- User config stored in `~/.composio/`
+- CLI: `cli-config.ts` — `showBuiltIns: false`, `autoCorrectLimit: 0`, `isCaseSensitive: true`
+- Constants: `constants.ts` — env prefixes (`COMPOSIO_`, `DEBUG_OVERRIDE_`)
+- User config: `~/.composio/user-config.json`
 - Cache files: `toolkits.json`, `tools.json`, `tools-as-enums.json`, `trigger-types.json`
 
-### Effect.ts Patterns
+### Key Dependencies
 
-The CLI uses the generator-based syntax throughout:
+`effect`, `@effect/cli`, `@effect/platform`, `@effect/platform-bun`, `@clack/prompts` (terminal UI — stderr by default), `ansis` / `picocolors`, `@composio/client` (Composio API), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/cli-local-tools` (local toolkit defs), `semver`, `open`, `decompress`.
+
+## Output Conventions: Composable CLI Output
+
+Follow the Unix convention of separating human-readable decoration from machine-readable data:
+
+- **stdout** — data only (`ui.output()`). Captured by pipes / `$(...)` / `> file`.
+- **stderr** — all decoration (Clack spinners, logs, notes, intro/outro). Visible in terminal, invisible in pipes.
+
+Rules:
+
+1. All `TerminalUI` methods **except `output()`** write to stderr via Clack's `{ output: process.stderr }`, and only in interactive mode.
+2. `ui.output(data)` writes to stdout **only when piped** (checked via `process.stdout.isTTY`).
+3. When stdout is piped, **all decoration is suppressed** — `composio whoami | pbcopy` is completely silent and clipboard gets the clean key.
+4. **Data commands** (whoami, version, login, generate, etc.) call both decoration (stderr) and `ui.output()` (stdout).
+5. **Action commands** (logout, upgrade) produce no stdout data — output is purely decorative.
+6. **Never** write data to stderr or decoration to stdout.
+
+When adding a new command: ask "Does this produce a value scripts should capture?" — yes → `ui.output(value)` + `ui.log.*`/`ui.note()`. No → decoration only.
+
+## Effect.ts Patterns
+
+Generator-based syntax throughout:
 
 ```typescript
 Effect.gen(function* () {
   const service = yield* ServiceName; // resolve dependency
-  const result = yield* someEffect; // await computation
-  yield* Effect.log('message'); // side effect
+  const result = yield* someEffect;   // await computation
+  yield* Effect.log('message');
   return result;
 });
 ```
 
-Key patterns:
+Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel work, `Layer.provide()` for dependency composition, `Effect.mapError()` / `Effect.catchTag()` for typed errors, `Effect.scoped` for resource cleanup.
 
-- `Effect.all([...], { concurrency: 'unbounded' })` for parallel fetches
-- `Layer.provide()` for dependency composition
-- `Effect.mapError()` / `Effect.catchTag()` for typed error handling
-- `Effect.scoped` for resource cleanup
+## Vendor Reference Sources
 
-### Key Dependencies
-
-| Package                 | Role                                                                |
-| ----------------------- | ------------------------------------------------------------------- |
-| `effect`                | Core runtime, data types, concurrency                               |
-| `@effect/cli`           | Command, Options, Args declaration and parsing                      |
-| `@effect/platform`      | FileSystem, Terminal abstraction                                    |
-| `@effect/platform-bun`  | Bun runtime layer                                                   |
-| `@clack/prompts`        | Terminal UI — prompts, spinners, logs, notes (all output to stderr) |
-| `ansis`, `picocolors`   | Colored output                                                      |
-| `@composio/client`      | Raw Composio API client                                             |
-| `@composio/core`        | Core SDK types and constants                                        |
-| `@composio/ts-builders` | TypeScript AST code generation                                      |
-| `semver`                | Version comparison for upgrades                                     |
-| `open`                  | Opens URLs in browser (login flow)                                  |
-| `decompress`            | Extracts downloaded binaries                                        |
-
----
-
-## Output Conventions: Composable CLI Output
-
-The CLI follows the Unix convention of separating human-readable decoration from machine-readable data:
-
-- **stdout** — data output only (`ui.output()`). This is what scripts and pipes capture.
-- **stderr** — all decoration (Clack spinners, logs, notes, intro/outro). Visible in terminal, invisible in pipes.
-
-### Rules
-
-1. **All `TerminalUI` methods except `output()` write to stderr** via Clack's `{ output: process.stderr }` option — but only in interactive mode.
-2. **`ui.output(data)` writes to stdout only when piped** — it checks `process.stdout.isTTY` and is a no-op in interactive terminals (the human already sees the data via decoration on stderr).
-3. **When stdout is piped, ALL decoration is suppressed** — `isInteractive` (`process.stdout.isTTY`) gates every decoration method. Only `ui.output()` writes in piped mode. This keeps `composio whoami | pbcopy` completely silent.
-4. **Action commands** (logout, upgrade) produce no stdout data — their output is purely decorative.
-5. **Data commands** (whoami, version, login, generate) call both decoration (stderr) and `ui.output()` (stdout). In interactive mode, only decoration is visible. In pipes/scripts, only the raw data is captured.
-6. **Never write data to stderr** — decoration methods are for human context only.
-7. **Never write decoration to stdout** — it breaks pipes, `$(...)` captures, and `> file` redirects.
-
-### Pattern
-
-```typescript
-// Data command (e.g., whoami):
-yield * ui.note(apiKey, 'API Key'); // Decoration → stderr (human sees pretty box)
-yield * ui.output(apiKey); // Data → stdout (scripts capture plain value)
-
-// Action command (e.g., login):
-yield * ui.intro('composio login'); // Decoration → stderr
-yield * ui.log.step('Redirecting'); // Decoration → stderr
-// No ui.output() call — nothing for scripts to capture
-```
-
-### How it works in practice
-
-The CLI checks `process.stdout.isTTY` once at startup to determine the output mode:
-
-- **Interactive** (`stdout` is TTY): decoration visible on stderr, `ui.output()` is a no-op.
-- **Piped** (`stdout` is NOT TTY): decoration suppressed, `ui.output()` writes raw data to stdout.
-
-```bash
-composio whoami              # Pretty box only (interactive)
-composio whoami | pbcopy     # Silent — clipboard gets clean key
-API_KEY=$(composio whoami)   # Silent — variable gets clean key
-composio whoami > file.txt   # Silent — file gets clean key
-
-composio version             # Decorated version (interactive)
-composio version | cat       # Raw version string
-
-composio login               # All decoration visible, browser opens
-composio login 2>/dev/null   # Silent (but still opens browser, polls API)
-```
-
-### Adding new commands
-
-When creating a new command, ask: "Does this command produce a value that scripts should capture?"
-
-- **Yes** → Use `ui.output(value)` for the data, `ui.log.*` / `ui.note()` for context
-- **No** → Use only `ui.log.*` / `ui.note()` / `ui.intro()` / `ui.outro()` — everything goes to stderr automatically
-
----
-
-## Clack Reference Source
-
-The CLI uses [`@clack/prompts`](https://github.com/bombshell-dev/clack) for interactive terminal UI (prompts, spinners, logs, etc.). A local copy of the Clack source code is available as a git submodule:
-
-- **Location:** `ts/vendor/clack/`
-- **Repo:** [bombshell-dev/clack](https://github.com/bombshell-dev/clack)
-
-When working on CLI code that involves terminal UI, reference the Clack source for accurate APIs and patterns:
-
-- `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (the high-level API used by this CLI)
-- `ts/vendor/clack/packages/core/src/` — `@clack/core` (low-level primitives underlying prompts)
-
-### Key modules in `@clack/prompts`
-
-| Module                  | Purpose                                                |
-| ----------------------- | ------------------------------------------------------ |
-| `text.ts`               | Text input prompt                                      |
-| `password.ts`           | Password input prompt                                  |
-| `confirm.ts`            | Yes/no confirmation prompt                             |
-| `select.ts`             | Single-select list prompt                              |
-| `multi-select.ts`       | Multi-select list prompt                               |
-| `group-multi-select.ts` | Grouped multi-select prompt                            |
-| `autocomplete.ts`       | Autocomplete/search prompt                             |
-| `spinner.ts`            | Loading spinner                                        |
-| `progress-bar.ts`       | Progress bar                                           |
-| `log.ts`                | Styled log messages                                    |
-| `note.ts`               | Boxed note output                                      |
-| `task.ts`               | Task runner with status                                |
-| `task-log.ts`           | Task with streaming log output                         |
-| `stream.ts`             | Streaming text output                                  |
-| `box.ts`                | Box drawing utility                                    |
-| `messages.ts`           | Intro/outro messages                                   |
-| `common.ts`             | Shared symbols (`S_BAR`, `S_BAR_H`, `unicodeOr`, etc.) |
-
-### Current clack usage in the CLI
-
-The CLI currently imports from `@clack/prompts`:
-
-- `S_BAR`, `S_BAR_H`, `unicodeOr` — Unicode box-drawing symbols for custom formatted output
-
-### Guidelines
-
-- The submodule is for **read-only reference only**. Do not modify files in `ts/vendor/clack/`.
-- The CLI's actual dependency comes from npm (`@clack/prompts` v1.0.1) via `pnpm install`.
-- When adding new interactive prompts or terminal UI, consult the source in `ts/vendor/clack/packages/prompts/src/` for the correct API surface and available options.
-- Prefer `@clack/prompts` (high-level) over `@clack/core` (low-level) unless you need custom prompt behavior.
-
----
-
-## Effect.ts Reference Source
-
-The CLI is built on the Effect.ts ecosystem. A local copy of the Effect source code is available as a git submodule:
-
-- **Location:** `ts/vendor/effect/`
-- **Repo:** [Effect-TS/effect](https://github.com/Effect-TS/effect)
-- **Branch:** `main`
-
-When working on CLI code, reference the Effect source for accurate patterns:
+Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from npm):
 
 - `ts/vendor/effect/packages/effect/src/` — core Effect runtime
-- `ts/vendor/effect/packages/cli/src/` — @effect/cli (Command, Options, Args)
-- `ts/vendor/effect/packages/platform/src/` — @effect/platform (FileSystem, Terminal)
-
-### Guidelines
-
-- The submodule is for **read-only reference only**. Do not modify files in `ts/vendor/effect/`.
-- The CLI's actual dependencies come from npm via `pnpm install`.
-
----
+- `ts/vendor/effect/packages/cli/src/` — `@effect/cli` (Command, Options, Args)
+- `ts/vendor/effect/packages/platform/src/` — `@effect/platform`
+- `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (text, select, confirm, spinner, note, task, etc.)
+- `ts/vendor/clack/packages/core/src/` — `@clack/core` primitives
 
 ## CLI Design Guidelines
 
-For principles on how to design CLI interactions (arguments, flags, help text, output, errors, interactivity, config precedence), see:
+Principles for arguments, flags, help, output, errors, interactivity, config precedence:
 
-- **Cursor rules**: `ts/packages/cli/.cursor/rules/cli-design-guidelines.mdc`
-- **Claude skill**: `.claude/skills/create-cli/SKILL.md` (standalone, trimmed for Claude Code context)
+- Cursor rules: `ts/packages/cli/.cursor/rules/cli-design-guidelines.mdc`
+- Claude skill: `/workspace/zen/skills/create-cli/` (also available as `/create-cli`)
 
-Use these guidelines when adding new commands, designing flag interfaces, or making UX decisions for the CLI.
-
----
+Use these when adding new commands or making UX decisions.
 
 ## Recording CLI Demos
 
-New commands should have VHS recordings for documentation. The recording script produces SVGs and asciicasts that demonstrate the CLI in action.
+New commands should ship with VHS recordings (SVG + asciicast). Workflow:
 
-### Adding Recordings
+1. Add entry to `recordings/recordings.yaml` (fields: `name`, `command`, `description`, `sleepAfterEnter`, `height: dynamic` for long output).
+2. Run `bun scripts/record.ts` — requires `COMPOSIO_API_KEY` and `vhs` on `PATH`.
 
-1. Add entries to `recordings/recordings.yaml` under the appropriate group
-2. Run `bun scripts/record.ts` (requires `COMPOSIO_API_KEY` and `vhs` on PATH)
-
-### Recording Config
-
-Each entry in `recordings.yaml` accepts:
-
-| Field             | Required | Description                                                                             |
-| ----------------- | -------- | --------------------------------------------------------------------------------------- |
-| `name`            | Yes      | Filename stem (`<name>.svg`, `<name>.ascii`, `<name>.tape`)                             |
-| `command`         | Yes      | Shell command to record                                                                 |
-| `description`     | No       | Comment shown instantly above the command (via VHS `Hide`/`Show`)                       |
-| `sleepAfterEnter` | No       | Wait time after Enter (default: `6s` from `vhs.sleepAfterEnter`)                        |
-| `height`          | No       | `'dynamic'` for two-pass auto-sizing, or a fixed pixel number. Omit for default (750px) |
-
-Use `height: dynamic` for commands with long output (help text, full listings). The recorder probes with 2x height, parses the SVG to measure content, then re-records at the computed height (capped at `vhs.height * 2`).
-
-### Output Structure
-
-```
-recordings/
-├── recordings.yaml                    # Config
-├── tapes/<group>/<name>.tape          # Generated VHS tape files
-├── svgs/<group>/<name>.svg            # SVG recordings
-└── ascii/<group>/<name>.ascii         # Asciicast recordings
-```
-
-### Key Files
-
-- **Config**: `recordings/recordings.yaml`
-- **Script**: `scripts/record.ts` — Bun + Effect.ts, parallel VHS execution
-- **Shared tape**: `recordings/tapes/shared-config.tape` — common VHS settings (auto-generated)
-
----
+Outputs land in `recordings/{tapes,svgs,ascii}/<group>/<name>.{tape,svg,ascii}`.
 
 ## Release Workflow
 
-CLI releases use a two-channel system: **beta** (automatic) and **stable** (manual promotion).
+Two channels: **beta** (automatic) and **stable** (manual promotion via changeset).
 
-### Beta Releases (automatic)
+### Beta (automatic)
 
-Every push to `next` that touches `ts/packages/cli/**` automatically triggers `.github/workflows/build-cli-binaries.yml`, which:
+Every push to `next` touching `ts/packages/cli/**` triggers `.github/workflows/build-cli-binaries.yml`:
 
-1. Finds the latest stable `@composio/cli@X.Y.Z` release
-2. Computes the next patch version (`X.Y.Z+1`)
-3. Builds cross-platform binaries (linux-x64, linux-aarch64, darwin-x64, darwin-aarch64)
-4. Creates a GitHub prerelease tagged `@composio/cli@X.Y.(Z+1)-beta.<run_number>`
+1. Find latest stable `@composio/cli@X.Y.Z`
+2. Compute next patch `X.Y.Z+1`
+3. Build cross-platform binaries (linux-x64, linux-aarch64, darwin-x64, darwin-aarch64)
+4. Publish GitHub prerelease `@composio/cli@X.Y.(Z+1)-beta.<run_number>`
 
-You can also trigger a beta build from **any branch** via `workflow_dispatch` → `build-beta`.
+Also triggerable from any branch via `workflow_dispatch` → `build-beta`. Users install with `composio upgrade --beta`.
 
-Users install beta releases with `composio upgrade --beta`.
+### Stable (via changeset)
 
-### Stable Releases (via changeset)
-
-To promote to a stable release:
-
-1. Create a changeset PR (`.changeset/<name>.md` with `"@composio/cli": patch`)
-2. Merge it into `next`
-3. The changeset bot creates a "Release: update version" PR that bumps `package.json`
-4. Merge that PR → the push to `next` detects the `package.json` version changed → builds a **stable** release (`@composio/cli@X.Y.Z`, marked as `latest`)
+1. Create changeset PR (`.changeset/<name>.md` with `"@composio/cli": patch`)
+2. Merge into `next`
+3. Changeset bot opens "Release: update version" PR bumping `package.json`
+4. Merge that PR → push to `next` detects version change → builds **stable** release (`@composio/cli@X.Y.Z`, marked `latest`)
 5. `ts.release.yml` also publishes to npm
 
-### Manual Promotion
+Promote an existing beta to stable via `workflow_dispatch` → `promote-stable` with the beta tag (e.g. `@composio/cli@0.2.20-beta.42`).
 
-You can also promote an existing beta to stable via `workflow_dispatch` → `promote-stable` with the beta tag (e.g. `@composio/cli@0.2.20-beta.42`).
+### Key Workflow Files
 
-### Key Files
-
-| File                                          | Purpose                          |
-| --------------------------------------------- | -------------------------------- |
-| `.github/workflows/build-cli-binaries.yml`    | Binary build + release workflow  |
-| `.github/workflows/ts.release.yml`            | Changeset bot + npm publish      |
-| `.github/workflows/cli.test-installation.yml` | Post-release install smoke tests |
-| `.changeset/config.json`                      | Changeset configuration          |
+- `.github/workflows/build-cli-binaries.yml` — binary build + release
+- `.github/workflows/ts.release.yml` — changeset bot + npm publish
+- `.github/workflows/cli.test-installation.yml` — post-release install smoke tests
+- `.changeset/config.json`
